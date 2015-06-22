@@ -34,7 +34,7 @@ To build the code:
 
     $ mkdir build
     $ cd build
-    $ cmake . -DCMAKE_BUILD_TYPE=Release
+    $ cmake .. -DCMAKE_BUILD_TYPE=Release
     $ make
 
 It is also preferable to perform a `make test`, which runs the unit tests.
