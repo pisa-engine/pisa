@@ -86,5 +86,11 @@ target_link_libraries(profile_decoding
   FastPFor_lib
   )
 
+add_executable(shuffle_docids shuffle_docids.cpp)
+target_link_libraries(shuffle_docids
+  ${Boost_LIBRARIES}
+  FastPFor_lib
+  )
+
 enable_testing()
 add_subdirectory(test)
