@@ -94,3 +94,4 @@ target_link_libraries(shuffle_docids
 
 enable_testing()
 add_subdirectory(test)
+add_subdirectory(benchmarks)
