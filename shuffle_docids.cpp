@@ -51,7 +51,7 @@ int main(int argc, const char** argv)
     {
         logger() << "Shuffling document sizes" << std::endl;
         binary_collection input_sizes((input_basename + ".sizes").c_str());
-        const auto& sizes = *input_sizes.begin();
+        auto sizes = *input_sizes.begin();
         if (sizes.size() != num_docs) {
             throw std::invalid_argument("Invalid sizes file");
         }
