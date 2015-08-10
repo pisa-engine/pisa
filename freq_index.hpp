@@ -4,7 +4,6 @@
 #include "compact_elias_fano.hpp"
 #include "integer_codes.hpp"
 #include "global_parameters.hpp"
-#include "semiasync_queue.hpp"
 
 namespace ds2i {
 
@@ -18,8 +17,7 @@ namespace ds2i {
         class builder {
         public:
             builder(uint64_t num_docs, global_parameters const& params)
-                : m_queue(1 << 24)
-                , m_params(params)
+                : m_params(params)
                 , m_num_docs(num_docs)
                 , m_docs_sequences(params)
                 , m_freqs_sequences(params)
@@ -31,17 +29,28 @@ namespace ds2i {
             {
                 if (!n) throw std::invalid_argument("List must be nonempty");
 
-                // make_shared does not seem to work
-                std::shared_ptr<list_adder<DocsIterator, FreqsIterator>>
-                    ptr(new list_adder<DocsIterator, FreqsIterator>
-                        (*this, docs_begin,
-                         freqs_begin, occurrences, n));
-                m_queue.add_job(ptr, 2 * n);
+                succinct::bit_vector_builder docs_bits;
+
+                write_gamma_nonzero(docs_bits, occurrences);
+                if (occurrences > 1) {
+                    docs_bits.append_bits(n, ceil_log2(occurrences + 1));
+                }
+
+                DocsSequence::write(docs_bits, docs_begin,
+                                    m_num_docs, n,
+                                    m_params);
+
+                succinct::bit_vector_builder freqs_bits;
+                FreqsSequence::write(freqs_bits, freqs_begin,
+                                     occurrences + 1, n,
+                                     m_params);
+
+                m_docs_sequences.append(docs_bits);
+                m_freqs_sequences.append(freqs_bits);
             }
 
             void build(freq_index& sq)
             {
-                m_queue.complete();
                 sq.m_num_docs = m_num_docs;
                 sq.m_params = m_params;
 
@@ -50,53 +59,6 @@ namespace ds2i {
             }
 
         private:
-
-            template <typename DocsIterator, typename FreqsIterator>
-            struct list_adder : semiasync_queue::job {
-                list_adder(builder& b,
-                           DocsIterator docs_begin,
-                           FreqsIterator freqs_begin,
-                           uint64_t occurrences,
-                           uint64_t n)
-                    : b(b)
-                    , docs_begin(docs_begin)
-                    , freqs_begin(freqs_begin)
-                    , occurrences(occurrences)
-                    , n(n)
-                {}
-
-                virtual void prepare()
-                {
-                    write_gamma_nonzero(docs_bits, occurrences);
-                    if (occurrences > 1) {
-                        docs_bits.append_bits(n, ceil_log2(occurrences + 1));
-                    }
-
-                    DocsSequence::write(docs_bits, docs_begin,
-                                        b.m_num_docs, n,
-                                        b.m_params);
-
-                    FreqsSequence::write(freqs_bits, freqs_begin,
-                                         occurrences + 1, n,
-                                         b.m_params);
-                }
-
-                virtual void commit()
-                {
-                    b.m_docs_sequences.append(docs_bits);
-                    b.m_freqs_sequences.append(freqs_bits);
-                }
-
-                builder& b;
-                DocsIterator docs_begin;
-                FreqsIterator freqs_begin;
-                uint64_t occurrences;
-                uint64_t n;
-                succinct::bit_vector_builder docs_bits;
-                succinct::bit_vector_builder freqs_bits;
-            };
-
-            semiasync_queue m_queue;
             global_parameters m_params;
             uint64_t m_num_docs;
             bitvector_collection::builder m_docs_sequences;
