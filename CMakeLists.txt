@@ -34,7 +34,7 @@ if (UNIX)
 endif()
 
 # set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.42.0 COMPONENTS iostreams unit_test_framework filesystem system REQUIRED)
+find_package(Boost 1.42.0 COMPONENTS iostreams unit_test_framework filesystem system thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 

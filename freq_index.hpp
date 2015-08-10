@@ -29,24 +29,30 @@ namespace ds2i {
             {
                 if (!n) throw std::invalid_argument("List must be nonempty");
 
-                succinct::bit_vector_builder docs_bits;
+                auto const& conf = configuration::get();
+                task_region(*conf.executor, [&](task_region_handle& trh) {
+                        trh.run([&] {
+                                succinct::bit_vector_builder docs_bits;
 
-                write_gamma_nonzero(docs_bits, occurrences);
-                if (occurrences > 1) {
-                    docs_bits.append_bits(n, ceil_log2(occurrences + 1));
-                }
+                                write_gamma_nonzero(docs_bits, occurrences);
+                                if (occurrences > 1) {
+                                    docs_bits.append_bits(n, ceil_log2(occurrences + 1));
+                                }
 
-                DocsSequence::write(docs_bits, docs_begin,
-                                    m_num_docs, n,
-                                    m_params);
+                                DocsSequence::write(docs_bits, docs_begin,
+                                                    m_num_docs, n,
+                                                    m_params);
+                                m_docs_sequences.append(docs_bits);
+                            });
+                        trh.run([&] {
+                                succinct::bit_vector_builder freqs_bits;
+                                FreqsSequence::write(freqs_bits, freqs_begin,
+                                                     occurrences + 1, n,
+                                                     m_params);
+                                m_freqs_sequences.append(freqs_bits);
+                            });
+                    });
 
-                succinct::bit_vector_builder freqs_bits;
-                FreqsSequence::write(freqs_bits, freqs_begin,
-                                     occurrences + 1, n,
-                                     m_params);
-
-                m_docs_sequences.append(docs_bits);
-                m_freqs_sequences.append(freqs_bits);
             }
 
             void build(freq_index& sq)
