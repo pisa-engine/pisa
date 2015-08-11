@@ -44,13 +44,12 @@ namespace ds2i {
                                                     m_params);
                                 m_docs_sequences.append(docs_bits);
                             });
-                        trh.run([&] {
-                                succinct::bit_vector_builder freqs_bits;
-                                FreqsSequence::write(freqs_bits, freqs_begin,
-                                                     occurrences + 1, n,
-                                                     m_params);
-                                m_freqs_sequences.append(freqs_bits);
-                            });
+
+                        succinct::bit_vector_builder freqs_bits;
+                        FreqsSequence::write(freqs_bits, freqs_begin,
+                                             occurrences + 1, n,
+                                             m_params);
+                        m_freqs_sequences.append(freqs_bits);
                     });
 
             }

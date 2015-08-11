@@ -20,7 +20,7 @@ namespace ds2i {
                           global_parameters const&)
         {
             assert(universe == n || n == 1); (void)universe; (void)n;
-            assert(*std::advance(begin, n - 1) == universe - 1); (void)begin;
+            assert(*std::next(begin, n - 1) == universe - 1); (void)begin;
         }
 
         class enumerator {

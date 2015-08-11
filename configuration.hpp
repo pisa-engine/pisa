@@ -27,6 +27,7 @@ namespace ds2i {
 
         double eps1;
         double eps2;
+        double eps3;
         uint64_t fix_cost;
 
         size_t log_partition_size;
@@ -41,6 +42,7 @@ namespace ds2i {
         {
             fillvar("DS2I_EPS1", eps1, 0.03);
             fillvar("DS2I_EPS2", eps2, 0.3);
+            fillvar("DS2I_EPS3", eps3, 0.01);
             fillvar("DS2I_FIXCOST", fix_cost, 64);
             fillvar("DS2I_LOG_PART", log_partition_size, 7);
             fillvar("DS2I_THREADS", worker_threads, std::thread::hardware_concurrency());

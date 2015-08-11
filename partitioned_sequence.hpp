@@ -25,18 +25,12 @@ namespace ds2i {
                           global_parameters const& params)
         {
             assert(n > 0);
-            auto const& conf = configuration::get();
+            auto partition = compute_partition(begin, universe, n, params);
 
-            auto cost_fun = [&](uint64_t universe, uint64_t n) {
-                return base_sequence_type::bitsize(params, universe, n) + conf.fix_cost;
-            };
-
-            optimal_partition opt(begin, universe, n, cost_fun, conf.eps1, conf.eps2);
-
-            size_t partitions = opt.partition.size();
+            size_t partitions = partition.size();
             assert(partitions > 0);
-            assert(opt.partition.front() != 0);
-            assert(opt.partition.back() == n);
+            assert(partition.front() != 0);
+            assert(partition.back() == n);
             write_gamma_nonzero(bvb, partitions);
 
             std::vector<uint64_t> cur_partition;
@@ -76,10 +70,10 @@ namespace ds2i {
                 cur_base = *begin;
                 upper_bounds.push_back(cur_base);
 
-                for (size_t p = 0; p < opt.partition.size(); ++p) {
+                for (size_t p = 0; p < partition.size(); ++p) {
                     cur_partition.clear();
                     uint64_t value = 0;
-                    for (; cur_i < opt.partition[p]; ++cur_i, ++it) {
+                    for (; cur_i < partition[p]; ++cur_i, ++it) {
                         value = *it;
                         cur_partition.push_back(value - cur_base);
                     }
@@ -96,7 +90,7 @@ namespace ds2i {
                 }
 
                 succinct::bit_vector_builder bv_sizes;
-                compact_elias_fano::write(bv_sizes, opt.partition.begin(),
+                compact_elias_fano::write(bv_sizes, partition.begin(),
                                           n, partitions - 1,
                                           params);
 
@@ -345,5 +339,86 @@ namespace ds2i {
             compact_elias_fano::enumerator m_upper_bounds;
             base_sequence_enumerator m_partition_enum;
         };
+
+    private:
+
+        template <typename Iterator>
+        static std::vector<uint32_t> compute_partition(Iterator begin,
+                                                       uint64_t universe, uint64_t n,
+                                                       global_parameters const& params)
+        {
+            std::vector<uint32_t> partition;
+
+            auto const& conf = configuration::get();
+
+            if (base_sequence_type::bitsize(params, universe, n) < 2 * conf.fix_cost) {
+                partition.push_back(n);
+                return partition;
+            }
+
+            auto cost_fun = [&](uint64_t universe, uint64_t n) {
+                return base_sequence_type::bitsize(params, universe, n) + conf.fix_cost;
+            };
+
+            const size_t superblock_bound =
+                conf.eps3 != 0
+                ? size_t(conf.fix_cost / conf.eps3)
+                : n;
+
+            std::deque<std::vector<uint32_t>> superblock_partitions;
+            task_region(*conf.executor, [&](task_region_handle& thr) {
+                    size_t superblock_pos = 0;
+                    auto superblock_begin = begin;
+                    auto superblock_base = *begin;
+
+                    while (superblock_pos < n) {
+                        size_t superblock_size = std::min<size_t>(superblock_bound,
+                                                                  n - superblock_pos);
+                        // If the remainder is smaller than the bound (possibly
+                        // empty), merge it to the current (now last) superblock.
+                        if (n - (superblock_pos + superblock_size) < superblock_bound) {
+                            superblock_size = n - superblock_pos;
+                        }
+                        auto superblock_last = std::next(superblock_begin, superblock_size - 1);
+                        auto superblock_end = std::next(superblock_last);
+
+                        // If this is the last superblock, its universe is the
+                        // list universe.
+                        size_t superblock_universe =
+                            superblock_pos + superblock_size == n
+                            ? universe
+                            : *superblock_last + 1;
+
+                        superblock_partitions.emplace_back();
+                        auto& superblock_partition = superblock_partitions.back();
+
+                        thr.run([=, &cost_fun, &conf, &superblock_partition] {
+                                optimal_partition opt(superblock_begin,
+                                                      superblock_base,
+                                                      superblock_universe,
+                                                      superblock_size,
+                                                      cost_fun,
+                                                      conf.eps1, conf.eps2);
+
+                                superblock_partition.reserve(opt.partition.size());
+                                for (auto& endpoint: opt.partition) {
+                                    superblock_partition.push_back(superblock_pos + endpoint);
+                                }
+                            });
+
+                        superblock_pos += superblock_size;
+                        superblock_begin = superblock_end;
+                        superblock_base = superblock_universe;
+                    }
+                });
+
+            for (const auto& superblock_partition: superblock_partitions) {
+                partition.insert(partition.end(),
+                                 superblock_partition.begin(),
+                                 superblock_partition.end());
+            }
+
+            return partition;
+        }
     };
 }
