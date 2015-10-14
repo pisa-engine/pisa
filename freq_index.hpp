@@ -4,6 +4,7 @@
 #include "compact_elias_fano.hpp"
 #include "integer_codes.hpp"
 #include "global_parameters.hpp"
+#include "configuration.hpp"
 
 namespace ds2i {
 

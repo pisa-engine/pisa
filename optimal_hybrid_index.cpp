@@ -19,6 +19,7 @@
 #include "verify_collection.hpp"
 #include "mixed_block.hpp"
 #include "index_build_utils.hpp"
+#include "semiasync_queue.hpp"
 
 using ds2i::logger;
 
