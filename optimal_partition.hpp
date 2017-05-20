@@ -18,7 +18,6 @@ namespace ds2i {
         template <typename ForwardIterator>
         struct cost_window {
             // a window reppresent the cost of the interval [start, end)
-
             ForwardIterator start_it;
             ForwardIterator end_it;
             // starting and ending position of the window

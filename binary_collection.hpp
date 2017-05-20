@@ -23,6 +23,7 @@ namespace ds2i {
             m_data = (posting_type const*)m_file.data();
             m_data_size = m_file.size() / sizeof(m_data[0]);
 
+            // Indicates that the application expects to access this address range in a sequential manner
             auto ret = posix_madvise((void*)m_data, m_data_size, POSIX_MADV_SEQUENTIAL);
             if (ret) logger() << "Error calling madvice: " << errno << std::endl;
         }

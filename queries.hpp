@@ -4,16 +4,17 @@
 #include <sstream>
 
 #include "index_types.hpp"
-#include "wand_data.hpp"
+#include "wand_data_compressed.hpp"
 #include "util.hpp"
+#include "wand_data_raw.hpp"
+#include "wand_data.hpp"
+#include <math.h>
 
 namespace ds2i {
-
     typedef uint32_t term_id_type;
     typedef std::vector<term_id_type> term_id_vec;
 
-    bool read_query(term_id_vec& ret, std::istream& is = std::cin)
-    {
+    bool read_query(term_id_vec &ret, std::istream &is = std::cin) {
         ret.clear();
         std::string line;
         if (!std::getline(is, line)) return false;
@@ -26,18 +27,18 @@ namespace ds2i {
         return true;
     }
 
-    void remove_duplicate_terms(term_id_vec& terms)
-    {
+
+    void remove_duplicate_terms(term_id_vec &terms) {
         std::sort(terms.begin(), terms.end());
         terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
     }
 
-    template <bool with_freqs>
+
+    template<bool with_freqs>
     struct and_query {
 
-        template <typename Index>
-        uint64_t operator()(Index const& index, term_id_vec terms) const
-        {
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec terms) const {
             if (terms.empty()) return 0;
             remove_duplicate_terms(terms);
 
@@ -51,7 +52,7 @@ namespace ds2i {
 
             // sort by increasing frequency
             std::sort(enums.begin(), enums.end(),
-                      [](enum_type const& lhs, enum_type const& rhs) {
+                      [](enum_type const &lhs, enum_type const &rhs) {
                           return lhs.size() < rhs.size();
                       });
 
@@ -70,27 +71,29 @@ namespace ds2i {
 
                 if (i == enums.size()) {
                     results += 1;
+
                     if (with_freqs) {
                         for (i = 0; i < enums.size(); ++i) {
                             do_not_optimize_away(enums[i].freq());
                         }
                     }
+
+                    if (results > 100)
+                        break;
                     enums[0].next();
                     candidate = enums[0].docid();
                     i = 1;
                 }
             }
-
             return results;
         }
     };
 
-    template <bool with_freqs>
+    template<bool with_freqs>
     struct or_query {
 
-        template <typename Index>
-        uint64_t operator()(Index const& index, term_id_vec terms) const
-        {
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec terms) const {
             if (terms.empty()) return 0;
             remove_duplicate_terms(terms);
 
@@ -104,7 +107,7 @@ namespace ds2i {
 
             uint64_t results = 0;
             uint64_t cur_doc = std::min_element(enums.begin(), enums.end(),
-                                                [](enum_type const& lhs, enum_type const& rhs) {
+                                                [](enum_type const &lhs, enum_type const &rhs) {
                                                     return lhs.docid() < rhs.docid();
                                                 })->docid();
 
@@ -133,8 +136,7 @@ namespace ds2i {
     typedef std::pair<uint64_t, uint64_t> term_freq_pair;
     typedef std::vector<term_freq_pair> term_freq_vec;
 
-    term_freq_vec query_freqs(term_id_vec terms)
-    {
+    term_freq_vec query_freqs(term_id_vec terms) {
         term_freq_vec query_term_freqs;
         std::sort(terms.begin(), terms.end());
         // count query term frequencies
@@ -151,64 +153,100 @@ namespace ds2i {
 
     struct topk_queue {
         topk_queue(uint64_t k)
-            : m_k(k)
-        {}
+                : m_k(k) { }
 
-        bool insert(float score)
-        {
+        topk_queue(const topk_queue &q) : m_q(q.m_q) {
+            m_k = q.m_k;
+            threshold = q.threshold;
+        }
+
+        bool insert(float score) {
+            return insert(score, 0);
+        }
+
+
+        bool insert(float score, uint64_t docid) {
             if (m_q.size() < m_k) {
-                m_q.push_back(score);
-                std::push_heap(m_q.begin(), m_q.end(), std::greater<float>());
+                m_q.push_back(std::make_pair(score, docid));
+                std::push_heap(m_q.begin(), m_q.end(), [](std::pair<float, uint64_t> l, std::pair<float, uint64_t> r) {
+                    return l.first > r.first;
+                });
+                threshold = m_q.front().first;
                 return true;
             } else {
-                if (score > m_q.front()) {
-                    std::pop_heap(m_q.begin(), m_q.end(), std::greater<float>());
-                    m_q.back() = score;
-                    std::push_heap(m_q.begin(), m_q.end(), std::greater<float>());
+                if (score > threshold) {
+                    std::pop_heap(m_q.begin(), m_q.end(),
+                                  [](std::pair<float, uint64_t> l, std::pair<float, uint64_t> r) {
+                                      return l.first > r.first;
+                                  });
+                    m_q.back() = std::make_pair(score, docid);
+                    std::push_heap(m_q.begin(), m_q.end(),
+                                   [](std::pair<float, uint64_t> l, std::pair<float, uint64_t> r) {
+                                       return l.first > r.first;
+                                   });
+                    threshold = m_q.front().first;
                     return true;
                 }
             }
             return false;
         }
 
-        bool would_enter(float score) const
-        {
-            return m_q.size() < m_k || score > m_q.front();
+        bool would_enter(float score) const {
+            return m_q.size() < m_k || score > threshold;
         }
 
-        void finalize()
-        {
-            std::sort_heap(m_q.begin(), m_q.end(), std::greater<float>());
+        void finalize() {
+            std::sort_heap(m_q.begin(), m_q.end(),
+                           [](std::pair<float, uint64_t> l, std::pair<float, uint64_t> r) {
+                               return l.first > r.first;
+                           });
+            size_t size = std::lower_bound(m_q.begin(), m_q.end(), 0, [](std::pair<float, uint64_t> l, float r) {
+                return l.first > r;
+            }) - m_q.begin();
+            m_q.resize(size);
         }
 
-        std::vector<float> const& topk() const
-        {
+        void sort_docid() {
+            std::sort_heap(m_q.begin(), m_q.end(),
+                           [](std::pair<float, uint64_t> l, std::pair<float, uint64_t> r) {
+                               return l.second < r.second;
+                           });
+        }
+
+        std::vector<std::pair<float, uint64_t>> const &topk() const {
             return m_q;
         }
 
-        void clear()
-        {
+        void set_threshold(float t) {
+            for (size_t i = 0; i < m_k; ++i) {
+                insert(0);
+            }
+            threshold = t;
+        }
+
+        void clear() {
             m_q.clear();
         }
 
-    private:
+        uint64_t size() {
+            return m_k;
+        }
+
+        float threshold;
         uint64_t m_k;
-        std::vector<float> m_q;
+        std::vector<std::pair<float, uint64_t>> m_q;
     };
 
-
+    template <typename WandType>
     struct wand_query {
 
         typedef bm25 scorer_type;
 
-        wand_query(wand_data<scorer_type> const& wdata, uint64_t k)
-            : m_wdata(&wdata)
-            , m_topk(k)
-        {}
+        wand_query(WandType const &wdata, uint64_t k)
+                : m_wdata(&wdata), m_topk(k) { }
 
-        template <typename Index>
-        uint64_t operator()(Index const& index, term_id_vec const& terms)
-        {
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec const &terms) {
             m_topk.clear();
             if (terms.empty()) return 0;
 
@@ -228,21 +266,27 @@ namespace ds2i {
             for (auto term: query_term_freqs) {
                 auto list = index[term.first];
                 auto q_weight = scorer_type::query_term_weight
-                    (term.second, list.size(), num_docs);
+                        (term.second, list.size(), num_docs);
+
+
+
                 auto max_weight = q_weight * m_wdata->max_term_weight(term.first);
                 enums.push_back(scored_enum {std::move(list), q_weight, max_weight});
             }
 
-            std::vector<scored_enum*> ordered_enums;
+
+
+
+            std::vector<scored_enum *> ordered_enums;
             ordered_enums.reserve(enums.size());
-            for (auto& en: enums) {
+            for (auto &en: enums) {
                 ordered_enums.push_back(&en);
             }
 
             auto sort_enums = [&]() {
                 // sort enumerators by increasing docid
                 std::sort(ordered_enums.begin(), ordered_enums.end(),
-                          [](scored_enum* lhs, scored_enum* rhs) {
+                          [](scored_enum *lhs, scored_enum *rhs) {
                               return lhs->docs_enum.docid() < rhs->docs_enum.docid();
                           });
             };
@@ -274,23 +318,23 @@ namespace ds2i {
                 if (pivot_id == ordered_enums[0]->docs_enum.docid()) {
                     float score = 0;
                     float norm_len = m_wdata->norm_len(pivot_id);
-                    for (scored_enum* en: ordered_enums) {
+                    for (scored_enum *en: ordered_enums) {
                         if (en->docs_enum.docid() != pivot_id) {
                             break;
                         }
                         score += en->q_weight * scorer_type::doc_term_weight
-                            (en->docs_enum.freq(), norm_len);
+                                (en->docs_enum.freq(), norm_len);
                         en->docs_enum.next();
                     }
 
-                    m_topk.insert(score);
+                    m_topk.insert(score, pivot_id);
                     // resort by docid
                     sort_enums();
                 } else {
                     // no match, move farthest list up to the pivot
                     uint64_t next_list = pivot;
                     for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id;
-                         --next_list);
+                           --next_list);
                     ordered_enums[next_list]->docs_enum.next_geq(pivot_id);
                     // bubble down the advanced list
                     for (size_t i = next_list + 1; i < ordered_enums.size(); ++i) {
@@ -308,29 +352,26 @@ namespace ds2i {
             return m_topk.topk().size();
         }
 
-        std::vector<float> const& topk() const
-        {
+        std::vector<std::pair<float, uint64_t>> const &topk() const {
             return m_topk.topk();
         }
 
     private:
-        wand_data<scorer_type> const* m_wdata;
+        WandType const *m_wdata;
         topk_queue m_topk;
     };
 
-
+    template <typename WandType>
     struct ranked_and_query {
 
         typedef bm25 scorer_type;
 
-        ranked_and_query(wand_data<scorer_type> const& wdata, uint64_t k)
-            : m_wdata(&wdata)
-            , m_topk(k)
-        {}
+        ranked_and_query(WandType const &wdata, uint64_t k)
+                : m_wdata(&wdata), m_topk(k) { }
 
-        template <typename Index>
-        uint64_t operator()(Index const& index, term_id_vec terms)
-        {
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec terms) {
+            size_t results = 0;
             m_topk.clear();
             if (terms.empty()) return 0;
 
@@ -349,13 +390,13 @@ namespace ds2i {
             for (auto term: query_term_freqs) {
                 auto list = index[term.first];
                 auto q_weight = scorer_type::query_term_weight
-                    (term.second, list.size(), num_docs);
+                        (term.second, list.size(), num_docs);
                 enums.push_back(scored_enum {std::move(list), q_weight});
             }
 
             // sort by increasing frequency
             std::sort(enums.begin(), enums.end(),
-                      [](scored_enum const& lhs, scored_enum const& rhs) {
+                      [](scored_enum const &lhs, scored_enum const &rhs) {
                           return lhs.docs_enum.size() < rhs.docs_enum.size();
                       });
 
@@ -376,43 +417,278 @@ namespace ds2i {
                     float score = 0;
                     for (i = 0; i < enums.size(); ++i) {
                         score += enums[i].q_weight * scorer_type::doc_term_weight
-                            (enums[i].docs_enum.freq(), norm_len);
+                                (enums[i].docs_enum.freq(), norm_len);
                     }
 
-                    m_topk.insert(score);
+                    m_topk.insert(score, enums[0].docs_enum.docid());
+
+                    results++;
+                    if (results >= m_topk.size()*2)
+                        break;
+
                     enums[0].docs_enum.next();
                     candidate = enums[0].docs_enum.docid();
                     i = 1;
                 }
             }
 
+            //    m_topk.finalize();
+            return m_topk.topk().size();
+        }
+
+        std::vector<std::pair<float, uint64_t>> const &topk() const {
+            return m_topk.topk();
+        }
+
+        topk_queue &get_topk(){
+            return m_topk;
+        }
+
+
+
+    private:
+        WandType const *m_wdata;
+        topk_queue m_topk;
+    };
+
+    template <typename WandType>
+    struct block_max_wand_query {
+        typedef bm25 scorer_type;
+
+
+        block_max_wand_query(WandType const &wdata, uint64_t k)
+                : m_wdata(&wdata), m_topk(k) {
+        }
+
+
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec const &terms) {
+            m_topk.clear();
+
+
+            if (terms.empty()) return 0;
+            auto query_term_freqs = query_freqs(terms);
+            uint64_t num_docs = index.num_docs();
+            typedef typename Index::document_enumerator enum_type;
+            typedef typename WandType::wand_data_enumerator wdata_enum;
+
+            struct scored_enum {
+                enum_type docs_enum;
+                wdata_enum w;
+                float q_weight;
+                float max_weight;
+
+            };
+
+            std::vector<scored_enum> enums;
+            enums.reserve(query_term_freqs.size());
+
+            for (auto term: query_term_freqs) {
+                auto list = index[term.first];
+                auto w_enum = m_wdata->getenum(term.first);
+                auto q_weight = scorer_type::query_term_weight
+                        (term.second, list.size(), num_docs);
+
+                float max_weight = q_weight * m_wdata->max_term_weight(term.first);
+                enums.push_back(scored_enum{ std::move(list), w_enum, q_weight, max_weight});
+
+            }
+
+            std::vector<scored_enum *> ordered_enums;
+            ordered_enums.reserve(enums.size());
+            for (auto &en: enums) {
+                ordered_enums.push_back(&en);
+            }
+
+
+            auto sort_enums = [&]() {
+                // sort enumerators by increasing docid
+                std::sort(ordered_enums.begin(), ordered_enums.end(),
+                          [](scored_enum *lhs, scored_enum *rhs) {
+                              return lhs->docs_enum.docid() < rhs->docs_enum.docid();
+                          });
+            };
+
+
+            sort_enums();
+
+            while (true) {
+
+                // find pivot
+                float upper_bound = 0.f;
+                size_t pivot;
+                bool found_pivot = false;
+                uint64_t pivot_id = num_docs;
+
+                for (pivot = 0; pivot < ordered_enums.size(); ++pivot) {
+                    if (ordered_enums[pivot]->docs_enum.docid() == num_docs) {
+                        break;
+                    }
+
+                    upper_bound += ordered_enums[pivot]->max_weight;
+                    if (m_topk.would_enter(upper_bound)) {
+                        found_pivot = true;
+                        pivot_id = ordered_enums[pivot]->docs_enum.docid();
+                        for (; pivot + 1 < ordered_enums.size() &&
+                               ordered_enums[pivot + 1]->docs_enum.docid() == pivot_id; ++pivot);
+                        break;
+                    }
+                }
+
+                // no pivot found, we can stop the search
+                if (!found_pivot) {
+                    break;
+                }
+
+                double block_upper_bound = 0;
+
+                for (size_t i = 0; i < pivot + 1; ++i) {
+                    if (ordered_enums[i]->w.docid() < pivot_id) {
+                        ordered_enums[i]->w.next_geq(pivot_id);
+                    }
+
+                    block_upper_bound += ordered_enums[i]->w.score() * ordered_enums[i]->q_weight;
+                }
+
+
+                if (m_topk.would_enter(block_upper_bound)) {
+
+
+                    // check if pivot is a possible match
+                    if (pivot_id == ordered_enums[0]->docs_enum.docid()) {
+                        float score = 0;
+                        float norm_len = m_wdata->norm_len(pivot_id);
+
+                        for (scored_enum *en: ordered_enums) {
+                            if (en->docs_enum.docid() != pivot_id) {
+                                break;
+                            }
+                            float part_score = en->q_weight * scorer_type::doc_term_weight
+                                    (en->docs_enum.freq(), norm_len);
+                            score += part_score;
+                            block_upper_bound -= en->w.score() * en->q_weight - part_score;
+                            if (!m_topk.would_enter(block_upper_bound)) {
+                                break;
+                            }
+
+                        }
+                        for (scored_enum *en: ordered_enums) {
+                            if (en->docs_enum.docid() != pivot_id) {
+                                break;
+                            }
+                            en->docs_enum.next();
+                        }
+
+                        m_topk.insert(score, pivot_id);
+                        // resort by docid
+                        sort_enums();
+
+                    } else {
+
+                        uint64_t next_list = pivot;
+                        for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id;
+                               --next_list);
+                        ordered_enums[next_list]->docs_enum.next_geq(pivot_id);
+
+                        // bubble down the advanced list
+                        for (size_t i = next_list + 1; i < ordered_enums.size(); ++i) {
+                            if (ordered_enums[i]->docs_enum.docid() <=
+                                ordered_enums[i - 1]->docs_enum.docid()) {
+                                std::swap(ordered_enums[i], ordered_enums[i - 1]);
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+
+                } else {
+
+
+                    uint64_t next;
+                    uint64_t next_list = pivot;
+
+                    float q_weight = ordered_enums[next_list]->q_weight;
+
+
+                    for (uint64_t i = 0; i < pivot; i++){
+                        if (ordered_enums[i]->q_weight > q_weight){
+                            next_list = i;
+                            q_weight = ordered_enums[i]->q_weight;
+                        }
+                    }
+
+                    // TO BE FIXED (change with num_docs())
+                    uint64_t next_jump = uint64_t(-2);
+
+                    if (pivot + 1 < ordered_enums.size()) {
+                        next_jump = ordered_enums[pivot + 1]->docs_enum.docid();
+                    }
+
+
+                    for (size_t i = 0; i <= pivot; ++i){
+                        if (ordered_enums[i]->w.docid() < next_jump)
+                            next_jump = std::min(ordered_enums[i]->w.docid(), next_jump);
+                    }
+
+                    next = next_jump + 1;
+                    if (pivot + 1 < ordered_enums.size()) {
+                        if (next > ordered_enums[pivot + 1]->docs_enum.docid()) {
+                            next = ordered_enums[pivot + 1]->docs_enum.docid();
+                        }
+                    }
+
+                    if (next <= ordered_enums[pivot]->docs_enum.docid()) {
+                        next = ordered_enums[pivot]->docs_enum.docid() + 1;
+                    }
+
+                    ordered_enums[next_list]->docs_enum.next_geq(next);
+
+                    // bubble down the advanced list
+                    for (size_t i = next_list + 1; i < ordered_enums.size(); ++i) {
+                        if (ordered_enums[i]->docs_enum.docid() <
+                            ordered_enums[i - 1]->docs_enum.docid()) {
+                            std::swap(ordered_enums[i], ordered_enums[i - 1]);
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+
+
             m_topk.finalize();
             return m_topk.topk().size();
         }
 
-        std::vector<float> const& topk() const
-        {
+
+        std::vector<std::pair<float, uint64_t>> const &topk() const {
             return m_topk.topk();
         }
 
+        void clear_topk() {
+            m_topk.clear();
+        }
+
+        topk_queue const &get_topk() const {
+            return m_topk;
+        }
+
     private:
-        wand_data<scorer_type> const* m_wdata;
+
+        WandType const *m_wdata;
         topk_queue m_topk;
     };
 
-
+template <typename WandType>
     struct ranked_or_query {
 
         typedef bm25 scorer_type;
 
-        ranked_or_query(wand_data<scorer_type> const& wdata, uint64_t k)
-            : m_wdata(&wdata)
-            , m_topk(k)
-        {}
+        ranked_or_query(WandType const &wdata, uint64_t k)
+                : m_wdata(&wdata), m_topk(k) { }
 
-        template <typename Index>
-        uint64_t operator()(Index const& index, term_id_vec terms)
-        {
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec terms) {
             m_topk.clear();
             if (terms.empty()) return 0;
 
@@ -431,16 +707,16 @@ namespace ds2i {
             for (auto term: query_term_freqs) {
                 auto list = index[term.first];
                 auto q_weight = scorer_type::query_term_weight
-                    (term.second, list.size(), num_docs);
+                        (term.second, list.size(), num_docs);
                 enums.push_back(scored_enum {std::move(list), q_weight});
             }
 
             uint64_t cur_doc =
-                std::min_element(enums.begin(), enums.end(),
-                                 [](scored_enum const& lhs, scored_enum const& rhs) {
-                                     return lhs.docs_enum.docid() < rhs.docs_enum.docid();
-                                 })
-                ->docs_enum.docid();
+                    std::min_element(enums.begin(), enums.end(),
+                                     [](scored_enum const &lhs, scored_enum const &rhs) {
+                                         return lhs.docs_enum.docid() < rhs.docs_enum.docid();
+                                     })
+                            ->docs_enum.docid();
 
             while (cur_doc < index.num_docs()) {
                 float score = 0;
@@ -449,7 +725,7 @@ namespace ds2i {
                 for (size_t i = 0; i < enums.size(); ++i) {
                     if (enums[i].docs_enum.docid() == cur_doc) {
                         score += enums[i].q_weight * scorer_type::doc_term_weight
-                            (enums[i].docs_enum.freq(), norm_len);
+                                (enums[i].docs_enum.freq(), norm_len);
                         enums[i].docs_enum.next();
                     }
                     if (enums[i].docs_enum.docid() < next_doc) {
@@ -465,28 +741,25 @@ namespace ds2i {
             return m_topk.topk().size();
         }
 
-        std::vector<float> const& topk() const
-        {
+        std::vector<std::pair<float, uint64_t> > const &topk() const {
             return m_topk.topk();
         }
 
     private:
-        wand_data<scorer_type> const* m_wdata;
+        WandType const *m_wdata;
         topk_queue m_topk;
     };
 
+    template <typename WandType>
     struct maxscore_query {
 
         typedef bm25 scorer_type;
 
-        maxscore_query(wand_data<scorer_type> const& wdata, uint64_t k)
-            : m_wdata(&wdata)
-            , m_topk(k)
-        {}
+        maxscore_query(WandType const &wdata, uint64_t k)
+                : m_wdata(&wdata), m_topk(k) { }
 
-        template <typename Index>
-        uint64_t operator()(Index const& index, term_id_vec const& terms)
-        {
+        template<typename Index>
+        uint64_t operator()(Index const &index, term_id_vec const &terms) {
             m_topk.clear();
             if (terms.empty()) return 0;
 
@@ -506,20 +779,20 @@ namespace ds2i {
             for (auto term: query_term_freqs) {
                 auto list = index[term.first];
                 auto q_weight = scorer_type::query_term_weight
-                    (term.second, list.size(), num_docs);
+                        (term.second, list.size(), num_docs);
                 auto max_weight = q_weight * m_wdata->max_term_weight(term.first);
                 enums.push_back(scored_enum {std::move(list), q_weight, max_weight});
             }
 
-            std::vector<scored_enum*> ordered_enums;
+            std::vector<scored_enum *> ordered_enums;
             ordered_enums.reserve(enums.size());
-            for (auto& en: enums) {
+            for (auto &en: enums) {
                 ordered_enums.push_back(&en);
             }
 
             // sort enumerators by increasing maxscore
             std::sort(ordered_enums.begin(), ordered_enums.end(),
-                      [](scored_enum* lhs, scored_enum* rhs) {
+                      [](scored_enum *lhs, scored_enum *rhs) {
                           return lhs->max_weight < rhs->max_weight;
                       });
 
@@ -531,11 +804,11 @@ namespace ds2i {
 
             uint64_t non_essential_lists = 0;
             uint64_t cur_doc =
-                std::min_element(enums.begin(), enums.end(),
-                                 [](scored_enum const& lhs, scored_enum const& rhs) {
-                                     return lhs.docs_enum.docid() < rhs.docs_enum.docid();
-                                 })
-                ->docs_enum.docid();
+                    std::min_element(enums.begin(), enums.end(),
+                                     [](scored_enum const &lhs, scored_enum const &rhs) {
+                                         return lhs.docs_enum.docid() < rhs.docs_enum.docid();
+                                     })
+                            ->docs_enum.docid();
 
             while (non_essential_lists < ordered_enums.size() &&
                    cur_doc < index.num_docs()) {
@@ -545,7 +818,7 @@ namespace ds2i {
                 for (size_t i = non_essential_lists; i < ordered_enums.size(); ++i) {
                     if (ordered_enums[i]->docs_enum.docid() == cur_doc) {
                         score += ordered_enums[i]->q_weight * scorer_type::doc_term_weight
-                            (ordered_enums[i]->docs_enum.freq(), norm_len);
+                                (ordered_enums[i]->docs_enum.freq(), norm_len);
                         ordered_enums[i]->docs_enum.next();
                     }
                     if (ordered_enums[i]->docs_enum.docid() < next_doc) {
@@ -561,7 +834,7 @@ namespace ds2i {
                     ordered_enums[i]->docs_enum.next_geq(cur_doc);
                     if (ordered_enums[i]->docs_enum.docid() == cur_doc) {
                         score += ordered_enums[i]->q_weight * scorer_type::doc_term_weight
-                            (ordered_enums[i]->docs_enum.freq(), norm_len);
+                                (ordered_enums[i]->docs_enum.freq(), norm_len);
                     }
                 }
 
@@ -580,13 +853,12 @@ namespace ds2i {
             return m_topk.topk().size();
         }
 
-        std::vector<float> const& topk() const
-        {
+        std::vector<std::pair<float, uint64_t>> const &topk() const {
             return m_topk.topk();
         }
 
     private:
-        wand_data<scorer_type> const* m_wdata;
+        WandType const *m_wdata;
         topk_queue m_topk;
     };
 

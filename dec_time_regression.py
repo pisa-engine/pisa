@@ -50,6 +50,7 @@ def train(filename):
 
         to_drop = ['type', 'time', 'n', 'entropy']
         training_X = training.drop(to_drop, axis=1)
+        log
         test_X = test.drop(to_drop, axis=1)
 
         opt = l1l1.solve_l1l1_approx(training_X.values, training['time'], 0.01)

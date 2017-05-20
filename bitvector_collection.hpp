@@ -1,6 +1,6 @@
 #pragma once
 
-#include <succinct/bit_vector.hpp>
+#include "succinct/bit_vector.hpp"
 
 #include "compact_elias_fano.hpp"
 

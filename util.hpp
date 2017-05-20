@@ -20,7 +20,7 @@
 #define DS2I_ALWAYSINLINE __attribute__((always_inline))
 
 #if defined(__GNUC__) && !defined(__clang__)
-#    define DS2I_FLATTEN_FUNC __attribute__((always_inline,flatten))
+#define DS2I_FLATTEN_FUNC  __attribute__((always_inline,flatten))
 #else
 #    define DS2I_FLATTEN_FUNC DS2I_ALWAYSINLINE
 #endif

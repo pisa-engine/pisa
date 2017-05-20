@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdexcept>
-#include <succinct/bit_vector.hpp>
-#include <succinct/broadword.hpp>
+#include "succinct/bit_vector.hpp"
+#include "succinct/broadword.hpp"
 
 #include "global_parameters.hpp"
 #include "util.hpp"

@@ -17,7 +17,7 @@ void perftest(const char* index_filename)
     boost::iostreams::mapped_file_source m(index_filename);
     succinct::mapper::map(coll, m, succinct::mapper::map_flags::warmup);
 
-    if (false) {
+    if (true) {
         logger() << "Scanning all the posting lists" << std::endl;
         auto tick = get_time_usecs();
         uint64_t calls_per_list = 500000;

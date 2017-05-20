@@ -12,6 +12,7 @@
 #include "block_freq_index.hpp"
 #include "block_codecs.hpp"
 #include "mixed_block.hpp"
+#include "elias_fano_score.hpp"
 
 namespace ds2i {
 

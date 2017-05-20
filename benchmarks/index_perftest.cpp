@@ -13,10 +13,15 @@ void perftest(IndexType const& index, std::string const& type)
     std::string freqs_log = with_freqs ? "+freq()" : "";
     {
         size_t min_length = 4096;
-        logger() << "Scanning posting lists longer than " << min_length << std::endl;
+        size_t max_length = 100000;
+        size_t max_number_of_lists = 1000;
+
+        logger() << "Scanning " << max_number_of_lists << " posting lists long between " 
+                 << min_length << " and " << max_length << std::endl;
+
         std::vector<size_t> long_lists;
-        for (size_t i = 0; i < index.size(); ++i) {
-            if (index[i].size() >= min_length) {
+        for (size_t i = 0; i < index.size() and long_lists.size() <= max_number_of_lists; ++i) {
+            if (index[i].size() >= min_length and index[i].size() < max_length) {
                 long_lists.push_back(i);
             }
         }

@@ -75,7 +75,6 @@ This performs conjunctive queries (`and`). In place of `and` other operators can
 be used (`or`, `wand`, ..., see `queries.cpp`), and also multiple operators
 separated by colon (`and:or:wand`).
 
-
 Example: Optimal Space-Time Tradeoffs
 -------------------------------------
 

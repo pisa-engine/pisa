@@ -1,7 +1,7 @@
 #pragma once
 
-#include <succinct/mappable_vector.hpp>
-#include <succinct/bit_vector.hpp>
+#include "succinct/mappable_vector.hpp"
+#include "succinct/bit_vector.hpp"
 
 #include "compact_elias_fano.hpp"
 #include "block_posting_list.hpp"

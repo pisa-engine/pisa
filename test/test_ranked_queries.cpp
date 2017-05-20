@@ -12,7 +12,7 @@ namespace ds2i { namespace test {
     struct index_initialization {
 
         typedef single_index index_type;
-
+        typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
         index_initialization()
             : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection")
             , document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes")
@@ -28,7 +28,7 @@ namespace ds2i { namespace test {
             builder.build(index);
 
             term_id_vec q;
-            std::ifstream qfile("test_data/queries");
+            std::ifstream qfile("../test/test_data/queries");
             while (read_query(q, qfile)) queries.push_back(q);
         }
 
@@ -37,19 +37,19 @@ namespace ds2i { namespace test {
         binary_collection document_sizes;
         index_type index;
         std::vector<term_id_vec> queries;
-        wand_data<> wdata;
+        WandType wdata;
 
         template <typename QueryOp>
         void test_against_or(QueryOp& op_q) const
         {
-            ranked_or_query or_q(wdata, 10);
+            ranked_or_query<WandType> or_q(wdata, 10);
 
             for (auto const& q: queries) {
                 or_q(index, q);
                 op_q(index, q);
                 BOOST_REQUIRE_EQUAL(or_q.topk().size(), op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                    BOOST_REQUIRE_CLOSE(or_q.topk()[i], op_q.topk()[i], 0.1); // tolerance is % relative
+                    BOOST_REQUIRE_CLOSE(or_q.topk()[i].first, op_q.topk()[i].first, 0.1); // tolerance is % relative
                 }
             }
         }
@@ -63,13 +63,13 @@ namespace ds2i { namespace test {
 BOOST_FIXTURE_TEST_CASE(wand,
                         ds2i::test::index_initialization)
 {
-    ds2i::wand_query wand_q(wdata, 10);
+    ds2i::wand_query<WandType> wand_q(wdata, 10);
     test_against_or(wand_q);
 }
 
 BOOST_FIXTURE_TEST_CASE(maxscore,
                         ds2i::test::index_initialization)
 {
-    ds2i::maxscore_query maxscore_q(wdata, 10);
+    ds2i::maxscore_query<WandType> maxscore_q(wdata, 10);
     test_against_or(maxscore_q);
 }

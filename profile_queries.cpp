@@ -7,7 +7,7 @@
 #include <boost/algorithm/string/split.hpp>
 
 #include "index_types.hpp"
-#include "wand_data.hpp"
+#include "wand_data_compressed.hpp"
 #include "queries.hpp"
 #include "util.hpp"
 
@@ -58,11 +58,12 @@ void profile(const char* index_filename,
     using namespace ds2i;
 
     typename add_profiling<IndexType>::type index;
+    typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
     logger() << "Loading index from " << index_filename << std::endl;
     boost::iostreams::mapped_file_source m(index_filename);
     succinct::mapper::map(index, m);
 
-    wand_data<> wdata;
+    WandType wdata;
     boost::iostreams::mapped_file_source md;
     if (wand_data_filename) {
         md.open(wand_data_filename);
@@ -79,11 +80,11 @@ void profile(const char* index_filename,
         if (t == "and") {
             op_profile(index, and_query<false>(), queries);
         } else if (t == "ranked_and" && wand_data_filename) {
-            op_profile(index, ranked_and_query(wdata, 10), queries);
+            op_profile(index, ranked_and_query<WandType>(wdata, 10), queries);
         } else if (t == "wand" && wand_data_filename) {
-            op_profile(index, wand_query(wdata, 10), queries);
+            op_profile(index, wand_query<WandType>(wdata, 10), queries);
         } else if (t == "maxscore" && wand_data_filename) {
-            op_profile(index, maxscore_query(wdata, 10), queries);
+            op_profile(index, maxscore_query<WandType>(wdata, 10), queries);
         } else {
             logger() << "Unsupported query type: " << t << std::endl;
         }
@@ -100,13 +101,25 @@ int main(int argc, const char** argv)
     const char* query_type = argv[2];
     const char* index_filename = argv[3];
     const char* wand_data_filename = nullptr;
+    size_t args =4;
     if (argc > 4) {
         wand_data_filename = argv[4];
+        args++;
     }
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
-    while (read_query(q)) queries.push_back(q);
+    if (std::string(argv[args]) == "--file") {
+        args++;
+        args++;
+        std::filebuf fb;
+        if (fb.open(argv[args], std::ios::in)) {
+            std::istream is(&fb);
+            while (read_query(q, is)) queries.push_back(q);
+        }
+    } else {
+        while (read_query(q)) queries.push_back(q);
+    }
 
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                   \

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdexcept>
-#include <succinct/bit_vector.hpp>
-#include <succinct/broadword.hpp>
+#include "succinct/bit_vector.hpp"
+#include "succinct/broadword.hpp"
 
 #include "global_parameters.hpp"
 #include "util.hpp"
@@ -104,10 +104,13 @@ namespace ds2i {
             Iterator it = begin;
             for (size_t i = 0; i < n; ++i) {
                 uint64_t v = *it++;
+
                 if (i && v < last) {
                     throw std::runtime_error("Sequence is not sorted");
                 }
+
                 assert(v < universe);
+
                 uint64_t high = (v >> of.lower_bits) + i + 1;
                 uint64_t low = v & of.mask;
 
@@ -258,6 +261,10 @@ namespace ds2i {
                 return m_position;
             }
 
+            inline value_type value() const
+            {
+                return value_type(m_position, m_value);
+            }
         private:
 
             value_type DS2I_NOINLINE slow_move(uint64_t position)
@@ -337,10 +344,6 @@ namespace ds2i {
 
             static const uint64_t linear_scan_threshold = 8;
 
-            inline value_type value() const
-            {
-                return value_type(m_position, m_value);
-            }
 
             inline uint64_t read_low()
             {

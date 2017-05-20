@@ -11,8 +11,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 if (UNIX)
-   # C++11
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+   # C++14
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
    # For hardware popcount and other special instructions
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -50,7 +50,7 @@ include_directories(${DS2I_SOURCE_DIR})
 add_subdirectory(succinct EXCLUDE_FROM_ALL)
 add_subdirectory(FastPFor EXCLUDE_FROM_ALL)
 
-add_executable(create_freq_index create_freq_index.cpp)
+add_executable(create_freq_index create_freq_index.cpp wand_partitioning.hpp wand_data.hpp)
 target_link_libraries(create_freq_index
   ${Boost_LIBRARIES}
   FastPFor_lib
@@ -73,6 +73,7 @@ target_link_libraries(queries
   ${Boost_LIBRARIES}
   FastPFor_lib
   )
+
 
 add_executable(profile_queries profile_queries.cpp)
 target_link_libraries(profile_queries
