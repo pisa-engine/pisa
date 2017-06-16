@@ -12,11 +12,13 @@ This code was used in the experiments of the following papers.
 * Giuseppe Ottaviano, Nicola Tonellotto, Rossano Venturini, _Optimal Space-Time
   Tradeoffs for Inverted Indexes_, ACM WSDM 2015.
 
+* Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, Rossano Venturini, _Faster BlockMax WAND with variable-sized blocks_, ACM SIGIR 2017.
+
 
 Building the code
 -----------------
 
-The code is tested on Linux with GCC 4.9 and OSX Yosemite with Clang.
+The code is tested on Linux with GCC 5.4.0 and macOS Sierra with Clang.
 
 The following dependencies are needed for the build.
 
@@ -38,7 +40,6 @@ To build the code:
     $ make
 
 It is also preferable to perform a `make test`, which runs the unit tests.
-
 
 Example: Partitioned Elias-Fano
 -------------------------------
@@ -74,6 +75,25 @@ again in `test/test_data`.
 This performs conjunctive queries (`and`). In place of `and` other operators can
 be used (`or`, `wand`, ..., see `queries.cpp`), and also multiple operators
 separated by colon (`and:or:wand`).
+
+
+Example: Variable Block Max WAND (VBMW)
+---------------------------------------
+
+To build a variable Block-Max WAND additional file, needed to perform a Block Max WAND query, use the following command:
+
+    $ ./create_wand_data ../test/test_data/test_collection test_collection.wand --variable-block
+
+If you want to compress the file append `--compress` at the end of the command.
+
+Now it is possible to query the index using BMW algorithm. Use the following command to perform a Block Max WAND query against the test index previously built.  
+
+    $ ./queries opt block_max_wand test_collection.index.opt --wand test_collection.wand < ../test/test_data/queries
+
+If the WAND file is compressed, please append `--compressed-wand` flag:
+
+    $ ./queries opt block_max_wand test_collection.index.opt --wand test_collection.wand --compressed-wand < ../test/test_data/queries
+
 
 Example: Optimal Space-Time Tradeoffs
 -------------------------------------
@@ -175,7 +195,8 @@ A _collection_ consists of 3 files, `<basename>.docs`, `<basename>.freqs`,
 
 Authors
 -------
-
+* Antonio Mallia <me@antoniomallia.it>
 * Giuseppe Ottaviano <giuott@gmail.com>
+* Elia Porciani <elia.porciani@gmail.com>
 * Rossano Venturini <rossano@di.unipi.it>
 * Nicola Tonellotto <nicola.tonellotto@isti.cnr.it>
