@@ -198,5 +198,5 @@ Authors
 * Antonio Mallia <me@antoniomallia.it>
 * Giuseppe Ottaviano <giuott@gmail.com>
 * Elia Porciani <elia.porciani@gmail.com>
-* Rossano Venturini <rossano@di.unipi.it>
 * Nicola Tonellotto <nicola.tonellotto@isti.cnr.it>
+* Rossano Venturini <rossano@di.unipi.it>
