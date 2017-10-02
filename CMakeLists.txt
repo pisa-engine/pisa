@@ -50,7 +50,7 @@ include_directories(${DS2I_SOURCE_DIR})
 add_subdirectory(succinct EXCLUDE_FROM_ALL)
 add_subdirectory(FastPFor EXCLUDE_FROM_ALL)
 
-add_executable(create_freq_index create_freq_index.cpp wand_partitioning.hpp wand_data.hpp)
+add_executable(create_freq_index create_freq_index.cpp wand_data.hpp)
 target_link_libraries(create_freq_index
   ${Boost_LIBRARIES}
   FastPFor_lib

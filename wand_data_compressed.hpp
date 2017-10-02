@@ -5,7 +5,6 @@
 #include "binary_freq_collection.hpp"
 #include "bm25.hpp"
 #include "util.hpp"
-#include "wand_partitioning.hpp"
 #include "score_partitioning.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
