@@ -40,7 +40,7 @@ namespace ds2i {
         size_t log_partition_size;
         size_t worker_threads;
         size_t threshold_wand_list;
-        float reference_size;
+        size_t reference_size;
 
 
 

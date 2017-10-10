@@ -180,7 +180,8 @@ namespace {
             {
                 uint64_t val = m_docs_enum.move(0).second;
                 m_cur_docid = val >> score_bits_size;
-                m_cur_score_index = (val << score_bits_size) >> score_bits_size;
+                uint64_t mask = configuration::get().reference_size - 1;
+		m_cur_score_index = (val & mask);
             }
 
             void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
@@ -188,7 +189,8 @@ namespace {
                     lower_bound = lower_bound << score_bits_size;
                     auto val = m_docs_enum.next_geq(lower_bound);
                     m_cur_docid = val.second >> score_bits_size;
-                    m_cur_score_index = (val.second << score_bits_size) >> score_bits_size;
+		    uint64_t mask = configuration::get().reference_size - 1;
+                    m_cur_score_index = (val.second & mask);
                 }
             }
 
