@@ -139,7 +139,7 @@ namespace ds2i {
             std::vector<posting_t> path(size + 1, 0);
             std::vector<float> maxs(size + 1, 0);
 
-            auto max1 = std::max_element(begin, begin + size, 
+            auto max1 = std::max_element(begin, begin + size,
                 [](const auto& lhs, const auto& rhs) -> auto {
                   return std::get<1>(lhs) < std::get<1>(rhs);
                 });

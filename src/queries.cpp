@@ -3,7 +3,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
 
 #include "index_types.hpp"

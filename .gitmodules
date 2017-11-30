@@ -1,9 +1,18 @@
 [submodule "succinct"]
-	path = succinct
+	path = external/succinct
 	url = git@github.com:ot/succinct.git
 [submodule "FastPFor"]
-	path = FastPFor
+	path = external/FastPFor
 	url = https://github.com/ot/FastPFor.git
 [submodule "stxxl"]
-	path = stxxl
+	path = external/stxxl
 	url = https://github.com/stxxl/stxxl.git
+[submodule "external/FastPFor"]
+	path = external/FastPFor
+	url = https://github.com/ot/FastPFor.git
+[submodule "external/stxxl"]
+	path = external/stxxl
+	url = https://github.com/stxxl/stxxl.git
+[submodule "external/succinct"]
+	path = external/succinct
+	url = https://github.com/ot/succinct.git

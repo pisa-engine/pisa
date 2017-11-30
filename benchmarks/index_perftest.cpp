@@ -1,4 +1,4 @@
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
 #include "util.hpp"
@@ -16,7 +16,7 @@ void perftest(IndexType const& index, std::string const& type)
         size_t max_length = 100000;
         size_t max_number_of_lists = 1000;
 
-        logger() << "Scanning " << max_number_of_lists << " posting lists long between " 
+        logger() << "Scanning " << max_number_of_lists << " posting lists long between "
                  << min_length << " and " << max_length << std::endl;
 
         std::vector<size_t> long_lists;

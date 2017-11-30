@@ -7,11 +7,11 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem/operations.hpp>
 
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
-#include <stxxl/vector>
-#include <stxxl/io>
-#include <stxxl/sort>
+#include "stxxl/vector"
+#include "stxxl/io"
+#include "stxxl/sort"
 
 #include "configuration.hpp"
 #include "index_types.hpp"

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"

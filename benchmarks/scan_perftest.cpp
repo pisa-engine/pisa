@@ -1,4 +1,4 @@
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 #include "sequence_collection.hpp"
 #include "partitioned_sequence.hpp"
 #include "uniform_partitioned_sequence.hpp"

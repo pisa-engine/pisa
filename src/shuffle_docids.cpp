@@ -5,7 +5,7 @@
 #include <numeric>
 #include <random>
 
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "index_build_utils.hpp"

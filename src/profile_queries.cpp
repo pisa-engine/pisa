@@ -1,11 +1,11 @@
 #include <iostream>
 #include <thread>
 
-#include <succinct/mapper.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include "succinct/mapper.hpp"
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"
 #include "queries.hpp"

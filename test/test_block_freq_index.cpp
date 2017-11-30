@@ -4,7 +4,7 @@
 
 #include "block_freq_index.hpp"
 #include "block_codecs.hpp"
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
 #include <vector>
 #include <cstdlib>

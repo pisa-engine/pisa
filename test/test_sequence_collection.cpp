@@ -6,7 +6,7 @@
 #include "indexed_sequence.hpp"
 #include "partitioned_sequence.hpp"
 #include "uniform_partitioned_sequence.hpp"
-#include <succinct/mapper.hpp>
+#include "succinct/mapper.hpp"
 
 #include <vector>
 #include <cstdlib>
