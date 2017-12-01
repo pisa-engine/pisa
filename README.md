@@ -1,6 +1,8 @@
 ds2i
 ====
 
+## What is it?
+
 Data Structures for Inverted Indexes (ds2i) is a library of data structures to
 represent the integer sequences used in inverted indexes.
 
@@ -14,23 +16,16 @@ This code was used in the experiments of the following papers.
 
 * Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, Rossano Venturini, _Faster BlockMax WAND with variable-sized blocks_, ACM SIGIR 2017.
 
-
 Building the code
 -----------------
 
-The code is tested on Linux with GCC 5.4.0 and macOS Sierra with Clang.
+The code is tested on Linux with GCC 5.4.0 and Clang 5.0.
 
 The following dependencies are needed for the build.
 
 * CMake >= 2.8, for the build system
 * Boost >= 1.51
-
-The code depends on several git submodules. If you have cloned the repository
-without `--recursive`, you will need to perform the following commands before
-building:
-
-    $ git submodule init
-    $ git submodule update
+* OpenMP (optional)
 
 To build the code:
 

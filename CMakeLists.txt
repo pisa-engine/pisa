@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(DS2I)
+project(DS2I CXX C)
 
 configure_file(
   ${DS2I_SOURCE_DIR}/include/ds2i_config.hpp.in
@@ -9,6 +9,8 @@ configure_file(
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release")
 endif()
+MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
+
 
 if (UNIX)
    # C++14

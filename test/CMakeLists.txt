@@ -10,11 +10,11 @@ foreach(TEST_SRC ${TEST_SOURCES})
 endforeach(TEST_SRC)
 
 target_link_libraries(test_block_codecs
-    FastPFor_lib)
+    FastPFor)
 
 target_link_libraries(test_block_posting_list
-    FastPFor_lib)
+    FastPFor)
 
 target_link_libraries(test_block_freq_index
-    FastPFor_lib)
+    FastPFor)
 

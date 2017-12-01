@@ -2,8 +2,8 @@
 
 #include "FastPFor/headers/optpfor.h"
 #include "FastPFor/headers/variablebyte.h"
-#include "FastPFor/headers/VarIntG8IU.h"
 
+#include "VarIntG8IU.h"
 #include "succinct/util.hpp"
 #include "interpolative_coding.hpp"
 #include "util.hpp"
@@ -153,7 +153,7 @@ namespace ds2i {
 
     struct optpfor_block {
 
-        struct codec_type : FastPFor::OPTPFor<4, FastPFor::Simple16<false>> {
+        struct codec_type : FastPForLib::OPTPFor<4, FastPForLib::Simple16<false>> {
 
             uint8_t const* force_b;
 
@@ -167,7 +167,7 @@ namespace ds2i {
                 // optimization early as the b to test becomes larger than maxb
                 uint32_t b = 0;
                 uint32_t bsize = std::numeric_limits<uint32_t>::max();
-                const uint32_t mb = FastPFor::maxbits(in,in+len);
+                const uint32_t mb = FastPForLib::maxbits(in,in+len);
                 uint32_t i = 0;
                 while(mb > 28 + possLogs[i]) ++i; // some schemes such as Simple16 don't code numbers greater than 28
 
@@ -233,7 +233,7 @@ namespace ds2i {
     struct varint_G8IU_block {
         static const uint64_t block_size = 128;
 
-        struct codec_type : FastPFor::VarIntG8IU {
+        struct codec_type : VarIntG8IU {
 
             // rewritten version of decodeBlock optimized for when the output
             // size is known rather than the input
