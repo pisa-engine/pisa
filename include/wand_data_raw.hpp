@@ -38,15 +38,15 @@ namespace ds2i {
 
 
 
-                    block_max_term_weight.insert(block_max_term_weight.end(), std::get<2>(t).begin(),
-                                                 std::get<2>(t).end());
-                    block_docid.insert(block_docid.end(), std::get<1>(t).begin(), std::get<1>(t).end());
-                    max_term_weight.push_back(*(std::max_element(std::get<2>(t).begin(), std::get<2>(t).end())));
-                    blocks_start.push_back(std::get<1>(t).size() + blocks_start.back());
+                    block_max_term_weight.insert(block_max_term_weight.end(), t.second.begin(),
+                                                 t.second.end());
+                    block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
+                    max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
+                    blocks_start.push_back(t.first.size() + blocks_start.back());
 
 
                     total_elements += seq.docs.size();
-                    total_blocks += std::get<1>(t).size();
+                    total_blocks += t.first.size();
                     effective_list++;
                 } else {
                     max_term_weight.push_back(0.0f);

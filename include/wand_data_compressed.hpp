@@ -128,14 +128,14 @@ namespace {
                     auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
                                                       : variable_block_partition(coll, seq, norm_lens));
 
-                    auto ind = compressor_builder.compress_data(std::get<2>(t));
+                    auto ind = compressor_builder.compress_data(t.second);
 
-                    compressor_builder.add_posting_list(std::get<1>(t).size(), std::get<1>(t).begin(),
+                    compressor_builder.add_posting_list(t.first.size(), t.first.begin(),
                                                            ind.begin());
 
-                    max_term_weight.push_back(*(std::max_element(std::get<2>(t).begin(), std::get<2>(t).end())));
+                    max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
                     total_elements += seq.docs.size();
-                    total_blocks += std::get<1>(t).size();
+                    total_blocks += t.first.size();
                     effective_list++;
                 } else {
                     max_term_weight.push_back(0.0f);
