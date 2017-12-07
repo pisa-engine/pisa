@@ -2,27 +2,27 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "succinct/mapper.hpp"
 
-
 #include "index_types.hpp"
-#include "wand_data_compressed.hpp"
-#include "wand_data_raw.hpp"
 #include "queries.hpp"
 #include "util.hpp"
+#include "wand_data_compressed.hpp"
+#include "wand_data_raw.hpp"
 
 namespace {
 void printUsage(const std::string &programName) {
-  std::cerr << "Usage: " << programName
-            << " index_type query_algorithm index_filename [--wand wand_data_filename]"
-            << " [--compressed-wand] [--query query_filename]" << std::endl;
+    std::cerr << "Usage: " << programName
+              << " index_type query_algorithm index_filename [--wand wand_data_filename]"
+              << " [--compressed-wand] [--query query_filename] [-k 10]" << std::endl;
 }
 } // namespace
 
 using namespace ds2i;
 
-template<typename Functor>
+template <typename Functor>
 void op_perftest(Functor query_func, // XXX!!!
                  std::vector<ds2i::term_id_vec> const &queries,
                  std::string const &index_type,
@@ -33,7 +33,7 @@ void op_perftest(Functor query_func, // XXX!!!
     std::vector<double> query_times;
 
     for (size_t run = 0; run <= runs; ++run) {
-        for (auto const &query: queries) {
+        for (auto const &query : queries) {
             auto tick = get_time_usecs();
             uint64_t result = query_func(query);
             do_not_optimize_away(result);
@@ -41,17 +41,17 @@ void op_perftest(Functor query_func, // XXX!!!
             if (run != 0) { // first run is not timed
                 query_times.push_back(elapsed);
             }
-
         }
     }
 
     if (false) {
-        for (auto t: query_times) {
+        for (auto t : query_times) {
             std::cout << (t / 1000) << std::endl;
         }
     } else {
         std::sort(query_times.begin(), query_times.end());
-        double avg = std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
+        double avg =
+            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
         double q50 = query_times[query_times.size() / 2];
         double q90 = query_times[90 * query_times.size() / 100];
         double q95 = query_times[95 * query_times.size() / 100];
@@ -62,34 +62,28 @@ void op_perftest(Functor query_func, // XXX!!!
         logger() << "90% quantile: " << q90 << std::endl;
         logger() << "95% quantile: " << q95 << std::endl;
 
-        stats_line()
-                ("type", index_type)
-                ("query", query_type)
-                ("avg", avg)
-                ("q50", q50)
-                ("q90", q90)
-                ("q95", q95);
+        stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
+            "q95", q95);
     }
 }
 
-template<typename IndexType, typename WandType>
+template <typename IndexType, typename WandType>
 void perftest(const char *index_filename,
               const char *wand_data_filename,
               std::vector<ds2i::term_id_vec> const &queries,
               std::string const &type,
-              std::string const &query_type) {
+              std::string const &query_type,
+              uint64_t k) {
     using namespace ds2i;
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
     boost::iostreams::mapped_file_source m(index_filename);
     succinct::mapper::map(index, m);
 
-
-
     logger() << "Warming up posting lists" << std::endl;
     std::unordered_set<term_id_type> warmed_up;
-    for (auto const &q: queries) {
-        for (auto t: q) {
+    for (auto const &q : queries) {
+        for (auto t : q) {
             if (!warmed_up.count(t)) {
                 index.warmup(t);
                 warmed_up.insert(t);
@@ -107,9 +101,10 @@ void perftest(const char *index_filename,
         succinct::mapper::map(wdata, md, succinct::mapper::map_flags::warmup);
     }
 
-    uint64_t k = configuration::get().k;
     logger() << "Performing " << type << " queries" << std::endl;
-    for (auto const &t: query_types) {
+    logger() << "K: " << k << std::endl;
+
+    for (auto const &t : query_types) {
         logger() << "Query type: " << t << std::endl;
         std::function<uint64_t(ds2i::term_id_vec)> query_fun;
         if (t == "and") {
@@ -121,21 +116,27 @@ void perftest(const char *index_filename,
         } else if (t == "or_freq") {
             query_fun = [&](ds2i::term_id_vec query) { return or_query<true>()(index, query); };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) { return wand_query<WandType>(wdata, k)(index, query); };
+            query_fun = [&](ds2i::term_id_vec query) {
+                return wand_query<WandType>(wdata, k)(index, query);
+            };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) { return block_max_wand_query<WandType>(wdata, k)(index, query); };
+            query_fun = [&](ds2i::term_id_vec query) {
+                return block_max_wand_query<WandType>(wdata, k)(index, query);
+            };
         } else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) { return ranked_or_query<WandType>(wdata, k)(index, query); };
+            query_fun = [&](ds2i::term_id_vec query) {
+                return ranked_or_query<WandType>(wdata, k)(index, query);
+            };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) { return maxscore_query<WandType>(wdata, k)(index, query); };
+            query_fun = [&](ds2i::term_id_vec query) {
+                return maxscore_query<WandType>(wdata, k)(index, query);
+            };
         } else {
             logger() << "Unsupported query type: " << t << std::endl;
             break;
         }
         op_perftest(query_fun, queries, type, t, 2);
     }
-
-
 }
 
 typedef wand_data<bm25, wand_data_raw<bm25>> wand_raw_index;
@@ -146,8 +147,8 @@ int main(int argc, const char **argv) {
 
     std::string programName = argv[0];
     if (argc < 3) {
-    printUsage(programName);
-    return 1;
+        printUsage(programName);
+        return 1;
     }
 
     std::string type = argv[1];
@@ -155,6 +156,7 @@ int main(int argc, const char **argv) {
     const char *index_filename = argv[3];
     const char *wand_data_filename = nullptr;
     const char *query_filename = nullptr;
+    uint64_t k = configuration::get().k;
 
     bool compressed = false;
     std::vector<term_id_vec> queries;
@@ -162,48 +164,53 @@ int main(int argc, const char **argv) {
     for (int i = 4; i < argc; ++i) {
         std::string arg = argv[i];
 
-        if(arg == "--wand"){
-            wand_data_filename = argv[++i];;
+        if (arg == "--wand") {
+            wand_data_filename = argv[++i];
         }
 
-        if(arg == "--compressed-wand"){
+        if (arg == "--compressed-wand") {
             compressed = true;
         }
 
         if (arg == "--query") {
             query_filename = argv[++i];
         }
+        if (arg == "-k") {
+            k = boost::lexical_cast<uint64_t>(argv[++i]);
+        }
     }
 
     term_id_vec q;
-    if(query_filename){
+    if (query_filename) {
         std::filebuf fb;
         if (fb.open(query_filename, std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is)) queries.push_back(q);
+            while (read_query(q, is))
+                queries.push_back(q);
         }
     } else {
-        while (read_query(q)) queries.push_back(q);
+        while (read_query(q))
+            queries.push_back(q);
     }
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                       \
-        } else if (type == BOOST_PP_STRINGIZE(T)) {                                 \
-            if (compressed) {                                                       \
-                 perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>              \
-                 (index_filename, wand_data_filename, queries, type, query_type);   \
-            } else {                                                                \
-                perftest<BOOST_PP_CAT(T, _index), wand_raw_index>                   \
-                (index_filename, wand_data_filename, queries, type, query_type);    \
-            }                                                                       \
-    /**/
+#define LOOP_BODY(R, DATA, T)                                                      \
+    }                                                                              \
+    else if (type == BOOST_PP_STRINGIZE(T)) {                                      \
+        if (compressed) {                                                          \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(                 \
+                index_filename, wand_data_filename, queries, type, query_type, k); \
+        } else {                                                                   \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(                     \
+                index_filename, wand_data_filename, queries, type, query_type, k); \
+        }                                                                          \
+        /**/
 
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {
         logger() << "ERROR: Unknown type " << type << std::endl;
     }
-
 }
