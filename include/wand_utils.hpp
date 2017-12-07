@@ -1,7 +1,7 @@
 #pragma once
 
 #include "configuration.hpp"
-#include "score_partitioning.hpp"
+#include "score_opt_partition.hpp"
 #include "global_parameters.hpp"
 
 namespace ds2i {
