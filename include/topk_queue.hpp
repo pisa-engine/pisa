@@ -2,11 +2,17 @@
 namespace ds2i {
 
 struct topk_queue {
-    topk_queue(uint64_t k) : m_k(k) {}
+    explicit topk_queue(uint64_t k) : threshold(0), m_k(k) {}
 
-    topk_queue(const topk_queue &q) : m_q(q.m_q) {
+    topk_queue(const topk_queue &q) : threshold(q.threshold), m_k(q.m_k), m_q(q.m_q) {
         m_k = q.m_k;
         threshold = q.threshold;
+    }
+
+    topk_queue &operator=(const topk_queue &q) {
+        m_k = q.m_k;
+        threshold = q.threshold;
+        return *this;
     }
 
     bool insert(float score) { return insert(score, 0); }
@@ -55,13 +61,6 @@ struct topk_queue {
                              [](std::pair<float, uint64_t> l, float r) { return l.first > r; }) -
             m_q.begin();
         m_q.resize(size);
-    }
-
-    void sort_docid() {
-        std::sort_heap(
-            m_q.begin(), m_q.end(), [](std::pair<float, uint64_t> l, std::pair<float, uint64_t> r) {
-                return l.second < r.second;
-            });
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_q; }
