@@ -1,5 +1,4 @@
-ds2i
-====
+# ds2i
 
 ## What is it?
 
@@ -16,8 +15,7 @@ This code was used in the experiments of the following papers.
 
 * Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, Rossano Venturini, _Faster BlockMax WAND with variable-sized blocks_, ACM SIGIR 2017.
 
-Building the code
------------------
+## Building the code
 
 The code is tested on Linux with GCC 5.4.0 and Clang 5.0.
 
@@ -36,23 +34,40 @@ To build the code:
 
 It is also preferable to perform a `make test`, which runs the unit tests.
 
+## Usage
+
+### Create an index
+
+To create an index use the command `create_freq_index`. The available index
+types are listed in `index_types.hpp`. 
+
+    create_freq_index - a tool for creating an index.
+    Usage:
+      create_freq_index [OPTION...]
+
+      -h, --help                 Print help
+      -t, --type type_name       Index type
+      -c, --collection basename  Collection basename
+      -o, --out filename         Output filename
+          --check                Check the correctness of the index (default:
+                                 false) 
+
+For example, to create an index using the
+optimal partitioning algorithm using the test collection, execute the command:
+
+    $ ./create_freq_index -t opt -c ../test/test_data/test_collection -o test_collection.index.opt --check
+
+where `test/test_data/test_collection` is the _basename_ of the collection, that
+is the name without the `.{docs,freqs,sizes}` extensions, and
+`test_collection.index.opt` is the filename of the output index. `--check`
+perform a verification step to check the correctness of the index.
+
 Example: Partitioned Elias-Fano
 -------------------------------
 
 The directory `test/test_data` contains a small document collection used in the
 unit tests. The binary format of the collection is described in a following
 section.
-
-To create an index use the command `create_freq_index`. The available index
-types are listed in `index_types.hpp`. For example, to create an index using the
-optimal partitioning algorithm using the test collection, execute the command:
-
-    $ ./create_freq_index opt ../test/test_data/test_collection test_collection.index.opt --check
-
-where `test/test_data/test_collection` is the _basename_ of the collection, that
-is the name without the `.{docs,freqs,sizes}` extensions, and
-`test_collection.index.opt` is the filename of the output index. `--check`
-perform a verification step to check the correctness of the index.
 
 To perform BM25 queries it is necessary to build an additional file containing
 the parameters needed to compute the score, such as the document lengths. The

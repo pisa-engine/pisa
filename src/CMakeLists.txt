@@ -2,6 +2,7 @@ add_executable(create_freq_index create_freq_index.cpp)
 target_link_libraries(create_freq_index
   ${Boost_LIBRARIES}
   FastPFor
+  cxxopts
   )
 
 add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)

@@ -7,3 +7,6 @@
 [submodule "external/succinct"]
 	path = external/succinct
 	url = https://github.com/ot/succinct.git
+[submodule "external/cxxopts"]
+	path = external/cxxopts
+	url = https://github.com/jarro2783/cxxopts.git
