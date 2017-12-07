@@ -36,14 +36,11 @@ namespace ds2i {
                     auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
                                                       : variable_block_partition(coll, seq, norm_lens));
 
-
-
                     block_max_term_weight.insert(block_max_term_weight.end(), t.second.begin(),
                                                  t.second.end());
                     block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
                     max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
                     blocks_start.push_back(t.first.size() + blocks_start.back());
-
 
                     total_elements += seq.docs.size();
                     total_blocks += t.first.size();
