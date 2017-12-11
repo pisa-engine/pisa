@@ -53,7 +53,7 @@ types are listed in `index_types.hpp`.
 For example, to create an index using the
 optimal partitioning algorithm using the test collection, execute the command:
 
-    $ ./create_freq_index -t opt -c ../test/test_data/test_collection -o test_collection.index.opt --check
+    $ ./bin/create_freq_index -t opt -c ../test/test_data/test_collection -o test_collection.index.opt --check
 
 where `test/test_data/test_collection` is the _basename_ of the collection, that
 is the name without the `.{docs,freqs,sizes}` extensions, and
@@ -66,7 +66,7 @@ To perform BM25 queries it is necessary to build an additional file containing
 the parameters needed to compute the score, such as the document lengths. The
 file can be built with the following command:
 
-    $ ./create_wand_data ../test/test_data/test_collection test_collection.wand
+    $ ./bin/create_wand_data ../test/test_data/test_collection test_collection.wand
 
 If you want to compress the file append `--compress` at the end of the command.
 
@@ -76,7 +76,7 @@ If you want to compress the file append `--compress` at the end of the command.
 Now it is possible to query the index. The command `queries` parses each line of the standard input as a tab-separated collection of term-ids, where the i-th
 term is the i-th list in the input collection.
 
-    $ ./queries opt and test_collection.index.opt test_collection.wand < ../test/test_data/queries
+    $ ./bin/queries opt and test_collection.index.opt test_collection.wand < ../test/test_data/queries
 
 This performs conjunctive queries (`and`). In place of `and` other operators can
 be used (`or`, `wand`, ..., see `queries.cpp`), and also multiple operators
