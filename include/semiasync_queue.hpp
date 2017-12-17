@@ -25,6 +25,7 @@ namespace ds2i {
         public:
             virtual void prepare() = 0;
             virtual void commit() = 0;
+            virtual ~job() = default;
         };
 
         typedef std::shared_ptr<job> job_ptr_type;
