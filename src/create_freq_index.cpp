@@ -105,13 +105,12 @@ int main(int argc, char **argv) {
 
     cxxopts::Options options("create_freq_index",
                              "create_freq_index - a tool for creating an index.");
-    options.add_options()("h,help",
-                          "Print help")("t,type", "Index type", cxxopts::value(type), "type_name")(
-        "c,collection", "Collection basename", cxxopts::value(input_basename), "basename")(
-        "o,out", "Output filename", cxxopts::value<std::string>(), "filename")(
-        "check",
-        "Check the correctness of the index",
-        cxxopts::value(check)->default_value("false"));
+    options.add_options()
+        ("h,help", "Print help")
+        ("t,type", "Index type", cxxopts::value(type), "type_name")
+        ("c,collection", "Collection basename", cxxopts::value(input_basename), "basename")
+        ("o,out", "Output filename", cxxopts::value<std::string>(), "filename")
+        ("check", "Check the correctness of the index", cxxopts::value(check));
 
     try {
         options.parse(argc, argv);
@@ -129,7 +128,6 @@ int main(int argc, char **argv) {
         std::cout << options.help(options.groups()) << std::endl;
         exit(1);
     }
-
     binary_freq_collection input(input_basename.c_str());
 
     ds2i::global_parameters params;
