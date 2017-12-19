@@ -1,3 +1,5 @@
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/test)
+
 file(GLOB TEST_SOURCES test_*.cpp)
 foreach(TEST_SRC ${TEST_SOURCES})
   get_filename_component (TEST_SRC_NAME ${TEST_SRC} NAME_WE)
