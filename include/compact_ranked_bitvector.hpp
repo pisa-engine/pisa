@@ -174,6 +174,7 @@ namespace ds2i {
                         if (DS2I_LIKELY(m_position < size())) {
                             val = he.next() - m_of.bits_offset;
                         } else {
+                            m_position = size();
                             val = m_of.universe;
                             break;
                         }

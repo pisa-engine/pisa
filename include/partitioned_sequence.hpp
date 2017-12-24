@@ -189,6 +189,7 @@ namespace ds2i {
             }
 
             // note: this is instantiated oly if BaseSequence has next_geq
+            template<typename Q = base_sequence_enumerator,  typename = if_has_next_geq<Q>>
             value_type DS2I_ALWAYSINLINE next_geq(uint64_t lower_bound)
             {
                 if (DS2I_LIKELY(lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound)) {

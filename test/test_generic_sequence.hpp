@@ -146,7 +146,7 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
             size_t exp_pos = i + skip;
             // for weakly monotone sequences, next_at returns the first of the
             // run of equal values
-            while ((exp_pos > 0) && seq[exp_pos - 1] == seq[i + skip]) {
+            while ((exp_pos > 0) && (exp_pos > i) && seq[exp_pos - 1] == seq[i + skip]) {
                 exp_pos -= 1;
             }
 
@@ -175,7 +175,7 @@ void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq,
 }
 
 template <typename SequenceReader>
-typename std::enable_if<ds2i::has_next_geq<SequenceReader>::value, void>::type
+typename ds2i::if_has_next_geq<SequenceReader>
 test_sequence(SequenceReader r, std::vector<uint64_t> const& seq,
               next_geq_tag const&)
 {

@@ -66,14 +66,18 @@ namespace ds2i {
         asm volatile("" : "+r" (datum));
     }
 
-    template<typename T>
-    struct has_next_geq
-    {
-        template<typename Fun> struct sfinae {};
-        template<typename U> static char test(sfinae<decltype(U::has_next)>);
-        template<typename U> static int test(...);
-        enum { value = sizeof(test<T>(0)) == sizeof(char) };
+    template <typename T>
+    struct has_next_geq {
+        template <class, class> class checker;
+        template <typename U>
+        static std::true_type test(checker<U, decltype(std::declval<U>().next_geq(0))> *);
+        template <typename U>
+        static std::false_type test(...);
+        static const bool value = std::is_same<std::true_type, decltype(test<T>(nullptr))>::value;
     };
+
+    template<typename T>
+    using if_has_next_geq = std::enable_if_t<has_next_geq<T>::value>;
 
     // A more powerful version of boost::function_input_iterator that also works
     // with lambdas.
