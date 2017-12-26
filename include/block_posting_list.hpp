@@ -1,9 +1,9 @@
 #pragma once
 
 #include "succinct/util.hpp"
-#include "block_codecs.hpp"
-#include "util.hpp"
-#include "block_profiler.hpp"
+#include "codec/block_codecs.hpp"
+#include "util/util.hpp"
+#include "util/block_profiler.hpp"
 
 namespace ds2i {
 

@@ -2,8 +2,8 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "uniform_partitioned_sequence.hpp"
-#include "strict_sequence.hpp"
+#include "sequence/uniform_partitioned_sequence.hpp"
+#include "sequence/strict_sequence.hpp"
 #include <vector>
 #include <cstdlib>
 

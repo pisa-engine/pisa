@@ -6,7 +6,7 @@
 #include "VarIntG8IU.h"
 #include "succinct/util.hpp"
 #include "interpolative_coding.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

@@ -8,8 +8,8 @@
 #include "succinct/mapper.hpp"
 
 #include "binary_freq_collection.hpp"
-#include "index_build_utils.hpp"
-#include "util.hpp"
+#include "util/index_build_utils.hpp"
+#include "util/util.hpp"
 
 using ds2i::logger;
 

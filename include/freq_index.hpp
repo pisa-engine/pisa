@@ -1,8 +1,8 @@
 #pragma once
 
 #include "bitvector_collection.hpp"
-#include "compact_elias_fano.hpp"
-#include "integer_codes.hpp"
+#include "codec/compact_elias_fano.hpp"
+#include "codec/integer_codes.hpp"
 #include "global_parameters.hpp"
 #include "configuration.hpp"
 

@@ -2,8 +2,8 @@
 
 #include <stdexcept>
 
-#include "compact_elias_fano.hpp"
-#include "util.hpp"
+#include "codec/compact_elias_fano.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

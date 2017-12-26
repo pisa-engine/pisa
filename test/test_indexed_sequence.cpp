@@ -2,7 +2,7 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "indexed_sequence.hpp"
+#include "sequence/indexed_sequence.hpp"
 #include <vector>
 #include <cstdlib>
 

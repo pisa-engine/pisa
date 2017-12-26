@@ -5,7 +5,7 @@
 
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
-#include "queries.hpp"
+#include "query/queries.hpp"
 
 namespace ds2i { namespace test {
 
@@ -28,7 +28,7 @@ namespace ds2i { namespace test {
             builder.build(index);
 
             term_id_vec q;
-            std::ifstream qfile("../test/test_data/queries");
+            std::ifstream qfile(DS2I_SOURCE_DIR "/test/test_data/queries");
             while (read_query(q, qfile)) queries.push_back(q);
         }
 

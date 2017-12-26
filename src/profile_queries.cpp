@@ -8,8 +8,8 @@
 #include "succinct/mapper.hpp"
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"
-#include "queries.hpp"
-#include "util.hpp"
+#include "query/queries.hpp"
+#include "util/util.hpp"
 
 template <typename QueryOperator, typename IndexType>
 void op_profile(IndexType const& index,

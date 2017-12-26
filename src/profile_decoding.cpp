@@ -5,7 +5,7 @@
 
 #include "succinct/mapper.hpp"
 #include "index_types.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 #include "dec_time_prediction.hpp"
 
 namespace ds2i {

@@ -5,13 +5,13 @@
 #include <boost/preprocessor/stringize.hpp>
 
 #include "binary_freq_collection.hpp"
-#include "block_codecs.hpp"
+#include "codec/block_codecs.hpp"
 #include "block_freq_index.hpp"
 #include "freq_index.hpp"
 #include "mixed_block.hpp"
-#include "partitioned_sequence.hpp"
-#include "positive_sequence.hpp"
-#include "uniform_partitioned_sequence.hpp"
+#include "sequence/partitioned_sequence.hpp"
+#include "sequence/positive_sequence.hpp"
+#include "sequence/uniform_partitioned_sequence.hpp"
 
 namespace ds2i {
 using ef_index =

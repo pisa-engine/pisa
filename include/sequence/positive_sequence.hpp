@@ -1,8 +1,8 @@
 #pragma once
 
 #include "global_parameters.hpp"
-#include "strict_sequence.hpp"
-#include "util.hpp"
+#include "sequence/strict_sequence.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

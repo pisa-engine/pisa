@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-#include "util.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

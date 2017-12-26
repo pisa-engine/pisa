@@ -5,8 +5,8 @@
 #include <iterator>
 #include <deque>
 #include <math.h>
-#include "util.hpp"
-#include "bm25.hpp"
+#include "util/util.hpp"
+#include "scorer/bm25.hpp"
 
 namespace ds2i {
 

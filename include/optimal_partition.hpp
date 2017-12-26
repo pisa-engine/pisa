@@ -3,7 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <iterator>
-#include "util.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

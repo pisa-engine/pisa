@@ -1,7 +1,7 @@
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 using ds2i::logger;
 using ds2i::get_time_usecs;

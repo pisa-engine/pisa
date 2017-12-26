@@ -5,7 +5,7 @@
 #include <deque>
 
 #include "configuration.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

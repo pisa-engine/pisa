@@ -2,9 +2,9 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "positive_sequence.hpp"
-#include "partitioned_sequence.hpp"
-#include "uniform_partitioned_sequence.hpp"
+#include "sequence/positive_sequence.hpp"
+#include "sequence/partitioned_sequence.hpp"
+#include "sequence/uniform_partitioned_sequence.hpp"
 #include <vector>
 #include <cstdlib>
 #include <algorithm>

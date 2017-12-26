@@ -2,7 +2,7 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "strict_elias_fano.hpp"
+#include "codec/strict_elias_fano.hpp"
 #include <vector>
 #include <cstdlib>
 

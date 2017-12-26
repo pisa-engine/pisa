@@ -4,7 +4,7 @@
 #include "binary_collection.hpp"
 #include "binary_freq_collection.hpp"
 #include "succinct/mapper.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"

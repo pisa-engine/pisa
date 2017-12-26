@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "block_codecs.hpp"
+#include "codec/block_codecs.hpp"
 #include "dec_time_prediction.hpp"
 
 namespace ds2i {

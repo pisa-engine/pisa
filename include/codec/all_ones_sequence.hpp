@@ -1,7 +1,7 @@
 #pragma once
 
 #include "global_parameters.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 namespace ds2i {
 

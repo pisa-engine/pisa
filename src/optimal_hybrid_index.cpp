@@ -15,11 +15,11 @@
 
 #include "configuration.hpp"
 #include "index_types.hpp"
-#include "util.hpp"
-#include "verify_collection.hpp"
+#include "util/util.hpp"
+#include "util/verify_collection.hpp"
 #include "mixed_block.hpp"
-#include "index_build_utils.hpp"
-#include "semiasync_queue.hpp"
+#include "util/index_build_utils.hpp"
+#include "util/semiasync_queue.hpp"
 
 using ds2i::logger;
 
