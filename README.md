@@ -1,5 +1,7 @@
 # ds2i
 
+[![Build Status](https://travis-ci.com/amallia/Variable-BMW.svg?token=2Cpy658AqNAqbjLFA4Z2&branch=master)](https://travis-ci.com/amallia/Variable-BMW)
+
 ## What is it?
 
 Data Structures for Inverted Indexes (ds2i) is a library of data structures to
