@@ -1,22 +1,7 @@
-# ds2i
+# Search Engine for Academic Research (SERA)
 
 [![Build Status](https://travis-ci.com/amallia/Variable-BMW.svg?token=2Cpy658AqNAqbjLFA4Z2&branch=master)](https://travis-ci.com/amallia/Variable-BMW)
 [![codecov](https://codecov.io/gh/amallia/Variable-BMW/branch/master/graph/badge.svg?token=RrfvWe6gol)](https://codecov.io/gh/amallia/Variable-BMW)
-
-## What is it?
-
-Data Structures for Inverted Indexes (ds2i) is a library of data structures to
-represent the integer sequences used in inverted indexes.
-
-This code was used in the experiments of the following papers.
-
-* Giuseppe Ottaviano, Rossano Venturini, _Partitioned Elias-Fano Indexes_,
-  ACM SIGIR 2014.
-
-* Giuseppe Ottaviano, Nicola Tonellotto, Rossano Venturini, _Optimal Space-Time
-  Tradeoffs for Inverted Indexes_, ACM WSDM 2015.
-
-* Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, Rossano Venturini, _Faster BlockMax WAND with variable-sized blocks_, ACM SIGIR 2017.
 
 ## Building the code
 
