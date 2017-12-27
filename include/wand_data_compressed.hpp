@@ -3,14 +3,14 @@
 #include "succinct/mappable_vector.hpp"
 
 #include "binary_freq_collection.hpp"
-#include "bm25.hpp"
-#include "util.hpp"
+#include "scorer/bm25.hpp"
+#include "util/util.hpp"
 #include "score_opt_partition.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
 
-#include "positive_sequence.hpp"
-#include "index_build_utils.hpp"
+#include "sequence/positive_sequence.hpp"
+#include "util/index_build_utils.hpp"
 #include "wand_utils.hpp"
 #include "global_parameters.hpp"
 

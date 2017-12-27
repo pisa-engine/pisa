@@ -1,10 +1,10 @@
 #pragma once
 
 #include "bitvector_collection.hpp"
-#include "compact_elias_fano.hpp"
-#include "integer_codes.hpp"
+#include "codec/compact_elias_fano.hpp"
+#include "codec/integer_codes.hpp"
 #include "global_parameters.hpp"
-#include "semiasync_queue.hpp"
+#include "util/semiasync_queue.hpp"
 
 namespace ds2i {
 

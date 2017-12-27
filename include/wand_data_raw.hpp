@@ -4,8 +4,8 @@
 #include "succinct/mappable_vector.hpp"
 
 #include "binary_freq_collection.hpp"
-#include "bm25.hpp"
-#include "util.hpp"
+#include "scorer/bm25.hpp"
+#include "util/util.hpp"
 #include "wand_utils.hpp"
 
 namespace ds2i {

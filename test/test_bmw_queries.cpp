@@ -5,7 +5,7 @@
 
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
-#include "queries.hpp"
+#include "query/queries.hpp"
 
 namespace ds2i {
     namespace test {

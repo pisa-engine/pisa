@@ -9,12 +9,12 @@
 
 #include "succinct/mapper.hpp"
 
-#include "bm25.hpp"
+#include "scorer/bm25.hpp"
 #include "configuration.hpp"
-#include "index_build_utils.hpp"
+#include "util/index_build_utils.hpp"
 #include "index_types.hpp"
-#include "util.hpp"
-#include "verify_collection.hpp" // XXX move to index_build_utils
+#include "util/util.hpp"
+#include "util/verify_collection.hpp" // XXX move to index_build_utils
 
 #include "cxxopts.hpp"
 

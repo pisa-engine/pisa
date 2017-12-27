@@ -1,9 +1,9 @@
 #include <iostream>
 #include <algorithm>
 
-#include "util.hpp"
+#include "util/util.hpp"
 #include "succinct/test_common.hpp"
-#include "block_codecs.hpp"
+#include "codec/block_codecs.hpp"
 
 int main()
 {

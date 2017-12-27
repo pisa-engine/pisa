@@ -7,8 +7,8 @@
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
-#include "queries.hpp"
-#include "util.hpp"
+#include "query/queries.hpp"
+#include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 

@@ -2,7 +2,7 @@
 
 #include "succinct/test_common.hpp"
 #include "succinct/bit_vector.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 std::vector<uint64_t> random_sequence(size_t universe, size_t n,
                                       bool strict = true)

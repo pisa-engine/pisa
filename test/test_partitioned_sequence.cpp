@@ -5,8 +5,8 @@
 #include <iostream>
 
 #include "test_generic_sequence.hpp"
-#include "partitioned_sequence.hpp"
-#include "strict_sequence.hpp"
+#include "sequence/partitioned_sequence.hpp"
+#include "sequence/strict_sequence.hpp"
 
 namespace ds2i {
 

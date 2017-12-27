@@ -3,7 +3,7 @@
 #include "test_generic_sequence.hpp"
 
 #include "block_freq_index.hpp"
-#include "block_codecs.hpp"
+#include "codec/block_codecs.hpp"
 #include "succinct/mapper.hpp"
 
 #include <vector>

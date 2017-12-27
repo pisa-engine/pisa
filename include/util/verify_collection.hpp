@@ -1,7 +1,7 @@
 #pragma once
 
 #include "succinct/mapper.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 
 using ds2i::logger;
 

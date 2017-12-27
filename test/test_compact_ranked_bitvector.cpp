@@ -2,7 +2,7 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "compact_ranked_bitvector.hpp"
+#include "codec/compact_ranked_bitvector.hpp"
 #include <vector>
 #include <cstdlib>
 

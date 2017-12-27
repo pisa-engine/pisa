@@ -3,7 +3,7 @@
 #include "test_generic_sequence.hpp"
 
 #include "block_posting_list.hpp"
-#include "block_codecs.hpp"
+#include "codec/block_codecs.hpp"
 
 #include <vector>
 #include <cstdlib>

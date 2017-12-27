@@ -1,7 +1,7 @@
 #pragma once
 
 #include "index_types.hpp"
-#include "util.hpp"
+#include "util/util.hpp"
 #include "succinct/mapper.hpp"
 
 namespace ds2i {

@@ -2,7 +2,7 @@
 
 #include "succinct/bit_vector.hpp"
 
-#include "compact_elias_fano.hpp"
+#include "codec/compact_elias_fano.hpp"
 
 namespace ds2i {
 

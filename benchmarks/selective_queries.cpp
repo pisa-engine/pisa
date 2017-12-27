@@ -4,8 +4,8 @@
 
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"
-#include "queries.hpp"
-#include "util.hpp"
+#include "query/queries.hpp"
+#include "util/util.hpp"
 
 template <typename IndexType>
 void selective_queries(const char* index_filename,
