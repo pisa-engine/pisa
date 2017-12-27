@@ -2,6 +2,10 @@ sudo: require
 language: cpp
 dist: trusty
 
+branches:
+  only:
+    - master
+    
 env:
   global:
     - DEPS_DIR=${TRAVIS_BUILD_DIR}/deps
