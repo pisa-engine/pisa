@@ -9,6 +9,9 @@ foreach(TEST_SRC ${TEST_SOURCES})
     ${Boost_LIBRARIES}
     )
   add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
+
+  # enable code coverage
+  add_coverage(${TEST_SRC_NAME})
 endforeach(TEST_SRC)
 
 target_link_libraries(test_block_codecs

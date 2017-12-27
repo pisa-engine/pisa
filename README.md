@@ -1,6 +1,7 @@
 # ds2i
 
 [![Build Status](https://travis-ci.com/amallia/Variable-BMW.svg?token=2Cpy658AqNAqbjLFA4Z2&branch=master)](https://travis-ci.com/amallia/Variable-BMW)
+[![codecov](https://codecov.io/gh/amallia/Variable-BMW/branch/master/graph/badge.svg?token=RrfvWe6gol)](https://codecov.io/gh/amallia/Variable-BMW)
 
 ## What is it?
 

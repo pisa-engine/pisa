@@ -17,6 +17,5 @@ target/
 # CMake junk
 CMakeCache.txt
 CMakeFiles/
-*.cmake
 Makefile
 Testing/
