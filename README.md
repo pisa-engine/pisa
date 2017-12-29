@@ -104,10 +104,3 @@ A _collection_ consists of 3 files, `<basename>.docs`, `<basename>.freqs`,
   same as the number of documents in the collection, and the i-th element of the
   sequence is the size (number of terms) of the i-th document.
 
-Authors
--------
-* Antonio Mallia <me@antoniomallia.it>
-* Giuseppe Ottaviano <giuott@gmail.com>
-* Elia Porciani <elia.porciani@gmail.com>
-* Nicola Tonellotto <nicola.tonellotto@isti.cnr.it>
-* Rossano Venturini <rossano@di.unipi.it>
