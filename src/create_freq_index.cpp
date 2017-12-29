@@ -58,7 +58,6 @@ void create_collection(InputCollection const &input,
     using namespace ds2i;
     logger() << "Processing " << input.num_docs() << " documents" << std::endl;
     double tick = get_time_usecs();
-    double user_tick = get_user_time_usecs();
 
     typename CollectionType::builder builder(input.num_docs(), params);
     progress_logger plog;
@@ -77,11 +76,10 @@ void create_collection(InputCollection const &input,
     CollectionType coll;
     builder.build(coll);
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    double user_elapsed_secs = (get_user_time_usecs() - user_tick) / 1000000;
     logger() << seq_type << " collection built in " << elapsed_secs << " seconds" << std::endl;
 
     stats_line()("type", seq_type)("worker_threads", configuration::get().worker_threads)(
-        "construction_time", elapsed_secs)("construction_user_time", user_elapsed_secs);
+        "construction_time", elapsed_secs);
 
     dump_stats(coll, seq_type, plog.postings);
     dump_index_specific_stats(coll, seq_type);

@@ -166,7 +166,6 @@ void compute_lambdas(InputCollectionType const& input_coll,
     std::ifstream block_stats(block_stats_filename);
 
     double tick = get_time_usecs();
-    double user_tick = get_user_time_usecs();
 
     std::string line;
     uint32_t block_counts_list;
@@ -224,28 +223,23 @@ void compute_lambdas(InputCollectionType const& input_coll,
     logger() << lambda_points.size() << " lambda points" << std::endl;
     logger() << "Sorting lambda points" << std::endl;
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    double user_elapsed_secs = (get_user_time_usecs() - user_tick) / 1000000;
 
     stats_line()
         ("worker_threads", configuration::get().worker_threads)
         ("lambda_computation_time", elapsed_secs)
-        ("lambda_computation_user_time", user_elapsed_secs)
         ("is_heuristic", configuration::get().heuristic_greedy)
         ;
 
     tick = get_time_usecs();
-    user_tick = get_user_time_usecs();
     static const size_t sort_memory = size_t(16) * 1024 * 1024 * 1024; // XXX
     stxxl::sort(lambda_points.begin(), lambda_points.end(),
                 lambda_point::comparator(),
                 sort_memory);
 
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    user_elapsed_secs = (get_user_time_usecs() - user_tick) / 1000000;
     stats_line()
         ("worker_threads", configuration::get().worker_threads)
         ("lambda_sorting_time", elapsed_secs)
-        ("lambda_sorting_user_time", user_elapsed_secs)
         ("is_heuristic", configuration::get().heuristic_greedy)
         ;
 }
@@ -348,7 +342,6 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     lambda_vector_type lambda_points(&lpfile);
 
     double tick = get_time_usecs();
-    double user_tick = get_user_time_usecs();
 
     logger() << "Computing space-time tradeoffs" << std::endl;
     std::vector<uint16_t> block_spaces(num_blocks);
@@ -405,11 +398,9 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     }
 
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    double user_elapsed_secs = (get_user_time_usecs() - user_tick) / 1000000;
     stats_line()
         ("worker_threads", configuration::get().worker_threads)
         ("greedy_time", elapsed_secs)
-        ("greedy_user_time", user_elapsed_secs)
         ;
 
     logger() << "Found trade-off. Space: " << cur_space
@@ -441,7 +432,6 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         ;
 
     tick = get_time_usecs();
-    user_tick = get_user_time_usecs();
 
     typedef typename block_mixed_index::builder builder_type;
     builder_type builder(input_coll.num_docs(), params);
@@ -472,14 +462,12 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     block_mixed_index coll;
     builder.build(coll);
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    user_elapsed_secs = (get_user_time_usecs() - user_tick) / 1000000;
     logger() << "Collection built in "
              << elapsed_secs << " seconds" << std::endl;
 
     stats_line()
         ("worker_threads", configuration::get().worker_threads)
         ("construction_time", elapsed_secs)
-        ("construction_user_time", user_elapsed_secs)
         ;
     dump_stats(coll, "block_mixed", plog.postings);
 

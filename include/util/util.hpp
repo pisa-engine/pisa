@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -49,9 +50,9 @@ namespace ds2i {
     }
 
     inline double get_time_usecs() {
-        timeval tv;
-        gettimeofday(&tv, NULL);
-        return double(tv.tv_sec) * 1000000 + double(tv.tv_usec);
+        auto now = std::chrono::system_clock::now();
+        auto duration = now.time_since_epoch();
+        return std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
     }
 
     inline double get_user_time_usecs() {
