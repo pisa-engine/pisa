@@ -2,7 +2,6 @@
 #include <algorithm>
 
 #include "util/util.hpp"
-#include "succinct/test_common.hpp"
 #include "codec/block_codecs.hpp"
 
 int main()

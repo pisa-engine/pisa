@@ -1,6 +1,6 @@
 #define BOOST_TEST_MODULE block_codecs
 
-#include "succinct/test_common.hpp"
+#include "test_common.hpp"
 #include "codec/block_codecs.hpp"
 #include <vector>
 #include <cstdlib>

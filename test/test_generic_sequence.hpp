@@ -1,6 +1,6 @@
 #pragma once
 
-#include "succinct/test_common.hpp"
+#include "test_common.hpp"
 #include "succinct/bit_vector.hpp"
 #include "util/util.hpp"
 

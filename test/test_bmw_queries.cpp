@@ -1,6 +1,6 @@
 #define BOOST_TEST_MODULE bwm_queries
 
-#include "succinct/test_common.hpp"
+#include "test_common.hpp"
 #include <boost/test/floating_point_comparison.hpp>
 
 #include "ds2i_config.hpp"

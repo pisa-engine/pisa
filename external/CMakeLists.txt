@@ -3,8 +3,6 @@ EXECUTE_PROCESS(COMMAND git submodule update --init
                 OUTPUT_QUIET
         )
 
-# Add succinct
-add_subdirectory(succinct EXCLUDE_FROM_ALL)
 # Add FastPFor
 add_subdirectory(FastPFor EXCLUDE_FROM_ALL)
 # Add cxxopts
