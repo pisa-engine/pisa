@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 #include <iterator>
-#include <stdint.h>
+#include <cstdint>
 
 #include "binary_collection.hpp"
 

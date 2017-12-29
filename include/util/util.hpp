@@ -10,8 +10,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <chrono>
-#include <sys/time.h>
-#include <sys/resource.h>
 
 #include "succinct/broadword.hpp"
 
@@ -53,12 +51,6 @@ namespace ds2i {
         auto now = std::chrono::system_clock::now();
         auto duration = now.time_since_epoch();
         return std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-    }
-
-    inline double get_user_time_usecs() {
-        rusage ru;
-        getrusage(RUSAGE_SELF, &ru);
-        return double(ru.ru_utime.tv_sec) * 1000000 + double(ru.ru_utime.tv_usec);
     }
 
     // stolen from folly

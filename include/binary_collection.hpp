@@ -3,10 +3,12 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <stdexcept>
 #include <iterator>
-#include <stdint.h>
-#include <sys/mman.h>
-
+#include <cstdint>
 #include "util/util.hpp"
+
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+#include <sys/mman.h>
+#endif
 
 namespace ds2i {
 
@@ -23,9 +25,11 @@ namespace ds2i {
             m_data = (posting_type const*)m_file.data();
             m_data_size = m_file.size() / sizeof(m_data[0]);
 
+#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
             // Indicates that the application expects to access this address range in a sequential manner
             auto ret = posix_madvise((void*)m_data, m_data_size, POSIX_MADV_SEQUENTIAL);
             if (ret) logger() << "Error calling madvice: " << errno << std::endl;
+#endif
         }
 
         class iterator;

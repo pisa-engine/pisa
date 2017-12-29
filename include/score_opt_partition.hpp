@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <iterator>
 #include <deque>
-#include <math.h>
 #include "util/util.hpp"
 #include "scorer/bm25.hpp"
 

@@ -1,5 +1,3 @@
-add_executable(drop_caches drop_caches.c)
-
 add_executable(index_perftest index_perftest.cpp)
 target_link_libraries(index_perftest
   ${Boost_LIBRARIES}
