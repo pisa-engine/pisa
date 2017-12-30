@@ -2,8 +2,11 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "block_posting_list.hpp"
 #include "codec/block_codecs.hpp"
+#include "codec/maskedvbyte.hpp"
+#include "codec/streamvbyte.hpp"
+
+#include "block_posting_list.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -97,6 +100,8 @@ BOOST_AUTO_TEST_CASE(block_posting_list)
 {
     test_block_posting_list<ds2i::optpfor_block>();
     test_block_posting_list<ds2i::varint_G8IU_block>();
+    test_block_posting_list<ds2i::streamvbyte_block>();
+    test_block_posting_list<ds2i::maskedvbyte_block>();
     test_block_posting_list<ds2i::interpolative_block>();
 }
 

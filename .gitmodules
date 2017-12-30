@@ -10,3 +10,9 @@
 [submodule "external/CMake-codecov"]
 	path = external/CMake-codecov
 	url = https://github.com/RWTH-HPC/CMake-codecov.git
+[submodule "external/streamvbyte"]
+	path = external/streamvbyte
+	url = https://github.com/lemire/streamvbyte
+[submodule "external/MaskedVByte"]
+	path = external/MaskedVByte
+	url = https://github.com/lemire/MaskedVByte

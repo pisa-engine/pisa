@@ -2,8 +2,11 @@
 
 #include "test_generic_sequence.hpp"
 
-#include "block_freq_index.hpp"
 #include "codec/block_codecs.hpp"
+#include "codec/maskedvbyte.hpp"
+#include "codec/streamvbyte.hpp"
+
+#include "block_freq_index.hpp"
 #include "succinct/mapper.hpp"
 
 #include <vector>
@@ -63,5 +66,7 @@ BOOST_AUTO_TEST_CASE(block_freq_index)
 {
     test_block_freq_index<ds2i::optpfor_block>();
     test_block_freq_index<ds2i::varint_G8IU_block>();
+    test_block_freq_index<ds2i::streamvbyte_block>();
+    test_block_freq_index<ds2i::maskedvbyte_block>();
     test_block_freq_index<ds2i::interpolative_block>();
 }

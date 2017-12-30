@@ -14,11 +14,17 @@ foreach(TEST_SRC ${TEST_SOURCES})
 endforeach(TEST_SRC)
 
 target_link_libraries(test_block_codecs
-    FastPFor)
+    FastPFor
+    streamvbyte
+    MaskedVByte)
 
 target_link_libraries(test_block_posting_list
-    FastPFor)
+    FastPFor
+    streamvbyte
+    MaskedVByte)
 
 target_link_libraries(test_block_freq_index
-    FastPFor)
+    FastPFor
+    streamvbyte
+    MaskedVByte)
 
