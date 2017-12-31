@@ -55,10 +55,10 @@ int main(int argc, const char **argv) {
   if (compress) {
     wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wdata(
         sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type);
-    succinct::mapper::freeze(wdata, output_filename);
+    mapper::freeze(wdata, output_filename);
   } else {
     wand_data<bm25, wand_data_raw<bm25>> wdata(sizes_coll.begin()->begin(),
                                                coll.num_docs(), coll, p_type);
-    succinct::mapper::freeze(wdata, output_filename);
+    mapper::freeze(wdata, output_filename);
   }
 }

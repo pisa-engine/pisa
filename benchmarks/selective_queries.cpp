@@ -17,7 +17,7 @@ void selective_queries(const char* index_filename,
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
     boost::iostreams::mapped_file_source m(index_filename);
-    succinct::mapper::map(index, m, succinct::mapper::map_flags::warmup);
+    mapper::map(index, m, mapper::map_flags::warmup);
 
     logger() << "Performing " << type << " queries" << std::endl;
 

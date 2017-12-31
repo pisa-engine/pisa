@@ -16,12 +16,12 @@ struct sequence_initialization {
         // high granularity to test more corner cases
         params.rb_log_rank1_sampling = 6;
         params.rb_log_sampling1 = 5;
-        succinct::bit_vector_builder bvb;
+        ds2i::bit_vector_builder bvb;
         ds2i::compact_ranked_bitvector::write(bvb,
                                                         seq.begin(),
                                                         universe, seq.size(),
                                                         params);
-        succinct::bit_vector(&bvb).swap(bv);
+        ds2i::bit_vector(&bvb).swap(bv);
     }
 
     ds2i::global_parameters params;
@@ -30,7 +30,7 @@ struct sequence_initialization {
     uint64_t log_rank1_sampling;
     uint64_t log_sampling1;
     std::vector<uint64_t> seq;
-    succinct::bit_vector bv;
+    ds2i::bit_vector bv;
 };
 
 BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_construction,

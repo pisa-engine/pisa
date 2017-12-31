@@ -16,19 +16,19 @@ struct sequence_initialization {
         // high granularity to test more corner cases
         params.ef_log_sampling0 = 4;
         params.ef_log_sampling1 = 5;
-        succinct::bit_vector_builder bvb;
+        ds2i::bit_vector_builder bvb;
         ds2i::compact_elias_fano::write(bvb,
                                                   seq.begin(),
                                                   universe, seq.size(),
                                                   params);
-        succinct::bit_vector(&bvb).swap(bv);
+        ds2i::bit_vector(&bvb).swap(bv);
     }
 
     ds2i::global_parameters params;
     size_t n;
     size_t universe;
     std::vector<uint64_t> seq;
-    succinct::bit_vector bv;
+    ds2i::bit_vector bv;
 };
 
 BOOST_FIXTURE_TEST_CASE(compact_elias_fano_singleton,

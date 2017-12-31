@@ -10,7 +10,7 @@ template<typename InputCollection, typename Collection>
 void verify_collection(InputCollection const &input, const char *filename) {
     Collection coll;
     boost::iostreams::mapped_file_source m(filename);
-    succinct::mapper::map(coll, m);
+    ds2i::mapper::map(coll, m);
     size_t size=0;
     logger() << "Checking the written data, just to be extra safe..." << std::endl;
     size_t s = 0;

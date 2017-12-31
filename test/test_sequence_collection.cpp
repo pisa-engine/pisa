@@ -31,13 +31,13 @@ void test_sequence_collection()
     {
         collection_type coll;
         b.build(coll);
-        succinct::mapper::freeze(coll, "temp.bin");
+        ds2i::mapper::freeze(coll, "temp.bin");
     }
 
     {
         collection_type coll;
         boost::iostreams::mapped_file_source m("temp.bin");
-        succinct::mapper::map(coll, m);
+        ds2i::mapper::map(coll, m);
 
         for (size_t i = 0; i < sequences.size(); ++i) {
             test_sequence(coll[i], sequences[i]);

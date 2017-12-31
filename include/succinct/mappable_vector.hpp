@@ -9,11 +9,9 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
 
-#include <stdint.h>
-
 #include "succinct/intrinsics.hpp"
 
-namespace succinct { namespace mapper {
+namespace ds2i { namespace mapper {
 
     namespace detail {
         class freeze_visitor;
@@ -24,7 +22,7 @@ namespace succinct { namespace mapper {
     typedef boost::function<void()> deleter_t;
 
     template <typename T> // T must be a POD
-    class mappable_vector : boost::noncopyable {
+    class mappable_vector {
     public:
         typedef T value_type;
         typedef const T* iterator;
@@ -35,6 +33,8 @@ namespace succinct { namespace mapper {
             , m_size(0)
             , m_deleter()
         {}
+        mappable_vector(const mappable_vector &) = delete;
+        mappable_vector &operator=(const mappable_vector &) = delete;
 
         template <typename Range>
         mappable_vector(Range const& from)
@@ -108,7 +108,7 @@ namespace succinct { namespace mapper {
         }
 
         inline void prefetch(size_t i) const {
-            succinct::intrinsics::prefetch(m_data + i);
+            intrinsics::prefetch(m_data + i);
         }
 
         friend class detail::freeze_visitor;

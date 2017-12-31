@@ -75,8 +75,8 @@ namespace ds2i {
             friend class wand_data_raw;
         public:
 
-            enumerator(uint32_t _block_start, uint32_t _block_number, succinct::mapper::mappable_vector<float> const & max_term_weight,
-            succinct::mapper::mappable_vector<uint32_t> const & block_docid) :
+            enumerator(uint32_t _block_start, uint32_t _block_number, mapper::mappable_vector<float> const & max_term_weight,
+            mapper::mappable_vector<uint32_t> const & block_docid) :
                     cur_pos(0),
                     block_start(_block_start),
                     block_number(_block_number),
@@ -111,8 +111,8 @@ namespace ds2i {
             uint64_t cur_pos;
             uint64_t block_start;
             uint64_t block_number;
-            succinct::mapper::mappable_vector<float> const &m_block_max_term_weight;
-            succinct::mapper::mappable_vector<uint32_t> const &m_block_docid;
+            mapper::mappable_vector<float> const &m_block_max_term_weight;
+            mapper::mappable_vector<uint32_t> const &m_block_docid;
 
         };
 
@@ -130,9 +130,9 @@ namespace ds2i {
 
     private:
 
-        succinct::mapper::mappable_vector<uint64_t> m_blocks_start;
-        succinct::mapper::mappable_vector<float> m_block_max_term_weight;
-        succinct::mapper::mappable_vector<uint32_t> m_block_docid;
+        mapper::mappable_vector<uint64_t> m_blocks_start;
+        mapper::mappable_vector<float> m_block_max_term_weight;
+        mapper::mappable_vector<uint32_t> m_block_docid;
 
     };
 

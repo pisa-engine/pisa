@@ -7,7 +7,7 @@
 
 BOOST_AUTO_TEST_CASE(basic_map)
 {
-    succinct::mapper::mappable_vector<int> vec;
+    ds2i::mapper::mappable_vector<int> vec;
     BOOST_REQUIRE_EQUAL(vec.size(), 0U);
 
     int nums[] = {1, 2, 3, 4};
@@ -17,12 +17,12 @@ BOOST_AUTO_TEST_CASE(basic_map)
     BOOST_REQUIRE_EQUAL(1, vec[0]);
     BOOST_REQUIRE_EQUAL(4, vec[3]);
 
-    succinct::mapper::freeze(vec, "temp.bin");
+    ds2i::mapper::freeze(vec, "temp.bin");
 
     {
-        succinct::mapper::mappable_vector<int> mapped_vec;
+        ds2i::mapper::mappable_vector<int> mapped_vec;
         boost::iostreams::mapped_file_source m("temp.bin");
-        succinct::mapper::map(mapped_vec, m);
+        ds2i::mapper::map(mapped_vec, m);
         BOOST_REQUIRE_EQUAL(vec.size(), mapped_vec.size());
         BOOST_REQUIRE(std::equal(vec.begin(), vec.end(), mapped_vec.begin()));
     }
@@ -51,16 +51,16 @@ public:
     }
 
     uint64_t m_a;
-    succinct::mapper::mappable_vector<uint32_t> m_b;
+    ds2i::mapper::mappable_vector<uint32_t> m_b;
 };
 
 BOOST_AUTO_TEST_CASE(complex_struct_map)
 {
     complex_struct s;
     s.init();
-    succinct::mapper::freeze(s, "temp.bin");
+    ds2i::mapper::freeze(s, "temp.bin");
 
-    BOOST_REQUIRE_EQUAL(24, succinct::mapper::size_of(s));
+    BOOST_REQUIRE_EQUAL(24, ds2i::mapper::size_of(s));
 
     complex_struct mapped_s;
     BOOST_REQUIRE_EQUAL(0, mapped_s.m_a);
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(complex_struct_map)
 
     {
         boost::iostreams::mapped_file_source m("temp.bin");
-        succinct::mapper::map(mapped_s, m);
+        ds2i::mapper::map(mapped_s, m);
         BOOST_REQUIRE_EQUAL(s.m_a, mapped_s.m_a);
         BOOST_REQUIRE_EQUAL(s.m_b.size(), mapped_s.m_b.size());
     }

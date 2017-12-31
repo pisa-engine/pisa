@@ -80,7 +80,7 @@ namespace ds2i {
         IndexType index;
         logger() << "Loading index from " << index_filename << std::endl;
         boost::iostreams::mapped_file_source m(index_filename);
-        succinct::mapper::map(index, m);
+        mapper::map(index, m);
 
         std::vector<uint32_t> values;
 

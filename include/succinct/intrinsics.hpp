@@ -16,7 +16,7 @@
 #define __INTRIN_INLINE inline
 #endif
 
-namespace succinct {
+namespace ds2i {
 namespace intrinsics {
 
 __INTRIN_INLINE uint64_t byteswap64(uint64_t value) {

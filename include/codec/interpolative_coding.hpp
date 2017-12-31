@@ -41,7 +41,7 @@ namespace ds2i {
         {
             assert(u > 0);
             assert(val < u);
-            auto b = succinct::broadword::msb(u);
+            auto b = broadword::msb(u);
             uint64_t m = (uint64_t(1) << (b + 1)) - u;
 
             if (val < m) {
@@ -109,7 +109,7 @@ namespace ds2i {
         uint32_t read_int(uint32_t u)
         {
             assert(u > 0);
-            auto b = succinct::broadword::msb(u);
+            auto b = broadword::msb(u);
             uint64_t m = (uint64_t(1) << (b + 1)) - u;
 
             uint32_t val = read(b);

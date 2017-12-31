@@ -17,7 +17,7 @@
 
 namespace ds2i {
 namespace {
-    static const size_t score_bits_size = succinct::broadword::msb(configuration::get().reference_size);
+    static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
 }
 
     class uniform_score_compressor{
@@ -60,7 +60,7 @@ namespace {
                 }
 
                 if (!n) throw std::invalid_argument("List must be nonempty");
-                succinct::bit_vector_builder docs_bits;
+                bit_vector_builder docs_bits;
                 write_gamma_nonzero(docs_bits, n);
                 Sequence::write(docs_bits, temp.begin(),
                                 m_num_docs, n,

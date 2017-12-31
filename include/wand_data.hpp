@@ -80,7 +80,7 @@ namespace ds2i {
 
     private:
         block_wand_type m_block_wand;
-        succinct::mapper::mappable_vector<float> m_norm_lens;
-        succinct::mapper::mappable_vector<float> m_max_term_weight;
+        mapper::mappable_vector<float> m_norm_lens;
+        mapper::mappable_vector<float> m_max_term_weight;
     };
 }

@@ -13,7 +13,7 @@ namespace ds2i {
         typedef typename base_sequence_type::enumerator base_sequence_enumerator;
 
         template <typename Iterator>
-        static void write(succinct::bit_vector_builder& bvb,
+        static void write(bit_vector_builder& bvb,
                           Iterator begin,
                           uint64_t universe, uint64_t n,
                           global_parameters const& params)
@@ -38,7 +38,7 @@ namespace ds2i {
             enumerator()
             {}
 
-            enumerator(succinct::bit_vector const& bv, uint64_t offset,
+            enumerator(bit_vector const& bv, uint64_t offset,
                        uint64_t universe, uint64_t n,
                        global_parameters const& params)
                 : m_base_enum(bv, offset, universe, n, params)

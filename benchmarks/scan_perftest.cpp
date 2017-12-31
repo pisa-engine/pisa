@@ -15,7 +15,7 @@ void perftest(const char* index_filename)
     logger() << "Loading collection from " << index_filename << std::endl;
     collection_type coll;
     boost::iostreams::mapped_file_source m(index_filename);
-    succinct::mapper::map(coll, m, succinct::mapper::map_flags::warmup);
+    ds2i::mapper::map(coll, m, ds2i::mapper::map_flags::warmup);
 
     if (true) {
         logger() << "Scanning all the posting lists" << std::endl;

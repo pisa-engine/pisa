@@ -24,7 +24,7 @@ namespace ds2i {
                 , log_sampling0(params.ef_log_sampling0)
                 , log_sampling1(params.ef_log_sampling1)
 
-                , lower_bits(universe > n ? succinct::broadword::msb(universe / n) : 0)
+                , lower_bits(universe > n ? broadword::msb(universe / n) : 0)
                 , mask((uint64_t(1) << lower_bits) - 1)
                   // pad with a zero on both sides as sentinels
                 , higher_bits_length(n + (universe >> lower_bits) + 2)
@@ -67,12 +67,12 @@ namespace ds2i {
         }
 
         template <typename Iterator>
-        static void write(succinct::bit_vector_builder& bvb,
+        static void write(bit_vector_builder& bvb,
                           Iterator begin,
                           uint64_t universe, uint64_t n,
                           global_parameters const& params)
         {
-            using succinct::util::ceil_div;
+            using util::ceil_div;
             uint64_t base_offset = bvb.size();
             offsets of(base_offset, universe, n, params);
             // initialize all the bits to 0
@@ -146,7 +146,7 @@ namespace ds2i {
             enumerator()
             {}
 
-            enumerator(succinct::bit_vector const& bv, uint64_t offset,
+            enumerator(bit_vector const& bv, uint64_t offset,
                        uint64_t universe, uint64_t n,
                        global_parameters const& params)
                 : m_bv(&bv)
@@ -170,7 +170,7 @@ namespace ds2i {
                     if (DS2I_UNLIKELY(m_position == size())) {
                         m_value = m_of.universe;
                     } else {
-                        succinct::bit_vector::unary_enumerator he = m_high_enumerator;
+                        bit_vector::unary_enumerator he = m_high_enumerator;
                         for (size_t i = 0; i < skip; ++i) {
                             he.next();
                         }
@@ -285,7 +285,7 @@ namespace ds2i {
                     uint64_t ptr = position >> m_of.log_sampling1;
                     uint64_t high_pos = pointer1(ptr);
                     uint64_t high_rank = ptr << m_of.log_sampling1;
-                    m_high_enumerator = succinct::bit_vector::unary_enumerator
+                    m_high_enumerator = bit_vector::unary_enumerator
                         (*m_bv, m_of.higher_bits_offset + high_pos);
                     to_skip = position - high_rank;
                 }
@@ -319,7 +319,7 @@ namespace ds2i {
                     uint64_t high_pos = pointer0(ptr);
                     uint64_t high_rank0 = ptr << m_of.log_sampling0;
 
-                    m_high_enumerator = succinct::bit_vector::unary_enumerator
+                    m_high_enumerator = bit_vector::unary_enumerator
                         (*m_bv, m_of.higher_bits_offset + high_pos);
                     to_skip = high_lower_bound - high_rank0;
                 }
@@ -386,9 +386,9 @@ namespace ds2i {
                 }
 
                 enumerator& e;
-                succinct::bit_vector::unary_enumerator high_enumerator;
+                bit_vector::unary_enumerator high_enumerator;
                 uint64_t high_base, lower_bits, lower_base, mask;
-                succinct::bit_vector const& bv;
+                bit_vector const& bv;
             };
 
             inline uint64_t pointer(uint64_t offset, uint64_t i) const
@@ -412,12 +412,12 @@ namespace ds2i {
                 return pointer(m_of.pointers1_offset, i);
             }
 
-            succinct::bit_vector const* m_bv;
+            bit_vector const* m_bv;
             offsets m_of;
 
             uint64_t m_position;
             uint64_t m_value;
-            succinct::bit_vector::unary_enumerator m_high_enumerator;
+            bit_vector::unary_enumerator m_high_enumerator;
         };
 
     };

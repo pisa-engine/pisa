@@ -64,7 +64,7 @@ void perftest(IndexType const& index, std::string const& type)
             if (size < min_length) continue;
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
-            for (size_t i = 0; i < std::min(succinct::util::ceil_div(size, skip),
+            for (size_t i = 0; i < std::min(ds2i::util::ceil_div(size, skip),
                                             max_calls_per_list); ++i) {
                 reader.move(i * skip);
                 skip_values.back().second.push_back(reader.docid());
@@ -105,7 +105,7 @@ void perftest(const char* index_filename, std::string const& type)
     logger() << "Loading index from " << index_filename << std::endl;
     IndexType index;
     boost::iostreams::mapped_file_source m(index_filename);
-    succinct::mapper::map(index, m, succinct::mapper::map_flags::warmup);
+    ds2i::mapper::map(index, m, ds2i::mapper::map_flags::warmup);
 
     perftest<IndexType, false>(index, type);
     perftest<IndexType, true>(index, type);

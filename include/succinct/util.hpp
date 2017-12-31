@@ -10,7 +10,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
 
-namespace succinct { namespace util {
+namespace ds2i { namespace util {
 
     inline void trim_newline_chars(std::string& s)
     {

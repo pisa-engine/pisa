@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-namespace succinct { namespace tables {
+namespace ds2i { namespace tables {
 
     const uint8_t select_in_byte[2048] = {
         8, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0, 5, 0, 1, 0, 2, 0, 1,

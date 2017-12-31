@@ -41,7 +41,7 @@ struct indexed_sequence {
     }
 
     template <typename Iterator>
-    static void write(succinct::bit_vector_builder &bvb,
+    static void write(bit_vector_builder &bvb,
                       Iterator begin,
                       uint64_t universe,
                       uint64_t n,
@@ -86,7 +86,7 @@ struct indexed_sequence {
 
         enumerator() {}
 
-        enumerator(succinct::bit_vector const &bv,
+        enumerator(bit_vector const &bv,
                    uint64_t offset,
                    uint64_t universe,
                    uint64_t n,

@@ -14,7 +14,7 @@ namespace ds2i {
         }
 
         template <typename Iterator>
-        static void write(succinct::bit_vector_builder&,
+        static void write(bit_vector_builder&,
                           Iterator,
                           uint64_t universe, uint64_t n,
                           global_parameters const&)
@@ -27,7 +27,7 @@ namespace ds2i {
 
             typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
 
-            enumerator(succinct::bit_vector const&, uint64_t,
+            enumerator(bit_vector const&, uint64_t,
                        uint64_t universe, uint64_t n,
                        global_parameters const&)
                 : m_universe(universe)

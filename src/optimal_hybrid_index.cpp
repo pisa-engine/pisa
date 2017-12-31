@@ -126,7 +126,7 @@ struct lambdas_computer : ds2i::semiasync_queue::job {
             append_lambdas(freqs_sts, cur_block_id++);
         }
 
-        succinct::util::dispose(m_counts);
+        util::dispose(m_counts);
     }
 
     virtual void commit()
@@ -309,7 +309,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
     InputCollectionType input_coll;
     boost::iostreams::mapped_file_source m(input_filename);
-    succinct::mapper::map(input_coll, m);
+    mapper::map(input_coll, m);
 
     logger() << "Processing " << input_coll.size() << " posting lists" << std::endl;
     size_t num_blocks = 0;
@@ -319,7 +319,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         auto e = input_coll[l];
         num_blocks += 2 * e.num_blocks();
         // list length in vbyte
-        space_base += succinct::util::ceil_div(succinct::broadword::msb(e.size()) + 1, 7);
+        space_base += util::ceil_div(broadword::msb(e.size()) + 1, 7);
         space_base += e.num_blocks() * 4; // max docid
         space_base += (e.num_blocks() - 1) * 4; // endpoint
         if (e.size() % mixed_block::block_size != 0) {
@@ -389,8 +389,8 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         }
     }
 
-    succinct::util::dispose(block_spaces);
-    succinct::util::dispose(block_times);
+    util::dispose(block_spaces);
+    util::dispose(block_times);
 
     if (budget == 0) {
         logger() << "Done" << std::endl;
@@ -472,7 +472,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     dump_stats(coll, "block_mixed", plog.postings);
 
     if (output_filename) {
-        succinct::mapper::freeze(coll, output_filename);
+        mapper::freeze(coll, output_filename);
     }
 }
 

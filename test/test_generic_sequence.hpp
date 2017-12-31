@@ -195,9 +195,9 @@ inline void test_sequence(SequenceType,
                           uint64_t universe,
                           std::vector<uint64_t> const& seq)
 {
-    succinct::bit_vector_builder bvb;
+    ds2i::bit_vector_builder bvb;
     SequenceType::write(bvb, seq.begin(), universe, seq.size(), params);
-    succinct::bit_vector bv(&bvb);
+    ds2i::bit_vector bv(&bvb);
     typename SequenceType::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
 }

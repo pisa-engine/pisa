@@ -61,13 +61,13 @@ void profile(const char* index_filename,
     typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
     logger() << "Loading index from " << index_filename << std::endl;
     boost::iostreams::mapped_file_source m(index_filename);
-    succinct::mapper::map(index, m);
+    mapper::map(index, m);
 
     WandType wdata;
     boost::iostreams::mapped_file_source md;
     if (wand_data_filename) {
         md.open(wand_data_filename);
-        succinct::mapper::map(wdata, md, succinct::mapper::map_flags::warmup);
+        mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
     logger() << "Performing " << type << " queries" << std::endl;

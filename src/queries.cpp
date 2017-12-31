@@ -78,7 +78,7 @@ void perftest(const char *index_filename,
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
     boost::iostreams::mapped_file_source m(index_filename);
-    succinct::mapper::map(index, m);
+    mapper::map(index, m);
 
     logger() << "Warming up posting lists" << std::endl;
     std::unordered_set<term_id_type> warmed_up;
@@ -98,7 +98,7 @@ void perftest(const char *index_filename,
     boost::iostreams::mapped_file_source md;
     if (wand_data_filename) {
         md.open(wand_data_filename);
-        succinct::mapper::map(wdata, md, succinct::mapper::map_flags::warmup);
+        mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
     logger() << "Performing " << type << " queries" << std::endl;

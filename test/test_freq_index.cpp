@@ -43,13 +43,13 @@ void test_freq_index()
     {
         collection_type coll;
         b.build(coll);
-        succinct::mapper::freeze(coll, "temp.bin");
+        ds2i::mapper::freeze(coll, "temp.bin");
     }
 
     {
         collection_type coll;
         boost::iostreams::mapped_file_source m("temp.bin");
-        succinct::mapper::map(coll, m);
+        ds2i::mapper::map(coll, m);
 
         for (size_t i = 0; i < posting_lists.size(); ++i) {
             auto const& plist = posting_lists[i];

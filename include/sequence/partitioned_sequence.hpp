@@ -19,7 +19,7 @@ namespace ds2i {
         typedef typename base_sequence_type::enumerator base_sequence_enumerator;
 
         template <typename Iterator>
-        static void write(succinct::bit_vector_builder& bvb,
+        static void write(bit_vector_builder& bvb,
                           Iterator begin,
                           uint64_t universe, uint64_t n,
                           global_parameters const& params)
@@ -61,7 +61,7 @@ namespace ds2i {
                                           cur_partition.size(),
                                           params);
             } else {
-                succinct::bit_vector_builder bv_sequences;
+                bit_vector_builder bv_sequences;
                 std::vector<uint64_t> endpoints;
                 std::vector<uint64_t> upper_bounds;
 
@@ -89,12 +89,12 @@ namespace ds2i {
                     cur_base = upper_bound + 1;
                 }
 
-                succinct::bit_vector_builder bv_sizes;
+                bit_vector_builder bv_sizes;
                 compact_elias_fano::write(bv_sizes, partition.begin(),
                                           n, partitions - 1,
                                           params);
 
-                succinct::bit_vector_builder bv_upper_bounds;
+                bit_vector_builder bv_upper_bounds;
                 compact_elias_fano::write(bv_upper_bounds, upper_bounds.begin(),
                                           universe, partitions + 1,
                                           params);
@@ -121,7 +121,7 @@ namespace ds2i {
             enumerator()
             {}
 
-            enumerator(succinct::bit_vector const& bv, uint64_t offset,
+            enumerator(bit_vector const& bv, uint64_t offset,
                        uint64_t universe, uint64_t n,
                        global_parameters const& params)
                 : m_params(params)
@@ -129,7 +129,7 @@ namespace ds2i {
                 , m_universe(universe)
                 , m_bv(&bv)
             {
-                succinct::bit_vector::enumerator it(bv, offset);
+                bit_vector::enumerator it(bv, offset);
                 m_partitions = read_gamma_nonzero(it);
                 if (m_partitions == 1) {
                     m_cur_partition = 0;
@@ -335,7 +335,7 @@ namespace ds2i {
             uint64_t m_cur_base;
             uint64_t m_cur_upper_bound;
 
-            succinct::bit_vector const* m_bv;
+            bit_vector const* m_bv;
             compact_elias_fano::enumerator m_sizes;
             compact_elias_fano::enumerator m_upper_bounds;
             base_sequence_enumerator m_partition_enum;

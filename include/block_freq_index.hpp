@@ -56,11 +56,11 @@ namespace ds2i {
                 sq.m_num_docs = m_num_docs;
                 sq.m_lists.steal(m_lists);
 
-                succinct::bit_vector_builder bvb;
+                bit_vector_builder bvb;
                 compact_elias_fano::write(bvb, m_endpoints.begin(),
                                           sq.m_lists.size(), sq.m_size,
                                           m_params); // XXX
-                succinct::bit_vector(&bvb).swap(sq.m_endpoints);
+                bit_vector(&bvb).swap(sq.m_endpoints);
             }
 
         private:
@@ -137,7 +137,7 @@ namespace ds2i {
         global_parameters m_params;
         size_t m_size;
         size_t m_num_docs;
-        succinct::bit_vector m_endpoints;
-        succinct::mapper::mappable_vector<uint8_t> m_lists;
+        bit_vector m_endpoints;
+        mapper::mappable_vector<uint8_t> m_lists;
     };
 }

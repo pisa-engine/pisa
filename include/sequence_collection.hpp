@@ -77,7 +77,7 @@ namespace ds2i {
                 Iterator begin;
                 uint64_t last_element;
                 uint64_t n;
-                succinct::bit_vector_builder bits;
+                bit_vector_builder bits;
             };
 
             semiasync_queue m_queue;

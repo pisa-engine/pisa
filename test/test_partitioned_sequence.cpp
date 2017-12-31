@@ -49,9 +49,9 @@ void test_partitioned_sequence(uint64_t universe,
     ds2i::global_parameters params;
     typedef ds2i::partitioned_sequence<BaseSequence> sequence_type;
 
-    succinct::bit_vector_builder bvb;
+    ds2i::bit_vector_builder bvb;
     sequence_type::write(bvb, seq.begin(), universe, seq.size(), params);
-    succinct::bit_vector bv(&bvb);
+    ds2i::bit_vector bv(&bvb);
 
     typename sequence_type::enumerator r(bv, 0, universe, seq.size(), params);
     ds2i::partitioned_sequence_test::test_construction(r, seq);

@@ -56,12 +56,12 @@ namespace ds2i {
         }
 
         template <typename Iterator>
-        static void write(succinct::bit_vector_builder& bvb,
+        static void write(bit_vector_builder& bvb,
                           Iterator begin,
                           uint64_t universe, uint64_t n,
                           global_parameters const& params)
         {
-            using succinct::util::ceil_div;
+            using util::ceil_div;
 
             uint64_t base_offset = bvb.size();
             offsets of(base_offset, universe, n, params);
@@ -119,7 +119,7 @@ namespace ds2i {
 
             typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
 
-            enumerator(succinct::bit_vector const& bv, uint64_t offset,
+            enumerator(bit_vector const& bv, uint64_t offset,
                        uint64_t universe, uint64_t n,
                        global_parameters const& params)
                 : m_bv(&bv)
@@ -143,7 +143,7 @@ namespace ds2i {
                     if (DS2I_UNLIKELY(m_position == size())) {
                         m_value = m_of.universe;
                     } else {
-                        succinct::bit_vector::unary_enumerator he = m_enumerator;
+                        bit_vector::unary_enumerator he = m_enumerator;
                         for (size_t i = 0; i < skip; ++i) {
                             he.next();
                         }
@@ -167,7 +167,7 @@ namespace ds2i {
                 if (DS2I_LIKELY(lower_bound > m_value
                            && diff <= linear_scan_threshold)) {
                     // optimize small skips
-                    succinct::bit_vector::unary_enumerator he = m_enumerator;
+                    bit_vector::unary_enumerator he = m_enumerator;
                     uint64_t val;
                     do {
                         m_position += 1;
@@ -241,7 +241,7 @@ namespace ds2i {
                     uint64_t ptr = position >> m_of.log_sampling1;
                     uint64_t ptr_pos = pointer1(ptr);
 
-                    m_enumerator = succinct::bit_vector::unary_enumerator
+                    m_enumerator = bit_vector::unary_enumerator
                               (*m_bv, m_of.bits_offset + ptr_pos);
                     to_skip = position - (ptr << m_of.log_sampling1);
                 }
@@ -256,14 +256,14 @@ namespace ds2i {
 
             value_type DS2I_NOINLINE slow_next_geq(uint64_t lower_bound)
             {
-                using succinct::broadword::popcount;
+                using broadword::popcount;
 
                 if (DS2I_UNLIKELY(lower_bound >= m_of.universe)) {
                     return move(size());
                 }
 
                 uint64_t skip = lower_bound - m_value;
-                m_enumerator = succinct::bit_vector::unary_enumerator
+                m_enumerator = bit_vector::unary_enumerator
                     (*m_bv, m_of.bits_offset + lower_bound);
 
                 uint64_t begin;
@@ -337,12 +337,12 @@ namespace ds2i {
                                m_of.rank1_sample_size);
             }
 
-            succinct::bit_vector const* m_bv;
+            bit_vector const* m_bv;
             offsets m_of;
 
             uint64_t m_position;
             uint64_t m_value;
-            succinct::bit_vector::unary_enumerator m_enumerator;
+            bit_vector::unary_enumerator m_enumerator;
         };
     };
 }

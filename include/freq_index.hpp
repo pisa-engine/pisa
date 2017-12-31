@@ -33,7 +33,7 @@ namespace ds2i {
                 auto const& conf = configuration::get();
                 task_region(*conf.executor, [&](task_region_handle& trh) {
                         trh.run([&] {
-                                succinct::bit_vector_builder docs_bits;
+                                bit_vector_builder docs_bits;
 
                                 write_gamma_nonzero(docs_bits, occurrences);
                                 if (occurrences > 1) {
@@ -46,7 +46,7 @@ namespace ds2i {
                                 m_docs_sequences.append(docs_bits);
                             });
 
-                        succinct::bit_vector_builder freqs_bits;
+                        bit_vector_builder freqs_bits;
                         FreqsSequence::write(freqs_bits, freqs_begin,
                                              occurrences + 1, n,
                                              m_params);

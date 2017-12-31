@@ -34,7 +34,7 @@ namespace ds2i {
     void get_size_stats(freq_index<DocsSequence, FreqsSequence>& coll,
                         uint64_t& docs_size, uint64_t& freqs_size)
     {
-        auto size_tree = succinct::mapper::size_tree_of(coll);
+        auto size_tree = mapper::size_tree_of(coll);
         size_tree->dump();
         for (auto const& node: size_tree->children) {
             if (node->name == "m_docs_sequences") {
@@ -49,7 +49,7 @@ namespace ds2i {
     void get_size_stats(block_freq_index<BlockCodec, Profile>& coll,
                         uint64_t& docs_size, uint64_t& freqs_size)
     {
-        auto size_tree = succinct::mapper::size_tree_of(coll);
+        auto size_tree = mapper::size_tree_of(coll);
         size_tree->dump();
         uint64_t total_size = 0;
         for (auto const& node: size_tree->children) {

@@ -4,7 +4,7 @@
 #include "succinct/intrinsics.hpp"
 #include "succinct/tables.hpp"
 
-namespace succinct { namespace broadword {
+namespace ds2i { namespace broadword {
 
     static const uint64_t ones_step_4  = 0x1111111111111111ULL;
     static const uint64_t ones_step_8  = 0x0101010101010101ULL;

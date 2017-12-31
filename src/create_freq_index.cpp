@@ -85,7 +85,7 @@ void create_collection(InputCollection const &input,
     dump_index_specific_stats(coll, seq_type);
 
     if (output_filename) {
-        succinct::mapper::freeze(coll, output_filename.value().c_str());
+        mapper::freeze(coll, output_filename.value().c_str());
         if (check) {
             verify_collection<InputCollection, CollectionType>(input,
                                                                output_filename.value().c_str());
