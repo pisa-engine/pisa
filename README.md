@@ -1,4 +1,4 @@
-# Search Engine for Academic Research (SERA)
+# Sera: Search Engine for Academic Research 
 
 [![Build Status](https://travis-ci.com/amallia/sera.svg?token=2Cpy658AqNAqbjLFA4Z2&branch=master)](https://travis-ci.com/amallia/sera)
 [![codecov](https://codecov.io/gh/amallia/sera/branch/master/graph/badge.svg?token=RrfvWe6gol)](https://codecov.io/gh/amallia/sera)
