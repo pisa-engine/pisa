@@ -126,7 +126,7 @@ struct lambdas_computer : ds2i::semiasync_queue::job {
             append_lambdas(freqs_sts, cur_block_id++);
         }
 
-        util::dispose(m_counts);
+        dispose(m_counts);
     }
 
     virtual void commit()
@@ -319,7 +319,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         auto e = input_coll[l];
         num_blocks += 2 * e.num_blocks();
         // list length in vbyte
-        space_base += util::ceil_div(broadword::msb(e.size()) + 1, 7);
+        space_base += ceil_div(broadword::msb(e.size()) + 1, 7);
         space_base += e.num_blocks() * 4; // max docid
         space_base += (e.num_blocks() - 1) * 4; // endpoint
         if (e.size() % mixed_block::block_size != 0) {
@@ -389,8 +389,8 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         }
     }
 
-    util::dispose(block_spaces);
-    util::dispose(block_times);
+    dispose(block_spaces);
+    dispose(block_times);
 
     if (budget == 0) {
         logger() << "Done" << std::endl;

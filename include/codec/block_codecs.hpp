@@ -4,7 +4,6 @@
 #include "FastPFor/headers/variablebyte.h"
 
 #include "VarIntG8IU.h"
-#include "succinct/util.hpp"
 #include "interpolative_coding.hpp"
 #include "util/util.hpp"
 
@@ -124,7 +123,7 @@ namespace ds2i {
             bw.write_interpolative(inbuf.data(), n - 1, 0, sum_of_values);
             uint8_t const* bufptr = (uint8_t const*)outbuf.data();
             out.insert(out.end(), bufptr,
-                       bufptr + util::ceil_div(bw.size(), 8));
+                       bufptr + ceil_div(bw.size(), 8));
         }
 
         static uint8_t const* DS2I_NOINLINE decode(uint8_t const* in, uint32_t* out,
@@ -144,7 +143,7 @@ namespace ds2i {
                 for (size_t i = n - 1; i > 0; --i) {
                     out[i] -= out[i - 1];
                 }
-                read_interpolative = util::ceil_div(br.position(), 8);
+                read_interpolative = ceil_div(br.position(), 8);
             }
 
             return inbuf + read_interpolative;

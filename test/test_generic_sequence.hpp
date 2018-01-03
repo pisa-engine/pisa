@@ -1,7 +1,7 @@
 #pragma once
 
 #include "test_common.hpp"
-#include "succinct/bit_vector.hpp"
+#include "bit_vector.hpp"
 #include "util/util.hpp"
 
 std::vector<uint64_t> random_sequence(size_t universe, size_t n,

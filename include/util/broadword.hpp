@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-#include "succinct/intrinsics.hpp"
-#include "succinct/tables.hpp"
+#include "util/intrinsics.hpp"
+#include "util/tables.hpp"
 
 namespace ds2i { namespace broadword {
 

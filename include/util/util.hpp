@@ -11,7 +11,7 @@
 #include <cstring>
 #include <chrono>
 
-#include "succinct/broadword.hpp"
+#include "util/broadword.hpp"
 
 #define DS2I_LIKELY(x) __builtin_expect(!!(x), 1)
 #define DS2I_UNLIKELY(x) __builtin_expect(!!(x), 0)
@@ -25,6 +25,20 @@
 #endif
 
 namespace ds2i {
+
+    template <typename IntType1, typename IntType2>
+    inline IntType1 ceil_div(IntType1 dividend, IntType2 divisor)
+    {
+        // XXX(ot): put some static check that IntType1 >= IntType2
+        IntType1 d = IntType1(divisor);
+        return IntType1(dividend + d - 1) / d;
+    }
+
+    template <typename T>
+    inline void dispose(T& t)
+    {
+        T().swap(t);
+    }
 
     inline uint64_t ceil_log2(const uint64_t x) {
         assert(x > 0);

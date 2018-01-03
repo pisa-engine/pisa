@@ -4,14 +4,15 @@
 
 #include <boost/range.hpp>
 
-#include "succinct/broadword.hpp"
+#include "util/broadword.hpp"
+#include "util/util.hpp"
+
 #include "succinct/mappable_vector.hpp"
-#include "succinct/util.hpp"
 
 namespace ds2i {
 
 namespace detail {
-inline size_t words_for(uint64_t n) { return util::ceil_div(n, 64); }
+inline size_t words_for(uint64_t n) { return ceil_div(n, 64); }
 } // namespace detail
 
 class bit_vector_builder {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "succinct/util.hpp"
 #include "codec/block_codecs.hpp"
 #include "util/util.hpp"
 #include "util/block_profiler.hpp"
@@ -16,7 +15,7 @@ namespace ds2i {
             TightVariableByte::encode_single(n, out);
 
             uint64_t block_size = BlockCodec::block_size;
-            uint64_t blocks = util::ceil_div(n, block_size);
+            uint64_t blocks = ceil_div(n, block_size);
             size_t begin_block_maxs = out.size();
             size_t begin_block_endpoints = begin_block_maxs + 4 * blocks;
             size_t begin_blocks = begin_block_endpoints + 4 * (blocks - 1);
@@ -87,7 +86,7 @@ namespace ds2i {
                                 size_t term_id = 0)
                 : m_n(0) // just to silence warnings
                 , m_base(TightVariableByte::decode(data, &m_n, 1))
-                , m_blocks(util::ceil_div(m_n, BlockCodec::block_size))
+                , m_blocks(ceil_div(m_n, BlockCodec::block_size))
                 , m_block_maxs(m_base)
                 , m_block_endpoints(m_block_maxs + 4 * m_blocks)
                 , m_blocks_data(m_block_endpoints + 4 * (m_blocks - 1))

@@ -6,7 +6,7 @@
 #include <boost/foreach.hpp>
 
 #include "succinct/mapper.hpp"
-#include "succinct/bit_vector.hpp"
+#include "bit_vector.hpp"
 
 BOOST_AUTO_TEST_CASE(bit_vector)
 {

@@ -22,7 +22,6 @@ namespace ds2i {
                           uint64_t universe, uint64_t n,
                           global_parameters const& params)
         {
-            using util::ceil_div;
             assert(n > 0);
             uint64_t partition_size = uint64_t(1) << params.log_partition_size;
             size_t partitions = ceil_div(n, partition_size);

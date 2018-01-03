@@ -3,7 +3,7 @@
 #include <vector>
 #include <cstdint>
 
-#include "succinct/broadword.hpp"
+#include "util/broadword.hpp"
 
 namespace ds2i {
 

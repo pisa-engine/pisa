@@ -1,8 +1,8 @@
 #pragma once
 
 #include <stdexcept>
-#include "succinct/bit_vector.hpp"
-#include "succinct/broadword.hpp"
+#include "bit_vector.hpp"
+#include "util/broadword.hpp"
 
 #include "global_parameters.hpp"
 #include "util/util.hpp"
@@ -72,7 +72,6 @@ namespace ds2i {
                           uint64_t universe, uint64_t n,
                           global_parameters const& params)
         {
-            using util::ceil_div;
             uint64_t base_offset = bvb.size();
             offsets of(base_offset, universe, n, params);
             // initialize all the bits to 0

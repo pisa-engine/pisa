@@ -9,7 +9,7 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/construct.hpp>
 
-#include "succinct/intrinsics.hpp"
+#include "util/intrinsics.hpp"
 
 namespace ds2i { namespace mapper {
 

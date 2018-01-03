@@ -64,7 +64,7 @@ void perftest(IndexType const& index, std::string const& type)
             if (size < min_length) continue;
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
-            for (size_t i = 0; i < std::min(ds2i::util::ceil_div(size, skip),
+            for (size_t i = 0; i < std::min(ds2i::ceil_div(size, skip),
                                             max_calls_per_list); ++i) {
                 reader.move(i * skip);
                 skip_values.back().second.push_back(reader.docid());

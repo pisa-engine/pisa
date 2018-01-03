@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 
 #include "test_generic_sequence.hpp"
 #include "sequence/partitioned_sequence.hpp"
