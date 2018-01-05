@@ -13,6 +13,8 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+add_subdirectory(external)
+
 # Add code coverage
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
 find_package(codecov)
@@ -51,8 +53,6 @@ endif()
 find_package(Boost 1.42.0 COMPONENTS iostreams unit_test_framework filesystem system thread REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
-
-add_subdirectory(external)
 
 # add the root directory to include path to make includes absolute
 include_directories(${DS2I_SOURCE_DIR}/external
