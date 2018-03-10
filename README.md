@@ -1,3 +1,5 @@
+<p align="center"><img src="https://amallia.github.io/sera/images/logo250.png" ></p>
+
 # Sera: Search Engine for Academic Research 
 
 [![Build Status](https://travis-ci.com/amallia/sera.svg?token=2Cpy658AqNAqbjLFA4Z2&branch=master)](https://travis-ci.com/amallia/sera)
