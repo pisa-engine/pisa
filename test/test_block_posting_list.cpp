@@ -5,6 +5,7 @@
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
 #include "codec/streamvbyte.hpp"
+#include "codec/qmx.hpp"
 
 #include "block_posting_list.hpp"
 
@@ -103,6 +104,8 @@ BOOST_AUTO_TEST_CASE(block_posting_list)
     test_block_posting_list<ds2i::streamvbyte_block>();
     test_block_posting_list<ds2i::maskedvbyte_block>();
     test_block_posting_list<ds2i::interpolative_block>();
+    test_block_posting_list<ds2i::qmx_block>();
+
 }
 
 BOOST_AUTO_TEST_CASE(block_posting_list_reordering)

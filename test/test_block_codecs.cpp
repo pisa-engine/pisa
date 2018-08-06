@@ -6,6 +6,7 @@
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
 #include "codec/streamvbyte.hpp"
+#include "codec/qmx.hpp"
 
 #include "test_common.hpp"
 
@@ -30,6 +31,7 @@ void test_block_codec()
             uint8_t const* out = BlockCodec::decode(encoded.data(), decoded.data(),
                                                     sum_of_values, values.size());
 
+
             BOOST_REQUIRE_EQUAL(encoded.size(), out - encoded.data());
             BOOST_REQUIRE_EQUAL_COLLECTIONS(values.begin(), values.end(),
                                             decoded.begin(), decoded.end());
@@ -39,9 +41,11 @@ void test_block_codec()
 
 BOOST_AUTO_TEST_CASE(block_codecs)
 {
-    // test_block_codec<ds2i::optpfor_block>();
-    // test_block_codec<ds2i::varint_G8IU_block>();
-    // test_block_codec<ds2i::streamvbyte_block>();
+    test_block_codec<ds2i::optpfor_block>();
+    test_block_codec<ds2i::varint_G8IU_block>();
+    test_block_codec<ds2i::streamvbyte_block>();
     test_block_codec<ds2i::maskedvbyte_block>();
-    // test_block_codec<ds2i::interpolative_block>();
+    test_block_codec<ds2i::interpolative_block>();
+    test_block_codec<ds2i::qmx_block>();
+
 }

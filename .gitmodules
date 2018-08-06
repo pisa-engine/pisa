@@ -16,3 +16,6 @@
 [submodule "external/MaskedVByte"]
 	path = external/MaskedVByte
 	url = https://github.com/lemire/MaskedVByte
+[submodule "external/QMX"]
+	path = external/QMX
+	url = https://github.com/amallia/QMX.git

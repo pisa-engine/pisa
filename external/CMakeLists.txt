@@ -27,3 +27,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 add_library(MaskedVByte STATIC MaskedVByte/src/varintdecode.c
                                MaskedVByte/src/varintencode.c
 )
+
+# Add QMX
+add_subdirectory(QMX EXCLUDE_FROM_ALL)

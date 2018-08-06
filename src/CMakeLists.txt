@@ -4,6 +4,7 @@ target_link_libraries(create_freq_index
   FastPFor
   streamvbyte
   MaskedVByte
+  QMX
   cxxopts
   )
 
@@ -13,12 +14,14 @@ target_link_libraries(optimal_hybrid_index
   FastPFor
   streamvbyte
   MaskedVByte
+  QMX
   ${STXXL_LIBRARIES}
 )
 
 add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
   ${Boost_LIBRARIES}
+  QMX
   )
 
 add_executable(queries queries.cpp)
@@ -27,6 +30,7 @@ target_link_libraries(queries
   FastPFor
   streamvbyte
   MaskedVByte
+  QMX
   )
 
 
@@ -36,6 +40,7 @@ target_link_libraries(profile_queries
   FastPFor
   streamvbyte
   MaskedVByte
+  QMX
   )
 
 add_executable(profile_decoding profile_decoding.cpp)
@@ -44,6 +49,7 @@ target_link_libraries(profile_decoding
   FastPFor
   streamvbyte
   MaskedVByte
+  QMX
   )
 
 add_executable(shuffle_docids shuffle_docids.cpp)
@@ -52,4 +58,5 @@ target_link_libraries(shuffle_docids
   FastPFor
   streamvbyte
   MaskedVByte
+  QMX
   )

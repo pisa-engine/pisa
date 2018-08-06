@@ -6,6 +6,7 @@ foreach(TEST_SRC ${TEST_SOURCES})
   add_executable(${TEST_SRC_NAME} ${TEST_SRC})
   target_link_libraries(${TEST_SRC_NAME}
     ${Boost_LIBRARIES}
+    QMX
     )
   add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
 
@@ -16,15 +17,21 @@ endforeach(TEST_SRC)
 target_link_libraries(test_block_codecs
     FastPFor
     streamvbyte
-    MaskedVByte)
+    MaskedVByte
+    QMX
+)
 
 target_link_libraries(test_block_posting_list
     FastPFor
     streamvbyte
-    MaskedVByte)
+    MaskedVByte
+    QMX
+)
 
 target_link_libraries(test_block_freq_index
     FastPFor
     streamvbyte
-    MaskedVByte)
+    MaskedVByte
+    QMX
+)
 
