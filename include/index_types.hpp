@@ -40,7 +40,7 @@ using block_mixed_index         = block_freq_index<ds2i::mixed_block>;
 
 #define DS2I_INDEX_TYPES                                                            \
     (ef)(single)(uniform)(opt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)( \
-        block_maskedvbyte)(block_interpolative)(block_mixed)
+        block_maskedvbyte)(block_interpolative)(block_qmx)(block_mixed)
 #define DS2I_BLOCK_INDEX_TYPES                                                                    \
     (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
         block_qmx)(block_mixed)
