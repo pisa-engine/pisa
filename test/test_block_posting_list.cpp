@@ -6,6 +6,7 @@
 #include "codec/maskedvbyte.hpp"
 #include "codec/streamvbyte.hpp"
 #include "codec/qmx.hpp"
+#include "codec/varintgb.hpp"
 
 #include "block_posting_list.hpp"
 
@@ -103,6 +104,7 @@ BOOST_AUTO_TEST_CASE(block_posting_list)
     test_block_posting_list<ds2i::varint_G8IU_block>();
     test_block_posting_list<ds2i::streamvbyte_block>();
     test_block_posting_list<ds2i::maskedvbyte_block>();
+    test_block_posting_list<ds2i::varintgb_block>();
     test_block_posting_list<ds2i::interpolative_block>();
     test_block_posting_list<ds2i::qmx_block>();
 

@@ -6,6 +6,7 @@
 #include "codec/maskedvbyte.hpp"
 #include "codec/streamvbyte.hpp"
 #include "codec/qmx.hpp"
+#include "codec/varintgb.hpp"
 
 #include "block_freq_index.hpp"
 #include "succinct/mapper.hpp"
@@ -69,6 +70,7 @@ BOOST_AUTO_TEST_CASE(block_freq_index)
     test_block_freq_index<ds2i::varint_G8IU_block>();
     test_block_freq_index<ds2i::streamvbyte_block>();
     test_block_freq_index<ds2i::maskedvbyte_block>();
+    test_block_freq_index<ds2i::varintgb_block>();
     test_block_freq_index<ds2i::interpolative_block>();
     test_block_freq_index<ds2i::qmx_block>();
 }
