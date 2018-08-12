@@ -19,6 +19,7 @@ target_link_libraries(test_block_codecs
     streamvbyte
     MaskedVByte
     QMX
+    simdcomp
 )
 
 target_link_libraries(test_block_posting_list
@@ -26,6 +27,7 @@ target_link_libraries(test_block_posting_list
     streamvbyte
     MaskedVByte
     QMX
+    simdcomp
 )
 
 target_link_libraries(test_block_freq_index
@@ -33,5 +35,6 @@ target_link_libraries(test_block_freq_index
     streamvbyte
     MaskedVByte
     QMX
+    simdcomp
 )
 

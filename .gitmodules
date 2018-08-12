@@ -19,3 +19,6 @@
 [submodule "external/QMX"]
 	path = external/QMX
 	url = https://github.com/amallia/QMX.git
+[submodule "external/simdcomp"]
+	path = external/simdcomp
+	url = https://github.com/lemire/simdcomp.git

@@ -30,3 +30,10 @@ add_library(MaskedVByte STATIC MaskedVByte/src/varintdecode.c
 
 # Add QMX
 add_subdirectory(QMX EXCLUDE_FROM_ALL)
+
+# Add SIMD-BP
+include_directories(simdcomp/include)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+add_library(simdcomp STATIC simdcomp/src/simdbitpacking.c
+                            simdcomp/src/simdcomputil.c
+)

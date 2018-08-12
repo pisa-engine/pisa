@@ -5,6 +5,7 @@ target_link_libraries(create_freq_index
   streamvbyte
   MaskedVByte
   QMX
+  simdcomp
   cxxopts
   )
 
@@ -15,6 +16,7 @@ target_link_libraries(optimal_hybrid_index
   streamvbyte
   MaskedVByte
   QMX
+  simdcomp
   ${STXXL_LIBRARIES}
 )
 
@@ -22,6 +24,7 @@ add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
   ${Boost_LIBRARIES}
   QMX
+  simdcomp
   )
 
 add_executable(queries queries.cpp)
@@ -31,6 +34,7 @@ target_link_libraries(queries
   streamvbyte
   MaskedVByte
   QMX
+  simdcomp
   )
 
 
@@ -41,6 +45,7 @@ target_link_libraries(profile_queries
   streamvbyte
   MaskedVByte
   QMX
+  simdcomp
   )
 
 add_executable(profile_decoding profile_decoding.cpp)
@@ -50,6 +55,7 @@ target_link_libraries(profile_decoding
   streamvbyte
   MaskedVByte
   QMX
+  simdcomp
   )
 
 add_executable(shuffle_docids shuffle_docids.cpp)
@@ -59,4 +65,5 @@ target_link_libraries(shuffle_docids
   streamvbyte
   MaskedVByte
   QMX
+  simdcomp
   )

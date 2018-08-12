@@ -8,6 +8,7 @@
 #include "codec/qmx.hpp"
 #include "codec/varintgb.hpp"
 #include "codec/simple8b.hpp"
+#include "codec/simdbp.hpp"
 
 #include "block_posting_list.hpp"
 
@@ -109,7 +110,7 @@ BOOST_AUTO_TEST_CASE(block_posting_list)
     test_block_posting_list<ds2i::interpolative_block>();
     test_block_posting_list<ds2i::qmx_block>();
     test_block_posting_list<ds2i::simple8b_block>();
-
+    test_block_posting_list<ds2i::simdbp_block>();
 }
 
 BOOST_AUTO_TEST_CASE(block_posting_list_reordering)

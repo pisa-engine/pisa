@@ -9,6 +9,7 @@
 #include "codec/qmx.hpp"
 #include "codec/varintgb.hpp"
 #include "codec/simple8b.hpp"
+#include "codec/simdbp.hpp"
 
 #include "test_common.hpp"
 
@@ -51,6 +52,5 @@ BOOST_AUTO_TEST_CASE(block_codecs)
     test_block_codec<ds2i::qmx_block>();
     test_block_codec<ds2i::varintgb_block>();
     test_block_codec<ds2i::simple8b_block>();
-
-
+    test_block_codec<ds2i::simdbp_block>();
 }
