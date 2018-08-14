@@ -123,7 +123,11 @@ void perftest(const char *index_filename,
             query_fun = [&](ds2i::term_id_vec query) {
                 return block_max_wand_query<WandType>(wdata, k)(index, query);
             };
-        } else if (t == "ranked_or" && wand_data_filename) {
+        } else if (t == "block_max_maxscore" && wand_data_filename) {
+            query_fun = [&](ds2i::term_id_vec query) {
+                return block_max_maxscore_query<WandType>(wdata, k)(index, query);
+            };
+        }  else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](ds2i::term_id_vec query) {
                 return ranked_or_query<WandType>(wdata, k)(index, query);
             };

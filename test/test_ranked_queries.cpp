@@ -73,3 +73,10 @@ BOOST_FIXTURE_TEST_CASE(maxscore,
     ds2i::maxscore_query<WandType> maxscore_q(wdata, 10);
     test_against_or(maxscore_q);
 }
+
+BOOST_FIXTURE_TEST_CASE(block_max_maxscore,
+                        ds2i::test::index_initialization)
+{
+    ds2i::block_max_maxscore_query<WandType> bmm_q(wdata, 10);
+    test_against_or(bmm_q);
+}
