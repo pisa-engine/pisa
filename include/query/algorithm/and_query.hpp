@@ -43,9 +43,6 @@ struct and_query {
                         do_not_optimize_away(enums[i].freq());
                     }
                 }
-
-                if (results > 100)
-                    break;
                 enums[0].next();
                 candidate = enums[0].docid();
                 i = 1;
