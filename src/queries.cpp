@@ -2,7 +2,7 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/lexical_cast.hpp>
+#include <boost/optional.hpp>
 
 #include "succinct/mapper.hpp"
 
@@ -12,13 +12,7 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
-namespace {
-void printUsage(const std::string &programName) {
-    std::cerr << "Usage: " << programName
-              << " index_type query_algorithm index_filename [--wand wand_data_filename]"
-              << " [--compressed-wand] [--query query_filename] [-k 10]" << std::endl;
-}
-} // namespace
+#include "CLI/CLI.hpp"
 
 using namespace ds2i;
 
@@ -68,16 +62,16 @@ void op_perftest(Functor query_func, // XXX!!!
 }
 
 template <typename IndexType, typename WandType>
-void perftest(const char *index_filename,
-              const char *wand_data_filename,
-              std::vector<ds2i::term_id_vec> const &queries,
+void perftest(const std::string &index_filename,
+              const boost::optional<std::string> &wand_data_filename,
+              const std::vector<ds2i::term_id_vec> &queries,
               std::string const &type,
               std::string const &query_type,
               uint64_t k) {
     using namespace ds2i;
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
-    boost::iostreams::mapped_file_source m(index_filename);
+    boost::iostreams::mapped_file_source m(index_filename.c_str());
     mapper::map(index, m);
 
     logger() << "Warming up posting lists" << std::endl;
@@ -97,14 +91,14 @@ void perftest(const char *index_filename,
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
     boost::iostreams::mapped_file_source md;
     if (wand_data_filename) {
-        md.open(wand_data_filename);
+        md.open(wand_data_filename.value());
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
     logger() << "Performing " << type << " queries" << std::endl;
     logger() << "K: " << k << std::endl;
 
-    for (auto const &t : query_types) {
+    for (auto &&t : query_types) {
         logger() << "Query type: " << t << std::endl;
         std::function<uint64_t(ds2i::term_id_vec)> query_fun;
         if (t == "and") {
@@ -149,45 +143,29 @@ typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wa
 int main(int argc, const char **argv) {
     using namespace ds2i;
 
-    std::string programName = argv[0];
-    if (argc < 3) {
-        printUsage(programName);
-        return 1;
-    }
-
-    std::string type = argv[1];
-    std::string query_type = argv[2];
-    const char *index_filename = argv[3];
-    const char *wand_data_filename = nullptr;
-    const char *query_filename = nullptr;
+    std::string type;
+    std::string query_type;
+    std::string index_filename;
+    boost::optional<std::string> wand_data_filename;
+    boost::optional<std::string> query_filename;
     uint64_t k = configuration::get().k;
-
     bool compressed = false;
+
+    CLI::App app{"queries - a tool for performing queries on an index."};
+    app.add_option("-t,--type", type, "Index type")->required();
+    app.add_option("-a,--algorithm", query_type, "Query algorithm")->required();
+    app.add_option("-i,--index", index_filename, "Collection basename")->required();
+    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
+    app.add_option("-q,--query", query_filename, "Queries filename");
+    app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
+    app.add_option("-k", k, "k value");
+    CLI11_PARSE(app, argc, argv);
+
     std::vector<term_id_vec> queries;
-
-    for (int i = 4; i < argc; ++i) {
-        std::string arg = argv[i];
-
-        if (arg == "--wand") {
-            wand_data_filename = argv[++i];
-        }
-
-        if (arg == "--compressed-wand") {
-            compressed = true;
-        }
-
-        if (arg == "--query") {
-            query_filename = argv[++i];
-        }
-        if (arg == "-k") {
-            k = boost::lexical_cast<uint64_t>(argv[++i]);
-        }
-    }
-
     term_id_vec q;
     if (query_filename) {
         std::filebuf fb;
-        if (fb.open(query_filename, std::ios::in)) {
+        if (fb.open(query_filename.value(), std::ios::in)) {
             std::istream is(&fb);
             while (read_query(q, is))
                 queries.push_back(q);

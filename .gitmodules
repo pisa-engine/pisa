@@ -4,9 +4,6 @@
 [submodule "external/stxxl"]
 	path = external/stxxl
 	url = https://github.com/stxxl/stxxl.git
-[submodule "external/cxxopts"]
-	path = external/cxxopts
-	url = https://github.com/jarro2783/cxxopts.git
 [submodule "external/CMake-codecov"]
 	path = external/CMake-codecov
 	url = https://github.com/RWTH-HPC/CMake-codecov.git
@@ -22,3 +19,6 @@
 [submodule "external/simdcomp"]
 	path = external/simdcomp
 	url = https://github.com/lemire/simdcomp.git
+[submodule "external/CLI11"]
+	path = external/CLI11
+	url = https://github.com/CLIUtils/CLI11.git

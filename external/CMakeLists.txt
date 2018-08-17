@@ -5,9 +5,9 @@ EXECUTE_PROCESS(COMMAND git submodule update --init
 
 # Add FastPFor
 add_subdirectory(FastPFor EXCLUDE_FROM_ALL)
-# Add cxxopts
-set(CXXOPTS_BUILD_EXAMPLES OFF CACHE BOOL "Enable cxxopts examples")
-add_subdirectory(cxxopts EXCLUDE_FROM_ALL)
+
+# Add CLI11
+add_subdirectory(CLI11 EXCLUDE_FROM_ALL)
 
 # stxxl
 add_definitions(-DSTXXL_VERBOSE_LEVEL=-10) # suppress messages to stdout

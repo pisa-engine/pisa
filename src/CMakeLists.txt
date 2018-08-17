@@ -6,7 +6,7 @@ target_link_libraries(create_freq_index
   MaskedVByte
   QMX
   simdcomp
-  cxxopts
+  CLI11
   )
 
 add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
@@ -25,6 +25,7 @@ target_link_libraries(create_wand_data
   ${Boost_LIBRARIES}
   QMX
   simdcomp
+  CLI11
   )
 
 add_executable(queries queries.cpp)
@@ -35,6 +36,7 @@ target_link_libraries(queries
   MaskedVByte
   QMX
   simdcomp
+  CLI11
   )
 
 

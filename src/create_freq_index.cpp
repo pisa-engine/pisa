@@ -16,7 +16,8 @@
 #include "util/util.hpp"
 #include "util/verify_collection.hpp" // XXX move to index_build_utils
 
-#include "cxxopts.hpp"
+#include "CLI/CLI.hpp"
+
 
 using ds2i::logger;
 
@@ -52,7 +53,7 @@ void dump_index_specific_stats(ds2i::opt_index const &coll, std::string const &t
 template <typename InputCollection, typename CollectionType, typename Scorer = ds2i::bm25>
 void create_collection(InputCollection const &input,
                        ds2i::global_parameters const &params,
-                       boost::optional<std::string> &output_filename,
+                       const boost::optional<std::string> &output_filename,
                        bool check,
                        std::string const &seq_type) {
     using namespace ds2i;
@@ -101,31 +102,13 @@ int main(int argc, char **argv) {
     boost::optional<std::string> output_filename;
     bool check = false;
 
-    cxxopts::Options options("create_freq_index",
-                             "create_freq_index - a tool for creating an index.");
-    options.add_options()
-        ("h,help", "Print help")
-        ("t,type", "Index type", cxxopts::value(type), "type_name")
-        ("c,collection", "Collection basename", cxxopts::value(input_basename), "basename")
-        ("o,out", "Output filename", cxxopts::value<std::string>(), "filename")
-        ("check", "Check the correctness of the index", cxxopts::value(check));
+    CLI::App app{"create_freq_index - a tool for creating an index."};
+    app.add_option("-t,--type", type, "Index type")->required();
+    app.add_option("-c,--collection", input_basename, "Collection basename")->required();
+    app.add_option("-o,--output", output_filename, "Output filename")->required();
+    app.add_flag("--check", check, "Check the correctness of the index");
+    CLI11_PARSE(app, argc, argv);
 
-    try {
-        options.parse(argc, argv);
-        if (options.count("help") == 1) {
-            std::cout << options.help(options.groups()) << std::endl;
-            exit(1);
-        }
-        if (options.count("out") == 1) {
-            output_filename = options["out"].as<std::string>();
-        }
-        cxxopts::check_required(options, {"type"});
-        cxxopts::check_required(options, {"collection"});
-    } catch (const cxxopts::OptionException &e) {
-        std::cout << "ERROR: " << e.what() << "\n";
-        std::cout << options.help(options.groups()) << std::endl;
-        exit(1);
-    }
     binary_freq_collection input(input_basename.c_str());
 
     ds2i::global_parameters params;
