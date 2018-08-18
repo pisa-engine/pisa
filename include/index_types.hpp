@@ -7,13 +7,15 @@
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
 #include "codec/qmx.hpp"
+#include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
 #include "codec/simple8b.hpp"
 #include "codec/streamvbyte.hpp"
 #include "codec/varintgb.hpp"
-#include "codec/simdbp.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "block_freq_index.hpp"
+
 #include "freq_index.hpp"
 #include "mixed_block.hpp"
 #include "sequence/partitioned_sequence.hpp"
@@ -39,6 +41,7 @@ using block_varintgb_index      = block_freq_index<ds2i::varintgb_block>;
 using block_interpolative_index = block_freq_index<ds2i::interpolative_block>;
 using block_qmx_index           = block_freq_index<ds2i::qmx_block>;
 using block_simple8b_index      = block_freq_index<ds2i::simple8b_block>;
+using block_simple16_index      = block_freq_index<ds2i::simple16_block>;
 using block_simdbp_index        = block_freq_index<ds2i::simdbp_block>;
 using block_mixed_index         = block_freq_index<ds2i::mixed_block>;
 
@@ -46,8 +49,8 @@ using block_mixed_index         = block_freq_index<ds2i::mixed_block>;
 
 #define DS2I_INDEX_TYPES                                                                    \
     (ef)(single)(uniform)(opt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(         \
-        block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)(block_simdbp)( \
-        block_mixed)
+        block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
+        block_simple16)(block_simdbp)(block_mixed)
 #define DS2I_BLOCK_INDEX_TYPES                                                                    \
     (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
-        block_qmx)(block_varintgb)(block_simple8b)(block_simdbp)(block_mixed)
+        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)(block_mixed)
