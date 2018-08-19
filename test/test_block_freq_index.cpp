@@ -8,6 +8,7 @@
 #include "codec/qmx.hpp"
 #include "codec/varintgb.hpp"
 #include "codec/simple8b.hpp"
+#include "codec/simple16.hpp"
 #include "codec/simdbp.hpp"
 
 #include "block_freq_index.hpp"
@@ -76,5 +77,6 @@ BOOST_AUTO_TEST_CASE(block_freq_index)
     test_block_freq_index<ds2i::interpolative_block>();
     test_block_freq_index<ds2i::qmx_block>();
     test_block_freq_index<ds2i::simple8b_block>();
+    test_block_freq_index<ds2i::simple16_block>();
     test_block_freq_index<ds2i::simdbp_block>();
 }
