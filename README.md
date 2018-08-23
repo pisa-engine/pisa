@@ -1,9 +1,9 @@
-<p align="center"><img src="https://amallia.github.io/sera/images/logo250.png" ></p>
+<p align="center"><img src="https://pisa-engine.github.io/images/logo250.png" width="250px"></p>
 
-# Sera: Search Engine for Academic Research 
+# Pisa: Performant Indexes and Search for Academia 
 
-[![Build Status](https://travis-ci.com/amallia/sera.svg?token=2Cpy658AqNAqbjLFA4Z2&branch=master)](https://travis-ci.com/amallia/sera)
-[![codecov](https://codecov.io/gh/amallia/sera/branch/master/graph/badge.svg?token=RrfvWe6gol)](https://codecov.io/gh/amallia/sera)
+[![Build Status](https://travis-ci.com/pisa-engine/pisa.svg?branch=master)](https://travis-ci.com/pisa-engine/pisa)
+[![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
 
 ## Building the code
 
