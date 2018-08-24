@@ -49,9 +49,9 @@ namespace ds2i {
         {
             if (!m_next_thread.first.empty()) {
                 spawn_next_thread();
-                while (!m_running_threads.empty()) {
-                    commit_thread();
-                }
+            }
+            while (!m_running_threads.empty()) {
+                commit_thread();
             }
         }
 
