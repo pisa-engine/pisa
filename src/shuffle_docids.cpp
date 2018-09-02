@@ -13,16 +13,6 @@
 
 using ds2i::logger;
 
-void emit(std::ostream& os, const uint32_t* vals, size_t n)
-{
-    os.write(reinterpret_cast<const char*>(vals), sizeof(*vals) * n);
-}
-
-void emit(std::ostream& os, uint32_t val)
-{
-    emit(os, &val, 1);
-}
-
 int main(int argc, const char** argv)
 {
 
@@ -47,52 +37,5 @@ int main(int argc, const char** argv)
     std::vector<uint32_t> new_doc_id(num_docs);
     std::iota(new_doc_id.begin(), new_doc_id.end(), uint32_t());
     std::shuffle(new_doc_id.begin(), new_doc_id.end(), rng);
-
-    {
-        logger() << "Shuffling document sizes" << std::endl;
-        binary_collection input_sizes((input_basename + ".sizes").c_str());
-        auto sizes = *input_sizes.begin();
-        if (sizes.size() != num_docs) {
-            throw std::invalid_argument("Invalid sizes file");
-        }
-
-        std::vector<uint32_t> new_sizes(num_docs);
-        for (size_t i = 0; i < num_docs; ++i) {
-            new_sizes[new_doc_id[i]] = sizes.begin()[i];
-        }
-
-        std::ofstream output_sizes(output_basename + ".sizes");
-        emit(output_sizes, sizes.size());
-        emit(output_sizes, new_sizes.data(), num_docs);
-    }
-
-    logger() << "Shuffling posting lists" << std::endl;
-    progress_logger plog;
-
-    std::ofstream output_docs(output_basename + ".docs");
-    std::ofstream output_freqs(output_basename + ".freqs");
-    emit(output_docs, 1);
-    emit(output_docs, num_docs);
-
-    std::vector<std::pair<uint32_t, uint32_t>> pl;
-    for (const auto& seq: input) {
-
-        for (size_t i = 0; i < seq.docs.size(); ++i) {
-            pl.emplace_back(new_doc_id[seq.docs.begin()[i]],
-                            seq.freqs.begin()[i]);
-        }
-
-        std::sort(pl.begin(), pl.end());
-
-        emit(output_docs, pl.size());
-        emit(output_freqs, pl.size());
-        for (const auto& posting: pl) {
-            emit(output_docs, posting.first);
-            emit(output_freqs, posting.second);
-        }
-
-        plog.done_sequence(seq.docs.size());
-        pl.clear();
-    }
-    plog.log();
+    reorder_inverted_index(input_basename, output_basename, new_doc_id);
 }

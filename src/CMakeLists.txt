@@ -69,3 +69,18 @@ target_link_libraries(shuffle_docids
   QMX
   simdcomp
   )
+
+add_executable(sample_index sample_index.cpp)
+target_link_libraries(sample_index
+  ${Boost_LIBRARIES}
+  CLI11
+  QMX
+  )
+
+add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
+target_link_libraries(recursive_graph_bisection
+  ${Boost_LIBRARIES}
+  CLI11
+  QMX
+  ParallelSTL
+  )
