@@ -295,6 +295,8 @@ void recursive_graph_bisection(document_range<Iterator> documents,
                                size_t                   parallel_depth,
                                size_t                   cache_depth,
                                progress &               p) {
+
+    std::sort(documents.begin(), documents.end());
     auto partition = documents.split();
     if (cache_depth >= 1) {
         // if (parallel_depth > 0) {
