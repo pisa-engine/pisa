@@ -64,7 +64,7 @@ template <class T>
 class single_init_vector : public std::vector<single_init_entry<T>> {
 
    public:
-    using typename std::vector<single_init_entry<T>>::vector;
+    using std::vector<single_init_entry<T>>::vector;
     const T &operator[](size_t i) const {
         return (std::vector<single_init_entry<T>>::      operator[](i).has_value(m_generation)
                     ? std::vector<single_init_entry<T>>::operator[](i).value()
@@ -292,45 +292,29 @@ void process_partition(document_partition<Iterator> &partition, GainF gain_funct
 template <class Iterator>
 void recursive_graph_bisection(document_range<Iterator> documents,
                                size_t                   depth,
-                               size_t                   parallel_depth,
                                size_t                   cache_depth,
                                progress &               p) {
 
     std::sort(documents.begin(), documents.end());
     auto partition = documents.split();
     if (cache_depth >= 1) {
-        // if (parallel_depth > 0) {
         process_partition(partition, compute_move_gains_caching<true, Iterator>);
-        // } else {
-        //     process_partition<false>(partition, compute_move_gains_caching<true, Iterator>);
-        // }
         --cache_depth;
     } else {
-        // if (parallel_depth > 0) {
         process_partition(partition, compute_move_gains_caching<false, Iterator>);
-        // } else {
-        //     process_partition<false>(partition, compute_move_gains_caching<false, Iterator>);
-        // }
     }
 
     p.update(documents.size());
     if (depth > 1 && documents.size() > 2) {
-        // if (parallel_depth > 0) {
         tbb::parallel_invoke(
             [&] {
                 recursive_graph_bisection(
-                    partition.left, depth - 1, parallel_depth - 1, cache_depth, p);
+                    partition.left, depth - 1, cache_depth, p);
             },
             [&] {
                 recursive_graph_bisection(
-                    partition.right, depth - 1, parallel_depth - 1, cache_depth, p);
+                    partition.right, depth - 1, cache_depth, p);
             });
-
-        // } else {
-        //     recursive_graph_bisection(partition.left, depth - 1, parallel_depth, cache_depth, p);
-        //     recursive_graph_bisection(partition.right, depth - 1, parallel_depth, cache_depth,
-        //     p);
-        // }
     } else {
         std::sort(partition.left.begin(), partition.left.end());
         std::sort(partition.right.begin(), partition.right.end());

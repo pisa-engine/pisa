@@ -62,10 +62,9 @@ int main(int argc, char const *argv[]) {
         std::cout << "Minimum list threshold: " << min_len << std::endl;
 
         {
-            size_t parallel_depth = 4 * std::log2(threads);
             ds2i::progress bp_progress("Graph bisection", initial_range.size() * depth);
             bp_progress.update(0);
-            recursive_graph_bisection(initial_range, depth, parallel_depth, depth - 6, bp_progress);
+            recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
         }
 
         auto mapping = get_mapping(documents);
