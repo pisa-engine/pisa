@@ -28,9 +28,11 @@ int main(int argc, const char** argv)
 
     using namespace ds2i;
 
-    if (argc < 3) {
+    if (argc != 3 && argc != 4) {
         std::cerr << "Usage: " << argv[0]
-                  << " <collection basename> <output basename>"
+                  << " <collection basename> <output basename> [ordering file]"
+                  << std::endl
+                  << "Ordering file is of the form <current ID> <new ID>"
                   << std::endl;
         return 1;
     }
@@ -41,13 +43,27 @@ int main(int argc, const char** argv)
     const std::string input_basename = argv[1];
     const std::string output_basename = argv[2];
     binary_freq_collection input(input_basename.c_str());
-
-    logger() << "Computing random permutation" << std::endl;
     size_t num_docs = input.num_docs();
     std::vector<uint32_t> new_doc_id(num_docs);
-    std::iota(new_doc_id.begin(), new_doc_id.end(), uint32_t());
-    std::shuffle(new_doc_id.begin(), new_doc_id.end(), rng);
+ 
+    if (argc == 4) {
+      const std::string order_file = argv[3];
+      std::ifstream in_order(order_file);
+      uint32_t prev_id, new_id;
+      size_t count = 0;
+      while (in_order >> prev_id >> new_id) {
+        new_doc_id[prev_id] = new_id;
+        ++count;
+      }
+      if (new_doc_id.size() != count)
+        throw std::invalid_argument("Invalid document order file.");
+    }
 
+    else {
+      logger() << "Computing random permutation" << std::endl;
+      std::iota(new_doc_id.begin(), new_doc_id.end(), uint32_t());
+      std::shuffle(new_doc_id.begin(), new_doc_id.end(), rng);
+    }
     {
         logger() << "Shuffling document sizes" << std::endl;
         binary_collection input_sizes((input_basename + ".sizes").c_str());
