@@ -69,3 +69,13 @@ target_link_libraries(shuffle_docids
   QMX
   simdcomp
   )
+  
+add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
+target_link_libraries(evaluate_collection_ordering
+  ${Boost_LIBRARIES}
+  FastPFor
+  streamvbyte
+  MaskedVByte
+  QMX
+  simdcomp
+  )
