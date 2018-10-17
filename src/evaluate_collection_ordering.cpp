@@ -1,0 +1,54 @@
+#include <fstream>
+#include <iostream>
+#include <algorithm>
+#include <thread>
+#include <numeric>
+#include <random>
+
+#include "succinct/mapper.hpp"
+
+#include "binary_freq_collection.hpp"
+#include "util/index_build_utils.hpp"
+#include "util/util.hpp"
+
+using ds2i::logger;
+
+
+int main(int argc, const char** argv)
+{
+
+    using namespace ds2i;
+
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0]
+                  << " <collection basename>"
+                  << std::endl;
+        return 1;
+    }
+
+    const std::string input_basename = argv[1];
+    binary_freq_collection input(input_basename.c_str());
+    
+    logger() << "Computing statistics about document ID space" << std::endl;
+
+    std::vector<float> log2_data(256);
+    for (size_t i = 0; i < 256; ++i) {
+      log2_data[i] = log2f(i);
+    }
+    
+    double all_log_gaps = 0.0f;
+    size_t no_gaps = 0;
+    for (const auto& seq: input) {
+        no_gaps += seq.docs.size();
+        all_log_gaps += log2f(seq.docs.begin()[0] + 1);
+        for (size_t i = 1; i < seq.docs.size(); ++i) {
+            auto gap = seq.docs.begin()[i] - seq.docs.begin()[i - 1];
+            if (gap < 256)
+                all_log_gaps += log2_data[gap];
+            else
+                all_log_gaps += log2f(gap);
+        }
+    }
+    double average_log_gap = all_log_gaps/no_gaps;
+    logger() << "Average LogGap of documents: " << average_log_gap << std::endl;
+}
