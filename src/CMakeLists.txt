@@ -76,7 +76,8 @@ target_link_libraries(recursive_graph_bisection
   CLI11
   QMX
   ParallelSTL
-  
+)
+
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
   ${Boost_LIBRARIES}
