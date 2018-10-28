@@ -106,3 +106,5 @@ A _collection_ consists of 3 files, `<basename>.docs`, `<basename>.freqs`,
   same as the number of documents in the collection, and the i-th element of the
   sequence is the size (number of terms) of the i-th document.
 
+#### Credits
+Pisa is an active fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot) which is currently unmainteined. This project extends and changes following sometimes different design directions.
