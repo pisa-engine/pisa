@@ -19,83 +19,6 @@
 namespace ds2i {
 const Log2<4096> log2;
 
-#ifndef NDEBUG
-const static bool Debug = true;
-#else
-const static bool Debug = false;
-#endif
-
-struct EqOperator {
-    template <typename T1, typename T2>
-    bool operator()(const T1 &v1, const T2 &v2) {
-        return v1 == v2;
-    }
-    template <typename T1, typename T2>
-    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
-        os << "Equality " << v1 << " == " << v2 << " failed.";
-        return os;
-    }
-} Equals;
-
-struct LtOperator {
-    template <typename T1, typename T2>
-    bool operator()(const T1 &v1, const T2 &v2) {
-        return v1 < v2;
-    }
-    template <typename T1, typename T2>
-    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
-        os << "Inequality " << v1 << " < " << v2 << " failed.";
-        return os;
-    }
-} LessThan;
-
-struct LeOperator {
-    template <typename T1, typename T2>
-    bool operator()(const T1 &v1, const T2 &v2) {
-        return v1 <= v2;
-    }
-    template <typename T1, typename T2>
-    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
-        os << "Inequality " << v1 << " <= " << v2 << " failed.";
-        return os;
-    }
-} LessOrEqual;
-
-struct GtOperator {
-    template <typename T1, typename T2>
-    bool operator()(const T1 &v1, const T2 &v2) {
-        return v1 > v2;
-    }
-    template <typename T1, typename T2>
-    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
-        os << "Inequality " << v1 << " > " << v2 << " failed.";
-        return os;
-    }
-} Greater;
-
-struct GeOperator {
-    template <typename T1, typename T2>
-    bool operator()(const T1 &v1, const T2 &v2) {
-        return v1 >= v2;
-    }
-    template <typename T1, typename T2>
-    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
-        os << "Inequality " << v1 << " >= " << v2 << " failed.";
-        return os;
-    }
-} GreaterOrEqual;
-
-template <typename T1, typename T2, typename BinaryOperator>
-DS2I_ALWAYSINLINE void expects(const T1 &v1, BinaryOperator op, const T2 &v2) {
-    if constexpr (Debug) {
-        if (not op(v1, v2)) {
-            op.error(std::cerr, v1, v2);
-            std::cerr << '\n';
-            std::abort();
-        }
-    }
-}
-
 namespace bp {
 
 DS2I_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2) {
@@ -136,8 +59,8 @@ class document_range {
     }
 
     DS2I_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const {
-        expects(left, LessThan, right);
-        expects(right, LessOrEqual, size());
+        assert(left < right);
+        assert(right <= size());
         return document_range(
             std::next(m_first, left), std::next(m_first, right), m_fwdidx, m_gains);
     }
