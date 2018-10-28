@@ -8,6 +8,7 @@
 
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "tbb/task_group.h"
 
 #include "forward_index.hpp"
 #include "util/index_build_utils.hpp"
@@ -17,6 +18,83 @@
 
 namespace ds2i {
 const Log2<4096> log2;
+
+#ifndef NDEBUG
+const static bool Debug = true;
+#else
+const static bool Debug = false;
+#endif
+
+struct EqOperator {
+    template <typename T1, typename T2>
+    bool operator()(const T1 &v1, const T2 &v2) {
+        return v1 == v2;
+    }
+    template <typename T1, typename T2>
+    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
+        os << "Equality " << v1 << " == " << v2 << " failed.";
+        return os;
+    }
+} Equals;
+
+struct LtOperator {
+    template <typename T1, typename T2>
+    bool operator()(const T1 &v1, const T2 &v2) {
+        return v1 < v2;
+    }
+    template <typename T1, typename T2>
+    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
+        os << "Inequality " << v1 << " < " << v2 << " failed.";
+        return os;
+    }
+} LessThan;
+
+struct LeOperator {
+    template <typename T1, typename T2>
+    bool operator()(const T1 &v1, const T2 &v2) {
+        return v1 <= v2;
+    }
+    template <typename T1, typename T2>
+    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
+        os << "Inequality " << v1 << " <= " << v2 << " failed.";
+        return os;
+    }
+} LessOrEqual;
+
+struct GtOperator {
+    template <typename T1, typename T2>
+    bool operator()(const T1 &v1, const T2 &v2) {
+        return v1 > v2;
+    }
+    template <typename T1, typename T2>
+    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
+        os << "Inequality " << v1 << " > " << v2 << " failed.";
+        return os;
+    }
+} Greater;
+
+struct GeOperator {
+    template <typename T1, typename T2>
+    bool operator()(const T1 &v1, const T2 &v2) {
+        return v1 >= v2;
+    }
+    template <typename T1, typename T2>
+    std::ostream &error(std::ostream &os, const T1 &v1, const T2 &v2) {
+        os << "Inequality " << v1 << " >= " << v2 << " failed.";
+        return os;
+    }
+} GreaterOrEqual;
+
+template <typename T1, typename T2, typename BinaryOperator>
+DS2I_ALWAYSINLINE void expects(const T1 &v1, BinaryOperator op, const T2 &v2) {
+    if constexpr (Debug) {
+        if (not op(v1, v2)) {
+            op.error(std::cerr, v1, v2);
+            std::cerr << '\n';
+            std::abort();
+        }
+    }
+}
 
 namespace bp {
 
@@ -32,7 +110,6 @@ DS2I_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t de
 } // namespace bp
 
 
-
 template <class Iterator>
 struct document_partition;
 
@@ -41,10 +118,10 @@ class document_range {
    public:
     using value_type = typename std::iterator_traits<Iterator>::value_type;
 
-    document_range(Iterator             first,
-                   Iterator             last,
-                   const forward_index &fwdidx,
-                   std::vector<double> &gains)
+    document_range(Iterator                                    first,
+                   Iterator                                    last,
+                   std::reference_wrapper<const forward_index> fwdidx,
+                   std::reference_wrapper<std::vector<double>> gains)
         : m_first(first), m_last(last), m_fwdidx(fwdidx), m_gains(gains) {}
 
     Iterator       begin() { return m_first; }
@@ -58,22 +135,31 @@ class document_range {
                 term_count()};
     }
 
-    std::size_t           term_count() const { return m_fwdidx.term_count(); }
-    std::vector<uint32_t> terms(value_type document) const { return m_fwdidx.terms(document); }
-    double                gain(value_type document) const { return m_gains[document]; }
-    double &              gain(value_type document) { return m_gains[document]; }
+    DS2I_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const {
+        expects(left, LessThan, right);
+        expects(right, LessOrEqual, size());
+        return document_range(
+            std::next(m_first, left), std::next(m_first, right), m_fwdidx, m_gains);
+    }
+
+    std::size_t           term_count() const { return m_fwdidx.get().term_count(); }
+    std::vector<uint32_t> terms(value_type document) const {
+        return m_fwdidx.get().terms(document);
+    }
+    double                gain(value_type document) const { return m_gains.get()[document]; }
+    double &              gain(value_type document) { return m_gains.get()[document]; }
 
     auto by_gain() {
         return [this](const value_type &lhs, const value_type &rhs) {
-            return m_gains[lhs] > m_gains[rhs];
+            return m_gains.get()[lhs] > m_gains.get()[rhs];
         };
     }
 
    private:
-    Iterator             m_first;
-    Iterator             m_last;
-    const forward_index &m_fwdidx;
-    std::vector<double> &m_gains;
+    Iterator                                    m_first;
+    Iterator                                    m_last;
+    std::reference_wrapper<const forward_index> m_fwdidx;
+    std::reference_wrapper<std::vector<double>> m_gains;
 };
 
 template <class Iterator>
@@ -81,6 +167,31 @@ struct document_partition {
     document_range<Iterator> left;
     document_range<Iterator> right;
     size_t                   term_count;
+
+    std::ptrdiff_t size() const { return left.size() + right.size(); }
+};
+
+template <class Iterator>
+struct computation_node {
+    int                          level;
+    int                          iteration_count;
+    document_partition<Iterator> partition;
+    bool                         cache;
+
+    static computation_node from_stream(std::istream &is, const document_range<Iterator> &range) {
+        int            level, iteration_count;
+        std::ptrdiff_t left_first, right_first, left_last, right_last;
+        bool           cache;
+        is >> level >> iteration_count >> left_first >> left_last >> right_first >> right_last;
+        is >> std::noboolalpha >> cache;
+        return computation_node{
+            level,
+            iteration_count,
+            {range(left_first, left_last), range(right_first, right_last), range.term_count()},
+            cache};
+    };
+
+    bool operator<(const computation_node &other) const { return level < other.level; }
 };
 
 auto get_mapping = [](const auto &collection) {
@@ -262,6 +373,35 @@ void recursive_graph_bisection(document_range<Iterator> documents,
     } else {
         std::sort(partition.left.begin(), partition.left.end());
         std::sort(partition.right.begin(), partition.right.end());
+    }
+}
+
+template <class Iterator>
+void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, progress &p) {
+    std::sort(nodes.begin(), nodes.end());
+    auto first = nodes.begin();
+    while (first != nodes.end()) {
+        auto last = std::find_if(
+            first, nodes.end(), [&first](const auto &node) { return node.level > first->level; });
+        bool last_level = last == nodes.end();
+        tbb::task_group level_group;
+        std::for_each(first, last, [&level_group, last_level, &p](auto &node) {
+            level_group.run([&]() {
+                std::sort(node.partition.left.begin(), node.partition.right.end());
+                if (node.cache) {
+                    process_partition(node.partition, compute_move_gains_caching<true, Iterator>);
+                } else {
+                    process_partition(node.partition, compute_move_gains_caching<false, Iterator>);
+                }
+                if (last_level) {
+                    std::sort(node.partition.left.begin(), node.partition.left.end());
+                    std::sort(node.partition.right.begin(), node.partition.right.end());
+                }
+                p.update(node.partition.size());
+            });
+        });
+        level_group.wait();
+        first = last;
     }
 }
 
