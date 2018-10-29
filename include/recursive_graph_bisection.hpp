@@ -106,12 +106,12 @@ struct computation_node {
         std::ptrdiff_t left_first, right_first, left_last, right_last;
         bool           cache;
         is >> level >> iteration_count >> left_first >> left_last >> right_first >> right_last;
-        is >> std::noboolalpha >> cache;
-        return computation_node{
-            level,
-            iteration_count,
-            {range(left_first, left_last), range(right_first, right_last), range.term_count()},
-            cache};
+        document_partition<Iterator> partition{
+            range(left_first, left_last), range(right_first, right_last), range.term_count()};
+        if (not (is >> std::noboolalpha >> cache)) {
+            cache = partition.size() > 64;
+        }
+        return computation_node{level, iteration_count, std::move(partition), cache};
     };
 
     bool operator<(const computation_node &other) const { return level < other.level; }
@@ -126,16 +126,12 @@ auto get_mapping = [](const auto &collection) {
     return mapping;
 };
 
-template <bool isParallel = true, class Iterator>
+template <class Iterator>
 void compute_degrees(document_range<Iterator> &range, single_init_vector<size_t> &deg_map) {
     for (const auto &document : range) {
         auto terms       = range.terms(document);
         auto deg_map_inc = [&](const auto &t) { deg_map.set(t, deg_map[t] + 1); };
-        if constexpr (isParallel) {
-            std::for_each(std::execution::par_unseq, terms.begin(), terms.end(), deg_map_inc);
-        } else {
-            std::for_each(std::execution::unseq, terms.begin(), terms.end(), deg_map_inc);
-        }
+        std::for_each(std::execution::unseq, terms.begin(), terms.end(), deg_map_inc);
     }
 }
 
@@ -178,21 +174,15 @@ void compute_move_gains_caching(document_range<Iter> &            range,
     std::for_each(range.begin(), range.end(), compute_document_gain);
 }
 
-template <bool isParallel = true, class Iterator, class GainF>
+template <class Iterator, class GainF>
 void compute_gains(document_partition<Iterator> &partition,
                    const degree_map_pair &       degrees,
                    GainF                         gain_function) {
 
     auto n1 = partition.left.size();
     auto n2 = partition.right.size();
-    if constexpr (isParallel) {
-        tbb::parallel_invoke(
-            [&] { gain_function(partition.left, n1, n2, degrees.left, degrees.right); },
-            [&] { gain_function(partition.right, n2, n1, degrees.right, degrees.left); });
-    } else {
-        gain_function(partition.left, n1, n2, degrees.left, degrees.right);
-        gain_function(partition.right, n2, n1, degrees.right, degrees.left);
-    }
+    gain_function(partition.left, n1, n2, degrees.left, degrees.right);
+    gain_function(partition.right, n2, n1, degrees.right, degrees.left);
 }
 
 template <class Iterator>
@@ -224,45 +214,31 @@ void swap(document_partition<Iterator> &partition, degree_map_pair &degrees) {
     }
 }
 
-template <bool isParallel = true, class Iterator, class GainF>
+template <class Iterator, class GainF>
 void process_partition(document_partition<Iterator> &partition, GainF gain_function) {
-
     thread_local single_init_vector<size_t> left_degree(partition.left.term_count());
     left_degree.clear();
     thread_local single_init_vector<size_t> right_degree(partition.right.term_count());
     right_degree.clear();
-    // if constexpr (isParallel) {
-    //     tbb::parallel_invoke([&] { compute_degrees(partition.left, left_degree); },
-    //                          [&] { compute_degrees(partition.right, right_degree); });
-
-    // } else {
-    compute_degrees<false>(partition.left, left_degree);
-    compute_degrees<false>(partition.right, right_degree);
-    // }
+    compute_degrees(partition.left, left_degree);
+    compute_degrees(partition.right, right_degree);
     degree_map_pair degrees{left_degree, right_degree};
 
     for (int iteration = 0; iteration < 20; ++iteration) {
-        compute_gains<false>(partition, degrees, gain_function);
-        if constexpr (isParallel) {
-            //     compute_gains(partition, degrees, gain_function);
-            tbb::parallel_invoke(
-                [&] {
-                    std::sort(std::execution::par_unseq,
-                              partition.left.begin(),
-                              partition.left.end(),
-                              partition.left.by_gain());
-                },
-                [&] {
-                    std::sort(std::execution::par_unseq,
-                              partition.right.begin(),
-                              partition.right.end(),
-                              partition.right.by_gain());
-                });
-        } else {
-            // compute_gains<false>(partition, degrees, gain_function);
-            std::sort(partition.left.begin(), partition.left.end(), partition.left.by_gain());
-            std::sort(partition.right.begin(), partition.right.end(), partition.right.by_gain());
-        }
+        compute_gains(partition, degrees, gain_function);
+        tbb::parallel_invoke(
+            [&] {
+                std::sort(std::execution::par_unseq,
+                          partition.left.begin(),
+                          partition.left.end(),
+                          partition.left.by_gain());
+            },
+            [&] {
+                std::sort(std::execution::par_unseq,
+                          partition.right.begin(),
+                          partition.right.end(),
+                          partition.right.by_gain());
+            });
         swap(partition, degrees);
     }
 }
@@ -299,14 +275,20 @@ void recursive_graph_bisection(document_range<Iterator> documents,
     }
 }
 
+/// Runs the Network-BP according to the configuration in `nodes`.
+///
+/// All nodes on the same level of recursion are allowed to be executed in parallel.
+/// The caller must ensure that no range on the same level intersects with another.
+/// Failure to do so leads to undefined behavior.
 template <class Iterator>
 void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, progress &p) {
     std::sort(nodes.begin(), nodes.end());
     auto first = nodes.begin();
-    while (first != nodes.end()) {
+    auto end = nodes.end();
+    while (first != end) {
         auto last = std::find_if(
-            first, nodes.end(), [&first](const auto &node) { return node.level > first->level; });
-        bool last_level = last == nodes.end();
+            first, end, [&first](const auto &node) { return node.level > first->level; });
+        bool last_level = last == end;
         tbb::task_group level_group;
         std::for_each(first, last, [&level_group, last_level, &p](auto &node) {
             level_group.run([&]() {

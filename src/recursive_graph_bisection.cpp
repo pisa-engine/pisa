@@ -8,18 +8,38 @@
 #include "util/progress.hpp"
 
 using namespace ds2i;
+using iterator_type = std::vector<uint32_t>::iterator;
+using range_type    = document_range<iterator_type>;
+using node_type     = computation_node<iterator_type>;
 
-template <typename Iterator>
-std::vector<computation_node<Iterator>> read_config(const std::string &      config_file,
-                                                    document_range<Iterator> initial_range) {
-    std::vector<computation_node<Iterator>> nodes;
-    std::ifstream is(config_file);
-    std::string line;
+inline std::vector<node_type> read_node_config(const std::string &config_file,
+                                               const range_type & initial_range) {
+    std::vector<node_type> nodes;
+    std::ifstream          is(config_file);
+    std::string            line;
     while (std::getline(is, line)) {
         std::istringstream iss(line);
-        nodes.push_back(computation_node<Iterator>::from_stream(iss, initial_range));
+        nodes.push_back(node_type::from_stream(iss, initial_range));
     }
     return nodes;
+}
+
+inline void run_with_config(const std::string &config_file, const range_type &initial_range) {
+    auto nodes       = read_node_config(config_file, initial_range);
+    auto total_count = std::accumulate(
+        nodes.begin(), nodes.end(), std::ptrdiff_t(0), [](auto acc, const auto &node) {
+            return acc + node.partition.size();
+        });
+    ds2i::progress bp_progress("Graph bisection", total_count);
+    bp_progress.update(0);
+    recursive_graph_bisection(std::move(nodes), bp_progress);
+}
+
+inline void run_default_tree(size_t depth, const range_type &initial_range) {
+    std::cerr << "Default tree with depth " << depth << std::endl;
+    ds2i::progress bp_progress("Graph bisection", initial_range.size() * depth);
+    bp_progress.update(0);
+    recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
 }
 
 int main(int argc, char const *argv[]) {
@@ -42,7 +62,8 @@ int main(int argc, char const *argv[]) {
     app.add_option("--store-fwdidx", output_fwd, "Output basename (forward index)");
     app.add_option("--fwdidx", input_fwd, "Use this forward index");
     app.add_option("-m,--min-len", min_len, "Minimum list threshold");
-    auto optdepth = app.add_option("-d,--depth", depth, "Recursion depth");
+    auto optdepth =
+        app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
     app.add_option("-t,--threads", threads, "Thread count");
     app.add_option("--prelim", prelim, "Precomputing limit");
     auto optconf = app.add_option("--config", config_file, "Node configuration file");
@@ -51,12 +72,16 @@ int main(int argc, char const *argv[]) {
     optconf->excludes(optdepth);
     CLI11_PARSE(app, argc, argv);
 
+    bool config_provided = app.count("--config") > 0u;
+    bool depth_provided  = app.count("--depth") > 0u;
+    bool output_provided  = app.count("--output") > 0u;
     if (app.count("--output") + app.count("--store-fwdidx") == 0u) {
         std::cerr << "ERROR: Must define at least one output parameter.\n";
         return 1;
     }
 
     tbb::task_scheduler_init init(threads);
+    std::cerr << "Number of threads: " << threads << std::endl;
 
     forward_index fwd = app.count("--fwdidx") > 0u
                             ? forward_index::read(input_fwd)
@@ -65,43 +90,21 @@ int main(int argc, char const *argv[]) {
         forward_index::write(fwd, output_fwd);
     }
 
-    if (app.count("--output")) {
+    if (output_provided) {
         std::vector<uint32_t> documents(fwd.size());
         std::iota(documents.begin(), documents.end(), 0u);
         std::vector<double> gains(fwd.size(), 0.0);
-        document_range<std::vector<uint32_t>::iterator> initial_range(
-            documents.begin(), documents.end(), fwd, gains);
+        range_type initial_range(documents.begin(), documents.end(), fwd, gains);
 
-        if (app.count("--config") > 0u) {
-            {
-                auto nodes = read_config(config_file, initial_range);
-                auto total_count = std::accumulate(nodes.begin(),
-                                                   nodes.end(),
-                                                   std::ptrdiff_t(0),
-                                                   [](std::ptrdiff_t acc, const auto &node) {
-                                                       return acc + node.partition.size();
-                                                   });
-                ds2i::progress bp_progress("Graph bisection", total_count);
-                bp_progress.update(0);
-                recursive_graph_bisection(std::move(nodes), bp_progress);
-            }
-        }
-        else {
-            if (depth == 0u) {
-                depth = static_cast<size_t>(std::log2(fwd.size()) - 5 );
-            }
-            std::cerr << "Using max depth " << depth << std::endl;
-            std::cerr << "Number of threads: " << threads << std::endl;
-            std::cerr << "Minimum list threshold: " << min_len << std::endl;
-
-            {
-                ds2i::progress bp_progress("Graph bisection", initial_range.size() * depth);
-                bp_progress.update(0);
-                recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
-            }
+        if (config_provided) {
+            run_with_config(config_file, initial_range);
+        } else {
+            run_default_tree(depth_provided ? depth
+                                            : static_cast<size_t>(std::log2(fwd.size()) - 5),
+                             initial_range);
         }
 
-        if (app.count("--print") > 0u) {
+        if (print) {
             for (const auto& document : documents) {
                 std::cout << document << '\n';
             }
