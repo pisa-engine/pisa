@@ -134,6 +134,8 @@ void perftest(const std::string &index_filename,
             query_fun = [&](term_id_vec query) {
                 return maxscore_query<WandType>(wdata, k)(index, query);
             };
+        } else if (t == "exhaustive_taat" && wand_data_filename) {
+            query_fun = pisa::make_exhaustive_taat_query(index, wdata, k);
         } else {
             logger() << "Unsupported query type: " << t << std::endl;
             break;
