@@ -5,6 +5,7 @@ EXECUTE_PROCESS(COMMAND git submodule update --init
 
 # Add FastPFor
 add_subdirectory(FastPFor EXCLUDE_FROM_ALL)
+target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 
 # Add CLI11
 add_subdirectory(CLI11 EXCLUDE_FROM_ALL)
@@ -19,6 +20,10 @@ include_directories(${STXXL_INCLUDE_DIRS})
 include_directories(streamvbyte/include)
 add_library(streamvbyte STATIC streamvbyte/src/streamvbyte.c
                                streamvbyte/src/streamvbytedelta.c
+)
+target_compile_options(streamvbyte PRIVATE -Wno-cast-align
+                                           -Wno-incompatible-pointer-types
+                                           -Wimplicit-function-declaration
 )
 
 # Add maskedvbyte
