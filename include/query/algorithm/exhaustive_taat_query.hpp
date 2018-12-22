@@ -26,6 +26,14 @@ struct Scored_Cursor {
     }
 
     [[gnu::always_inline]] constexpr void next() { unscored_cursor.next(); }
+    [[nodiscard]] auto next_block() -> std::pair<std::vector<uint32_t>, std::vector<float>> {
+        auto [documents, frequencies] = unscored_cursor.next_block();
+        std::vector<float> scores(documents.size());
+        for (uint32_t idx = 0; idx < documents.size(); ++idx) {
+            scores[idx] = score_function(documents[idx], frequencies[idx]);
+        }
+        return std::make_pair(std::move(documents), std::move(scores));
+    }
 };
 
 template <typename Index, typename WandType>
@@ -72,8 +80,11 @@ struct exhaustive_taat_query {
         }
         std::fill(m_accumulators.begin(), m_accumulators.end(), 0.0);
         for (auto &cursor : cursors) {
-            for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
-                m_accumulators[cursor.docid()] += cursor.score();
+            while (cursor.docid() < m_accumulators.size()) {
+                auto [documents, scores] = cursor.next_block();
+                for (uint32_t idx = 0; idx < documents.size(); ++idx) {
+                    m_accumulators[documents[idx]] += scores[idx];
+                }
             }
         }
         for (uint64_t docid = 0u; docid < m_accumulators.size(); ++docid) {

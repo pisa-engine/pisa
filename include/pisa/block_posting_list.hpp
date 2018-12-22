@@ -156,6 +156,19 @@ namespace pisa {
                 }
             }
 
+            [[nodiscard]] std::pair<std::vector<uint32_t>, std::vector<uint32_t>> next_block()
+            {
+                // TODO: For now only, gotta be changed.
+                if (m_pos_in_block != 0) throw std::runtime_error("Oops.");
+
+                auto block = std::make_pair(std::move(m_docs_buf), std::move(m_freqs_buf));
+                m_docs_buf.resize(BlockCodec::block_size);
+                m_freqs_buf.resize(BlockCodec::block_size);
+                m_pos_in_block = m_cur_block_size - 1;
+                next();
+                return block;
+            }
+
             uint64_t docid() const
             {
                 return m_cur_docid;

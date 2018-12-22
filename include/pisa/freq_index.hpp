@@ -103,6 +103,14 @@ namespace pisa {
                 m_cur_docid = val.second;
             }
 
+            [[nodiscard]] std::pair<std::vector<uint32_t>, std::vector<uint32_t>> next_block()
+            {
+                auto block = std::make_pair<std::vector<uint32_t>, std::vector<uint32_t>>(
+                    {m_cur_docid}, {m_freqs_enum.move(m_cur_pos).second});
+                next();
+                return block;
+            }
+
             uint64_t docid() const
             {
                 return m_cur_docid;
