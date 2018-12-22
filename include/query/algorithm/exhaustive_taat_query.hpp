@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util/intrinsics.hpp"
 #include "topk_queue.hpp"
 
 namespace pisa {
@@ -83,6 +84,7 @@ struct exhaustive_taat_query {
             while (cursor.docid() < m_accumulators.size()) {
                 auto [documents, scores] = cursor.next_block();
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
+                    intrinsics::prefetch(&m_accumulators[documents[idx + 3]]);
                     m_accumulators[documents[idx]] += scores[idx];
                 }
             }
