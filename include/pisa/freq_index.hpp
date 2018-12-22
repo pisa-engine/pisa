@@ -76,6 +76,7 @@ namespace pisa {
 
         class document_enumerator {
         public:
+            using enumerator_category = ds2i::input_enumerator_tag;
             void reset()
             {
                 m_cur_pos = 0;
@@ -101,14 +102,6 @@ namespace pisa {
                 auto val = m_docs_enum.move(position);
                 m_cur_pos = val.first;
                 m_cur_docid = val.second;
-            }
-
-            [[nodiscard]] std::pair<std::vector<uint32_t>, std::vector<uint32_t>> next_block()
-            {
-                auto block = std::make_pair<std::vector<uint32_t>, std::vector<uint32_t>>(
-                    {m_cur_docid}, {m_freqs_enum.move(m_cur_pos).second});
-                next();
-                return block;
             }
 
             uint64_t docid() const

@@ -82,6 +82,8 @@ namespace pisa {
 
         class document_enumerator {
         public:
+            using enumerator_category = ds2i::block_enumerator_tag;
+
             document_enumerator(uint8_t const* data, uint64_t universe,
                                 size_t term_id = 0)
                 : m_n(0) // just to silence warnings
@@ -156,17 +158,23 @@ namespace pisa {
                 }
             }
 
-            [[nodiscard]] std::pair<std::vector<uint32_t>, std::vector<uint32_t>> next_block()
-            {
-                // TODO: For now only, gotta be changed.
-                if (m_pos_in_block != 0) throw std::runtime_error("Oops.");
+            // TODO(michal): I recommend using some view, like gsl::span or something
+            //               instead of a reference to a vector.
+            [[nodiscard]] auto document_buffer() -> std::vector<uint32_t> const & {
+                return m_docs_buf;
+            }
 
-                auto block = std::make_pair(std::move(m_docs_buf), std::move(m_freqs_buf));
-                m_docs_buf.resize(BlockCodec::block_size);
-                m_freqs_buf.resize(BlockCodec::block_size);
+            [[nodiscard]] auto frequency_buffer() -> std::vector<uint32_t> const & {
+                if (!m_freqs_decoded) {
+                    decode_freqs_block();
+                }
+                return m_freqs_buf;
+            }
+
+            void next_block()
+            {
                 m_pos_in_block = m_cur_block_size - 1;
                 next();
-                return block;
             }
 
             uint64_t docid() const

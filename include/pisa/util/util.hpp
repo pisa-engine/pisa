@@ -265,4 +265,8 @@ namespace pisa {
         bool first;
     };
 
+    // TODO(michal): We should extract it in a better place, couldn't find anything better quickly.
+    struct input_enumerator_tag {};
+    struct block_enumerator_tag : public input_enumerator_tag {};
+
 }
