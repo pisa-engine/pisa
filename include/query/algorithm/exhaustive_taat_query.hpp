@@ -39,16 +39,45 @@ template <typename Index, typename WandType>
 
 } // namespace query
 
-template <typename Index, typename WandType>
+template <typename Index, typename WandType, size_t accumulator_block_size = 0>
 struct exhaustive_taat_query {
     exhaustive_taat_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
+        : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs())
+    {
+        static_assert(accumulator_block_size >= 0, "must be non-negative");
+        if constexpr (accumulator_block_size > 0) {
+            m_acc_block_count =
+                (m_accumulators.size() + accumulator_block_size - 1) / accumulator_block_size;
+            m_accumulators_max.resize(m_acc_block_count);
+        } else {
+            m_acc_block_count = 1;
+            m_accumulators_max.push_back(std::numeric_limits<float>::max());
+        }
+    }
 
     uint64_t operator()(term_id_vec terms) {
         auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
         return taat(std::move(cws.first), std::move(cws.second));
     }
     using score_function_type = std::function<float(uint64_t, uint64_t)>;
+
+    void init()
+    {
+        std::fill(m_accumulators.begin(), m_accumulators.end(), 0.0);
+    }
+
+    void aggregate()
+    {
+        for (uint64_t block = 0u; block < m_acc_block_count; ++block) {
+            if (not m_topk.would_enter(m_accumulators_max[block])) {
+                break;
+            }
+            uint64_t end = std::max(accumulator_block_size * (block + 1), m_accumulators.size());
+            for (uint64_t docid = accumulator_block_size * block; docid < end; ++docid) {
+                m_topk.insert(m_accumulators[docid], docid);
+            }
+        }
+    }
 
     // TODO(michal): I think this should be eventually the `operator()`
     template <typename Cursor>
@@ -57,7 +86,7 @@ struct exhaustive_taat_query {
         if (cursors.empty()) {
             return 0;
         }
-        std::fill(m_accumulators.begin(), m_accumulators.end(), 0.0);
+        init();
         for (uint32_t term = 0; term < cursors.size(); ++term) {
             auto &cursor         = cursors[term];
             auto &score_function = score_functions[term];
@@ -68,8 +97,13 @@ struct exhaustive_taat_query {
                     auto const &freqs     = cursor.frequency_buffer();
                     for (uint32_t idx = 0; idx < documents.size(); ++idx) {
                         intrinsics::prefetch(&m_accumulators[documents[idx + 3]]);
-                        m_accumulators[documents[idx]] +=
-                            score_function(documents[idx], freqs[idx] + 1);
+                        auto& accumulator = m_accumulators[documents[idx]];
+                        accumulator += score_function(documents[idx], freqs[idx] + 1);
+                        if constexpr (accumulator_block_size > 1) {
+                            auto block = documents[idx] / accumulator_block_size;
+                            m_accumulators_max[block] =
+                                std::max(m_accumulators_max[block], accumulator);
+                        }
                     }
                     cursor.next_block();
                 }
@@ -77,9 +111,7 @@ struct exhaustive_taat_query {
                 // TODO(michal): when no blocks
             }
         }
-        for (uint64_t docid = 0u; docid < m_accumulators.size(); ++docid) {
-            m_topk.insert(m_accumulators[docid], docid);
-        }
+        aggregate();
 
         m_topk.finalize();
         return m_topk.topk().size();
@@ -92,6 +124,8 @@ struct exhaustive_taat_query {
     WandType const &   m_wdata;
     topk_queue         m_topk;
     std::vector<float> m_accumulators;
+    size_t             m_acc_block_count{};
+    std::vector<float> m_accumulators_max{};
 };
 
 template <typename Index, typename WandType>
