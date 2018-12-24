@@ -23,7 +23,7 @@ add_library(streamvbyte STATIC streamvbyte/src/streamvbyte.c
 )
 target_compile_options(streamvbyte PRIVATE -Wno-cast-align
                                            -Wno-incompatible-pointer-types
-                                           -Wimplicit-function-declaration
+                                           -Wno-implicit-function-declaration
 )
 
 # Add maskedvbyte
