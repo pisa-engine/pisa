@@ -77,6 +77,9 @@ target_link_libraries(recursive_graph_bisection
   QMX
   ParallelSTL
 )
+set_target_properties(recursive_graph_bisection PROPERTIES
+            CXX_STANDARD 17
+)
 
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
