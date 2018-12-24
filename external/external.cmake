@@ -5,6 +5,7 @@ EXECUTE_PROCESS(COMMAND git submodule update --init
 
 # Add FastPFor
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/FastPFor EXCLUDE_FROM_ALL)
+target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 
 # Add CLI11
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/CLI11 EXCLUDE_FROM_ALL)
@@ -19,6 +20,10 @@ include_directories(${STXXL_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/streamvbyte/include)
 add_library(streamvbyte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/external/streamvbyte/src/streamvbyte.c
                                ${CMAKE_CURRENT_SOURCE_DIR}/external/streamvbyte/src/streamvbytedelta.c
+)
+target_compile_options(streamvbyte PRIVATE -Wno-cast-align
+                                           -Wno-incompatible-pointer-types
+                                           -Wno-implicit-function-declaration
 )
 
 # Add maskedvbyte
