@@ -4,22 +4,22 @@ EXECUTE_PROCESS(COMMAND git submodule update --init
         )
 
 # Add FastPFor
-add_subdirectory(FastPFor EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/FastPFor EXCLUDE_FROM_ALL)
 target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 
 # Add CLI11
-add_subdirectory(CLI11 EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 
 # stxxl
 add_definitions(-DSTXXL_VERBOSE_LEVEL=-10) # suppress messages to stdout
-add_subdirectory(stxxl)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/stxxl)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STXXL_CXX_FLAGS}")
 include_directories(${STXXL_INCLUDE_DIRS})
 
 # Add streamvbyte
-include_directories(streamvbyte/include)
-add_library(streamvbyte STATIC streamvbyte/src/streamvbyte.c
-                               streamvbyte/src/streamvbytedelta.c
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/include)
+add_library(streamvbyte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/src/streamvbyte.c
+                               ${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/src/streamvbytedelta.c
 )
 target_compile_options(streamvbyte PRIVATE -Wno-cast-align
                                            -Wno-incompatible-pointer-types
@@ -27,18 +27,37 @@ target_compile_options(streamvbyte PRIVATE -Wno-cast-align
 )
 
 # Add maskedvbyte
-include_directories(MaskedVByte/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/include)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
-add_library(MaskedVByte STATIC MaskedVByte/src/varintdecode.c
-                               MaskedVByte/src/varintencode.c
+add_library(MaskedVByte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varintdecode.c
+                               ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varintencode.c
 )
 
 # Add QMX
-add_subdirectory(QMX EXCLUDE_FROM_ALL)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/QMX EXCLUDE_FROM_ALL)
 
 # Add SIMD-BP
-include_directories(simdcomp/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/include)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
-add_library(simdcomp STATIC simdcomp/src/simdbitpacking.c
-                            simdcomp/src/simdcomputil.c
+add_library(simdcomp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdbitpacking.c
+                            ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdcomputil.c
 )
+
+
+# Add TBB
+set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tbb/)
+include(${TBB_ROOT}/cmake/TBBBuild.cmake)
+tbb_build(
+    TBB_ROOT ${TBB_ROOT}
+    CONFIG_DIR TBB_DIR)
+# find_package(TBB REQUIRED tbb)
+
+# Add ParallelSTL
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/parallelstl EXCLUDE_FROM_ALL)
+target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
+                                           -Wno-unknown-pragmas
+                                           -Wno-sign-compare
+                                           -Wno-reorder
+)
+
+
