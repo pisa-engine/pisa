@@ -30,13 +30,16 @@ struct topk_queue {
             return false;
         }
         m_q.emplace_back(score, docid);
-        if (m_q.size() < m_k) {
+        if (DS2I_UNLIKELY(m_q.size() < m_k)) {
             std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
+            if(DS2I_UNLIKELY(m_q.size() == m_k)) {
+                m_threshold = m_q.front().first;
+            }        
         } else {
             std::pop_heap(m_q.begin(), m_q.end(), min_heap_order);
             m_q.pop_back();
+            m_threshold = m_q.front().first;
         }
-        m_threshold = m_q.size() == m_k ? m_q.front().first : 0.0;
         return true;
     }
 
