@@ -1,10 +1,11 @@
 #pragma once
 
+#include "tbb/parallel_invoke.h"
+
 #include "bitvector_collection.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "codec/integer_codes.hpp"
 #include "global_parameters.hpp"
-#include "configuration.hpp"
 
 namespace ds2i {
 
@@ -30,29 +31,21 @@ namespace ds2i {
             {
                 if (!n) throw std::invalid_argument("List must be nonempty");
 
-                auto const& conf = configuration::get();
-                task_region(*conf.executor, [&](task_region_handle& trh) {
-                        trh.run([&] {
-                                bit_vector_builder docs_bits;
-
-                                write_gamma_nonzero(docs_bits, occurrences);
-                                if (occurrences > 1) {
-                                    docs_bits.append_bits(n, ceil_log2(occurrences + 1));
-                                }
-
-                                DocsSequence::write(docs_bits, docs_begin,
-                                                    m_num_docs, n,
-                                                    m_params);
-                                m_docs_sequences.append(docs_bits);
-                            });
-
+                tbb::parallel_invoke(
+                    [&] {
+                        bit_vector_builder docs_bits;
+                        write_gamma_nonzero(docs_bits, occurrences);
+                        if (occurrences > 1) {
+                            docs_bits.append_bits(n, ceil_log2(occurrences + 1));
+                        }
+                        DocsSequence::write(docs_bits, docs_begin, m_num_docs, n, m_params);
+                        m_docs_sequences.append(docs_bits);
+                    },
+                    [&] {
                         bit_vector_builder freqs_bits;
-                        FreqsSequence::write(freqs_bits, freqs_begin,
-                                             occurrences + 1, n,
-                                             m_params);
+                        FreqsSequence::write(freqs_bits, freqs_begin, occurrences + 1, n, m_params);
                         m_freqs_sequences.append(freqs_bits);
                     });
-
             }
 
             void build(freq_index& sq)

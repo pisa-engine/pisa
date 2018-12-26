@@ -5,18 +5,9 @@
 #include <memory>
 #include <thread>
 
-#define BOOST_THREAD_VERSION 4
-#define BOOST_THREAD_PROVIDES_EXECUTORS
-#include <boost/config.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/thread/executors/basic_thread_pool.hpp>
-#include <boost/thread/experimental/parallel/v2/task_region.hpp>
 
 namespace ds2i {
-    typedef boost::executors::basic_thread_pool executor_type;
-    typedef boost::experimental::parallel::v2::task_region_handle_gen<executor_type>
-        task_region_handle;
-    using boost::experimental::parallel::v2::task_region;
 
     class configuration {
     public:
@@ -46,8 +37,6 @@ namespace ds2i {
 
         bool heuristic_greedy;
 
-        std::unique_ptr<executor_type> executor;
-
     private:
         configuration()
         {
@@ -65,7 +54,6 @@ namespace ds2i {
             fillvar("DS2I_EPS1_WAND", eps1_wand, 0.01);
             fillvar("DS2I_EPS2_WAND", eps2_wand, 0.4);
             fillvar("DS2I_SCORE_REFERENCES_SIZE", reference_size, 128);
-            executor.reset(new executor_type(worker_threads));
         }
 
         template <typename T, typename T2>
