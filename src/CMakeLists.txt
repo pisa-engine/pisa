@@ -39,6 +39,7 @@ target_link_libraries(queries
   QMX
   simdcomp
   CLI11
+  ParallelSTL
   )
 
 
