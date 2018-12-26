@@ -4,6 +4,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/optional.hpp>
 
+#include "mio/mmap.hpp"
+
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
@@ -71,7 +73,7 @@ void perftest(const std::string &index_filename,
     using namespace ds2i;
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
-    boost::iostreams::mapped_file_source m(index_filename.c_str());
+    mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
 
     logger() << "Warming up posting lists" << std::endl;
@@ -89,7 +91,7 @@ void perftest(const std::string &index_filename,
 
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
-    boost::iostreams::mapped_file_source md;
+    mio::mmap_source md;
     if (wand_data_filename) {
         md.open(wand_data_filename.value());
         mapper::map(wdata, md, mapper::map_flags::warmup);

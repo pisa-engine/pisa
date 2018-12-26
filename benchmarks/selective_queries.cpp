@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "succinct/mapper.hpp"
+#include "mio/mmap.hpp"
 
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"
@@ -16,7 +17,7 @@ void selective_queries(const char* index_filename,
 
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
-    boost::iostreams::mapped_file_source m(index_filename);
+    mio::mmap_source m(index_filename);
     mapper::map(index, m, mapper::map_flags::warmup);
 
     logger() << "Performing " << type << " queries" << std::endl;

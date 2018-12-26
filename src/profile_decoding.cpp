@@ -2,6 +2,7 @@
 #include <random>
 
 #include <boost/lexical_cast.hpp>
+#include "mio/mmap.hpp"
 
 #include "succinct/mapper.hpp"
 #include "index_types.hpp"
@@ -79,7 +80,7 @@ namespace ds2i {
 
         IndexType index;
         logger() << "Loading index from " << index_filename << std::endl;
-        boost::iostreams::mapped_file_source m(index_filename);
+        mio::mmap_source m(index_filename);
         mapper::map(index, m);
 
         std::vector<uint32_t> values;

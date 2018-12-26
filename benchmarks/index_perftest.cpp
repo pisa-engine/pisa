@@ -1,3 +1,4 @@
+#include "mio/mmap.hpp"
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
@@ -104,7 +105,7 @@ void perftest(const char* index_filename, std::string const& type)
 {
     logger() << "Loading index from " << index_filename << std::endl;
     IndexType index;
-    boost::iostreams::mapped_file_source m(index_filename);
+    mio::mmap_source m(index_filename);
     ds2i::mapper::map(index, m, ds2i::mapper::map_flags::warmup);
 
     perftest<IndexType, false>(index, type);

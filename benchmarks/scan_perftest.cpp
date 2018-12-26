@@ -1,3 +1,4 @@
+#include "mio/mmap.hpp"
 #include "succinct/mapper.hpp"
 #include "sequence_collection.hpp"
 #include "sequence/partitioned_sequence.hpp"
@@ -14,7 +15,7 @@ void perftest(const char* index_filename)
     typedef ds2i::sequence_collection<BaseSequence> collection_type;
     logger() << "Loading collection from " << index_filename << std::endl;
     collection_type coll;
-    boost::iostreams::mapped_file_source m(index_filename);
+    mio::mmap_source m(index_filename);
     ds2i::mapper::map(coll, m, ds2i::mapper::map_flags::warmup);
 
     if (true) {

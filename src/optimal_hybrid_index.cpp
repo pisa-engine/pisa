@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <thread>
 #include <numeric>
+#include "mio/mmap.hpp"
 
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem/operations.hpp>
 
 #include "succinct/mapper.hpp"
 
@@ -308,7 +308,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     using namespace ds2i;
 
     InputCollectionType input_coll;
-    boost::iostreams::mapped_file_source m(input_filename);
+    mio::mmap_source m(input_filename);
     mapper::map(input_coll, m);
 
     logger() << "Processing " << input_coll.size() << " posting lists" << std::endl;
@@ -329,7 +329,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
     logger() << num_blocks << " overall blocks" << std::endl;
 
-    if (boost::filesystem::exists(lambdas_filename)) {
+    if (!!std::ifstream(lambdas_filename)) {
         logger() << "Found lambdas file " << lambdas_filename << ", skipping recomputation" << std::endl;
         logger() << "To recompute lambdas, remove file" << std::endl;
     } else {

@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE sequence_collection
 
 #include "test_generic_sequence.hpp"
+#include "mio/mmap.hpp"
 
 #include "sequence_collection.hpp"
 #include "sequence/indexed_sequence.hpp"
@@ -36,7 +37,7 @@ void test_sequence_collection()
 
     {
         collection_type coll;
-        boost::iostreams::mapped_file_source m("temp.bin");
+        mio::mmap_source m("temp.bin");
         ds2i::mapper::map(coll, m);
 
         for (size_t i = 0; i < sequences.size(); ++i) {
