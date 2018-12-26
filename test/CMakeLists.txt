@@ -8,6 +8,7 @@ foreach(TEST_SRC ${TEST_SOURCES})
     ${Boost_LIBRARIES}
     QMX
     mio
+    ParallelSTL
     )
   add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
 

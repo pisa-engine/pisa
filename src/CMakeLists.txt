@@ -21,6 +21,7 @@ target_link_libraries(optimal_hybrid_index
   simdcomp
   ${STXXL_LIBRARIES}
   mio
+  ParallelSTL
 )
 
 add_executable(create_wand_data create_wand_data.cpp)
@@ -30,6 +31,7 @@ target_link_libraries(create_wand_data
   simdcomp
   CLI11
   mio
+  ParallelSTL
   )
 
 add_executable(queries queries.cpp)
@@ -42,6 +44,7 @@ target_link_libraries(queries
   simdcomp
   CLI11
   mio
+  ParallelSTL
   )
 
 
@@ -54,6 +57,7 @@ target_link_libraries(profile_queries
   QMX
   simdcomp
   mio
+  ParallelSTL
   )
 
 add_executable(profile_decoding profile_decoding.cpp)
@@ -65,6 +69,7 @@ target_link_libraries(profile_decoding
   QMX
   simdcomp
   mio
+  ParallelSTL
   )
 
 add_executable(shuffle_docids shuffle_docids.cpp)
@@ -76,6 +81,7 @@ target_link_libraries(shuffle_docids
   QMX
   simdcomp
   mio
+  ParallelSTL
   )
 
 add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
@@ -99,4 +105,5 @@ target_link_libraries(evaluate_collection_ordering
   QMX
   simdcomp
   mio
+  ParallelSTL
   )
