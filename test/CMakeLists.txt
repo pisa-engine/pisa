@@ -38,3 +38,21 @@ target_link_libraries(test_block_freq_index
     simdcomp
 )
 
+target_link_libraries(test_sample_index
+    FastPFor
+    streamvbyte
+    MaskedVByte
+    QMX
+    simdcomp
+)
+
+target_link_libraries(test_forward_index
+    FastPFor
+    streamvbyte
+    MaskedVByte
+    QMX
+    simdcomp
+    ParallelSTL
+)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

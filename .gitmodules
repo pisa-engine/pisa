@@ -22,3 +22,9 @@
 [submodule "external/CLI11"]
 	path = external/CLI11
 	url = https://github.com/CLIUtils/CLI11.git
+[submodule "external/parallelstl"]
+	path = external/parallelstl
+	url = https://github.com/intel/parallelstl.git
+[submodule "external/tbb"]
+	path = external/tbb
+	url = https://github.com/01org/tbb.git
