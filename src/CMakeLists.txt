@@ -19,6 +19,7 @@ target_link_libraries(optimal_hybrid_index
   QMX
   simdcomp
   ${STXXL_LIBRARIES}
+  ParallelSTL
 )
 
 add_executable(create_wand_data create_wand_data.cpp)
