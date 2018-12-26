@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdexcept>
+#include "tbb/task_group.h"
 
 #include "configuration.hpp"
 #include "global_parameters.hpp"
@@ -367,51 +368,52 @@ namespace ds2i {
                 : n;
 
             std::deque<std::vector<uint32_t>> superblock_partitions;
-            task_region(*conf.executor, [&](task_region_handle& thr) {
-                    size_t superblock_pos = 0;
-                    auto superblock_begin = begin;
-                    auto superblock_base = *begin;
+            tbb::task_group tg;
 
-                    while (superblock_pos < n) {
-                        size_t superblock_size = std::min<size_t>(superblock_bound,
-                                                                  n - superblock_pos);
-                        // If the remainder is smaller than the bound (possibly
-                        // empty), merge it to the current (now last) superblock.
-                        if (n - (superblock_pos + superblock_size) < superblock_bound) {
-                            superblock_size = n - superblock_pos;
+            size_t superblock_pos = 0;
+            auto superblock_begin = begin;
+            auto superblock_base = *begin;
+
+            while (superblock_pos < n) {
+                size_t superblock_size = std::min<size_t>(superblock_bound,
+                                                          n - superblock_pos);
+                // If the remainder is smaller than the bound (possibly
+                // empty), merge it to the current (now last) superblock.
+                if (n - (superblock_pos + superblock_size) < superblock_bound) {
+                    superblock_size = n - superblock_pos;
+                }
+                auto superblock_last = std::next(superblock_begin, superblock_size - 1);
+                auto superblock_end = std::next(superblock_last);
+
+                // If this is the last superblock, its universe is the
+                // list universe.
+                size_t superblock_universe =
+                    superblock_pos + superblock_size == n
+                    ? universe
+                    : *superblock_last + 1;
+
+                superblock_partitions.emplace_back();
+                auto& superblock_partition = superblock_partitions.back();
+
+                tg.run([=, &cost_fun, &conf, &superblock_partition] {
+                        optimal_partition opt(superblock_begin,
+                                              superblock_base,
+                                              superblock_universe,
+                                              superblock_size,
+                                              cost_fun,
+                                              conf.eps1, conf.eps2);
+
+                        superblock_partition.reserve(opt.partition.size());
+                        for (auto& endpoint: opt.partition) {
+                            superblock_partition.push_back(superblock_pos + endpoint);
                         }
-                        auto superblock_last = std::next(superblock_begin, superblock_size - 1);
-                        auto superblock_end = std::next(superblock_last);
+                    });
 
-                        // If this is the last superblock, its universe is the
-                        // list universe.
-                        size_t superblock_universe =
-                            superblock_pos + superblock_size == n
-                            ? universe
-                            : *superblock_last + 1;
-
-                        superblock_partitions.emplace_back();
-                        auto& superblock_partition = superblock_partitions.back();
-
-                        thr.run([=, &cost_fun, &conf, &superblock_partition] {
-                                optimal_partition opt(superblock_begin,
-                                                      superblock_base,
-                                                      superblock_universe,
-                                                      superblock_size,
-                                                      cost_fun,
-                                                      conf.eps1, conf.eps2);
-
-                                superblock_partition.reserve(opt.partition.size());
-                                for (auto& endpoint: opt.partition) {
-                                    superblock_partition.push_back(superblock_pos + endpoint);
-                                }
-                            });
-
-                        superblock_pos += superblock_size;
-                        superblock_begin = superblock_end;
-                        superblock_base = superblock_universe;
-                    }
-                });
+                superblock_pos += superblock_size;
+                superblock_begin = superblock_end;
+                superblock_base = superblock_universe;
+            }
+            tg.wait();
 
             for (const auto& superblock_partition: superblock_partitions) {
                 partition.insert(partition.end(),

@@ -7,6 +7,7 @@ target_link_libraries(create_freq_index
   QMX
   simdcomp
   CLI11
+  ParallelSTL
   )
 
 add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
