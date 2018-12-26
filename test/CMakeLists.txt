@@ -7,6 +7,7 @@ foreach(TEST_SRC ${TEST_SOURCES})
   target_link_libraries(${TEST_SRC_NAME}
     ${Boost_LIBRARIES}
     QMX
+    ParallelSTL
     )
   add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
 
