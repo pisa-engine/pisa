@@ -15,8 +15,6 @@ class progress {
             throw std::runtime_error("goal must be positive");
         }
         m_goal = goal;
-        std::thread t([&]() { status(); });
-        t.detach();
     }
     ~progress() {
         m_status.notify_one();
@@ -28,19 +26,7 @@ class progress {
     void update(size_t inc) {
         std::unique_lock<std::mutex> lock(m_mut);
         m_count += inc;
-    }
-
-    void print() {
-        std::unique_lock<std::mutex> lock(m_mut);
         print_status();
-    }
-
-    void status() {
-        while (m_count < m_goal) {
-            std::unique_lock<std::mutex> lock(m_mut);
-            print_status();
-            m_status.wait_for(lock, std::chrono::seconds(1));
-        }
     }
 
    private:
