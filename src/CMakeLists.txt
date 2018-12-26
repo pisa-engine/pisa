@@ -28,6 +28,7 @@ target_link_libraries(create_wand_data
   QMX
   simdcomp
   CLI11
+  ParallelSTL
   )
 
 add_executable(queries queries.cpp)
@@ -51,6 +52,7 @@ target_link_libraries(profile_queries
   MaskedVByte
   QMX
   simdcomp
+  ParallelSTL
   )
 
 add_executable(profile_decoding profile_decoding.cpp)
@@ -61,6 +63,7 @@ target_link_libraries(profile_decoding
   MaskedVByte
   QMX
   simdcomp
+  ParallelSTL
   )
 
 add_executable(shuffle_docids shuffle_docids.cpp)
@@ -71,6 +74,7 @@ target_link_libraries(shuffle_docids
   MaskedVByte
   QMX
   simdcomp
+  ParallelSTL
   )
 
 add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
@@ -92,4 +96,5 @@ target_link_libraries(evaluate_collection_ordering
   MaskedVByte
   QMX
   simdcomp
+  ParallelSTL
   )
