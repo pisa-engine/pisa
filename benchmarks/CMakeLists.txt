@@ -6,6 +6,7 @@ target_link_libraries(index_perftest
   MaskedVByte
   QMX
   simdcomp
+  ParallelSTL
   )
 
 add_executable(perftest_interpolative perftest_interpolative.cpp)
