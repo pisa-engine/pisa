@@ -135,7 +135,12 @@ void perftest(const std::string &index_filename,
                 return maxscore_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "exhaustive_taat" && wand_data_filename) {
-            query_fun = pisa::make_exhaustive_taat_query(index, wdata, k);
+            query_fun = pisa::make_exhaustive_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
+        } else if (t == "exhaustive_taat_lazy" && wand_data_filename) {
+            query_fun =
+                pisa::make_exhaustive_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
+        } else if (t == "maxscore_taat" && wand_data_filename) {
+            query_fun = pisa::make_maxscore_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
         } else {
             logger() << "Unsupported query type: " << t << std::endl;
             break;

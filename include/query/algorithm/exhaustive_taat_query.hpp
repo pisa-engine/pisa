@@ -5,6 +5,8 @@
 
 namespace pisa {
 
+using score_function_type = std::function<float(uint64_t, uint64_t)>;
+
 // TODO: These are functions common to query processing in general.
 //       They should be moved out of this file.
 namespace query {
@@ -16,7 +18,6 @@ template <typename Index, typename WandType>
     //               complex refactoring I want to avoid for now.
     using scorer_type         = bm25;
     using cursor_type         = typename Index::document_enumerator;
-    using score_function_type = std::function<float(uint64_t, uint64_t)>;
 
     auto query_term_freqs = query_freqs(terms);
     std::vector<cursor_type> cursors;
@@ -38,45 +39,104 @@ template <typename Index, typename WandType>
 }
 
 } // namespace query
+template <int counter_bit_size, typename Descriptor = std::uint64_t>
+struct Lazy_Accumulator {
+    static_assert(std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>,
+                  "must be unsigned number");
+    constexpr static auto descriptor_size        = sizeof(Descriptor);
+    constexpr static auto counters_in_descriptor = descriptor_size / counter_bit_size;
+    constexpr static auto mask                   = (1u << counter_bit_size) - 1;
+    constexpr static auto cycle                  = (1u << counter_bit_size);
 
-template <typename Index, typename WandType, size_t accumulator_block_size = 0>
-struct exhaustive_taat_query {
-    exhaustive_taat_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs())
-    {
-        static_assert(accumulator_block_size >= 0, "must be non-negative");
-        if constexpr (accumulator_block_size > 0) {
-            m_acc_block_count =
-                (m_accumulators.size() + accumulator_block_size - 1) / accumulator_block_size;
-            m_accumulators_max.resize(m_acc_block_count);
-        } else {
-            m_acc_block_count = 1;
-            m_accumulators_max.push_back(std::numeric_limits<float>::max());
+    struct Block {
+        Descriptor                                descriptor{};
+        std::array<float, counters_in_descriptor> accumulators{};
+
+        [[nodiscard]] auto counter(int pos) -> int {
+            return (descriptor >> (pos * counter_bit_size)) & mask;
+        }
+    };
+
+    Lazy_Accumulator(std::size_t size)
+        : m_size(size),
+          m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor) {}
+
+    void init() {
+        if (m_counter == 0) {
+            auto first = reinterpret_cast<std::byte *>(&m_accumulators.front());
+            auto last =
+                std::next(reinterpret_cast<std::byte *>(&m_accumulators.back()), sizeof(Block));
+            std::fill(first, last, std::byte{});
         }
     }
+
+    float &operator[](std::ptrdiff_t document) {
+        auto block        = document / counters_in_descriptor;
+        auto pos_in_block = document % counters_in_descriptor;
+        if (m_accumulators[block].counter(pos_in_block) < m_counter) {
+            m_accumulators[block].descriptor ^= (mask << pos_in_block * counter_bit_size);
+            m_accumulators[block].accumulators[pos_in_block] = 0;
+        }
+        return m_accumulators[block].accumulators[pos_in_block];
+    }
+
+    void aggregate(topk_queue &topk) {
+        uint64_t docid = 0u;
+        for (auto const &block : m_accumulators) {
+            for (auto const &score : block.accumulators) {
+                topk.insert(score, docid++);
+            }
+        };
+        m_counter = (m_counter + 1) % cycle;
+    }
+
+    [[nodiscard]] auto size() noexcept -> std::size_t { return m_size; }
+
+   private:
+    std::size_t        m_size;
+    std::vector<Block> m_accumulators;
+    int                m_counter{};
+};
+
+struct Simple_Accumulator : public std::vector<float> {
+    Simple_Accumulator(std::ptrdiff_t size) : std::vector<float>(size) {}
+    void init() { std::fill(begin(), end(), 0.0); }
+    void aggregate(topk_queue &topk) {
+        uint64_t docid = 0u;
+        std::for_each(begin(), end(), [&](auto score) { topk.insert(score, docid++); });
+    }
+};
+
+struct Taat_Traversal {
+    template <typename Cursor, typename Acc>
+    void static traverse_term(Cursor &cursor, score_function_type score, Acc &acc) {
+        if constexpr (std::is_same_v<typename Cursor::enumerator_category,
+                                     ds2i::block_enumerator_tag>) {
+            while (cursor.docid() < acc.size()) {
+                auto const &documents = cursor.document_buffer();
+                auto const &freqs     = cursor.frequency_buffer();
+                for (uint32_t idx = 0; idx < documents.size(); ++idx) {
+                    acc[documents[idx]] = score(documents[idx], freqs[idx]);
+                }
+                cursor.next_block();
+            }
+        } else {
+            for (; cursor.docid() < acc.size(); cursor.next()) {
+                acc[cursor.docid()] = score(cursor.docid(), cursor.freq());
+            }
+        }
+    }
+};
+
+template <typename Index, typename WandType, typename Acc = Simple_Accumulator>
+class exhaustive_taat_query {
+   public:
+    exhaustive_taat_query(Index const &index, WandType const &wdata, uint64_t k)
+        : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
 
     uint64_t operator()(term_id_vec terms) {
         auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
         return taat(std::move(cws.first), std::move(cws.second));
-    }
-    using score_function_type = std::function<float(uint64_t, uint64_t)>;
-
-    void init()
-    {
-        std::fill(m_accumulators.begin(), m_accumulators.end(), 0.0);
-    }
-
-    void aggregate()
-    {
-        for (uint64_t block = 0u; block < m_acc_block_count; ++block) {
-            if (not m_topk.would_enter(m_accumulators_max[block])) {
-                break;
-            }
-            uint64_t end = std::max(accumulator_block_size * (block + 1), m_accumulators.size());
-            for (uint64_t docid = accumulator_block_size * block; docid < end; ++docid) {
-                m_topk.insert(m_accumulators[docid], docid);
-            }
-        }
     }
 
     // TODO(michal): I think this should be eventually the `operator()`
@@ -86,33 +146,11 @@ struct exhaustive_taat_query {
         if (cursors.empty()) {
             return 0;
         }
-        init();
+        m_accumulators.init();
         for (uint32_t term = 0; term < cursors.size(); ++term) {
-            auto &cursor         = cursors[term];
-            auto &score_function = score_functions[term];
-            if constexpr (std::is_same_v<typename Cursor::enumerator_category,
-                                         ds2i::block_enumerator_tag>) {
-                while (cursor.docid() < m_accumulators.size()) {
-                    auto const &documents = cursor.document_buffer();
-                    auto const &freqs     = cursor.frequency_buffer();
-                    for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                        intrinsics::prefetch(&m_accumulators[documents[idx + 3]]);
-                        auto& accumulator = m_accumulators[documents[idx]];
-                        accumulator += score_function(documents[idx], freqs[idx] + 1);
-                        if constexpr (accumulator_block_size > 1) {
-                            auto block = documents[idx] / accumulator_block_size;
-                            m_accumulators_max[block] =
-                                std::max(m_accumulators_max[block], accumulator);
-                        }
-                    }
-                    cursor.next_block();
-                }
-            } else {
-                // TODO(michal): when no blocks
-            }
+            Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
         }
-        aggregate();
-
+        m_accumulators.aggregate(m_topk);
         m_topk.finalize();
         return m_topk.topk().size();
     }
@@ -120,19 +158,17 @@ struct exhaustive_taat_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    Index const &      m_index;
-    WandType const &   m_wdata;
-    topk_queue         m_topk;
-    std::vector<float> m_accumulators;
-    size_t             m_acc_block_count{};
-    std::vector<float> m_accumulators_max{};
+    Index const &          m_index;
+    WandType const &       m_wdata;
+    topk_queue             m_topk;
+    Acc                    m_accumulators;
 };
 
-template <typename Index, typename WandType>
+template <typename Acc, typename Index, typename WandType>
 [[nodiscard]] auto make_exhaustive_taat_query(Index const &   index,
                                               WandType const &wdata,
                                               uint64_t        k) {
-    return exhaustive_taat_query<Index, WandType>(index, wdata, k);
+    return exhaustive_taat_query<Index, WandType, Acc>(index, wdata, k);
 }
 
 }; // namespace pisa
