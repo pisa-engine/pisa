@@ -69,7 +69,7 @@ void profile(const char* index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename.value(), error);
+        md.map(wand_data_filename, error);
         if(error){
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
