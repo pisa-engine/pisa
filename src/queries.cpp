@@ -93,7 +93,12 @@ void perftest(const std::string &index_filename,
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
     mio::mmap_source md;
     if (wand_data_filename) {
-        md.open(wand_data_filename.value());
+        std::error_code error;
+        md.map(wand_data_filename.value(), error);
+        if(error){
+            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
+            throw std::runtime_error("Error opening file");
+        }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
