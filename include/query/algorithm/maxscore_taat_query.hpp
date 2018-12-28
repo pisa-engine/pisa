@@ -1,6 +1,7 @@
 #pragma once
 
 #include "exhaustive_taat_query.hpp"
+//#include "heap.hpp"
 #include "topk_queue.hpp"
 #include "util/intrinsics.hpp"
 
@@ -57,19 +58,123 @@ void apply_permutation(Container &container, const std::vector<std::size_t> &p) 
 }
 
 template <typename Container, typename... Containers, typename Function>
-void sort(Container &key_container, Function sort_function, Containers &... containers) {
+void sort_many(Container &key_container, Function sort_function, Containers &... containers) {
     auto permutation = sort_permutation(key_container, sort_function);
     (apply_permutation(containers, permutation), ...);
 }
 
+namespace heap {
+
+} // namespace heap
+
+template <typename K, typename P, typename Order = heap::Max_Order<K, P>>
+class Bounded_Priority_Queue {
+   public:
+    using key_type      = K;
+    using priority_type = P;
+    using entry_type    = std::pair<K, P>;
+
+    struct Reverse_Function {
+        std::unordered_map<key_type, int> &reverse;
+        void operator()(entry_type const &entry, int pos) { reverse[entry.first] = pos; }
+    };
+
+    explicit Bounded_Priority_Queue(uint64_t capacity, Order order = heap::Max_Order<K, P>{})
+        : m_threshold(0),
+          m_capacity(capacity),
+          m_order(std::move(order)),
+          m_reverse_function{m_reverse} {
+        m_entries.reserve(capacity + 1);
+    }
+    Bounded_Priority_Queue(Bounded_Priority_Queue const &) = default;
+    Bounded_Priority_Queue &operator=(Bounded_Priority_Queue const &) = default;
+
+    void push(key_type const &key, priority_type const &priority) {
+        if (DS2I_UNLIKELY(priority < m_threshold)) {
+            return;
+        }
+        m_entries.emplace_back(key, priority);
+        if (DS2I_UNLIKELY(m_entries.size() < m_capacity)) {
+            auto pos = push_heap(m_entries.begin(), m_entries.end(), m_reverse_function, m_order);
+            if (DS2I_UNLIKELY(m_entries.size() == m_capacity)) {
+                m_threshold = m_entries.front().second;
+            }
+            m_reverse[key] = std::distance(m_entries.begin(), pos);
+        } else {
+            auto pos = pop_heap(m_entries.begin(), m_entries.end(), m_reverse_function, m_order);
+            m_entries.pop_back();
+            m_threshold = m_entries.front().second;
+            m_reverse[key] = std::distance(m_entries.begin(), pos);
+        }
+    }
+
+    [[nodiscard]] auto find(key_type const& key) const {
+        if (auto pos = m_reverse.find(key); pos != m_reverse.end()) {
+            return std::next(m_entries.begin(), *pos);
+        }
+        return m_entries.end();
+    }
+
+    template <typename RandomAccessIterator>
+    void increase_priority(RandomAccessIterator handle, priority_type priority) {
+        handle->second = priority;
+        auto pos = heap::sift_up_and_track(m_entries.begin(), handle, m_order, m_reverse_function);
+        m_reverse[handle->first] = std::distance(m_entries.begin(), pos);
+    }
+
+    void push_or_update(key_type const &key, priority_type const &priority) {
+        if (auto pos = m_reverse.find(key); pos != m_reverse.end()) {
+            increase_priority(std::next(m_entries.begin(), pos->second), priority);
+        }
+        return push(key, priority);
+    }
+
+    bool would_enter(priority_type priority) const {
+        return m_entries.size() < m_capacity || priority > m_threshold;
+    }
+
+    void finalize() {
+        std::sort_heap(m_entries.begin(), m_entries.end(), m_order);
+        size_t size =
+            std::lower_bound(m_entries.begin(),
+                             m_entries.end(),
+                             0,
+                             [](std::pair<float, uint64_t> l, float r) { return l.first > r; }) -
+            m_entries.begin();
+        m_entries.resize(size);
+    }
+
+    [[nodiscard]] std::vector<entry_type> const &topk() const noexcept { return m_entries; }
+
+    void clear() noexcept { m_entries.clear(); }
+
+    [[nodiscard]] uint64_t size() const noexcept { return m_capacity; }
+
+   private:
+    float                             m_threshold;
+    std::size_t                       m_capacity;
+    std::vector<entry_type>           m_entries;
+    std::unordered_map<key_type, int> m_reverse;
+    Order                             m_order;
+    Reverse_Function                  m_reverse_function;
+};
+
 template <typename Index, typename WandType, typename Acc = Simple_Accumulator>
 class maxscore_taat_query {
+    using accumulator_reference = typename Acc::reference;
+
    public:
     maxscore_taat_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
+        : m_index(index), m_wdata(wdata), m_k(k), m_topk(k), m_accumulators(index.num_docs()) {}
 
     uint64_t operator()(term_id_vec terms) {
-        auto cws         = query::cursors_with_scores(m_index, m_wdata, terms);
+        auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
+        return maxscore_taat(
+            std::move(cws.first), std::move(cws.second), max_weights(m_index, m_wdata, terms));
+    }
+
+    uint64_t operator()([[maybe_unused]] Index const &, term_id_vec terms) {
+        auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
         return maxscore_taat(
             std::move(cws.first), std::move(cws.second), max_weights(m_index, m_wdata, terms));
     }
@@ -82,22 +187,49 @@ class maxscore_taat_query {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    auto& accumulator = m_accumulators[documents[idx]];
+                    accumulator_reference accumulator = m_accumulators[documents[idx]];
                     if (accumulator > 0) {
-                        accumulator = score(documents[idx], freqs[idx]);
+                        accumulator += score(documents[idx], freqs[idx]);
                     }
                 }
                 cursor.next_block();
             }
         } else {
             for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
-                auto &accumulator = m_accumulators[cursor.docid()];
+                accumulator_reference accumulator = m_accumulators[cursor.docid()];
                 if (accumulator > 0) {
-                    accumulator = score(cursor.docid(), cursor.freq());
+                    accumulator += score(cursor.docid(), cursor.freq());
                 }
             }
         }
     }
+
+    //template <typename Cursor>
+    //void static traverse_term(Cursor &                                 cursor,
+    //                          score_function_type                      score,
+    //                          Acc &                                    acc,
+    //                          Bounded_Priority_Queue<uint32_t, float> &heap)
+    //{
+    //    if constexpr (std::is_same_v<typename Cursor::enumerator_category,
+    //                                 ds2i::block_enumerator_tag>) {
+    //        while (cursor.docid() < acc.size()) {
+    //            auto const &documents = cursor.document_buffer();
+    //            auto const &freqs     = cursor.frequency_buffer();
+    //            for (uint32_t idx = 0; idx < documents.size(); ++idx) {
+    //                auto document = documents[idx];
+    //                acc[document] += score(document, freqs[idx]);
+    //                heap.push_or_update(document, acc[document]);
+    //            }
+    //            cursor.next_block();
+    //        }
+    //    } else {
+    //        for (; cursor.docid() < acc.size(); cursor.next()) {
+    //            auto document = cursor.docid();
+    //            acc[document] += score(document, cursor.freq());
+    //            heap.push_or_update(document, acc[document]);
+    //        }
+    //    }
+    //}
 
     // TODO(michal): I think this should be eventually the `operator()`
     template <typename Cursor>
@@ -108,21 +240,21 @@ class maxscore_taat_query {
             m_topk.clear();
             return 0;
         }
-        sort(max_weights, [](auto lhs, auto rhs) { return lhs < rhs; }, cursors, score_functions);
+        sort_many(
+            max_weights, [](auto lhs, auto rhs) { return lhs > rhs; }, cursors, score_functions);
 
-        float essential_sum    = 0;
+        //Bounded_Priority_Queue<uint32_t, float> heap(m_k);
         float nonessential_sum = std::accumulate(max_weights.begin(), max_weights.end(), 0.0);
         m_accumulators.init();
         uint32_t term = 0;
         for (; term < cursors.size(); ++term) {
-            essential_sum += max_weights[term];
-            nonessential_sum -= max_weights[term];
-            Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
             m_topk.clear();
             m_accumulators.aggregate(m_topk);
             if (not m_topk.would_enter(nonessential_sum)) {
                 break;
             }
+            Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
+            nonessential_sum -= max_weights[term];
         }
 
         for (; term < cursors.size(); ++term) {
@@ -140,6 +272,7 @@ class maxscore_taat_query {
    private:
     Index const &          m_index;
     WandType const &       m_wdata;
+    int                    m_k;
     topk_queue             m_topk;
     Acc                    m_accumulators;
 };

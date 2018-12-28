@@ -39,20 +39,91 @@ template <typename Index, typename WandType>
 }
 
 } // namespace query
+
+template <int block_size>
+struct Blocked_Accumulator {
+
+    struct Proxy_Element {
+        std::ptrdiff_t      document;
+        std::vector<float> &accumulators;
+        std::vector<float> &accumulators_max;
+
+        Proxy_Element &operator=(float score) {
+            accumulators[document] = score;
+            auto &block_max        = accumulators_max[document / block_size];
+            if (score > block_max) {
+                block_max = score;
+            }
+            return *this;
+        }
+        Proxy_Element &operator+=(float delta) {
+            accumulators[document] += delta;
+            auto const&score = accumulators[document];
+            auto &block_max = accumulators_max[document / block_size];
+            if (score > block_max) {
+                block_max = score;
+            }
+            return *this;
+        }
+
+        operator float() { return accumulators[document]; }
+    };
+
+    using reference = Proxy_Element;
+
+    static_assert(block_size > 0, "must be positive");
+
+    [[nodiscard]] constexpr static auto calc_block_count(std::size_t size) noexcept -> std::size_t {
+        return (size + block_size - 1) / block_size;
+    }
+
+    Blocked_Accumulator(std::size_t size)
+        : m_size(size),
+        m_block_count(calc_block_count(size)), m_accumulators(size),
+        m_accumulators_max(m_block_count) {}
+
+    void init() { std::fill(m_accumulators.begin(), m_accumulators.end(), 0.0); }
+
+    [[nodiscard]] auto operator[](std::ptrdiff_t document) -> Proxy_Element {
+        return {document, m_accumulators, m_accumulators_max};
+    }
+
+    void aggregate(topk_queue &topk) {
+        for (size_t block = 0; block < m_block_count; ++block) {
+            if (not topk.would_enter(m_accumulators_max[block])) { continue; }
+            uint32_t doc = block * block_size;
+            uint32_t end = std::min((block + 1) * block_size, m_accumulators.size());
+            for (; doc < end; ++doc) {
+                topk.insert(m_accumulators[doc], doc);
+            }
+        }
+    }
+
+    [[nodiscard]] auto size() noexcept -> std::size_t { return m_size; }
+
+   private:
+    std::size_t        m_size;
+    std::size_t        m_block_count;
+    std::vector<float> m_accumulators;
+    std::vector<float> m_accumulators_max;
+};
+
 template <int counter_bit_size, typename Descriptor = std::uint64_t>
 struct Lazy_Accumulator {
+    using reference = float &;
+
     static_assert(std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>,
                   "must be unsigned number");
-    constexpr static auto descriptor_size        = sizeof(Descriptor);
-    constexpr static auto counters_in_descriptor = descriptor_size / counter_bit_size;
-    constexpr static auto mask                   = (1u << counter_bit_size) - 1;
-    constexpr static auto cycle                  = (1u << counter_bit_size);
+    constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
+    constexpr static auto counters_in_descriptor  = descriptor_size_in_bits / counter_bit_size;
+    constexpr static auto mask                    = (1u << counter_bit_size) - 1;
+    constexpr static auto cycle                   = (1u << counter_bit_size);
 
     struct Block {
         Descriptor                                descriptor{};
         std::array<float, counters_in_descriptor> accumulators{};
 
-        [[nodiscard]] auto counter(int pos) -> int {
+        [[nodiscard]] auto counter(int pos) const noexcept -> int {
             return (descriptor >> (pos * counter_bit_size)) & mask;
         }
     };
@@ -66,15 +137,19 @@ struct Lazy_Accumulator {
             auto first = reinterpret_cast<std::byte *>(&m_accumulators.front());
             auto last =
                 std::next(reinterpret_cast<std::byte *>(&m_accumulators.back()), sizeof(Block));
-            std::fill(first, last, std::byte{});
+            std::fill(first, last, std::byte{0});
         }
     }
 
-    float &operator[](std::ptrdiff_t document) {
-        auto block        = document / counters_in_descriptor;
-        auto pos_in_block = document % counters_in_descriptor;
-        if (m_accumulators[block].counter(pos_in_block) < m_counter) {
-            m_accumulators[block].descriptor ^= (mask << pos_in_block * counter_bit_size);
+    float &operator[](std::ptrdiff_t const document) {
+        auto const block        = document / counters_in_descriptor;
+        auto const pos_in_block = document % counters_in_descriptor;
+        if (m_accumulators[block].accumulators[pos_in_block] > 0 &&
+            m_accumulators[block].counter(pos_in_block) < m_counter)
+        {
+            auto const shift = pos_in_block * counter_bit_size;
+            m_accumulators[block].descriptor &= ~(mask << shift);
+            m_accumulators[block].descriptor |= m_counter << shift;
             m_accumulators[block].accumulators[pos_in_block] = 0;
         }
         return m_accumulators[block].accumulators[pos_in_block];
@@ -83,8 +158,12 @@ struct Lazy_Accumulator {
     void aggregate(topk_queue &topk) {
         uint64_t docid = 0u;
         for (auto const &block : m_accumulators) {
+            int pos = 0;
             for (auto const &score : block.accumulators) {
-                topk.insert(score, docid++);
+                if (block.counter(pos++) == m_counter) {
+                    topk.insert(score, docid);
+                }
+                ++docid;
             }
         };
         m_counter = (m_counter + 1) % cycle;
@@ -116,13 +195,13 @@ struct Taat_Traversal {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    acc[documents[idx]] = score(documents[idx], freqs[idx]);
+                    acc[documents[idx]] += score(documents[idx], freqs[idx]);
                 }
                 cursor.next_block();
             }
         } else {
             for (; cursor.docid() < acc.size(); cursor.next()) {
-                acc[cursor.docid()] = score(cursor.docid(), cursor.freq());
+                acc[cursor.docid()] += score(cursor.docid(), cursor.freq());
             }
         }
     }
@@ -135,6 +214,11 @@ class exhaustive_taat_query {
         : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
 
     uint64_t operator()(term_id_vec terms) {
+        auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
+        return taat(std::move(cws.first), std::move(cws.second));
+    }
+
+    uint64_t operator()([[maybe_unused]] Index const &, term_id_vec terms) {
         auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
         return taat(std::move(cws.first), std::move(cws.second));
     }
