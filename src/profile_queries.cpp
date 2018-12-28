@@ -5,6 +5,8 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
+#include "mio/mmap.hpp"
+
 #include "succinct/mapper.hpp"
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"
@@ -60,13 +62,18 @@ void profile(const char* index_filename,
     typename add_profiling<IndexType>::type index;
     typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
     logger() << "Loading index from " << index_filename << std::endl;
-    boost::iostreams::mapped_file_source m(index_filename);
+    mio::mmap_source m(index_filename);
     mapper::map(index, m);
 
     WandType wdata;
-    boost::iostreams::mapped_file_source md;
+    mio::mmap_source md;
     if (wand_data_filename) {
-        md.open(wand_data_filename);
+        std::error_code error;
+        md.map(wand_data_filename, error);
+        if(error){
+            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
+            throw std::runtime_error("Error opening file");
+        }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 

@@ -8,6 +8,7 @@
 #include "sequence/positive_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
 #include "succinct/mapper.hpp"
+#include "mio/mmap.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -48,7 +49,7 @@ void test_freq_index()
 
     {
         collection_type coll;
-        boost::iostreams::mapped_file_source m("temp.bin");
+        mio::mmap_source m("temp.bin");
         ds2i::mapper::map(coll, m);
 
         for (size_t i = 0; i < posting_lists.size(); ++i) {

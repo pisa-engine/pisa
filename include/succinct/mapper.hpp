@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iostream>
 
-#include <boost/iostreams/device/mapped_file.hpp>
+#include "mio/mmap.hpp"
 
 #include "succinct/mappable_vector.hpp"
 
@@ -237,7 +237,7 @@ size_t map(T &val,
 
 template <typename T>
 size_t map(T &val,
-           boost::iostreams::mapped_file_source const &m,
+           const mio::mmap_source &m,
            uint64_t flags = 0,
            const char *friendly_name = "<TOP>") {
     return map(val, m.data(), flags, friendly_name);

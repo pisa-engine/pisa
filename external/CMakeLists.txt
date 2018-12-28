@@ -36,6 +36,11 @@ add_library(MaskedVByte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varin
 # Add QMX
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/QMX EXCLUDE_FROM_ALL)
 
+# Add mio
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mio EXCLUDE_FROM_ALL)
+target_compile_options(mio INTERFACE -Wno-sign-compare)
+
+
 # Add SIMD-BP
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/include)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")

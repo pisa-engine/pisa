@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mio/mmap.hpp"
+
 #include "succinct/mapper.hpp"
 #include "util/util.hpp"
 
@@ -9,7 +11,7 @@ using ds2i::logger;
 template<typename InputCollection, typename Collection>
 void verify_collection(InputCollection const &input, const char *filename) {
     Collection coll;
-    boost::iostreams::mapped_file_source m(filename);
+    mio::mmap_source m(filename);
     ds2i::mapper::map(coll, m);
     size_t size=0;
     logger() << "Checking the written data, just to be extra safe..." << std::endl;

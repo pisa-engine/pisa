@@ -7,6 +7,7 @@ target_link_libraries(create_freq_index
   QMX
   simdcomp
   CLI11
+  mio
   ParallelSTL
   )
 
@@ -19,6 +20,7 @@ target_link_libraries(optimal_hybrid_index
   QMX
   simdcomp
   ${STXXL_LIBRARIES}
+  mio
   ParallelSTL
 )
 
@@ -28,6 +30,7 @@ target_link_libraries(create_wand_data
   QMX
   simdcomp
   CLI11
+  mio
   ParallelSTL
   )
 
@@ -40,6 +43,7 @@ target_link_libraries(queries
   QMX
   simdcomp
   CLI11
+  mio
   ParallelSTL
   )
 
@@ -52,6 +56,7 @@ target_link_libraries(profile_queries
   MaskedVByte
   QMX
   simdcomp
+  mio
   ParallelSTL
   )
 
@@ -63,6 +68,7 @@ target_link_libraries(profile_decoding
   MaskedVByte
   QMX
   simdcomp
+  mio
   ParallelSTL
   )
 
@@ -74,6 +80,7 @@ target_link_libraries(shuffle_docids
   MaskedVByte
   QMX
   simdcomp
+  mio
   ParallelSTL
   )
 
@@ -83,6 +90,7 @@ target_link_libraries(recursive_graph_bisection
   CLI11
   QMX
   ParallelSTL
+  mio
 )
 set_target_properties(recursive_graph_bisection PROPERTIES
             CXX_STANDARD 17
@@ -96,5 +104,6 @@ target_link_libraries(evaluate_collection_ordering
   MaskedVByte
   QMX
   simdcomp
+  mio
   ParallelSTL
   )

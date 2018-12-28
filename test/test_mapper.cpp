@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE mapper
 #include "test_common.hpp"
 
-#include <boost/filesystem.hpp>
+#include "mio/mmap.hpp"
 
 #include "succinct/mapper.hpp"
 
@@ -21,13 +21,13 @@ BOOST_AUTO_TEST_CASE(basic_map)
 
     {
         ds2i::mapper::mappable_vector<int> mapped_vec;
-        boost::iostreams::mapped_file_source m("temp.bin");
+        mio::mmap_source m("temp.bin");
         ds2i::mapper::map(mapped_vec, m);
         BOOST_REQUIRE_EQUAL(vec.size(), mapped_vec.size());
         BOOST_REQUIRE(std::equal(vec.begin(), vec.end(), mapped_vec.begin()));
     }
 
-    boost::filesystem::remove("temp.bin");
+    std::remove("temp.bin");
 }
 
 class complex_struct {
@@ -67,11 +67,11 @@ BOOST_AUTO_TEST_CASE(complex_struct_map)
     BOOST_REQUIRE_EQUAL(0U, mapped_s.m_b.size());
 
     {
-        boost::iostreams::mapped_file_source m("temp.bin");
+        mio::mmap_source m("temp.bin");
         ds2i::mapper::map(mapped_s, m);
         BOOST_REQUIRE_EQUAL(s.m_a, mapped_s.m_a);
         BOOST_REQUIRE_EQUAL(s.m_b.size(), mapped_s.m_b.size());
     }
 
-    boost::filesystem::remove("temp.bin");
+    std::remove("temp.bin");
 }

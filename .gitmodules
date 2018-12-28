@@ -28,3 +28,6 @@
 [submodule "external/tbb"]
 	path = external/tbb
 	url = https://github.com/01org/tbb.git
+[submodule "external/mio"]
+	path = external/mio
+	url = https://github.com/mandreyel/mio.git

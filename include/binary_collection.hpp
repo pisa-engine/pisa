@@ -1,9 +1,9 @@
 #pragma once
 
-#include <boost/iostreams/device/mapped_file.hpp>
 #include <stdexcept>
 #include <iterator>
 #include <cstdint>
+#include "mio/mmap.hpp"
 #include "util/util.hpp"
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -18,8 +18,10 @@ namespace ds2i {
 
         binary_collection(const char* filename)
         {
-            m_file.open(filename);
-            if ( !m_file.is_open() ) {
+            std::error_code error;
+            m_file.map(filename, error);
+            if ( error ) {
+                std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
                 throw std::runtime_error("Error opening file");
             }
             m_data = (posting_type const*)m_file.data();
@@ -152,7 +154,7 @@ namespace ds2i {
         };
 
     private:
-        boost::iostreams::mapped_file_source m_file;
+        mio::mmap_source m_file;
         posting_type const* m_data;
         size_t m_data_size;
     };
