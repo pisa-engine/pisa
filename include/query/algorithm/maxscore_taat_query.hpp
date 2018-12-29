@@ -89,6 +89,7 @@ class maxscore_taat_query {
             while (cursor.docid() < m_accumulators.size()) {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
+                #pragma omp simd
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
                     accumulator_reference accumulator = m_accumulators[documents[idx]];
                     if (accumulator > 0) {
