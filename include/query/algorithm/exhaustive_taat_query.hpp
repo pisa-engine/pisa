@@ -1,5 +1,7 @@
 #pragma once
 
+#include <omp.h>
+
 #include "util/intrinsics.hpp"
 #include "topk_queue.hpp"
 
@@ -194,6 +196,7 @@ struct Taat_Traversal {
             while (cursor.docid() < acc.size()) {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
+                #pragma omp simd
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
                     acc[documents[idx]] += score(documents[idx], freqs[idx]);
                 }
