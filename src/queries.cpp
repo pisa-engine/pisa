@@ -67,6 +67,7 @@ template <typename IndexType, typename WandType>
 void perftest(const std::string &index_filename,
               const boost::optional<std::string> &wand_data_filename,
               const std::vector<ds2i::term_id_vec> &queries,
+              const boost::optional<std::string> &thresholds_filename,
               std::string const &type,
               std::string const &query_type,
               uint64_t k) {
@@ -100,6 +101,15 @@ void perftest(const std::string &index_filename,
             throw std::runtime_error("Error opening file");
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
+    }
+
+    std::vector<float> thresholds;
+    if (thresholds_filename) {
+        std::string t;
+        std::ifstream tin(thresholds_filename.value());
+        while (std::getline(tin, t)) {
+            thresholds.push_back(std::stof(t));
+        }
     }
 
     logger() << "Performing " << type << " queries" << std::endl;
@@ -155,6 +165,7 @@ int main(int argc, const char **argv) {
     std::string index_filename;
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
+    boost::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
 
@@ -166,6 +177,7 @@ int main(int argc, const char **argv) {
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    app.add_option("-T,--thresholds", thresholds_filename, "k value");
     CLI11_PARSE(app, argc, argv);
 
     std::vector<term_id_vec> queries;
@@ -184,16 +196,26 @@ int main(int argc, const char **argv) {
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                      \
-    }                                                                              \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                      \
-        if (compressed) {                                                          \
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(                 \
-                index_filename, wand_data_filename, queries, type, query_type, k); \
-        } else {                                                                   \
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(                     \
-                index_filename, wand_data_filename, queries, type, query_type, k); \
-        }                                                                          \
+#define LOOP_BODY(R, DATA, T)                                                          \
+    }                                                                                  \
+    else if (type == BOOST_PP_STRINGIZE(T)) {                                          \
+        if (compressed) {                                                              \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
+                                                                  wand_data_filename,  \
+                                                                  queries,             \
+                                                                  thresholds_filename, \
+                                                                  type,                \
+                                                                  query_type,          \
+                                                                  k);                  \
+        } else {                                                                       \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
+                                                              wand_data_filename,      \
+                                                              queries,                 \
+                                                              thresholds_filename,     \
+                                                              type,                    \
+                                                              query_type,              \
+                                                              k);                      \
+        }                                                                              \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
