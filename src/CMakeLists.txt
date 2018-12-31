@@ -47,6 +47,19 @@ target_link_libraries(queries
   ParallelSTL
   )
 
+add_executable(thresholds thresholds.cpp)
+target_link_libraries(thresholds
+  ${Boost_LIBRARIES}
+  FastPFor
+  streamvbyte
+  MaskedVByte
+  QMX
+  simdcomp
+  CLI11
+  mio
+  ParallelSTL
+  )
+
 
 add_executable(profile_queries profile_queries.cpp)
 target_link_libraries(profile_queries
