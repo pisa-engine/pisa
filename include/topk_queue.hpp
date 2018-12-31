@@ -34,7 +34,7 @@ struct topk_queue {
             std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
             if(DS2I_UNLIKELY(m_q.size() == m_k)) {
                 m_threshold = m_q.front().first;
-            }        
+            }
         } else {
             std::pop_heap(m_q.begin(), m_q.end(), min_heap_order);
             m_q.pop_back();
