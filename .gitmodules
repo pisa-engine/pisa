@@ -31,3 +31,6 @@
 [submodule "external/mio"]
 	path = external/mio
 	url = https://github.com/mandreyel/mio.git
+[submodule "external/GSL"]
+	path = external/GSL
+	url = https://github.com/Microsoft/GSL.git
