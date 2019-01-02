@@ -10,6 +10,7 @@
 #include "CLI/CLI.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 #include "tbb/task_scheduler_init.h"
 
@@ -257,14 +258,16 @@ class Forward_Index_Builder {
     void build(std::istream &             is,
                std::string const &        output_file,
                read_record_function_type  next_record,
-               process_term_function_type process_term)
+               process_term_function_type process_term,
+               std::ptrdiff_t             batch_size)
     {
         Document_Id    first_document{0};
-        std::ptrdiff_t batch_size = 1000;
         std::ptrdiff_t batch_number = 0;
 
         std::vector<Record> record_batch;
         tbb::task_group     batch_group;
+        tbb::concurrent_bounded_queue<int> queue;
+        queue.set_capacity(8);
         while (true) {
             std::optional<Record> record = std::nullopt;
             try {
@@ -288,8 +291,11 @@ class Forward_Index_Builder {
             if (record_batch.size() == batch_size) {
                 Batch_Process bp{
                     batch_number, std::move(record_batch), first_document, output_file};
-                batch_group.run([bp = std::move(bp), process_term, this]() {
+                queue.push(0);
+                batch_group.run([bp = std::move(bp), process_term, this, &queue]() {
                     run(std::move(bp), process_term);
+                    int x;
+                    queue.try_pop(x);
                 });
                 ++batch_number;
                 first_document += batch_size;
@@ -350,10 +356,13 @@ int main(int argc, char **argv) {
     std::string input_basename;
     std::string output_filename;
     size_t      threads = std::thread::hardware_concurrency();
+    ptrdiff_t   batch_size = 1'000'000;
 
     CLI::App app{"parse_collection - parse collection and store as forward index."};
     app.add_option("-o,--output", output_filename, "Forward index filename")->required();
     app.add_option("-j,--threads", threads, "Thread count");
+    app.add_option(
+        "-b,--batch-size", threads, "Number of documents to process in one thread", true);
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(threads);
@@ -370,7 +379,8 @@ int main(int argc, char **argv) {
             }
             return std::nullopt;
         },
-        [&](std::string const &term) -> std::string { return Porter2_Stemmer{}(tolower(term)); });
+        [&](std::string const &term) -> std::string { return Porter2_Stemmer{}(tolower(term)); },
+        batch_size);
 
     return 0;
 }
