@@ -106,4 +106,25 @@ target_link_libraries(evaluate_collection_ordering
   simdcomp
   mio
   ParallelSTL
+  gumbo::gumbo
   )
+
+add_executable(parse_collection parse_collection.cpp)
+target_link_libraries(parse_collection
+  ${Boost_LIBRARIES}
+  CLI11
+  mio
+  ParallelSTL
+  gumbo::gumbo
+  )
+target_compile_features(parse_collection PRIVATE cxx_std_17)
+
+add_executable(read_collection read_collection.cpp)
+target_link_libraries(read_collection
+  ${Boost_LIBRARIES}
+  CLI11
+  mio
+  ParallelSTL
+  gumbo::gumbo
+  )
+target_compile_features(parse_collection PRIVATE cxx_std_17)

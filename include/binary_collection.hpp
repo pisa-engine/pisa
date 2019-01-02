@@ -3,7 +3,10 @@
 #include <stdexcept>
 #include <iterator>
 #include <cstdint>
+
 #include "mio/mmap.hpp"
+#include "gsl/span"
+
 #include "util/util.hpp"
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -13,18 +16,17 @@
 namespace ds2i {
 
     class binary_collection {
-    public:
-        typedef uint32_t posting_type;
+       public:
+        using posting_type = uint32_t;
 
-        binary_collection(const char* filename)
-        {
+        binary_collection(const char *filename) {
             std::error_code error;
             m_file.map(filename, error);
             if ( error ) {
                 std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
                 throw std::runtime_error("Error opening file");
             }
-            m_data = (posting_type const*)m_file.data();
+            m_data      = reinterpret_cast<posting_type *>(m_file.data());
             m_data_size = m_file.size() / sizeof(m_data[0]);
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
@@ -34,100 +36,49 @@ namespace ds2i {
 #endif
         }
 
-        class iterator;
+        template <typename T>
+        class base_iterator;
 
-        iterator begin() const
-        {
-            return iterator(this, 0);
-        }
+        using iterator       = base_iterator<posting_type>;
+        using const_iterator = base_iterator<posting_type const>;
 
-        iterator end() const
-        {
-            return iterator(this, m_data_size);
-        }
+        iterator       begin() { return iterator(this, 0); }
+        iterator       end() { return iterator(this, m_data_size); }
+        const_iterator begin() const { return const_iterator(this, 0); }
+        const_iterator end() const { return const_iterator(this, m_data_size); }
+        const_iterator cbegin() const { return const_iterator(this, 0); }
+        const_iterator cend() const { return const_iterator(this, m_data_size); }
 
-        class sequence {
-        public:
-            sequence()
-                : m_begin(nullptr)
-                , m_end(nullptr)
-            {}
+        using sequence       = gsl::span<posting_type>;
+        using const_sequence = gsl::span<posting_type const>;
 
-            posting_type const* begin() const
-            {
-                return m_begin;
-            }
+        template <typename T>
+        class base_iterator : public std::iterator<std::forward_iterator_tag, gsl::span<T>> {
+           public:
+            base_iterator() : m_collection(nullptr) {}
 
-            posting_type const* end() const
-            {
-                return m_end;
-            }
+            auto const &operator*() const { return m_cur_seq; }
 
-            posting_type back() const
-            {
-                assert(size());
-                return *(m_end - 1);
-            }
+            auto const *operator-> () const { return &m_cur_seq; }
 
-            size_t size() const
-            {
-                return m_end - m_begin;
-            }
-
-        private:
-            friend class binary_collection::iterator;
-
-            sequence(posting_type const* begin, posting_type const* end)
-                : m_begin(begin)
-                , m_end(end)
-            {}
-
-            posting_type const* m_begin;
-            posting_type const* m_end;
-        };
-
-        class iterator : public std::iterator<std::forward_iterator_tag,
-                                               sequence> {
-        public:
-            iterator()
-                : m_collection(nullptr)
-            {}
-
-            value_type const& operator*() const
-            {
-                return m_cur_seq;
-            }
-
-            value_type const* operator->() const
-            {
-                return &m_cur_seq;
-            }
-
-            iterator& operator++()
-            {
+            base_iterator &operator++() {
                 m_pos = m_next_pos;
                 read();
                 return *this;
             }
 
-            bool operator==(iterator const& other) const
-            {
+            bool operator==(base_iterator const &other) const {
                 assert(m_collection == other.m_collection);
                 return m_pos == other.m_pos;
             }
 
-            bool operator!=(iterator const& other) const
-            {
-                return !(*this == other);
-            }
+            bool operator!=(base_iterator const &other) const { return !(*this == other); }
 
-        private:
+           private:
             friend class binary_collection;
 
-            iterator(binary_collection const* coll, size_t pos)
-                : m_collection(coll)
-                , m_pos(pos)
-            {
+            base_iterator(binary_collection const *coll, size_t pos)
+                : m_collection(coll), m_pos(pos) {
                 read();
             }
 
@@ -141,21 +92,20 @@ namespace ds2i {
                 while (!(n = m_collection->m_data[pos++])); // skip empty seqs
                 // file might be truncated
                 n = std::min(n, size_t(m_collection->m_data_size - pos));
-                posting_type const* begin = &m_collection->m_data[pos];
-                posting_type const* end = begin + n;
+                T *begin = &m_collection->m_data[pos];
 
                 m_next_pos = pos + n;
-                m_cur_seq = sequence(begin, end);
+                m_cur_seq  = gsl::span<T>(begin, n);
             }
 
-            binary_collection const* m_collection;
-            size_t m_pos, m_next_pos;
-            sequence m_cur_seq;
+            binary_collection const *     m_collection;
+            size_t                        m_pos, m_next_pos;
+            gsl::span<T>                  m_cur_seq;
         };
 
-    private:
-        mio::mmap_source m_file;
-        posting_type const* m_data;
-        size_t m_data_size;
+       private:
+        mio::mmap_sink m_file;
+        posting_type * m_data;
+        size_t         m_data_size;
     };
 }
