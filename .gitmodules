@@ -34,3 +34,6 @@
 [submodule "external/GSL"]
 	path = external/GSL
 	url = https://github.com/Microsoft/GSL.git
+[submodule "external/gumbo-parser"]
+	path = external/gumbo-parser
+	url = https://github.com/google/gumbo-parser.git
