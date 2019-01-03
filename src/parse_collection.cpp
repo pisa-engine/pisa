@@ -156,7 +156,9 @@ class Forward_Index_Builder {
 
         for (auto const &record : bp.records) {
             title_os << record.trecid() << '\n';
-            url_os << record.url() << '\n';
+            // TODO(michal): it gets stuck on this for some reason
+            //               once fixed, uncomment; not crucial at the moment
+            // url_os << record.url() << '\n';
 
             auto content = parsing::html::cleantext(record.content());
             std::vector<uint32_t> term_ids;
@@ -259,7 +261,8 @@ class Forward_Index_Builder {
                std::string const &        output_file,
                read_record_function_type  next_record,
                process_term_function_type process_term,
-               std::ptrdiff_t             batch_size)
+               std::ptrdiff_t             batch_size,
+               std::size_t                threads)
     {
         Document_Id    first_document{0};
         std::ptrdiff_t batch_number = 0;
@@ -267,7 +270,7 @@ class Forward_Index_Builder {
         std::vector<Record> record_batch;
         tbb::task_group     batch_group;
         tbb::concurrent_bounded_queue<int> queue;
-        queue.set_capacity(8);
+        queue.set_capacity((threads - 1) * 2);
         while (true) {
             std::optional<Record> record = std::nullopt;
             try {
@@ -305,41 +308,6 @@ class Forward_Index_Builder {
         batch_group.wait();
         merge(output_file, static_cast<ptrdiff_t>(first_document), batch_number);
     }
-
-    void renumber_terms(std::string const &filename) {
-        std::vector<Term_Id> remapping(m_term_map.size());
-        Term_Id new_id{0};
-        std::ofstream term_os(filename + ".terms");
-        for (auto &[term, assigned_id] : m_term_map) {
-            logger() << "Term " << static_cast<ptrdiff_t>(new_id) << '\n';
-            term_os << term << '\n';
-            remapping[static_cast<ptrdiff_t>(assigned_id)] = new_id;
-            assigned_id                                    = new_id;
-            ++new_id;
-        }
-        binary_collection coll(filename.c_str());
-        for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
-            for (auto &term_id : *doc_iter) {
-                term_id = static_cast<ptrdiff_t>(remapping[term_id]);
-            }
-        }
-    }
-
-    [[nodiscard]] auto term_id(std::string const &term) -> Term_Id {
-        if (auto pos = m_term_map.find(term); pos != m_term_map.end()) {
-            return pos->second;
-        } else {
-            auto id = Term_Id{static_cast<ptrdiff_t>(m_term_map.size())};
-            m_term_map[term] = id;
-            return id;
-        }
-    }
-
-   private:
-    bool                                         m_stem = true;
-    std::vector<std::string>                     m_document_titles{};
-    std::vector<std::string>                     m_document_urls{};
-    std::map<std::string, Term_Id>               m_term_map{};
 };
 
 std::string tolower(std::string const &term) {
@@ -356,13 +324,13 @@ int main(int argc, char **argv) {
     std::string input_basename;
     std::string output_filename;
     size_t      threads = std::thread::hardware_concurrency();
-    ptrdiff_t   batch_size = 1'000'000;
+    ptrdiff_t   batch_size = 100'000;
 
     CLI::App app{"parse_collection - parse collection and store as forward index."};
     app.add_option("-o,--output", output_filename, "Forward index filename")->required();
     app.add_option("-j,--threads", threads, "Thread count");
     app.add_option(
-        "-b,--batch-size", threads, "Number of documents to process in one thread", true);
+        "-b,--batch-size", batch_size, "Number of documents to process in one thread", true);
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(threads);
@@ -380,7 +348,8 @@ int main(int argc, char **argv) {
             return std::nullopt;
         },
         [&](std::string const &term) -> std::string { return Porter2_Stemmer{}(tolower(term)); },
-        batch_size);
+        batch_size,
+        threads);
 
     return 0;
 }
