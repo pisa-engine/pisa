@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE positive_sequence
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -35,7 +36,7 @@ void test_positive_sequence()
     }
 }
 
-BOOST_AUTO_TEST_CASE(positive_sequence)
+TEST_CASE("positive_sequence")
 {
     test_positive_sequence<ds2i::strict_sequence>();
     test_positive_sequence<ds2i::partitioned_sequence<ds2i::strict_sequence>>();

@@ -9,7 +9,6 @@
 #include <cstdlib>
 
 TEST_CASE( "uniform_partitioned_sequence")
-
 {
     ds2i::global_parameters params;
     using ds2i::indexed_sequence;

@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE partitioned_sequence
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -59,25 +60,25 @@ void test_partitioned_sequence(uint64_t universe,
     test_sequence(r, seq);
 }
 
-BOOST_AUTO_TEST_CASE(partitioned_sequence)
+TEST_CASE("partitioned_sequence")
 {
     using ds2i::indexed_sequence;
     using ds2i::strict_sequence;
 
-    if (boost::unit_test::framework::master_test_suite().argc == 2) {
-        const char* filename = boost::unit_test::framework::master_test_suite().argv[1];
-        std::cerr << "Testing sequence from file " << filename << std::endl;
-        std::ifstream is(filename);
-        uint64_t v;
-        std::vector<uint64_t> seq;
-        while (is >> v) {
-            seq.push_back(v);
-        }
-        uint64_t universe = seq.back() + 1;
-        test_partitioned_sequence<indexed_sequence>(universe, seq);
-        test_partitioned_sequence<strict_sequence>(universe, seq);
-        return;
-    }
+    // if (boost::unit_test::framework::master_test_suite().argc == 2) {
+    //     const char* filename = boost::unit_test::framework::master_test_suite().argv[1];
+    //     std::cerr << "Testing sequence from file " << filename << std::endl;
+    //     std::ifstream is(filename);
+    //     uint64_t v;
+    //     std::vector<uint64_t> seq;
+    //     while (is >> v) {
+    //         seq.push_back(v);
+    //     }
+    //     uint64_t universe = seq.back() + 1;
+    //     test_partitioned_sequence<indexed_sequence>(universe, seq);
+    //     test_partitioned_sequence<strict_sequence>(universe, seq);
+    //     return;
+    // }
 
     // test singleton sequences
     {

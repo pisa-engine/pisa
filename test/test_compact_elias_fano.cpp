@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE compact_elias_fano
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -31,8 +32,7 @@ struct sequence_initialization {
     ds2i::bit_vector bv;
 };
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_singleton,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_singleton")
 {
     // test singleton sequences
     std::vector<uint64_t> short_seq;
@@ -42,8 +42,7 @@ BOOST_FIXTURE_TEST_CASE(compact_elias_fano_singleton,
     test_sequence(ds2i::compact_elias_fano(), params, 2, short_seq);
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_construction,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
 {
 
     // test pointers and low-level values
@@ -79,8 +78,7 @@ BOOST_FIXTURE_TEST_CASE(compact_elias_fano_construction,
     }
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_enumerator,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_enumerator")
 {
     ds2i::compact_elias_fano::enumerator r(bv, 0,
                                                      universe, seq.size(),
@@ -88,8 +86,7 @@ BOOST_FIXTURE_TEST_CASE(compact_elias_fano_enumerator,
     test_sequence(r, seq);
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_weakly_monotone,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_weakly_monotone")
 {
     n = 100000;
     universe = n * 3;

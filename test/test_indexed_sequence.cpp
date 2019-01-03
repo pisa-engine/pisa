@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE indexed_sequence
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -6,7 +7,7 @@
 #include <vector>
 #include <cstdlib>
 
-BOOST_AUTO_TEST_CASE(indexed_sequence)
+TEST_CASE("indexed_sequence")
 {
     ds2i::global_parameters params;
 
