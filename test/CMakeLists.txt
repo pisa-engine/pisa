@@ -9,6 +9,7 @@ foreach(TEST_SRC ${TEST_SOURCES})
     QMX
     mio
     ParallelSTL
+    Catch2
     )
   add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
 

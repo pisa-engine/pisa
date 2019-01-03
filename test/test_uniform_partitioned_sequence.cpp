@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE uniform_partitioned_sequence
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -7,7 +8,8 @@
 #include <vector>
 #include <cstdlib>
 
-BOOST_AUTO_TEST_CASE(uniform_partitioned_sequence)
+TEST_CASE( "uniform_partitioned_sequence")
+
 {
     ds2i::global_parameters params;
     using ds2i::indexed_sequence;
