@@ -277,8 +277,11 @@ class Forward_Index_Builder {
                 if (not (record = next_record(is))) {
                     Batch_Process bp{
                         batch_number, std::move(record_batch), first_document, output_file};
-                    batch_group.run([bp = std::move(bp), process_term, this]() {
+                    queue.push(0);
+                    batch_group.run([bp = std::move(bp), process_term, this, &queue]() {
                         run(std::move(bp), process_term);
+                        int x;
+                        queue.try_pop(x);
                     });
                     ++batch_number;
                     first_document += batch_size;
