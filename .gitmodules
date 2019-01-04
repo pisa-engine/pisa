@@ -31,3 +31,6 @@
 [submodule "external/mio"]
 	path = external/mio
 	url = https://github.com/mandreyel/mio.git
+[submodule "external/Catch2"]
+	path = external/Catch2
+	url = https://github.com/catchorg/Catch2.git

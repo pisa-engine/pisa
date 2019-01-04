@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE sequence_collection
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 #include "mio/mmap.hpp"
@@ -46,7 +47,7 @@ void test_sequence_collection()
     }
 }
 
-BOOST_AUTO_TEST_CASE(sequence_collection)
+TEST_CASE( "sequence_collection")
 {
     test_sequence_collection<ds2i::indexed_sequence>();
     test_sequence_collection<ds2i::partitioned_sequence<>>();

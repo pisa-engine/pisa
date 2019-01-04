@@ -1,7 +1,7 @@
-#define BOOST_TEST_MODULE ranked_queries
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_common.hpp"
-#include <boost/test/floating_point_comparison.hpp>
 
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
@@ -47,9 +47,9 @@ namespace ds2i { namespace test {
             for (auto const& q: queries) {
                 or_q(index, q);
                 op_q(index, q);
-                BOOST_REQUIRE_EQUAL(or_q.topk().size(), op_q.topk().size());
+                REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                    BOOST_REQUIRE_CLOSE(or_q.topk()[i].first, op_q.topk()[i].first, 0.1); // tolerance is % relative
+                    REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
                 }
             }
         }
@@ -60,22 +60,19 @@ namespace ds2i { namespace test {
 }}
 
 
-BOOST_FIXTURE_TEST_CASE(wand,
-                        ds2i::test::index_initialization)
+TEST_CASE_METHOD(ds2i::test::index_initialization, "wand")
 {
     ds2i::wand_query<WandType> wand_q(wdata, 10);
     test_against_or(wand_q);
 }
 
-BOOST_FIXTURE_TEST_CASE(maxscore,
-                        ds2i::test::index_initialization)
+TEST_CASE_METHOD(ds2i::test::index_initialization, "maxscore")
 {
     ds2i::maxscore_query<WandType> maxscore_q(wdata, 10);
     test_against_or(maxscore_q);
 }
 
-BOOST_FIXTURE_TEST_CASE(block_max_maxscore,
-                        ds2i::test::index_initialization)
+TEST_CASE_METHOD(ds2i::test::index_initialization, "block_max_maxscore")
 {
     ds2i::block_max_maxscore_query<WandType> bmm_q(wdata, 10);
     test_against_or(bmm_q);

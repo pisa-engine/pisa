@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE sample_index
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -26,7 +27,7 @@
 #include <algorithm>
 #include <numeric>
 
-BOOST_AUTO_TEST_CASE(sample_index_full)
+TEST_CASE( "sample_index_full")
 {
     // given
     using ds2i::binary_freq_collection;
@@ -39,7 +40,7 @@ BOOST_AUTO_TEST_CASE(sample_index_full)
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
-    BOOST_REQUIRE_EQUAL(sampled.num_docs(), original.num_docs());
+    REQUIRE(sampled.num_docs() == original.num_docs());
     auto oit = original.begin();
     auto sit = sampled.begin();
     for (; oit != original.end(); ++oit, ++sit) {
@@ -47,13 +48,13 @@ BOOST_AUTO_TEST_CASE(sample_index_full)
         std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
         std::vector<uint32_t> ofreqs(oit->freqs.begin(), oit->freqs.end());
         std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
-        BOOST_CHECK_EQUAL_COLLECTIONS(odocs.begin(), odocs.end(), sdocs.begin(), sdocs.end());
-        BOOST_CHECK_EQUAL_COLLECTIONS(ofreqs.begin(), ofreqs.end(), sfreqs.begin(), sfreqs.end());
+        REQUIRE(std::equal(odocs.begin(), odocs.end(), sdocs.begin()));
+        REQUIRE(std::equal(ofreqs.begin(), ofreqs.end(), sfreqs.begin()));
     }
-    BOOST_REQUIRE_EQUAL(sit == sampled.end(), true);
+    REQUIRE(sit == sampled.end());
 }
 
-BOOST_AUTO_TEST_CASE(sample_index)
+TEST_CASE( "sample_index")
 {
     // given
     using ds2i::binary_freq_collection;
@@ -67,17 +68,16 @@ BOOST_AUTO_TEST_CASE(sample_index)
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
-    BOOST_REQUIRE_EQUAL(sampled.num_docs(), doc_limit);
+    REQUIRE(sampled.num_docs() == doc_limit);
     auto oit = original.begin();
     auto sit = sampled.begin();
     for (; oit != original.end(); ++oit, ++sit) {
         std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
         std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
 
-        BOOST_REQUIRE_GT(sdocs.size(), 0);
-        BOOST_REQUIRE_GT(sfreqs.size(), 0);
-        BOOST_REQUIRE_EQUAL(
-            std::count_if(sdocs.begin(), sdocs.end(), [&](const auto &d) { return d >= doc_limit; }),
-            0);
+        REQUIRE(sdocs.size() > 0);
+        REQUIRE(sfreqs.size() > 0);
+        REQUIRE(
+            std::count_if(sdocs.begin(), sdocs.end(), [&](const auto &d) { return d >= doc_limit; }) == 0);
     }
 }

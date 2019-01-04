@@ -1,14 +1,14 @@
-#define BOOST_TEST_MODULE bit_vector
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
+
 #include "test_common.hpp"
 #include "test_rank_select_common.hpp"
 
 #include <cstdlib>
-#include <boost/foreach.hpp>
-
 #include "succinct/mapper.hpp"
 #include "bit_vector.hpp"
 
-BOOST_AUTO_TEST_CASE(bit_vector)
+TEST_CASE("bit_vector")
 {
     srand(42);
 
@@ -41,15 +41,15 @@ BOOST_AUTO_TEST_CASE(bit_vector)
     uint64_t ints[] = {uint64_t(-1), uint64_t(1) << 63, 1, 1, 1, 3, 5, 7, 0xFFF, 0xF0F, 1, 0xFFFFFF, 0x123456, uint64_t(1) << 63, uint64_t(-1)};
     {
         ds2i::bit_vector_builder bvb;
-        BOOST_FOREACH(uint64_t i, ints) {
+        for(uint64_t i : ints) {
             uint64_t len = ds2i::broadword::msb(i) + 1;
             bvb.append_bits(i, len);
         }
         ds2i::bit_vector bitmap(&bvb);
         uint64_t pos = 0;
-        BOOST_FOREACH(uint64_t i, ints) {
+        for(uint64_t i : ints) {
             uint64_t len = ds2i::broadword::msb(i) + 1;
-            BOOST_REQUIRE_EQUAL(i, bitmap.get_bits(pos, len));
+            REQUIRE(i == bitmap.get_bits(pos, len));
             pos += len;
         }
     }
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(bit_vector)
     {
         using ds2i::broadword::msb;
         std::vector<size_t> positions(1);
-        BOOST_FOREACH(uint64_t i, ints) {
+        for(uint64_t i : ints) {
             positions.push_back(positions.back() + msb(i) + 1);
         }
 
@@ -73,12 +73,12 @@ BOOST_AUTO_TEST_CASE(bit_vector)
         for (size_t i = 0; i < positions.size() - 1; ++i) {
             uint64_t v = ints[i];
             uint64_t len = positions[i + 1] - positions[i];
-            BOOST_REQUIRE_EQUAL(v, bitmap.get_bits(positions[i], len));
+            REQUIRE(v == bitmap.get_bits(positions[i], len));
         }
     }
 }
 
-BOOST_AUTO_TEST_CASE(bit_vector_enumerator)
+TEST_CASE("bit_vector_enumerator")
 {
     srand(42);
     std::vector<bool> v = random_bit_vector();
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(bit_vector_enumerator)
     }
 }
 
-BOOST_AUTO_TEST_CASE(bit_vector_unary_enumerator)
+TEST_CASE("bit_vector_unary_enumerator")
 {
     srand(42);
     uint64_t n = 20000;
@@ -202,7 +202,7 @@ void test_bvb_reverse(size_t n)
     test_equal_bits(v, bitmap, "In-place reverse");
 }
 
-BOOST_AUTO_TEST_CASE(bvb_reverse)
+TEST_CASE("bvb_reverse")
 {
     srand(42);
 

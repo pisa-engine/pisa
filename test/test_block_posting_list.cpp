@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE block_posting_list
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -25,7 +26,7 @@ void test_block_posting_list_ops(uint8_t const* data, uint64_t n, uint64_t unive
                                  std::vector<uint64_t> const& freqs)
 {
         typename PostingList::document_enumerator e(data, universe);
-        BOOST_REQUIRE_EQUAL(n, e.size());
+        REQUIRE(n == e.size());
         for (size_t i = 0; i < n; ++i, e.next()) {
             MY_REQUIRE_EQUAL(docs[i], e.docid(),
                              "i = " << i << " size = " << n);
@@ -42,9 +43,9 @@ void test_block_posting_list_ops(uint8_t const* data, uint64_t n, uint64_t unive
                              "i = " << i << " size = " << n);
         }
         e.reset(); e.next_geq(docs.back() + 1);
-        BOOST_REQUIRE_EQUAL(universe, e.docid());
+        REQUIRE(universe == e.docid());
         e.reset(); e.next_geq(universe);
-        BOOST_REQUIRE_EQUAL(universe, e.docid());
+        REQUIRE(universe == e.docid());
 }
 
 void random_posting_data(uint64_t n, uint64_t universe,
@@ -103,7 +104,7 @@ void test_block_posting_list_reordering()
     }
 }
 
-BOOST_AUTO_TEST_CASE(block_posting_list)
+TEST_CASE("block_posting_list")
 {
     test_block_posting_list<ds2i::optpfor_block>();
     test_block_posting_list<ds2i::varint_G8IU_block>();
@@ -116,8 +117,7 @@ BOOST_AUTO_TEST_CASE(block_posting_list)
     test_block_posting_list<ds2i::simple16_block>();
     test_block_posting_list<ds2i::simdbp_block>();
 }
-
-BOOST_AUTO_TEST_CASE(block_posting_list_reordering)
+TEST_CASE("block_posting_list_reordering")
 {
     test_block_posting_list_reordering<ds2i::optpfor_block>();
 }
