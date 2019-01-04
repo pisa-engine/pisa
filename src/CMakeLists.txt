@@ -12,6 +12,7 @@ target_link_libraries(create_freq_index
 
 add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
 target_link_libraries(optimal_hybrid_index
+  Boost::boost
   FastPFor
   streamvbyte
   MaskedVByte
