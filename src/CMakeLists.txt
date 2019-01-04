@@ -1,6 +1,5 @@
 add_executable(create_freq_index create_freq_index.cpp)
 target_link_libraries(create_freq_index
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
@@ -13,7 +12,6 @@ target_link_libraries(create_freq_index
 
 add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
 target_link_libraries(optimal_hybrid_index
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
@@ -26,7 +24,6 @@ target_link_libraries(optimal_hybrid_index
 
 add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
-  ${Boost_LIBRARIES}
   QMX
   simdcomp
   CLI11
@@ -36,7 +33,6 @@ target_link_libraries(create_wand_data
 
 add_executable(queries queries.cpp)
 target_link_libraries(queries
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
@@ -50,7 +46,6 @@ target_link_libraries(queries
 
 add_executable(profile_queries profile_queries.cpp)
 target_link_libraries(profile_queries
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
@@ -62,7 +57,6 @@ target_link_libraries(profile_queries
 
 add_executable(profile_decoding profile_decoding.cpp)
 target_link_libraries(profile_decoding
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
@@ -74,7 +68,6 @@ target_link_libraries(profile_decoding
 
 add_executable(shuffle_docids shuffle_docids.cpp)
 target_link_libraries(shuffle_docids
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
@@ -86,7 +79,6 @@ target_link_libraries(shuffle_docids
 
 add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
 target_link_libraries(recursive_graph_bisection
-  ${Boost_LIBRARIES}
   CLI11
   QMX
   ParallelSTL
@@ -98,7 +90,6 @@ set_target_properties(recursive_graph_bisection PROPERTIES
 
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
-  ${Boost_LIBRARIES}
   FastPFor
   streamvbyte
   MaskedVByte
