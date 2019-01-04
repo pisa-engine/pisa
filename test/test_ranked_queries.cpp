@@ -54,6 +54,22 @@ namespace ds2i { namespace test {
             }
         }
 
+        void test_k_size() const
+        {
+            ranked_or_query<WandType> or_10(wdata, 10);
+            ranked_or_query<WandType> or_1(wdata, 1);
+
+            for (auto const& q: queries) {
+                or_10(index, q);
+                or_1(index, q);
+		if (not or_10.topk().empty()) {
+                    REQUIRE(not or_1.topk().empty());
+                    REQUIRE(or_1.topk().front().second == or_10.topk().front().second);
+                    REQUIRE(or_1.topk().front().first == Approx(or_10.topk().front().first).epsilon(0.1));
+		}
+            }
+        }
+
 
     };
 
@@ -76,4 +92,10 @@ TEST_CASE_METHOD(ds2i::test::index_initialization, "block_max_maxscore")
 {
     ds2i::block_max_maxscore_query<WandType> bmm_q(wdata, 10);
     test_against_or(bmm_q);
+}
+
+/// Issue #26 https://github.com/pisa-engine/pisa/issues/26
+TEST_CASE_METHOD(ds2i::test::index_initialization, "topk_size_ranked_or")
+{
+    test_k_size();
 }
