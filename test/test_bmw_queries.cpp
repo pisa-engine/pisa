@@ -1,7 +1,7 @@
-#define BOOST_TEST_MODULE bwm_queries
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_common.hpp"
-#include <boost/test/floating_point_comparison.hpp>
 
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
@@ -62,11 +62,10 @@ struct index_initialization {
         for (auto const &q : queries) {
             or_q(index, q);
             op_q(index, q);
-            BOOST_REQUIRE_EQUAL(or_q.topk().size(), op_q.topk().size());
+            REQUIRE(or_q.topk().size() == op_q.topk().size());
 
             for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                BOOST_REQUIRE_CLOSE(
-                    or_q.topk()[i].first, op_q.topk()[i].first, 0.01); // tolerance is % relative
+                REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
             }
             op_q.clear_topk();
         }
@@ -76,7 +75,7 @@ struct index_initialization {
 } // namespace test
 } // namespace ds2i
 
-BOOST_FIXTURE_TEST_CASE(block_max_wand, ds2i::test::index_initialization) {
+TEST_CASE_METHOD(ds2i::test::index_initialization, "block_max_wand") {
     ds2i::block_max_wand_query<WandTypePlain>   block_max_wand_q(wdata, 10);
     ds2i::block_max_wand_query<WandTypeUniform> block_max_wand_uniform_q(wdata_uniform, 10);
     ds2i::block_max_wand_query<WandTypePlain>   block_max_wand_fixed_q(wdata_fixed, 10);

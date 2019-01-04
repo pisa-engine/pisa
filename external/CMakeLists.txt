@@ -66,4 +66,7 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
                                            -Wno-unused-local-typedef
 )
 
+# Add Catch
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
+
 
