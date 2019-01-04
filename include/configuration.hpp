@@ -5,7 +5,7 @@
 #include <memory>
 #include <thread>
 
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 
 namespace ds2i {
 

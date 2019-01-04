@@ -4,8 +4,8 @@
 #include <numeric>
 #include <thread>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/optional.hpp>
+#include "boost/algorithm/string/predicate.hpp"
+#include "boost/optional.hpp"
 
 #include "succinct/mapper.hpp"
 
