@@ -30,6 +30,7 @@ target_link_libraries(selective_queries
 
 add_executable(scan_perftest scan_perftest.cpp)
 target_link_libraries(scan_perftest
+  Boost::boost
   mio
   ParallelSTL
   )
