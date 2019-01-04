@@ -79,8 +79,9 @@ struct block_max_maxscore_query {
                     next_doc = ordered_enums[i]->docs_enum.docid();
                 }
             }
-
-            double block_upper_bound = upper_bounds[non_essential_lists - 1];
+	    double block_upper_bound = 0;
+	    if(non_essential_lists > 0) {
+            block_upper_bound = upper_bounds[non_essential_lists - 1];
             for (size_t i = non_essential_lists - 1; i + 1 > 0; --i) {
                 if (ordered_enums[i]->w.docid() < cur_doc) {
                     ordered_enums[i]->w.next_geq(cur_doc);
@@ -90,7 +91,7 @@ struct block_max_maxscore_query {
                     break;
                 }
             }
-
+            }
                 if(m_topk.would_enter(score + block_upper_bound)) {
                     // try to complete evaluation with non-essential lists
                     for (size_t i = non_essential_lists - 1; i + 1 > 0; --i) {
