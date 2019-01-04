@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE freq_index
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -55,19 +56,19 @@ void test_freq_index()
         for (size_t i = 0; i < posting_lists.size(); ++i) {
             auto const& plist = posting_lists[i];
             auto doc_enum = coll[i];
-            BOOST_REQUIRE_EQUAL(plist.first.size(), doc_enum.size());
+            REQUIRE(plist.first.size() == doc_enum.size());
             for (size_t p = 0; p < plist.first.size(); ++p, doc_enum.next()) {
                 MY_REQUIRE_EQUAL(plist.first[p], doc_enum.docid(),
                                  "i = " << i << " p = " << p);
                 MY_REQUIRE_EQUAL(plist.second[p], doc_enum.freq(),
                                  "i = " << i << " p = " << p);
             }
-            BOOST_REQUIRE_EQUAL(coll.num_docs(), doc_enum.docid());
+            REQUIRE(coll.num_docs() == doc_enum.docid());
         }
     }
 }
 
-BOOST_AUTO_TEST_CASE(freq_index)
+TEST_CASE("freq_index")
 {
     using ds2i::indexed_sequence;
     using ds2i::strict_sequence;

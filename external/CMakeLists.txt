@@ -68,3 +68,6 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
 
 # GSL
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
+
+# Add Catch
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
