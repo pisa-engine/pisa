@@ -37,3 +37,6 @@
 [submodule "external/gumbo-parser"]
 	path = external/gumbo-parser
 	url = https://github.com/google/gumbo-parser.git
+[submodule "external/Catch2"]
+	path = external/Catch2
+	url = https://github.com/catchorg/Catch2.git

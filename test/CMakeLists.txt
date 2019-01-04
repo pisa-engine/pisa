@@ -5,11 +5,11 @@ foreach(TEST_SRC ${TEST_SOURCES})
   get_filename_component (TEST_SRC_NAME ${TEST_SRC} NAME_WE)
   add_executable(${TEST_SRC_NAME} ${TEST_SRC})
   target_link_libraries(${TEST_SRC_NAME}
-    ${Boost_LIBRARIES}
     QMX
     mio
     ParallelSTL
     GSL
+    Catch2
     )
   add_test(${TEST_SRC_NAME} ${TEST_SRC_NAME})
 
@@ -21,7 +21,6 @@ target_link_libraries(test_block_codecs
     FastPFor
     streamvbyte
     MaskedVByte
-    QMX
     simdcomp
 )
 
@@ -29,7 +28,6 @@ target_link_libraries(test_block_posting_list
     FastPFor
     streamvbyte
     MaskedVByte
-    QMX
     simdcomp
 )
 
@@ -37,7 +35,6 @@ target_link_libraries(test_block_freq_index
     FastPFor
     streamvbyte
     MaskedVByte
-    QMX
     simdcomp
 )
 
@@ -45,7 +42,6 @@ target_link_libraries(test_sample_index
     FastPFor
     streamvbyte
     MaskedVByte
-    QMX
     simdcomp
 )
 
@@ -53,7 +49,6 @@ target_link_libraries(test_forward_index
     FastPFor
     streamvbyte
     MaskedVByte
-    QMX
     simdcomp
     ParallelSTL
 )

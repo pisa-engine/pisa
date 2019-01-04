@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE compact_ranked_bitvector
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -33,8 +34,7 @@ struct sequence_initialization {
     ds2i::bit_vector bv;
 };
 
-BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_construction,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction")
 {
 
     // test pointers and rank samples
@@ -67,8 +67,7 @@ BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_construction,
     }
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_singleton,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_singleton")
 {
     // test singleton sequences
     std::vector<uint64_t> short_seq;
@@ -78,8 +77,7 @@ BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_singleton,
     test_sequence(ds2i::compact_ranked_bitvector(), params, 2, short_seq);
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_enumerator,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_enumerator")
 {
     ds2i::compact_ranked_bitvector::enumerator r(bv, 0,
                                                            universe, seq.size(),
