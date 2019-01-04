@@ -1,4 +1,5 @@
 #pragma once
+#include "catch2/catch.hpp"
 
 #include "test_common.hpp"
 #include "bit_vector.hpp"
@@ -28,10 +29,10 @@ std::vector<uint64_t> random_sequence(size_t universe, size_t n,
 template <typename SequenceReader>
 void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
 {
-    BOOST_REQUIRE_EQUAL(seq.size(), r.size());
+    REQUIRE(seq.size() == r.size());
     if (seq.empty()) {
         // just check that move works
-        BOOST_REQUIRE_EQUAL(seq.size(), r.move(seq.size()).first);
+        REQUIRE(seq.size() == r.move(seq.size()).first);
         return;
     }
 
@@ -54,7 +55,7 @@ void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
         }
     }
     r.move(seq.size());
-    BOOST_REQUIRE_EQUAL(seq.back(), r.prev_value());
+    REQUIRE(seq.back() == r.prev_value());
 
     val = r.move(0);
     for (uint64_t i = 0; i < seq.size(); ++i) {
@@ -70,8 +71,8 @@ void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
         }
         val = r.next();
     }
-    BOOST_REQUIRE_EQUAL(r.size(), val.first);
-    BOOST_REQUIRE_EQUAL(seq.back(), r.prev_value());
+    REQUIRE(r.size() == val.first);
+    REQUIRE(seq.back() == r.prev_value());
 
     // test small skips
     for (size_t i = 0; i < seq.size(); ++i) {
@@ -90,10 +91,10 @@ void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
 template <typename SequenceReader>
 void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
 {
-    BOOST_REQUIRE_EQUAL(seq.size(), r.size());
+    REQUIRE(seq.size() == r.size());
     if (seq.empty()) {
         // just check that next_geq works
-        BOOST_REQUIRE_EQUAL(seq.size(), r.next_geq(1).first);
+        REQUIRE(seq.size() == r.next_geq(1).first);
         return;
     }
 
@@ -117,7 +118,7 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
             }
 
             val = rr.next_geq(p);
-            BOOST_REQUIRE_EQUAL(i, val.first);
+            REQUIRE(i == val.first);
             MY_REQUIRE_EQUAL(seq[i], val.second,
                              "p = " << p);
 
@@ -133,12 +134,12 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
     }
 
     val = r.next_geq(seq.back() + 1);
-    BOOST_REQUIRE_EQUAL(r.size(), val.first);
-    BOOST_REQUIRE_EQUAL(seq.back(), r.prev_value());
+    REQUIRE(r.size() == val.first);
+    REQUIRE(seq.back() == r.prev_value());
 
     // check next_geq beyond universe
     val = r.next_geq(2 * seq.back() + 1);
-    BOOST_REQUIRE_EQUAL(r.size(), val.first);
+    REQUIRE(r.size() == val.first);
 
     // test small skips
     for (size_t i = 0; i < seq.size(); ++i) {

@@ -52,7 +52,7 @@ if(OPENMP_FOUND)
 endif()
 
 # set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost 1.42.0 COMPONENTS iostreams unit_test_framework filesystem system REQUIRED)
+find_package(Boost 1.42.0 COMPONENTS filesystem system REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIRS})
 
@@ -66,4 +66,6 @@ add_subdirectory(src)
 
 enable_testing()
 add_subdirectory(test)
+
 add_subdirectory(benchmarks)
+
