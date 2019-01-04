@@ -32,13 +32,8 @@ matrix:
             - lcov
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - clang
+    - os: osx
+      compiler: clang
       env:
         - MATRIX_EVAL="CC=clang && CXX=clang++"
 
