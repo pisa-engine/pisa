@@ -281,10 +281,34 @@ std::string tolower(std::string const &term) {
     return lower;
 }
 
+
+class Plaintext_Record {
+   public:
+    Plaintext_Record() = default;
+    [[nodiscard]] auto content() -> std::string & { return m_content; }
+    [[nodiscard]] auto content() const -> std::string const & { return m_content; }
+    [[nodiscard]] auto trecid() const -> std::string const & { return m_trecid; }
+    [[nodiscard]] auto type() const noexcept -> std::string { return "response"; }
+    [[nodiscard]] static auto read(std::istream &is) {}
+
+   private:
+    std::string m_trecid;
+    std::string m_content;
+    friend auto operator>>(std::istream &is, Plaintext_Record &record) -> std::istream &;
+};
+
+auto operator>>(std::istream &is, Plaintext_Record &record) -> std::istream &
+{
+    is >> record.m_trecid;
+    std::getline(is, record.m_content);
+    return is;
+}
+
 int main(int argc, char **argv) {
 
     std::string input_basename;
     std::string output_filename;
+    std::string format = "plaintext";
     size_t      threads = std::thread::hardware_concurrency();
     ptrdiff_t   batch_size = 100'000;
 
@@ -293,25 +317,43 @@ int main(int argc, char **argv) {
     app.add_option("-j,--threads", threads, "Thread count");
     app.add_option(
         "-b,--batch-size", batch_size, "Number of documents to process in one thread", true);
+    app.add_option("-f,--format", format, "Input format", true);
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(threads);
     logger() << "Number of threads: " << threads << '\n';
 
-    Forward_Index_Builder<Warc_Record> builder;
-    builder.build(
-        std::cin,
-        output_filename,
-        [](std::istream &in) -> std::optional<Warc_Record> {
-            Warc_Record record;
-            if (read_warc_record(in, record)) {
-                return record;
-            }
-            return std::nullopt;
-        },
-        [&](std::string const &term) -> std::string { return Porter2_Stemmer{}(tolower(term)); },
-        batch_size,
-        threads);
+    if (format == "plaintext") {
+        Forward_Index_Builder<Plaintext_Record> builder;
+        builder.build(std::cin,
+                      output_filename,
+                      [](std::istream &in) -> std::optional<Plaintext_Record> {
+                          Plaintext_Record record;
+                          if (in >> record) {
+                              return record;
+                          }
+                          return std::nullopt;
+                      },
+                      [&](std::string const &term) -> std::string { return term; },
+                      batch_size,
+                      threads);
+    } else if (format == "warc") {
+        Forward_Index_Builder<Warc_Record> builder;
+        builder.build(std::cin,
+                      output_filename,
+                      [](std::istream &in) -> std::optional<Warc_Record> {
+                          Warc_Record record;
+                          if (read_warc_record(in, record)) {
+                              return record;
+                          }
+                          return std::nullopt;
+                      },
+                      [&](std::string const &term) -> std::string {
+                          return Porter2_Stemmer{}(tolower(term));
+                      },
+                      batch_size,
+                      threads);
+    }
 
     return 0;
 }
