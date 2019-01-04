@@ -196,7 +196,7 @@ class Forward_Index_Builder {
         logger() << "Remapping IDs\n";
         for (auto batch : enumerate(batch_count)) {
             auto &mapping = id_mappings[batch];
-            binary_collection coll(batch_file(basename, batch).c_str());
+            writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
                     term_id = mapping[term_id];
