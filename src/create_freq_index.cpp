@@ -61,19 +61,21 @@ void create_collection(InputCollection const &input,
     double tick = get_time_usecs();
 
     typename CollectionType::builder builder(input.num_docs(), params);
-    progress_logger plog;
     uint64_t size = 0;
+    size_t postings = 0;
+    {
+        ds2i::progress progress("Create index", input.size());
+        for (auto const &plist : input) {
+            uint64_t freqs_sum;
+            size = plist.docs.size();
+            freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
+            builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
 
-    for (auto const &plist : input) {
-        uint64_t freqs_sum;
-        size = plist.docs.size();
-        freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
-        builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
-
-        plog.done_sequence(size);
+            progress.update(1);
+            postings += size;
+        }
     }
 
-    plog.log();
     CollectionType coll;
     builder.build(coll);
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
@@ -82,7 +84,7 @@ void create_collection(InputCollection const &input,
     stats_line()("type", seq_type)("worker_threads", configuration::get().worker_threads)(
         "construction_time", elapsed_secs);
 
-    dump_stats(coll, seq_type, plog.postings);
+    dump_stats(coll, seq_type, postings);
     dump_index_specific_stats(coll, seq_type);
 
     if (output_filename) {
