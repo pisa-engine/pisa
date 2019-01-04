@@ -1,11 +1,11 @@
 #pragma once
-
+#include "catch2/catch.hpp"
 #include "test_common.hpp"
 
 template <class Vector>
 inline void test_equal_bits(std::vector<bool> const& v, Vector const& bitmap, const char* test_name)
 {
-    BOOST_REQUIRE_EQUAL(v.size(), bitmap.size());
+    REQUIRE(v.size() == bitmap.size());
     for (size_t i = 0; i < v.size(); ++i) {
         MY_REQUIRE_EQUAL((bool)v[i], bitmap[i],
                          "operator[] (" << test_name << "): i=" << i);
