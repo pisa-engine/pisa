@@ -128,6 +128,17 @@ target_link_libraries(parse_collection
   )
 target_compile_features(parse_collection PRIVATE cxx_std_17)
 
+add_executable(invert invert.cpp)
+target_link_libraries(invert
+  ${Boost_LIBRARIES}
+  CLI11
+  mio
+  ParallelSTL
+  GSL
+  gumbo::gumbo
+  )
+target_compile_features(invert PRIVATE cxx_std_17)
+
 add_executable(read_collection read_collection.cpp)
 target_link_libraries(read_collection
   ${Boost_LIBRARIES}
