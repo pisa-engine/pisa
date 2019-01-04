@@ -33,14 +33,14 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
     - os: linux
-      compiler: clang
-      env: 
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - clang
+      env:
+        - MATRIX_EVAL="CC=clang && CXX=clang++"
 
 # Install dependencies
 before_install:
