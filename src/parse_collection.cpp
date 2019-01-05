@@ -115,9 +115,6 @@ class Forward_Index_Builder {
 
         for (auto const &record : bp.records) {
             title_os << record.trecid() << '\n';
-            // TODO(michal): it gets stuck on this for some reason
-            //               once fixed, uncomment; not crucial at the moment
-            // url_os << record.url() << '\n';
 
             auto content = parsing::html::cleantext(record.content());
             std::vector<uint32_t> term_ids;
@@ -234,6 +231,7 @@ class Forward_Index_Builder {
             std::optional<Record> record = std::nullopt;
             try {
                 if (not (record = next_record(is))) {
+                    auto last_batch_size = record_batch.size();
                     Batch_Process bp{
                         batch_number, std::move(record_batch), first_document, output_file};
                     queue.push(0);
@@ -243,7 +241,7 @@ class Forward_Index_Builder {
                         queue.try_pop(x);
                     });
                     ++batch_number;
-                    first_document += batch_size;
+                    first_document += last_batch_size;
                     break;
                 }
             } catch (Warc_Format_Error &err) {
