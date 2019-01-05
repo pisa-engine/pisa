@@ -35,6 +35,11 @@ namespace ds2i {
             return iterator(m_docs.end(), m_freqs.end());
         }
 
+        size_t size() const
+        {
+            return std::distance(begin(), end());
+        }
+
         uint64_t num_docs() const
         {
             return m_num_docs;
