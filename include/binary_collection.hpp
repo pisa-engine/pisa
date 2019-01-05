@@ -114,7 +114,7 @@ namespace ds2i {
 
                 size_t n = 0;
                 size_t pos = m_pos;
-                while (!(n = m_collection->m_data[pos++])); // skip empty seqs
+                n = m_collection->m_data[pos++];
                 // file might be truncated
                 n = std::min(n, size_t(m_collection->m_data_size - pos));
                 auto begin = &m_collection->m_data[pos];
