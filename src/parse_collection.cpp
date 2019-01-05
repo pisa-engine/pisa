@@ -74,8 +74,9 @@ class Forward_Index_Builder {
         return os;
     }
 
-    static std::ostream &write_header(std::ostream &os, uint32_t document_count) {
-        return write_document(os, &document_count, &document_count + sizeof(document_count));
+    static std::ostream &write_header(std::ostream &os, uint32_t document_count)
+    {
+        return write_document(os, &document_count, std::next(&document_count));
     }
 
     static std::ostream &write_terms(std::ostream &os, std::map<std::string, uint32_t> map)
@@ -116,11 +117,10 @@ class Forward_Index_Builder {
         for (auto const &record : bp.records) {
             title_os << record.trecid() << '\n';
 
-            auto content = parsing::html::cleantext(record.content());
+            auto content = record.content();
             std::vector<uint32_t> term_ids;
 
-            auto process = [&](auto term_iter) {
-                auto term = process_term(term_iter->str());
+            auto process = [&](auto const &term) {
                 uint32_t id = 0;
                 if (auto pos = map.find(term); pos != map.end()) {
                     id = pos->second;
@@ -131,14 +131,10 @@ class Forward_Index_Builder {
                 }
                 term_ids.push_back(id);
             };
-            std::regex term_pattern("(\\w+)");
-            auto term_iter = std::sregex_iterator(content.begin(), content.end(), term_pattern);
-            if (term_iter != std::sregex_iterator()) {
-                process(term_iter);
-                term_iter++;
-                for (; term_iter != std::sregex_iterator(); term_iter++) {
-                    process(term_iter);
-                }
+            std::istringstream content_stream(content);
+            std::string term;
+            while (content_stream >> term) {
+                process(term);
             }
             write_document(os, term_ids.begin(), term_ids.end());
         }
