@@ -1,7 +1,7 @@
 #pragma once
 
-#include <boost/variant.hpp>
 #include <stdexcept>
+#include "boost/variant.hpp"
 
 #include "codec/all_ones_sequence.hpp"
 #include "codec/compact_ranked_bitvector.hpp"

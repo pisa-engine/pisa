@@ -5,7 +5,7 @@
 #include <numeric>
 #include "mio/mmap.hpp"
 
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 
 #include "succinct/mapper.hpp"
 

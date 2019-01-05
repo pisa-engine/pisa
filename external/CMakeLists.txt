@@ -69,4 +69,6 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
 # Add Catch
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
+# Add Boost
+add_subdirectory(boost-cmake)
 
