@@ -1,9 +1,10 @@
 #include <iostream>
 #include <thread>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include "boost/lexical_cast.hpp"
+#include "boost/algorithm/string/classification.hpp"
+#include "boost/algorithm/string/split.hpp"
+#include "boost/optional.hpp"
 
 #include "mio/mmap.hpp"
 
@@ -51,8 +52,8 @@ struct add_profiling<ds2i::block_freq_index<BlockType, false>> {
 
 
 template <typename IndexType>
-void profile(const char* index_filename,
-             const char* wand_data_filename,
+void profile(const std::string index_filename,
+             const boost::optional<std::string> &wand_data_filename,
              std::vector<ds2i::term_id_vec> const& queries,
              std::string const& type,
              std::string const& query_type)
@@ -69,7 +70,7 @@ void profile(const char* index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename, error);
+        md.map(wand_data_filename.value(), error);
         if(error){
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
@@ -107,7 +108,7 @@ int main(int argc, const char** argv)
     std::string type = argv[1];
     const char* query_type = argv[2];
     const char* index_filename = argv[3];
-    const char* wand_data_filename = nullptr;
+    boost::optional<std::string> wand_data_filename;
     size_t args =4;
     if (argc > 4) {
         wand_data_filename = argv[4];
