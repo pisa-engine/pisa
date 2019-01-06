@@ -53,4 +53,11 @@ target_link_libraries(test_forward_index
     ParallelSTL
 )
 
+target_compile_features(test_forward_index_builder PRIVATE cxx_std_17)
+target_link_libraries(test_forward_index_builder
+    ParallelSTL
+    gumbo::gumbo
+    Boost::filesystem
+)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

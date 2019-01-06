@@ -40,7 +40,7 @@ template <typename T>
 
 template <typename T>
 [[nodiscard]] auto enumerate(T first, T last) -> Enumerator_Range<T> {
-    assert(0 <= last);
+    assert(first <= last);
     return Enumerator_Range<T>{{first}, {last}};
 }
 
