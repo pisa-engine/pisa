@@ -5,7 +5,7 @@
 #include <numeric>
 #include "mio/mmap.hpp"
 
-#include <boost/lexical_cast.hpp>
+#include "boost/lexical_cast.hpp"
 
 #include "succinct/mapper.hpp"
 
@@ -20,6 +20,7 @@
 #include "mixed_block.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/semiasync_queue.hpp"
+#include "util/progress.hpp"
 
 using ds2i::logger;
 
@@ -60,12 +61,10 @@ struct lambdas_computer : ds2i::semiasync_queue::job {
                      typename InputCollectionType::document_enumerator e,
                      ds2i::predictors_vec_type const& predictors,
                      std::vector<uint32_t>& counts,
-                     ds2i::progress_logger& plog,
                      lambda_vector_type& lambda_points)
         : m_block_id_base(block_id_base)
         , m_e(e)
         , m_predictors(predictors)
-        , m_plog(plog)
         , m_lambda_points(lambda_points)
     {
         m_counts.swap(counts);
@@ -135,14 +134,12 @@ struct lambdas_computer : ds2i::semiasync_queue::job {
         //                        m_points_buf.begin(), m_points_buf.end());
         std::copy(m_points_buf.begin(), m_points_buf.end(),
                   std::back_inserter(m_lambda_points));
-        m_plog.done_sequence(m_e.size());
     }
 
     block_id_type m_block_id_base;
     typename InputCollectionType::document_enumerator m_e;
     ds2i::predictors_vec_type const& m_predictors;
     std::vector<uint32_t> m_counts;
-    ds2i::progress_logger& m_plog;
     double m_lambda;
     std::vector<lambda_point> m_points_buf;
     lambda_vector_type& m_lambda_points;
@@ -159,8 +156,7 @@ void compute_lambdas(InputCollectionType const& input_coll,
     using namespace ds2i;
     using namespace time_prediction;
 
-    logger() << "Computing lambdas" << std::endl;
-    progress_logger plog;
+    ds2i::progress progress("Computing lambdas", input_coll.size());
 
     auto predictors = load_predictors(predictors_filename);
     std::ifstream block_stats(block_stats_filename);
@@ -198,14 +194,14 @@ void compute_lambdas(InputCollectionType const& input_coll,
                                                     return accum + (freq == 0);
                                                 });
             block_counts_consumed = true;
-            job.reset(new job_type(block_id_base, e, predictors, block_counts, plog, lambda_points));
+            job.reset(new job_type(block_id_base, e, predictors, block_counts, lambda_points));
         } else {
             freq_zero_lists += 1;
             freq_zero_blocks += 2 * e.num_blocks();
             std::vector<uint32_t> empty_counts;
-            job.reset(new job_type(block_id_base, e, predictors, empty_counts, plog, lambda_points));
+            job.reset(new job_type(block_id_base, e, predictors, empty_counts, lambda_points));
         }
-
+        progress.update(1);
         block_id_base += 2 * e.num_blocks();
         queue.add_job(job, 2 * e.size());
     }
@@ -218,7 +214,6 @@ void compute_lambdas(InputCollectionType const& input_coll,
         ;
 
     queue.complete();
-    plog.log();
 
     logger() << lambda_points.size() << " lambda points" << std::endl;
     logger() << "Sorting lambda points" << std::endl;
@@ -249,13 +244,11 @@ struct list_transformer : ds2i::semiasync_queue::job {
     list_transformer(CollectionBuilder& b,
                      typename InputCollectionType::document_enumerator e,
                      std::vector<ds2i::mixed_block::block_type>::const_iterator block_type_begin,
-                     std::vector<ds2i::mixed_block::compr_param_type>::const_iterator block_param_begin,
-                     ds2i::progress_logger& plog)
+                     std::vector<ds2i::mixed_block::compr_param_type>::const_iterator block_param_begin)
         : m_b(b)
         , m_e(e)
         , m_block_type(block_type_begin)
         , m_block_param(block_param_begin)
-        , m_plog(plog)
     {}
 
     virtual void prepare()
@@ -284,14 +277,12 @@ struct list_transformer : ds2i::semiasync_queue::job {
     virtual void commit()
     {
         m_b.add_posting_list(m_buf);
-        m_plog.done_sequence(m_e.size());
     }
 
     CollectionBuilder& m_b;
     typename InputCollectionType::document_enumerator m_e;
     std::vector<ds2i::mixed_block::block_type>::const_iterator m_block_type;
     std::vector<ds2i::mixed_block::compr_param_type>::const_iterator m_block_param;
-    ds2i::progress_logger& m_plog;
     std::vector<uint8_t> m_buf;
 };
 
@@ -435,20 +426,22 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
     typedef typename block_mixed_index::builder builder_type;
     builder_type builder(input_coll.num_docs(), params);
-    progress_logger plog;
+    ds2i::progress progress("Building collection", input_coll.size());
+
     semiasync_queue queue(1 << 24);
     auto block_types_it = block_types.begin();
     auto block_params_it = block_params.begin();
-
+    size_t postings = 0;
     for (size_t l = 0; l < input_coll.size(); ++l) {
         auto e = input_coll[l];
 
         typedef list_transformer<InputCollectionType, builder_type> job_type;
         std::shared_ptr<job_type> job(new job_type(builder, e,
                                                    block_types_it,
-                                                   block_params_it,
-                                                   plog));
+                                                   block_params_it));
 
+        progress.update(1);
+        postings += e.size();
         block_types_it += 2 * e.num_blocks();
         block_params_it += 2 * e.num_blocks();
         queue.add_job(job, 2 * e.size());
@@ -457,7 +450,6 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     assert(block_types_it == block_types.end());
     assert(block_params_it == block_params.end());
     queue.complete();
-    plog.log();
 
     block_mixed_index coll;
     builder.build(coll);
@@ -469,7 +461,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         ("worker_threads", configuration::get().worker_threads)
         ("construction_time", elapsed_secs)
         ;
-    dump_stats(coll, "block_mixed", plog.postings);
+    dump_stats(coll, "block_mixed", postings);
 
     if (output_filename) {
         mapper::freeze(coll, output_filename);

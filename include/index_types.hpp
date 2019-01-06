@@ -1,8 +1,8 @@
 #pragma once
 
-#include <boost/preprocessor/cat.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/stringize.hpp>
+#include "boost/preprocessor/cat.hpp"
+#include "boost/preprocessor/seq/for_each.hpp"
+#include "boost/preprocessor/stringize.hpp"
 
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
