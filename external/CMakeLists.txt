@@ -46,6 +46,7 @@ add_library(MaskedVByte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varin
 
 # Add QMX
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/QMX EXCLUDE_FROM_ALL)
+target_compile_options(qmx INTERFACE -Wno-implicit-fallthrough=)
 
 # Add mio
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mio EXCLUDE_FROM_ALL)
