@@ -21,6 +21,7 @@ matrix:
   include:
     # works on Precise and Trusty
     - os: linux
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -29,11 +30,11 @@ matrix:
             - g++-7
             - lcov
       env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
     - os: osx
       compiler: clang
       env:
-        - MATRIX_EVAL="CC=clang && CXX=clang++"
+        - MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
 
 # Install dependencies
 before_install:
@@ -42,7 +43,7 @@ before_install:
 script:
     - mkdir build
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=On ${CMAKE_OPTIONS} ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} ${CMAKE_OPTIONS} ..
     - make
     - ctest
 
