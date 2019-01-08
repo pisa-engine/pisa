@@ -32,6 +32,7 @@ matrix:
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
     - os: osx
+      osx_image: xcode10.1	
       compiler: clang
       env:
         - MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
