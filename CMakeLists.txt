@@ -47,11 +47,6 @@ if(OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-# set(Boost_USE_STATIC_LIBS ON)
-# find_package(Boost 1.42.0 COMPONENTS filesystem system REQUIRED)
-# include_directories(${Boost_INCLUDE_DIRS})
-# link_directories(${Boost_LIBRARY_DIRS})
-
 # add the root directory to include path to make includes absolute
 include_directories(${DS2I_SOURCE_DIR}/external
 		    ${STXXL_INCLUDE_DIRS}
