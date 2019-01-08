@@ -9,6 +9,7 @@
 #include "ds2i_config.hpp"
 #include "enumerate.hpp"
 #include "forward_index_builder.hpp"
+#include "temporary_directory.hpp"
 
 using namespace boost::filesystem;
 
@@ -80,28 +81,6 @@ void write_lines(std::string const &filename, gsl::span<T> &&elements)
     std::ofstream os(filename);
     write_lines<T>(os, std::forward<gsl::span<T>>(elements));
 }
-
-struct Temporary_Directory {
-    explicit Temporary_Directory()
-        : dir_(boost::filesystem::temp_directory_path() / boost::filesystem::unique_path())
-    {
-        if (boost::filesystem::exists(dir_)) {
-            boost::filesystem::remove_all(dir_);
-        }
-        boost::filesystem::create_directory(dir_);
-        std::cerr << "Created a tmp dir " << dir_.c_str() << '\n';
-    }
-    ~Temporary_Directory() {
-        if (boost::filesystem::exists(dir_)) {
-            boost::filesystem::remove_all(dir_);
-        }
-    }
-
-    [[nodiscard]] auto path() -> boost::filesystem::path const & { return dir_; }
-
-   private:
-    boost::filesystem::path dir_;
-};
 
 TEST_CASE("Build forward index batch", "[parsing][forward_index]")
 {
@@ -294,7 +273,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
         std::string input(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
         REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
         int thread_count = GENERATE(2, 8);
-        int batch_size   = GENERATE(1, 123, 1000, 10000);
+        int batch_size   = GENERATE(123, 10000);
         WHEN("Build a forward index") {
             Temporary_Directory tmpdir;
             auto dir = tmpdir.path();

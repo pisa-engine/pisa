@@ -35,13 +35,13 @@ matrix:
 # Install dependencies
 before_install:
   - eval "${MATRIX_EVAL}"
-  
+
 script:
     - mkdir build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=On ${CMAKE_OPTIONS} ..
     - make
-    - ctest
+    - ctest -VV
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

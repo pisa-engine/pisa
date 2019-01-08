@@ -9,6 +9,7 @@
 #include <optional>
 #include <thread>
 #include <unordered_set>
+#include <vector>
 
 #include "pstl/algorithm"
 #include "pstl/execution"

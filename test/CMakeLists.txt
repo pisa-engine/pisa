@@ -61,4 +61,10 @@ target_link_libraries(test_forward_index_builder
     Boost::filesystem
 )
 
+target_compile_features(test_invert PRIVATE cxx_std_17)
+target_link_libraries(test_invert
+    ParallelSTL
+    Boost::filesystem
+)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

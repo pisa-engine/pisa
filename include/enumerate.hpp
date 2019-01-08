@@ -14,6 +14,7 @@ class Enumerator_Index {
         return *this;
     }
     operator T() const { return idx_; }
+    bool operator!=(Enumerator_Index const &rhs) const { return idx_ != rhs.idx_; }
 
    private:
     T idx_;
@@ -34,8 +35,8 @@ template <typename T>
 
 template <typename T>
 [[nodiscard]] auto enumerate(T last) -> Enumerator_Range<T> {
-    assert(0 <= last);
-    return Enumerator_Range<T>{{0}, {last}};
+    assert(static_cast<T>(0) <= last);
+    return Enumerator_Range<T>{{static_cast<T>(0)}, {last}};
 }
 
 template <typename T>
