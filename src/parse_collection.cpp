@@ -50,16 +50,16 @@ int main(int argc, char **argv) {
                       [](std::istream &in) -> std::optional<Warc_Record> {
                           Warc_Record record;
                           if (read_warc_record(in, record)) {
-                              return record;
+                              return std::make_optional(record);
                           }
                           return std::nullopt;
                       },
-                      [&, stemmer = stem::Porter2{}](std::string &&term) -> std::string {
+                      [&](std::string &&term) -> std::string {
                           std::transform(term.begin(),
                                          term.end(),
                                          term.begin(),
                                          [](unsigned char c) { return std::tolower(c); });
-                          return stemmer.stem(term);
+                          return stem::Porter2{}.stem(term);
                       },
                       batch_size,
                       threads);
