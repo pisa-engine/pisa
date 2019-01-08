@@ -19,7 +19,6 @@
 #include "binary_collection.hpp"
 #include "enumerate.hpp"
 #include "parsing/html.hpp"
-#include "parsing/stemmer.hpp"
 #include "parsing/warc.hpp"
 #include "util/util.hpp"
 
@@ -240,7 +239,7 @@ class Forward_Index_Builder {
             if (record->type() != "response") {
                 continue;
             }
-            record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional 
+            record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
             if (record_batch.size() == batch_size) {
                 Batch_Process bp{
                     batch_number, std::move(record_batch), first_document, output_file};

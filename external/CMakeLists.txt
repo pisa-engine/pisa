@@ -86,3 +86,6 @@ add_subdirectory(boost-cmake)
 
 # Add Catch
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
+
+# Add Porter2
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)

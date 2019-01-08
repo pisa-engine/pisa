@@ -125,6 +125,7 @@ target_link_libraries(parse_collection
   ParallelSTL
   GSL
   gumbo::gumbo
+  Porter2
   )
 target_compile_features(parse_collection PRIVATE cxx_std_17)
 

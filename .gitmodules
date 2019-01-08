@@ -43,3 +43,6 @@
 [submodule "external/boost-cmake"]
 	path = external/boost-cmake
 	url = https://github.com/Orphis/boost-cmake.git
+[submodule "external/Porter2"]
+	path = external/Porter2
+	url = https://github.com/pisa-engine/Porter2.git

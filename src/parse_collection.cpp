@@ -2,6 +2,7 @@
 
 #include "CLI/CLI.hpp"
 #include "tbb/task_scheduler_init.h"
+#include "Porter2/Porter2.hpp"
 
 #include "forward_index_builder.hpp"
 
@@ -53,7 +54,7 @@ int main(int argc, char **argv) {
                           return std::nullopt;
                       },
                       [&](std::string const &term) -> std::string {
-                          return Porter2_Stemmer{}(tolower(term));
+                          return stem::Porter2{}.stem(tolower(term));
                       },
                       batch_size,
                       threads);
