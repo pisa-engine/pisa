@@ -63,7 +63,7 @@ template <typename Record>
 class Forward_Index_Builder {
    public:
     using read_record_function_type  = std::function<std::optional<Record>(std::istream &)>;
-    using process_term_function_type = std::function<std::string(std::string const &)>;
+    using process_term_function_type = std::function<std::string(std::string &&)>;
 
     template <typename Iterator>
     static std::ostream &write_document(std::ostream &os, Iterator first, Iterator last)
@@ -113,7 +113,8 @@ class Forward_Index_Builder {
             auto content = record.content();
             std::vector<uint32_t> term_ids;
 
-            auto process = [&](auto const &term) {
+            auto process = [&](auto &term) {
+                term = process_term(std::move(term));
                 uint32_t id = 0;
                 if (auto pos = map.find(term); pos != map.end()) {
                     id = pos->second;
@@ -258,16 +259,6 @@ class Forward_Index_Builder {
         merge(output_file, static_cast<ptrdiff_t>(first_document), batch_number);
     }
 };
-
-std::string tolower(std::string const &term) {
-    std::string lower;
-    lower.reserve(term.size());
-    for (char const &c : term) {
-        lower.push_back(std::tolower(c));
-    }
-    return lower;
-}
-
 
 class Plaintext_Record {
    public:

@@ -30,18 +30,19 @@ int main(int argc, char **argv) {
 
     if (format == "plaintext") {
         Forward_Index_Builder<Plaintext_Record> builder;
-        builder.build(std::cin,
-                      output_filename,
-                      [](std::istream &in) -> std::optional<Plaintext_Record> {
-                          Plaintext_Record record;
-                          if (in >> record) {
-                              return record;
-                          }
-                          return std::nullopt;
-                      },
-                      [&](std::string const &term) -> std::string { return term; },
-                      batch_size,
-                      threads);
+        builder.build(
+            std::cin,
+            output_filename,
+            [](std::istream &in) -> std::optional<Plaintext_Record> {
+                Plaintext_Record record;
+                if (in >> record) {
+                    return record;
+                }
+                return std::nullopt;
+            },
+            [&](std::string &&term) -> std::string { return std::forward<std::string>(term); },
+            batch_size,
+            threads);
     } else if (format == "warc") {
         Forward_Index_Builder<Warc_Record> builder;
         builder.build(std::cin,
@@ -53,8 +54,12 @@ int main(int argc, char **argv) {
                           }
                           return std::nullopt;
                       },
-                      [&](std::string const &term) -> std::string {
-                          return stem::Porter2{}.stem(tolower(term));
+                      [&, stemmer = stem::Porter2{}](std::string &&term) -> std::string {
+                          std::transform(term.begin(),
+                                         term.end(),
+                                         term.begin(),
+                                         [](unsigned char c) { return std::tolower(c); });
+                          return stemmer.stem(term);
                       },
                       batch_size,
                       threads);
