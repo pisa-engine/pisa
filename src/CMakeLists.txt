@@ -25,6 +25,9 @@ target_link_libraries(optimal_hybrid_index
   ParallelSTL
   GSL
 )
+set_target_properties(optimal_hybrid_index PROPERTIES
+            CXX_STANDARD 14
+)
 
 add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
@@ -99,9 +102,6 @@ target_link_libraries(recursive_graph_bisection
   ParallelSTL
   mio
   GSL
-)
-set_target_properties(recursive_graph_bisection PROPERTIES
-            CXX_STANDARD 17
 )
 
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
