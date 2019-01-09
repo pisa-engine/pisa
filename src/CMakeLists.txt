@@ -52,7 +52,7 @@ target_link_libraries(queries
 
 add_executable(thresholds thresholds.cpp)
 target_link_libraries(thresholds
-  ${Boost_LIBRARIES}
+  Boost::boost
   FastPFor
   streamvbyte
   MaskedVByte
