@@ -46,8 +46,8 @@ matrix:
       addons:
           apt:
               sources: *all_sources
-              packages: ['clang-6.0']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+              packages: ['clang-5.0']
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
     - os: linux
       compiler: clang
       addons:
