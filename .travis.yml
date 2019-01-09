@@ -46,7 +46,7 @@ matrix:
       addons:
           apt:
               sources: *all_sources
-              packages: ['clang-5.0', 'libstdc++-8-dev']
+              packages: ['clang-5.0', 'libstdc++-7-dev']
       env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
     - os: linux
       compiler: clang
