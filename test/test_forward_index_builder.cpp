@@ -8,6 +8,7 @@
 
 #include "ds2i_config.hpp"
 #include "enumerate.hpp"
+#include "filesystem.hpp"
 #include "forward_index_builder.hpp"
 #include "temporary_directory.hpp"
 
@@ -310,6 +311,10 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     REQUIRE(produced_body == original_body);
                     ++seq_iter;
                 }
+                auto batch_files = ds2i::ls(dir, [](auto const &filename) {
+                    return filename.find("batch") != std::string::npos;
+                });
+                REQUIRE(batch_files.empty());
             }
         }
     }

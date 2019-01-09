@@ -35,6 +35,7 @@ class Warc_Record {
     Warc_Record() = default;
     explicit Warc_Record(std::string version) : version_(std::move(version)) {}
     [[nodiscard]] auto type() const -> std::string const & { return warc_fields_.at("warc-type"); }
+    [[nodiscard]] auto valid() const noexcept -> bool { return type() == "response"; }
     [[nodiscard]] auto warc_content_length() const -> std::size_t {
         auto &field_value = warc_fields_.at("content-length");
         try {

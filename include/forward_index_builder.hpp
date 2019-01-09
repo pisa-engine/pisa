@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "boost/filesystem.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
 #include "tbb/concurrent_queue.h"
@@ -109,6 +110,7 @@ class Forward_Index_Builder {
 
         for (auto const &record : bp.records) {
             title_os << record.trecid() << '\n';
+            url_os << record.url() << '\n';
 
             auto content = record.content();
             std::vector<uint32_t> term_ids;
@@ -208,7 +210,7 @@ class Forward_Index_Builder {
                read_record_function_type  next_record,
                process_term_function_type process_term,
                std::ptrdiff_t             batch_size,
-               std::size_t                threads)
+               std::size_t                threads) const
     {
         Document_Id    first_document{0};
         std::ptrdiff_t batch_number = 0;
@@ -237,7 +239,7 @@ class Forward_Index_Builder {
             } catch (Warc_Format_Error &err) {
                 continue;
             }
-            if (record->type() != "response") {
+            if (not record->valid()) {
                 continue;
             }
             record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
@@ -257,6 +259,20 @@ class Forward_Index_Builder {
         }
         batch_group.wait();
         merge(output_file, static_cast<ptrdiff_t>(first_document), batch_number);
+        remove_batches(output_file, batch_number);
+    }
+
+    void remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const
+    {
+        using boost::filesystem::path;
+        using boost::filesystem::remove;
+        for (auto batch : enumerate(batch_count)) {
+            auto batch_basename = batch_file(basename, batch);
+            remove(path{batch_basename + ".documents"});
+            remove(path{batch_basename + ".terms"});
+            remove(path{batch_basename + ".urls"});
+            remove(path{batch_basename});
+        }
     }
 };
 
@@ -269,13 +285,15 @@ class Plaintext_Record {
     [[nodiscard]] auto content() const -> std::string const & { return m_content; }
     [[nodiscard]] auto trecid() -> std::string & { return m_trecid; }
     [[nodiscard]] auto trecid() const -> std::string const & { return m_trecid; }
-    [[nodiscard]] auto type() const noexcept -> std::string { return "response"; }
+    [[nodiscard]] auto url() -> std::string & { return m_url; }
+    [[nodiscard]] auto url() const -> std::string const & { return m_url; }
+    [[nodiscard]] auto valid() const noexcept -> bool { return true; }
     [[nodiscard]] static auto read(std::istream &is) {}
 
    private:
     std::string m_trecid;
     std::string m_content;
-    //friend auto operator>>(std::istream &is, Plaintext_Record &record) -> std::istream &;
+    std::string m_url;
 };
 
 } // namespace ds2i

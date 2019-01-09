@@ -119,7 +119,8 @@ target_link_libraries(evaluate_collection_ordering
 
 add_executable(parse_collection parse_collection.cpp)
 target_link_libraries(parse_collection
-  ${Boost_LIBRARIES}
+  Boost::boost
+  Boost::filesystem
   CLI11
   mio
   ParallelSTL
