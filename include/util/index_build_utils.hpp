@@ -7,25 +7,6 @@
 
 namespace ds2i {
 
-struct progress_logger {
-    progress_logger() : sequences(0), postings(0) {}
-
-    void log() {
-        logger() << "Processed " << sequences << " sequences, " << postings << " postings"
-                 << std::endl;
-    }
-
-    void done_sequence(size_t n) {
-        sequences += 1;
-        postings += n;
-        if (sequences % 1000000 == 0) {
-            log();
-        }
-    }
-
-    size_t sequences, postings;
-};
-
 template <typename DocsSequence, typename FreqsSequence>
 void get_size_stats(freq_index<DocsSequence, FreqsSequence> &coll,
                     uint64_t &                               docs_size,

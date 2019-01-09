@@ -27,7 +27,6 @@ class forward_index : public std::vector<std::vector<std::uint8_t>> {
         : std::vector<entry_type>(document_count),
           m_term_count(term_count),
           m_term_counts(document_count),
-          m_terms(term_count),
           m_compressed(compressed) {}
 
     const std::size_t &term_count() const { return m_term_count; }
@@ -146,7 +145,6 @@ class forward_index : public std::vector<std::vector<std::uint8_t>> {
    private:
     std::size_t              m_term_count;
     std::vector<std::size_t> m_term_counts;
-    std::size_t              m_terms;
     bool                     m_compressed;
 };
 

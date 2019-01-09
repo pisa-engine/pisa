@@ -10,6 +10,7 @@
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
+#include "util/progress.hpp"
 
 using ds2i::logger;
 
@@ -35,7 +36,7 @@ int main(int argc, const char** argv)
     binary_freq_collection input(input_basename.c_str());
     size_t num_docs = input.num_docs();
     std::vector<uint32_t> new_doc_id(num_docs);
- 
+
     if (argc == 4) {
       const std::string order_file = argv[3];
       std::ifstream in_order(order_file);
@@ -72,8 +73,7 @@ int main(int argc, const char** argv)
         emit(output_sizes, new_sizes.data(), num_docs);
     }
 
-    logger() << "Shuffling posting lists" << std::endl;
-    progress_logger plog;
+    ds2i::progress progress("Shuffling posting lists", input.size());
 
     std::ofstream output_docs(output_basename + ".docs");
     std::ofstream output_freqs(output_basename + ".freqs");
@@ -97,8 +97,7 @@ int main(int argc, const char** argv)
             emit(output_freqs, posting.second);
         }
 
-        plog.done_sequence(seq.docs.size());
+        progress.update(1);
         pl.clear();
     }
-    plog.log();
 }

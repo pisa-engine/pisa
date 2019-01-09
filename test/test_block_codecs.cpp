@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE block_codecs
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -35,15 +36,13 @@ void test_block_codec()
             uint8_t const* out = BlockCodec::decode(encoded.data(), decoded.data(),
                                                     sum_of_values, values.size());
 
-
-            BOOST_REQUIRE_EQUAL(encoded.size(), out - encoded.data());
-            BOOST_REQUIRE_EQUAL_COLLECTIONS(values.begin(), values.end(),
-                                            decoded.begin(), decoded.end());
+            REQUIRE(encoded.size() == out - encoded.data());
+            REQUIRE(std::equal(values.begin(), values.end(), decoded.begin()));
         }
     }
 }
 
-BOOST_AUTO_TEST_CASE(block_codecs)
+TEST_CASE("block_codecs")
 {
     test_block_codec<ds2i::optpfor_block>();
     test_block_codec<ds2i::varint_G8IU_block>();

@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE strict_elias_fano
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -6,7 +7,8 @@
 #include <vector>
 #include <cstdlib>
 
-BOOST_AUTO_TEST_CASE(strict_elias_fano)
+
+TEST_CASE( "strict_elias_fano")
 {
     ds2i::global_parameters params;
 

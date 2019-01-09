@@ -5,18 +5,9 @@ namespace ds2i {
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
-    explicit topk_queue(uint64_t k) : m_threshold(0), m_k(k) { m_q.reserve(k + 1); }
-
-    topk_queue(const topk_queue &q) : m_threshold(q.m_threshold), m_k(q.m_k), m_q(q.m_q) {
-        m_k = q.m_k;
-        m_threshold = q.m_threshold;
-    }
-
-    topk_queue &operator=(const topk_queue &q) {
-        m_k = q.m_k;
-        m_threshold = q.m_threshold;
-        return *this;
-    }
+    explicit topk_queue(uint64_t k) : m_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
+    topk_queue(topk_queue const &q) = default;
+    topk_queue &operator=(topk_queue const &q) = default;
 
     [[nodiscard]] constexpr static auto min_heap_order(entry_type const &lhs,
                                                        entry_type const &rhs) noexcept -> bool {
@@ -26,11 +17,12 @@ struct topk_queue {
     bool insert(float score) { return insert(score, 0); }
 
     bool insert(float score, uint64_t docid) {
+        //std::cerr << "insert: " << score << "(" << m_threshold << ")\n";
         if (DS2I_UNLIKELY(score < m_threshold)) {
             return false;
         }
         m_q.emplace_back(score, docid);
-        if (DS2I_UNLIKELY(m_q.size() < m_k)) {
+        if (DS2I_UNLIKELY(m_q.size() <= m_k)) {
             std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
             if(DS2I_UNLIKELY(m_q.size() == m_k)) {
                 m_threshold = m_q.front().first;
@@ -58,17 +50,14 @@ struct topk_queue {
 
     [[nodiscard]] std::vector<entry_type> const &topk() const noexcept { return m_q; }
 
-    void set_threshold(float t) {
-        for (size_t i = 0; i < m_k; ++i) {
-            insert(0);
-        }
-        m_threshold = t;
+    void clear() noexcept {
+        m_q.clear();
+        m_threshold = 0;
     }
-
-    void clear() noexcept { m_q.clear(); }
 
     [[nodiscard]] uint64_t size() const noexcept { return m_k; }
 
+   private:
     float                   m_threshold;
     uint64_t                m_k;
     std::vector<entry_type> m_q;
