@@ -24,8 +24,8 @@ void thresholds(const std::string &                   index_filename,
                 const std::vector<ds2i::term_id_vec> &queries,
                 const boost::optional<std::string> &  thresholds_filename,
                 std::string const &                   type,
-                std::string const &                   query_type,
-                uint64_t                              k) {
+                uint64_t                              k)
+{
     using namespace ds2i;
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -33,8 +33,6 @@ void thresholds(const std::string &                   index_filename,
 
     WandType wdata;
 
-    std::vector<std::string> query_types;
-    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
@@ -51,9 +49,7 @@ void thresholds(const std::string &                   index_filename,
         query_func(index, query);
         auto  results   = query_func.topk();
         float threshold = 0.0;
-        std::cerr << results.size() << "/" << k << '\n';
         if (results.size() == k) {
-            std::cerr << "!!!\n";
             auto min = std::min_element(
                 results.begin(), results.end(), [](auto const &lhs, auto const &rhs) {
                     return lhs.first < rhs.first;
@@ -113,7 +109,6 @@ int main(int argc, const char **argv) {
                                                                     queries,             \
                                                                     thresholds_filename, \
                                                                     type,                \
-                                                                    query_type,          \
                                                                     k);                  \
         } else {                                                                         \
             thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
@@ -121,7 +116,6 @@ int main(int argc, const char **argv) {
                                                                 queries,                 \
                                                                 thresholds_filename,     \
                                                                 type,                    \
-                                                                query_type,              \
                                                                 k);                      \
         }                                                                                \
         /**/
