@@ -31,6 +31,17 @@ matrix:
             - lcov
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
+    - os: linux
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-8
+            - lcov
+      env:
+        - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off"
     - os: osx
       compiler: clang
       env:
