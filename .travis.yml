@@ -9,8 +9,6 @@ branches:
 common_sources: &all_sources
   - ubuntu-toolchain-r-test
   - llvm-toolchain-trusty
-  - llvm-toolchain-trusty-3.9
-  - llvm-toolchain-trusty-4.0
   - llvm-toolchain-trusty-5.0
   - llvm-toolchain-trusty-6.0
 
@@ -27,8 +25,16 @@ cache:
 
 matrix:
   include:
-    # works on Precise and Trusty
     - os: linux
+      compiler: gcc
+      addons: &gcc6
+        apt:
+          sources: *all_sources
+          packages:
+            - g++-6
+            - lcov
+      env: MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && COVERAGE=On"
+  - os: linux
       compiler: gcc
       addons: &gcc7
         apt:
@@ -51,11 +57,17 @@ matrix:
               sources: *all_sources
               packages: ['clang-6.0']
       env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
-      
+    - os: linux
+      compiler: clang
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-6.0']
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"  
     - os: osx
       compiler: clang
       env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
-
+      
 # Install dependencies
 before_install:
   - eval "${MATRIX_EVAL}"
