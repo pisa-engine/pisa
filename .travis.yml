@@ -27,15 +27,6 @@ matrix:
   include:
     - os: linux
       compiler: gcc
-      addons: &gcc6
-        apt:
-          sources: *all_sources
-          packages:
-            - g++-6
-            - lcov
-      env: MATRIX_EVAL="CC=gcc-6 && CXX=g++-6 && COVERAGE=On"
-  - os: linux
-      compiler: gcc
       addons: &gcc7
         apt:
           sources: *all_sources
