@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
 project(DS2I CXX C)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(
   ${DS2I_SOURCE_DIR}/include/ds2i_config.hpp.in
@@ -45,6 +46,10 @@ find_package(OpenMP)
 if(OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+link_libraries(Threads::Threads)
 
 # add the root directory to include path to make includes absolute
 include_directories(${DS2I_SOURCE_DIR}/external
