@@ -11,6 +11,7 @@
 #include "binary_collection.hpp"
 #include "ds2i_config.hpp"
 #include "enumerate.hpp"
+#include "filesystem.hpp"
 #include "invert.hpp"
 #include "temporary_directory.hpp"
 
@@ -249,9 +250,8 @@ TEST_CASE("Invert collection", "[invert][unit]")
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads") {
             uint32_t term_count = 10;
             auto index_basename = (tmpdir.path() / "idx").string();
-            uint32_t batch_count = invert::build_batches(
+            invert::invert_forward_index(
                 collection_filename, index_basename, term_count, batch_size, threads);
-            invert::merge_batches(index_basename, batch_count, term_count);
             THEN("Index is stored in binary_freq_collection format") {
                 std::vector<uint32_t> document_data{
                     /* size */ 1, /* count */ 10,
@@ -289,6 +289,10 @@ TEST_CASE("Invert collection", "[invert][unit]")
                     reinterpret_cast<uint32_t const *>(mmf.data()) + mmf.size() / sizeof(uint32_t));
                 REQUIRE(d == document_data);
                 REQUIRE(f == frequency_data);
+                auto batch_files = ds2i::ls(tmpdir.path().string(), [](auto const &filename) {
+                    return filename.find("batch") != std::string::npos;
+                });
+                REQUIRE(batch_files.empty());
             }
         }
     }

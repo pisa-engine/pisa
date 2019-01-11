@@ -1,15 +1,18 @@
 #define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-#include <boost/filesystem.hpp>
-#include <gsl/span>
 
 #include <cstdio>
 #include <string>
+
+#include "Porter2/Porter2.hpp"
+#include "boost/filesystem.hpp"
+#include "catch2/catch.hpp"
+#include "gsl/span"
 
 #include "ds2i_config.hpp"
 #include "enumerate.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "parsing/html.hpp"
 #include "temporary_directory.hpp"
 
 using namespace boost::filesystem;
@@ -100,7 +103,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
             ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::Batch_Process bp{
                 7, records, ds2i::Document_Id{10}, output_file.string()};
             ds2i::Forward_Index_Builder<ds2i::Plaintext_Record> builder;
-            builder.run(bp, identity);
+            builder.run(bp, identity, ds2i::parse_plaintext_content);
             THEN("documents are in check") {
                 std::vector<std::string> expected_documents{
                     "Doc10", "Doc11", "Doc12", "Doc13", "Doc14"};
@@ -282,12 +285,14 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
 
             std::ifstream is(input);
             ds2i::Forward_Index_Builder<ds2i::Plaintext_Record> builder;
-            builder.build(is,
-                          output,
-                          next_record,
-                          [&](std::string const &term) -> std::string { return term; },
-                          batch_size,
-                          thread_count);
+            builder.build(
+                is,
+                output,
+                next_record,
+                [](std::string &&term) -> std::string { return std::forward<std::string>(term); },
+                ds2i::parse_plaintext_content,
+                batch_size,
+                thread_count);
 
             THEN("The collection mapped to terms matches input") {
                 auto term_map = load_term_map(output);
@@ -309,6 +314,86 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                         produced_body.push_back(term_map[term_id]);
                     }
                     REQUIRE(produced_body == original_body);
+                    ++seq_iter;
+                }
+                auto batch_files = ds2i::ls(dir, [](auto const &filename) {
+                    return filename.find("batch") != std::string::npos;
+                });
+                REQUIRE(batch_files.empty());
+            }
+        }
+    }
+}
+
+TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration]")
+{
+    auto next_record = [](std::istream &in) -> std::optional<ds2i::Warc_Record> {
+        ds2i::Warc_Record record;
+        if (read_warc_record(in, record)) {
+            return std::make_optional(record);
+        }
+        return std::nullopt;
+    };
+    auto process_term = [&](std::string &&term) -> std::string {
+        std::transform(term.begin(),
+                       term.end(),
+                       term.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        return stem::Porter2{}.stem(term);
+    };
+    auto next_plain_record = [](std::istream &in) -> std::optional<ds2i::Plaintext_Record> {
+        ds2i::Plaintext_Record record;
+        if (in >> record) {
+            return record;
+        }
+        return std::nullopt;
+    };
+
+    GIVEN("A plaintext collection file") {
+        std::string input(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.warc");
+        REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
+        int thread_count = 2;
+        int batch_size   = 123;
+        WHEN("Build a forward index") {
+            Temporary_Directory tmpdir;
+            auto dir = tmpdir.path();
+            std::string output = (dir / "fwd").string();
+
+            std::ifstream is(input);
+            ds2i::Forward_Index_Builder<ds2i::Warc_Record> builder;
+            builder.build(is,
+                          output,
+                          next_record,
+                          process_term,
+                          ds2i::parse_html_content,
+                          batch_size,
+                          thread_count);
+
+            THEN("The collection mapped to terms matches input") {
+                auto term_map = load_term_map(output);
+                ds2i::binary_collection coll((output).c_str());
+                auto seq_iter = coll.begin();
+                CHECK(*seq_iter->begin() == 10000);
+                ++seq_iter;
+                std::ifstream plain_is(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
+                std::ifstream doc_is(output + ".documents");
+                std::optional<ds2i::Plaintext_Record> record = std::nullopt;
+                while ((record = next_plain_record(plain_is)).has_value()) {
+                    std::string doc;
+                    std::getline(doc_is, doc);
+                    REQUIRE(doc == record->trecid());
+                    std::vector<std::string> original_body;
+                    std::istringstream content_stream(record->content());
+                    std::string term;
+                    while (content_stream >> term) {
+                        original_body.push_back(std::move(term));
+                    }
+                    std::vector<std::string> produced_body;
+                    for (auto term_id : *seq_iter) {
+                        produced_body.push_back(term_map[term_id]);
+                    }
+                    std::cerr << doc << '\n';
+                    CHECK(produced_body == original_body);
                     ++seq_iter;
                 }
                 auto batch_files = ds2i::ls(dir, [](auto const &filename) {

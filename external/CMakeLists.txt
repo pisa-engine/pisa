@@ -75,7 +75,7 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
                                            -Wno-unknown-pragmas
                                            -Wno-sign-compare
                                            -Wno-reorder
-                                           -Wno-unused-local-typedef
+                                           -Wno-unused-local-typedefs
 )
 
 # Add GSL

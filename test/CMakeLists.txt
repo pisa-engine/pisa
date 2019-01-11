@@ -59,6 +59,7 @@ target_link_libraries(test_forward_index_builder
     ParallelSTL
     gumbo::gumbo
     Boost::filesystem
+    Porter2
 )
 
 target_compile_features(test_invert PRIVATE cxx_std_17)

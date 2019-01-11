@@ -25,6 +25,10 @@
 
 namespace ds2i {
 
+using process_term_function_type    = std::function<std::string(std::string &&)>;
+using process_content_function_type =
+    std::function<void(std::string &&, std::function<void(std::string &&)>)>;
+
 template <class Tag, class T, T default_value = 0>
 class Id {
    public:
@@ -60,11 +64,35 @@ using Document_Id = Id<document_id_tag, std::ptrdiff_t>;
 struct term_id_tag {};
 using Term_Id = Id<term_id_tag, std::ptrdiff_t>;
 
+void parse_plaintext_content(std::string &&content, std::function<void(std::string &&)> process) {
+    std::istringstream content_stream(content);
+    std::string        term;
+    while (content_stream >> term) {
+        process(std::move(term));
+    }
+}
+
+void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
+    content = parsing::html::cleantext(std::move(content));
+    if (content.empty()) {
+        return;
+    }
+    std::regex term_pattern("(\\w)+");
+    auto term_it = std::sregex_iterator(content.begin(), content.end(), term_pattern);
+    for (auto term_it = std::sregex_iterator(content.begin(), content.end(), term_pattern);
+         term_it != std::sregex_iterator();
+         ++term_it)
+    {
+        if (term_it->length()) {
+            process(term_it->str());
+        }
+    }
+}
+
 template <typename Record>
 class Forward_Index_Builder {
    public:
-    using read_record_function_type  = std::function<std::optional<Record>(std::istream &)>;
-    using process_term_function_type = std::function<std::string(std::string &&)>;
+    using read_record_function_type = std::function<std::optional<Record>(std::istream &)>;
 
     template <typename Iterator>
     static std::ostream &write_document(std::ostream &os, Iterator first, Iterator last)
@@ -96,7 +124,9 @@ class Forward_Index_Builder {
         std::string const &          output_file;
     };
 
-    void run(Batch_Process bp, process_term_function_type process_term) const
+    void run(Batch_Process                 bp,
+             process_term_function_type    process_term,
+             process_content_function_type process_content) const
     {
         auto basename = batch_file(bp.output_file, bp.batch_number);
 
@@ -108,14 +138,13 @@ class Forward_Index_Builder {
 
         std::map<std::string, uint32_t> map;
 
-        for (auto const &record : bp.records) {
+        for (auto &&record : bp.records) {
             title_os << record.trecid() << '\n';
             url_os << record.url() << '\n';
 
-            auto content = record.content();
             std::vector<uint32_t> term_ids;
 
-            auto process = [&](auto &term) {
+            auto process = [&](auto &&term) {
                 term = process_term(std::move(term));
                 uint32_t id = 0;
                 if (auto pos = map.find(term); pos != map.end()) {
@@ -127,11 +156,7 @@ class Forward_Index_Builder {
                 }
                 term_ids.push_back(id);
             };
-            std::istringstream content_stream(content);
-            std::string term;
-            while (content_stream >> term) {
-                process(term);
-            }
+            process_content(std::move(record.content()), process);
             write_document(os, term_ids.begin(), term_ids.end());
         }
         logger() << "[Batch " << bp.batch_number << "] Processed documents [" << bp.first_document
@@ -205,12 +230,13 @@ class Forward_Index_Builder {
         logger() << "Done.\n";
     }
 
-    void build(std::istream &             is,
-               std::string const &        output_file,
-               read_record_function_type  next_record,
-               process_term_function_type process_term,
-               std::ptrdiff_t             batch_size,
-               std::size_t                threads) const
+    void build(std::istream &                is,
+               std::string const &           output_file,
+               read_record_function_type     next_record,
+               process_term_function_type    process_term,
+               process_content_function_type process_content,
+               std::ptrdiff_t                batch_size,
+               std::size_t                   threads) const
     {
         Document_Id    first_document{0};
         std::ptrdiff_t batch_number = 0;
@@ -227,11 +253,12 @@ class Forward_Index_Builder {
                     Batch_Process bp{
                         batch_number, std::move(record_batch), first_document, output_file};
                     queue.push(0);
-                    batch_group.run([bp = std::move(bp), process_term, this, &queue]() {
-                        run(std::move(bp), process_term);
-                        int x;
-                        queue.try_pop(x);
-                    });
+                    batch_group.run(
+                        [bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                            run(std::move(bp), process_term, process_content);
+                            int x;
+                            queue.try_pop(x);
+                        });
                     ++batch_number;
                     first_document += last_batch_size;
                     break;
@@ -247,11 +274,12 @@ class Forward_Index_Builder {
                 Batch_Process bp{
                     batch_number, std::move(record_batch), first_document, output_file};
                 queue.push(0);
-                batch_group.run([bp = std::move(bp), process_term, this, &queue]() {
-                    run(std::move(bp), process_term);
-                    int x;
-                    queue.try_pop(x);
-                });
+                batch_group.run(
+                    [bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                        run(std::move(bp), process_term, process_content);
+                        int x;
+                        queue.try_pop(x);
+                    });
                 ++batch_number;
                 first_document += batch_size;
                 record_batch = std::vector<Record>();

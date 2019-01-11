@@ -37,10 +37,7 @@ int main(int argc, char **argv) {
 
     tbb::task_scheduler_init init(threads);
     logger() << "Number of threads: " << threads << '\n';
-
-    uint32_t batch_count =
-        invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
-    invert::merge_batches(output_basename, batch_count, term_count);
+    invert::invert_forward_index(input_basename, output_basename, term_count, batch_size, threads);
 
     return 0;
 }

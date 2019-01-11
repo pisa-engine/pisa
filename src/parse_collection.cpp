@@ -41,6 +41,7 @@ int main(int argc, char **argv) {
                 return std::nullopt;
             },
             [&](std::string &&term) -> std::string { return std::forward<std::string>(term); },
+            parse_plaintext_content,
             batch_size,
             threads);
     } else if (format == "warc") {
@@ -61,6 +62,7 @@ int main(int argc, char **argv) {
                                          [](unsigned char c) { return std::tolower(c); });
                           return stem::Porter2{}.stem(term);
                       },
+                      parse_html_content,
                       batch_size,
                       threads);
     }

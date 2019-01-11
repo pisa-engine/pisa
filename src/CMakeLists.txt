@@ -132,7 +132,8 @@ target_compile_features(parse_collection PRIVATE cxx_std_17)
 
 add_executable(invert invert.cpp)
 target_link_libraries(invert
-  ${Boost_LIBRARIES}
+  Boost::boost
+  Boost::filesystem
   CLI11
   mio
   ParallelSTL

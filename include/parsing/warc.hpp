@@ -31,13 +31,28 @@ class Warc_Record {
     Field_Map   http_fields_;
     std::string content_;
 
+    static std::string const Warc_Type;
+    static std::string const Warc_Target_Uri;
+    static std::string const Warc_Trec_Id;
+    static std::string const Content_Length;
+    static std::string const Response;
+
    public:
     Warc_Record() = default;
     explicit Warc_Record(std::string version) : version_(std::move(version)) {}
-    [[nodiscard]] auto type() const -> std::string const & { return warc_fields_.at("warc-type"); }
-    [[nodiscard]] auto valid() const noexcept -> bool { return type() == "response"; }
+    [[nodiscard]] auto type() const -> std::string const & { return warc_fields_.at(Warc_Type); }
+    [[nodiscard]] auto has(std::string const& field) const noexcept -> bool {
+        return warc_fields_.find(field) != warc_fields_.end();
+    }
+    [[nodiscard]] auto valid() const noexcept -> bool {
+        return has(Warc_Type) &&
+               has(Warc_Target_Uri) &&
+               has(Warc_Trec_Id) &&
+               has(Content_Length) &&
+               type() == Response;
+    }
     [[nodiscard]] auto warc_content_length() const -> std::size_t {
-        auto &field_value = warc_fields_.at("content-length");
+        auto &field_value = warc_fields_.at(Content_Length);
         try {
             return std::stoi(field_value);
         } catch (std::invalid_argument &error) {
@@ -45,7 +60,7 @@ class Warc_Record {
         }
     }
     [[nodiscard]] auto http_content_length() const -> std::size_t {
-        auto &field_value = http_fields_.at("content-length");
+        auto &field_value = http_fields_.at(Content_Length);
         try {
             return std::stoi(field_value);
         } catch (std::invalid_argument &error) {
@@ -55,10 +70,10 @@ class Warc_Record {
     [[nodiscard]] auto content() -> std::string & { return content_; }
     [[nodiscard]] auto content() const -> std::string const & { return content_; }
     [[nodiscard]] auto url() const -> std::string const & {
-        return warc_fields_.at("warc-target-uri");
+        return warc_fields_.at(Warc_Target_Uri);
     }
     [[nodiscard]] auto trecid() const -> std::string const & {
-        return warc_fields_.at("warc-trec-id");
+        return warc_fields_.at(Warc_Trec_Id);
     }
     [[nodiscard]] auto warc_field(std::string const &name) const -> std::optional<std::string> {
         if (auto pos = warc_fields_.find(name); pos != warc_fields_.end()) {
@@ -75,6 +90,12 @@ class Warc_Record {
 
     friend std::istream &read_warc_record(std::istream &in, Warc_Record &record);
 };
+
+std::string const Warc_Record::Warc_Type       = "warc-type";
+std::string const Warc_Record::Warc_Target_Uri = "warc-target-uri";
+std::string const Warc_Record::Warc_Trec_Id    = "warc-trec-id";
+std::string const Warc_Record::Content_Length  = "content-length";
+std::string const Warc_Record::Response        = "response";
 
 namespace warc {
 

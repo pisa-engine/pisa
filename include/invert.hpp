@@ -10,7 +10,7 @@
 #include <thread>
 #include <unordered_map>
 
-
+#include "boost/filesystem.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
 #include "tbb/concurrent_queue.h"
@@ -304,6 +304,8 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
             documents.emplace_back(reinterpret_cast<Term_Id const *>(document_sequence.begin()),
                                    document_sequence.size());
         }
+        logger() << "Inverting [" << documents_processed << ", "
+                 << documents_processed + documents.size() << ")\n";
         auto index = invert_range(documents, Document_Id(documents_processed), threads);
 
         std::ostringstream batch_name_stream;
@@ -356,6 +358,25 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
         }
         write_sequence(dos, gsl::span<uint32_t const>(dlist));
         write_sequence(fos, gsl::span<uint32_t const>(flist));
+    }
+}
+
+void invert_forward_index(std::string const &input_basename,
+                          std::string const &output_basename,
+                          uint32_t           term_count,
+                          size_t             batch_size,
+                          size_t             threads)
+{
+    uint32_t batch_count =
+        invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
+    invert::merge_batches(output_basename, batch_count, term_count);
+
+    for (auto batch : enumerate(batch_count)) {
+        std::ostringstream batch_name_stream;
+        batch_name_stream << output_basename << ".batch." << batch;
+        auto batch_basename = batch_name_stream.str();
+        boost::filesystem::remove(boost::filesystem::path{batch_basename + ".docs"});
+        boost::filesystem::remove(boost::filesystem::path{batch_basename + ".freqs"});
     }
 }
 
