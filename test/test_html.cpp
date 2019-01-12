@@ -9,7 +9,10 @@ using namespace ds2i::parsing::html;
 
 TEST_CASE("Parse WARC version", "[warc][unit]")
 {
-    auto [input, expected] = GENERATE(table<std::string, std::string>(
-        {{"text", "text"}, {"<a>text</a>", "text"}, {"<a>text</a>text", "text text"}}));
+    auto [input, expected] =
+        GENERATE(table<std::string, std::string>({{"text", "text"},
+                                                  {"<a>text</a>", "text"},
+                                                  {"<a>text</a>text", "text text"},
+                                                  {"<!-- comment -->", ""}}));
     GIVEN("Input: " << input) { CHECK(cleantext(input) == expected); }
 }

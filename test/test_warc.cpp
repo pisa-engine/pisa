@@ -93,6 +93,7 @@ TEST_CASE("Parse warcinfo record", "[warc][unit]")
     CHECK(in.peek() == EOF);
     CHECK(*record.http_field("conformsto") ==
           "http://www.archive.org/documents/WarcFileFormat-0.18.html");
+    CHECK_FALSE(record.http_field("unknown-field").has_value());
 }
 
 std::string response() {
@@ -130,4 +131,45 @@ TEST_CASE("Parse response record", "[warc][unit]")
     CHECK(in.peek() == EOF);
     CHECK(record.type() == "response");
     CHECK(record.content() == "Content...");
+    CHECK(record.url() == "http://00000-nrt-realestate.homepagestartup.com/");
+    CHECK(record.trecid() == "clueweb09-en0000-00-00000");
+}
+
+TEST_CASE("Check if parsed record is valid (has required fields)", "[warc][unit]")
+{
+    auto [input, valid] =
+        GENERATE(table<std::string, bool>({{warcinfo(), false}, {response(), true}}));
+    GIVEN("A record that can be parsed") {
+        std::istringstream in(input);
+        WHEN("Parse fields") {
+            Warc_Record record;
+            read_warc_record(in, record);
+            THEN("The record is " << (valid ? "valid" : "invalid")) {
+                CHECK(record.valid() == valid);
+            }
+        }
+    }
+}
+
+TEST_CASE("Parse invalid content-length", "[warc][unit]")
+{
+    GIVEN("A record with invalid WARC length") {
+        std::istringstream in(
+            "WARC/0.18\n"
+            "Content-Length: INVALID\n"
+            "\n"
+            "HTTP/1.1 200 OK\n"
+            "Content-Length: 10\n");
+        Warc_Record record;
+        REQUIRE_THROWS_AS(read_warc_record(in, record), Warc_Format_Error);
+    }
+    GIVEN("A record with WARC length == 0") {
+        std::istringstream in(
+            "WARC/0.18\n"
+            "Content-Length: 0\n"
+            "\n");
+        Warc_Record record;
+        read_warc_record(in, record);
+        CHECK(record.warc_content_length() == 0);
+    }
 }

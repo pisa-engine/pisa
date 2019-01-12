@@ -12,12 +12,9 @@ namespace ds2i {
 
 using Field_Map = std::unordered_map<std::string, std::string>;
 
-class Warc_Format_Error : public std::exception {
-    std::string message_;
-
+class Warc_Format_Error : public std::runtime_error {
    public:
-    Warc_Format_Error(std::string line, std::string message) : message_(message + line) {}
-    [[nodiscard]] char const *what() const noexcept override { return message_.c_str(); }
+    Warc_Format_Error(std::string line, std::string message) : std::runtime_error(message + line) {}
 };
 
 class Warc_Record;
@@ -60,7 +57,7 @@ class Warc_Record {
         }
     }
     [[nodiscard]] auto http_content_length() const -> std::size_t {
-        auto &field_value = http_fields_.at(Content_Length);
+        auto const &field_value = http_fields_.at(Content_Length);
         try {
             return std::stoi(field_value);
         } catch (std::invalid_argument &error) {
