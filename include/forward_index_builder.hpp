@@ -83,7 +83,7 @@ void parse_html_content(std::string &&content, std::function<void(std::string &&
          term_it != std::sregex_iterator();
          ++term_it)
     {
-        if (term_it->length()) {
+        if (term_it->length() > 0) {
             process(term_it->str());
         }
     }

@@ -252,6 +252,19 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
         }
     }
 }
+TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
+{
+    std::vector<std::string> vec;
+    auto map_word = [&](std::string &&word) { vec.push_back(word); };
+    SECTION("empty") {
+        ds2i::parse_html_content("<a/>", map_word);
+        REQUIRE(vec == std::vector<std::string>{});
+    }
+    SECTION("non-empty") {
+        ds2i::parse_html_content("<a>lorem</a>ipsum", map_word);
+        REQUIRE(vec == std::vector<std::string>{"lorem", "ipsum"});
+    }
+}
 
 [[nodiscard]] auto load_term_map(std::string const& basename) -> std::vector<std::string> {
     std::vector<std::string> map;

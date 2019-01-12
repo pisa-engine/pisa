@@ -13,6 +13,6 @@ TEST_CASE("Parse WARC version", "[warc][unit]")
         GENERATE(table<std::string, std::string>({{"text", "text"},
                                                   {"<a>text</a>", "text"},
                                                   {"<a>text</a>text", "text text"},
-                                                  {"<!-- comment -->", ""}}));
+                                                  {"<a><!-- comment --></a>", ""}}));
     GIVEN("Input: " << input) { CHECK(cleantext(input) == expected); }
 }

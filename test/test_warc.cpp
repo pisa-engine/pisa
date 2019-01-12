@@ -68,6 +68,16 @@ TEST_CASE("Parse valid fields", "[warc][unit]")
     }
 }
 
+TEST_CASE("Parse invalid fields", "[warc][unit]")
+{
+    std::string input = GENERATE(as<std::string>(), "invalidfield\n", "invalid:\n", ":value\n");
+    GIVEN("Field input: '" << input << "'") {
+        std::istringstream in(input);
+        Field_Map          fields;
+        REQUIRE_THROWS_AS(warc::read_fields(in, fields), Warc_Format_Error);
+    }
+}
+
 std::string warcinfo() {
     return "WARC/0.18\n"
            "WARC-Type: warcinfo\n"
@@ -172,4 +182,42 @@ TEST_CASE("Parse invalid content-length", "[warc][unit]")
         read_warc_record(in, record);
         CHECK(record.warc_content_length() == 0);
     }
+    GIVEN("A record with invalid HTTP length") {
+        std::istringstream in(
+            "WARC/0.18\n"
+            "WARC-Type: response\n"
+            "WARC-Target-URI: http://00000-nrt-realestate.homepagestartup.com/\n"
+            "WARC-Warcinfo-ID: 993d3969-9643-4934-b1c6-68d4dbe55b83\n"
+            "WARC-Date: 2009-03-65T08:43:19-0800\n"
+            "WARC-Record-ID: <urn:uuid:67f7cabd-146c-41cf-bd01-04f5fa7d5229>\n"
+            "WARC-TREC-ID: clueweb09-en0000-00-00000\n"
+            "Content-Type: application/http;msgtype=response\n"
+            "WARC-Identified-Payload-Type: \n"
+            "Content-Length: 16558\n"
+            "\n"
+            "HTTP/1.1 200 OK\n"
+            "Content-Type: text/html\n"
+            "Date: Tue, 13 Jan 2009 18:05:10 GMT\n"
+            "Pragma: no-cache\n"
+            "Cache-Control: no-cache, must-revalidate\n"
+            "X-Powered-By: PHP/4.4.8\n"
+            "Server: WebServerX\n"
+            "Connection: close\n"
+            "Last-Modified: Tue, 13 Jan 2009 18:05:10 GMT\n"
+            "Expires: Mon, 20 Dec 1998 01:00:00 GMT\n"
+            "Content-Length: INVALID\n"
+            "\n"
+            "Content...");
+        Warc_Record record;
+        REQUIRE_THROWS_AS(read_warc_record(in, record), Warc_Format_Error);
+    }
+}
+
+TEST_CASE("Parse empty record", "[warc][unit]")
+{
+    std::istringstream in("\n");
+    Warc_Record record;
+    read_warc_record(in, record);
+    REQUIRE(record.warc_content_length() == 0);
+    REQUIRE(record.http_content_length() == 0);
 }

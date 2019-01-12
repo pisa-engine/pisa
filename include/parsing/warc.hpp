@@ -134,7 +134,7 @@ void read_fields(std::istream &in, Field_Map &fields) {
     while (not line.empty() && line != "\r") {
         gsl::span<char> field_line(line);
         auto [name, value] = split(line, ':');
-        if (name.size() == field_line.size()) {
+        if (name.empty() || value.empty()) {
             throw Warc_Format_Error(line, "could not parse field: ");
         }
         name = trim(name);
@@ -153,6 +153,8 @@ std::istream& read_warc_record(std::istream& in, Warc_Record& record)
 {
     std::string version;
     if (not warc::read_version(in, version)) {
+        record.http_fields_[Warc_Record::Content_Length] = "0";
+        record.warc_fields_[Warc_Record::Content_Length] = "0";
         return in;
     }
     record.version_ = std::move(version);
