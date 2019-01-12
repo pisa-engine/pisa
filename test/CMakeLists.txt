@@ -68,4 +68,11 @@ target_link_libraries(test_invert
     Boost::filesystem
 )
 
+target_compile_features(test_html PRIVATE cxx_std_17)
+target_link_libraries(test_html
+    gumbo::gumbo
+    Boost::filesystem
+    Porter2
+)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
