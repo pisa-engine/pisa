@@ -3,6 +3,7 @@
 #include "CLI/CLI.hpp"
 #include "tbb/task_scheduler_init.h"
 #include "Porter2/Porter2.hpp"
+#include "warcpp/warcpp.hpp"
 
 #include "forward_index_builder.hpp"
 
@@ -45,12 +46,12 @@ int main(int argc, char **argv) {
             batch_size,
             threads);
     } else if (format == "warc") {
-        Forward_Index_Builder<Warc_Record> builder;
+        Forward_Index_Builder<warcpp::Warc_Record> builder;
         builder.build(std::cin,
                       output_filename,
-                      [](std::istream &in) -> std::optional<Warc_Record> {
-                          Warc_Record record;
-                          if (read_warc_record(in, record)) {
+                      [](std::istream &in) -> std::optional<warcpp::Warc_Record> {
+                          warcpp::Warc_Record record;
+                          if (warcpp::read_warc_record(in, record)) {
                               return std::make_optional(record);
                           }
                           return std::nullopt;

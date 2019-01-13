@@ -20,7 +20,7 @@
 #include "binary_collection.hpp"
 #include "enumerate.hpp"
 #include "parsing/html.hpp"
-#include "parsing/warc.hpp"
+#include "warcpp/warcpp.hpp"
 #include "util/util.hpp"
 
 namespace ds2i {
@@ -263,7 +263,7 @@ class Forward_Index_Builder {
                     first_document += last_batch_size;
                     break;
                 }
-            } catch (Warc_Format_Error &err) {
+            } catch (warcpp::Warc_Format_Error &err) {
                 continue;
             }
             if (not record->valid()) {

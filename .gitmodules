@@ -46,3 +46,6 @@
 [submodule "external/Porter2"]
 	path = external/Porter2
 	url = https://github.com/pisa-engine/Porter2.git
+[submodule "external/warcpp"]
+	path = external/warcpp
+	url = https://github.com/pisa-engine/warcpp.git

@@ -89,3 +89,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
 # Add Porter2
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
+
+# Add warcpp
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
+

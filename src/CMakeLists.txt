@@ -127,6 +127,7 @@ target_link_libraries(parse_collection
   GSL
   gumbo::gumbo
   Porter2
+  warcpp
   )
 target_compile_features(parse_collection PRIVATE cxx_std_17)
 
