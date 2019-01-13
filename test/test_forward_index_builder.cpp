@@ -7,6 +7,7 @@
 #include "boost/filesystem.hpp"
 #include "catch2/catch.hpp"
 #include "gsl/span"
+#include "warcpp/warcpp.hpp"
 
 #include "ds2i_config.hpp"
 #include "enumerate.hpp"
@@ -340,8 +341,8 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
 
 TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration]")
 {
-    auto next_record = [](std::istream &in) -> std::optional<ds2i::Warc_Record> {
-        ds2i::Warc_Record record;
+    auto next_record = [](std::istream &in) -> std::optional<warcpp::Warc_Record> {
+        warcpp::Warc_Record record;
         if (read_warc_record(in, record)) {
             return std::make_optional(record);
         }
@@ -373,7 +374,7 @@ TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration
             std::string output = (dir / "fwd").string();
 
             std::ifstream is(input);
-            ds2i::Forward_Index_Builder<ds2i::Warc_Record> builder;
+            ds2i::Forward_Index_Builder<warcpp::Warc_Record> builder;
             builder.build(is,
                           output,
                           next_record,
