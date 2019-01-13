@@ -69,7 +69,7 @@ script:
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} ${CMAKE_OPTIONS} ..
     - make
-    - ctest -VV
+    - ctest
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash) > /dev/null
+  - bash <(curl -s https://codecov.io/bash)
