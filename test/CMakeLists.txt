@@ -60,6 +60,7 @@ target_link_libraries(test_forward_index_builder
     gumbo::gumbo
     Boost::filesystem
     Porter2
+    warcpp
 )
 
 target_compile_features(test_invert PRIVATE cxx_std_17)
