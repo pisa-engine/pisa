@@ -56,13 +56,14 @@ matrix:
               packages: ['clang-6.0', 'libstdc++-8-dev']
       env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"  
     - os: osx
+      osx_image: xcode10.1	
       compiler: clang
       env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
       
 # Install dependencies
 before_install:
   - eval "${MATRIX_EVAL}"
-  
+
 script:
     - mkdir build
     - cd build

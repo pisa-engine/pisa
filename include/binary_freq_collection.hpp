@@ -46,8 +46,8 @@ namespace ds2i {
         }
 
         struct sequence {
-            binary_collection::sequence docs;
-            binary_collection::sequence freqs;
+            binary_collection::const_sequence docs;
+            binary_collection::const_sequence freqs;
         };
 
         class iterator : public std::iterator<std::forward_iterator_tag,
@@ -86,17 +86,15 @@ namespace ds2i {
         private:
             friend class binary_freq_collection;
 
-            iterator(binary_collection::iterator docs_it,
-                     binary_collection::iterator freqs_it)
-                : m_docs_it(docs_it)
-                , m_freqs_it(freqs_it)
-            {
+            iterator(binary_collection::const_iterator docs_it,
+                     binary_collection::const_iterator freqs_it)
+                : m_docs_it(docs_it), m_freqs_it(freqs_it) {
                 m_cur_seq.docs = *m_docs_it;
                 m_cur_seq.freqs = *m_freqs_it;
             }
 
-            binary_collection::iterator m_docs_it;
-            binary_collection::iterator m_freqs_it;
+            binary_collection::const_iterator m_docs_it;
+            binary_collection::const_iterator m_freqs_it;
             sequence m_cur_seq;
         };
 
