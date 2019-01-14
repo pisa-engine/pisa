@@ -20,6 +20,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # include(external/external.cmake)
 add_subdirectory(external)
 
+include(ExternalProject)
+ExternalProject_Add(gumbo-external
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
+    BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
+    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
+    BUILD_COMMAND ${MAKE})
+add_library(gumbo::gumbo UNKNOWN IMPORTED)
+set_target_properties(gumbo::gumbo PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser/src)
+set_property(TARGET gumbo::gumbo APPEND PROPERTY IMPORTED_LOCATION
+    ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a)
+
 # Add code coverage
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
 find_package(codecov)
@@ -46,6 +58,10 @@ find_package(OpenMP)
 if(OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+link_libraries(Threads::Threads)
 
 # add the root directory to include path to make includes absolute
 include_directories(${DS2I_SOURCE_DIR}/external

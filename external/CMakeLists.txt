@@ -75,12 +75,21 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
                                            -Wno-unknown-pragmas
                                            -Wno-sign-compare
                                            -Wno-reorder
-                                           -Wno-unused-local-typedef
+                                           -Wno-unused-local-typedefs
 )
+
+# Add GSL
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
+
+# Add Boost
+add_subdirectory(boost-cmake)
 
 # Add Catch
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
-# Add Boost
-add_subdirectory(boost-cmake)
+# Add Porter2
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
+
+# Add warcpp
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 

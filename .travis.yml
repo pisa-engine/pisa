@@ -6,6 +6,12 @@ branches:
   only:
     - master
 
+common_sources: &all_sources
+  - ubuntu-toolchain-r-test
+  - llvm-toolchain-trusty
+  - llvm-toolchain-trusty-5.0
+  - llvm-toolchain-trusty-6.0
+
 env:
   global:
     - DEPS_DIR=${TRAVIS_BUILD_DIR}/deps
@@ -19,27 +25,45 @@ cache:
 
 matrix:
   include:
-    # works on Precise and Trusty
     - os: linux
       compiler: gcc
-      addons:
+      addons: &gcc7
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
+          sources: *all_sources
           packages:
             - g++-7
             - lcov
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
-    - os: osx
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
+    - os: linux
+      compiler: gcc
+      addons: &gcc8
+        apt:
+          sources: *all_sources
+          packages: ['g++-8']
+      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off"
+    - os: linux
       compiler: clang
-      env:
-        - MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
-
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-5.0', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
+    - os: linux
+      compiler: clang
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-6.0', 'libstdc++-8-dev']
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"  
+    - os: osx
+      osx_image: xcode10.1	
+      compiler: clang
+      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
+      
 # Install dependencies
 before_install:
   - eval "${MATRIX_EVAL}"
-  
+
 script:
     - mkdir build
     - cd build
