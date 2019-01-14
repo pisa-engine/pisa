@@ -70,7 +70,8 @@ void perftest(const std::string &index_filename,
               const boost::optional<std::string> &thresholds_filename,
               std::string const &type,
               std::string const &query_type,
-              uint64_t k) {
+              uint64_t k)
+{
     using namespace ds2i;
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
