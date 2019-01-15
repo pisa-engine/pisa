@@ -5,6 +5,7 @@ target_link_libraries(create_freq_index
 )
 
 add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
+target_include_directories(optimal_hybrid_index ${STXXL_INCLUDE_DIRS})
 target_link_libraries(optimal_hybrid_index
   ${STXXL_LIBRARIES}
   pisa
