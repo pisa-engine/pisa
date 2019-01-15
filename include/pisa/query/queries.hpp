@@ -63,3 +63,4 @@ term_freq_vec query_freqs(term_id_vec terms) {
 #include "algorithm/wand_query.hpp"
 #include "algorithm/exhaustive_taat_query.hpp"
 #include "algorithm/maxscore_taat_query.hpp"
+#include "algorithm/ranked_or_taat_query.hpp"

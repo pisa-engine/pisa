@@ -93,6 +93,50 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
     test_against_or(bmm_q);
 }
 
+TEST_CASE_METHOD(ds2i::test::index_initialization, "exhaustive_taat")
+{
+    ds2i::pisa::exhaustive_taat_query<index_type, WandType, ds2i::pisa::Simple_Accumulator> taat_q(
+        index, wdata, 10);
+    test_against_or(taat_q);
+}
+
+TEST_CASE_METHOD(ds2i::test::index_initialization, "exhaustive_taat_blocked")
+{
+    ds2i::pisa::exhaustive_taat_query<index_type, WandType, ds2i::pisa::Blocked_Accumulator<1024>>
+        taat_q(index, wdata, 10);
+    test_against_or(taat_q);
+}
+
+TEST_CASE_METHOD(ds2i::test::index_initialization, "maxscore_taat")
+{
+    ds2i::pisa::maxscore_taat_query<index_type, WandType, ds2i::pisa::Simple_Accumulator> taat_q(
+        index, wdata, 10);
+    test_against_or(taat_q);
+}
+
+TEST_CASE_METHOD(ds2i::test::index_initialization, "maxscore_taat_blocked")
+{
+    ds2i::pisa::maxscore_taat_query<index_type, WandType, ds2i::pisa::Blocked_Accumulator<1024>>
+        taat_q(index, wdata, 10);
+    test_against_or(taat_q);
+}
+
+TEST_CASE_METHOD(ds2i::test::index_initialization, "ranked_or_taat")
+{
+
+    ds2i::ranked_or_taat_query<WandType> ranked_or_taat_q(wdata, 10);
+    test_against_or(ranked_or_taat_q);
+}
+
+// TODO(michal): there is a bug, investigate!
+//BOOST_FIXTURE_TEST_CASE(exhaustive_taat_lazy,
+//                        ds2i::test::index_initialization)
+//{
+//    ds2i::pisa::exhaustive_taat_query<index_type, WandType, ds2i::pisa::Lazy_Accumulator<8>>
+//        taat_q(index, wdata, 10);
+//    test_against_or(taat_q);
+//}
+
 /// Issue #26 https://github.com/pisa-engine/pisa/issues/26
 TEST_CASE_METHOD(pisa::test::index_initialization, "topk_size_ranked_or")
 {
