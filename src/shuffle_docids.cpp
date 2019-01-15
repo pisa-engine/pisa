@@ -12,12 +12,12 @@
 #include "util/util.hpp"
 #include "util/progress.hpp"
 
-using ds2i::logger;
+using pisa::logger;
 
 int main(int argc, const char** argv)
 {
 
-    using namespace ds2i;
+    using namespace pisa;
 
     if (argc != 3 && argc != 4) {
         std::cerr << "Usage: " << argv[0]
@@ -73,7 +73,7 @@ int main(int argc, const char** argv)
         emit(output_sizes, new_sizes.data(), num_docs);
     }
 
-    ds2i::progress progress("Shuffling posting lists", input.size());
+    pisa::progress progress("Shuffling posting lists", input.size());
 
     std::ofstream output_docs(output_basename + ".docs");
     std::ofstream output_freqs(output_basename + ".freqs");

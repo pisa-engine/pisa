@@ -16,8 +16,8 @@
 #include "temporary_directory.hpp"
 
 using namespace boost::filesystem;
-using namespace ds2i;
-using namespace ds2i::literals;
+using namespace pisa;
+using namespace pisa::literals;
 
 using posting_vector_type = std::vector<std::pair<Term_Id, Document_Id>>;
 using iterator_type       = decltype(std::declval<posting_vector_type>().begin());
@@ -289,7 +289,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
                     reinterpret_cast<uint32_t const *>(mmf.data()) + mmf.size() / sizeof(uint32_t));
                 REQUIRE(d == document_data);
                 REQUIRE(f == frequency_data);
-                auto batch_files = ds2i::ls(tmpdir.path().string(), [](auto const &filename) {
+                auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const &filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());

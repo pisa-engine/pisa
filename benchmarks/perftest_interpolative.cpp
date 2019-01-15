@@ -6,7 +6,7 @@
 
 int main()
 {
-    using namespace ds2i;
+    using namespace pisa;
     static const size_t size = interpolative_block::block_size;
     static const size_t runs = 1 << 20;
 

@@ -12,7 +12,7 @@
 #include "CLI/CLI.hpp"
 
 int main(int argc, const char **argv) {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string input_basename;
     std::string output_filename;

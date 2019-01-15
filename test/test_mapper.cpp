@@ -9,7 +9,7 @@
 
 TEST_CASE("basic_map")
 {
-    ds2i::mapper::mappable_vector<int> vec;
+    pisa::mapper::mappable_vector<int> vec;
     REQUIRE(vec.size() == 0U);
 
     int nums[] = {1, 2, 3, 4};
@@ -19,12 +19,12 @@ TEST_CASE("basic_map")
     REQUIRE(1 == vec[0]);
     REQUIRE(4 == vec[3]);
 
-    ds2i::mapper::freeze(vec, "temp.bin");
+    pisa::mapper::freeze(vec, "temp.bin");
 
     {
-        ds2i::mapper::mappable_vector<int> mapped_vec;
+        pisa::mapper::mappable_vector<int> mapped_vec;
         mio::mmap_source m("temp.bin");
-        ds2i::mapper::map(mapped_vec, m);
+        pisa::mapper::map(mapped_vec, m);
         REQUIRE(vec.size() == mapped_vec.size());
         REQUIRE(std::equal(vec.begin(), vec.end(), mapped_vec.begin()));
     }
@@ -53,16 +53,16 @@ public:
     }
 
     uint64_t m_a;
-    ds2i::mapper::mappable_vector<uint32_t> m_b;
+    pisa::mapper::mappable_vector<uint32_t> m_b;
 };
 
 TEST_CASE("complex_struct_map")
 {
     complex_struct s;
     s.init();
-    ds2i::mapper::freeze(s, "temp.bin");
+    pisa::mapper::freeze(s, "temp.bin");
 
-    REQUIRE(24 == ds2i::mapper::size_of(s));
+    REQUIRE(24 == pisa::mapper::size_of(s));
 
     complex_struct mapped_s;
     REQUIRE(0 == mapped_s.m_a);
@@ -70,7 +70,7 @@ TEST_CASE("complex_struct_map")
 
     {
         mio::mmap_source m("temp.bin");
-        ds2i::mapper::map(mapped_s, m);
+        pisa::mapper::map(mapped_s, m);
         REQUIRE(s.m_a == mapped_s.m_a);
         REQUIRE(s.m_b.size() == mapped_s.m_b.size());
     }

@@ -7,7 +7,7 @@
 #include "index_types.hpp"
 #include "query/queries.hpp"
 
-namespace ds2i { namespace test {
+namespace pisa { namespace test {
 
     struct index_initialization {
 
@@ -75,26 +75,26 @@ namespace ds2i { namespace test {
 }}
 
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "wand")
+TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
 {
-    ds2i::wand_query<WandType> wand_q(wdata, 10);
+    pisa::wand_query<WandType> wand_q(wdata, 10);
     test_against_or(wand_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "maxscore")
+TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore")
 {
-    ds2i::maxscore_query<WandType> maxscore_q(wdata, 10);
+    pisa::maxscore_query<WandType> maxscore_q(wdata, 10);
     test_against_or(maxscore_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "block_max_maxscore")
+TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 {
-    ds2i::block_max_maxscore_query<WandType> bmm_q(wdata, 10);
+    pisa::block_max_maxscore_query<WandType> bmm_q(wdata, 10);
     test_against_or(bmm_q);
 }
 
 /// Issue #26 https://github.com/pisa-engine/pisa/issues/26
-TEST_CASE_METHOD(ds2i::test::index_initialization, "topk_size_ranked_or")
+TEST_CASE_METHOD(pisa::test::index_initialization, "topk_size_ranked_or")
 {
     test_k_size();
 }
