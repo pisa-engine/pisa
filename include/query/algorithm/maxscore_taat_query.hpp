@@ -13,7 +13,7 @@ template <typename Index, typename WandType>
     //               complex refactoring I want to avoid for now.
     using scorer_type         = bm25;
     using cursor_type         = typename Index::document_enumerator;
-    using score_function_type = std::function<float(uint64_t, uint64_t)>;
+    using score_function_type = Score_Function<scorer_type, WandType>;
 
     auto query_term_freqs = query_freqs(terms);
     std::vector<float> max_weights;
@@ -65,6 +65,7 @@ void sort_many(Container &key_container, Function sort_function, Containers &...
 template <typename Index, typename WandType, typename Acc = Simple_Accumulator>
 class maxscore_taat_query {
     using accumulator_reference = typename Acc::reference;
+    using score_function_type   = Score_Function<bm25, WandType>;
 
    public:
     maxscore_taat_query(Index const &index, WandType const &wdata, uint64_t k)
@@ -82,14 +83,13 @@ class maxscore_taat_query {
             std::move(cws.first), std::move(cws.second), max_weights(m_index, m_wdata, terms));
     }
 
-    template <typename Cursor>
-    void traverse_with_lookups(Cursor &cursor, score_function_type score) {
+    template <typename Cursor, typename Score>
+    void traverse_with_lookups(Cursor &cursor, Score score) {
         if constexpr (std::is_same_v<typename Cursor::enumerator_category,
                                      ds2i::block_enumerator_tag>) {
             while (cursor.docid() < m_accumulators.size()) {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
-                #pragma omp simd
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
                     accumulator_reference accumulator = m_accumulators[documents[idx]];
                     if (accumulator > 0) {

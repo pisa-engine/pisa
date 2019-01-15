@@ -5,7 +5,15 @@
 
 namespace pisa {
 
-using score_function_type = std::function<float(uint64_t, uint64_t)>;
+template <typename Scorer, typename Wand>
+struct Score_Function {
+    float query_weight;
+    std::reference_wrapper<Wand const> wdata;
+
+    [[nodiscard]] auto operator()(uint32_t doc, uint32_t freq) const -> float {
+        return query_weight * Scorer::doc_term_weight(freq, wdata.get().norm_len(doc));
+    }
+};
 
 // TODO: These are functions common to query processing in general.
 //       They should be moved out of this file.
@@ -18,6 +26,7 @@ template <typename Index, typename WandType>
     //               complex refactoring I want to avoid for now.
     using scorer_type         = bm25;
     using cursor_type         = typename Index::document_enumerator;
+    using score_function_type = Score_Function<scorer_type, WandType>;
 
     auto query_term_freqs = query_freqs(terms);
     std::vector<cursor_type> cursors;
@@ -30,10 +39,7 @@ template <typename Index, typename WandType>
         uint64_t num_docs = index.num_docs();
         auto     q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
         cursors.push_back(std::move(list));
-        score_functions.push_back([q_weight, &wdata](auto docid, auto freq) {
-            float norm_len = wdata.norm_len(docid);
-            return q_weight * scorer_type::doc_term_weight(freq, norm_len);
-        });
+        score_functions.push_back({q_weight, std::cref(wdata)});
     }
     return std::make_pair(cursors, score_functions);
 }
@@ -187,8 +193,8 @@ struct Simple_Accumulator : public std::vector<float> {
 };
 
 struct Taat_Traversal {
-    template <typename Cursor, typename Acc>
-    void static traverse_term(Cursor &cursor, score_function_type score, Acc &acc) {
+    template <typename Cursor, typename Acc, typename Score>
+    void static traverse_term(Cursor &cursor, Score score, Acc &acc) {
         if constexpr (std::is_same_v<typename Cursor::enumerator_category,
                                      ds2i::block_enumerator_tag>) {
             while (cursor.docid() < acc.size()) {
@@ -209,6 +215,8 @@ struct Taat_Traversal {
 
 template <typename Index, typename WandType, typename Acc = Simple_Accumulator>
 class exhaustive_taat_query {
+    using score_function_type = Score_Function<bm25, WandType>;
+
    public:
     exhaustive_taat_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
