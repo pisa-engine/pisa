@@ -1,7 +1,5 @@
 #pragma once
 
-#include <omp.h>
-
 #include "util/intrinsics.hpp"
 #include "topk_queue.hpp"
 
