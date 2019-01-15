@@ -90,8 +90,19 @@ struct Blocked_Accumulator {
 
     void init() { std::fill(m_accumulators.begin(), m_accumulators.end(), 0.0); }
 
-    [[nodiscard]] auto operator[](std::ptrdiff_t document) -> Proxy_Element {
+    [[nodiscard]] auto operator[](std::ptrdiff_t document) -> Proxy_Element
+    {
         return {document, m_accumulators, m_accumulators_max};
+    }
+
+    void accumulate(std::ptrdiff_t const document, float score_delta)
+    {
+        m_accumulators[document] += score_delta;
+        auto const &score = m_accumulators[document];
+        auto &block_max = m_accumulators_max[document / block_size];
+        if (score > block_max) {
+            block_max = score;
+        }
     }
 
     void aggregate(topk_queue &topk) {
@@ -121,9 +132,9 @@ struct Lazy_Accumulator {
     static_assert(std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>,
                   "must be unsigned number");
     constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
-    constexpr static auto counters_in_descriptor  = descriptor_size_in_bits / counter_bit_size;
-    constexpr static auto mask                    = (1u << counter_bit_size) - 1;
-    constexpr static auto cycle                   = (1u << counter_bit_size);
+    constexpr static auto counters_in_descriptor = descriptor_size_in_bits / counter_bit_size;
+    constexpr static auto cycle = (1u << counter_bit_size);
+    constexpr static Descriptor mask = (1u << counter_bit_size) - 1;
 
     struct Block {
         Descriptor                                descriptor{};
@@ -132,13 +143,22 @@ struct Lazy_Accumulator {
         [[nodiscard]] auto counter(int pos) const noexcept -> int {
             return (descriptor >> (pos * counter_bit_size)) & mask;
         }
+
+        void reset_counter(int pos, int counter)
+        {
+            auto const shift = pos * counter_bit_size;
+            descriptor &= ~(mask << shift);
+            descriptor |= static_cast<Descriptor>(counter) << shift;
+            accumulators[pos] = 0;
+        }
     };
 
     Lazy_Accumulator(std::size_t size)
-        : m_size(size),
-          m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor) {}
+        : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor)
+    {}
 
-    void init() {
+    void init()
+    {
         if (m_counter == 0) {
             auto first = reinterpret_cast<std::byte *>(&m_accumulators.front());
             auto last =
@@ -150,8 +170,8 @@ struct Lazy_Accumulator {
     float &operator[](std::ptrdiff_t const document) {
         auto const block        = document / counters_in_descriptor;
         auto const pos_in_block = document % counters_in_descriptor;
-        if (m_accumulators[block].accumulators[pos_in_block] > 0 &&
-            m_accumulators[block].counter(pos_in_block) < m_counter)
+        if (//m_accumulators[block].accumulators[pos_in_block] > 0 &&
+            m_accumulators[block].counter(pos_in_block) != m_counter)
         {
             auto const shift = pos_in_block * counter_bit_size;
             m_accumulators[block].descriptor &= ~(mask << shift);
@@ -159,6 +179,16 @@ struct Lazy_Accumulator {
             m_accumulators[block].accumulators[pos_in_block] = 0;
         }
         return m_accumulators[block].accumulators[pos_in_block];
+    }
+
+    void accumulate(std::ptrdiff_t const document, float score)
+    {
+        auto const block = document / counters_in_descriptor;
+        auto const pos_in_block = document % counters_in_descriptor;
+        if (m_accumulators[block].counter(pos_in_block) != m_counter) {
+            m_accumulators[block].reset_counter(pos_in_block, m_counter);
+        }
+        m_accumulators[block].accumulators[pos_in_block] += score;
     }
 
     void aggregate(topk_queue &topk) {
@@ -175,7 +205,9 @@ struct Lazy_Accumulator {
         m_counter = (m_counter + 1) % cycle;
     }
 
-    [[nodiscard]] auto size() noexcept -> std::size_t { return m_size; }
+    [[nodiscard]] auto size() const noexcept -> std::size_t { return m_size; }
+    [[nodiscard]] auto blocks() noexcept -> std::vector<Block> & { return m_accumulators; }
+    [[nodiscard]] auto counter() const noexcept -> int { return m_counter; }
 
    private:
     std::size_t        m_size;
@@ -186,6 +218,7 @@ struct Lazy_Accumulator {
 struct Simple_Accumulator : public std::vector<float> {
     Simple_Accumulator(std::ptrdiff_t size) : std::vector<float>(size) {}
     void init() { std::fill(begin(), end(), 0.0); }
+    void accumulate(uint32_t doc, float score) { operator[](doc) += score; }
     void aggregate(topk_queue &topk) {
         uint64_t docid = 0u;
         std::for_each(begin(), end(), [&](auto score) { topk.insert(score, docid++); });
@@ -201,13 +234,13 @@ struct Taat_Traversal {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    acc[documents[idx]] += score(documents[idx], freqs[idx]);
+                    acc.accumulate(documents[idx], score(documents[idx], freqs[idx]));
                 }
                 cursor.next_block();
             }
         } else {
             for (; cursor.docid() < acc.size(); cursor.next()) {
-                acc[cursor.docid()] += score(cursor.docid(), cursor.freq());
+                acc.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
             }
         }
     }
