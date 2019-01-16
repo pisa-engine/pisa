@@ -9,6 +9,11 @@
 
 namespace pisa {
 
+// TODO(antonio): basically here we can do a bit better.
+// before scoring a document, we read its accumulator value and check if the sum of
+// the accumulator value and the upper bound of the maxscores of the missing terms
+// (current included) is greater than the threshold. If it is we score and add it to the accumulator,
+// we go to the next document otherwise.
 struct Maxscore_Taat_Traversal {
     template <typename Cursor, typename Acc, typename Score>
     void static traverse_term(Cursor &cursor, Score score, Acc &acc)
