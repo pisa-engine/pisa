@@ -1,10 +1,35 @@
 #pragma once
 
-#include "exhaustive_taat_query.hpp"
 #include "topk_queue.hpp"
 #include "util/intrinsics.hpp"
 
+#include "accumulator/simple_accumulator.hpp"
+#include "accumulator/lazy_accumulator.hpp"
+#include "accumulator/blocked_accumulator.hpp"
+
 namespace pisa {
+
+struct Maxscore_Taat_Traversal {
+    template <typename Cursor, typename Acc, typename Score>
+    void static traverse_term(Cursor &cursor, Score score, Acc &acc)
+    {
+        if constexpr (std::is_same_v<typename Cursor::enumerator_category,
+                                     pisa::block_enumerator_tag>) {
+            while (cursor.docid() < acc.size()) {
+                auto const &documents = cursor.document_buffer();
+                auto const &freqs     = cursor.frequency_buffer();
+                for (uint32_t idx = 0; idx < documents.size(); ++idx) {
+                    acc.accumulate(documents[idx], score(documents[idx], freqs[idx] + 1));
+                }
+                cursor.next_block();
+            }
+        } else {
+            for (; cursor.docid() < acc.size(); cursor.next()) {
+                acc.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
+            }
+        }
+    }
+};
 
 template <typename Index, typename WandType>
 [[nodiscard]] auto max_weights(Index const& index, WandType const &wdata, term_id_vec terms)
@@ -129,7 +154,7 @@ class maxscore_taat_query {
             if (not m_topk.would_enter(nonessential_sum)) {
                 break;
             }
-            Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
+            Maxscore_Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
             nonessential_sum -= max_weights[term];
         }
 
