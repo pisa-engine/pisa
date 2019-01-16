@@ -143,7 +143,7 @@ void perftest(const std::string &index_filename,
             query_fun =
                 pisa::make_exhaustive_taat_query<pisa::Blocked_Accumulator<1024>>(index, wdata, k);
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](pisa::term_id_vec query) {
                 return ranked_or_taat_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "maxscore_taat" && wand_data_filename) {

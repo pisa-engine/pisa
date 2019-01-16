@@ -82,7 +82,7 @@ namespace pisa {
 
         class document_enumerator {
         public:
-            using enumerator_category = ds2i::block_enumerator_tag;
+            using enumerator_category = pisa::block_enumerator_tag;
 
             document_enumerator(uint8_t const* data, uint64_t universe,
                                 size_t term_id = 0)

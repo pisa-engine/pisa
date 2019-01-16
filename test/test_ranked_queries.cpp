@@ -93,44 +93,44 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
     test_against_or(bmm_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "exhaustive_taat")
+TEST_CASE_METHOD(pisa::test::index_initialization, "exhaustive_taat")
 {
-    ds2i::pisa::exhaustive_taat_query<index_type, WandType, ds2i::pisa::Simple_Accumulator> taat_q(
+    pisa::pisa::exhaustive_taat_query<index_type, WandType, pisa::pisa::Simple_Accumulator> taat_q(
         index, wdata, 10);
     test_against_or(taat_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "exhaustive_taat_blocked")
+TEST_CASE_METHOD(pisa::test::index_initialization, "exhaustive_taat_blocked")
 {
-    ds2i::pisa::exhaustive_taat_query<index_type, WandType, ds2i::pisa::Blocked_Accumulator<1024>>
+    pisa::pisa::exhaustive_taat_query<index_type, WandType, pisa::pisa::Blocked_Accumulator<1024>>
         taat_q(index, wdata, 10);
     test_against_or(taat_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "maxscore_taat")
+TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore_taat")
 {
-    ds2i::pisa::maxscore_taat_query<index_type, WandType, ds2i::pisa::Simple_Accumulator> taat_q(
+    pisa::pisa::maxscore_taat_query<index_type, WandType, pisa::pisa::Simple_Accumulator> taat_q(
         index, wdata, 10);
     test_against_or(taat_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "maxscore_taat_blocked")
+TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore_taat_blocked")
 {
-    ds2i::pisa::maxscore_taat_query<index_type, WandType, ds2i::pisa::Blocked_Accumulator<1024>>
+    pisa::pisa::maxscore_taat_query<index_type, WandType, pisa::pisa::Blocked_Accumulator<1024>>
         taat_q(index, wdata, 10);
     test_against_or(taat_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "ranked_or_taat")
+TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
 
-    ds2i::ranked_or_taat_query<WandType> ranked_or_taat_q(wdata, 10);
+    pisa::ranked_or_taat_query<WandType> ranked_or_taat_q(wdata, 10);
     test_against_or(ranked_or_taat_q);
 }
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "exhaustive_taat_lazy")
+TEST_CASE_METHOD(pisa::test::index_initialization, "exhaustive_taat_lazy")
 {
-    ds2i::pisa::exhaustive_taat_query<index_type, WandType, ds2i::pisa::Lazy_Accumulator<8>> taat_q(
+    pisa::pisa::exhaustive_taat_query<index_type, WandType, pisa::pisa::Lazy_Accumulator<8>> taat_q(
         index, wdata, 10);
     test_against_or(taat_q);
 }

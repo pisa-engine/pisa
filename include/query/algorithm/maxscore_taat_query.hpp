@@ -86,7 +86,7 @@ class maxscore_taat_query {
     template <typename Cursor, typename Score>
     void traverse_with_lookups(Cursor &cursor, Score score) {
         if constexpr (std::is_same_v<typename Cursor::enumerator_category,
-                                     ds2i::block_enumerator_tag>) {
+                                     pisa::block_enumerator_tag>) {
             while (cursor.docid() < m_accumulators.size()) {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();

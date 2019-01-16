@@ -230,7 +230,7 @@ struct Taat_Traversal {
     void static traverse_term(Cursor &cursor, Score score, Acc &acc)
     {
         if constexpr (std::is_same_v<typename Cursor::enumerator_category,
-                                     ds2i::block_enumerator_tag>) {
+                                     pisa::block_enumerator_tag>) {
             while (cursor.docid() < acc.size()) {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
