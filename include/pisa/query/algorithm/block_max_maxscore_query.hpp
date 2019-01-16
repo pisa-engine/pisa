@@ -2,22 +2,22 @@
 
 namespace pisa {
 
-template <typename WandType>
+template <typename Index, typename WandType>
 struct block_max_maxscore_query {
 
     typedef bm25 scorer_type;
 
-    block_max_maxscore_query(WandType const &wdata, uint64_t k) : m_wdata(&wdata), m_topk(k) {}
+    block_max_maxscore_query(Index const &index, WandType const &wdata, uint64_t k)
+        : m_index(index), m_wdata(&wdata), m_topk(k) {}
 
-    template <typename Index>
-    uint64_t operator()(Index const &index, term_id_vec const &terms) {
+    uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();
         if (terms.empty())
             return 0;
 
         auto query_term_freqs = query_freqs(terms);
 
-        uint64_t                                        num_docs = index.num_docs();
+        uint64_t                                        num_docs = m_index.num_docs();
         typedef typename Index::document_enumerator     enum_type;
         typedef typename WandType::wand_data_enumerator wdata_enum;
 
@@ -32,7 +32,7 @@ struct block_max_maxscore_query {
         enums.reserve(query_term_freqs.size());
 
         for (auto term : query_term_freqs) {
-            auto list       = index[term.first];
+            auto list       = m_index[term.first];
             auto w_enum     = m_wdata->getenum(term.first);
             auto q_weight   = scorer_type::query_term_weight(term.second, list.size(), num_docs);
             auto max_weight = q_weight * m_wdata->max_term_weight(term.first);
@@ -66,10 +66,10 @@ struct block_max_maxscore_query {
                              })
                 ->docs_enum.docid();
 
-        while (non_essential_lists < ordered_enums.size() && cur_doc < index.num_docs()) {
+        while (non_essential_lists < ordered_enums.size() && cur_doc < m_index.num_docs()) {
             float    score    = 0;
             float    norm_len = m_wdata->norm_len(cur_doc);
-            uint64_t next_doc = index.num_docs();
+            uint64_t next_doc = m_index.num_docs();
             for (size_t i = non_essential_lists; i < ordered_enums.size(); ++i) {
                 if (ordered_enums[i]->docs_enum.docid() == cur_doc) {
                     score +=
@@ -129,6 +129,7 @@ struct block_max_maxscore_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
+    Index const &   m_index;
     WandType const *m_wdata;
     topk_queue      m_topk;
 };

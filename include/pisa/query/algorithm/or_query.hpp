@@ -2,11 +2,12 @@
 
 namespace pisa {
 
-template <bool with_freqs>
+template <typename Index, bool with_freqs>
 struct or_query {
 
-    template <typename Index>
-    uint64_t operator()(Index const &index, term_id_vec terms) const {
+    or_query(Index const &index) : m_index(index) {}
+
+    uint64_t operator()(term_id_vec terms) const {
         if (terms.empty())
             return 0;
         remove_duplicate_terms(terms);
@@ -16,7 +17,7 @@ struct or_query {
         enums.reserve(terms.size());
 
         for (auto term : terms) {
-            enums.push_back(index[term]);
+            enums.push_back(m_index[term]);
         }
 
         uint64_t results = 0;
@@ -27,9 +28,9 @@ struct or_query {
                                             })
                                ->docid();
 
-        while (cur_doc < index.num_docs()) {
+        while (cur_doc < m_index.num_docs()) {
             results += 1;
-            uint64_t next_doc = index.num_docs();
+            uint64_t next_doc = m_index.num_docs();
             for (size_t i = 0; i < enums.size(); ++i) {
                 if (enums[i].docid() == cur_doc) {
                     if (with_freqs) {
@@ -47,6 +48,9 @@ struct or_query {
 
         return results;
     }
+
+   private:
+    Index const &m_index;
 };
 
 } // namespace pisa

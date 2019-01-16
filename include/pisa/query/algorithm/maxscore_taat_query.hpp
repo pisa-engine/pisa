@@ -3,21 +3,20 @@
 #include "topk_queue.hpp"
 #include "util/intrinsics.hpp"
 
-#include "accumulator/simple_accumulator.hpp"
-#include "accumulator/lazy_accumulator.hpp"
 #include "accumulator/blocked_accumulator.hpp"
+#include "accumulator/lazy_accumulator.hpp"
+#include "accumulator/simple_accumulator.hpp"
 
 namespace pisa {
 
 // TODO(antonio): basically here we can do a bit better.
 // before scoring a document, we read its accumulator value and check if the sum of
 // the accumulator value and the upper bound of the maxscores of the missing terms
-// (current included) is greater than the threshold. If it is we score and add it to the accumulator,
-// we go to the next document otherwise.
+// (current included) is greater than the threshold. If it is we score and add it to the
+// accumulator, we go to the next document otherwise.
 struct Maxscore_Taat_Traversal {
     template <typename Cursor, typename Acc, typename Score>
-    void static traverse_term(Cursor &cursor, Score score, Acc &acc)
-    {
+    void static traverse_term(Cursor &cursor, Score score, Acc &acc) {
         if constexpr (std::is_same_v<typename Cursor::enumerator_category,
                                      pisa::block_enumerator_tag>) {
             while (cursor.docid() < acc.size()) {
@@ -37,15 +36,14 @@ struct Maxscore_Taat_Traversal {
 };
 
 template <typename Index, typename WandType>
-[[nodiscard]] auto max_weights(Index const& index, WandType const &wdata, term_id_vec terms)
-{
+[[nodiscard]] auto max_weights(Index const &index, WandType const &wdata, term_id_vec terms) {
     // TODO(michal): parametrize scorer_type; didn't do that because this might mean some more
     //               complex refactoring I want to avoid for now.
     using scorer_type         = bm25;
     using cursor_type         = typename Index::document_enumerator;
     using score_function_type = Score_Function<scorer_type, WandType>;
 
-    auto query_term_freqs = query_freqs(terms);
+    auto               query_term_freqs = query_freqs(terms);
     std::vector<float> max_weights;
     max_weights.reserve(query_term_freqs.size());
 
@@ -74,7 +72,7 @@ void apply_permutation(Container &container, const std::vector<std::size_t> &p) 
         if (done[i]) {
             continue;
         }
-        done[i] = true;
+        done[i]            = true;
         std::size_t prev_j = i;
         std::size_t j      = p[i];
         while (i != j) {
@@ -159,7 +157,8 @@ class maxscore_taat_query {
             if (not m_topk.would_enter(nonessential_sum)) {
                 break;
             }
-            Maxscore_Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
+            Maxscore_Taat_Traversal::traverse_term(
+                cursors[term], score_functions[term], m_accumulators);
             nonessential_sum -= max_weights[term];
         }
 
@@ -176,11 +175,11 @@ class maxscore_taat_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    Index const &          m_index;
-    WandType const &       m_wdata;
-    int                    m_k;
-    topk_queue             m_topk;
-    Acc                    m_accumulators;
+    Index const &   m_index;
+    WandType const &m_wdata;
+    int             m_k;
+    topk_queue      m_topk;
+    Acc             m_accumulators;
 };
 
 template <typename Acc, typename Index, typename WandType>

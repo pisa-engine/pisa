@@ -107,32 +107,32 @@ void perftest(const std::string &index_filename,
         logger() << "Query type: " << t << std::endl;
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            query_fun = [&](term_id_vec query) { return and_query<false>()(index, query); };
+            query_fun = [&](term_id_vec query) { return and_query<IndexType, false>(index)(query); };
         } else if (t == "and_freq") {
-            query_fun = [&](term_id_vec query) { return and_query<true>()(index, query); };
+            query_fun = [&](term_id_vec query) { return and_query<IndexType, true>(index)(query); };
         } else if (t == "or") {
-            query_fun = [&](term_id_vec query) { return or_query<false>()(index, query); };
+            query_fun = [&](term_id_vec query) { return or_query<IndexType, false>(index)(query); };
         } else if (t == "or_freq") {
-            query_fun = [&](term_id_vec query) { return or_query<true>()(index, query); };
+            query_fun = [&](term_id_vec query) { return or_query<IndexType, true>(index)(query); };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](term_id_vec query) {
-                return wand_query<WandType>(wdata, k)(index, query);
+                return wand_query<IndexType, WandType>(index, wdata, k)(query);
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](term_id_vec query) {
-                return block_max_wand_query<WandType>(wdata, k)(index, query);
+                return block_max_wand_query<IndexType, WandType>(index, wdata, k)(query);
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec query) {
-                return block_max_maxscore_query<WandType>(wdata, k)(index, query);
+                return block_max_maxscore_query<IndexType, WandType>(index, wdata, k)(query);
             };
         }  else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](term_id_vec query) {
-                return ranked_or_query<WandType>(wdata, k)(index, query);
+                return ranked_or_query<IndexType, WandType>(index, wdata, k)(query);
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec query) {
-                return maxscore_query<WandType>(wdata, k)(index, query);
+                return maxscore_query<IndexType, WandType>(index, wdata, k)(query);
             };
         } else if (t == "exhaustive_taat" && wand_data_filename) {
             query_fun = pisa::make_exhaustive_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
@@ -144,7 +144,7 @@ void perftest(const std::string &index_filename,
                 pisa::make_exhaustive_taat_query<pisa::Blocked_Accumulator<1024>>(index, wdata, k);
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             query_fun = [&](pisa::term_id_vec query) {
-                return ranked_or_taat_query<WandType>(wdata, k)(index, query);
+                return ranked_or_taat_query<IndexType, WandType>(index, wdata, k)(query);
             };
         } else if (t == "maxscore_taat" && wand_data_filename) {
             query_fun = pisa::make_maxscore_taat_query<pisa::Simple_Accumulator>(index, wdata, k);

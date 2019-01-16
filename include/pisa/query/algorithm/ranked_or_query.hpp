@@ -2,22 +2,22 @@
 
 namespace pisa {
 
-template <typename WandType>
+template <typename Index, typename WandType>
 struct ranked_or_query {
 
     typedef bm25 scorer_type;
 
-    ranked_or_query(WandType const &wdata, uint64_t k) : m_wdata(&wdata), m_topk(k) {}
+    ranked_or_query(Index const &index, WandType const &wdata, uint64_t k)
+        : m_index(index), m_wdata(&wdata), m_topk(k) {}
 
-    template <typename Index>
-    uint64_t operator()(Index const &index, term_id_vec terms) {
+    uint64_t operator()(term_id_vec terms) {
         m_topk.clear();
         if (terms.empty())
             return 0;
 
         auto query_term_freqs = query_freqs(terms);
 
-        uint64_t                                    num_docs = index.num_docs();
+        uint64_t                                    num_docs = m_index.num_docs();
         typedef typename Index::document_enumerator enum_type;
         struct scored_enum {
             enum_type docs_enum;
@@ -28,7 +28,7 @@ struct ranked_or_query {
         enums.reserve(query_term_freqs.size());
 
         for (auto term : query_term_freqs) {
-            auto list     = index[term.first];
+            auto list     = m_index[term.first];
             auto q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
             enums.push_back(scored_enum{std::move(list), q_weight});
         }
@@ -41,10 +41,10 @@ struct ranked_or_query {
                              })
                 ->docs_enum.docid();
 
-        while (cur_doc < index.num_docs()) {
+        while (cur_doc < m_index.num_docs()) {
             float    score    = 0;
             float    norm_len = m_wdata->norm_len(cur_doc);
-            uint64_t next_doc = index.num_docs();
+            uint64_t next_doc = m_index.num_docs();
             for (size_t i = 0; i < enums.size(); ++i) {
                 if (enums[i].docs_enum.docid() == cur_doc) {
                     score += enums[i].q_weight *
@@ -67,6 +67,7 @@ struct ranked_or_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
+    Index const &   m_index;
     WandType const *m_wdata;
     topk_queue      m_topk;
 };

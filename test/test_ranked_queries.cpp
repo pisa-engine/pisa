@@ -42,11 +42,11 @@ namespace pisa { namespace test {
         template <typename QueryOp>
         void test_against_or(QueryOp& op_q) const
         {
-            ranked_or_query<WandType> or_q(wdata, 10);
+            ranked_or_query<index_type, WandType> or_q(index, wdata, 10);
 
             for (auto const& q: queries) {
-                or_q(index, q);
-                op_q(index, q);
+                or_q(q);
+                op_q(q);
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
@@ -56,12 +56,12 @@ namespace pisa { namespace test {
 
         void test_k_size() const
         {
-            ranked_or_query<WandType> or_10(wdata, 10);
-            ranked_or_query<WandType> or_1(wdata, 1);
+            ranked_or_query<index_type, WandType> or_10(index, wdata, 10);
+            ranked_or_query<index_type, WandType> or_1(index, wdata, 1);
 
             for (auto const &q : queries) {
-                or_10(index, q);
-                or_1(index, q);
+                or_10(q);
+                or_1(q);
                 if (not or_10.topk().empty()) {
                     REQUIRE(not or_1.topk().empty());
                     REQUIRE(or_1.topk().front().first == Approx(or_10.topk().front().first).epsilon(0.1));
@@ -77,19 +77,19 @@ namespace pisa { namespace test {
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
 {
-    pisa::wand_query<WandType> wand_q(wdata, 10);
+    pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
     test_against_or(wand_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore")
 {
-    pisa::maxscore_query<WandType> maxscore_q(wdata, 10);
+    pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10);
     test_against_or(maxscore_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 {
-    pisa::block_max_maxscore_query<WandType> bmm_q(wdata, 10);
+    pisa::block_max_maxscore_query<index_type, WandType> bmm_q(index, wdata, 10);
     test_against_or(bmm_q);
 }
 
@@ -124,7 +124,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore_taat_blocked")
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
 
-    pisa::ranked_or_taat_query<WandType> ranked_or_taat_q(wdata, 10);
+    pisa::ranked_or_taat_query<index_type, WandType> ranked_or_taat_q(index, wdata, 10);
     test_against_or(ranked_or_taat_q);
 }
 

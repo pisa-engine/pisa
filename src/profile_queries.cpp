@@ -14,9 +14,8 @@
 #include "query/queries.hpp"
 #include "util/util.hpp"
 
-template <typename QueryOperator, typename IndexType>
-void op_profile(IndexType const& index,
-                QueryOperator const& query_op,
+template <typename QueryOperator>
+void op_profile(QueryOperator const& query_op,
                 std::vector<pisa::term_id_vec> const& queries)
 {
     using namespace pisa;
@@ -34,7 +33,7 @@ void op_profile(IndexType const& index,
                         logger() << i << " queries processed" << std::endl;
                     }
 
-                    query_op_copy(index, queries[i]);
+                    query_op_copy(queries[i]);
                 }
             });
     }
@@ -86,13 +85,13 @@ void profile(const std::string index_filename,
     for (auto const& t: query_types) {
         logger() << "Query type: " << t << std::endl;
         if (t == "and") {
-            op_profile(index, and_query<false>(), queries);
+            op_profile(and_query<typename add_profiling<IndexType>::type, false>(index), queries);
         } else if (t == "ranked_and" && wand_data_filename) {
-            op_profile(index, ranked_and_query<WandType>(wdata, 10), queries);
+            op_profile(ranked_and_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else if (t == "wand" && wand_data_filename) {
-            op_profile(index, wand_query<WandType>(wdata, 10), queries);
+            op_profile(wand_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else if (t == "maxscore" && wand_data_filename) {
-            op_profile(index, maxscore_query<WandType>(wdata, 10), queries);
+            op_profile(maxscore_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else {
             logger() << "Unsupported query type: " << t << std::endl;
         }

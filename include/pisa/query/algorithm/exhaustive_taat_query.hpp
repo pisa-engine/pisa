@@ -40,18 +40,7 @@ class exhaustive_taat_query {
         : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
 
     uint64_t operator()(term_id_vec terms) {
-        auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
-        return taat(std::move(cws.first), std::move(cws.second));
-    }
-
-    uint64_t operator()([[maybe_unused]] Index const &, term_id_vec terms) {
-        auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
-        return taat(std::move(cws.first), std::move(cws.second));
-    }
-
-    // TODO(michal): I think this should be eventually the `operator()`
-    template <typename Cursor>
-    uint64_t taat(std::vector<Cursor> cursors, std::vector<score_function_type> score_functions) {
+        auto [cursors, score_functions] = query::cursors_with_scores(m_index, m_wdata, terms);
         m_topk.clear();
         if (cursors.empty()) {
             return 0;
