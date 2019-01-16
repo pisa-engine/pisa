@@ -95,28 +95,28 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "exhaustive_taat")
 {
-    pisa::pisa::exhaustive_taat_query<index_type, WandType, pisa::pisa::Simple_Accumulator> taat_q(
+    pisa::exhaustive_taat_query<index_type, WandType, pisa::Simple_Accumulator> taat_q(
         index, wdata, 10);
     test_against_or(taat_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "exhaustive_taat_blocked")
 {
-    pisa::pisa::exhaustive_taat_query<index_type, WandType, pisa::pisa::Blocked_Accumulator<1024>>
+    pisa::exhaustive_taat_query<index_type, WandType, pisa::Blocked_Accumulator<1024>>
         taat_q(index, wdata, 10);
     test_against_or(taat_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore_taat")
 {
-    pisa::pisa::maxscore_taat_query<index_type, WandType, pisa::pisa::Simple_Accumulator> taat_q(
+    pisa::maxscore_taat_query<index_type, WandType, pisa::Simple_Accumulator> taat_q(
         index, wdata, 10);
     test_against_or(taat_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore_taat_blocked")
 {
-    pisa::pisa::maxscore_taat_query<index_type, WandType, pisa::pisa::Blocked_Accumulator<1024>>
+    pisa::maxscore_taat_query<index_type, WandType, pisa::Blocked_Accumulator<1024>>
         taat_q(index, wdata, 10);
     test_against_or(taat_q);
 }
@@ -130,7 +130,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "exhaustive_taat_lazy")
 {
-    pisa::pisa::exhaustive_taat_query<index_type, WandType, pisa::pisa::Lazy_Accumulator<8>> taat_q(
+    pisa::exhaustive_taat_query<index_type, WandType, pisa::Lazy_Accumulator<8>> taat_q(
         index, wdata, 10);
     test_against_or(taat_q);
 }

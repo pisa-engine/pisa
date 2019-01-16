@@ -61,8 +61,6 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-link_libraries(Threads::Threads)
-
 
 include_directories(include)
 add_library(pisa INTERFACE)
