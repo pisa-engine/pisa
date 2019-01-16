@@ -227,14 +227,15 @@ struct Simple_Accumulator : public std::vector<float> {
 
 struct Taat_Traversal {
     template <typename Cursor, typename Acc, typename Score>
-    void static traverse_term(Cursor &cursor, Score score, Acc &acc) {
+    void static traverse_term(Cursor &cursor, Score score, Acc &acc)
+    {
         if constexpr (std::is_same_v<typename Cursor::enumerator_category,
                                      ds2i::block_enumerator_tag>) {
             while (cursor.docid() < acc.size()) {
                 auto const &documents = cursor.document_buffer();
                 auto const &freqs     = cursor.frequency_buffer();
                 for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    acc.accumulate(documents[idx], score(documents[idx], freqs[idx]));
+                    acc.accumulate(documents[idx], score(documents[idx], freqs[idx] + 1));
                 }
                 cursor.next_block();
             }

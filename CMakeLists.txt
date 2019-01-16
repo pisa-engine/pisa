@@ -40,12 +40,6 @@ list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
 
 
 if (UNIX)
-<<<<<<< HEAD
-=======
-   # C++14
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
->>>>>>> Fetch an entire block at a time for TAAT
-
    # For hardware popcount and other special instructions
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
