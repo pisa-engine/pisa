@@ -82,7 +82,6 @@ namespace pisa {
 
         class document_enumerator {
         public:
-            using enumerator_category = pisa::block_enumerator_tag;
 
             document_enumerator(uint8_t const* data, uint64_t universe,
                                 size_t term_id = 0)
@@ -156,25 +155,6 @@ namespace pisa {
                 while (position() < pos) {
                     m_cur_docid += m_docs_buf[++m_pos_in_block] + 1;
                 }
-            }
-
-            // TODO(michal): I recommend using some view, like gsl::span or something
-            //               instead of a reference to a vector.
-            [[nodiscard]] auto document_buffer() -> std::vector<uint32_t> const & {
-                return m_docs_buf;
-            }
-
-            [[nodiscard]] auto frequency_buffer() -> std::vector<uint32_t> const & {
-                if (!m_freqs_decoded) {
-                    decode_freqs_block();
-                }
-                return m_freqs_buf;
-            }
-
-            void next_block()
-            {
-                m_pos_in_block = m_cur_block_size - 1;
-                next();
             }
 
             uint64_t docid() const

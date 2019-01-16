@@ -17,20 +17,8 @@ namespace pisa {
 struct Maxscore_Taat_Traversal {
     template <typename Cursor, typename Acc, typename Score>
     void static traverse_term(Cursor &cursor, Score score, Acc &acc) {
-        if constexpr (std::is_same_v<typename Cursor::enumerator_category,
-                                     pisa::block_enumerator_tag>) {
-            while (cursor.docid() < acc.size()) {
-                auto const &documents = cursor.document_buffer();
-                auto const &freqs     = cursor.frequency_buffer();
-                for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    acc.accumulate(documents[idx], score(documents[idx], freqs[idx] + 1));
-                }
-                cursor.next_block();
-            }
-        } else {
-            for (; cursor.docid() < acc.size(); cursor.next()) {
-                acc.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
-            }
+        for (; cursor.docid() < acc.size(); cursor.next()) {
+            acc.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
         }
     }
 };
@@ -113,25 +101,10 @@ class maxscore_taat_query {
 
     template <typename Cursor, typename Score>
     void traverse_with_lookups(Cursor &cursor, Score score) {
-        if constexpr (std::is_same_v<typename Cursor::enumerator_category,
-                                     pisa::block_enumerator_tag>) {
-            while (cursor.docid() < m_accumulators.size()) {
-                auto const &documents = cursor.document_buffer();
-                auto const &freqs     = cursor.frequency_buffer();
-                for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    accumulator_reference accumulator = m_accumulators[documents[idx]];
-                    if (accumulator > 0) {
-                        accumulator += score(documents[idx], freqs[idx]);
-                    }
-                }
-                cursor.next_block();
-            }
-        } else {
-            for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
-                accumulator_reference accumulator = m_accumulators[cursor.docid()];
-                if (accumulator > 0) {
-                    accumulator += score(cursor.docid(), cursor.freq());
-                }
+        for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
+            accumulator_reference accumulator = m_accumulators[cursor.docid()];
+            if (accumulator > 0) {
+                accumulator += score(cursor.docid(), cursor.freq());
             }
         }
     }

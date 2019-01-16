@@ -9,28 +9,6 @@
 
 namespace pisa {
 
-struct Taat_Traversal {
-    template <typename Cursor, typename Acc, typename Score>
-    void static traverse_term(Cursor &cursor, Score score, Acc &acc)
-    {
-        if constexpr (std::is_same_v<typename Cursor::enumerator_category,
-                                     pisa::block_enumerator_tag>) {
-            while (cursor.docid() < acc.size()) {
-                auto const &documents = cursor.document_buffer();
-                auto const &freqs     = cursor.frequency_buffer();
-                for (uint32_t idx = 0; idx < documents.size(); ++idx) {
-                    acc.accumulate(documents[idx], score(documents[idx], freqs[idx] + 1));
-                }
-                cursor.next_block();
-            }
-        } else {
-            for (; cursor.docid() < acc.size(); cursor.next()) {
-                acc.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
-            }
-        }
-    }
-};
-
 template <typename Index, typename WandType, typename Acc = Simple_Accumulator>
 class exhaustive_taat_query {
     using score_function_type = Score_Function<bm25, WandType>;
@@ -47,7 +25,11 @@ class exhaustive_taat_query {
         }
         m_accumulators.init();
         for (uint32_t term = 0; term < cursors.size(); ++term) {
-            Taat_Traversal::traverse_term(cursors[term], score_functions[term], m_accumulators);
+            auto cursor = cursors[term];
+            const auto score = score_functions[term];
+            for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
+                m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
+            }
         }
         m_accumulators.aggregate(m_topk);
         m_topk.finalize();

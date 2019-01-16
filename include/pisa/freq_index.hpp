@@ -76,7 +76,7 @@ namespace pisa {
 
         class document_enumerator {
         public:
-            using enumerator_category = pisa::input_enumerator_tag;
+
             void reset()
             {
                 m_cur_pos = 0;
