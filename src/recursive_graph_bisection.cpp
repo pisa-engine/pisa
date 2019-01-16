@@ -7,7 +7,7 @@
 #include "recursive_graph_bisection.hpp"
 #include "util/progress.hpp"
 
-using namespace ds2i;
+using namespace pisa;
 using iterator_type = std::vector<uint32_t>::iterator;
 using range_type    = document_range<iterator_type>;
 using node_type     = computation_node<iterator_type>;
@@ -30,14 +30,14 @@ inline void run_with_config(const std::string &config_file, const range_type &in
         nodes.begin(), nodes.end(), std::ptrdiff_t(0), [](auto acc, const auto &node) {
             return acc + node.partition.size();
         });
-    ds2i::progress bp_progress("Graph bisection", total_count);
+    pisa::progress bp_progress("Graph bisection", total_count);
     bp_progress.update(0);
     recursive_graph_bisection(std::move(nodes), bp_progress);
 }
 
 inline void run_default_tree(size_t depth, const range_type &initial_range) {
     std::cerr << "Default tree with depth " << depth << std::endl;
-    ds2i::progress bp_progress("Graph bisection", initial_range.size() * depth);
+    pisa::progress bp_progress("Graph bisection", initial_range.size() * depth);
     bp_progress.update(0);
     recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
 }

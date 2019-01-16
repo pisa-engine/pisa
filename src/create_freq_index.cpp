@@ -19,17 +19,17 @@
 #include "CLI/CLI.hpp"
 
 
-using ds2i::logger;
+using pisa::logger;
 
 template <typename Collection>
 void dump_index_specific_stats(Collection const &, std::string const &) {}
 
-void dump_index_specific_stats(ds2i::uniform_index const &coll, std::string const &type) {
-    ds2i::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
+void dump_index_specific_stats(pisa::uniform_index const &coll, std::string const &type) {
+    pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
-void dump_index_specific_stats(ds2i::opt_index const &coll, std::string const &type) {
-    auto const &conf = ds2i::configuration::get();
+void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &type) {
+    auto const &conf = pisa::configuration::get();
 
     uint64_t length_threshold = 4096;
     double long_postings = 0;
@@ -45,18 +45,18 @@ void dump_index_specific_stats(ds2i::opt_index const &coll, std::string const &t
         }
     }
 
-    ds2i::stats_line()("type", type)("eps1", conf.eps1)("eps2", conf.eps2)(
+    pisa::stats_line()("type", type)("eps1", conf.eps1)("eps2", conf.eps2)(
         "fix_cost", conf.fix_cost)("docs_avg_part", long_postings / docs_partitions)(
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
-template <typename InputCollection, typename CollectionType, typename Scorer = ds2i::bm25>
+template <typename InputCollection, typename CollectionType, typename Scorer = pisa::bm25>
 void create_collection(InputCollection const &input,
-                       ds2i::global_parameters const &params,
+                       pisa::global_parameters const &params,
                        const boost::optional<std::string> &output_filename,
                        bool check,
                        std::string const &seq_type) {
-    using namespace ds2i;
+    using namespace pisa;
     logger() << "Processing " << input.num_docs() << " documents" << std::endl;
     double tick = get_time_usecs();
 
@@ -64,7 +64,7 @@ void create_collection(InputCollection const &input,
     uint64_t size = 0;
     size_t postings = 0;
     {
-        ds2i::progress progress("Create index", input.size());
+        pisa::progress progress("Create index", input.size());
         for (auto const &plist : input) {
             uint64_t freqs_sum;
             size = plist.docs.size();
@@ -98,7 +98,7 @@ void create_collection(InputCollection const &input,
 
 int main(int argc, char **argv) {
 
-    using namespace ds2i;
+    using namespace pisa;
     std::string type;
     std::string input_basename;
     boost::optional<std::string> output_filename;
@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 
     binary_freq_collection input(input_basename.c_str());
 
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
     params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {

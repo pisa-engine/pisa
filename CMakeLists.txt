@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 configure_file(
-  ${DS2I_SOURCE_DIR}/include/ds2i_config.hpp.in
-  ${DS2I_SOURCE_DIR}/include/ds2i_config.hpp
+  ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp.in
+  ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp
   ESCAPE_QUOTES)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -31,6 +31,7 @@ set_target_properties(gumbo::gumbo PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser/src)
 set_property(TARGET gumbo::gumbo APPEND PROPERTY IMPORTED_LOCATION
     ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a)
+add_dependencies( gumbo::gumbo gumbo-external )
 
 # Add code coverage
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
@@ -63,11 +64,29 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 link_libraries(Threads::Threads)
 
-# add the root directory to include path to make includes absolute
-include_directories(${DS2I_SOURCE_DIR}/external
-		    ${STXXL_INCLUDE_DIRS}
-		    ${DS2I_SOURCE_DIR}/include
-		    )
+
+include_directories(include)
+add_library(pisa INTERFACE)
+target_include_directories(pisa INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
+)
+target_link_libraries(pisa INTERFACE
+    Threads::Threads
+    Boost::boost
+    QMX
+    mio
+    ParallelSTL
+    GSL
+    FastPFor
+    streamvbyte
+    MaskedVByte
+    simdcomp
+    gumbo::gumbo
+    Boost::filesystem
+    Porter2
+    warcpp
+)
+target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(src)
 

@@ -15,6 +15,6 @@ int main(int argc, char const *argv[]) {
     app.add_option("-n,--num-doc", num_docs, "Number of documents")->required();
     CLI11_PARSE(app, argc, argv);
 
-    ds2i::sample_inverted_index(input_basename, output_basename, num_docs);
+    pisa::sample_inverted_index(input_basename, output_basename, num_docs);
     return 0;
 }

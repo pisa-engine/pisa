@@ -4,9 +4,9 @@
 #include "index_types.hpp"
 #include "util/util.hpp"
 
-using ds2i::logger;
-using ds2i::get_time_usecs;
-using ds2i::do_not_optimize_away;
+using pisa::logger;
+using pisa::get_time_usecs;
+using pisa::do_not_optimize_away;
 
 template <typename IndexType, bool with_freqs>
 void perftest(IndexType const& index, std::string const& type)
@@ -65,7 +65,7 @@ void perftest(IndexType const& index, std::string const& type)
             if (size < min_length) continue;
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
-            for (size_t i = 0; i < std::min(ds2i::ceil_div(size, skip),
+            for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip),
                                             max_calls_per_list); ++i) {
                 reader.move(i * skip);
                 skip_values.back().second.push_back(reader.docid());
@@ -106,7 +106,7 @@ void perftest(const char* index_filename, std::string const& type)
     logger() << "Loading index from " << index_filename << std::endl;
     IndexType index;
     mio::mmap_source m(index_filename);
-    ds2i::mapper::map(index, m, ds2i::mapper::map_flags::warmup);
+    pisa::mapper::map(index, m, pisa::mapper::map_flags::warmup);
 
     perftest<IndexType, false>(index, type);
     perftest<IndexType, true>(index, type);
@@ -115,7 +115,7 @@ void perftest(const char* index_filename, std::string const& type)
 
 int main(int argc, const char** argv) {
 
-    using namespace ds2i;
+    using namespace pisa;
 
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0]

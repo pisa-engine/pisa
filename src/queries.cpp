@@ -16,15 +16,14 @@
 
 #include "CLI/CLI.hpp"
 
-using namespace ds2i;
+using namespace pisa;
 
 template <typename Functor>
 void op_perftest(Functor query_func, // XXX!!!
-                 std::vector<ds2i::term_id_vec> const &queries,
+                 std::vector<pisa::term_id_vec> const &queries,
                  std::string const &index_type,
                  std::string const &query_type,
                  size_t runs) {
-    using namespace ds2i;
 
     std::vector<double> query_times;
 
@@ -66,11 +65,10 @@ void op_perftest(Functor query_func, // XXX!!!
 template <typename IndexType, typename WandType>
 void perftest(const std::string &index_filename,
               const boost::optional<std::string> &wand_data_filename,
-              const std::vector<ds2i::term_id_vec> &queries,
+              const std::vector<term_id_vec> &queries,
               std::string const &type,
               std::string const &query_type,
               uint64_t k) {
-    using namespace ds2i;
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
     mio::mmap_source m(index_filename.c_str());
@@ -107,33 +105,33 @@ void perftest(const std::string &index_filename,
 
     for (auto &&t : query_types) {
         logger() << "Query type: " << t << std::endl;
-        std::function<uint64_t(ds2i::term_id_vec)> query_fun;
+        std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            query_fun = [&](ds2i::term_id_vec query) { return and_query<false>()(index, query); };
+            query_fun = [&](term_id_vec query) { return and_query<false>()(index, query); };
         } else if (t == "and_freq") {
-            query_fun = [&](ds2i::term_id_vec query) { return and_query<true>()(index, query); };
+            query_fun = [&](term_id_vec query) { return and_query<true>()(index, query); };
         } else if (t == "or") {
-            query_fun = [&](ds2i::term_id_vec query) { return or_query<false>()(index, query); };
+            query_fun = [&](term_id_vec query) { return or_query<false>()(index, query); };
         } else if (t == "or_freq") {
-            query_fun = [&](ds2i::term_id_vec query) { return or_query<true>()(index, query); };
+            query_fun = [&](term_id_vec query) { return or_query<true>()(index, query); };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return wand_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return block_max_wand_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return block_max_maxscore_query<WandType>(wdata, k)(index, query);
             };
         }  else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return ranked_or_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return maxscore_query<WandType>(wdata, k)(index, query);
             };
         } else {
@@ -148,8 +146,6 @@ typedef wand_data<bm25, wand_data_raw<bm25>> wand_raw_index;
 typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wand_uniform_index;
 
 int main(int argc, const char **argv) {
-    using namespace ds2i;
-
     std::string type;
     std::string query_type;
     std::string index_filename;

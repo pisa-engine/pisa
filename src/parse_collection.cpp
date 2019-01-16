@@ -7,8 +7,8 @@
 
 #include "forward_index_builder.hpp"
 
-using ds2i::logger;
-using namespace ds2i;
+using pisa::logger;
+using namespace pisa;
 
 int main(int argc, char **argv) {
 

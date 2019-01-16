@@ -61,7 +61,7 @@ void random_posting_data(uint64_t n, uint64_t universe,
 template <typename BlockCodec>
 void test_block_posting_list()
 {
-    typedef ds2i::block_posting_list<BlockCodec> posting_list_type;
+    typedef pisa::block_posting_list<BlockCodec> posting_list_type;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
@@ -80,7 +80,7 @@ void test_block_posting_list()
 template <typename BlockCodec>
 void test_block_posting_list_reordering()
 {
-    typedef ds2i::block_posting_list<BlockCodec> posting_list_type;
+    typedef pisa::block_posting_list<BlockCodec> posting_list_type;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
@@ -106,18 +106,18 @@ void test_block_posting_list_reordering()
 
 TEST_CASE("block_posting_list")
 {
-    test_block_posting_list<ds2i::optpfor_block>();
-    test_block_posting_list<ds2i::varint_G8IU_block>();
-    test_block_posting_list<ds2i::streamvbyte_block>();
-    test_block_posting_list<ds2i::maskedvbyte_block>();
-    test_block_posting_list<ds2i::varintgb_block>();
-    test_block_posting_list<ds2i::interpolative_block>();
-    test_block_posting_list<ds2i::qmx_block>();
-    test_block_posting_list<ds2i::simple8b_block>();
-    test_block_posting_list<ds2i::simple16_block>();
-    test_block_posting_list<ds2i::simdbp_block>();
+    test_block_posting_list<pisa::optpfor_block>();
+    test_block_posting_list<pisa::varint_G8IU_block>();
+    test_block_posting_list<pisa::streamvbyte_block>();
+    test_block_posting_list<pisa::maskedvbyte_block>();
+    test_block_posting_list<pisa::varintgb_block>();
+    test_block_posting_list<pisa::interpolative_block>();
+    test_block_posting_list<pisa::qmx_block>();
+    test_block_posting_list<pisa::simple8b_block>();
+    test_block_posting_list<pisa::simple16_block>();
+    test_block_posting_list<pisa::simdbp_block>();
 }
 TEST_CASE("block_posting_list_reordering")
 {
-    test_block_posting_list_reordering<ds2i::optpfor_block>();
+    test_block_posting_list_reordering<pisa::optpfor_block>();
 }
