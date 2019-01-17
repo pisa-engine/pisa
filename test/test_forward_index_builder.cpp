@@ -21,9 +21,9 @@ using namespace boost::filesystem;
 TEST_CASE("Batch file name", "[parsing][forward_index]")
 {
     std::string basename = "basename";
-    REQUIRE(ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::batch_file(basename, 0) ==
+    REQUIRE(pisa::Forward_Index_Builder<pisa::Plaintext_Record>::batch_file(basename, 0) ==
             basename + ".batch.0");
-    REQUIRE(ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::batch_file(basename, 10) ==
+    REQUIRE(pisa::Forward_Index_Builder<pisa::Plaintext_Record>::batch_file(basename, 10) ==
             basename + ".batch.10");
 }
 
@@ -37,7 +37,7 @@ TEST_CASE("Write document to stream", "[parsing][forward_index]")
            4, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
          {{}, {0, 0, 0, 0}}}));
     WHEN("List of term IDs is written to stream") {
-        ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::write_document(
+        pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_document(
             os, term_ids.begin(), term_ids.end());
         THEN("Encoded sequence is " << encoded_sequence) { REQUIRE(os.str() == encoded_sequence); }
     }
@@ -53,7 +53,7 @@ TEST_CASE("Write header", "[parsing][forward_index]")
          {10, {1, 0, 0, 0, 10, 0, 0, 0}}}));
     GIVEN("Document count is " << document_count)
     WHEN("Header is written to stream") {
-        ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::write_header(os, document_count);
+        pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_header(os, document_count);
         THEN("Encoded header is " << encoded_header) { REQUIRE(os.str() == encoded_header); }
     }
 }
@@ -92,7 +92,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
     auto identity = [](std::string const &term) -> std::string { return term; };
 
     GIVEN("a few test records") {
-        std::vector<ds2i::Plaintext_Record> records{
+        std::vector<pisa::Plaintext_Record> records{
             {"Doc10", "lorem ipsum dolor sit amet consectetur adipiscing elit"},
             {"Doc11", "integer rutrum felis et sagittis dapibus"},
             {"Doc12", "vivamus ac velit nec purus molestie tincidunt"},
@@ -101,10 +101,10 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
         WHEN("write a batch to temp directory") {
             Temporary_Directory tmpdir;
             auto output_file = tmpdir.path() / "fwd";
-            ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::Batch_Process bp{
-                7, records, ds2i::Document_Id{10}, output_file.string()};
-            ds2i::Forward_Index_Builder<ds2i::Plaintext_Record> builder;
-            builder.run(bp, identity, ds2i::parse_plaintext_content);
+            pisa::Forward_Index_Builder<pisa::Plaintext_Record>::Batch_Process bp{
+                7, records, pisa::Document_Id{10}, output_file.string()};
+            pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
+            builder.run(bp, identity, pisa::parse_plaintext_content);
             THEN("documents are in check") {
                 std::vector<std::string> expected_documents{
                     "Doc10", "Doc11", "Doc12", "Doc13", "Doc14"};
@@ -123,7 +123,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
                 REQUIRE(terms == expected_terms);
             }
             THEN("term IDs") {
-                ds2i::binary_collection coll((output_file.string() + ".batch.7").c_str());
+                pisa::binary_collection coll((output_file.string() + ".batch.7").c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
                     auto seq = *seq_iter;
@@ -151,9 +151,9 @@ void write_batch(std::string const &                       basename,
     write_lines(document_file, gsl::make_span(documents));
     write_lines(term_file, gsl::make_span(terms));
     std::ofstream os(basename);
-    ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::write_header(os, collection.size());
+    pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_header(os, collection.size());
     for (auto const& seq : collection) {
-        ds2i::Forward_Index_Builder<ds2i::Plaintext_Record>::write_document(
+        pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_document(
             os, seq.begin(), seq.end());
     }
 }
@@ -215,7 +215,7 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
 
         WHEN("Merging function is called") {
             auto output_file = (dir / "fwd").string();
-            ds2i::Forward_Index_Builder<ds2i::Plaintext_Record> builder;
+            pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
             builder.merge(output_file, 5, 3);
 
             THEN("documents are in check") {
@@ -236,7 +236,7 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
                 REQUIRE(terms == expected_terms);
             }
             THEN("term IDs") {
-                ds2i::binary_collection coll((output_file).c_str());
+                pisa::binary_collection coll((output_file).c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
                     auto seq = *seq_iter;
@@ -258,11 +258,11 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
     std::vector<std::string> vec;
     auto map_word = [&](std::string &&word) { vec.push_back(word); };
     SECTION("empty") {
-        ds2i::parse_html_content("<a/>", map_word);
+        pisa::parse_html_content("<a/>", map_word);
         REQUIRE(vec == std::vector<std::string>{});
     }
     SECTION("non-empty") {
-        ds2i::parse_html_content("<a>lorem</a>ipsum", map_word);
+        pisa::parse_html_content("<a>lorem</a>ipsum", map_word);
         REQUIRE(vec == std::vector<std::string>{"lorem", "ipsum"});
     }
 }
@@ -279,8 +279,8 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
 
 TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
 {
-    auto next_record = [](std::istream &in) -> std::optional<ds2i::Plaintext_Record> {
-        ds2i::Plaintext_Record record;
+    auto next_record = [](std::istream &in) -> std::optional<pisa::Plaintext_Record> {
+        pisa::Plaintext_Record record;
         if (in >> record) {
             return record;
         }
@@ -298,24 +298,24 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
             std::string output = (dir / "fwd").string();
 
             std::ifstream is(input);
-            ds2i::Forward_Index_Builder<ds2i::Plaintext_Record> builder;
+            pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
             builder.build(
                 is,
                 output,
                 next_record,
                 [](std::string &&term) -> std::string { return std::forward<std::string>(term); },
-                ds2i::parse_plaintext_content,
+                pisa::parse_plaintext_content,
                 batch_size,
                 thread_count);
 
             THEN("The collection mapped to terms matches input") {
                 auto term_map = load_term_map(output);
-                ds2i::binary_collection coll((output).c_str());
+                pisa::binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 REQUIRE(*seq_iter->begin() == 10000);
                 ++seq_iter;
                 std::ifstream plain_is(input);
-                std::optional<ds2i::Plaintext_Record> record = std::nullopt;
+                std::optional<pisa::Plaintext_Record> record = std::nullopt;
                 while ((record = next_record(plain_is)).has_value()) {
                     std::vector<std::string> original_body;
                     std::istringstream content_stream(record->content());
@@ -330,7 +330,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     REQUIRE(produced_body == original_body);
                     ++seq_iter;
                 }
-                auto batch_files = ds2i::ls(dir, [](auto const &filename) {
+                auto batch_files = pisa::ls(dir, [](auto const &filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());
@@ -355,8 +355,8 @@ TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration
                        [](unsigned char c) { return std::tolower(c); });
         return stem::Porter2{}.stem(term);
     };
-    auto next_plain_record = [](std::istream &in) -> std::optional<ds2i::Plaintext_Record> {
-        ds2i::Plaintext_Record record;
+    auto next_plain_record = [](std::istream &in) -> std::optional<pisa::Plaintext_Record> {
+        pisa::Plaintext_Record record;
         if (in >> record) {
             return record;
         }
@@ -374,24 +374,24 @@ TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration
             std::string output = (dir / "fwd").string();
 
             std::ifstream is(input);
-            ds2i::Forward_Index_Builder<warcpp::Warc_Record> builder;
+            pisa::Forward_Index_Builder<warcpp::Warc_Record> builder;
             builder.build(is,
                           output,
                           next_record,
                           process_term,
-                          ds2i::parse_html_content,
+                          pisa::parse_html_content,
                           batch_size,
                           thread_count);
 
             THEN("The collection mapped to terms matches input") {
                 auto term_map = load_term_map(output);
-                ds2i::binary_collection coll((output).c_str());
+                pisa::binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 CHECK(*seq_iter->begin() == 10000);
                 ++seq_iter;
                 std::ifstream plain_is(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
                 std::ifstream doc_is(output + ".documents");
-                std::optional<ds2i::Plaintext_Record> record = std::nullopt;
+                std::optional<pisa::Plaintext_Record> record = std::nullopt;
                 while ((record = next_plain_record(plain_is)).has_value()) {
                     std::string doc;
                     std::getline(doc_is, doc);
@@ -410,7 +410,7 @@ TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration
                     CHECK(produced_body == original_body);
                     ++seq_iter;
                 }
-                auto batch_files = ds2i::ls(dir, [](auto const &filename) {
+                auto batch_files = pisa::ls(dir, [](auto const &filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());

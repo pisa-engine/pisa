@@ -10,11 +10,11 @@
 
 TEST_CASE( "strict_elias_fano")
 {
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
 
     uint64_t n = 10000;
     uint64_t universe = uint64_t(2 * n);
     auto seq = random_sequence(universe, n, true);
 
-    test_sequence(ds2i::strict_elias_fano(), params, universe, seq);
+    test_sequence(pisa::strict_elias_fano(), params, universe, seq);
 }

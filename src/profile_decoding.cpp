@@ -9,7 +9,7 @@
 #include "util/util.hpp"
 #include "dec_time_prediction.hpp"
 
-namespace ds2i {
+namespace pisa {
 
     double measure_decoding_time(size_t sum_of_values, size_t n,
                                  std::vector<uint8_t> const& buf)
@@ -108,7 +108,7 @@ namespace ds2i {
 
 int main(int /* argc */, const char** argv)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string type = argv[1];
     const char* index_filename = argv[2];

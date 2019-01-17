@@ -5,18 +5,18 @@
 #include "sequence/uniform_partitioned_sequence.hpp"
 #include "util/util.hpp"
 
-using ds2i::logger;
-using ds2i::get_time_usecs;
-using ds2i::do_not_optimize_away;
+using pisa::logger;
+using pisa::get_time_usecs;
+using pisa::do_not_optimize_away;
 
 template <typename BaseSequence>
 void perftest(const char* index_filename)
 {
-    typedef ds2i::sequence_collection<BaseSequence> collection_type;
+    typedef pisa::sequence_collection<BaseSequence> collection_type;
     logger() << "Loading collection from " << index_filename << std::endl;
     collection_type coll;
     mio::mmap_source m(index_filename);
-    ds2i::mapper::map(coll, m, ds2i::mapper::map_flags::warmup);
+    pisa::mapper::map(coll, m, pisa::mapper::map_flags::warmup);
 
     if (true) {
         logger() << "Scanning all the posting lists" << std::endl;
@@ -127,10 +127,10 @@ void perftest(const char* index_filename)
 }
 int main(int argc, const char** argv) {
 
-    using ds2i::compact_elias_fano;
-    using ds2i::indexed_sequence;
-    using ds2i::partitioned_sequence;
-    using ds2i::uniform_partitioned_sequence;
+    using pisa::compact_elias_fano;
+    using pisa::indexed_sequence;
+    using pisa::partitioned_sequence;
+    using pisa::uniform_partitioned_sequence;
 
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0]
