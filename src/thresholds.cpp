@@ -16,17 +16,16 @@
 
 #include "CLI/CLI.hpp"
 
-using namespace ds2i;
+using namespace pisa;
 
 template <typename IndexType, typename WandType>
 void thresholds(const std::string &                   index_filename,
                 const boost::optional<std::string> &  wand_data_filename,
-                const std::vector<ds2i::term_id_vec> &queries,
+                const std::vector<term_id_vec> &queries,
                 const boost::optional<std::string> &  thresholds_filename,
                 std::string const &                   type,
                 uint64_t                              k)
 {
-    using namespace ds2i;
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
@@ -45,27 +44,22 @@ void thresholds(const std::string &                   index_filename,
     }
 
     wand_query<WandType> query_func(wdata, k);
-    for (auto const& query : queries) {
+    for (auto const &query : queries) {
         query_func(index, query);
         auto  results   = query_func.topk();
         float threshold = 0.0;
         if (results.size() == k) {
-            auto min = std::min_element(
-                results.begin(), results.end(), [](auto const &lhs, auto const &rhs) {
-                    return lhs.first < rhs.first;
-                });
-            threshold = min->first;
+            threshold = results.back().first;
         }
         std::cout << threshold << '\n';
     }
 }
 
-typedef wand_data<bm25, wand_data_raw<bm25>> wand_raw_index;
-typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wand_uniform_index;
+using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
+using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
 
-int main(int argc, const char **argv) {
-    using namespace ds2i;
-
+int main(int argc, const char **argv)
+{
     std::string type;
     std::string query_type;
     std::string index_filename;

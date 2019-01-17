@@ -32,7 +32,7 @@ namespace pisa { namespace test {
             while (read_query(q, qfile)) queries.push_back(q);
 
             std::string t;
-            std::ifstream tin(DS2I_SOURCE_DIR "/test/test_data/thresholds");
+            std::ifstream tin(DS2I_SOURCE_DIR "/test/test_data/top5_thresholds");
             while (std::getline(tin, t)) {
                 thresholds.push_back(std::stof(t));
             }
