@@ -115,16 +115,6 @@ namespace {
 
                 if (seq.docs.size() > configuration::get().threshold_wand_list) {
 
-                    float max_score = 0;
-                    std::vector<std::tuple<uint64_t, float, bool>> doc_score_top;
-                    for (size_t i = 0; i < seq.docs.size(); ++i) {
-                        uint64_t docid = *(seq.docs.begin() + i);
-                        uint64_t freq = *(seq.freqs.begin() + i);
-                        float score = Scorer::doc_term_weight(freq, norm_lens[docid]);
-                        doc_score_top.emplace_back(docid, score, false);
-                        max_score = std::max(max_score, score);
-                    }
-
                     auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
                                                       : variable_block_partition(coll, seq, norm_lens));
 
