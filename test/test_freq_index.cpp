@@ -19,9 +19,9 @@
 template <typename DocsSequence, typename FreqsSequence>
 void test_freq_index()
 {
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
     uint64_t universe = 20000;
-    typedef ds2i::freq_index<DocsSequence, FreqsSequence>
+    typedef pisa::freq_index<DocsSequence, FreqsSequence>
         collection_type;
     typename collection_type::builder b(universe, params);
 
@@ -45,13 +45,13 @@ void test_freq_index()
     {
         collection_type coll;
         b.build(coll);
-        ds2i::mapper::freeze(coll, "temp.bin");
+        pisa::mapper::freeze(coll, "temp.bin");
     }
 
     {
         collection_type coll;
         mio::mmap_source m("temp.bin");
-        ds2i::mapper::map(coll, m);
+        pisa::mapper::map(coll, m);
 
         for (size_t i = 0; i < posting_lists.size(); ++i) {
             auto const& plist = posting_lists[i];
@@ -70,11 +70,11 @@ void test_freq_index()
 
 TEST_CASE("freq_index")
 {
-    using ds2i::indexed_sequence;
-    using ds2i::strict_sequence;
-    using ds2i::positive_sequence;
-    using ds2i::partitioned_sequence;
-    using ds2i::uniform_partitioned_sequence;
+    using pisa::indexed_sequence;
+    using pisa::strict_sequence;
+    using pisa::positive_sequence;
+    using pisa::partitioned_sequence;
+    using pisa::uniform_partitioned_sequence;
 
     test_freq_index<indexed_sequence,
                     positive_sequence<>>();

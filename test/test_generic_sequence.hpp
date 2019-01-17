@@ -176,7 +176,7 @@ void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq,
 }
 
 template <typename SequenceReader>
-typename ds2i::if_has_next_geq<SequenceReader>
+typename pisa::if_has_next_geq<SequenceReader>
 test_sequence(SequenceReader r, std::vector<uint64_t> const& seq,
               next_geq_tag const&)
 {
@@ -196,9 +196,9 @@ inline void test_sequence(SequenceType,
                           uint64_t universe,
                           std::vector<uint64_t> const& seq)
 {
-    ds2i::bit_vector_builder bvb;
+    pisa::bit_vector_builder bvb;
     SequenceType::write(bvb, seq.begin(), universe, seq.size(), params);
-    ds2i::bit_vector bv(&bvb);
+    pisa::bit_vector bv(&bvb);
     typename SequenceType::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
 }

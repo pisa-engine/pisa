@@ -12,7 +12,7 @@ template <typename IndexType>
 void selective_queries(const char* index_filename,
                        std::string const& type)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
 
     IndexType index;
@@ -59,7 +59,7 @@ void selective_queries(const char* index_filename,
 
 
 int main(int, const char** argv) {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string type = argv[1];
     const char* index_filename = argv[2];

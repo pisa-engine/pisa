@@ -11,7 +11,7 @@
 #include "sequence/strict_sequence.hpp"
 
 
-namespace ds2i {
+namespace pisa {
 
     class partitioned_sequence_test {
     public:
@@ -49,22 +49,22 @@ template <typename BaseSequence>
 void test_partitioned_sequence(uint64_t universe,
                                std::vector<uint64_t> const& seq)
 {
-    ds2i::global_parameters params;
-    typedef ds2i::partitioned_sequence<BaseSequence> sequence_type;
+    pisa::global_parameters params;
+    typedef pisa::partitioned_sequence<BaseSequence> sequence_type;
 
-    ds2i::bit_vector_builder bvb;
+    pisa::bit_vector_builder bvb;
     sequence_type::write(bvb, seq.begin(), universe, seq.size(), params);
-    ds2i::bit_vector bv(&bvb);
+    pisa::bit_vector bv(&bvb);
 
     typename sequence_type::enumerator r(bv, 0, universe, seq.size(), params);
-    ds2i::partitioned_sequence_test::test_construction(r, seq);
+    pisa::partitioned_sequence_test::test_construction(r, seq);
     test_sequence(r, seq);
 }
 
 TEST_CASE("partitioned_sequence")
 {
-    using ds2i::indexed_sequence;
-    using ds2i::strict_sequence;
+    using pisa::indexed_sequence;
+    using pisa::strict_sequence;
 
     // test singleton sequences
     {

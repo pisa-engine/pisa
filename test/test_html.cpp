@@ -5,7 +5,7 @@
 
 #include "parsing/html.hpp"
 
-using namespace ds2i::parsing::html;
+using namespace pisa::parsing::html;
 
 TEST_CASE("Parse WARC version", "[warc][unit]")
 {

@@ -17,9 +17,9 @@
 template <typename QueryOperator, typename IndexType>
 void op_profile(IndexType const& index,
                 QueryOperator const& query_op,
-                std::vector<ds2i::term_id_vec> const& queries)
+                std::vector<pisa::term_id_vec> const& queries)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
     size_t n_threads = std::thread::hardware_concurrency();
     std::vector<std::thread> threads(n_threads);
@@ -46,19 +46,20 @@ template <typename IndexType>
 struct add_profiling { typedef IndexType type; };
 
 template <typename BlockType>
-struct add_profiling<ds2i::block_freq_index<BlockType, false>> {
-    typedef ds2i::block_freq_index<BlockType, true> type;
+struct add_profiling<pisa::block_freq_index<BlockType, false>> {
+    typedef pisa::block_freq_index<BlockType, true> type;
 };
 
 
 template <typename IndexType>
 void profile(const std::string index_filename,
+
              const std::optional<std::string> &wand_data_filename,
-             std::vector<ds2i::term_id_vec> const& queries,
+             std::vector<pisa::term_id_vec> const& queries,
              std::string const& type,
              std::string const& query_type)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
     typename add_profiling<IndexType>::type index;
     typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
@@ -103,7 +104,7 @@ void profile(const std::string index_filename,
 
 int main(int argc, const char** argv)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string type = argv[1];
     const char* query_type = argv[2];

@@ -16,15 +16,14 @@
 
 #include "CLI/CLI.hpp"
 
-using namespace ds2i;
+using namespace pisa;
 
 template <typename Functor>
 void op_perftest(Functor query_func, // XXX!!!
-                 std::vector<ds2i::term_id_vec> const &queries,
+                 std::vector<pisa::term_id_vec> const &queries,
                  std::string const &index_type,
                  std::string const &query_type,
                  size_t runs) {
-    using namespace ds2i;
 
     std::vector<double> query_times;
 
@@ -66,11 +65,12 @@ void op_perftest(Functor query_func, // XXX!!!
 template <typename IndexType, typename WandType>
 void perftest(const std::string &index_filename,
               const std::optional<std::string> &wand_data_filename,
-              const std::vector<ds2i::term_id_vec> &queries,
+              const std::vector<term_id_vec> &queries,
+              const std::optional<std::string> &thresholds_filename,
               std::string const &type,
               std::string const &query_type,
-              uint64_t k) {
-    using namespace ds2i;
+              uint64_t k)
+{
     IndexType index;
     logger() << "Loading index from " << index_filename << std::endl;
     mio::mmap_source m(index_filename.c_str());
@@ -102,38 +102,47 @@ void perftest(const std::string &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
+    std::vector<float> thresholds;
+    if (thresholds_filename) {
+        std::string t;
+        std::ifstream tin(*thresholds_filename);
+        while (std::getline(tin, t)) {
+            thresholds.push_back(std::stof(t));
+        }
+    }
+
     logger() << "Performing " << type << " queries" << std::endl;
     logger() << "K: " << k << std::endl;
 
     for (auto &&t : query_types) {
         logger() << "Query type: " << t << std::endl;
-        std::function<uint64_t(ds2i::term_id_vec)> query_fun;
+        std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            query_fun = [&](ds2i::term_id_vec query) { return and_query<false>()(index, query); };
+            query_fun = [&](term_id_vec query) { return and_query<false>()(index, query); };
         } else if (t == "and_freq") {
-            query_fun = [&](ds2i::term_id_vec query) { return and_query<true>()(index, query); };
+            query_fun = [&](term_id_vec query) { return and_query<true>()(index, query); };
         } else if (t == "or") {
-            query_fun = [&](ds2i::term_id_vec query) { return or_query<false>()(index, query); };
+            query_fun = [&](term_id_vec query) { return or_query<false>()(index, query); };
         } else if (t == "or_freq") {
-            query_fun = [&](ds2i::term_id_vec query) { return or_query<true>()(index, query); };
+            query_fun = [&](term_id_vec query) { return or_query<true>()(index, query); };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return wand_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return block_max_wand_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return block_max_maxscore_query<WandType>(wdata, k)(index, query);
             };
         }  else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return ranked_or_query<WandType>(wdata, k)(index, query);
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](ds2i::term_id_vec query) {
+            query_fun = [&](term_id_vec query) {
                 return maxscore_query<WandType>(wdata, k)(index, query);
             };
         } else {
@@ -148,13 +157,12 @@ typedef wand_data<bm25, wand_data_raw<bm25>> wand_raw_index;
 typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wand_uniform_index;
 
 int main(int argc, const char **argv) {
-    using namespace ds2i;
-
     std::string type;
     std::string query_type;
     std::string index_filename;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
+    std::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
 
@@ -166,6 +174,7 @@ int main(int argc, const char **argv) {
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    app.add_option("-T,--thresholds", thresholds_filename, "k value");
     CLI11_PARSE(app, argc, argv);
 
     std::vector<term_id_vec> queries;
@@ -184,16 +193,26 @@ int main(int argc, const char **argv) {
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                      \
-    }                                                                              \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                      \
-        if (compressed) {                                                          \
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(                 \
-                index_filename, wand_data_filename, queries, type, query_type, k); \
-        } else {                                                                   \
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(                     \
-                index_filename, wand_data_filename, queries, type, query_type, k); \
-        }                                                                          \
+#define LOOP_BODY(R, DATA, T)                                                          \
+    }                                                                                  \
+    else if (type == BOOST_PP_STRINGIZE(T)) {                                          \
+        if (compressed) {                                                              \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
+                                                                  wand_data_filename,  \
+                                                                  queries,             \
+                                                                  thresholds_filename, \
+                                                                  type,                \
+                                                                  query_type,          \
+                                                                  k);                  \
+        } else {                                                                       \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
+                                                              wand_data_filename,      \
+                                                              queries,                 \
+                                                              thresholds_filename,     \
+                                                              type,                    \
+                                                              query_type,              \
+                                                              k);                      \
+        }                                                                              \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
