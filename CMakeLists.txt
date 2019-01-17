@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.0)
+
+if(NOT DEFINED PROJECT_NAME)
+  set(NOT_SUBPROJECT ON)
+endif()
+
 project(DS2I CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -90,8 +95,9 @@ target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(src)
 
-enable_testing()
-add_subdirectory(test)
-
-add_subdirectory(benchmarks)
+if (BUILD_TESTING AND NOT_SUBPROJECT)
+    enable_testing()
+    add_subdirectory(test)
+    add_subdirectory(benchmarks)
+endif()
 
