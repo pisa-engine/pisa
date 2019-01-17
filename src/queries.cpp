@@ -1,8 +1,8 @@
 #include <iostream>
+#include <optional>
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "boost/optional.hpp"
 
 #include "mio/mmap.hpp"
 
@@ -65,7 +65,7 @@ void op_perftest(Functor query_func, // XXX!!!
 
 template <typename IndexType, typename WandType>
 void perftest(const std::string &index_filename,
-              const boost::optional<std::string> &wand_data_filename,
+              const std::optional<std::string> &wand_data_filename,
               const std::vector<ds2i::term_id_vec> &queries,
               std::string const &type,
               std::string const &query_type,
@@ -94,7 +94,7 @@ void perftest(const std::string &index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename.value(), error);
+        md.map(*wand_data_filename, error);
         if(error){
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
@@ -153,8 +153,8 @@ int main(int argc, const char **argv) {
     std::string type;
     std::string query_type;
     std::string index_filename;
-    boost::optional<std::string> wand_data_filename;
-    boost::optional<std::string> query_filename;
+    std::optional<std::string> wand_data_filename;
+    std::optional<std::string> query_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
 
@@ -172,7 +172,7 @@ int main(int argc, const char **argv) {
     term_id_vec q;
     if (query_filename) {
         std::filebuf fb;
-        if (fb.open(query_filename.value(), std::ios::in)) {
+        if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
             while (read_query(q, is))
                 queries.push_back(q);

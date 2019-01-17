@@ -3,9 +3,10 @@
 #include <iostream>
 #include <numeric>
 #include <thread>
+#include <optional>
 
 #include "boost/algorithm/string/predicate.hpp"
-#include "boost/optional.hpp"
+
 
 #include "succinct/mapper.hpp"
 
@@ -53,7 +54,7 @@ void dump_index_specific_stats(ds2i::opt_index const &coll, std::string const &t
 template <typename InputCollection, typename CollectionType, typename Scorer = ds2i::bm25>
 void create_collection(InputCollection const &input,
                        ds2i::global_parameters const &params,
-                       const boost::optional<std::string> &output_filename,
+                       const std::optional<std::string> &output_filename,
                        bool check,
                        std::string const &seq_type) {
     using namespace ds2i;
@@ -88,10 +89,10 @@ void create_collection(InputCollection const &input,
     dump_index_specific_stats(coll, seq_type);
 
     if (output_filename) {
-        mapper::freeze(coll, output_filename.value().c_str());
+        mapper::freeze(coll, (*output_filename).c_str());
         if (check) {
             verify_collection<InputCollection, CollectionType>(input,
-                                                               output_filename.value().c_str());
+                                                               (*output_filename).c_str());
         }
     }
 }
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
     using namespace ds2i;
     std::string type;
     std::string input_basename;
-    boost::optional<std::string> output_filename;
+    std::optional<std::string> output_filename;
     bool check = false;
 
     CLI::App app{"create_freq_index - a tool for creating an index."};
