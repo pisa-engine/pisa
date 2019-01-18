@@ -1,14 +1,12 @@
 cmake_minimum_required(VERSION 3.0)
 
-if(NOT DEFINED PROJECT_NAME)
-  set(NOT_SUBPROJECT ON)
-endif()
-
 project(DS2I CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 
 configure_file(
   ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp.in
@@ -95,7 +93,7 @@ target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(src)
 
-if (BUILD_TESTING AND NOT_SUBPROJECT)
+if (PISA_ENABLE_TESTING)
     enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmarks)
