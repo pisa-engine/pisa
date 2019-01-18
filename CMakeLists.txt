@@ -93,7 +93,7 @@ target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(src)
 
-if (PISA_ENABLE_TESTING)
+if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()
     add_subdirectory(test)
     add_subdirectory(benchmarks)
