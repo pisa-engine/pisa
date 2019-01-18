@@ -11,6 +11,7 @@
 #include "codec/simple8b.hpp"
 #include "codec/simple16.hpp"
 #include "codec/simdbp.hpp"
+#include "temporary_directory.hpp"
 
 #include "block_freq_index.hpp"
 #include "succinct/mapper.hpp"
@@ -43,15 +44,17 @@ void test_block_freq_index()
 
     }
 
+    Temporary_Directory tmpdir;
+    auto filename = tmpdir.path().string() + "temp.bin";
     {
         collection_type coll;
         b.build(coll);
-        pisa::mapper::freeze(coll, "temp.bin");
+        pisa::mapper::freeze(coll, filename.c_str());
     }
 
     {
         collection_type coll;
-        mio::mmap_source m("temp.bin");
+        mio::mmap_source m(filename.c_str());
         pisa::mapper::map(coll, m);
 
         for (size_t i = 0; i < posting_lists.size(); ++i) {
