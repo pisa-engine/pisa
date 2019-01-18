@@ -21,6 +21,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
+#include "temporary_directory.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -32,7 +33,8 @@ TEST_CASE( "sample_index_full")
     // given
     using pisa::binary_freq_collection;
     std::string input("test_data/test_collection");
-    std::string output("temp_collection");
+    Temporary_Directory tmpdir;
+    std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
 
     // when
@@ -59,7 +61,8 @@ TEST_CASE( "sample_index")
     // given
     using pisa::binary_freq_collection;
     std::string input("test_data/test_collection");
-    std::string output("temp_collection");
+    Temporary_Directory tmpdir;
+    std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
     size_t doc_limit = 2000;
 
