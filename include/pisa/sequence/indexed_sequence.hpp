@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdexcept>
-#include "boost/variant.hpp"
+#include <variant>
 
 #include "codec/all_ones_sequence.hpp"
 #include "codec/compact_elias_fano.hpp"
@@ -116,28 +116,28 @@ struct indexed_sequence {
         }
 
         value_type move(uint64_t position) {
-            return boost::apply_visitor([&position](auto &&e) { return e.move(position); },
+            return std::visit([&position](auto &&e) { return e.move(position); },
                                         m_enumerator);
         }
         value_type next_geq(uint64_t lower_bound) {
-            return boost::apply_visitor(
+            return std::visit(
                 [&lower_bound](auto &&e) { return e.next_geq(lower_bound); }, m_enumerator);
         }
         value_type next() {
-            return boost::apply_visitor([](auto &&e) { return e.next(); }, m_enumerator);
+            return std::visit([](auto &&e) { return e.next(); }, m_enumerator);
         }
 
         uint64_t size() const {
-            return boost::apply_visitor([](auto &&e) { return e.size(); }, m_enumerator);
+            return std::visit([](auto &&e) { return e.size(); }, m_enumerator);
         }
 
         uint64_t prev_value() const {
-            return boost::apply_visitor([](auto &&e) { return e.prev_value(); }, m_enumerator);
+            return std::visit([](auto &&e) { return e.prev_value(); }, m_enumerator);
         }
 
        private:
         index_type m_type;
-        boost::variant<compact_elias_fano::enumerator,
+        std::variant<compact_elias_fano::enumerator,
                        compact_ranked_bitvector::enumerator,
                        all_ones_sequence::enumerator>
             m_enumerator;
