@@ -9,20 +9,6 @@
 
 namespace pisa {
 
-// TODO(antonio): basically here we can do a bit better.
-// before scoring a document, we read its accumulator value and check if the sum of
-// the accumulator value and the upper bound of the maxscores of the missing terms
-// (current included) is greater than the threshold. If it is we score and add it to the
-// accumulator, we go to the next document otherwise.
-struct Maxscore_Taat_Traversal {
-    template <typename Cursor, typename Acc, typename Score>
-    void static traverse_term(Cursor &cursor, Score score, Acc &acc) {
-        for (; cursor.docid() < acc.size(); cursor.next()) {
-            acc.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
-        }
-    }
-};
-
 template <typename Index, typename WandType>
 [[nodiscard]] auto max_weights(Index const &index, WandType const &wdata, term_id_vec terms) {
     // TODO(michal): parametrize scorer_type; didn't do that because this might mean some more
@@ -89,39 +75,17 @@ class maxscore_taat_query {
 
     uint64_t operator()(term_id_vec terms) {
         auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
-        return maxscore_taat(
-            std::move(cws.first), std::move(cws.second), max_weights(m_index, m_wdata, terms));
-    }
-
-    uint64_t operator()([[maybe_unused]] Index const &, term_id_vec terms) {
-        auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
-        return maxscore_taat(
-            std::move(cws.first), std::move(cws.second), max_weights(m_index, m_wdata, terms));
-    }
-
-    template <typename Cursor, typename Score>
-    void traverse_with_lookups(Cursor &cursor, Score score) {
-        for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
-            accumulator_reference accumulator = m_accumulators[cursor.docid()];
-            if (accumulator > 0) {
-                accumulator += score(cursor.docid(), cursor.freq());
-            }
-        }
-    }
-
-    // TODO(michal): I think this should be eventually the `operator()`
-    template <typename Cursor>
-    uint64_t maxscore_taat(std::vector<Cursor>              cursors,
-                           std::vector<score_function_type> score_functions,
-                           std::vector<float>               max_weights) {
+        auto cursors = cws.first;
+        auto score_functions = cws.second;
+        auto m_w = max_weights(m_index, m_wdata, terms);
         if (cursors.empty()) {
             m_topk.clear();
             return 0;
         }
         sort_many(
-            max_weights, [](auto lhs, auto rhs) { return lhs > rhs; }, cursors, score_functions);
+            m_w, [](auto lhs, auto rhs) { return lhs > rhs; }, cursors, score_functions);
 
-        float nonessential_sum = std::accumulate(max_weights.begin(), max_weights.end(), 0.0);
+        float nonessential_sum = std::accumulate(m_w.begin(), m_w.end(), 0.0);
         m_accumulators.init();
         uint32_t term = 0;
         for (; term < cursors.size(); ++term) {
@@ -130,13 +94,28 @@ class maxscore_taat_query {
             if (not m_topk.would_enter(nonessential_sum)) {
                 break;
             }
-            Maxscore_Taat_Traversal::traverse_term(
-                cursors[term], score_functions[term], m_accumulators);
-            nonessential_sum -= max_weights[term];
+            auto cursor = cursors[term];
+            auto score = score_functions[term];
+            // TODO(antonio): basically here we can do a bit better.
+            // before scoring a document, we read its accumulator value and check if the sum of
+            // the accumulator value and the upper bound of the maxscores of the missing terms
+            // (current included) is greater than the threshold. If it is we score and add it to the
+            // accumulator, we go to the next document otherwise.
+            for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
+                m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
+            }
+            nonessential_sum -= m_w[term];
         }
 
         for (; term < cursors.size(); ++term) {
-            traverse_with_lookups(cursors[term], score_functions[term]);
+            auto cursor = cursors[term];
+            auto score = score_functions[term];
+            for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
+                accumulator_reference accumulator = m_accumulators[cursor.docid()];
+                if (accumulator > 0) {
+                    accumulator += score(cursor.docid(), cursor.freq());
+                }
+            }
         }
 
         m_topk.clear();
@@ -144,6 +123,7 @@ class maxscore_taat_query {
         m_topk.finalize();
         return m_topk.topk().size();
     }
+
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
