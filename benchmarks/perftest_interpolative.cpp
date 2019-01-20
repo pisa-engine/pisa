@@ -1,6 +1,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include "spdlog/spdlog.h"
+
 #include "util/util.hpp"
 #include "codec/block_codecs.hpp"
 
@@ -25,6 +27,6 @@ int main()
         }
 
         double time = (get_time_usecs() - tick) / runs * 1000;
-        logger() << "u=" << u << " time=" << time << std::endl;
+        spdlog::info("u = {}; time = {}", u, time);
     }
 }

@@ -5,6 +5,7 @@
 #include "boost/optional.hpp"
 
 #include "mio/mmap.hpp"
+#include "spdlog/spdlog.h"
 
 #include "succinct/mapper.hpp"
 
@@ -118,6 +119,6 @@ int main(int argc, const char **argv)
 #undef LOOP_BODY
 
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 }

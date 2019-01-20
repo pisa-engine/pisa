@@ -1,5 +1,6 @@
-
 #pragma once
+
+#include "spdlog/spdlog.h"
 
 #include "succinct/mappable_vector.hpp"
 
@@ -16,17 +17,19 @@ namespace pisa {
         wand_data_raw() { }
 
         class builder{
-        public:
-            builder(partition_type type, binary_freq_collection const & coll, global_parameters const & params){
+           public:
+            builder(partition_type                type,
+                    binary_freq_collection const &coll,
+                    global_parameters const &     params)
+            {
                 (void) coll;
                 (void) params;
                 this->type = type;
-                logger() << "Storing max weight for each list and for each block..." << std::endl;
+                spdlog::info("Storing max weight for each list and for each block...");
                 total_elements = 0;
                 total_blocks = 0;
                 effective_list = 0;
                 blocks_start.push_back(0);
-
             }
 
             float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
@@ -54,13 +57,13 @@ namespace pisa {
 
             }
 
-            void build(wand_data_raw & wdata){
+            void build(wand_data_raw &wdata) {
                 wdata.m_block_max_term_weight.steal(block_max_term_weight);
                 wdata.m_blocks_start.steal(blocks_start);
                 wdata.m_block_docid.steal(block_docid);
-                logger() << "number of elements / number of blocks: " << (float) total_elements / (float) total_blocks << std::endl;
+                spdlog::info("number of elements / number of blocks: {}",
+                             static_cast<float>(total_elements) / static_cast<float>(total_blocks);
             }
-
 
             partition_type type;
             uint64_t total_elements;

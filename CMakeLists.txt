@@ -85,6 +85,7 @@ target_link_libraries(pisa INTERFACE
     Boost::filesystem
     Porter2
     warcpp
+    spdlog
 )
 target_include_directories(pisa INTERFACE external)
 

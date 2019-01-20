@@ -6,7 +6,6 @@
 #include "enumerate.hpp"
 #include "util/util.hpp"
 
-using pisa::logger;
 using namespace pisa;
 
 int main(int argc, char **argv) {

@@ -4,6 +4,8 @@
 #include <memory>
 #include <deque>
 
+#include "spdlog/spdlog.h"
+
 #include "configuration.hpp"
 #include "util/util.hpp"
 
@@ -17,8 +19,7 @@ namespace pisa {
             , m_work_per_thread(work_per_thread)
         {
             m_max_threads = configuration::get().worker_threads;
-            logger() << "semiasync_queue using " << m_max_threads
-                     << " worker threads" << std::endl;
+            spdlog::info("semiasync_queue using {} worker threads", m_max_threads);
         }
 
         class job {
