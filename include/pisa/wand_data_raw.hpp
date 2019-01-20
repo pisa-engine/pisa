@@ -62,7 +62,7 @@ namespace pisa {
                 wdata.m_blocks_start.steal(blocks_start);
                 wdata.m_block_docid.steal(block_docid);
                 spdlog::info("number of elements / number of blocks: {}",
-                             static_cast<float>(total_elements) / static_cast<float>(total_blocks);
+                             static_cast<float>(total_elements) / static_cast<float>(total_blocks));
             }
 
             partition_type type;

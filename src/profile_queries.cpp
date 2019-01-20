@@ -142,7 +142,7 @@ int main(int argc, const char** argv)
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        spdlog::error("Unknown type ", type);
+        spdlog::error("Unknown type {}", type);
     }
 
 }

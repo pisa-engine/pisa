@@ -42,7 +42,7 @@ void perftest(const char* index_filename)
 
     {
         size_t min_length = 4096;
-        spdlog::info("Scanning posting lists longer than ", min_length);
+        spdlog::info("Scanning posting lists longer than {}", min_length);
         std::vector<size_t> long_lists;
         for (size_t i = 0; i < coll.size(); ++i) {
             if (coll[i].size() >= min_length) {

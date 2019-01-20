@@ -16,7 +16,7 @@ void selective_queries(const char* index_filename,
 
 
     IndexType index;
-    spdlog::info("Loading index from ", index_filename);
+    spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename);
     mapper::map(index, m, mapper::map_flags::warmup);
 
