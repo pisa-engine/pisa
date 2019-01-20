@@ -10,9 +10,6 @@ target_link_libraries(optimal_hybrid_index
   ${STXXL_LIBRARIES}
   pisa
 )
-set_target_properties(optimal_hybrid_index PROPERTIES
-            CXX_STANDARD 14
-)
 
 add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
