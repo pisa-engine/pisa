@@ -14,6 +14,8 @@
 #include "boost/filesystem.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "spdlog/fmt/ostr.h"
+#include "spdlog/spdlog.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
@@ -55,7 +57,7 @@ class Id {
 };
 
 template <class Tag, class T, T default_value>
-std::ostream &operator<<(std::ostream &os, Id<Tag, T, default_value> id) {
+std::ostream &operator<<(std::ostream &os, Id<Tag, T, default_value> const &id) {
     return os << static_cast<T>(id);
 }
 
@@ -159,8 +161,10 @@ class Forward_Index_Builder {
             process_content(std::move(record.content()), process);
             write_document(os, term_ids.begin(), term_ids.end());
         }
-        logger() << "[Batch " << bp.batch_number << "] Processed documents [" << bp.first_document
-                 << ", " << (bp.first_document + bp.records.size()) << ")\n";
+        spdlog::info("[Batch {}] Processed documents [{}, {})",
+                     bp.batch_number,
+                     bp.first_document,
+                     bp.first_document + bp.records.size());
     }
 
     void merge(std::string const &basename,
@@ -173,18 +177,18 @@ class Forward_Index_Builder {
         std::ofstream url_os(basename + ".urls");
         std::ofstream term_os(basename + ".terms");
 
-        logger() << "Merging titles\n";
+        spdlog::info("Merging titles");
         for (auto batch : enumerate(batch_count)) {
             std::ifstream title_is(batch_file(basename, batch) + ".documents");
             title_os << title_is.rdbuf();
         }
-        logger() << "Merging URLs\n";
+        spdlog::info("Merging URLs");
         for (auto batch : enumerate(batch_count)) {
             std::ifstream url_is(batch_file(basename, batch) + ".urls");
             url_os << url_is.rdbuf();
         }
 
-        logger() << "Mapping terms\n";
+        spdlog::info("Mapping terms");
         term_map_type term_map;
         std::vector<std::vector<std::ptrdiff_t>> id_mappings(batch_count);
         for (auto batch : enumerate(batch_count)) {
@@ -197,7 +201,7 @@ class Forward_Index_Builder {
             id_mappings[batch].resize(batch_term_id);
         }
 
-        logger() << "Mapping IDs and writing terms\n";
+        spdlog::info("Mapping IDs and writing terms");
         std::ptrdiff_t term_id = 0;
         for (auto const &[term, idmap] : term_map) {
             term_os << term << '\n';
@@ -207,7 +211,7 @@ class Forward_Index_Builder {
             ++term_id;
         }
 
-        logger() << "Remapping IDs\n";
+        spdlog::info("Remapping IDs");
         for (auto batch : enumerate(batch_count)) {
             auto &mapping = id_mappings[batch];
             writable_binary_collection coll(batch_file(basename, batch).c_str());
@@ -218,7 +222,7 @@ class Forward_Index_Builder {
             }
         }
 
-        logger() << "Concatenating batches\n";
+        spdlog::info("Concatenating batches");
         std::ofstream os(basename);
         write_header(os, document_count);
         for (auto batch : enumerate(batch_count)) {
@@ -227,7 +231,7 @@ class Forward_Index_Builder {
             os << is.rdbuf();
         }
 
-        logger() << "Done.\n";
+        spdlog::info("Success.");
     }
 
     void build(std::istream &                is,

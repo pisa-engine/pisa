@@ -13,6 +13,7 @@
 #include "boost/filesystem.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "spdlog/spdlog.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
@@ -304,8 +305,8 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
             documents.emplace_back(reinterpret_cast<Term_Id const *>(document_sequence.begin()),
                                    document_sequence.size());
         }
-        logger() << "Inverting [" << documents_processed << ", "
-                 << documents_processed + documents.size() << ")\n";
+        spdlog::info(
+            "Inverting [{}, {})", documents_processed, documents_processed + documents.size());
         auto index = invert_range(documents, Document_Id(documents_processed), threads);
 
         std::ostringstream batch_name_stream;
