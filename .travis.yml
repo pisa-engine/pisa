@@ -24,6 +24,7 @@ cache:
 matrix:
   include:
     - os: linux
+      dist: xenial
       compiler: gcc
       addons: &gcc7
         apt:
@@ -33,6 +34,7 @@ matrix:
             - lcov
       env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
     - os: linux
+      dist: xenial
       compiler: gcc
       addons: &gcc8
         apt:
@@ -40,6 +42,7 @@ matrix:
           packages: ['g++-8']
       env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off"
     - os: linux
+      dist: xenial
       compiler: clang
       addons:
           apt:
@@ -47,6 +50,7 @@ matrix:
               packages: ['clang-5.0', 'libstdc++-7-dev']
       env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
     - os: linux
+      dist: xenial
       compiler: clang
       addons:
           apt:
