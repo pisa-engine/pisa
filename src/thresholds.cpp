@@ -44,9 +44,9 @@ void thresholds(const std::string &                   index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    wand_query<WandType> query_func(wdata, k);
+    wand_query<IndexType, WandType> query_func(index, wdata, k);
     for (auto const &query : queries) {
-        query_func(index, query);
+        query_func(query);
         auto  results   = query_func.topk();
         float threshold = 0.0;
         if (results.size() == k) {

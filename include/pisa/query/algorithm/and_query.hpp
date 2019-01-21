@@ -2,11 +2,12 @@
 
 namespace pisa {
 
-template <bool with_freqs>
+template <typename Index, bool with_freqs>
 struct and_query {
 
-    template <typename Index>
-    uint64_t operator()(Index const &index, term_id_vec terms) const {
+    and_query(Index const &index) : m_index(index) {}
+
+    uint64_t operator()(term_id_vec terms) const {
         if (terms.empty())
             return 0;
         remove_duplicate_terms(terms);
@@ -16,7 +17,7 @@ struct and_query {
         enums.reserve(terms.size());
 
         for (auto term : terms) {
-            enums.push_back(index[term]);
+            enums.push_back(m_index[term]);
         }
 
         // sort by increasing frequency
@@ -27,7 +28,7 @@ struct and_query {
         uint64_t results   = 0;
         uint64_t candidate = enums[0].docid();
         size_t   i         = 1;
-        while (candidate < index.num_docs()) {
+        while (candidate < m_index.num_docs()) {
             for (; i < enums.size(); ++i) {
                 enums[i].next_geq(candidate);
                 if (enums[i].docid() != candidate) {
@@ -52,6 +53,9 @@ struct and_query {
         }
         return results;
     }
+
+   private:
+    Index const &m_index;
 };
 
 } // namespace pisa

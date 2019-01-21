@@ -2,20 +2,20 @@
 
 namespace pisa {
 
-template <typename WandType>
+template <typename Index, typename WandType>
 struct block_max_wand_query {
     typedef bm25 scorer_type;
 
-    block_max_wand_query(WandType const &wdata, uint64_t k) : m_wdata(&wdata), m_topk(k) {}
+    block_max_wand_query(Index const &index, WandType const &wdata, uint64_t k)
+        : m_index(index), m_wdata(&wdata), m_topk(k) {}
 
-    template <typename Index>
-    uint64_t operator()(Index const &index, term_id_vec const &terms) {
+    uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();
 
         if (terms.empty())
             return 0;
         auto                                            query_term_freqs = query_freqs(terms);
-        uint64_t                                        num_docs         = index.num_docs();
+        uint64_t                                        num_docs         = m_index.num_docs();
         typedef typename Index::document_enumerator     enum_type;
         typedef typename WandType::wand_data_enumerator wdata_enum;
 
@@ -30,7 +30,7 @@ struct block_max_wand_query {
         enums.reserve(query_term_freqs.size());
 
         for (auto term : query_term_freqs) {
-            auto list     = index[term.first];
+            auto list     = m_index[term.first];
             auto w_enum   = m_wdata->getenum(term.first);
             auto q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
 
@@ -204,6 +204,7 @@ struct block_max_wand_query {
     topk_queue const &get_topk() const { return m_topk; }
 
    private:
+    Index const &   m_index;
     WandType const *m_wdata;
     topk_queue      m_topk;
 };
