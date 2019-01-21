@@ -30,6 +30,12 @@ namespace pisa { namespace test {
             term_id_vec q;
             std::ifstream qfile(DS2I_SOURCE_DIR "/test/test_data/queries");
             while (read_query(q, qfile)) queries.push_back(q);
+
+            std::string t;
+            std::ifstream tin(DS2I_SOURCE_DIR "/test/test_data/top5_thresholds");
+            while (std::getline(tin, t)) {
+                thresholds.push_back(std::stof(t));
+            }
         }
 
         global_parameters params;
@@ -37,10 +43,11 @@ namespace pisa { namespace test {
         binary_collection document_sizes;
         index_type index;
         std::vector<term_id_vec> queries;
+        std::vector<float> thresholds;
         WandType wdata;
 
         template <typename QueryOp>
-        void test_against_or(QueryOp& op_q) const
+        void test_against_or(QueryOp &op_q) const
         {
             ranked_or_query<index_type, WandType> or_q(index, wdata, 10);
 
@@ -49,7 +56,8 @@ namespace pisa { namespace test {
                 op_q(q);
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                    REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+                    REQUIRE(or_q.topk()[i].first ==
+                            Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
                 }
             }
         }
@@ -64,16 +72,14 @@ namespace pisa { namespace test {
                 or_1(q);
                 if (not or_10.topk().empty()) {
                     REQUIRE(not or_1.topk().empty());
-                    REQUIRE(or_1.topk().front().first == Approx(or_10.topk().front().first).epsilon(0.1));
+                    REQUIRE(or_1.topk().front().first ==
+                            Approx(or_10.topk().front().first).epsilon(0.1));
                 }
             }
         }
-
-
     };
 
 }}
-
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
 {

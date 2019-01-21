@@ -1,8 +1,9 @@
 #include <iostream>
+#include <optional>
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "boost/optional.hpp"
+#include "spdlog/spdlog.h"
 
 #include "mio/mmap.hpp"
 
@@ -51,11 +52,11 @@ void op_perftest(Functor query_func, // XXX!!!
         double q90 = query_times[90 * query_times.size() / 100];
         double q95 = query_times[95 * query_times.size() / 100];
 
-        logger() << "---- " << index_type << " " << query_type << std::endl;
-        logger() << "Mean: " << avg << std::endl;
-        logger() << "50% quantile: " << q50 << std::endl;
-        logger() << "90% quantile: " << q90 << std::endl;
-        logger() << "95% quantile: " << q95 << std::endl;
+        spdlog::info("---- {} {}", index_type, query_type);
+        spdlog::info("Mean: {}", avg);
+        spdlog::info("50% quantile: {}", q50);
+        spdlog::info("90% quantile: {}", q90);
+        spdlog::info("95% quantile: {}", q95);
 
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
             "q95", q95);
@@ -64,17 +65,19 @@ void op_perftest(Functor query_func, // XXX!!!
 
 template <typename IndexType, typename WandType>
 void perftest(const std::string &index_filename,
-              const boost::optional<std::string> &wand_data_filename,
+              const std::optional<std::string> &wand_data_filename,
               const std::vector<term_id_vec> &queries,
+              const std::optional<std::string> &thresholds_filename,
               std::string const &type,
               std::string const &query_type,
-              uint64_t k) {
+              uint64_t k)
+{
     IndexType index;
-    logger() << "Loading index from " << index_filename << std::endl;
+    spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
 
-    logger() << "Warming up posting lists" << std::endl;
+    spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
     for (auto const &q : queries) {
         for (auto t : q) {
@@ -92,7 +95,7 @@ void perftest(const std::string &index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename.value(), error);
+        md.map(*wand_data_filename, error);
         if(error){
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
@@ -100,11 +103,20 @@ void perftest(const std::string &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    logger() << "Performing " << type << " queries" << std::endl;
-    logger() << "K: " << k << std::endl;
+    std::vector<float> thresholds;
+    if (thresholds_filename) {
+        std::string t;
+        std::ifstream tin(*thresholds_filename);
+        while (std::getline(tin, t)) {
+            thresholds.push_back(std::stof(t));
+        }
+    }
+
+    spdlog::info("Performing {} queries", type);
+    spdlog::info("K: {}", k);
 
     for (auto &&t : query_types) {
-        logger() << "Query type: " << t << std::endl;
+        spdlog::info("Query type: {}", t);
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
             query_fun = and_query<IndexType, false>(index);
@@ -127,7 +139,7 @@ void perftest(const std::string &index_filename,
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
         } else {
-            logger() << "Unsupported query type: " << t << std::endl;
+            spdlog::error("Unsupported query type: {}", t);
             break;
         }
         op_perftest(query_fun, queries, type, t, 2);
@@ -141,8 +153,9 @@ int main(int argc, const char **argv) {
     std::string type;
     std::string query_type;
     std::string index_filename;
-    boost::optional<std::string> wand_data_filename;
-    boost::optional<std::string> query_filename;
+    std::optional<std::string> wand_data_filename;
+    std::optional<std::string> query_filename;
+    std::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
 
@@ -154,13 +167,14 @@ int main(int argc, const char **argv) {
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    app.add_option("-T,--thresholds", thresholds_filename, "k value");
     CLI11_PARSE(app, argc, argv);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
     if (query_filename) {
         std::filebuf fb;
-        if (fb.open(query_filename.value(), std::ios::in)) {
+        if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
             while (read_query(q, is))
                 queries.push_back(q);
@@ -172,22 +186,32 @@ int main(int argc, const char **argv) {
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                      \
-    }                                                                              \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                      \
-        if (compressed) {                                                          \
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(                 \
-                index_filename, wand_data_filename, queries, type, query_type, k); \
-        } else {                                                                   \
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(                     \
-                index_filename, wand_data_filename, queries, type, query_type, k); \
-        }                                                                          \
+#define LOOP_BODY(R, DATA, T)                                                          \
+    }                                                                                  \
+    else if (type == BOOST_PP_STRINGIZE(T)) {                                          \
+        if (compressed) {                                                              \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
+                                                                  wand_data_filename,  \
+                                                                  queries,             \
+                                                                  thresholds_filename, \
+                                                                  type,                \
+                                                                  query_type,          \
+                                                                  k);                  \
+        } else {                                                                       \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
+                                                              wand_data_filename,      \
+                                                              queries,                 \
+                                                              thresholds_filename,     \
+                                                              type,                    \
+                                                              query_type,              \
+                                                              k);                      \
+        }                                                                              \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 }

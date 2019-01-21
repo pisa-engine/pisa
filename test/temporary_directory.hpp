@@ -1,5 +1,7 @@
 #pragma once
 
+#include "boost/filesystem.hpp"
+
 struct Temporary_Directory {
     explicit Temporary_Directory()
         : dir_(boost::filesystem::temp_directory_path() / boost::filesystem::unique_path())

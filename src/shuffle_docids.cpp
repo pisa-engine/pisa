@@ -5,14 +5,13 @@
 #include <numeric>
 #include <random>
 
+#include "spdlog/spdlog.h"
 #include "succinct/mapper.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 #include "util/progress.hpp"
-
-using pisa::logger;
 
 int main(int argc, const char** argv)
 {
@@ -38,25 +37,26 @@ int main(int argc, const char** argv)
     std::vector<uint32_t> new_doc_id(num_docs);
 
     if (argc == 4) {
-      const std::string order_file = argv[3];
-      std::ifstream in_order(order_file);
-      uint32_t prev_id, new_id;
-      size_t count = 0;
-      while (in_order >> prev_id >> new_id) {
-        new_doc_id[prev_id] = new_id;
-        ++count;
-      }
-      if (new_doc_id.size() != count)
-        throw std::invalid_argument("Invalid document order file.");
+        const std::string order_file = argv[3];
+        std::ifstream     in_order(order_file);
+        uint32_t          prev_id, new_id;
+        size_t            count = 0;
+        while (in_order >> prev_id >> new_id) {
+            new_doc_id[prev_id] = new_id;
+            ++count;
+        }
+        if (new_doc_id.size() != count) {
+            throw std::invalid_argument("Invalid document order file.");
+        }
     }
 
     else {
-      logger() << "Computing random permutation" << std::endl;
-      std::iota(new_doc_id.begin(), new_doc_id.end(), uint32_t());
-      std::shuffle(new_doc_id.begin(), new_doc_id.end(), rng);
+        spdlog::info("Computing random permutation");
+        std::iota(new_doc_id.begin(), new_doc_id.end(), uint32_t());
+        std::shuffle(new_doc_id.begin(), new_doc_id.end(), rng);
     }
     {
-        logger() << "Shuffling document sizes" << std::endl;
+        spdlog::info("Shuffling document sizes");
         binary_collection input_sizes((input_basename + ".sizes").c_str());
         auto sizes = *input_sizes.begin();
         if (sizes.size() != num_docs) {

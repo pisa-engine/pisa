@@ -4,11 +4,12 @@
 #include "test_generic_sequence.hpp"
 #include "mio/mmap.hpp"
 
-#include "sequence_collection.hpp"
 #include "sequence/indexed_sequence.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
+#include "sequence_collection.hpp"
 #include "succinct/mapper.hpp"
+#include "temporary_directory.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -30,15 +31,17 @@ void test_sequence_collection()
         b.add_sequence(seq.begin(), seq.back() + 1, n);
     }
 
+    Temporary_Directory tmpdir;
+    auto filename = tmpdir.path().string() + "temp.bin";
     {
         collection_type coll;
         b.build(coll);
-        pisa::mapper::freeze(coll, "temp.bin");
+        pisa::mapper::freeze(coll, filename.c_str());
     }
 
     {
         collection_type coll;
-        mio::mmap_source m("temp.bin");
+        mio::mmap_source m(filename.c_str());
         pisa::mapper::map(coll, m);
 
         for (size_t i = 0; i < sequences.size(); ++i) {
