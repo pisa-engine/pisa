@@ -67,7 +67,7 @@ int main(int argc, const char **argv)
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
-    uint64_t k = configuration::get().k;
+    uint64_t k = 10;
     bool compressed = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
@@ -76,7 +76,7 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("-k", k, "k value");
+    app.add_option("-k", k, "k value", true);
     CLI11_PARSE(app, argc, argv);
 
     std::vector<term_id_vec> queries;

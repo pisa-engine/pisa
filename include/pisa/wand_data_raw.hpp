@@ -33,25 +33,18 @@ namespace pisa {
             }
 
             float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
+                auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
+                                                  : variable_block_partition(coll, seq, norm_lens));
 
-                if (seq.docs.size() > configuration::get().threshold_wand_list) {
+                block_max_term_weight.insert(block_max_term_weight.end(), t.second.begin(),
+                                             t.second.end());
+                block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
+                max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
+                blocks_start.push_back(t.first.size() + blocks_start.back());
 
-                    auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
-                                                      : variable_block_partition(coll, seq, norm_lens));
-
-                    block_max_term_weight.insert(block_max_term_weight.end(), t.second.begin(),
-                                                 t.second.end());
-                    block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
-                    max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
-                    blocks_start.push_back(t.first.size() + blocks_start.back());
-
-                    total_elements += seq.docs.size();
-                    total_blocks += t.first.size();
-                    effective_list++;
-                } else {
-                    max_term_weight.push_back(0.0f);
-                    blocks_start.push_back(blocks_start.back());
-                }
+                total_elements += seq.docs.size();
+                total_blocks += t.first.size();
+                effective_list++;
 
                 return max_term_weight.back();
 

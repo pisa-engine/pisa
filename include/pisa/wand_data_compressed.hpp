@@ -18,23 +18,23 @@
 
 
 namespace pisa {
-namespace {
-    static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
-}
 
+    template<size_t reference_size = 128>
     class uniform_score_compressor{
+    static const size_t s_reference_size = reference_size;
+    static const size_t s_score_bits_size = broadword::msb(s_reference_size);
 
     public:
         class builder{
         public:
             builder(uint64_t num_docs, global_parameters const& params)
                 : m_params(params)
-                , m_num_docs((num_docs+1) << score_bits_size)
+                , m_num_docs((num_docs+1) << s_score_bits_size)
                 , m_docs_sequences(params)
             {}
 
             std::vector<uint32_t> compress_data(std::vector<float> effective_scores){
-                float quant = 1.f/configuration::get().reference_size;
+                float quant = 1.f/reference_size;
 
                 //Partition scores.
                 std::vector<uint32_t> score_indexes;
@@ -56,7 +56,7 @@ namespace {
                 for(size_t i =0; i < n; ++i)
                 {
                     uint64_t elem = *(docs_begin + i);
-                    elem = elem << score_bits_size;
+                    elem = elem << s_score_bits_size;
                     elem += *(score_begin + i);
                     temp.push_back(elem);
                 }
@@ -91,13 +91,13 @@ namespace {
         };
 
         static float inline score(uint32_t index){
-                const float quant = 1.f/configuration::get().reference_size;
+                const float quant = 1.f/reference_size;
                 return quant * (index + 1);
         }
 
     };
 
-    template<typename Scorer = bm25, typename score_compressor = uniform_score_compressor>
+    template<typename Scorer = bm25, typename score_compressor = uniform_score_compressor<>>
     class wand_data_compressed {
     public:
         class builder{
@@ -115,28 +115,18 @@ namespace {
             }
 
             float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
+                auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
+                                                  : variable_block_partition(coll, seq, norm_lens));
 
-                if (seq.docs.size() > configuration::get().threshold_wand_list) {
+                auto ind = compressor_builder.compress_data(t.second);
 
-                    auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
-                                                      : variable_block_partition(coll, seq, norm_lens));
+                compressor_builder.add_posting_list(t.first.size(), t.first.begin(),
+                                                       ind.begin());
 
-                    auto ind = compressor_builder.compress_data(t.second);
-
-                    compressor_builder.add_posting_list(t.first.size(), t.first.begin(),
-                                                           ind.begin());
-
-                    max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
-                    total_elements += seq.docs.size();
-                    total_blocks += t.first.size();
-                    effective_list++;
-                } else {
-                    max_term_weight.push_back(0.0f);
-                    std::vector<uint32_t> temp = {0};
-                    compressor_builder.add_posting_list(temp.size(), temp.begin(),
-                                                           temp.begin());
-                }
-
+                max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
+                total_elements += seq.docs.size();
+                total_blocks += t.first.size();
+                effective_list++;
                 return max_term_weight.back();
 
             }
@@ -171,17 +161,17 @@ namespace {
             void reset()
             {
                 uint64_t val = m_docs_enum.move(0).second;
-                m_cur_docid = val >> score_bits_size;
-                uint64_t mask = configuration::get().reference_size - 1;
+                m_cur_docid = val >> score_compressor::s_score_bits_size;
+                uint64_t mask = score_compressor::s_reference_size - 1;
 		m_cur_score_index = (val & mask);
             }
 
             void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
                 if(docid() != lower_bound) {
-                    lower_bound = lower_bound << score_bits_size;
+                    lower_bound = lower_bound << score_compressor::s_score_bits_size;
                     auto val = m_docs_enum.next_geq(lower_bound);
-                    m_cur_docid = val.second >> score_bits_size;
-		    uint64_t mask = configuration::get().reference_size - 1;
+                    m_cur_docid = val.second >> score_compressor::s_score_bits_size;
+		    uint64_t mask = score_compressor::s_reference_size - 1;
                     m_cur_score_index = (val.second & mask);
                 }
             }

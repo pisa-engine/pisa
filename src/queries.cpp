@@ -156,7 +156,7 @@ int main(int argc, const char **argv) {
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
-    uint64_t k = configuration::get().k;
+    uint64_t k = 10;
     bool compressed = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
@@ -166,7 +166,7 @@ int main(int argc, const char **argv) {
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("-k", k, "k value");
+    app.add_option("-k", k, "k value", true);
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
     CLI11_PARSE(app, argc, argv);
 

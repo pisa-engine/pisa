@@ -121,12 +121,12 @@ namespace pisa { namespace broadword {
             [(x * detail::debruijn64) >> 58];
     }
 
-    inline uint8_t msb(uint64_t x, unsigned long& ret)
+    constexpr inline uint8_t msb(uint64_t x, unsigned long& ret)
     {
         return intrinsics::bsr64(&ret, x);
     }
 
-    inline uint8_t msb(uint64_t x)
+    constexpr inline uint8_t msb(uint64_t x)
     {
         assert(x);
         unsigned long ret = -1U;

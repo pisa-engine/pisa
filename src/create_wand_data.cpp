@@ -39,7 +39,7 @@ int main(int argc, const char **argv) {
     binary_freq_collection coll(input_basename.c_str());
 
     if (compress) {
-        wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wdata(
+        wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor<>>> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
