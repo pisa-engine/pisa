@@ -124,21 +124,8 @@ void perftest(const std::string &index_filename,
             query_fun = ranked_or_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
-        } else if (t == "exhaustive_taat" && wand_data_filename) {
-            query_fun = pisa::make_exhaustive_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
-        } else if (t == "exhaustive_taat_lazy" && wand_data_filename) {
-            query_fun =
-                pisa::make_exhaustive_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
-        } else if (t == "exhaustive_taat_blocked" && wand_data_filename) {
-            query_fun =
-                pisa::make_exhaustive_taat_query<pisa::Blocked_Accumulator<1024>>(index, wdata, k);
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            query_fun =ranked_or_taat_query<IndexType, WandType>(index, wdata, k);
-        } else if (t == "maxscore_taat" && wand_data_filename) {
-            query_fun = pisa::make_maxscore_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
-        } else if (t == "maxscore_taat_blocked" && wand_data_filename) {
-            query_fun =
-                pisa::make_maxscore_taat_query<pisa::Blocked_Accumulator<1024>>(index, wdata, k);
+            query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
         } else {
             logger() << "Unsupported query type: " << t << std::endl;
             break;

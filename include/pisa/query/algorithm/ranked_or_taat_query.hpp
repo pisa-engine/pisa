@@ -1,40 +1,35 @@
 #pragma once
 
+#include "util/intrinsics.hpp"
+#include "topk_queue.hpp"
+
+#include "accumulator/simple_accumulator.hpp"
+
 namespace pisa {
-template <typename Index,typename WandType>
-struct ranked_or_taat_query {
 
-    typedef bm25 scorer_type;
+template <typename Index, typename WandType, typename Acc = Simple_Accumulator>
+class ranked_or_taat_query {
+    using score_function_type = Score_Function<bm25, WandType>;
 
+   public:
     ranked_or_taat_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(&wdata), m_topk(k) {}
+        : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
 
     uint64_t operator()(term_id_vec terms) {
+        auto [cursors, score_functions] = query::cursors_with_scores(m_index, m_wdata, terms);
         m_topk.clear();
-        if (terms.empty())
+        if (cursors.empty()) {
             return 0;
-
-        auto query_term_freqs = query_freqs(terms);
-
-        uint64_t           num_docs = m_index.num_docs();
-        std::vector<float> accumulator(num_docs, 0.0f);
-        for (auto term : query_term_freqs) {
-            auto list     = m_index[term.first];
-            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
-            auto cur_doc  = list.docid();
-            while (cur_doc < num_docs) {
-                float norm_len = m_wdata->norm_len(cur_doc);
-                float score    = q_weight * scorer_type::doc_term_weight(list.freq(), norm_len);
-                accumulator[cur_doc] += score;
-                list.next();
-                cur_doc = list.docid();
+        }
+        m_accumulators.init();
+        for (uint32_t term = 0; term < cursors.size(); ++term) {
+            auto cursor = cursors[term];
+            const auto score = score_functions[term];
+            for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
+                m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
             }
         }
-
-        for (auto &&v : accumulator) {
-            m_topk.insert(v);
-        }
-
+        m_accumulators.aggregate(m_topk);
         m_topk.finalize();
         return m_topk.topk().size();
     }
@@ -42,9 +37,17 @@ struct ranked_or_taat_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    Index const &   m_index;
-    WandType const *m_wdata;
-    topk_queue      m_topk;
+    Index const &          m_index;
+    WandType const &       m_wdata;
+    topk_queue             m_topk;
+    Acc                    m_accumulators;
 };
 
-} // namespace pisa
+template <typename Acc, typename Index, typename WandType>
+[[nodiscard]] auto make_ranked_or_taat_query(Index const &   index,
+                                              WandType const &wdata,
+                                              uint64_t        k) {
+    return ranked_or_taat_query<Index, WandType, Acc>(index, wdata, k);
+}
+
+}; // namespace pisa
