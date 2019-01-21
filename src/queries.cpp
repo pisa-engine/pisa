@@ -3,6 +3,7 @@
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
+#include "spdlog/spdlog.h"
 
 #include "mio/mmap.hpp"
 
@@ -51,11 +52,11 @@ void op_perftest(Functor query_func, // XXX!!!
         double q90 = query_times[90 * query_times.size() / 100];
         double q95 = query_times[95 * query_times.size() / 100];
 
-        logger() << "---- " << index_type << " " << query_type << std::endl;
-        logger() << "Mean: " << avg << std::endl;
-        logger() << "50% quantile: " << q50 << std::endl;
-        logger() << "90% quantile: " << q90 << std::endl;
-        logger() << "95% quantile: " << q95 << std::endl;
+        spdlog::info("---- {} {}", index_type, query_type);
+        spdlog::info("Mean: {}", avg);
+        spdlog::info("50% quantile: {}", q50);
+        spdlog::info("90% quantile: {}", q90);
+        spdlog::info("95% quantile: {}", q95);
 
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
             "q95", q95);
@@ -72,11 +73,11 @@ void perftest(const std::string &index_filename,
               uint64_t k)
 {
     IndexType index;
-    logger() << "Loading index from " << index_filename << std::endl;
+    spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
 
-    logger() << "Warming up posting lists" << std::endl;
+    spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
     for (auto const &q : queries) {
         for (auto t : q) {
@@ -111,42 +112,34 @@ void perftest(const std::string &index_filename,
         }
     }
 
-    logger() << "Performing " << type << " queries" << std::endl;
-    logger() << "K: " << k << std::endl;
+    spdlog::info("Performing {} queries", type);
+    spdlog::info("K: {}", k);
 
     for (auto &&t : query_types) {
-        logger() << "Query type: " << t << std::endl;
+        spdlog::info("Query type: {}", t);
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            query_fun = [&](term_id_vec query) { return and_query<false>()(index, query); };
+            query_fun = and_query<IndexType, false>(index);
         } else if (t == "and_freq") {
-            query_fun = [&](term_id_vec query) { return and_query<true>()(index, query); };
+            query_fun = and_query<IndexType, true>(index);
         } else if (t == "or") {
-            query_fun = [&](term_id_vec query) { return or_query<false>()(index, query); };
+            query_fun = or_query<IndexType, false>(index);
         } else if (t == "or_freq") {
-            query_fun = [&](term_id_vec query) { return or_query<true>()(index, query); };
+            query_fun = or_query<IndexType, true>(index);
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](term_id_vec query) {
-                return wand_query<WandType>(wdata, k)(index, query);
-            };
+            query_fun = wand_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](term_id_vec query) {
-                return block_max_wand_query<WandType>(wdata, k)(index, query);
-            };
+            query_fun =block_max_wand_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](term_id_vec query) {
-                return block_max_maxscore_query<WandType>(wdata, k)(index, query);
-            };
+            query_fun = block_max_maxscore_query<IndexType, WandType>(index, wdata, k);
         }  else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](term_id_vec query) {
-                return ranked_or_query<WandType>(wdata, k)(index, query);
-            };
+            query_fun = ranked_or_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](term_id_vec query) {
-                return maxscore_query<WandType>(wdata, k)(index, query);
-            };
+            query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
+        } else if (t == "ranked_or_taat" && wand_data_filename) {
+            query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
         } else {
-            logger() << "Unsupported query type: " << t << std::endl;
+            spdlog::error("Unsupported query type: {}", t);
             break;
         }
         op_perftest(query_fun, queries, type, t, 2);
@@ -219,6 +212,6 @@ int main(int argc, const char **argv) {
 #undef LOOP_BODY
 
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 }

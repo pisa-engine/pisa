@@ -2,9 +2,10 @@
 #include <thread>
 #include <optional>
 
-#include "boost/lexical_cast.hpp"
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
+#include "boost/lexical_cast.hpp"
+#include "spdlog/spdlog.h"
 
 #include "mio/mmap.hpp"
 
@@ -14,9 +15,8 @@
 #include "query/queries.hpp"
 #include "util/util.hpp"
 
-template <typename QueryOperator, typename IndexType>
-void op_profile(IndexType const& index,
-                QueryOperator const& query_op,
+template <typename QueryOperator>
+void op_profile(QueryOperator const& query_op,
                 std::vector<pisa::term_id_vec> const& queries)
 {
     using namespace pisa;
@@ -31,10 +31,10 @@ void op_profile(IndexType const& index,
                 for (size_t i = tid; i < queries.size(); i += n_threads) {
                     if (i % 10000 == 0) {
                         std::lock_guard<std::mutex> lock(io_mutex);
-                        logger() << i << " queries processed" << std::endl;
+                        spdlog::info("{} queries processed", i);
                     }
 
-                    query_op_copy(index, queries[i]);
+                    query_op_copy(queries[i]);
                 }
             });
     }
@@ -63,7 +63,7 @@ void profile(const std::string index_filename,
 
     typename add_profiling<IndexType>::type index;
     typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
-    logger() << "Loading index from " << index_filename << std::endl;
+    spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename);
     mapper::map(index, m);
 
@@ -79,23 +79,23 @@ void profile(const std::string index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    logger() << "Performing " << type << " queries" << std::endl;
+    spdlog::info("Performing {} queries", type);
 
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
     for (auto const& t: query_types) {
-        logger() << "Query type: " << t << std::endl;
+        spdlog::info("Query type: {}", t);
         if (t == "and") {
-            op_profile(index, and_query<false>(), queries);
+            op_profile(and_query<typename add_profiling<IndexType>::type, false>(index), queries);
         } else if (t == "ranked_and" && wand_data_filename) {
-            op_profile(index, ranked_and_query<WandType>(wdata, 10), queries);
+            op_profile(ranked_and_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else if (t == "wand" && wand_data_filename) {
-            op_profile(index, wand_query<WandType>(wdata, 10), queries);
+            op_profile(wand_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else if (t == "maxscore" && wand_data_filename) {
-            op_profile(index, maxscore_query<WandType>(wdata, 10), queries);
+            op_profile(maxscore_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else {
-            logger() << "Unsupported query type: " << t << std::endl;
+            spdlog::error("Unsupported query type: {}", t);
         }
     }
 
@@ -141,7 +141,7 @@ int main(int argc, const char** argv)
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 
 }

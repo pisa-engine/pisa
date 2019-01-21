@@ -51,6 +51,46 @@ term_freq_vec query_freqs(term_id_vec terms) {
     return query_term_freqs;
 }
 
+template <typename Scorer, typename Wand>
+struct Score_Function {
+    float query_weight;
+    std::reference_wrapper<Wand const> wdata;
+
+    [[nodiscard]] auto operator()(uint32_t doc, uint32_t freq) const -> float {
+        return query_weight * Scorer::doc_term_weight(freq, wdata.get().norm_len(doc));
+    }
+};
+
+// TODO: These are functions common to query processing in general.
+//       They should be moved out of this file.
+namespace query {
+
+template <typename Index, typename WandType>
+[[nodiscard]] auto cursors_with_scores(Index const& index, WandType const &wdata, term_id_vec terms)
+{
+    // TODO(michal): parametrize scorer_type; didn't do that because this might mean some more
+    //               complex refactoring I want to avoid for now.
+    using scorer_type         = bm25;
+    using cursor_type         = typename Index::document_enumerator;
+    using score_function_type = Score_Function<scorer_type, WandType>;
+
+    auto query_term_freqs = query_freqs(terms);
+    std::vector<cursor_type> cursors;
+    std::vector<score_function_type> score_functions;
+    cursors.reserve(query_term_freqs.size());
+    score_functions.reserve(query_term_freqs.size());
+
+    for (auto term : query_term_freqs) {
+        auto     list     = index[term.first];
+        uint64_t num_docs = index.num_docs();
+        auto     q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
+        cursors.push_back(std::move(list));
+        score_functions.push_back({q_weight, std::cref(wdata)});
+    }
+    return std::make_pair(cursors, score_functions);
+}
+
+} // namespace query
 } // namespace pisa
 
 #include "algorithm/and_query.hpp"
@@ -61,3 +101,4 @@ term_freq_vec query_freqs(term_id_vec terms) {
 #include "algorithm/ranked_and_query.hpp"
 #include "algorithm/ranked_or_query.hpp"
 #include "algorithm/wand_query.hpp"
+#include "algorithm/ranked_or_taat_query.hpp"

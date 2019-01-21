@@ -1,5 +1,7 @@
 #pragma once
 
+#include "spdlog/spdlog.h"
+
 #include "index_types.hpp"
 #include "succinct/mapper.hpp"
 #include "util/progress.hpp"
@@ -50,10 +52,8 @@ void dump_stats(Collection &coll, std::string const &type, uint64_t postings) {
 
     double bits_per_doc  = docs_size * 8.0 / postings;
     double bits_per_freq = freqs_size * 8.0 / postings;
-    logger() << "Documents: " << docs_size << " bytes, " << bits_per_doc << " bits per element"
-             << std::endl;
-    logger() << "Frequencies: " << freqs_size << " bytes, " << bits_per_freq << " bits per element"
-             << std::endl;
+    spdlog::info("Documents: {} bytes, {} bits per element", docs_size, bits_per_doc);
+    spdlog::info("Frequencies: {} bytes, {} bits per element", freqs_size, bits_per_freq);
 
     stats_line()("type", type)("size", docs_size + freqs_size)("docs_size", docs_size)(
         "freqs_size", freqs_size)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);

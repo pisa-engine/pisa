@@ -76,6 +76,7 @@ namespace pisa {
 
         class document_enumerator {
         public:
+
             void reset()
             {
                 m_cur_pos = 0;

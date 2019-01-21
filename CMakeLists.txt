@@ -43,7 +43,6 @@ list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
 
 
 if (UNIX)
-
    # For hardware popcount and other special instructions
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
@@ -65,8 +64,6 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-link_libraries(Threads::Threads)
-
 
 include_directories(include)
 add_library(pisa INTERFACE)
@@ -88,6 +85,7 @@ target_link_libraries(pisa INTERFACE
     Boost::filesystem
     Porter2
     warcpp
+    spdlog
 )
 target_include_directories(pisa INTERFACE external)
 

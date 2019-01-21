@@ -1,13 +1,13 @@
 #include <string>
 
 #include "CLI/CLI.hpp"
-#include "tbb/task_scheduler_init.h"
 #include "Porter2/Porter2.hpp"
+#include "spdlog/spdlog.h"
+#include "tbb/task_scheduler_init.h"
 #include "warcpp/warcpp.hpp"
 
 #include "forward_index_builder.hpp"
 
-using pisa::logger;
 using namespace pisa;
 
 int main(int argc, char **argv) {
@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(threads);
-    logger() << "Number of threads: " << threads << '\n';
+    spdlog::info("Number of threads: {}", threads);
 
     if (format == "plaintext") {
         Forward_Index_Builder<Plaintext_Record> builder;

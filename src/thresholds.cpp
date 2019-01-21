@@ -5,6 +5,7 @@
 #include "boost/optional.hpp"
 
 #include "mio/mmap.hpp"
+#include "spdlog/spdlog.h"
 
 #include "succinct/mapper.hpp"
 
@@ -43,9 +44,9 @@ void thresholds(const std::string &                   index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    wand_query<WandType> query_func(wdata, k);
+    wand_query<IndexType, WandType> query_func(index, wdata, k);
     for (auto const &query : queries) {
-        query_func(index, query);
+        query_func(query);
         auto  results   = query_func.topk();
         float threshold = 0.0;
         if (results.size() == k) {
@@ -118,6 +119,6 @@ int main(int argc, const char **argv)
 #undef LOOP_BODY
 
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 }

@@ -82,6 +82,7 @@ namespace pisa {
 
         class document_enumerator {
         public:
+
             document_enumerator(uint8_t const* data, uint64_t universe,
                                 size_t term_id = 0)
                 : m_n(0) // just to silence warnings
