@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
+option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 
 configure_file(
   ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp.in
@@ -91,9 +92,12 @@ target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(src)
 
-if (PISA_ENABLE_TESTING AND BUILD_TESTING)
+if (PISA_ENABLE_TESTING)
     enable_testing()
     add_subdirectory(test)
-    add_subdirectory(benchmarks)
+endif()
+
+if (PISA_ENABLE_BENCHMARKING)
+  add_subdirectory(benchmarks)
 endif()
 
