@@ -101,6 +101,5 @@ template <typename Index, typename WandType>
 #include "algorithm/ranked_and_query.hpp"
 #include "algorithm/ranked_or_query.hpp"
 #include "algorithm/wand_query.hpp"
-#include "algorithm/exhaustive_taat_query.hpp"
-#include "algorithm/maxscore_taat_query.hpp"
 #include "algorithm/ranked_or_taat_query.hpp"
+#include "algorithm/maxscore_taat_query.hpp"

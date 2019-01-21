@@ -1,5 +1,7 @@
 #pragma once
 
+#include "spdlog/spdlog.h"
+
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
 #include "succinct/mappable_vector.hpp"
@@ -24,7 +26,7 @@ namespace pisa {
             std::vector<float> max_term_weight;
             global_parameters params;
             double lens_sum = 0;
-            logger() << "Reading sizes..." << std::endl;
+            spdlog::info("Reading sizes...");
 
             for (size_t i = 0; i < num_docs; ++i) {
                 float len = *len_it++;
@@ -43,11 +45,11 @@ namespace pisa {
                 auto v = builder.add_sequence(seq, coll, norm_lens);
                 max_term_weight.push_back(v);
                 if ((max_term_weight.size() % 1000000) == 0) {
-                    logger() << max_term_weight.size() << " list processed" << std::endl;
+                    spdlog::info("{} lists processed", max_term_weight.size());
                 }
             }
             if ((max_term_weight.size() % 1000000) != 0) {
-               logger() << max_term_weight.size() << " list processed" << std::endl;
+                spdlog::info("{} lists processed", max_term_weight.size());
             }
 
             builder.build(m_block_wand);

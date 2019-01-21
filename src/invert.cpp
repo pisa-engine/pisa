@@ -3,10 +3,11 @@
 #include <vector>
 
 #include "CLI/CLI.hpp"
+#include "gsl/span"
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "spdlog/spdlog.h"
 #include "tbb/task_group.h"
-#include "gsl/span"
 #include "tbb/task_scheduler_init.h"
 
 #include "binary_collection.hpp"
@@ -14,7 +15,6 @@
 #include "invert.hpp"
 #include "util/util.hpp"
 
-using pisa::logger;
 using namespace pisa;
 
 int main(int argc, char **argv) {
@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(threads);
-    logger() << "Number of threads: " << threads << '\n';
+    spdlog::info("Number of threads: {}", threads);
     invert::invert_forward_index(input_basename, output_basename, term_count, batch_size, threads);
 
     return 0;

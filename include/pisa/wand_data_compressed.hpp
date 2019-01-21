@@ -1,13 +1,15 @@
 #pragma once
 
+#include "spdlog/spdlog.h"
+
 #include "succinct/mappable_vector.hpp"
 
 #include "binary_freq_collection.hpp"
-#include "scorer/bm25.hpp"
-#include "util/util.hpp"
-#include "score_opt_partition.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
+#include "score_opt_partition.hpp"
+#include "scorer/bm25.hpp"
+#include "util/util.hpp"
 
 #include "sequence/positive_sequence.hpp"
 #include "util/index_build_utils.hpp"
@@ -99,16 +101,17 @@ namespace {
     class wand_data_compressed {
     public:
         class builder{
-        public:
-            builder(partition_type type, binary_freq_collection const & coll, global_parameters const &params) :
-                    total_elements(0),
-                    total_blocks(0),
-                    effective_list(0),
-                    type(type),
-                    params(params),
-                    compressor_builder(coll.num_docs(), params){
-                logger() << "Storing max weight for each list and for each block..." << std::endl;
-
+           public:
+            builder(partition_type                type,
+                    binary_freq_collection const &coll,
+                    global_parameters const &     params)
+                : total_elements(0),
+                  total_blocks(0),
+                  effective_list(0),
+                  type(type),
+                  params(params),
+                  compressor_builder(coll.num_docs(), params) {
+                spdlog::info("Storing max weight for each list and for each block...");
             }
 
             float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
@@ -138,14 +141,13 @@ namespace {
 
             }
 
-            void build(wand_data_compressed & wdata){
-
+            void build(wand_data_compressed &wdata) {
                 wdata.m_num_docs = compressor_builder.num_docs();
                 wdata.m_params = compressor_builder.params();
                 compressor_builder.build(wdata.m_docs_sequences);
-                logger() << "number of elements / number of blocks: " << (float) total_elements / (float) total_blocks << std::endl;
+                spdlog::info("number of elements / number of blocks: {}",
+                             (float)total_elements / (float)total_blocks);
             }
-
 
             uint64_t total_elements;
             uint64_t total_blocks;

@@ -1,10 +1,11 @@
 #include <iostream>
 #include <thread>
+#include <optional>
 
-#include "boost/lexical_cast.hpp"
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "boost/optional.hpp"
+#include "boost/lexical_cast.hpp"
+#include "spdlog/spdlog.h"
 
 #include "mio/mmap.hpp"
 
@@ -30,7 +31,7 @@ void op_profile(QueryOperator const& query_op,
                 for (size_t i = tid; i < queries.size(); i += n_threads) {
                     if (i % 10000 == 0) {
                         std::lock_guard<std::mutex> lock(io_mutex);
-                        logger() << i << " queries processed" << std::endl;
+                        spdlog::info("{} queries processed", i);
                     }
 
                     query_op_copy(queries[i]);
@@ -52,7 +53,8 @@ struct add_profiling<pisa::block_freq_index<BlockType, false>> {
 
 template <typename IndexType>
 void profile(const std::string index_filename,
-             const boost::optional<std::string> &wand_data_filename,
+
+             const std::optional<std::string> &wand_data_filename,
              std::vector<pisa::term_id_vec> const& queries,
              std::string const& type,
              std::string const& query_type)
@@ -61,7 +63,7 @@ void profile(const std::string index_filename,
 
     typename add_profiling<IndexType>::type index;
     typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
-    logger() << "Loading index from " << index_filename << std::endl;
+    spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename);
     mapper::map(index, m);
 
@@ -69,7 +71,7 @@ void profile(const std::string index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename.value(), error);
+        md.map(*wand_data_filename, error);
         if(error){
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
@@ -77,13 +79,13 @@ void profile(const std::string index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    logger() << "Performing " << type << " queries" << std::endl;
+    spdlog::info("Performing {} queries", type);
 
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
     for (auto const& t: query_types) {
-        logger() << "Query type: " << t << std::endl;
+        spdlog::info("Query type: {}", t);
         if (t == "and") {
             op_profile(and_query<typename add_profiling<IndexType>::type, false>(index), queries);
         } else if (t == "ranked_and" && wand_data_filename) {
@@ -93,7 +95,7 @@ void profile(const std::string index_filename,
         } else if (t == "maxscore" && wand_data_filename) {
             op_profile(maxscore_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
         } else {
-            logger() << "Unsupported query type: " << t << std::endl;
+            spdlog::error("Unsupported query type: {}", t);
         }
     }
 
@@ -107,7 +109,7 @@ int main(int argc, const char** argv)
     std::string type = argv[1];
     const char* query_type = argv[2];
     const char* index_filename = argv[3];
-    boost::optional<std::string> wand_data_filename;
+    std::optional<std::string> wand_data_filename;
     size_t args =4;
     if (argc > 4) {
         wand_data_filename = argv[4];
@@ -139,7 +141,7 @@ int main(int argc, const char** argv)
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 
 }

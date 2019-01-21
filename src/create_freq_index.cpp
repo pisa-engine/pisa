@@ -3,9 +3,10 @@
 #include <iostream>
 #include <numeric>
 #include <thread>
+#include <optional>
 
 #include "boost/algorithm/string/predicate.hpp"
-#include "boost/optional.hpp"
+#include "spdlog/spdlog.h"
 
 #include "succinct/mapper.hpp"
 
@@ -17,9 +18,6 @@
 #include "util/verify_collection.hpp" // XXX move to index_build_utils
 
 #include "CLI/CLI.hpp"
-
-
-using pisa::logger;
 
 template <typename Collection>
 void dump_index_specific_stats(Collection const &, std::string const &) {}
@@ -53,11 +51,11 @@ void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &t
 template <typename InputCollection, typename CollectionType, typename Scorer = pisa::bm25>
 void create_collection(InputCollection const &input,
                        pisa::global_parameters const &params,
-                       const boost::optional<std::string> &output_filename,
+                       const std::optional<std::string> &output_filename,
                        bool check,
                        std::string const &seq_type) {
     using namespace pisa;
-    logger() << "Processing " << input.num_docs() << " documents" << std::endl;
+    spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 
     typename CollectionType::builder builder(input.num_docs(), params);
@@ -79,7 +77,7 @@ void create_collection(InputCollection const &input,
     CollectionType coll;
     builder.build(coll);
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    logger() << seq_type << " collection built in " << elapsed_secs << " seconds" << std::endl;
+    spdlog::info("{} collection built in {} seconds", seq_type, elapsed_secs);
 
     stats_line()("type", seq_type)("worker_threads", configuration::get().worker_threads)(
         "construction_time", elapsed_secs);
@@ -88,10 +86,10 @@ void create_collection(InputCollection const &input,
     dump_index_specific_stats(coll, seq_type);
 
     if (output_filename) {
-        mapper::freeze(coll, output_filename.value().c_str());
+        mapper::freeze(coll, (*output_filename).c_str());
         if (check) {
             verify_collection<InputCollection, CollectionType>(input,
-                                                               output_filename.value().c_str());
+                                                               (*output_filename).c_str());
         }
     }
 }
@@ -101,7 +99,7 @@ int main(int argc, char **argv) {
     using namespace pisa;
     std::string type;
     std::string input_basename;
-    boost::optional<std::string> output_filename;
+    std::optional<std::string> output_filename;
     bool check = false;
 
     CLI::App app{"create_freq_index - a tool for creating an index."};
@@ -127,7 +125,7 @@ int main(int argc, char **argv) {
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 
     return 0;
