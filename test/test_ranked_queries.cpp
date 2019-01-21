@@ -117,6 +117,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
 
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
+        index, wdata, 10);
     test_against_or(ranked_or_taat_q);
 }
 
