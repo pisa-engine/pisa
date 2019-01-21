@@ -1,6 +1,5 @@
 sudo: require
 language: cpp
-dist: xenial
 
 branches:
   only:
