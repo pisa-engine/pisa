@@ -107,7 +107,6 @@ namespace {
                     global_parameters const &     params)
                 : total_elements(0),
                   total_blocks(0),
-                  effective_list(0),
                   type(type),
                   params(params),
                   compressor_builder(coll.num_docs(), params) {
@@ -129,7 +128,6 @@ namespace {
                     max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
                     total_elements += seq.docs.size();
                     total_blocks += t.first.size();
-                    effective_list++;
                 } else {
                     max_term_weight.push_back(0.0f);
                     std::vector<uint32_t> temp = {0};
@@ -151,7 +149,6 @@ namespace {
 
             uint64_t total_elements;
             uint64_t total_blocks;
-            uint64_t effective_list;
             partition_type type;
             std::vector<float> score_references;
             std::vector<float> max_term_weight;
