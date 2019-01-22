@@ -42,7 +42,8 @@ class wand_data_range {
                     uint64_t freq = *(seq.freqs.begin() + i);
                     float score = Scorer::doc_term_weight(freq, norm_lens[docid]);
                     max_score = std::max(max_score, score);
-                    float bm = block_max_term_weight[docid/range_size];
+                    size_t pos = docid/range_size;
+                    float &bm = b_max[pos];
                     bm = std::max(bm, score);
                 }
                 block_max_term_weight.insert(
