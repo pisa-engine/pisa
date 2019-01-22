@@ -101,8 +101,10 @@ class maxscore_taat_query {
             // (current included) is greater than the threshold. If it is we score and add it to the
             // accumulator, we go to the next document otherwise.
             for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
-                m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
-                m_topk.insert(m_accumulators[cursor.docid()]);
+                if(m_topk.would_enter(nonessential_sum + m_accumulators[cursor.docid()])) {
+                    m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
+                    m_topk.insert(m_accumulators[cursor.docid()]);
+                }
             }
             nonessential_sum -= m_w[term];
         }
