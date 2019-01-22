@@ -74,12 +74,12 @@ class maxscore_taat_query {
         : m_index(index), m_wdata(wdata), m_k(k), m_topk(k), m_accumulators(index.num_docs()) {}
 
     uint64_t operator()(term_id_vec terms) {
+        m_topk.clear();
         auto cws = query::cursors_with_scores(m_index, m_wdata, terms);
         auto cursors = cws.first;
         auto score_functions = cws.second;
         auto m_w = max_weights(m_index, m_wdata, terms);
         if (cursors.empty()) {
-            m_topk.clear();
             return 0;
         }
         sort_many(
@@ -89,11 +89,10 @@ class maxscore_taat_query {
         m_accumulators.init();
         uint32_t term = 0;
         for (; term < cursors.size(); ++term) {
-            m_topk.clear();
-            m_accumulators.aggregate(m_topk);
             if (not m_topk.would_enter(nonessential_sum)) {
                 break;
             }
+            m_topk.clear();
             auto cursor = cursors[term];
             auto score = score_functions[term];
             // TODO(antonio): basically here we can do a bit better.
@@ -103,6 +102,7 @@ class maxscore_taat_query {
             // accumulator, we go to the next document otherwise.
             for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
                 m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
+                m_topk.insert(m_accumulators[cursor.docid()]);
             }
             nonessential_sum -= m_w[term];
         }
