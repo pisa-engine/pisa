@@ -71,6 +71,10 @@ namespace pisa {
             return m_block_wand.get_enum(i);
         }
 
+        const block_wand_type& get_block_wand() const {
+            return m_block_wand;
+        }
+
         template<typename Visitor>
         void map(Visitor &visit) {
             visit

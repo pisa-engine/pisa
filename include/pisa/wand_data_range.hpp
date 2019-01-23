@@ -11,10 +11,24 @@
 
 namespace pisa {
 
-template <size_t range_size = 1024, typename Scorer = bm25>
+template <size_t range_size = 128, size_t min_list_lenght = 1024, typename Scorer = bm25>
 class wand_data_range {
    public:
-    wand_data_range() {}
+
+    template<typename List>
+    std::vector<float> compute(List &list, std::function<float(uint64_t)> norm_lens) const {
+        std::vector<float> block_max_scores(m_blocks_num, 0.0f);
+        for (int i = 0; i < list.size(); ++i) {
+            auto docid = list.docid();
+            auto freq = list.freq();
+            list.next();
+            float score = Scorer::doc_term_weight(freq, norm_lens(docid));
+            size_t pos = docid/range_size;
+            float &bm = block_max_scores[pos];
+            bm = std::max(bm, score);
+        }
+        return block_max_scores;
+    }
 
     class builder {
        public:
@@ -29,32 +43,38 @@ class wand_data_range {
             spdlog::info("Range size: {}. Number of docs: {}. Blocks per posting list: {}. Posting lists: {}."
                 , range_size, coll.num_docs(), blocks_num, posting_lists);
             total_elements = 0;
+            blocks_start.push_back(0);
         }
 
         float add_sequence(binary_freq_collection::sequence const &seq,
                            binary_freq_collection const &          coll,
                            std::vector<float> const &              norm_lens) {
             float max_score =0.0f;
-            if (seq.docs.size() > configuration::get().threshold_wand_list) {
-                std::vector<float> b_max(blocks_num, 0.0f);
-                for (auto i = 0; i < seq.docs.size(); ++i) {
-                    uint64_t docid = *(seq.docs.begin() + i);
-                    uint64_t freq = *(seq.freqs.begin() + i);
-                    float score = Scorer::doc_term_weight(freq, norm_lens[docid]);
-                    max_score = std::max(max_score, score);
-                    size_t pos = docid/range_size;
-                    float &bm = b_max[pos];
-                    bm = std::max(bm, score);
-                }
+
+            std::vector<float> b_max(blocks_num, 0.0f);
+            for (auto i = 0; i < seq.docs.size(); ++i) {
+                uint64_t docid = *(seq.docs.begin() + i);
+                uint64_t freq = *(seq.freqs.begin() + i);
+                float score = Scorer::doc_term_weight(freq, norm_lens[docid]);
+                max_score = std::max(max_score, score);
+                size_t pos = docid/range_size;
+                float &bm = b_max[pos];
+                bm = std::max(bm, score);
+            }
+            if (seq.docs.size() >= min_list_lenght) {
                 block_max_term_weight.insert(
                     block_max_term_weight.end(), b_max.begin(), b_max.end());
+                blocks_start.push_back(b_max.size() + blocks_start.back());
                 total_elements += seq.docs.size();
+            } else{
+                blocks_start.push_back(blocks_start.back());
             }
             return max_score;
         }
 
         void build(wand_data_range &wdata) {
             wdata.m_blocks_num = blocks_num;
+            wdata.m_blocks_start.steal(blocks_start);
             wdata.m_block_max_term_weight.steal(block_max_term_weight);
             spdlog::info("number of elements / number of blocks: {}",
                          static_cast<float>(total_elements) / static_cast<float>(wdata.m_block_max_term_weight.size()));
@@ -63,6 +83,7 @@ class wand_data_range {
         uint64_t           blocks_num;
         partition_type     type;
         uint64_t           total_elements;
+        std::vector<uint64_t> blocks_start;
         std::vector<float> block_max_term_weight;
     };
 
@@ -94,17 +115,19 @@ class wand_data_range {
 
     enumerator get_enum(uint32_t i) const {
         return enumerator(
-            i * m_blocks_num, m_block_max_term_weight);
+            m_blocks_start[i], m_block_max_term_weight);
     }
 
     template <typename Visitor>
     void map(Visitor &visit) {
         visit(m_blocks_num, "m_blocks_num")
+             (m_blocks_start, "m_blocks_start")
              (m_block_max_term_weight, "m_block_max_term_weight");
     }
 
    private:
     uint64_t m_blocks_num;
+    mapper::mappable_vector<uint64_t> m_blocks_start;
     mapper::mappable_vector<float> m_block_max_term_weight;
 };
 
