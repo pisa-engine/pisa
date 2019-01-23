@@ -47,7 +47,7 @@ int main(int argc, const char **argv) {
             sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type);
         mapper::freeze(wdata, output_filename.c_str());
     } else if(range) {
-        wand_data<bm25, wand_data_range<1024, bm25>> wdata(
+        wand_data<bm25, wand_data_range<128, 1024, bm25>> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
