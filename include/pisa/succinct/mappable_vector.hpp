@@ -103,11 +103,6 @@ namespace pisa { namespace mapper {
             return m_data[i];
         }
 
-        inline T & operator[](uint64_t i) {
-            assert(i < m_size);
-            return m_data[i];
-        }
-
         inline T const* data() const {
             return m_data;
         }
