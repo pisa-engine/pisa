@@ -97,6 +97,10 @@ class wand_data_range {
               block_start(_block_start),
               m_block_max_term_weight(block_max_term_weight) {}
 
+        void DS2I_NOINLINE next_block() {
+            cur_pos += 1;
+        }
+
         void DS2I_NOINLINE next_geq(uint64_t lower_bound) {
             cur_pos = lower_bound/range_size;
         }
@@ -116,6 +120,23 @@ class wand_data_range {
     enumerator get_enum(uint32_t i) const {
         return enumerator(
             m_blocks_start[i], m_block_max_term_weight);
+    }
+
+    static std::vector<bool> compute_live_blocks(std::vector<enumerator> &enums, float threasold, uint64_t begin, uint64_t end) {
+        size_t len = ceil_div((end - begin), range_size);
+        std::vector<bool> live_blocks(len);
+        for(auto&& e : enums) {
+            e.next_geq(begin);
+        }
+        for (size_t i = 0; i < len; ++i) {
+            float score = 0.0f;
+            for(auto&& e : enums) {
+                score += e.score();
+                e.next_block();
+            }
+            live_blocks[i] = (score > threasold);
+        }
+        return live_blocks;
     }
 
     template <typename Visitor>
