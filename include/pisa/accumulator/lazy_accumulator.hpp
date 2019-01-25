@@ -1,5 +1,7 @@
 #pragma once
 
+#include "topk_queue.hpp"
+
 namespace pisa {
 
 template <int counter_bit_size, typename Descriptor = std::uint64_t>
@@ -18,15 +20,23 @@ struct Lazy_Accumulator {
         std::array<float, counters_in_descriptor> accumulators{};
 
         [[nodiscard]] auto counter(int pos) const noexcept -> int {
-            return (descriptor >> (pos * counter_bit_size)) & mask;
+            if constexpr (counter_bit_size == 8) {
+                return static_cast<int>(*(reinterpret_cast<uint8_t const *>(&descriptor) + pos));
+            } else {
+                return (descriptor >> (pos * counter_bit_size)) & mask;
+            }
         }
 
         void reset_counter(int pos, int counter)
         {
-            auto const shift = pos * counter_bit_size;
-            descriptor &= ~(mask << shift);
-            descriptor |= static_cast<Descriptor>(counter) << shift;
-            accumulators[pos] = 0;
+            if constexpr (counter_bit_size == 8) {
+                *(reinterpret_cast<uint8_t *>(&descriptor) + pos) = static_cast<uint8_t>(counter);
+            } else {
+                auto const shift = pos * counter_bit_size;
+                descriptor &= ~(mask << shift);
+                descriptor |= static_cast<Descriptor>(counter) << shift;
+                accumulators[pos] = 0;
+            }
         }
     };
 

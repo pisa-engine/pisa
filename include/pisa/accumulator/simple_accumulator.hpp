@@ -1,5 +1,7 @@
 #pragma once
 
+#include "topk_queue.hpp"
+
 namespace pisa {
 
 struct Simple_Accumulator : public std::vector<float> {
