@@ -93,5 +93,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 # Add warcpp
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 
+# Add fmt
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+
 # Add spdlog
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)

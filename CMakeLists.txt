@@ -87,6 +87,7 @@ target_link_libraries(pisa INTERFACE
     Porter2
     warcpp
     spdlog
+    fmt::fmt
 )
 target_include_directories(pisa INTERFACE external)
 
