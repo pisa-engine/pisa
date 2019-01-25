@@ -6,7 +6,6 @@
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
-#include "wand_data_range.hpp"
 
 namespace pisa {
 namespace test {
@@ -16,7 +15,6 @@ struct index_initialization {
     typedef opt_index                                                             index_type;
     typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> WandTypeUniform;
     typedef wand_data<bm25, wand_data_raw<bm25>>                                  WandTypePlain;
-    typedef wand_data<bm25, wand_data_range<128, 0, bm25>>                          WandTypeRange;
 
     index_initialization()
         : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection"),
@@ -32,11 +30,7 @@ struct index_initialization {
           wdata_uniform(document_sizes.begin()->begin(),
                         collection.num_docs(),
                         collection,
-                        partition_type::variable_blocks),
-          wdata_range(document_sizes.begin()->begin(),
-                      collection.num_docs(),
-                      collection,
-                      partition_type::fixed_blocks) {
+                        partition_type::variable_blocks) {
         index_type::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
@@ -59,7 +53,6 @@ struct index_initialization {
     std::vector<term_id_vec> queries;
     WandTypePlain            wdata;
     WandTypePlain            wdata_fixed;
-    WandTypeRange            wdata_range;
     WandTypeUniform          wdata_uniform;
 
     template <typename QueryOp>
@@ -86,11 +79,9 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand") {
     pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
     pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
     pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10);
-    pisa::block_max_wand_query<index_type, WandTypeRange>   block_max_wand_range_q(index, wdata_range, 10);
 
     test_against_wand(block_max_wand_uniform_q);
     test_against_wand(block_max_wand_q);
     test_against_wand(block_max_wand_fixed_q);
-    test_against_wand(block_max_wand_range_q);
 
 }
