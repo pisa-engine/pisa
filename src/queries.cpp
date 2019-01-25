@@ -3,14 +3,14 @@
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "spdlog/spdlog.h"
-
 #include "mio/mmap.hpp"
+#include "spdlog/spdlog.h"
 
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
 #include "query/queries.hpp"
+#include "timer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
@@ -30,12 +30,12 @@ void op_perftest(Functor query_func, // XXX!!!
 
     for (size_t run = 0; run <= runs; ++run) {
         for (auto const &query : queries) {
-            auto tick = get_time_usecs();
-            uint64_t result = query_func(query);
-            do_not_optimize_away(result);
-            double elapsed = double(get_time_usecs() - tick);
+            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
+                uint64_t result = query_func(query);
+                do_not_optimize_away(result);
+            });
             if (run != 0) { // first run is not timed
-                query_times.push_back(elapsed);
+                query_times.push_back(usecs.count());
             }
         }
     }
