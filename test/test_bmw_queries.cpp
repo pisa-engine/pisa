@@ -16,7 +16,7 @@ struct index_initialization {
     typedef opt_index                                                             index_type;
     typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> WandTypeUniform;
     typedef wand_data<bm25, wand_data_raw<bm25>>                                  WandTypePlain;
-    typedef wand_data<bm25, wand_data_range<128, 1024, bm25>>                          WandTypeRange;
+    typedef wand_data<bm25, wand_data_range<128, 0, bm25>>                          WandTypeRange;
 
     index_initialization()
         : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection"),
