@@ -3,7 +3,7 @@
 #include <array>
 #include <sstream>
 #include <string>
-#include <algorithms>
+#include <algorithm>
 
 #include "boost/preprocessor/seq/enum.hpp"
 #include "boost/preprocessor/seq/for_each.hpp"
