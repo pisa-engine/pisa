@@ -19,6 +19,7 @@ cache:
   apt: true
 
 matrix:
+  fast_finish: true
   include:
     - os: linux
       dist: xenial
