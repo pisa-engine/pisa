@@ -109,3 +109,4 @@ if (PISA_ENABLE_BENCHMARKING)
   add_subdirectory(benchmarks)
 endif()
 
+include(cmake/)
