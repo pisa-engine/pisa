@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cassert>
 
 #include "streamvbyte/include/streamvbyte.h"
 

@@ -121,7 +121,7 @@ if(PISA_COMPILE_HEADERS)
   endforeach()
 
   include(CheckCXXSourceCompiles)
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -c")
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX_FLAGS} -std=c++${CMAKE_CXX_STANDARD} -c")
   get_property(dirs TARGET pisa PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
   set(CMAKE_REQUIRED_INCLUDES "${CMAKE_SOURCE_DIR}/external/tbb/include" ${inc_dirs})
 
