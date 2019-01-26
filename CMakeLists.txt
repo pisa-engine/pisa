@@ -30,12 +30,15 @@ ExternalProject_Add(gumbo-external
     BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
     BUILD_COMMAND ${MAKE})
-add_library(gumbo::gumbo UNKNOWN IMPORTED)
-set_target_properties(gumbo::gumbo PROPERTIES INCLUDE_DIRECTORIES
+add_library(gumbo::gumbo STATIC IMPORTED)
+set_property(TARGET gumbo::gumbo APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser/src)
+set_property(TARGET gumbo::gumbo APPEND PROPERTY INCLUDE_DIRECTORIES
     ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser/src)
 set_property(TARGET gumbo::gumbo APPEND PROPERTY IMPORTED_LOCATION
     ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a)
 add_dependencies( gumbo::gumbo gumbo-external )
+
 
 # Add code coverage
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
