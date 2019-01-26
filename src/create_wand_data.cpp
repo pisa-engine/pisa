@@ -1,6 +1,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "spdlog/spdlog.h"
+
 #include "binary_collection.hpp"
 #include "binary_freq_collection.hpp"
 #include "succinct/mapper.hpp"
@@ -12,7 +14,7 @@
 #include "CLI/CLI.hpp"
 
 int main(int argc, const char **argv) {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string input_basename;
     std::string output_filename;
@@ -31,7 +33,7 @@ int main(int argc, const char **argv) {
 
     std::string partition_type_name =
         (p_type == partition_type::fixed_blocks) ? "static partition" : "variable partition";
-    logger() << "Block based wand creation with " << partition_type_name << std::endl;
+    spdlog::info("Block based wand creation with {}", partition_type_name);
 
     binary_collection      sizes_coll((input_basename + ".sizes").c_str());
     binary_freq_collection coll(input_basename.c_str());

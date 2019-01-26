@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE compact_elias_fano
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -16,38 +17,36 @@ struct sequence_initialization {
         // high granularity to test more corner cases
         params.ef_log_sampling0 = 4;
         params.ef_log_sampling1 = 5;
-        ds2i::bit_vector_builder bvb;
-        ds2i::compact_elias_fano::write(bvb,
+        pisa::bit_vector_builder bvb;
+        pisa::compact_elias_fano::write(bvb,
                                                   seq.begin(),
                                                   universe, seq.size(),
                                                   params);
-        ds2i::bit_vector(&bvb).swap(bv);
+        pisa::bit_vector(&bvb).swap(bv);
     }
 
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
     size_t n;
     size_t universe;
     std::vector<uint64_t> seq;
-    ds2i::bit_vector bv;
+    pisa::bit_vector bv;
 };
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_singleton,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_singleton")
 {
     // test singleton sequences
     std::vector<uint64_t> short_seq;
     short_seq.push_back(0);
-    test_sequence(ds2i::compact_elias_fano(), params, 1, short_seq);
+    test_sequence(pisa::compact_elias_fano(), params, 1, short_seq);
     short_seq[0] = 1;
-    test_sequence(ds2i::compact_elias_fano(), params, 2, short_seq);
+    test_sequence(pisa::compact_elias_fano(), params, 2, short_seq);
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_construction,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
 {
 
     // test pointers and low-level values
-    ds2i::compact_elias_fano::offsets of(0,
+    pisa::compact_elias_fano::offsets of(0,
                                                    universe, seq.size(),
                                                    params);
     uint64_t rank = 0;
@@ -79,21 +78,19 @@ BOOST_FIXTURE_TEST_CASE(compact_elias_fano_construction,
     }
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_enumerator,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_enumerator")
 {
-    ds2i::compact_elias_fano::enumerator r(bv, 0,
+    pisa::compact_elias_fano::enumerator r(bv, 0,
                                                      universe, seq.size(),
                                                      params);
     test_sequence(r, seq);
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_elias_fano_weakly_monotone,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_weakly_monotone")
 {
     n = 100000;
     universe = n * 3;
     std::vector<uint64_t> seq = random_sequence(universe, n, false);
-    test_sequence(ds2i::compact_elias_fano(), params, universe, seq);
+    test_sequence(pisa::compact_elias_fano(), params, universe, seq);
 }
 

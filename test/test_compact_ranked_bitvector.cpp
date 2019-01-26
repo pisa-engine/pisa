@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE compact_ranked_bitvector
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -16,29 +17,28 @@ struct sequence_initialization {
         // high granularity to test more corner cases
         params.rb_log_rank1_sampling = 6;
         params.rb_log_sampling1 = 5;
-        ds2i::bit_vector_builder bvb;
-        ds2i::compact_ranked_bitvector::write(bvb,
+        pisa::bit_vector_builder bvb;
+        pisa::compact_ranked_bitvector::write(bvb,
                                                         seq.begin(),
                                                         universe, seq.size(),
                                                         params);
-        ds2i::bit_vector(&bvb).swap(bv);
+        pisa::bit_vector(&bvb).swap(bv);
     }
 
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
     size_t n;
     size_t universe;
     uint64_t log_rank1_sampling;
     uint64_t log_sampling1;
     std::vector<uint64_t> seq;
-    ds2i::bit_vector bv;
+    pisa::bit_vector bv;
 };
 
-BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_construction,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction")
 {
 
     // test pointers and rank samples
-    ds2i::compact_ranked_bitvector::offsets of(0,
+    pisa::compact_ranked_bitvector::offsets of(0,
                                                          universe, seq.size(),
                                                          params);
     uint64_t rank = 0;
@@ -67,21 +67,19 @@ BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_construction,
     }
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_singleton,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_singleton")
 {
     // test singleton sequences
     std::vector<uint64_t> short_seq;
     short_seq.push_back(0);
-    test_sequence(ds2i::compact_ranked_bitvector(), params, 1, short_seq);
+    test_sequence(pisa::compact_ranked_bitvector(), params, 1, short_seq);
     short_seq[0] = 1;
-    test_sequence(ds2i::compact_ranked_bitvector(), params, 2, short_seq);
+    test_sequence(pisa::compact_ranked_bitvector(), params, 2, short_seq);
 }
 
-BOOST_FIXTURE_TEST_CASE(compact_ranked_bitvector_enumerator,
-                        sequence_initialization)
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_enumerator")
 {
-    ds2i::compact_ranked_bitvector::enumerator r(bv, 0,
+    pisa::compact_ranked_bitvector::enumerator r(bv, 0,
                                                            universe, seq.size(),
                                                            params);
     test_sequence(r, seq);

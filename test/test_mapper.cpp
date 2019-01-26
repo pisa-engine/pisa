@@ -1,33 +1,35 @@
-#define BOOST_TEST_MODULE mapper
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
+
 #include "test_common.hpp"
 
-#include <boost/filesystem.hpp>
+#include "mio/mmap.hpp"
 
 #include "succinct/mapper.hpp"
 
-BOOST_AUTO_TEST_CASE(basic_map)
+TEST_CASE("basic_map")
 {
-    ds2i::mapper::mappable_vector<int> vec;
-    BOOST_REQUIRE_EQUAL(vec.size(), 0U);
+    pisa::mapper::mappable_vector<int> vec;
+    REQUIRE(vec.size() == 0U);
 
     int nums[] = {1, 2, 3, 4};
     vec.assign(nums);
 
-    BOOST_REQUIRE_EQUAL(4U, vec.size());
-    BOOST_REQUIRE_EQUAL(1, vec[0]);
-    BOOST_REQUIRE_EQUAL(4, vec[3]);
+    REQUIRE(4U == vec.size());
+    REQUIRE(1 == vec[0]);
+    REQUIRE(4 == vec[3]);
 
-    ds2i::mapper::freeze(vec, "temp.bin");
+    pisa::mapper::freeze(vec, "temp.bin");
 
     {
-        ds2i::mapper::mappable_vector<int> mapped_vec;
-        boost::iostreams::mapped_file_source m("temp.bin");
-        ds2i::mapper::map(mapped_vec, m);
-        BOOST_REQUIRE_EQUAL(vec.size(), mapped_vec.size());
-        BOOST_REQUIRE(std::equal(vec.begin(), vec.end(), mapped_vec.begin()));
+        pisa::mapper::mappable_vector<int> mapped_vec;
+        mio::mmap_source m("temp.bin");
+        pisa::mapper::map(mapped_vec, m);
+        REQUIRE(vec.size() == mapped_vec.size());
+        REQUIRE(std::equal(vec.begin(), vec.end(), mapped_vec.begin()));
     }
 
-    boost::filesystem::remove("temp.bin");
+    std::remove("temp.bin");
 }
 
 class complex_struct {
@@ -51,27 +53,27 @@ public:
     }
 
     uint64_t m_a;
-    ds2i::mapper::mappable_vector<uint32_t> m_b;
+    pisa::mapper::mappable_vector<uint32_t> m_b;
 };
 
-BOOST_AUTO_TEST_CASE(complex_struct_map)
+TEST_CASE("complex_struct_map")
 {
     complex_struct s;
     s.init();
-    ds2i::mapper::freeze(s, "temp.bin");
+    pisa::mapper::freeze(s, "temp.bin");
 
-    BOOST_REQUIRE_EQUAL(24, ds2i::mapper::size_of(s));
+    REQUIRE(24 == pisa::mapper::size_of(s));
 
     complex_struct mapped_s;
-    BOOST_REQUIRE_EQUAL(0, mapped_s.m_a);
-    BOOST_REQUIRE_EQUAL(0U, mapped_s.m_b.size());
+    REQUIRE(0 == mapped_s.m_a);
+    REQUIRE(0U == mapped_s.m_b.size());
 
     {
-        boost::iostreams::mapped_file_source m("temp.bin");
-        ds2i::mapper::map(mapped_s, m);
-        BOOST_REQUIRE_EQUAL(s.m_a, mapped_s.m_a);
-        BOOST_REQUIRE_EQUAL(s.m_b.size(), mapped_s.m_b.size());
+        mio::mmap_source m("temp.bin");
+        pisa::mapper::map(mapped_s, m);
+        REQUIRE(s.m_a == mapped_s.m_a);
+        REQUIRE(s.m_b.size() == mapped_s.m_b.size());
     }
 
-    boost::filesystem::remove("temp.bin");
+    std::remove("temp.bin");
 }

@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE block_freq_index
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -10,9 +11,11 @@
 #include "codec/simple8b.hpp"
 #include "codec/simple16.hpp"
 #include "codec/simdbp.hpp"
+#include "temporary_directory.hpp"
 
 #include "block_freq_index.hpp"
 #include "succinct/mapper.hpp"
+#include "mio/mmap.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -21,9 +24,9 @@
 template <typename BlockCodec>
 void test_block_freq_index()
 {
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
     uint64_t universe = 20000;
-    typedef ds2i::block_freq_index<BlockCodec> collection_type;
+    typedef pisa::block_freq_index<BlockCodec> collection_type;
     typename collection_type::builder b(universe, params);
 
     typedef std::vector<uint64_t> vec_type;
@@ -41,42 +44,44 @@ void test_block_freq_index()
 
     }
 
+    Temporary_Directory tmpdir;
+    auto filename = tmpdir.path().string() + "temp.bin";
     {
         collection_type coll;
         b.build(coll);
-        ds2i::mapper::freeze(coll, "temp.bin");
+        pisa::mapper::freeze(coll, filename.c_str());
     }
 
     {
         collection_type coll;
-        boost::iostreams::mapped_file_source m("temp.bin");
-        ds2i::mapper::map(coll, m);
+        mio::mmap_source m(filename.c_str());
+        pisa::mapper::map(coll, m);
 
         for (size_t i = 0; i < posting_lists.size(); ++i) {
             auto const& plist = posting_lists[i];
             auto doc_enum = coll[i];
-            BOOST_REQUIRE_EQUAL(plist.first.size(), doc_enum.size());
+            REQUIRE(plist.first.size() == doc_enum.size());
             for (size_t p = 0; p < plist.first.size(); ++p, doc_enum.next()) {
                 MY_REQUIRE_EQUAL(plist.first[p], doc_enum.docid(),
                                  "i = " << i << " p = " << p);
                 MY_REQUIRE_EQUAL(plist.second[p], doc_enum.freq(),
                                  "i = " << i << " p = " << p);
             }
-            BOOST_REQUIRE_EQUAL(coll.num_docs(), doc_enum.docid());
+            REQUIRE(coll.num_docs() == doc_enum.docid());
         }
     }
 }
 
-BOOST_AUTO_TEST_CASE(block_freq_index)
+TEST_CASE("block_freq_index")
 {
-    test_block_freq_index<ds2i::optpfor_block>();
-    test_block_freq_index<ds2i::varint_G8IU_block>();
-    test_block_freq_index<ds2i::streamvbyte_block>();
-    test_block_freq_index<ds2i::maskedvbyte_block>();
-    test_block_freq_index<ds2i::varintgb_block>();
-    test_block_freq_index<ds2i::interpolative_block>();
-    test_block_freq_index<ds2i::qmx_block>();
-    test_block_freq_index<ds2i::simple8b_block>();
-    test_block_freq_index<ds2i::simple16_block>();
-    test_block_freq_index<ds2i::simdbp_block>();
+    test_block_freq_index<pisa::optpfor_block>();
+    test_block_freq_index<pisa::varint_G8IU_block>();
+    test_block_freq_index<pisa::streamvbyte_block>();
+    test_block_freq_index<pisa::maskedvbyte_block>();
+    test_block_freq_index<pisa::varintgb_block>();
+    test_block_freq_index<pisa::interpolative_block>();
+    test_block_freq_index<pisa::qmx_block>();
+    test_block_freq_index<pisa::simple8b_block>();
+    test_block_freq_index<pisa::simple16_block>();
+    test_block_freq_index<pisa::simdbp_block>();
 }

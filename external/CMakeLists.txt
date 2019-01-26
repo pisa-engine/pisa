@@ -13,8 +13,19 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 # stxxl
 add_definitions(-DSTXXL_VERBOSE_LEVEL=-10) # suppress messages to stdout
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/stxxl)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STXXL_CXX_FLAGS}")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STXXL_CXX_FLAGS}")
 include_directories(${STXXL_INCLUDE_DIRS})
+set_target_properties(stxxl PROPERTIES
+            CXX_STANDARD 14
+)
+set_target_properties(${LIBSTXXL_SOURCES} PROPERTIES
+            CXX_STANDARD 14
+)
+set_target_properties(stxxl_tool test1 test2 PROPERTIES
+            CXX_STANDARD 14
+)
+
+
 
 # Add streamvbyte
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/include)
@@ -35,6 +46,12 @@ add_library(MaskedVByte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varin
 
 # Add QMX
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/QMX EXCLUDE_FROM_ALL)
+target_compile_options(QMX INTERFACE -Wno-implicit-fallthrough)
+
+# Add mio
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/mio EXCLUDE_FROM_ALL)
+target_compile_options(mio INTERFACE -Wno-sign-compare)
+
 
 # Add SIMD-BP
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/include)
@@ -58,7 +75,26 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
                                            -Wno-unknown-pragmas
                                            -Wno-sign-compare
                                            -Wno-reorder
-                                           -Wno-unused-local-typedef
+                                           -Wno-unused-local-typedefs
 )
 
+# Add GSL
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
 
+# Add Boost
+add_subdirectory(boost-cmake)
+
+# Add Catch
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
+
+# Add Porter2
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
+
+# Add warcpp
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
+
+# Add fmt
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+
+# Add spdlog
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)

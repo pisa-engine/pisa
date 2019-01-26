@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE partitioned_sequence
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -9,7 +10,8 @@
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/strict_sequence.hpp"
 
-namespace ds2i {
+
+namespace pisa {
 
     class partitioned_sequence_test {
     public:
@@ -47,37 +49,22 @@ template <typename BaseSequence>
 void test_partitioned_sequence(uint64_t universe,
                                std::vector<uint64_t> const& seq)
 {
-    ds2i::global_parameters params;
-    typedef ds2i::partitioned_sequence<BaseSequence> sequence_type;
+    pisa::global_parameters params;
+    typedef pisa::partitioned_sequence<BaseSequence> sequence_type;
 
-    ds2i::bit_vector_builder bvb;
+    pisa::bit_vector_builder bvb;
     sequence_type::write(bvb, seq.begin(), universe, seq.size(), params);
-    ds2i::bit_vector bv(&bvb);
+    pisa::bit_vector bv(&bvb);
 
     typename sequence_type::enumerator r(bv, 0, universe, seq.size(), params);
-    ds2i::partitioned_sequence_test::test_construction(r, seq);
+    pisa::partitioned_sequence_test::test_construction(r, seq);
     test_sequence(r, seq);
 }
 
-BOOST_AUTO_TEST_CASE(partitioned_sequence)
+TEST_CASE("partitioned_sequence")
 {
-    using ds2i::indexed_sequence;
-    using ds2i::strict_sequence;
-
-    if (boost::unit_test::framework::master_test_suite().argc == 2) {
-        const char* filename = boost::unit_test::framework::master_test_suite().argv[1];
-        std::cerr << "Testing sequence from file " << filename << std::endl;
-        std::ifstream is(filename);
-        uint64_t v;
-        std::vector<uint64_t> seq;
-        while (is >> v) {
-            seq.push_back(v);
-        }
-        uint64_t universe = seq.back() + 1;
-        test_partitioned_sequence<indexed_sequence>(universe, seq);
-        test_partitioned_sequence<strict_sequence>(universe, seq);
-        return;
-    }
+    using pisa::indexed_sequence;
+    using pisa::strict_sequence;
 
     // test singleton sequences
     {

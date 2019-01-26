@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE block_codecs
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -35,24 +36,22 @@ void test_block_codec()
             uint8_t const* out = BlockCodec::decode(encoded.data(), decoded.data(),
                                                     sum_of_values, values.size());
 
-
-            BOOST_REQUIRE_EQUAL(encoded.size(), out - encoded.data());
-            BOOST_REQUIRE_EQUAL_COLLECTIONS(values.begin(), values.end(),
-                                            decoded.begin(), decoded.end());
+            REQUIRE(encoded.size() == out - encoded.data());
+            REQUIRE(std::equal(values.begin(), values.end(), decoded.begin()));
         }
     }
 }
 
-BOOST_AUTO_TEST_CASE(block_codecs)
+TEST_CASE("block_codecs")
 {
-    test_block_codec<ds2i::optpfor_block>();
-    test_block_codec<ds2i::varint_G8IU_block>();
-    test_block_codec<ds2i::streamvbyte_block>();
-    test_block_codec<ds2i::maskedvbyte_block>();
-    test_block_codec<ds2i::interpolative_block>();
-    test_block_codec<ds2i::qmx_block>();
-    test_block_codec<ds2i::varintgb_block>();
-    test_block_codec<ds2i::simple8b_block>();
-    test_block_codec<ds2i::simdbp_block>();
-    test_block_codec<ds2i::simple16_block>();
+    test_block_codec<pisa::optpfor_block>();
+    test_block_codec<pisa::varint_G8IU_block>();
+    test_block_codec<pisa::streamvbyte_block>();
+    test_block_codec<pisa::maskedvbyte_block>();
+    test_block_codec<pisa::interpolative_block>();
+    test_block_codec<pisa::qmx_block>();
+    test_block_codec<pisa::varintgb_block>();
+    test_block_codec<pisa::simple8b_block>();
+    test_block_codec<pisa::simdbp_block>();
+    test_block_codec<pisa::simple16_block>();
 }

@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE strict_elias_fano
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -6,13 +7,14 @@
 #include <vector>
 #include <cstdlib>
 
-BOOST_AUTO_TEST_CASE(strict_elias_fano)
+
+TEST_CASE( "strict_elias_fano")
 {
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
 
     uint64_t n = 10000;
     uint64_t universe = uint64_t(2 * n);
     auto seq = random_sequence(universe, n, true);
 
-    test_sequence(ds2i::strict_elias_fano(), params, universe, seq);
+    test_sequence(pisa::strict_elias_fano(), params, universe, seq);
 }

@@ -1,4 +1,5 @@
-#define BOOST_TEST_MODULE forward_index
+#define CATCH_CONFIG_MAIN
+#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
@@ -6,26 +7,22 @@
 
 #include <vector>
 
-BOOST_AUTO_TEST_CASE(write_and_read)
-{
+TEST_CASE("write_and_read") {
     // given
-    using namespace ds2i;
+    using namespace pisa;
     std::string invind_input("test_data/test_collection");
     std::string fwdind_file("temp_collection");
-    auto fwd = forward_index::from_inverted_index(invind_input, 0, true);
+    auto        fwd = forward_index::from_inverted_index(invind_input, 0, true);
 
     // when
     forward_index::write(fwd, fwdind_file);
     auto fwd_read = forward_index::read(fwdind_file);
 
     // then
-    BOOST_REQUIRE_EQUAL(fwd.size(), fwd_read.size());
-    BOOST_REQUIRE_EQUAL(fwd.term_count(), fwd_read.term_count());
+    REQUIRE(fwd.size() == fwd_read.size());
+    REQUIRE(fwd.term_count() == fwd_read.term_count());
     for (uint32_t doc = 0; doc < fwd.size(); ++doc) {
-        BOOST_REQUIRE_EQUAL(fwd.term_count(doc), fwd_read.term_count(doc));
-        BOOST_CHECK_EQUAL_COLLECTIONS(fwd[doc].begin(),
-                                      fwd[doc].end(),
-                                      fwd_read[doc].begin(),
-                                      fwd_read[doc].end());
+        REQUIRE(fwd.term_count(doc) == fwd_read.term_count(doc));
+        REQUIRE(std::equal(fwd[doc].begin(), fwd[doc].end(), fwd_read[doc].begin()));
     }
 }
