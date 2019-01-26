@@ -7,11 +7,14 @@
 #include <optional>
 #include <vector>
 #include <string>
+#include <sstream>
 
 #include "boost/filesystem.hpp"
 #include "spdlog/spdlog.h"
+#include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
+#include "binary_collection.hpp"
 #include "enumerate.hpp"
 #include "parsing/html.hpp"
 #include "warcpp/warcpp.hpp"

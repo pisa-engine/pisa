@@ -7,6 +7,7 @@
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
 #include "wand_utils.hpp"
+#include "global_parameters.hpp"
 
 namespace pisa {
 
