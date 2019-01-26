@@ -2,8 +2,6 @@
 
 #include "spdlog/spdlog.h"
 
-#include "succinct/mappable_vector.hpp"
-
 #include "binary_freq_collection.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
