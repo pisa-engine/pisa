@@ -12,15 +12,15 @@ template <typename IndexType>
 void selective_queries(const char* index_filename,
                        std::string const& type)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
 
     IndexType index;
-    logger() << "Loading index from " << index_filename << std::endl;
+    spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename);
     mapper::map(index, m, mapper::map_flags::warmup);
 
-    logger() << "Performing " << type << " queries" << std::endl;
+    spdlog::info("Performing {} queries", type);
 
     term_id_vec query;
 
@@ -59,7 +59,7 @@ void selective_queries(const char* index_filename,
 
 
 int main(int, const char** argv) {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string type = argv[1];
     const char* index_filename = argv[2];
@@ -74,7 +74,7 @@ int main(int, const char** argv) {
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 
 }

@@ -31,9 +31,27 @@
 [submodule "external/mio"]
 	path = external/mio
 	url = https://github.com/mandreyel/mio.git
+[submodule "external/GSL"]
+	path = external/GSL
+	url = https://github.com/Microsoft/GSL.git
+[submodule "external/gumbo-parser"]
+	path = external/gumbo-parser
+	url = https://github.com/google/gumbo-parser.git
 [submodule "external/Catch2"]
 	path = external/Catch2
 	url = https://github.com/catchorg/Catch2.git
 [submodule "external/boost-cmake"]
 	path = external/boost-cmake
 	url = https://github.com/Orphis/boost-cmake.git
+[submodule "external/Porter2"]
+	path = external/Porter2
+	url = https://github.com/pisa-engine/Porter2.git
+[submodule "external/warcpp"]
+	path = external/warcpp
+	url = https://github.com/pisa-engine/warcpp.git
+[submodule "external/spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git

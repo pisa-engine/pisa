@@ -1,13 +1,17 @@
 cmake_minimum_required(VERSION 3.0)
+
 project(DS2I CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
+option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
+
 configure_file(
-  ${DS2I_SOURCE_DIR}/include/ds2i_config.hpp.in
-  ${DS2I_SOURCE_DIR}/include/ds2i_config.hpp
+  ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp.in
+  ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp
   ESCAPE_QUOTES)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -20,6 +24,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # include(external/external.cmake)
 add_subdirectory(external)
 
+include(ExternalProject)
+ExternalProject_Add(gumbo-external
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
+    BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
+    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
+    BUILD_COMMAND ${MAKE})
+add_library(gumbo::gumbo UNKNOWN IMPORTED)
+set_target_properties(gumbo::gumbo PROPERTIES INTERFACE_INCLUDE_DIRECTORIES
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser/src)
+set_property(TARGET gumbo::gumbo APPEND PROPERTY IMPORTED_LOCATION
+    ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a)
+add_dependencies( gumbo::gumbo gumbo-external )
+
 # Add code coverage
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
 find_package(codecov)
@@ -27,7 +44,6 @@ list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
 
 
 if (UNIX)
-
    # For hardware popcount and other special instructions
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
@@ -49,18 +65,40 @@ endif()
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-link_libraries(Threads::Threads)
 
-# add the root directory to include path to make includes absolute
-include_directories(${DS2I_SOURCE_DIR}/external
-		    ${STXXL_INCLUDE_DIRS}
-		    ${DS2I_SOURCE_DIR}/include
-		    )
+include_directories(include)
+add_library(pisa INTERFACE)
+target_include_directories(pisa INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
+)
+target_link_libraries(pisa INTERFACE
+    Threads::Threads
+    Boost::boost
+    QMX
+    mio
+    ParallelSTL
+    GSL
+    FastPFor
+    streamvbyte
+    MaskedVByte
+    simdcomp
+    gumbo::gumbo
+    Boost::filesystem
+    Porter2
+    warcpp
+    spdlog
+    fmt::fmt
+)
+target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(src)
 
-enable_testing()
-add_subdirectory(test)
+if (PISA_ENABLE_TESTING AND BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(test)
+endif()
 
-add_subdirectory(benchmarks)
+if (PISA_ENABLE_BENCHMARKING)
+  add_subdirectory(benchmarks)
+endif()
 

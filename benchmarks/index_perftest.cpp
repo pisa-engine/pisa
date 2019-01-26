@@ -1,12 +1,12 @@
 #include "mio/mmap.hpp"
+#include "spdlog/spdlog.h"
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
 #include "util/util.hpp"
 
-using ds2i::logger;
-using ds2i::get_time_usecs;
-using ds2i::do_not_optimize_away;
+using pisa::get_time_usecs;
+using pisa::do_not_optimize_away;
 
 template <typename IndexType, bool with_freqs>
 void perftest(IndexType const& index, std::string const& type)
@@ -17,8 +17,10 @@ void perftest(IndexType const& index, std::string const& type)
         size_t max_length = 100000;
         size_t max_number_of_lists = 1000;
 
-        logger() << "Scanning " << max_number_of_lists << " posting lists long between "
-                 << min_length << " and " << max_length << std::endl;
+        spdlog::info("Scanning {} posting lists with length between {} and {}",
+                     max_number_of_lists,
+                     min_length,
+                     max_length);
 
         std::vector<size_t> long_lists;
         for (size_t i = 0; i < index.size() and long_lists.size() <= max_number_of_lists; ++i) {
@@ -44,14 +46,12 @@ void perftest(IndexType const& index, std::string const& type)
         }
         double elapsed = get_time_usecs() - tick;
         double next_ns = elapsed / postings * 1000;
-        logger() << "Performed " << postings << " next()" << freqs_log
-                 << " in " << uint64_t(elapsed / 1000000) << " seconds, "
-                 << std::fixed << std::setprecision(1)
-                 << next_ns << " ns per posting"
-                 << std::endl;
-
-        std::cout << type << "\t" << "next" << (with_freqs ? "_freq" : "")
-                  << "\t" << next_ns << std::endl;
+        spdlog::info("Performed {} next(){} in {} seconds, {:.1f} ns per posting",
+                     postings,
+                     freqs_log,
+                     uint64_t(elapsed / 1000000),
+                     next_ns);
+        spdlog::info("{}\tnext{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), next_ns);
     }
 
     uint64_t min_calls_per_list = 100;
@@ -65,7 +65,7 @@ void perftest(IndexType const& index, std::string const& type)
             if (size < min_length) continue;
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
-            for (size_t i = 0; i < std::min(ds2i::ceil_div(size, skip),
+            for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip),
                                             max_calls_per_list); ++i) {
                 reader.move(i * skip);
                 skip_values.back().second.push_back(reader.docid());
@@ -88,25 +88,23 @@ void perftest(IndexType const& index, std::string const& type)
         double elapsed = get_time_usecs() - tick;
         double next_geq_ns = elapsed / calls * 1000;
 
-        logger() << "Performed " << calls << " next_geq()" << freqs_log
-                 << " with skip=" << skip <<": "
-                 << std::fixed << std::setprecision(1)
-                 << next_geq_ns << " ns per call"
-                 << std::endl;
-
-        std::cout << type << "\t" << "next_geq" << (with_freqs ? "_freq" : "")
-                  << "\t" << skip
-                  << "\t" << next_geq_ns << std::endl;
+        spdlog::info("Performed {} calls next_geq(){} with skip={}: {:.1f} ns per call",
+                     calls,
+                     freqs_log,
+                     skip,
+                     next_geq_ns);
+        spdlog::info(
+            "{}\tnext_geq{}\t{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), skip, next_geq_ns);
     }
 }
 
 template <typename IndexType>
 void perftest(const char* index_filename, std::string const& type)
 {
-    logger() << "Loading index from " << index_filename << std::endl;
+    spdlog::info("Loading index from {}", index_filename);
     IndexType index;
     mio::mmap_source m(index_filename);
-    ds2i::mapper::map(index, m, ds2i::mapper::map_flags::warmup);
+    pisa::mapper::map(index, m, pisa::mapper::map_flags::warmup);
 
     perftest<IndexType, false>(index, type);
     perftest<IndexType, true>(index, type);
@@ -115,7 +113,7 @@ void perftest(const char* index_filename, std::string const& type)
 
 int main(int argc, const char** argv) {
 
-    using namespace ds2i;
+    using namespace pisa;
 
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0]
@@ -137,6 +135,6 @@ int main(int argc, const char** argv) {
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 }

@@ -6,6 +6,7 @@
 #include "mio/mmap.hpp"
 
 #include "boost/lexical_cast.hpp"
+#include "spdlog/spdlog.h"
 
 #include "succinct/mapper.hpp"
 
@@ -22,14 +23,12 @@
 #include "util/semiasync_queue.hpp"
 #include "util/progress.hpp"
 
-using ds2i::logger;
-
 typedef uint32_t block_id_type; // XXX for memory reasons, but would need size_t for very large indexes
 
 struct lambda_point {
     block_id_type block_id;
     float lambda;
-    ds2i::mixed_block::space_time_point st;
+    pisa::mixed_block::space_time_point st;
 
     struct comparator {
         bool operator()(lambda_point const& lhs, lambda_point const& rhs) const
@@ -56,10 +55,10 @@ struct lambda_point {
 typedef stxxl::vector<lambda_point> lambda_vector_type;
 
 template <typename InputCollectionType>
-struct lambdas_computer : ds2i::semiasync_queue::job {
+struct lambdas_computer : pisa::semiasync_queue::job {
     lambdas_computer(block_id_type block_id_base,
                      typename InputCollectionType::document_enumerator e,
-                     ds2i::predictors_vec_type const& predictors,
+                     pisa::predictors_vec_type const& predictors,
                      std::vector<uint32_t>& counts,
                      lambda_vector_type& lambda_points)
         : m_block_id_base(block_id_base)
@@ -72,7 +71,7 @@ struct lambdas_computer : ds2i::semiasync_queue::job {
 
     virtual void prepare()
     {
-        using namespace ds2i;
+        using namespace pisa;
         using namespace time_prediction;
 
         auto blocks = m_e.get_blocks();
@@ -138,7 +137,7 @@ struct lambdas_computer : ds2i::semiasync_queue::job {
 
     block_id_type m_block_id_base;
     typename InputCollectionType::document_enumerator m_e;
-    ds2i::predictors_vec_type const& m_predictors;
+    pisa::predictors_vec_type const& m_predictors;
     std::vector<uint32_t> m_counts;
     double m_lambda;
     std::vector<lambda_point> m_points_buf;
@@ -153,10 +152,10 @@ void compute_lambdas(InputCollectionType const& input_coll,
                      const char* lambdas_filename)
 
 {
-    using namespace ds2i;
+    using namespace pisa;
     using namespace time_prediction;
 
-    ds2i::progress progress("Computing lambdas", input_coll.size());
+    pisa::progress progress("Computing lambdas", input_coll.size());
 
     auto predictors = load_predictors(predictors_filename);
     std::ifstream block_stats(block_stats_filename);
@@ -215,8 +214,8 @@ void compute_lambdas(InputCollectionType const& input_coll,
 
     queue.complete();
 
-    logger() << lambda_points.size() << " lambda points" << std::endl;
-    logger() << "Sorting lambda points" << std::endl;
+    spdlog::info("{} lambda points", lambda_points.size());
+    spdlog::info("Sorting lambda points");
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
 
     stats_line()
@@ -240,11 +239,11 @@ void compute_lambdas(InputCollectionType const& input_coll,
 }
 
 template <typename InputCollectionType, typename CollectionBuilder>
-struct list_transformer : ds2i::semiasync_queue::job {
+struct list_transformer : pisa::semiasync_queue::job {
     list_transformer(CollectionBuilder& b,
                      typename InputCollectionType::document_enumerator e,
-                     std::vector<ds2i::mixed_block::block_type>::const_iterator block_type_begin,
-                     std::vector<ds2i::mixed_block::compr_param_type>::const_iterator block_param_begin)
+                     std::vector<pisa::mixed_block::block_type>::const_iterator block_type_begin,
+                     std::vector<pisa::mixed_block::compr_param_type>::const_iterator block_param_begin)
         : m_b(b)
         , m_e(e)
         , m_block_type(block_type_begin)
@@ -253,7 +252,7 @@ struct list_transformer : ds2i::semiasync_queue::job {
 
     virtual void prepare()
     {
-        using namespace ds2i;
+        using namespace pisa;
 
         typedef typename InputCollectionType::document_enumerator::block_data input_block_type;
         typedef mixed_block::block_transformer<input_block_type> output_block_type;
@@ -281,14 +280,14 @@ struct list_transformer : ds2i::semiasync_queue::job {
 
     CollectionBuilder& m_b;
     typename InputCollectionType::document_enumerator m_e;
-    std::vector<ds2i::mixed_block::block_type>::const_iterator m_block_type;
-    std::vector<ds2i::mixed_block::compr_param_type>::const_iterator m_block_param;
+    std::vector<pisa::mixed_block::block_type>::const_iterator m_block_type;
+    std::vector<pisa::mixed_block::compr_param_type>::const_iterator m_block_param;
     std::vector<uint8_t> m_buf;
 };
 
 
 template <typename InputCollectionType>
-void optimal_hybrid_index(ds2i::global_parameters const& params,
+void optimal_hybrid_index(pisa::global_parameters const& params,
                           const char* predictors_filename,
                           const char* block_stats_filename,
                           const char* input_filename,
@@ -296,13 +295,13 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
                           const char* lambdas_filename,
                           size_t budget)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
     InputCollectionType input_coll;
     mio::mmap_source m(input_filename);
     mapper::map(input_coll, m);
 
-    logger() << "Processing " << input_coll.size() << " posting lists" << std::endl;
+    spdlog::info("Processing {} posting lists", input_coll.size());
     size_t num_blocks = 0;
     size_t partial_blocks = 0;
     size_t space_base = 8; // space overhead independent of block compression method
@@ -318,11 +317,11 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         }
     }
 
-    logger() << num_blocks << " overall blocks" << std::endl;
+    spdlog::info("{} overall blocks", num_blocks);
 
     if (!!std::ifstream(lambdas_filename)) {
-        logger() << "Found lambdas file " << lambdas_filename << ", skipping recomputation" << std::endl;
-        logger() << "To recompute lambdas, remove file" << std::endl;
+        spdlog::info("Found lambdas file {}, skipping recomputation", lambdas_filename);
+        spdlog::info("To recompute lambdas, remove file");
     } else {
         compute_lambdas(input_coll, num_blocks, predictors_filename,
                         block_stats_filename, lambdas_filename);
@@ -334,7 +333,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
     double tick = get_time_usecs();
 
-    logger() << "Computing space-time tradeoffs" << std::endl;
+    spdlog::info("Computing space-time tradeoffs");
     std::vector<uint16_t> block_spaces(num_blocks);
     std::vector<float> block_times(num_blocks);
     std::vector<mixed_block::block_type> block_types(num_blocks);
@@ -364,7 +363,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
         if (lpid.lambda > 0) { // we are past the initial frontier
             if (first_nonzero_lambda) {
-                logger() << "Minimum feasible space: " << cur_space << std::endl;
+                spdlog::info("Minimum feasible space: {}", cur_space);
                 first_nonzero_lambda = false;
             }
 
@@ -384,7 +383,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     dispose(block_times);
 
     if (budget == 0) {
-        logger() << "Done" << std::endl;
+        spdlog::info("Done");
         return; // done, just reporting the trade-offs
     }
 
@@ -394,8 +393,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
         ("greedy_time", elapsed_secs)
         ;
 
-    logger() << "Found trade-off. Space: " << cur_space
-             << " Time: " << cur_time << std::endl;
+    spdlog::info("Found trade-off. Space: {} Time: {}", cur_space, cur_time);
 
     stats_line()
         ("found_space", cur_space)
@@ -426,7 +424,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
     typedef typename block_mixed_index::builder builder_type;
     builder_type builder(input_coll.num_docs(), params);
-    ds2i::progress progress("Building collection", input_coll.size());
+    pisa::progress progress("Building collection", input_coll.size());
 
     semiasync_queue queue(1 << 24);
     auto block_types_it = block_types.begin();
@@ -454,8 +452,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
     block_mixed_index coll;
     builder.build(coll);
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    logger() << "Collection built in "
-             << elapsed_secs << " seconds" << std::endl;
+    spdlog::info("Collection built in {} seconds", elapsed_secs);
 
     stats_line()
         ("worker_threads", configuration::get().worker_threads)
@@ -471,7 +468,7 @@ void optimal_hybrid_index(ds2i::global_parameters const& params,
 
 int main(int argc, const char** argv) {
 
-    using namespace ds2i;
+    using namespace pisa;
 
     if (argc < 5) {
         std::cerr << "Usage: " << argv[0]
@@ -498,7 +495,7 @@ int main(int argc, const char** argv) {
         collection_basename = argv[9];
     }
 
-    ds2i::global_parameters params;
+    pisa::global_parameters params;
 
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                           \
@@ -516,7 +513,7 @@ int main(int argc, const char** argv) {
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_BLOCK_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 
     return 0;

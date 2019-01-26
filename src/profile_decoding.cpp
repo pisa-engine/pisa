@@ -3,13 +3,14 @@
 
 #include "boost/lexical_cast.hpp"
 #include "mio/mmap.hpp"
+#include "spdlog/spdlog.h"
 
 #include "succinct/mapper.hpp"
 #include "index_types.hpp"
 #include "util/util.hpp"
 #include "dec_time_prediction.hpp"
 
-namespace ds2i {
+namespace pisa {
 
     double measure_decoding_time(size_t sum_of_values, size_t n,
                                  std::vector<uint8_t> const& buf)
@@ -79,7 +80,7 @@ namespace ds2i {
         std::uniform_real_distribution<double> dist01(0.0, 1.0);
 
         IndexType index;
-        logger() << "Loading index from " << index_filename << std::endl;
+        spdlog::info("Loading index from {}", index_filename);
         mio::mmap_source m(index_filename);
         mapper::map(index, m);
 
@@ -87,7 +88,7 @@ namespace ds2i {
 
         for (size_t l = 0; l < index.size(); ++l) {
             if (l % 1000000 == 0) {
-                logger() << l << " lists processed" << std::endl;
+                spdlog::info("{} lists processed", l);
             }
 
             auto blocks = index[l].get_blocks();
@@ -102,13 +103,13 @@ namespace ds2i {
             }
         }
 
-        logger() << index.size() << " lists processed" << std::endl;
+        spdlog::info("{} lists processed", index.size());
     }
 }
 
 int main(int /* argc */, const char** argv)
 {
-    using namespace ds2i;
+    using namespace pisa;
 
     std::string type = argv[1];
     const char* index_filename = argv[2];
@@ -124,7 +125,7 @@ int main(int /* argc */, const char** argv)
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_BLOCK_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 
 }

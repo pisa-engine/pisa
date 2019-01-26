@@ -5,19 +5,17 @@
 #include <numeric>
 #include <random>
 
+#include "spdlog/spdlog.h"
 #include "succinct/mapper.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 
-using ds2i::logger;
-
-
 int main(int argc, const char** argv)
 {
 
-    using namespace ds2i;
+    using namespace pisa;
 
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0]
@@ -28,14 +26,14 @@ int main(int argc, const char** argv)
 
     const std::string input_basename = argv[1];
     binary_freq_collection input(input_basename.c_str());
-    
-    logger() << "Computing statistics about document ID space" << std::endl;
+
+    spdlog::info("Computing statistics about document ID space");
 
     std::vector<float> log2_data(256);
     for (size_t i = 0; i < 256; ++i) {
       log2_data[i] = log2f(i);
     }
-    
+
     double all_log_gaps = 0.0f;
     size_t no_gaps = 0;
     for (const auto& seq: input) {
@@ -50,5 +48,5 @@ int main(int argc, const char** argv)
         }
     }
     double average_log_gap = all_log_gaps/no_gaps;
-    logger() << "Average LogGap of documents: " << average_log_gap << std::endl;
+    spdlog::info("Average LogGap of documents: {}", average_log_gap);
 }

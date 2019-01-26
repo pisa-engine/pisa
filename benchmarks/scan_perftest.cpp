@@ -1,25 +1,26 @@
 #include "mio/mmap.hpp"
+#include "spdlog/spdlog.h"
+
 #include "succinct/mapper.hpp"
 #include "sequence_collection.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
 #include "util/util.hpp"
 
-using ds2i::logger;
-using ds2i::get_time_usecs;
-using ds2i::do_not_optimize_away;
+using pisa::get_time_usecs;
+using pisa::do_not_optimize_away;
 
 template <typename BaseSequence>
 void perftest(const char* index_filename)
 {
-    typedef ds2i::sequence_collection<BaseSequence> collection_type;
-    logger() << "Loading collection from " << index_filename << std::endl;
+    typedef pisa::sequence_collection<BaseSequence> collection_type;
+    spdlog::info("Loading collection from {}", index_filename);
     collection_type coll;
     mio::mmap_source m(index_filename);
-    ds2i::mapper::map(coll, m, ds2i::mapper::map_flags::warmup);
+    pisa::mapper::map(coll, m, pisa::mapper::map_flags::warmup);
 
     if (true) {
-        logger() << "Scanning all the posting lists" << std::endl;
+        spdlog::info("Scanning all the posting lists");
         auto tick = get_time_usecs();
         uint64_t calls_per_list = 500000;
         size_t postings = 0;
@@ -33,16 +34,15 @@ void perftest(const char* index_filename)
             postings += calls;
         }
         double elapsed = get_time_usecs() - tick;
-        logger() << "Read " << postings << " postings in "
-                 << uint64_t(elapsed / 1000000) << " seconds, "
-                 << std::fixed << std::setprecision(1)
-                 << (elapsed / postings * 1000) << " ns per posting"
-                 << std::endl;
+        spdlog::info("Read {} postings in {} seconds, {:.1f} ns per posting",
+                     postings,
+                     uint64_t(elapsed / 1000000),
+                     (elapsed / postings * 1000));
     }
 
     {
         size_t min_length = 4096;
-        logger() << "Scanning posting lists longer than " << min_length << std::endl;
+        spdlog::info("Scanning posting lists longer than {}", min_length);
         std::vector<size_t> long_lists;
         for (size_t i = 0; i < coll.size(); ++i) {
             if (coll[i].size() >= min_length) {
@@ -63,11 +63,10 @@ void perftest(const char* index_filename)
             postings += calls;
         }
         double elapsed = get_time_usecs() - tick;
-        logger() << "Read " << postings << " postings in "
-                 << uint64_t(elapsed / 1000000) << " seconds, "
-                 << std::fixed << std::setprecision(1)
-                 << (elapsed / postings * 1000) << " ns per posting"
-                 << std::endl;
+        spdlog::info("Read {} postings in {} seconds, {:.1f} ns per posting",
+                     postings,
+                     uint64_t(elapsed / 1000000),
+                     (elapsed / postings * 1000));
     }
 
     uint64_t calls_per_list = 20000;
@@ -103,10 +102,10 @@ void perftest(const char* index_filename)
         }
         double elapsed = get_time_usecs() - tick;
 
-        logger() << "Performed " << calls << " next_geq() with skip=" << skip <<": "
-                 << std::fixed << std::setprecision(1)
-                 << (elapsed / calls * 1000) << " ns per call"
-                 << std::endl;
+        spdlog::info("Performed {} next_geq() with skip={}: {:.1f} ns per call",
+                     calls,
+                     skip,
+                     (elapsed / calls * 1000));
 
         tick = get_time_usecs();
         calls = 0;
@@ -119,18 +118,18 @@ void perftest(const char* index_filename)
         }
         elapsed = get_time_usecs() - tick;
 
-        logger() << "Performed " << calls << " move() with skip=" << skip <<": "
-                 << std::fixed << std::setprecision(1)
-                 << (elapsed / calls * 1000) << " ns per call"
-                 << std::endl;
+        spdlog::info("Performed {} move() with skip={}: {:.1f} ns per call",
+                     calls,
+                     skip,
+                     (elapsed / calls * 1000));
     }
 }
 int main(int argc, const char** argv) {
 
-    using ds2i::compact_elias_fano;
-    using ds2i::indexed_sequence;
-    using ds2i::partitioned_sequence;
-    using ds2i::uniform_partitioned_sequence;
+    using pisa::compact_elias_fano;
+    using pisa::indexed_sequence;
+    using pisa::partitioned_sequence;
+    using pisa::uniform_partitioned_sequence;
 
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0]
@@ -151,6 +150,6 @@ int main(int argc, const char** argv) {
     } else if (type == "part") {
         perftest<partitioned_sequence<>>(index_filename);
     } else {
-        logger() << "ERROR: Unknown type " << type << std::endl;
+        spdlog::error("Unknown type {}", type);
     }
 }

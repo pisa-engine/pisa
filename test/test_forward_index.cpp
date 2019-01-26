@@ -9,7 +9,7 @@
 
 TEST_CASE("write_and_read") {
     // given
-    using namespace ds2i;
+    using namespace pisa;
     std::string invind_input("test_data/test_collection");
     std::string fwdind_file("temp_collection");
     auto        fwd = forward_index::from_inverted_index(invind_input, 0, true);

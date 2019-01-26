@@ -1,12 +1,14 @@
 #include <iostream>
 #include <algorithm>
 
+#include "spdlog/spdlog.h"
+
 #include "util/util.hpp"
 #include "codec/block_codecs.hpp"
 
 int main()
 {
-    using namespace ds2i;
+    using namespace pisa;
     static const size_t size = interpolative_block::block_size;
     static const size_t runs = 1 << 20;
 
@@ -25,6 +27,6 @@ int main()
         }
 
         double time = (get_time_usecs() - tick) / runs * 1000;
-        logger() << "u=" << u << " time=" << time << std::endl;
+        spdlog::info("u = {}; time = {}", u, time);
     }
 }

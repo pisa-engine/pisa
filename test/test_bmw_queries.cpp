@@ -7,7 +7,7 @@
 #include "index_types.hpp"
 #include "query/queries.hpp"
 
-namespace ds2i {
+namespace pisa {
 namespace test {
 
 struct index_initialization {
@@ -57,11 +57,11 @@ struct index_initialization {
 
     template <typename QueryOp>
     void test_against_wand(QueryOp &op_q) const {
-        wand_query<WandTypePlain> or_q(wdata, 10);
+        wand_query<index_type, WandTypePlain> or_q(index, wdata, 10);
 
         for (auto const &q : queries) {
-            or_q(index, q);
-            op_q(index, q);
+            or_q(q);
+            op_q(q);
             REQUIRE(or_q.topk().size() == op_q.topk().size());
 
             for (size_t i = 0; i < or_q.topk().size(); ++i) {
@@ -73,12 +73,12 @@ struct index_initialization {
 };
 
 } // namespace test
-} // namespace ds2i
+} // namespace pisa
 
-TEST_CASE_METHOD(ds2i::test::index_initialization, "block_max_wand") {
-    ds2i::block_max_wand_query<WandTypePlain>   block_max_wand_q(wdata, 10);
-    ds2i::block_max_wand_query<WandTypeUniform> block_max_wand_uniform_q(wdata_uniform, 10);
-    ds2i::block_max_wand_query<WandTypePlain>   block_max_wand_fixed_q(wdata_fixed, 10);
+TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand") {
+    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
+    pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
+    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10);
     test_against_wand(block_max_wand_uniform_q);
     test_against_wand(block_max_wand_q);
     test_against_wand(block_max_wand_fixed_q);

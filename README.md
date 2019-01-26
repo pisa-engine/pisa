@@ -7,7 +7,7 @@
 
 ## Building the code
 
-The code is tested on Linux with GCC 5.4.0 and Clang 5.0.
+The code is tested on Linux with `GCC 7.4.0`, `GCC 8.1.0`, `Clang 5.0`, `Clang 6.0` and on macOS with `AppleClang 9.1.0`.
 
 The following dependencies are needed for the build.
 
