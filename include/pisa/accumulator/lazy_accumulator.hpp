@@ -35,8 +35,8 @@ struct Lazy_Accumulator {
                 auto const shift = pos * counter_bit_size;
                 descriptor &= ~(mask << shift);
                 descriptor |= static_cast<Descriptor>(counter) << shift;
-                accumulators[pos] = 0;
             }
+            accumulators[pos] = 0;
         }
     };
 
