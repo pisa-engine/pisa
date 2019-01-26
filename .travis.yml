@@ -33,6 +33,14 @@ matrix:
     - os: linux
       dist: xenial
       compiler: gcc
+      addons: &gcc7
+        apt:
+          sources: *all_sources
+          packages: ['g++-7']
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On"
+    - os: linux
+      dist: xenial
+      compiler: gcc
       addons: &gcc8
         apt:
           sources: *all_sources
@@ -66,7 +74,7 @@ before_install:
 script:
     - mkdir build
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} ${CMAKE_OPTIONS} ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - make
     - ctest
 

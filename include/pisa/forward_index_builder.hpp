@@ -10,6 +10,8 @@
 #include <thread>
 #include <unordered_set>
 #include <vector>
+#include <string>
+#include <sstream>
 
 #include "boost/filesystem.hpp"
 #include "pstl/algorithm"

@@ -1,6 +1,11 @@
 #pragma once
 
+#include <vector>
+#include <string>
+#include "query/queries.hpp"
+
 namespace pisa {
+
 
 template <typename Index, typename WandType>
 struct ranked_or_query {

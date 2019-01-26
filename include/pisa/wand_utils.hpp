@@ -1,6 +1,7 @@
 #pragma once
 
 #include "configuration.hpp"
+#include "binary_freq_collection.hpp"
 #include "score_opt_partition.hpp"
 #include "global_parameters.hpp"
 

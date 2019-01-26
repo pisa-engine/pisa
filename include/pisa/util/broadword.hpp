@@ -1,8 +1,10 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
+#include <cassert>
 #include "util/intrinsics.hpp"
 #include "util/tables.hpp"
+
 
 namespace pisa { namespace broadword {
 

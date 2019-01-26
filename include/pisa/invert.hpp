@@ -9,7 +9,9 @@
 #include <optional>
 #include <thread>
 #include <unordered_map>
+#include <sstream>
 
+#include "gsl/span"
 #include "boost/filesystem.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"

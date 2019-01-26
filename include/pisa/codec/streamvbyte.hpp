@@ -1,6 +1,9 @@
 #pragma once
 
+#include <vector>
+
 #include "streamvbyte/include/streamvbyte.h"
+
 namespace pisa {
 
 struct streamvbyte_block {

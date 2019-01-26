@@ -1,5 +1,11 @@
 #pragma once
 
+#include <vector>
+
+#include "scorer/bm25.hpp"
+#include "topk_queue.hpp"
+#include "query/queries.hpp"
+
 namespace pisa {
 
 template <typename Index, typename WandType>

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <atomic>
 #include <mutex>
+#include <map>
 
 namespace pisa {
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cmath>
-
+#include <algorithm>
 namespace pisa {
 
     struct bm25 {
