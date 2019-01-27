@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include <array>
+
 namespace pisa {
 
 template <size_t N>

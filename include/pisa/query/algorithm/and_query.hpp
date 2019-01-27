@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include "query/queries.hpp"
+
 namespace pisa {
 
 template <typename Index, bool with_freqs>

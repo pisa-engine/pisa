@@ -1,6 +1,7 @@
 #pragma once
 
 #include "QMX/qmx.hpp"
+#include "codec/block_codecs.hpp"
 
 namespace pisa {
 struct qmx_block {
