@@ -54,20 +54,6 @@ struct Lazy_Accumulator {
         }
     }
 
-    float &operator[](std::ptrdiff_t const document) {
-        auto const block        = document / counters_in_descriptor;
-        auto const pos_in_block = document % counters_in_descriptor;
-        if (//m_accumulators[block].accumulators[pos_in_block] > 0 &&
-            m_accumulators[block].counter(pos_in_block) != m_counter)
-        {
-            auto const shift = pos_in_block * counter_bit_size;
-            m_accumulators[block].descriptor &= ~(mask << shift);
-            m_accumulators[block].descriptor |= m_counter << shift;
-            m_accumulators[block].accumulators[pos_in_block] = 0;
-        }
-        return m_accumulators[block].accumulators[pos_in_block];
-    }
-
     void accumulate(std::ptrdiff_t const document, float score)
     {
         auto const block = document / counters_in_descriptor;
