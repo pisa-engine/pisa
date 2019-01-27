@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include "util/util.hpp"
 namespace pisa {
 
 struct topk_queue {

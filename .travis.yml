@@ -19,6 +19,7 @@ cache:
   apt: true
 
 matrix:
+  fast_finish: true
   include:
     - os: linux
       dist: xenial
@@ -30,6 +31,14 @@ matrix:
             - g++-7
             - lcov
       env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      addons: &gcc7
+        apt:
+          sources: *all_sources
+          packages: ['g++-7']
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On"
     - os: linux
       dist: xenial
       compiler: gcc
@@ -66,9 +75,9 @@ before_install:
 script:
     - mkdir build
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} ${CMAKE_OPTIONS} ..
-    - make -j 2
-    - ctest -j 2
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
+    - make
+    - ctest
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

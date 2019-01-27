@@ -1,21 +1,17 @@
 #pragma once
 
 #include <algorithm>
-#include <atomic>
 #include <fstream>
 #include <functional>
-#include <iostream>
 #include <numeric>
 #include <optional>
-#include <thread>
-#include <unordered_set>
 #include <vector>
+#include <string>
+#include <sstream>
 
 #include "boost/filesystem.hpp"
-#include "pstl/algorithm"
-#include "pstl/execution"
-#include "spdlog/fmt/ostr.h"
 #include "spdlog/spdlog.h"
+#include "spdlog/fmt/ostr.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
@@ -23,7 +19,6 @@
 #include "enumerate.hpp"
 #include "parsing/html.hpp"
 #include "warcpp/warcpp.hpp"
-#include "util/util.hpp"
 
 namespace pisa {
 

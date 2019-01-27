@@ -1,4 +1,9 @@
 #pragma once
+
+#include <vector>
+#include "util/util.hpp"
+#include "codec/block_codecs.hpp"
+
 extern "C" {
 #include "simdcomp/include/simdbitpacking.h"
 }

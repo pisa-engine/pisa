@@ -1,5 +1,9 @@
 #pragma once
 
+#include <vector>
+
+#include "codec/block_codecs.hpp"
+#include "util/util.hpp"
 #include "MaskedVByte/include/varintencode.h"
 #include "MaskedVByte/include/varintdecode.h"
 

@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include "codec/block_codecs.hpp"
 
 #include "FastPFor/headers/common.h"
 
