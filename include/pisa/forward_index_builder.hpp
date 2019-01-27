@@ -11,6 +11,7 @@
 
 #include "boost/filesystem.hpp"
 #include "spdlog/spdlog.h"
+#include "spdlog/fmt/ostr.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
