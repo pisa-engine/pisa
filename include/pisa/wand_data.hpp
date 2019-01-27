@@ -7,6 +7,7 @@
 #include "succinct/mappable_vector.hpp"
 #include "util/util.hpp"
 #include "wand_data_raw.hpp"
+#include "util/progress.hpp"
 
 class enumerator;
 namespace pisa {
@@ -40,18 +41,14 @@ namespace pisa {
             }
 
             typename block_wand_type::builder builder(type, coll, params);
-
-            for (auto const &seq: coll) {
-                auto v = builder.add_sequence(seq, coll, norm_lens);
-                max_term_weight.push_back(v);
-                if ((max_term_weight.size() % 1000000) == 0) {
-                    spdlog::info("{} lists processed", max_term_weight.size());
+            {
+                pisa::progress progress("Processing posting lists", coll.size());
+                for (auto const &seq: coll) {
+                    auto v = builder.add_sequence(seq, coll, norm_lens);
+                    max_term_weight.push_back(v);
+                    progress.update(1);
                 }
             }
-            if ((max_term_weight.size() % 1000000) != 0) {
-                spdlog::info("{} lists processed", max_term_weight.size());
-            }
-
             builder.build(m_block_wand);
             m_norm_lens.steal(norm_lens);
             m_max_term_weight.steal(max_term_weight);
