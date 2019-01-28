@@ -249,4 +249,11 @@ namespace pisa {
         bool first;
     };
 
+    class Line : public std::string {
+        friend std::istream &operator>>(std::istream &is, Line &line)
+        {
+            return std::getline(is, line);
+        }
+    };
+    using Line_Iterator = std::istream_iterator<Line>;
 }

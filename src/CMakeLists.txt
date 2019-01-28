@@ -75,3 +75,9 @@ target_link_libraries(read_collection
   pisa
   CLI11
 )
+
+add_executable(lexicon lexicon.cpp)
+target_link_libraries(lexicon
+  pisa
+  CLI11
+)
