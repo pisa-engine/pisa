@@ -79,8 +79,8 @@ class Lexicon_View {
         using value_type = std::string_view;
         using iterator_category = std::random_access_iterator_tag;
 
-        std::ptrdiff_t const *ptr;
-        char const *payloads;
+        std::ptrdiff_t const *ptr = nullptr;
+        char const *payloads = nullptr;
 
         [[nodiscard]] constexpr auto operator==(iterator const &other) const -> bool
         {
@@ -146,6 +146,11 @@ class Lexicon_View {
             auto begin = std::next(payloads, *ptr);
             return std::string_view(begin, static_cast<std::size_t>(*std::next(ptr) - *ptr));
         }
+
+        [[nodiscard]] constexpr auto operator->() const -> std::unique_ptr<std::string_view>
+        {
+            return std::make_unique(operator*());
+        }
     };
     using const_iterator = iterator;
 
@@ -191,6 +196,6 @@ struct std::iterator_traits<typename pisa::Lexicon_View::iterator> {
     using difference_type = std::ptrdiff_t;
     using value_type = std::string_view;
     using pointer = void;
-    using reference = void;
+    using reference = std::string_view;
     using iterator_category = std::random_access_iterator_tag;
 };
