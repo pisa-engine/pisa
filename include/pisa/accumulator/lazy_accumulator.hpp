@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <algorithm>
+#include <cstddef>
 
 #include "topk_queue.hpp"
 
