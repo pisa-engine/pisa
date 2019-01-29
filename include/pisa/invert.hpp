@@ -11,16 +11,16 @@
 #include <unordered_map>
 #include <sstream>
 
-#include "gsl/span"
 #include "boost/filesystem.hpp"
+#include "gsl/span"
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "range/v3/view/iota.hpp"
 #include "spdlog/spdlog.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
 #include "binary_collection.hpp"
-#include "enumerate.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
@@ -28,6 +28,8 @@ namespace pisa {
 template <class Tag, class T, T default_value = 0>
 class Integer {
    public:
+    using difference_type = T;
+
     Integer() : m_val(default_value) {}
     explicit Integer(T val) : m_val(val) {}
     Integer(Integer const &) = default;
@@ -49,6 +51,7 @@ class Integer {
         ++m_val;
         return *this;
     }
+    Integer operator++(int) const { return Integer{m_val++}; }
 
     [[nodiscard]] Integer operator+(T difference) const { return Integer(m_val + difference); }
     Integer &             operator+=(T difference) {
@@ -149,7 +152,7 @@ namespace invert {
 
 struct Batch {
     gsl::span<gsl::span<Term_Id const>> documents;
-    Enumerator_Range<Document_Id>       document_ids;
+    ranges::iota_view<Document_Id, Document_Id> document_ids;
 };
 
 std::vector<std::pair<Term_Id, Document_Id>> map_to_postings(Batch batch)
@@ -243,7 +246,7 @@ void write(std::string const &                     basename,
     std::ofstream fstream(basename + ".freqs");
     std::uint32_t count = index.documents.size();
     write_sequence(dstream, gsl::make_span<uint32_t const>(&count, 1));
-    for (auto term : enumerate(Term_Id(term_count))) {
+    for (auto term : ranges::view::iota(Term_Id(0), Term_Id(term_count))) {
         if (auto pos = index.documents.find(term); pos != index.documents.end()) {
             auto const &documents = pos->second;
             auto const &frequencies = index.frequencies.at(term);
@@ -269,8 +272,9 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
         auto first_document_in_batch = first_document_id + first_idx_in_batch;
         auto last_document_in_batch  = first_document_id + last_idx_in_batch;
         auto current_batch_size  = last_idx_in_batch - first_idx_in_batch;
-        batches.push_back(Batch{documents.subspan(first_idx_in_batch, current_batch_size),
-                                enumerate(first_document_in_batch, last_document_in_batch)});
+        batches.push_back(
+            Batch{documents.subspan(first_idx_in_batch, current_batch_size),
+                  ranges::view::iota(first_document_in_batch, last_document_in_batch)});
     }
     std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
     std::transform(std::execution::par_unseq,
@@ -325,7 +329,7 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
 {
     std::vector<binary_collection> doc_collections;
     std::vector<binary_collection> freq_collections;
-    for (auto batch : enumerate(batch_count)) {
+    for (auto batch : ranges::view::iota(0, batch_count)) {
         std::ostringstream batch_name_stream;
         batch_name_stream << output_basename << ".batch." << batch;
         doc_collections.emplace_back((batch_name_stream.str() + ".docs").c_str());
@@ -346,7 +350,7 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");
     write_sequence(dos, gsl::make_span<uint32_t const>(&term_count, 1));
-    for ([[maybe_unused]] auto _ : enumerate(term_count)) {
+    for ([[maybe_unused]] auto _ : ranges::view::iota(0, term_count)) {
         std::vector<uint32_t> dlist;
         for (auto &iter : doc_iterators) {
             auto seq = *iter;
@@ -374,7 +378,7 @@ void invert_forward_index(std::string const &input_basename,
         invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
     invert::merge_batches(output_basename, batch_count, term_count);
 
-    for (auto batch : enumerate(batch_count)) {
+    for (auto batch : ranges::view::iota(0, batch_count)) {
         std::ostringstream batch_name_stream;
         batch_name_stream << output_basename << ".batch." << batch;
         auto batch_basename = batch_name_stream.str();

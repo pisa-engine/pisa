@@ -1,5 +1,10 @@
 #pragma once
 
+#include <array>
+#include <vector>
+#include <algorithm>
+#include <cstddef>
+
 #include "topk_queue.hpp"
 
 namespace pisa {
@@ -52,20 +57,6 @@ struct Lazy_Accumulator {
                 std::next(reinterpret_cast<std::byte *>(&m_accumulators.back()), sizeof(Block));
             std::fill(first, last, std::byte{0});
         }
-    }
-
-    float &operator[](std::ptrdiff_t const document) {
-        auto const block        = document / counters_in_descriptor;
-        auto const pos_in_block = document % counters_in_descriptor;
-        if (//m_accumulators[block].accumulators[pos_in_block] > 0 &&
-            m_accumulators[block].counter(pos_in_block) != m_counter)
-        {
-            auto const shift = pos_in_block * counter_bit_size;
-            m_accumulators[block].descriptor &= ~(mask << shift);
-            m_accumulators[block].descriptor |= m_counter << shift;
-            m_accumulators[block].accumulators[pos_in_block] = 0;
-        }
-        return m_accumulators[block].accumulators[pos_in_block];
     }
 
     void accumulate(std::ptrdiff_t const document, float score)

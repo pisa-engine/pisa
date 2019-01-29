@@ -11,7 +11,6 @@
 #include "tbb/task_scheduler_init.h"
 
 #include "binary_collection.hpp"
-#include "enumerate.hpp"
 #include "invert.hpp"
 #include "util/util.hpp"
 

@@ -98,3 +98,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 
 # Add spdlog
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
+
+# Add range-v3
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)

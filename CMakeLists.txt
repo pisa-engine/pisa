@@ -92,6 +92,7 @@ target_link_libraries(pisa INTERFACE
     warcpp
     spdlog
     fmt::fmt
+    range-v3
 )
 target_include_directories(pisa INTERFACE external)
 
