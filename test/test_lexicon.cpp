@@ -8,29 +8,26 @@
 
 using namespace std::literals::string_view_literals;
 
-[[nodiscard]] auto operator==(pisa::Lexicon_Data const &lhs, pisa::Lexicon_Data const &rhs) -> bool
-{
-    return lhs.size == rhs.size and lhs.pointers == rhs.pointers and lhs.payloads == rhs.payloads;
-}
-
-pisa::Lexicon_Data lexicon_data()
+pisa::Lexicon lexicon()
 {
     std::vector<std::ptrdiff_t> pointers{0, 3, 9, 17};
-    return pisa::Lexicon_Data{
+    return pisa::Lexicon{
         3,
         std::vector<char>(reinterpret_cast<char *>(&pointers[0]),
                           reinterpret_cast<char *>(&pointers[0]) + 4 * sizeof(std::ptrdiff_t)),
         {'f', 'o', 'o', 'f', 'o', 'o', 'b', 'a', 'r', 'f', 'o', 'o', 't', 'b', 'a', 'l', 'l'}};
 }
 
-TEST_CASE("Lexicon_Data from vector", "[lexicon][unit]")
+TEST_CASE("Lexicon from vector", "[lexicon][unit]")
 {
     std::vector<std::string> strings{"foo", "foobar", "football"};
-    auto dat = pisa::Lexicon_Data(strings.begin(), strings.end());
-    auto expected = lexicon_data();
-    REQUIRE(dat.size == expected.size);
-    REQUIRE(dat.pointers == expected.pointers);
-    REQUIRE(dat.payloads == expected.payloads);
+    auto lex = pisa::Lexicon(strings.begin(), strings.end());
+    auto expected = lexicon();
+    REQUIRE(lex.size == expected.size);
+    REQUIRE(lex.pointers == expected.pointers);
+    REQUIRE(lex.payloads == expected.payloads);
+    std::vector<std::string> resulting_strings(lex.begin(), lex.end());
+    REQUIRE(resulting_strings == strings);
 }
 
 TEST_CASE("Serialize", "[lexicon][unit]")
@@ -45,10 +42,10 @@ TEST_CASE("Serialize", "[lexicon][unit]")
         'f', 'o', 'o', 'b', 'a', 'r',
         'f', 'o', 'o', 't', 'b', 'a', 'l', 'l'};
 
-    SECTION("To vector") { REQUIRE(lexicon_data().serialize() == expected); }
+    SECTION("To vector") { REQUIRE(lexicon().serialize() == expected); }
     SECTION("To stream") {
         std::ostringstream os;
-        REQUIRE(lexicon_data().serialize(os) == 57);
+        REQUIRE(lexicon().serialize(os) == 57);
         auto str = os.str();
         REQUIRE(std::vector<char>(str.begin(), str.end()) == expected);
     }
@@ -56,7 +53,7 @@ TEST_CASE("Serialize", "[lexicon][unit]")
 
 TEST_CASE("Parse", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data().serialize();
+    auto lexdata = lexicon().serialize();
     auto lex = pisa::Lexicon_View::parse(lexdata.data());
     REQUIRE(std::vector<std::string>(lex.begin(), lex.end()) ==
             std::vector<std::string>{"foo", "foobar", "football"});
@@ -64,7 +61,7 @@ TEST_CASE("Parse", "[lexicon][unit]")
 
 TEST_CASE("Copy constructor and assignment", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data();
+    auto lexdata = lexicon();
     pisa::Lexicon_View lex(lexdata.size, lexdata.pointers.data(), lexdata.payloads.data());
     auto lex2 = lex;
     pisa::Lexicon_View lex3;
@@ -79,7 +76,7 @@ TEST_CASE("Copy constructor and assignment", "[lexicon][unit]")
 
 TEST_CASE("Move constructor and assignment", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data();
+    auto lexdata = lexicon();
     pisa::Lexicon_View lex(lexdata.size, lexdata.pointers.data(), lexdata.payloads.data());
     auto lex2 = std::move(lex);
     REQUIRE(std::vector<std::string>(lex2.begin(), lex2.end()) ==
@@ -91,7 +88,7 @@ TEST_CASE("Move constructor and assignment", "[lexicon][unit]")
 
 TEST_CASE("Size", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data();
+    auto lexdata = lexicon();
     pisa::Lexicon_View lex(lexdata.size, lexdata.pointers.data(), lexdata.payloads.data());
     REQUIRE(lex.size() == 3);
     REQUIRE_FALSE(lex.empty());
@@ -99,7 +96,7 @@ TEST_CASE("Size", "[lexicon][unit]")
 
 TEST_CASE("Iterating", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data();
+    auto lexdata = lexicon();
     pisa::Lexicon_View lex(lexdata.size, lexdata.pointers.data(), lexdata.payloads.data());
 
     SECTION("Random access")
@@ -119,7 +116,7 @@ TEST_CASE("Iterating", "[lexicon][unit]")
 
 TEST_CASE("Binary search", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data();
+    auto lexdata = lexicon();
     pisa::Lexicon_View lex(lexdata.size, lexdata.pointers.data(), lexdata.payloads.data());
 
     SECTION("Lower bound")
@@ -138,7 +135,7 @@ TEST_CASE("Binary search", "[lexicon][unit]")
 
 TEST_CASE("Random accessors", "[lexicon][unit]")
 {
-    auto lexdata = lexicon_data();
+    auto lexdata = lexicon();
     pisa::Lexicon_View lex(lexdata.size, lexdata.pointers.data(), lexdata.payloads.data());
 
     SECTION("operator[]")

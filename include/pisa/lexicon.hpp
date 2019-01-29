@@ -6,51 +6,6 @@
 
 namespace pisa {
 
-struct Lexicon_Data {
-    std::size_t size = 0;
-    std::vector<char> pointers{};
-    std::vector<char> payloads{};
-
-    Lexicon_Data(std::size_t size, std::vector<char> pointers, std::vector<char> payloads)
-        : size(size), pointers(std::move(pointers)), payloads(std::move(payloads))
-    {}
-
-    template <typename Iterator>
-    Lexicon_Data(Iterator first, Iterator last)
-    {
-        auto push_pointer = [&](std::ptrdiff_t ptr) {
-            pointers.insert(pointers.end(),
-                            reinterpret_cast<char *>(&ptr),
-                            reinterpret_cast<char *>(&ptr) + sizeof(ptr));
-        };
-        for (; first != last; ++first) {
-            push_pointer(payloads.size());
-            payloads.insert(payloads.end(), first->begin(), first->end());
-            size += 1;
-        }
-        push_pointer(payloads.size());
-    }
-
-    std::streamsize serialize(std::ostream &os)
-    {
-        os.write(reinterpret_cast<char *>(&size), sizeof(size));
-        os.write(&pointers[0], pointers.size());
-        os.write(&payloads[0], payloads.size());
-        return sizeof(size) + pointers.size() + payloads.size();
-    }
-
-    [[nodiscard]] auto serialize() const -> std::vector<char>
-    {
-        std::vector<char> data;
-        data.insert(data.end(),
-                    reinterpret_cast<char const *>(&size),
-                    reinterpret_cast<char const *>(&size) + sizeof(size));
-        data.insert(data.end(), pointers.begin(), pointers.end());
-        data.insert(data.end(), payloads.begin(), payloads.end());
-        return data;
-    }
-};
-
 class Lexicon_View {
     using size_type = std::size_t;
 
@@ -183,10 +138,66 @@ class Lexicon_View {
     [[nodiscard]] constexpr auto size() const -> std::ptrdiff_t { return size_; }
     [[nodiscard]] constexpr auto empty() const -> bool { return size_ == 0; }
 
-   private:
+   protected:
     size_type size_;
     std::ptrdiff_t const *pointers_;
     char const *payloads_;
+};
+
+struct Lexicon : public Lexicon_View {
+    std::size_t size = 0;
+    std::vector<char> pointers{};
+    std::vector<char> payloads{};
+
+    Lexicon(std::size_t size, std::vector<char> pointers, std::vector<char> payloads)
+        : size(size), pointers(std::move(pointers)), payloads(std::move(payloads))
+    {
+        init_view();
+    }
+
+    template <typename Iterator>
+    Lexicon(Iterator first, Iterator last)
+    {
+        auto push_pointer = [&](std::ptrdiff_t ptr) {
+            pointers.insert(pointers.end(),
+                            reinterpret_cast<char *>(&ptr),
+                            reinterpret_cast<char *>(&ptr) + sizeof(ptr));
+        };
+        for (; first != last; ++first) {
+            push_pointer(payloads.size());
+            payloads.insert(payloads.end(), first->begin(), first->end());
+            size += 1;
+        }
+        push_pointer(payloads.size());
+        init_view();
+    }
+
+    std::streamsize serialize(std::ostream &os)
+    {
+        os.write(reinterpret_cast<char *>(&size), sizeof(size));
+        os.write(&pointers[0], pointers.size());
+        os.write(&payloads[0], payloads.size());
+        return sizeof(size) + pointers.size() + payloads.size();
+    }
+
+    [[nodiscard]] auto serialize() const -> std::vector<char>
+    {
+        std::vector<char> data;
+        data.insert(data.end(),
+                    reinterpret_cast<char const *>(&size),
+                    reinterpret_cast<char const *>(&size) + sizeof(size));
+        data.insert(data.end(), pointers.begin(), pointers.end());
+        data.insert(data.end(), payloads.begin(), payloads.end());
+        return data;
+    }
+
+   private:
+    void init_view()
+    {
+        size_ = this->size;
+        pointers_ = (reinterpret_cast<std::ptrdiff_t const *>(&this->pointers[0])),
+        payloads_ = &this->payloads[0];
+     }
 };
 
 } // namespace pisa

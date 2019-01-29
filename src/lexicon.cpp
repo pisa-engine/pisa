@@ -14,7 +14,7 @@ void build_lexicon(std::string const &input_file, std::string const &output_file
 {
     std::ifstream is(input_file);
     std::ofstream os(output_file);
-    Lexicon_Data(Line_Iterator(is), Line_Iterator()).serialize(os);
+    Lexicon(Line_Iterator(is), Line_Iterator()).serialize(os);
 }
 
 int main(int argc, const char **argv)
