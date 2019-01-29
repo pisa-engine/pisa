@@ -6,6 +6,7 @@
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
+#include "accumulator/lazy_accumulator.hpp"
 
 namespace pisa { namespace test {
 
@@ -101,9 +102,17 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
-    pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> taat_q(
+
+    pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
         index, wdata, 10);
-    test_against_or(taat_q);
+    test_against_or(ranked_or_taat_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
+{
+    pisa::ranked_or_taat_query<index_type, WandType, pisa::Lazy_Accumulator<8>> ranked_or_taat_q(
+        index, wdata, 10);
+    test_against_or(ranked_or_taat_q);
 }
 
 /// Issue #26 https://github.com/pisa-engine/pisa/issues/26

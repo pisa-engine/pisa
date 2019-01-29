@@ -9,6 +9,7 @@
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
+#include "accumulator/lazy_accumulator.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "util/util.hpp"
@@ -138,6 +139,9 @@ void perftest(const std::string &index_filename,
             query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
+        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+            query_fun =
+                pisa::make_ranked_or_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
         } else {
             spdlog::error("Unsupported query type: {}", t);
             break;
