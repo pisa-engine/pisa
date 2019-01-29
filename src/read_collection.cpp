@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "CLI/CLI.hpp"
+#include <CLI/CLI.hpp>
+#include <range/v3/view/iota.hpp>
 
 #include "binary_collection.hpp"
-#include "enumerate.hpp"
 #include "util/util.hpp"
 
 using namespace pisa;
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 
     binary_collection coll(collection_file.c_str());
     auto iter = coll.begin();
-    for ([[maybe_unused]] auto idx : enumerate(first)) {
+    for ([[maybe_unused]] auto idx : ranges::view::iota(0, first)) {
         ++iter;
     }
 

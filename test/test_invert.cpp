@@ -4,13 +4,13 @@
 #include <cstdio>
 #include <string>
 
-#include <tbb/task_scheduler_init.h>
 #include <boost/filesystem.hpp>
 #include <gsl/span>
+#include <range/v3/view/iota.hpp>
+#include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
 #include "ds2i_config.hpp"
-#include "enumerate.hpp"
 #include "filesystem.hpp"
 #include "invert.hpp"
 #include "temporary_directory.hpp"
@@ -29,7 +29,7 @@ TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][un
     std::vector<gsl::span<Term_Id const>> spans = {gsl::make_span(documents[0]),
                                                    gsl::make_span(documents[1])};
 
-    auto postings = invert::map_to_postings(invert::Batch{spans, enumerate(0_d, 2_d)});
+    auto postings = invert::map_to_postings(invert::Batch{spans, ranges::view::iota(0_d, 2_d)});
     REQUIRE(postings == std::vector<std::pair<Term_Id, Document_Id>>{{0_t, 0_d},
                                                                      {1_t, 0_d},
                                                                      {2_t, 0_d},

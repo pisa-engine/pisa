@@ -10,7 +10,6 @@
 #include "warcpp/warcpp.hpp"
 
 #include "ds2i_config.hpp"
-#include "enumerate.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
 #include "parsing/html.hpp"
