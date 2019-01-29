@@ -223,9 +223,11 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
                          {6_t, {1_f, 4_f}},
                          {7_t, {1_f}},
                          {8_t, {3_f, 1_f, 1_f}},
-                         {9_t, {1_f, 1_f, 1_f, 1_f}}});
+                         {9_t, {1_f, 1_f, 1_f, 1_f}}},
+                        {5, 9, 6, 3, 11});
     REQUIRE(index.documents == expected.documents);
     REQUIRE(index.frequencies == expected.frequencies);
+    REQUIRE(index.document_sizes == expected.document_sizes);
 }
 
 TEST_CASE("Invert collection", "[invert][unit]")
@@ -276,6 +278,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
                     /* size */ 1, /* Term 7 */ 1,
                     /* size */ 3, /* Term 8 */ 3, 1, 1,
                     /* size */ 4, /* Term 9 */ 1, 1, 1, 1};
+                std::vector<uint32_t> size_data{/* size */ 5, /* sizes */ 5, 9, 6, 3, 11};
                 mio::mmap_source mm;
                 std::error_code error;
                 mm.map((index_basename + ".docs").c_str(), error);
@@ -287,8 +290,14 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 std::vector<uint32_t> f(
                     reinterpret_cast<uint32_t const *>(mmf.data()),
                     reinterpret_cast<uint32_t const *>(mmf.data()) + mmf.size() / sizeof(uint32_t));
+                mio::mmap_source mms;
+                mms.map((index_basename + ".sizes").c_str(), error);
+                std::vector<uint32_t> s(
+                    reinterpret_cast<uint32_t const *>(mms.data()),
+                    reinterpret_cast<uint32_t const *>(mms.data()) + mms.size() / sizeof(uint32_t));
                 REQUIRE(d == document_data);
                 REQUIRE(f == frequency_data);
+                REQUIRE(s == size_data);
                 auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const &filename) {
                     return filename.find("batch") != std::string::npos;
                 });
