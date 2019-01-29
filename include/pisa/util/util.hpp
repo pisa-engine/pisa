@@ -1,15 +1,16 @@
 #pragma once
 
-#include <iostream>
-#include <cmath>
-#include <vector>
-#include <map>
-#include <iomanip>
-#include <locale>
 #include <cassert>
+#include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <locale>
+#include <map>
+#include <vector>
 
 #include "util/broadword.hpp"
 
