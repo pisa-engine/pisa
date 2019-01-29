@@ -6,6 +6,7 @@
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
+#include "accumulator/lazy_accumulator.hpp"
 
 namespace pisa { namespace test {
 
