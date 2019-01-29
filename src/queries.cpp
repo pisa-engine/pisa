@@ -9,6 +9,7 @@
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
+#include "accumulator/lazy_accumulator.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "util/util.hpp"
