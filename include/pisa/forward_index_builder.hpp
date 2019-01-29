@@ -10,13 +10,13 @@
 #include <sstream>
 
 #include "boost/filesystem.hpp"
-#include "spdlog/spdlog.h"
+#include "range/v3/view/iota.hpp"
 #include "spdlog/fmt/ostr.h"
+#include "spdlog/spdlog.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 
 #include "binary_collection.hpp"
-#include "enumerate.hpp"
 #include "parsing/html.hpp"
 #include "warcpp/warcpp.hpp"
 
@@ -173,12 +173,12 @@ class Forward_Index_Builder {
         std::ofstream term_os(basename + ".terms");
 
         spdlog::info("Merging titles");
-        for (auto batch : enumerate(batch_count)) {
+        for (auto batch : ranges::view::iota(0, batch_count)) {
             std::ifstream title_is(batch_file(basename, batch) + ".documents");
             title_os << title_is.rdbuf();
         }
         spdlog::info("Merging URLs");
-        for (auto batch : enumerate(batch_count)) {
+        for (auto batch : ranges::view::iota(0, batch_count)) {
             std::ifstream url_is(batch_file(basename, batch) + ".urls");
             url_os << url_is.rdbuf();
         }
@@ -186,7 +186,7 @@ class Forward_Index_Builder {
         spdlog::info("Mapping terms");
         term_map_type term_map;
         std::vector<std::vector<std::ptrdiff_t>> id_mappings(batch_count);
-        for (auto batch : enumerate(batch_count)) {
+        for (auto batch : ranges::view::iota(0, batch_count)) {
             std::ifstream terms_is(batch_file(basename, batch) + ".terms");
             std::string term;
             std::ptrdiff_t batch_term_id = 0;
@@ -207,7 +207,7 @@ class Forward_Index_Builder {
         }
 
         spdlog::info("Remapping IDs");
-        for (auto batch : enumerate(batch_count)) {
+        for (auto batch : ranges::view::iota(0, batch_count)) {
             auto &mapping = id_mappings[batch];
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
@@ -220,7 +220,7 @@ class Forward_Index_Builder {
         spdlog::info("Concatenating batches");
         std::ofstream os(basename);
         write_header(os, document_count);
-        for (auto batch : enumerate(batch_count)) {
+        for (auto batch : ranges::view::iota(0, batch_count)) {
             std::ifstream is(batch_file(basename, batch));
             is.ignore(8);
             os << is.rdbuf();
@@ -293,7 +293,7 @@ class Forward_Index_Builder {
     {
         using boost::filesystem::path;
         using boost::filesystem::remove;
-        for (auto batch : enumerate(batch_count)) {
+        for (auto batch : ranges::view::iota(0, batch_count)) {
             auto batch_basename = batch_file(basename, batch);
             remove(path{batch_basename + ".documents"});
             remove(path{batch_basename + ".terms"});
