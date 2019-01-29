@@ -14,17 +14,21 @@ namespace pisa {
 typedef uint32_t                  term_id_type;
 typedef std::vector<term_id_type> term_id_vec;
 
-bool read_query(term_id_vec &ret, std::istream &is = std::cin) {
+bool read_query(term_id_vec &ret,
+                std::istream &is = std::cin,
+                std::function<term_id_type(std::string &&)> process_term = [](auto str) {
+                    return std::stoi(str);
+                })
+{
     ret.clear();
     std::string line;
     if (!std::getline(is, line))
         return false;
     std::istringstream iline(line);
-    term_id_type       term_id;
-    while (iline >> term_id) {
-        ret.push_back(term_id);
+    std::string term;
+    while (iline >> term) {
+        ret.push_back(process_term(std::move(term)));
     }
-
     return true;
 }
 

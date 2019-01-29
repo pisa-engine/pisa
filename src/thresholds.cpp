@@ -9,7 +9,9 @@
 
 #include "succinct/mapper.hpp"
 
+#include "Porter2/Porter2.hpp"
 #include "index_types.hpp"
+#include "io.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
@@ -64,11 +66,13 @@ int main(int argc, const char **argv)
     std::string type;
     std::string query_type;
     std::string index_filename;
+    boost::optional<std::string> terms_file;
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
+    bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.add_option("-t,--type", type, "Index type")->required();
@@ -77,7 +81,25 @@ int main(int argc, const char **argv)
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    auto *terms_opt =
+        app.add_option("-T,--terms", terms_file, "Text file with terms in separate lines");
+    app.add_option("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
+
+    std::function<term_id_type(std::string &&)> process_term = [](auto &&str) {
+        return std::stoi(str);
+    };
+
+    std::unordered_map<std::string, term_id_type> term_mapping;
+    if (terms_file) {
+        term_mapping = io::read_string_map<term_id_type>(terms_file.value());
+        auto to_id = [&](auto &&str) { return term_mapping.at(str); };
+        if (not nostem) {
+            process_term = [&](auto &&str) { return to_id(stem::Porter2{}.stem(str)); };
+        } else {
+            process_term = to_id;
+        }
+    }
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
@@ -85,8 +107,9 @@ int main(int argc, const char **argv)
         std::filebuf fb;
         if (fb.open(query_filename.value(), std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is))
+            while (read_query(q, is, process_term)) {
                 queries.push_back(q);
+            }
         }
     } else {
         while (read_query(q))
