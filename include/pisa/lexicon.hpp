@@ -147,9 +147,9 @@ class Lexicon_View {
             return std::string_view(begin, static_cast<std::size_t>(*std::next(ptr) - *ptr));
         }
 
-        [[nodiscard]] constexpr auto operator->() const -> std::unique_ptr<std::string_view>
+        [[nodiscard]] auto operator->() const -> std::unique_ptr<std::string_view>
         {
-            return std::make_unique(operator*());
+            return std::make_unique<std::string_view>(operator*());
         }
     };
     using const_iterator = iterator;
