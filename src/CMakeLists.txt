@@ -21,12 +21,14 @@ target_link_libraries(create_wand_data
 )
 
 add_executable(queries queries.cpp)
+target_include_directories(queries PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(queries
   pisa
   CLI11
 )
 
 add_executable(thresholds thresholds.cpp)
+target_include_directories(thresholds PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(thresholds
   pisa
   CLI11

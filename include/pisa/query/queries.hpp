@@ -3,6 +3,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <spdlog/spdlog.h>
+
 #include "index_types.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
@@ -16,7 +18,7 @@ typedef std::vector<term_id_type> term_id_vec;
 
 bool read_query(term_id_vec &ret,
                 std::istream &is = std::cin,
-                std::function<term_id_type(std::string &&)> process_term = [](auto str) {
+                std::function<term_id_type(std::string)> process_term = [](auto str) {
                     return std::stoi(str);
                 })
 {
@@ -27,7 +29,13 @@ bool read_query(term_id_vec &ret,
     std::istringstream iline(line);
     std::string term;
     while (iline >> term) {
-        ret.push_back(process_term(std::move(term)));
+        try {
+            ret.push_back(process_term(term));
+        } catch (std::invalid_argument& err) {
+            spdlog::warn("Could not parse `{}` to a number", term);
+        } catch (std::out_of_range& err) {
+            spdlog::warn("Term `{}` not found and will be ignored", term);
+        }
     }
     return true;
 }

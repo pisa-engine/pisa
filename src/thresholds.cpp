@@ -9,7 +9,7 @@
 
 #include "succinct/mapper.hpp"
 
-#include "Porter2/Porter2.hpp"
+#include "cli.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
@@ -66,7 +66,7 @@ int main(int argc, const char **argv)
     std::string type;
     std::string query_type;
     std::string index_filename;
-    boost::optional<std::string> terms_file;
+    std::optional<std::string> terms_file;
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
@@ -82,27 +82,11 @@ int main(int argc, const char **argv)
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     auto *terms_opt =
-        app.add_option("-T,--terms", terms_file, "Text file with terms in separate lines");
+        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    std::function<term_id_type(std::string &&)> process_term = [](auto str) {
-        return std::stoi(str);
-    };
-
-    std::unordered_map<std::string, term_id_type> term_mapping;
-    if (terms_file) {
-        term_mapping = io::read_string_map<term_id_type>(terms_file.value());
-        auto to_id = [&](auto str) { return term_mapping.at(str); };
-        if (not nostem) {
-            process_term = [=](auto str) {
-                stem::Porter2 stemmer{};
-                return to_id(stemmer.stem(str));
-            };
-        } else {
-            process_term = to_id;
-        }
-    }
+    auto process_term = term_processor(terms_file, not nostem);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
