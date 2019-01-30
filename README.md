@@ -60,19 +60,6 @@ file can be built with the following command:
 If you want to compress the file append `--compress` at the end of the command.
 
 
-### Query an index
-
-Now it is possible to query the index. The command `queries` parses each line of the standard input as a tab-separated collection of term-ids, where the i-th
-term is the i-th list in the input collection.
-
-    $ ./bin/queries -t opt -a and -i test_collection.index.opt -w test_collection.wand -q ../test/test_data/queries
-
-This performs conjunctive queries (`and`). In place of `and` other operators can
-be used (`or`, `wand`, ..., see `queries.cpp`), and also multiple operators
-separated by colon (`and:or:wand`).
-
-If the WAND file is compressed, please append `--compressed-wand` flag.
-
 ## Run unit tests
 
 To run the unit tests simply perform a `make test`.
