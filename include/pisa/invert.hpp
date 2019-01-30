@@ -140,12 +140,23 @@ std::vector<T> concatenate(std::vector<std::vector<T>> const &containers)
 }
 
 template <typename T>
-static std::ostream &write_sequence(std::ostream &os, gsl::span<T> sequence)
+std::ostream &write_sequence(std::ostream &os, gsl::span<T> sequence)
 {
     auto length = static_cast<uint32_t>(sequence.size());
     os.write(reinterpret_cast<const char *>(&length), sizeof(length));
     os.write(reinterpret_cast<const char *>(sequence.data()), length * sizeof(T));
     return os;
+}
+
+template <typename T>
+std::istream &read_sequence(std::istream &is, std::vector<T> &out)
+{
+    uint32_t length;
+    is.read(reinterpret_cast<char *>(&length), sizeof(length));
+    auto size = out.size();
+    out.resize(size + length);
+    is.read(reinterpret_cast<char *>(&out[size]), length * sizeof(T));
+    return is;
 }
 
 namespace invert {
@@ -187,13 +198,18 @@ template <typename Iterator>
 struct Inverted_Index {
     using iterator_type = Iterator;
     std::unordered_map<Term_Id, std::vector<Document_Id>> documents{};
-    std::unordered_map<Term_Id, std::vector<Frequency>>   frequencies{};
+    std::unordered_map<Term_Id, std::vector<Frequency>> frequencies{};
+    std::vector<std::uint32_t> document_sizes{};
 
     Inverted_Index() = default;
     Inverted_Index(Inverted_Index &, tbb::split) {}
     Inverted_Index(std::unordered_map<Term_Id, std::vector<Document_Id>> documents,
-                   std::unordered_map<Term_Id, std::vector<Frequency>>   frequencies)
-        : documents(std::move(documents)), frequencies(std::move(frequencies)) {}
+                   std::unordered_map<Term_Id, std::vector<Frequency>> frequencies,
+                   std::vector<std::uint32_t> document_sizes = {})
+        : documents(std::move(documents)),
+          frequencies(std::move(frequencies)),
+          document_sizes(std::move(document_sizes))
+    {}
 
     void operator()(tbb::blocked_range<iterator_type> const &r) {
         if (auto first = r.begin(); first != r.end()) {
@@ -219,7 +235,10 @@ struct Inverted_Index {
         }
     }
 
-    void join(Inverted_Index &rhs) {
+    void join(Inverted_Index &rhs)
+    {
+        document_sizes.insert(
+            document_sizes.end(), rhs.document_sizes.begin(), rhs.document_sizes.end());
         for (auto &&[term_id, document_ids] : rhs.documents) {
             if (auto pos = documents.find(term_id); pos == documents.end()) {
                 std::swap(documents[term_id], document_ids);
@@ -244,6 +263,7 @@ void write(std::string const &                     basename,
 {
     std::ofstream dstream(basename + ".docs");
     std::ofstream fstream(basename + ".freqs");
+    std::ofstream sstream(basename + ".sizes");
     std::uint32_t count = index.documents.size();
     write_sequence(dstream, gsl::make_span<uint32_t const>(&count, 1));
     for (auto term : ranges::view::iota(Term_Id(0), Term_Id(term_count))) {
@@ -257,12 +277,19 @@ void write(std::string const &                     basename,
             write_sequence(fstream, gsl::span<Frequency const>());
         }
     }
+    write_sequence(sstream, gsl::span<uint32_t const>(index.document_sizes));
 }
 
 auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
                   Document_Id                         first_document_id,
                   size_t                              threads)
 {
+    std::vector<uint32_t> document_sizes(documents.size());
+    std::transform(std::execution::par_unseq,
+                   documents.begin(),
+                   documents.end(),
+                   document_sizes.begin(),
+                   [](auto const &terms) { return terms.size(); });
     gsl::index batch_size = (documents.size() + threads - 1) / threads;
     std::vector<Batch> batches;
     for (gsl::index first_idx_in_batch = 0; first_idx_in_batch < documents.size();
@@ -291,6 +318,7 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
     using iterator_type = decltype(postings.begin());
     invert::Inverted_Index<iterator_type> index;
     tbb::parallel_reduce(tbb::blocked_range(postings.begin(), postings.end()), index);
+    index.document_sizes = std::move(document_sizes);
     return index;
 }
 
@@ -329,12 +357,18 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
 {
     std::vector<binary_collection> doc_collections;
     std::vector<binary_collection> freq_collections;
+    std::vector<uint32_t> document_sizes;
     for (auto batch : ranges::view::iota(0, batch_count)) {
         std::ostringstream batch_name_stream;
         batch_name_stream << output_basename << ".batch." << batch;
         doc_collections.emplace_back((batch_name_stream.str() + ".docs").c_str());
         freq_collections.emplace_back((batch_name_stream.str() + ".freqs").c_str());
+        std::ifstream sizes_is(batch_name_stream.str() + ".sizes");
+        read_sequence(sizes_is, document_sizes);
     }
+
+    std::ofstream sos(output_basename + ".sizes");
+    write_sequence(sos, gsl::span<uint32_t const>(document_sizes));
 
     std::vector<binary_collection::const_iterator> doc_iterators;
     std::vector<binary_collection::const_iterator> freq_iterators;
@@ -384,6 +418,7 @@ void invert_forward_index(std::string const &input_basename,
         auto batch_basename = batch_name_stream.str();
         boost::filesystem::remove(boost::filesystem::path{batch_basename + ".docs"});
         boost::filesystem::remove(boost::filesystem::path{batch_basename + ".freqs"});
+        boost::filesystem::remove(boost::filesystem::path{batch_basename + ".sizes"});
     }
 }
 
