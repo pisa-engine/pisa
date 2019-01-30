@@ -7,7 +7,6 @@ branches:
 
 common_sources: &all_sources
   - ubuntu-toolchain-r-test
-  - llvm-toolchain-xenial
   - llvm-toolchain-xenial-6.0
 
 env:
@@ -16,8 +15,11 @@ env:
 
 
 cache:
-  apt: true
-
+  - ccache
+  - apt: true
+  - directories:
+    - ${TRAVIS_BUILD_DIR}/build/external
+  
 matrix:
   fast_finish: true
   include:
@@ -70,14 +72,21 @@ matrix:
 
 # Install dependencies
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
+      brew install ccache;
+      export PATH="/usr/local/opt/ccache/libexec:$PATH";
+    fi
   - eval "${MATRIX_EVAL}"
 
 script:
-    - mkdir build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
-    - make
-    - ctest
+    - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
+        make -j2;
+        ctest -j2;
+      fi
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - if [[ "${COVERAGE}" == "On" ]]; then 
+      bash <(curl -s https://codecov.io/bash);
+    fi
