@@ -39,9 +39,9 @@ void thresholds(const std::string &                   index_filename,
     if (wand_data_filename) {
         std::error_code error;
         md.map(wand_data_filename.value(), error);
-        if(error){
-            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
-            throw std::runtime_error("Error opening file");
+        if (error) {
+            spdlog::error("error mapping file: {}, exiting...", error.message());
+            std::abort();
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
@@ -83,19 +83,22 @@ int main(int argc, const char **argv)
     app.add_option("-k", k, "k value");
     auto *terms_opt =
         app.add_option("-T,--terms", terms_file, "Text file with terms in separate lines");
-    app.add_option("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    std::function<term_id_type(std::string &&)> process_term = [](auto &&str) {
+    std::function<term_id_type(std::string &&)> process_term = [](auto str) {
         return std::stoi(str);
     };
 
     std::unordered_map<std::string, term_id_type> term_mapping;
     if (terms_file) {
         term_mapping = io::read_string_map<term_id_type>(terms_file.value());
-        auto to_id = [&](auto &&str) { return term_mapping.at(str); };
+        auto to_id = [&](auto str) { return term_mapping.at(str); };
         if (not nostem) {
-            process_term = [&](auto &&str) { return to_id(stem::Porter2{}.stem(str)); };
+            process_term = [=](auto str) {
+                stem::Porter2 stemmer{};
+                return to_id(stemmer.stem(str));
+            };
         } else {
             process_term = to_id;
         }
