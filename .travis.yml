@@ -19,7 +19,8 @@ cache:
   apt: true
   directories:
     - ${TRAVIS_BUILD_DIR}/build/external
-
+  - ccache
+  
 matrix:
   fast_finish: true
   include:
@@ -72,6 +73,10 @@ matrix:
 
 # Install dependencies
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
+      brew install ccache;
+      export PATH="/usr/local/opt/ccache/libexec:$PATH";
+    fi
   - eval "${MATRIX_EVAL}"
 
 script:
