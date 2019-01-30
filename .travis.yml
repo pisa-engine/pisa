@@ -76,7 +76,6 @@ before_install:
   - eval "${MATRIX_EVAL}"
 
 script:
-    - mkdir build
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - make
