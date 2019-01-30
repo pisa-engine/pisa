@@ -19,7 +19,7 @@ cache:
   apt: true
   directories:
     - ${TRAVIS_BUILD_DIR}/build/external
-
+    - ${TRAVIS_BUILD_DIR}/external/boost-cmake/boost
 
 matrix:
   fast_finish: true
