@@ -75,6 +75,7 @@ int main(int argc, const char **argv)
     bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
+    app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
