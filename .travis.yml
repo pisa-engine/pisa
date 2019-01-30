@@ -17,6 +17,9 @@ env:
 
 cache:
   apt: true
+  directories:
+    - ${TRAVIS_BUILD_DIR}/build/external
+
 
 matrix:
   fast_finish: true
