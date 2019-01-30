@@ -86,4 +86,6 @@ script:
     - ctest
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - if [[ "${COVERAGE}" == "On" ]]; then 
+      bash <(curl -s https://codecov.io/bash);
+    fi
