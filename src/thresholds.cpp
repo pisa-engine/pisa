@@ -9,7 +9,6 @@
 
 #include "succinct/mapper.hpp"
 
-#include "cli.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
@@ -87,7 +86,7 @@ int main(int argc, const char **argv)
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, not nostem);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;

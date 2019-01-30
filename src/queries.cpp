@@ -14,7 +14,6 @@
 #include "timer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
-#include "cli.hpp"
 #include "wand_data_raw.hpp"
 
 #include "CLI/CLI.hpp"
@@ -181,7 +180,7 @@ int main(int argc, const char **argv) {
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, not nostem);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
