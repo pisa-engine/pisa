@@ -79,8 +79,6 @@ TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_singleton")
 
 TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_enumerator")
 {
-    pisa::compact_ranked_bitvector::enumerator r(bv, 0,
-                                                           universe, seq.size(),
-                                                           params);
+    pisa::compact_ranked_bitvector::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
 }

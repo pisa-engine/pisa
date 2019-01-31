@@ -124,6 +124,7 @@ namespace pisa {
                 , m_of(offset, universe, n, params)
                 , m_position(size())
                 , m_value(m_of.universe)
+                , m_enumerator(bv, 0)
             {}
 
             value_type move(uint64_t position)

@@ -1,46 +1,46 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
-#include <thread>
 #include <numeric>
+#include <optional>
 #include <random>
+#include <thread>
 
+#include "CLI/CLI.hpp"
 #include "spdlog/spdlog.h"
 #include "succinct/mapper.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
-#include "util/util.hpp"
 #include "util/progress.hpp"
+#include "util/util.hpp"
 
 int main(int argc, const char** argv)
 {
 
     using namespace pisa;
 
-    if (argc != 3 && argc != 4) {
-        std::cerr << "Usage: " << argv[0]
-                  << " <collection basename> <output basename> [ordering file]"
-                  << std::endl
-                  << "Ordering file is of the form <current ID> <new ID>"
-                  << std::endl;
-        return 1;
-    }
+    std::string input_basename;
+    std::string output_basename;
+    std::optional<std::string> ordering_file;
+    uint32_t seed = 1729;
 
-    constexpr uint32_t seed = 1729;
+    CLI::App app{"shuffle_docids"};
+    app.add_option("collection_basename", input_basename, "Collection basename")->required();
+    app.add_option("output_basename", output_basename, "Output basename")->required();
+    app.add_option("ordering_file", ordering_file, "Ordering file");
+    app.add_option("--seed", seed, "Random seed", true);
+    CLI11_PARSE(app, argc, argv);
+
     std::mt19937 rng(seed);
-
-    const std::string input_basename = argv[1];
-    const std::string output_basename = argv[2];
     binary_freq_collection input(input_basename.c_str());
     size_t num_docs = input.num_docs();
     std::vector<uint32_t> new_doc_id(num_docs);
 
-    if (argc == 4) {
-        const std::string order_file = argv[3];
-        std::ifstream     in_order(order_file);
-        uint32_t          prev_id, new_id;
-        size_t            count = 0;
+    if (ordering_file) {
+        std::ifstream in_order(ordering_file.value());
+        uint32_t prev_id, new_id;
+        size_t count = 0;
         while (in_order >> prev_id >> new_id) {
             new_doc_id[prev_id] = new_id;
             ++count;

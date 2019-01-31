@@ -82,7 +82,7 @@ struct indexed_sequence {
 
     class enumerator {
        public:
-        typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
+        using value_type = std::pair<uint64_t, uint64_t>; // (position, value)
 
         enumerator() {}
 

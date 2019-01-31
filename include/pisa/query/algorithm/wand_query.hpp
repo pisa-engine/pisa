@@ -18,8 +18,9 @@ struct wand_query {
 
     uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();
-        if (terms.empty())
+        if (terms.empty()) {
             return 0;
+        }
 
         auto query_term_freqs = query_freqs(terms);
 

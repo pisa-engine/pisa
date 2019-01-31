@@ -20,12 +20,10 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void thresholds(const std::string &                   index_filename,
-                const boost::optional<std::string> &  wand_data_filename,
+void thresholds(const std::string &index_filename,
+                const boost::optional<std::string> &wand_data_filename,
                 const std::vector<term_id_vec> &queries,
-                const boost::optional<std::string> &  thresholds_filename,
-                std::string const &                   type,
-                uint64_t                              k)
+                uint64_t k)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -37,7 +35,7 @@ void thresholds(const std::string &                   index_filename,
     if (wand_data_filename) {
         std::error_code error;
         md.map(wand_data_filename.value(), error);
-        if(error){
+        if (error) {
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
         }
@@ -66,7 +64,6 @@ int main(int argc, const char **argv)
     std::string index_filename;
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
-    boost::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
 
@@ -83,42 +80,38 @@ int main(int argc, const char **argv)
     term_id_vec q;
     if (query_filename) {
         std::filebuf fb;
-        if (fb.open(query_filename.value(), std::ios::in)) {
+        if (fb.open(query_filename.value(), std::ios::in) != nullptr) {
             std::istream is(&fb);
-            while (read_query(q, is))
+            while (read_query(q, is)) {
                 queries.push_back(q);
+            }
         }
     } else {
-        while (read_query(q))
+        while (read_query(q)) {
             queries.push_back(q);
+        }
     }
 
     /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                            \
-    }                                                                                    \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                            \
-        if (compressed) {                                                                \
-            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                    wand_data_filename,  \
-                                                                    queries,             \
-                                                                    thresholds_filename, \
-                                                                    type,                \
-                                                                    k);                  \
-        } else {                                                                         \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                                wand_data_filename,      \
-                                                                queries,                 \
-                                                                thresholds_filename,     \
-                                                                type,                    \
-                                                                k);                      \
-        }                                                                                \
+    if (false) { // NOLINT
+#define LOOP_BODY(R, DATA, T)                                                                      \
+    }                                                                                              \
+    else if (type == BOOST_PP_STRINGIZE(T))                                                        \
+    {                                                                                              \
+        if (compressed) {                                                                          \
+            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(                               \
+                index_filename, wand_data_filename, queries, k);                                   \
+        }                                                                                          \
+        else {                                                                                     \
+            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(                                   \
+                index_filename, wand_data_filename, queries, k);                                   \
+        }                                                                                          \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
 #undef LOOP_BODY
-
-    } else {
+    }
+    else {
         spdlog::error("Unknown type {}", type);
     }
 }

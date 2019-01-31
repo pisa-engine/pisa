@@ -1,7 +1,7 @@
 #include <iostream>
 #include <random>
 
-#include "boost/lexical_cast.hpp"
+#include "CLI/CLI.hpp"
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
@@ -22,13 +22,13 @@ namespace pisa {
         mixed_block::decode(buf.data(), out_buf.data(),
                             sum_of_values, n);
 
-        size_t spacing = 1 << 10;
+        size_t spacing = 1u << 10u;
         thread_local std::vector<uint8_t> readbuf(runs * spacing);
         thread_local std::vector<uint8_t const*> positions(runs);
         for (size_t run = 0; run < runs; ++run) {
             // try random alignments
             // XXX switch to c++ gens
-            uint8_t* position = readbuf.data() + run * spacing + (rand() % 64);
+            uint8_t *position = &readbuf[run * spacing + (rand() % 64)];
             std::copy(buf.begin(), buf.end(), position);
             positions[run] = position;
         }
@@ -52,7 +52,7 @@ namespace pisa {
         values_statistics(values, fv);
 
         for (uint8_t t = 0; t < mixed_block::block_types; ++t) {
-            mixed_block::block_type type = (mixed_block::block_type)t;
+            auto type = static_cast<mixed_block::block_type>(t);
             for (mixed_block::compr_param_type param = 0;
                  param < mixed_block::compr_params(type); ++param) {
                 buf.clear();
@@ -107,20 +107,27 @@ namespace pisa {
     }
 }
 
-int main(int /* argc */, const char** argv)
+int main(int argc, const char **argv)
 {
     using namespace pisa;
 
-    std::string type = argv[1];
-    const char* index_filename = argv[2];
-    double p = boost::lexical_cast<double>(argv[3]);
+    std::string type;
+    std::string index_filename;
+    double p;
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                           \
-        } else if (type == BOOST_PP_STRINGIZE(T)) {     \
-            profile_decoding<BOOST_PP_CAT(T, _index)>   \
-                (index_filename, p);                    \
-            /**/
+    CLI::App app{"shuffle_docids"};
+    app.add_option("type", type, "Index type")->required();
+    app.add_option("index_filename", index_filename, "Index file name")->required();
+    app.add_option("p", p, "p")->required();
+    CLI11_PARSE(app, argc, argv);
+
+    if (false) { // NOLINT
+#define LOOP_BODY(R, DATA, T)                                                                      \
+    }                                                                                              \
+    else if (type == BOOST_PP_STRINGIZE(T))                                                        \
+    {                                                                                              \
+        profile_decoding<BOOST_PP_CAT(T, _index)>(index_filename.c_str(), p);                      \
+        /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_BLOCK_INDEX_TYPES);
 #undef LOOP_BODY

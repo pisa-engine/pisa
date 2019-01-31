@@ -9,8 +9,8 @@
 
 namespace pisa {
 
-    typedef uint32_t posting_t ;
-    typedef float wand_cost_t;
+    using posting_t = uint32_t;
+    using wand_cost_t = float;
 
     struct score_opt_partition {
 
@@ -43,7 +43,6 @@ namespace pisa {
                     : start_it(begin)
                     , end_it(begin)
                     , min_p(base)
-                    , max_p(0)
                     , cost_upper_bound(cost_upper_bound)
                     , m_fixed_cost(fixed_cost)
                     , sum(0)
@@ -63,14 +62,16 @@ namespace pisa {
 
 
                 float v = std::get<1>(*start_it)*estimated_idf;
-                if (std::get<1>(*start_it)  == max_queue.front())
+                if (std::get<1>(*start_it) == max_queue.front()) {
                     max_queue.pop_front();
+                }
 
                 sum -= v;
                 ++start;
                 ++start_it;
-                if (std::get<1>(*start_it) != 0)
+                if (std::get<1>(*start_it) != 0) {
                     ++element_count;
+                }
             }
 
             void advance_end() {
@@ -79,7 +80,7 @@ namespace pisa {
                 float v = std::get<1>(*end_it)*estimated_idf;
                 sum += v;
 
-                while (max_queue.size() > 0 && max_queue.back() < std::get<1>(*end_it)){
+                while (not max_queue.empty() && max_queue.back() < std::get<1>(*end_it)){
                     max_queue.pop_back();
                 }
 
@@ -87,15 +88,16 @@ namespace pisa {
                 // max_p = *end_it;
                 ++end;
                 ++end_it;
-                if (std::get<1>(*end_it) != 0)
+                if (std::get<1>(*end_it) != 0) {
                     --element_count;
+                }
             }
 
             float cost(){
-                if (size() < 2)
+                if (size() < 2) {
                     return m_fixed_cost;
-                else
-                    return  size()*max_queue.front()*estimated_idf - sum + m_fixed_cost;
+                }
+                return size() * max_queue.front() * estimated_idf - sum + m_fixed_cost;
             }
 
             float max(){
@@ -104,8 +106,7 @@ namespace pisa {
 
         };
 
-        score_opt_partition()
-        {}
+        score_opt_partition() = default;
 
         template <typename ForwardIterator>
         score_opt_partition(ForwardIterator begin,
@@ -131,7 +132,9 @@ namespace pisa {
             wand_cost_t cost_bound = cost_lb;
             while (eps1 == 0 || cost_bound < cost_lb / eps1) {
                 windows.emplace_back(begin, base, cost_bound, fixed_cost, size, estimated_idf);
-                if (cost_bound >= single_block_cost) break;
+                if (cost_bound >= single_block_cost) {
+                    break;
+                }
                 cost_bound = cost_bound * (1 + eps2);
             }
 
@@ -164,8 +167,9 @@ namespace pisa {
                             maxs[window.end] = window.max();
                         }
                         last_end = window.end;
-                        if (window.end == size) break;
-                        if (window_cost >= window.cost_upper_bound) break;
+                        if (window.end == size or window_cost >= window.cost_upper_bound) {
+                            break;
+                        }
                         window.advance_end();
                     }
 

@@ -24,7 +24,7 @@ namespace pisa {
                 , log_sampling0(params.ef_log_sampling0)
                 , log_sampling1(params.ef_log_sampling1)
 
-                , lower_bits(universe > n ? broadword::msb(universe / n) : 0)
+                , lower_bits(universe > n and n > 0 ? broadword::msb(universe / n) : 0)
                 , mask((uint64_t(1) << lower_bits) - 1)
                   // pad with a zero on both sides as sentinels
                 , higher_bits_length(n + (universe >> lower_bits) + 2)
@@ -152,6 +152,7 @@ namespace pisa {
                 , m_of(offset, universe, n, params)
                 , m_position(size())
                 , m_value(m_of.universe)
+                , m_high_enumerator(bv, 0)
             {}
 
             value_type move(uint64_t position)

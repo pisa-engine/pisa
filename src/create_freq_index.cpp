@@ -20,7 +20,9 @@
 #include "CLI/CLI.hpp"
 
 template <typename Collection>
-void dump_index_specific_stats(Collection const &, std::string const &) {}
+void dump_index_specific_stats(Collection const & /* index_collection */,
+                               std::string const & /* type */)
+{}
 
 void dump_index_specific_stats(pisa::uniform_index const &coll, std::string const &type) {
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
@@ -114,7 +116,7 @@ int main(int argc, char **argv) {
     pisa::global_parameters params;
     params.log_partition_size = configuration::get().log_partition_size;
 
-    if (false) {
+    if (false) { // NOLINT
 #define LOOP_BODY(R, DATA, T)                                               \
     }                                                                       \
     else if (type == BOOST_PP_STRINGIZE(T)) {                               \

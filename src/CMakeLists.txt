@@ -9,6 +9,7 @@ target_include_directories(optimal_hybrid_index PRIVATE ${STXXL_INCLUDE_DIRS})
 target_link_libraries(optimal_hybrid_index
   ${STXXL_LIBRARIES}
   pisa
+  CLI11
 )
 set_target_properties(optimal_hybrid_index PROPERTIES
             CXX_STANDARD 14
@@ -35,16 +36,19 @@ target_link_libraries(thresholds
 add_executable(profile_queries profile_queries.cpp)
 target_link_libraries(profile_queries
   pisa
+  CLI11
 )
 
 add_executable(profile_decoding profile_decoding.cpp)
 target_link_libraries(profile_decoding
   pisa
+  CLI11
 )
 
 add_executable(shuffle_docids shuffle_docids.cpp)
 target_link_libraries(shuffle_docids
   pisa
+  CLI11
 )
 
 add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
@@ -56,7 +60,8 @@ target_link_libraries(recursive_graph_bisection
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
   pisa
-  )
+  CLI11
+)
 
 add_executable(parse_collection parse_collection.cpp)
 target_link_libraries(parse_collection

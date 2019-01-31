@@ -76,6 +76,7 @@ matrix:
           - cd build
           - cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
           - cp ../script/remove-submodules.py .
+          - cp ../.clang-tidy .
           - python remove-submodules.py
           - run-clang-tidy.py -header-filter=".*include/pisa/.*hpp"
     - os: osx
