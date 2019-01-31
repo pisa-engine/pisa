@@ -9,14 +9,13 @@
 namespace pisa {
 
     class binary_freq_collection {
-    public:
-
-        binary_freq_collection(const char* basename)
+       public:
+        explicit binary_freq_collection(const char* basename)
             : m_docs((std::string(basename) + ".docs").c_str())
             , m_freqs((std::string(basename) + ".freqs").c_str())
         {
             auto firstseq = *m_docs.begin();
-            if (firstseq.size() != 1) {
+            if (firstseq.size() != 1u) {
                 throw std::invalid_argument("First sequence should only contain number of documents");
             }
             m_num_docs = *firstseq.begin();
@@ -53,8 +52,7 @@ namespace pisa {
         class iterator : public std::iterator<std::forward_iterator_tag,
                                               sequence> {
         public:
-            iterator()
-            {}
+            iterator() = default;
 
             value_type const& operator*() const
             {

@@ -33,7 +33,7 @@ struct size_node {
 };
 
 namespace detail {
-class freeze_visitor { // NOLINT
+class freeze_visitor {
    public:
     freeze_visitor(std::ofstream &fout, uint64_t flags)
         : m_fout(fout), m_flags(flags), m_written(0) {
@@ -82,13 +82,17 @@ class freeze_visitor { // NOLINT
 class map_visitor {
    public:
     map_visitor(const char *base_address, uint64_t flags)
-        : m_base(base_address), m_cur(m_base), m_flags(flags) {
+        : m_base(base_address), m_cur(m_base), m_flags(flags)
+    {
         m_freeze_flags = *reinterpret_cast<const uint64_t *>(m_cur);
         std::advance(m_cur, sizeof(m_freeze_flags));
     }
 
     map_visitor(const map_visitor &) = delete;
+    map_visitor(map_visitor &&) = delete;
     map_visitor &operator=(const map_visitor &) = delete;
+    map_visitor &operator=(map_visitor &&) = delete;
+    ~map_visitor() = default;
 
     template <typename T>
     typename std::enable_if<!std::is_pod<T>::value, map_visitor &>::type operator()(
@@ -134,7 +138,7 @@ class map_visitor {
     uint64_t m_freeze_flags;
 };
 
-class sizeof_visitor { // NOLINT
+class sizeof_visitor {
    public:
     explicit sizeof_visitor(bool with_tree = false)
     {

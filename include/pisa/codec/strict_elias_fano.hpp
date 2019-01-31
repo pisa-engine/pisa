@@ -23,7 +23,7 @@ namespace pisa {
                           global_parameters const& params)
         {
             uint64_t new_universe = universe - n + 1;
-            typedef typename std::iterator_traits<Iterator>::value_type value_type;
+            using value_type = typename std::iterator_traits<Iterator>::value_type;
             auto new_begin =
                 make_function_iterator(std::make_pair(value_type(0), begin),
                                        [](std::pair<value_type, Iterator>& state) {
@@ -38,11 +38,9 @@ namespace pisa {
         class enumerator {
         public:
 
-            typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
+            using value_type = std::pair<uint64_t, uint64_t>; // (position, value)
 
-            enumerator()
-            {}
-
+            enumerator() = default;
             enumerator(bit_vector const& bv, uint64_t offset,
                        uint64_t universe, uint64_t n,
                        global_parameters const& params)
@@ -68,11 +66,10 @@ namespace pisa {
 
             uint64_t prev_value() const
             {
-                if (m_ef_enum.position()) {
+                if (m_ef_enum.position() != 0) {
                     return m_ef_enum.prev_value() + m_ef_enum.position() - 1;
-                } else {
-                    return 0;
                 }
+                return 0;
             }
 
         private:

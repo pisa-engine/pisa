@@ -8,15 +8,16 @@ namespace pisa {
 template <typename Index, bool with_freqs>
 struct or_query {
 
-    or_query(Index const &index) : m_index(index) {}
+    explicit or_query(Index const &index) : m_index(index) {}
 
-    uint64_t operator()(term_id_vec terms) const {
-        if (terms.empty())
+    uint64_t operator()(term_id_vec terms) const { // NOLINT
+        if (terms.empty()) {
             return 0;
+        }
         remove_duplicate_terms(terms);
 
-        typedef typename Index::document_enumerator enum_type;
-        std::vector<enum_type>                      enums;
+        using enum_type = typename Index::document_enumerator;
+        std::vector<enum_type> enums;
         enums.reserve(terms.size());
 
         for (auto term : terms) {

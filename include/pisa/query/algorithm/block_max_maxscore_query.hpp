@@ -8,27 +8,28 @@ namespace pisa {
 template <typename Index, typename WandType>
 struct block_max_maxscore_query {
 
-    typedef bm25 scorer_type;
+    using scorer_type = bm25;
 
     block_max_maxscore_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
 
     uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();
-        if (terms.empty())
+        if (terms.empty()) {
             return 0;
+        }
 
         auto query_term_freqs = query_freqs(terms);
 
-        uint64_t                                        num_docs = m_index.num_docs();
-        typedef typename Index::document_enumerator     enum_type;
-        typedef typename WandType::wand_data_enumerator wdata_enum;
+        uint64_t num_docs = m_index.num_docs();
+        using enum_type = typename Index::document_enumerator;
+        using wdata_enum = typename WandType::wand_data_enumerator;
 
         struct scored_enum {
-            enum_type  docs_enum;
+            enum_type docs_enum;
             wdata_enum w;
-            float      q_weight;
-            float      max_weight;
+            float q_weight;
+            float max_weight;
         };
 
         std::vector<scored_enum> enums;

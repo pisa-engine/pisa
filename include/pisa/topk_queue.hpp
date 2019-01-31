@@ -9,8 +9,11 @@ struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
     explicit topk_queue(uint64_t k) : m_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
-    topk_queue(topk_queue const &q) = default;
-    topk_queue &operator=(topk_queue const &q) = default;
+    topk_queue(topk_queue const &) = default;
+    topk_queue(topk_queue &&) noexcept = default;
+    topk_queue &operator=(topk_queue const &) = default;
+    topk_queue &operator=(topk_queue &&) noexcept = default;
+    ~topk_queue() = default;
 
     [[nodiscard]] constexpr static auto min_heap_order(entry_type const &lhs,
                                                        entry_type const &rhs) noexcept -> bool {

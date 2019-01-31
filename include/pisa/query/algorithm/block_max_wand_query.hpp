@@ -7,7 +7,7 @@ namespace pisa {
 
 template <typename Index, typename WandType>
 struct block_max_wand_query {
-    typedef bm25 scorer_type;
+    using scorer_type = bm25;
 
     block_max_wand_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
@@ -15,18 +15,20 @@ struct block_max_wand_query {
     uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();
 
-        if (terms.empty())
+        if (terms.empty()) {
             return 0;
-        auto                                            query_term_freqs = query_freqs(terms);
-        uint64_t                                        num_docs         = m_index.num_docs();
-        typedef typename Index::document_enumerator     enum_type;
-        typedef typename WandType::wand_data_enumerator wdata_enum;
+        }
+
+        auto query_term_freqs = query_freqs(terms);
+        uint64_t num_docs = m_index.num_docs();
+        using enum_type = typename Index::document_enumerator;
+        using wdata_enum = typename WandType::wand_data_enumerator;
 
         struct scored_enum {
-            enum_type  docs_enum;
+            enum_type docs_enum;
             wdata_enum w;
-            float      q_weight;
-            float      max_weight;
+            float q_weight;
+            float max_weight;
         };
 
         std::vector<scored_enum> enums;
@@ -76,8 +78,7 @@ struct block_max_wand_query {
                     pivot_id    = ordered_enums[pivot]->docs_enum.docid();
                     for (; pivot + 1 < ordered_enums.size() &&
                            ordered_enums[pivot + 1]->docs_enum.docid() == pivot_id;
-                         ++pivot)
-                        ;
+                         ++pivot) {}
                     break;
                 }
             }
@@ -130,8 +131,7 @@ struct block_max_wand_query {
                 } else {
 
                     uint64_t next_list = pivot;
-                    for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id; --next_list)
-                        ;
+                    for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id; --next_list) {}
                     ordered_enums[next_list]->docs_enum.next_geq(pivot_id);
 
                     // bubble down the advanced list
@@ -160,15 +160,16 @@ struct block_max_wand_query {
                 }
 
                 // TO BE FIXED (change with num_docs())
-                uint64_t next_jump = uint64_t(-2);
+                auto next_jump = uint64_t(-2);
 
                 if (pivot + 1 < ordered_enums.size()) {
                     next_jump = ordered_enums[pivot + 1]->docs_enum.docid();
                 }
 
                 for (size_t i = 0; i <= pivot; ++i) {
-                    if (ordered_enums[i]->w.docid() < next_jump)
+                    if (ordered_enums[i]->w.docid() < next_jump) {
                         next_jump = std::min(ordered_enums[i]->w.docid(), next_jump);
+                    }
                 }
 
                 next = next_jump + 1;

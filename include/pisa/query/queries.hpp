@@ -11,32 +11,36 @@
 #include "wand_data_raw.hpp"
 
 namespace pisa {
-typedef uint32_t                  term_id_type;
-typedef std::vector<term_id_type> term_id_vec;
 
-bool read_query(term_id_vec &ret, std::istream &is = std::cin) {
+using term_id_type = uint32_t;
+using term_id_vec = std::vector<term_id_type>;
+
+inline bool read_query(term_id_vec &ret, std::istream &is = std::cin)
+{
     ret.clear();
     std::string line;
-    if (!std::getline(is, line))
+    if (not std::getline(is, line)) {
         return false;
+    }
     std::istringstream iline(line);
-    term_id_type       term_id;
+    term_id_type term_id;
     while (iline >> term_id) {
         ret.push_back(term_id);
     }
-
     return true;
 }
 
-void remove_duplicate_terms(term_id_vec &terms) {
+inline void remove_duplicate_terms(term_id_vec &terms)
+{
     std::sort(terms.begin(), terms.end());
     terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
 }
 
-typedef std::pair<uint64_t, uint64_t> term_freq_pair;
-typedef std::vector<term_freq_pair>   term_freq_vec;
+using term_freq_pair = std::pair<uint64_t, uint64_t>;
+using term_freq_vec = std::vector<term_freq_pair>;
 
-term_freq_vec query_freqs(term_id_vec terms) {
+inline term_freq_vec query_freqs(term_id_vec terms)
+{
     term_freq_vec query_term_freqs;
     std::sort(terms.begin(), terms.end());
     // count query term frequencies
@@ -66,7 +70,7 @@ struct Score_Function {
 namespace query {
 
 template <typename Index, typename WandType>
-[[nodiscard]] auto cursors_with_scores(Index const& index, WandType const &wdata, term_id_vec terms)
+[[nodiscard]] auto cursors_with_scores(Index const &index, WandType const &wdata, term_id_vec terms)
 {
     // TODO(michal): parametrize scorer_type; didn't do that because this might mean some more
     //               complex refactoring I want to avoid for now.
@@ -74,7 +78,7 @@ template <typename Index, typename WandType>
     using cursor_type         = typename Index::document_enumerator;
     using score_function_type = Score_Function<scorer_type, WandType>;
 
-    auto query_term_freqs = query_freqs(terms);
+    auto query_term_freqs = query_freqs(std::move(terms));
     std::vector<cursor_type> cursors;
     std::vector<score_function_type> score_functions;
     cursors.reserve(query_term_freqs.size());

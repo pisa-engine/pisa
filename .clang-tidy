@@ -1,0 +1,17 @@
+HeaderFilterRegex: '.*include/pisa/.*\.hpp'
+WarningsAsErrors: '*'
+Checks: |
+    *,
+    -google-*,
+    -fuchsia-*,
+    -llvm-*,
+    -cert-msc30-c,
+    -cert-msc32-c,
+    -cert-msc50-cpp,
+    -cert-msc51-cpp,
+    -cert-dcl21-cpp,
+    -clang-analyzer-core.UndefinedBinaryOperatorResult,
+    -cppcoreguidelines-pro-type-reinterpret-cast,
+    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -hicpp-no-array-decay,
+    -bugprone-exception-escape

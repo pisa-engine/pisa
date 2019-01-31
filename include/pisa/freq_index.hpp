@@ -141,7 +141,7 @@ namespace pisa {
 
             document_enumerator(typename DocsSequence::enumerator docs_enum,
                                 typename FreqsSequence::enumerator freqs_enum)
-                : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum)
+                : m_docs_enum(std::move(docs_enum)), m_freqs_enum(std::move(freqs_enum))
             {
                 reset();
             }

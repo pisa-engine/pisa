@@ -7,15 +7,10 @@
 namespace pisa {
 
     class bitvector_collection {
-    public:
-        bitvector_collection()
-            : m_size(0)
-        {}
-
+       public:
         class builder {
-        public:
-            builder(global_parameters const& params)
-                : m_params(params)
+           public:
+            explicit builder(global_parameters const &params) : m_params(params)
             {
                 m_endpoints.push_back(0);
             }
@@ -84,7 +79,7 @@ namespace pisa {
         }
 
     private:
-        size_t m_size;
+        size_t m_size{0};
         bit_vector m_endpoints;
         bit_vector m_bitvectors;
     };

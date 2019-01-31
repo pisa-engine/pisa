@@ -76,7 +76,7 @@ namespace pisa {
                            || cur_partition.size() == partition_size);
 
                     uint64_t upper_bound = value;
-                    assert(cur_partition.size() > 0);
+                    assert(cur_partition.size() > 0u);
                     base_sequence_type::write(bv_sequences, cur_partition.begin(),
                                               cur_partition.back() + 1,
                                               cur_partition.size(), // XXX skip last one?
@@ -217,7 +217,8 @@ namespace pisa {
                 if (DS2I_UNLIKELY(m_position == m_size)) {
                     assert(m_cur_partition == m_partitions - 1);
                     auto val = m_partition_enum.next();
-                    assert(val.first == m_partition_enum.size()); (void)val;
+                    assert(val.first == m_partition_enum.size());
+                    (void)val;
                     return value_type(m_position, m_universe);
                 }
 
@@ -265,7 +266,7 @@ namespace pisa {
 
             void switch_partition(uint64_t partition)
             {
-                assert(m_partitions > 1);
+                assert(m_partitions > 1u);
 
                 uint64_t endpoint = partition != 0u
                     ? m_bv->get_bits(m_endpoints_offset +

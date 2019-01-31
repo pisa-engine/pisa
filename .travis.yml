@@ -78,7 +78,7 @@ matrix:
           - cp ../script/remove-submodules.py .
           - cp ../.clang-tidy .
           - python remove-submodules.py
-          - run-clang-tidy.py -header-filter=".*include/pisa/.*hpp"
+          - python ../script/clang-tidy.py .. --exclude varintgb.hpp VarIntG8IU.h mapper.hpp mappable_vector.hpp uniform_partitioned_sequence.hpp indexed_sequence.hpp partitioned_sequence.hpp strict_sequence.hpp positive_sequence.hpp streamvbyte.hpp simdbp.hpp simple16.hpp simple8b.hpp qmx.hpp maskedvbyte.hpp interpolative_coding.hpp integer_codes.hpp compact_ranked_bitvector.hpp compact_elias_fano.hpp all_ones_sequence.hpp block_codecs.hpp block_posting_list.hpp bit_vector.hpp
     - os: osx
       osx_image: xcode10.1
       compiler: clang

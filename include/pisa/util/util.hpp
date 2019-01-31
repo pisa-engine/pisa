@@ -41,7 +41,7 @@ namespace pisa {
     }
 
     inline uint64_t ceil_log2(const uint64_t x) {
-        assert(x > 0);
+        assert(x > 0u);
         return (x > 1) ? broadword::msb(x - 1) + 1 : 0;
     }
 
@@ -64,6 +64,7 @@ namespace pisa {
         static std::true_type test(checker<U, decltype(std::declval<U>().next_geq(0))> *);
         template <typename U>
         static std::false_type test(...);
+        // NOLINTNEXTLINE
         static const bool value = std::is_same<std::true_type, decltype(test<T>(nullptr))>::value;
     };
 
@@ -82,7 +83,7 @@ namespace pisa {
 
        public:
         function_iterator() = default;
-        explicit function_iterator(State initial_state) : m_state(initial_state) {}
+        explicit function_iterator(State initial_state) : m_state(std::move(initial_state)) {}
 
         friend inline
         void swap(function_iterator& lhs, function_iterator& rhs)

@@ -10,13 +10,9 @@ namespace pisa {
 
     template <typename BlockCodec, bool Profile=false>
     class block_freq_index {
-    public:
-        block_freq_index()
-            : m_size(0)
-        {}
-
+       public:
         class builder {
-        public:
+           public:
             builder(uint64_t num_docs, global_parameters const& params)
                 : m_params(params)
             {
@@ -28,7 +24,9 @@ namespace pisa {
             void add_posting_list(uint64_t n, DocsIterator docs_begin,
                                   FreqsIterator freqs_begin, uint64_t /* occurrences */)
             {
-                if (!n) throw std::invalid_argument("List must be nonempty");
+                if (n == 0u) {
+                    throw std::invalid_argument("List must be nonempty");
+                }
                 block_posting_list<BlockCodec, Profile>::write(m_lists, n,
                                                                docs_begin, freqs_begin);
                 m_endpoints.push_back(m_lists.size());
@@ -37,7 +35,9 @@ namespace pisa {
             template <typename BlockDataRange>
             void add_posting_list(uint64_t n, BlockDataRange const& blocks)
             {
-                if (!n) throw std::invalid_argument("List must be nonempty");
+                if (n == 0u) {
+                    throw std::invalid_argument("List must be nonempty");
+                }
                 block_posting_list<BlockCodec>::write_blocks(m_lists, n, blocks);
                 m_endpoints.push_back(m_lists.size());
             }
@@ -80,17 +80,17 @@ namespace pisa {
             return m_num_docs;
         }
 
-        typedef typename block_posting_list<BlockCodec, Profile>::document_enumerator document_enumerator;
+        using document_enumerator =
+            typename block_posting_list<BlockCodec, Profile>::document_enumerator;
 
         document_enumerator operator[](size_t i) const
         {
             assert(i < size());
-            compact_elias_fano::enumerator endpoints(m_endpoints, 0,
-                                                     m_lists.size(), m_size,
-                                                     m_params);
+            compact_elias_fano::enumerator endpoints(
+                m_endpoints, 0, m_lists.size(), m_size, m_params);
 
             auto endpoint = endpoints.move(i).second;
-            return document_enumerator(m_lists.data() + endpoint, num_docs(), i);
+            return document_enumerator(&m_lists[endpoint], num_docs(), i);
         }
 
         void warmup(size_t i) const
@@ -135,8 +135,8 @@ namespace pisa {
 
     private:
         global_parameters m_params;
-        size_t m_size;
-        size_t m_num_docs;
+        size_t m_size{0};
+        size_t m_num_docs{0};
         bit_vector m_endpoints;
         mapper::mappable_vector<uint8_t> m_lists;
     };

@@ -11,7 +11,7 @@ namespace pisa {
 template <typename Index, typename WandType>
 struct wand_query {
 
-    typedef bm25 scorer_type;
+    using scorer_type = bm25;
 
     wand_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
@@ -24,12 +24,12 @@ struct wand_query {
 
         auto query_term_freqs = query_freqs(terms);
 
-        uint64_t                                    num_docs = m_index.num_docs();
-        typedef typename Index::document_enumerator enum_type;
+        uint64_t num_docs = m_index.num_docs();
+        using enum_type = typename Index::document_enumerator;
         struct scored_enum {
             enum_type docs_enum;
-            float     q_weight;
-            float     max_weight;
+            float q_weight;
+            float max_weight;
         };
 
         std::vector<scored_enum> enums;
@@ -99,8 +99,7 @@ struct wand_query {
             } else {
                 // no match, move farthest list up to the pivot
                 uint64_t next_list = pivot;
-                for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id; --next_list)
-                    ;
+                for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id; --next_list) {}
                 ordered_enums[next_list]->docs_enum.next_geq(pivot_id);
                 // bubble down the advanced list
                 for (size_t i = next_list + 1; i < ordered_enums.size(); ++i) {

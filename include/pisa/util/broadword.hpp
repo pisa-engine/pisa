@@ -124,7 +124,7 @@ namespace pisa { namespace broadword {
     // return the position of the single bit set in the word x
     inline uint8_t bit_position(uint64_t x)
     {
-        assert(popcount(x) == 1);
+        assert(popcount(x) == 1u);
         return detail::debruijn64_mapping[(x * detail::debruijn64) >> 58u]; // NOLINT
     }
 
@@ -135,7 +135,7 @@ namespace pisa { namespace broadword {
 
     inline uint8_t msb(uint64_t x)
     {
-        assert(x);
+        assert(x != 0u);
         unsigned long ret = -1U;
         msb(x, ret);
         return (uint8_t)ret;
@@ -148,7 +148,7 @@ namespace pisa { namespace broadword {
 
     inline uint8_t lsb(uint64_t x)
     {
-        assert(x);
+        assert(x != 0u);
         unsigned long ret = -1U;
         lsb(x, ret);
         return (uint8_t)ret;

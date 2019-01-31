@@ -292,14 +292,13 @@ namespace pisa {
             void DS2I_NOINLINE decode_docs_block(uint64_t block)
             {
                 static const uint64_t block_size = BlockCodec::block_size;
-                uint32_t endpoint = block
-                    ? ((uint32_t const*)m_block_endpoints)[block - 1]
-                    : 0;
-                uint8_t const* block_data = m_blocks_data + endpoint;
+                uint32_t endpoint =
+                    block != 0 ? ((uint32_t const *)m_block_endpoints)[block - 1] : 0;
+                uint8_t const *block_data = std::next(m_blocks_data, endpoint);
                 m_cur_block_size =
                     ((block + 1) * block_size <= size())
                     ? block_size : (size() % block_size);
-                uint32_t cur_base = (block ? block_max(block - 1) : uint32_t(-1)) + 1;
+                uint32_t cur_base = (block != 0u ? block_max(block - 1) : uint32_t(-1)) + 1;
                 m_cur_block_max = block_max(block);
                 m_freqs_block_data =
                     BlockCodec::decode(block_data, m_docs_buf.data(),
@@ -314,7 +313,7 @@ namespace pisa {
                 m_cur_docid = m_docs_buf[0];
                 m_freqs_decoded = false;
                 if (Profile) {
-                    ++m_block_profile[2 * m_cur_block];
+                    ++m_block_profile[2 * m_cur_block]; // NOLINT
                 }
             }
 
@@ -326,7 +325,7 @@ namespace pisa {
                 m_freqs_decoded = true;
 
                 if (Profile) {
-                    ++m_block_profile[2 * m_cur_block + 1];
+                    ++m_block_profile[2 * m_cur_block + 1]; // NOLINT
                 }
             }
 

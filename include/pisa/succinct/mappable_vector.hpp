@@ -36,7 +36,7 @@ namespace pisa { namespace mapper {
         explicit mappable_vector(Range const &from)
         {
             size_t size = boost::size(from);
-            T *data = new T[size]; // NOLINT(cppcoreguidelines-owning-memory)
+            T *data = new T[size];
             m_deleter = boost::lambda::bind(boost::lambda::delete_array(), data);
 
             std::copy(boost::begin(from), boost::end(from), data);
@@ -65,7 +65,7 @@ namespace pisa { namespace mapper {
             clear();
             m_size = vec.size();
             if (m_size) {
-                auto new_vec = new std::vector<T>; // NOLINT(cppcoreguidelines-owning-memory)
+                auto new_vec = new std::vector<T>;
                 new_vec->swap(vec);
                 m_deleter = boost::lambda::bind(boost::lambda::delete_ptr(), new_vec);
                 m_data = &(*new_vec)[0];
@@ -100,7 +100,7 @@ namespace pisa { namespace mapper {
         }
 
         inline void prefetch(size_t i) const {
-            intrinsics::prefetch(m_data + i); // NOLINT
+            intrinsics::prefetch(m_data + i);
         }
 
         friend class detail::freeze_visitor;

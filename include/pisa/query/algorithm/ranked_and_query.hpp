@@ -8,24 +8,25 @@ namespace pisa {
 template <typename Index, typename WandType>
 struct ranked_and_query {
 
-    typedef bm25 scorer_type;
+    using scorer_type = bm25;
 
     ranked_and_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
 
-    uint64_t operator()(term_id_vec terms) {
+    uint64_t operator()(term_id_vec terms) { // NOLINT
         size_t results = 0;
         m_topk.clear();
-        if (terms.empty())
+        if (terms.empty()) {
             return 0;
+        }
 
         auto query_term_freqs = query_freqs(terms);
 
-        uint64_t                                    num_docs = m_index.num_docs();
-        typedef typename Index::document_enumerator enum_type;
+        uint64_t num_docs = m_index.num_docs();
+        using enum_type = typename Index::document_enumerator;
         struct scored_enum {
             enum_type docs_enum;
-            float     q_weight;
+            float q_weight;
         };
 
         std::vector<scored_enum> enums;
@@ -65,8 +66,9 @@ struct ranked_and_query {
                 m_topk.insert(score, enums[0].docs_enum.docid());
 
                 results++;
-                if (results >= m_topk.size() * 2)
+                if (results >= m_topk.size() * 2) {
                     break;
+                }
 
                 enums[0].docs_enum.next();
                 candidate = enums[0].docs_enum.docid();
