@@ -18,7 +18,7 @@ struct size_node;
 using size_node_ptr = std::shared_ptr<size_node>;
 
 struct size_node {
-    size_node() {}
+    size_node() = default;
 
     std::string name{};
     size_t size{0};
@@ -64,7 +64,7 @@ class freeze_visitor { // NOLINT
     freeze_visitor &operator()(mappable_vector<T> &vec, const char * /* friendly_name */) {
         (*this)(vec.m_size, "size");
 
-        size_t n_bytes = static_cast<size_t>(vec.m_size * sizeof(T));
+        auto n_bytes = static_cast<size_t>(vec.m_size * sizeof(T));
         m_fout.write(reinterpret_cast<const char *>(vec.m_data), long(n_bytes));
         m_written += n_bytes;
 
@@ -79,12 +79,12 @@ class freeze_visitor { // NOLINT
     uint64_t m_written;
 };
 
-class map_visitor { // NOLINT
+class map_visitor {
    public:
     map_visitor(const char *base_address, uint64_t flags)
         : m_base(base_address), m_cur(m_base), m_flags(flags) {
         m_freeze_flags = *reinterpret_cast<const uint64_t *>(m_cur);
-        m_cur += sizeof(m_freeze_flags);
+        std::advance(m_cur, sizeof(m_freeze_flags));
     }
 
     map_visitor(const map_visitor &) = delete;
@@ -101,7 +101,7 @@ class map_visitor { // NOLINT
     typename std::enable_if<std::is_pod<T>::value, map_visitor &>::type operator()(
         T &val, const char * /* friendly_name */) {
         val = *reinterpret_cast<const T *>(m_cur);
-        m_cur += sizeof(T);
+        std::advance(m_cur, sizeof(T));
         return *this;
     }
 
@@ -121,7 +121,7 @@ class map_visitor { // NOLINT
             }
         }
 
-        m_cur += bytes;
+        std::advance(m_cur, bytes);
         return *this;
     }
 
@@ -134,7 +134,7 @@ class map_visitor { // NOLINT
     uint64_t m_freeze_flags;
 };
 
-class sizeof_visitor {
+class sizeof_visitor { // NOLINT
    public:
     explicit sizeof_visitor(bool with_tree = false)
     {

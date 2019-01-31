@@ -37,8 +37,8 @@ namespace pisa {
 
         bool heuristic_greedy;
 
-    private:
-        configuration()
+       private:
+        configuration() // NOLINT
         {
             fillvar("DS2I_K", k, 10);
             fillvar("DS2I_BLOCK_SIZE", block_size, 5);

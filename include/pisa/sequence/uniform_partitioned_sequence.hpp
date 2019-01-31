@@ -13,8 +13,8 @@ namespace pisa {
     template <typename BaseSequence = indexed_sequence>
     struct uniform_partitioned_sequence {
 
-        typedef BaseSequence base_sequence_type;
-        typedef typename base_sequence_type::enumerator base_sequence_enumerator;
+        using base_sequence_type = BaseSequence;
+        using base_sequence_enumerator = typename base_sequence_type::enumerator;
 
         template <typename Iterator>
         static void write(bit_vector_builder& bvb,
@@ -104,20 +104,16 @@ namespace pisa {
         }
 
         class enumerator {
-        public:
+           public:
+            using value_type = std::pair<uint64_t, uint64_t>; // (position, value)
 
-            typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
-
-            enumerator()
-            {}
-
-            enumerator(bit_vector const& bv, uint64_t offset,
-                       uint64_t universe, uint64_t n,
-                       global_parameters const& params)
-                : m_params(params)
-                , m_size(n)
-                , m_universe(universe)
-                , m_bv(&bv)
+            enumerator() = default;
+            enumerator(bit_vector const &bv,
+                       uint64_t offset,
+                       uint64_t universe,
+                       uint64_t n,
+                       global_parameters const &params)
+                : m_params(params), m_size(n), m_universe(universe), m_bv(&bv)
             {
                 bit_vector::enumerator it(bv, offset);
                 m_partitions = read_gamma_nonzero(it);
@@ -131,23 +127,22 @@ namespace pisa {
                     auto ub = 0;
                     if (n > 1) {
                         uint64_t universe_delta = read_delta(it);
-                        ub = universe_delta ? universe_delta : (universe - m_cur_base - 1);
+                        ub = universe_delta != 0u ? universe_delta : (universe - m_cur_base - 1);
                     }
 
-                    m_partition_enum = base_sequence_enumerator
-                        (*m_bv, it.position(), ub + 1, n, m_params);
+                    m_partition_enum =
+                        base_sequence_enumerator(*m_bv, it.position(), ub + 1, n, m_params);
 
                     m_cur_upper_bound = m_cur_base + ub;
-                } else {
+                }
+                else {
                     m_endpoint_bits = read_gamma(it);
                     uint64_t cur_offset = it.position();
 
-                    m_upper_bounds = compact_elias_fano::enumerator(bv, cur_offset,
-                                                                    universe, m_partitions + 1,
-                                                                    params);
-                    cur_offset += compact_elias_fano::offsets(0, universe,
-                                                              m_partitions + 1,
-                                                              params).end;
+                    m_upper_bounds = compact_elias_fano::enumerator(
+                        bv, cur_offset, universe, m_partitions + 1, params);
+                    cur_offset +=
+                        compact_elias_fano::offsets(0, universe, m_partitions + 1, params).end;
 
                     m_endpoints_offset = cur_offset;
                     uint64_t endpoints_size = m_endpoint_bits * (m_partitions - 1);
@@ -206,9 +201,8 @@ namespace pisa {
             {
                 if (DS2I_UNLIKELY(m_position == m_cur_begin)) {
                     return m_cur_partition ? m_cur_base - 1 : 0;
-                } else {
-                    return m_cur_base + m_partition_enum.prev_value();
                 }
+                return m_cur_base + m_partition_enum.prev_value();
             }
 
         private:
@@ -252,9 +246,8 @@ namespace pisa {
                 if (m_partitions == 1) {
                     if (lower_bound < m_cur_base) {
                         return move(0);
-                    } else {
-                        return move(size());
                     }
+                    return move(size());
                 }
 
                 auto ub_it = m_upper_bounds.next_geq(lower_bound);
@@ -274,7 +267,7 @@ namespace pisa {
             {
                 assert(m_partitions > 1);
 
-                uint64_t endpoint = partition
+                uint64_t endpoint = partition != 0u
                     ? m_bv->get_bits(m_endpoints_offset +
                                      (partition - 1) * m_endpoint_bits,
                                      m_endpoint_bits)
@@ -287,7 +280,7 @@ namespace pisa {
 
                 auto ub_it = m_upper_bounds.move(partition + 1);
                 m_cur_upper_bound = ub_it.second;
-                m_cur_base = m_upper_bounds.prev_value() + (partition ? 1 : 0);
+                m_cur_base = m_upper_bounds.prev_value() + (partition != 0u ? 1 : 0);
 
                 m_partition_enum = base_sequence_enumerator
                     (*m_bv, m_sequences_offset + endpoint,

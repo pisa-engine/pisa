@@ -82,7 +82,7 @@ namespace pisa {
                 if (cost_bound >= single_block_cost) {
                     break;
                 }
-                cost_bound = cost_bound * (1 + eps2);
+                cost_bound = cost_bound * (1 + eps2); // NOLINT
             }
 
             std::vector<posting_t> path(size + 1, 0);
@@ -103,8 +103,9 @@ namespace pisa {
                             path[window.end] = i;
                         }
                         last_end = window.end;
-                        if (window.end == size) break;
-                        if (window_cost >= window.cost_upper_bound) break;
+                        if (window.end == size or window_cost >= window.cost_upper_bound) {
+                            break;
+                        }
                         window.advance_end();
                     }
 

@@ -61,7 +61,9 @@ using Document_Id = Id<document_id_tag, std::ptrdiff_t>;
 struct term_id_tag {};
 using Term_Id = Id<term_id_tag, std::ptrdiff_t>;
 
-void parse_plaintext_content(std::string &&content, std::function<void(std::string &&)> process) {
+inline void parse_plaintext_content(std::string &&content,
+                                    std::function<void(std::string &&)> const &process)
+{
     std::istringstream content_stream(content);
     std::string        term;
     while (content_stream >> term) {
@@ -69,8 +71,10 @@ void parse_plaintext_content(std::string &&content, std::function<void(std::stri
     }
 }
 
-void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
-    content = parsing::html::cleantext(std::move(content));
+inline void parse_html_content(std::string &&content,
+                               std::function<void(std::string &&)> const &process)
+{
+    content = parsing::html::cleantext(content);
     if (content.empty()) {
         return;
     }
@@ -115,10 +119,10 @@ class Forward_Index_Builder {
     }
 
     struct Batch_Process {
-        std::ptrdiff_t               batch_number;
-        std::vector<Record>          records;
-        Document_Id                  first_document;
-        std::string const &          output_file;
+        std::ptrdiff_t batch_number{};
+        std::vector<Record> records;
+        Document_Id first_document;
+        std::string const &output_file;
     };
 
     void run(Batch_Process                 bp,
@@ -142,7 +146,7 @@ class Forward_Index_Builder {
             std::vector<uint32_t> term_ids;
 
             auto process = [&](auto &&term) {
-                term = process_term(std::move(term));
+                term = process_term(std::forward<decltype(term)>(term));
                 uint32_t id = 0;
                 if (auto pos = map.find(term); pos != map.end()) {
                     id = pos->second;
@@ -229,13 +233,13 @@ class Forward_Index_Builder {
         spdlog::info("Success.");
     }
 
-    void build(std::istream &                is,
-               std::string const &           output_file,
-               read_record_function_type     next_record,
-               process_term_function_type    process_term,
+    void build(std::istream &is,
+               std::string const &output_file,
+               read_record_function_type next_record,
+               process_term_function_type const &process_term,
                process_content_function_type process_content,
-               std::ptrdiff_t                batch_size,
-               std::size_t                   threads) const
+               std::ptrdiff_t batch_size,
+               std::size_t threads) const
     {
         Document_Id    first_document{0};
         std::ptrdiff_t batch_number = 0;
@@ -325,7 +329,7 @@ class Plaintext_Record {
 
 } // namespace pisa
 
-auto operator>>(std::istream &is, pisa::Plaintext_Record &record) -> std::istream &
+inline auto operator>>(std::istream &is, pisa::Plaintext_Record &record) -> std::istream &
 {
     is >> record.trecid();
     std::getline(is, record.content());

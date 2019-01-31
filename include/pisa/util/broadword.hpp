@@ -51,7 +51,7 @@ namespace pisa { namespace broadword {
 
     inline uint64_t byte_counts(uint64_t x)
     {
-        x = x - ((x & 0xau * ones_step_4) >> 1);
+        x = x - ((x & 0xau * ones_step_4) >> 1u);
         x = (x & 3u * ones_step_4) + ((x >> 2u) & 3u * ones_step_4);
         x = (x + (x >> 4u)) & 0x0fu * ones_step_8;
         return x;

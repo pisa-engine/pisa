@@ -84,8 +84,7 @@ struct indexed_sequence {
        public:
         using value_type = std::pair<uint64_t, uint64_t>; // (position, value)
 
-        enumerator() {}
-
+        enumerator() = default;
         enumerator(bit_vector const &bv,
                    uint64_t offset,
                    uint64_t universe,

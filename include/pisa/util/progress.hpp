@@ -18,12 +18,7 @@ class progress {
         m_goal = goal;
     }
     progress(progress const &other)
-        : m_name(other.m_name),
-          m_count(other.m_count),
-          m_goal(other.m_goal),
-          m_start(other.m_start),
-          m_mut{},
-          m_status{}
+        : m_name(other.m_name), m_count(other.m_count), m_goal(other.m_goal), m_start(other.m_start)
     {}
     progress(progress &&other) = delete;
     progress &operator=(progress const &other) = delete;

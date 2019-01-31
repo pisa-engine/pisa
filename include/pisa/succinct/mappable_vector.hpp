@@ -19,35 +19,27 @@ namespace pisa { namespace mapper {
         class sizeof_visitor;
     }
 
-    typedef boost::function<void()> deleter_t;
+    using deleter_t = boost::function<void()>;
 
     template <typename T> // T must be a POD
     class mappable_vector {
-    public:
-        typedef T value_type;
-        typedef const T* iterator;
-        typedef const T* const_iterator;
+       public:
+        using value_type = T;
+        using iterator = const T *;
+        using const_iterator = const T *;
 
-        mappable_vector()
-            : m_data(0)
-            , m_size(0)
-            , m_deleter()
-        {}
+        mappable_vector() = default;
         mappable_vector(const mappable_vector &) = delete;
         mappable_vector &operator=(const mappable_vector &) = delete;
 
         template <typename Range>
-        mappable_vector(Range const& from)
-            : m_data(0)
-            , m_size(0)
+        explicit mappable_vector(Range const &from)
         {
             size_t size = boost::size(from);
-            T* data = new T[size];
+            T *data = new T[size]; // NOLINT(cppcoreguidelines-owning-memory)
             m_deleter = boost::lambda::bind(boost::lambda::delete_array(), data);
 
-            std::copy(boost::begin(from),
-                      boost::end(from),
-                      data);
+            std::copy(boost::begin(from), boost::end(from), data);
             m_data = data;
             m_size = size;
         }
@@ -73,7 +65,7 @@ namespace pisa { namespace mapper {
             clear();
             m_size = vec.size();
             if (m_size) {
-                std::vector<T>* new_vec = new std::vector<T>;
+                auto new_vec = new std::vector<T>; // NOLINT(cppcoreguidelines-owning-memory)
                 new_vec->swap(vec);
                 m_deleter = boost::lambda::bind(boost::lambda::delete_ptr(), new_vec);
                 m_data = &(*new_vec)[0];
@@ -100,7 +92,7 @@ namespace pisa { namespace mapper {
 
         inline T const& operator[](uint64_t i) const {
             assert(i < m_size);
-            return m_data[i];
+            return *std::next(m_data, i);
         }
 
         inline T const* data() const {
@@ -108,16 +100,16 @@ namespace pisa { namespace mapper {
         }
 
         inline void prefetch(size_t i) const {
-            intrinsics::prefetch(m_data + i);
+            intrinsics::prefetch(m_data + i); // NOLINT
         }
 
         friend class detail::freeze_visitor;
         friend class detail::map_visitor;
         friend class detail::sizeof_visitor;
 
-    protected:
-        const T* m_data;
-        uint64_t m_size;
+       protected:
+        const T *m_data{nullptr};
+        uint64_t m_size{0};
         deleter_t m_deleter;
     };
 
