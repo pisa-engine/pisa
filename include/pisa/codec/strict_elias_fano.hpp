@@ -50,7 +50,7 @@ namespace pisa {
             value_type move(uint64_t position)
             {
                 auto val = m_ef_enum.move(position);
-                return value_type(val.first, val.second + val.first);
+                return {val.first, val.second + val.first};
             }
 
             value_type next()

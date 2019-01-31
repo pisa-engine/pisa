@@ -26,32 +26,19 @@ namespace pisa {
         iterator begin() const
         {
             auto docs_it = m_docs.begin();
-            return iterator(++docs_it, m_freqs.begin());
+            return {++docs_it, m_freqs.begin()};
         }
-
-        iterator end() const
-        {
-            return iterator(m_docs.end(), m_freqs.end());
-        }
-
-        size_t size() const
-        {
-            return std::distance(begin(), end());
-        }
-
-        uint64_t num_docs() const
-        {
-            return m_num_docs;
-        }
+        iterator end() const { return {m_docs.end(), m_freqs.end()}; }
+        size_t size() const { return std::distance(begin(), end()); }
+        uint64_t num_docs() const { return m_num_docs; }
 
         struct sequence {
             binary_collection::const_sequence docs;
             binary_collection::const_sequence freqs;
         };
 
-        class iterator : public std::iterator<std::forward_iterator_tag,
-                                              sequence> {
-        public:
+        class iterator : public std::iterator<std::forward_iterator_tag, sequence> {
+           public:
             iterator() = default;
 
             value_type const& operator*() const

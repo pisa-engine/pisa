@@ -12,34 +12,33 @@
 namespace pisa {
 
     class semiasync_queue {
-    public:
-
-        semiasync_queue(double work_per_thread)
-            : m_expected_work(0)
-            , m_work_per_thread(work_per_thread)
+       public:
+        explicit semiasync_queue(double work_per_thread)
+            : m_expected_work(0), m_work_per_thread(work_per_thread)
         {
             m_max_threads = configuration::get().worker_threads;
             spdlog::info("semiasync_queue using {} worker threads", m_max_threads);
         }
 
-        class job {
-        public:
+        class job { // NOLINT
+           public:
             virtual void prepare() = 0;
             virtual void commit() = 0;
             virtual ~job() = default;
         };
 
-        typedef std::shared_ptr<job> job_ptr_type;
+        using job_ptr_type = std::shared_ptr<job>;
 
         void add_job(job_ptr_type j, double expected_work)
         {
-            if (m_max_threads) {
+            if (m_max_threads != 0u) {
                 m_next_thread.first.push_back(j);
-                m_expected_work += expected_work;
+                m_expected_work += expected_work; // NOLINT; TODO(michal): weird, why double?
                 if (m_expected_work >= m_work_per_thread) {
                     spawn_next_thread();
                 }
-            } else { // all in main thread
+            }
+            else { // all in main thread
                 j->prepare();
                 j->commit();
                 j.reset();
@@ -88,7 +87,7 @@ namespace pisa {
             m_running_threads.pop_front();
         }
 
-        typedef std::pair<std::vector<job_ptr_type>, std::thread> thread_t;
+        using thread_t = std::pair<std::vector<job_ptr_type>, std::thread>;
         thread_t m_next_thread;
         std::deque<thread_t> m_running_threads;
 

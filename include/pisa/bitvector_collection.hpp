@@ -49,8 +49,7 @@ namespace pisa {
             return m_bitvectors;
         }
 
-        bit_vector::enumerator
-        get(global_parameters const& params, size_t i) const
+        bit_vector::enumerator get(global_parameters const &params, size_t i) const
         {
             assert(i < size());
             compact_elias_fano::enumerator endpoints(m_endpoints, 0,
@@ -58,7 +57,7 @@ namespace pisa {
                                                      params);
 
             auto endpoint = endpoints.move(i).second;
-            return bit_vector::enumerator(m_bitvectors, endpoint);
+            return {m_bitvectors, endpoint};
         }
 
         void swap(bitvector_collection& other)
