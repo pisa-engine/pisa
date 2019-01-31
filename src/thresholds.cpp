@@ -37,7 +37,7 @@ void thresholds(const std::string &                   index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename.value(), error);
+        md.map(*wand_data_filename, error);
         if (error) {
             spdlog::error("error mapping file: {}, exiting...", error.message());
             std::abort();
@@ -92,7 +92,7 @@ int main(int argc, const char **argv)
     term_id_vec q;
     if (query_filename) {
         std::filebuf fb;
-        if (fb.open(query_filename.value(), std::ios::in)) {
+        if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
             while (read_query(q, is, process_term)) {
                 queries.push_back(q);
