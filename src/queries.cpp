@@ -157,13 +157,16 @@ int main(int argc, const char **argv) {
     std::string type;
     std::string query_type;
     std::string index_filename;
+    std::optional<std::string> terms_file;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
+    bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
+    app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-a,--algorithm", query_type, "Query algorithm")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
@@ -172,7 +175,12 @@ int main(int argc, const char **argv) {
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
+    auto *terms_opt =
+        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
+
+    auto process_term = query::term_processor(terms_file, not nostem);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
@@ -180,7 +188,7 @@ int main(int argc, const char **argv) {
         std::filebuf fb;
         if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is))
+            while (read_query(q, is, process_term))
                 queries.push_back(q);
         }
     } else {

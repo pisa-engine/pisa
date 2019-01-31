@@ -1,9 +1,19 @@
 #pragma once
 
+#include <functional>
 #include <iostream>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <unordered_map>
+
+#include <Porter2/Porter2.hpp>
+#include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
+#include "io.hpp"
+#include "query/queries.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
@@ -15,7 +25,11 @@ namespace pisa {
 using term_id_type = uint32_t;
 using term_id_vec = std::vector<term_id_type>;
 
-inline bool read_query(term_id_vec &ret, std::istream &is = std::cin)
+inline bool read_query(term_id_vec &ret,
+                       std::istream &is = std::cin,
+                       std::function<term_id_type(std::string)> process_term = [](auto str) {
+                           return std::stoi(str);
+                       })
 {
     ret.clear();
     std::string line;
@@ -23,9 +37,15 @@ inline bool read_query(term_id_vec &ret, std::istream &is = std::cin)
         return false;
     }
     std::istringstream iline(line);
-    term_id_type term_id;
-    while (iline >> term_id) {
-        ret.push_back(term_id);
+    std::string term;
+    while (iline >> term) {
+        try {
+            ret.push_back(process_term(term));
+        } catch (std::invalid_argument& err) {
+            spdlog::warn("Could not parse `{}` to a number", term);
+        } catch (std::out_of_range& err) {
+            spdlog::warn("Term `{}` not found and will be ignored", term);
+        }
     }
     return true;
 }
@@ -92,6 +112,28 @@ template <typename Index, typename WandType>
         score_functions.push_back({q_weight, std::cref(wdata)});
     }
     return std::make_pair(cursors, score_functions);
+}
+
+std::function<term_id_type(std::string &&)> term_processor(std::optional<std::string> terms_file,
+                                                           bool stem)
+{
+    if (terms_file) {
+        auto to_id = [m = std::make_shared<std::unordered_map<std::string, term_id_type>>(
+                          io::read_string_map<term_id_type>(*terms_file))](auto str) {
+            return m->at(str);
+        };
+        if (stem) {
+            return [=](auto str) {
+                stem::Porter2 stemmer{};
+                return to_id(stemmer.stem(str));
+            };
+        } else {
+            return to_id;
+        }
+    }
+    else {
+        return [](auto str) { return std::stoi(str); };
+    }
 }
 
 } // namespace query
