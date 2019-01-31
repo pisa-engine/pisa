@@ -1,5 +1,9 @@
 #pragma once
 
+#include <fstream>
+#include <string>
+#include <unordered_map>
+
 namespace pisa::io {
 
 template <typename Integral>

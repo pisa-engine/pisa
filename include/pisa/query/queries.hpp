@@ -115,7 +115,7 @@ std::function<term_id_type(std::string &&)> term_processor(std::optional<std::st
 {
     if (terms_file) {
         auto to_id = [m = std::make_shared<std::unordered_map<std::string, term_id_type>>(
-                          io::read_string_map<term_id_type>(terms_file.value()))](auto str) {
+                          io::read_string_map<term_id_type>(*terms_file))](auto str) {
             return m->at(str);
         };
         if (stem) {
