@@ -10,6 +10,7 @@
 #include "succinct/mapper.hpp"
 
 #include "index_types.hpp"
+#include "io.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
@@ -36,10 +37,10 @@ void thresholds(const std::string &                   index_filename,
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
-        md.map(wand_data_filename.value(), error);
-        if(error){
-            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
-            throw std::runtime_error("Error opening file");
+        md.map(*wand_data_filename, error);
+        if (error) {
+            spdlog::error("error mapping file: {}, exiting...", error.message());
+            std::abort();
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
@@ -64,29 +65,38 @@ int main(int argc, const char **argv)
     std::string type;
     std::string query_type;
     std::string index_filename;
+    std::optional<std::string> terms_file;
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
+    bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
+    app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    auto *terms_opt =
+        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
+
+    auto process_term = query::term_processor(terms_file, not nostem);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
     if (query_filename) {
         std::filebuf fb;
-        if (fb.open(query_filename.value(), std::ios::in)) {
+        if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is))
+            while (read_query(q, is, process_term)) {
                 queries.push_back(q);
+            }
         }
     } else {
         while (read_query(q))
