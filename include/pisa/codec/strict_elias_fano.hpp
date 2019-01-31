@@ -56,7 +56,7 @@ namespace pisa {
             value_type next()
             {
                 auto val = m_ef_enum.next();
-                return value_type(val.first, val.second + val.first);
+                return {val.first, val.second + val.first};
             }
 
             uint64_t size() const
