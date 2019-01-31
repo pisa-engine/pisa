@@ -17,14 +17,16 @@
 #include "util/single_init_vector.hpp"
 
 namespace pisa {
+
 const Log2<4096> log2;
 
 namespace bp {
 
-DS2I_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2) {
+[[gnu::always_inline]] inline double expb(double logn1, double logn2, size_t deg1, size_t deg2)
+{
     __m128 _deg    = _mm_cvtepi32_ps(_mm_set_epi32(deg1, deg1, deg2, deg2));
     __m128 _log    = _mm_set_ps(logn1, log2(deg1 + 1), logn2, log2(deg2 + 1));
-    __m128 _result = _mm_mul_ps(_deg, _log);
+    __m128 _result = _mm_mul_ps(_deg, _log); // NOLINT
     float  a[4];
     _mm_store_ps(a, _result);
     return a[3] - a[2] + a[1] - a[0]; // Can we do it with SIMD?
@@ -117,7 +119,7 @@ struct computation_node {
     bool operator<(const computation_node &other) const { return level < other.level; }
 };
 
-auto get_mapping = [](const auto &collection) {
+inline auto get_mapping = [](const auto &collection) {
     std::vector<uint32_t> mapping(collection.size(), 0u);
     size_t                p = 0;
     for (const auto &id : collection) {
@@ -150,7 +152,7 @@ void compute_move_gains_caching(document_range<Iter> &            range,
         double gain  = 0.0;
         auto   terms = range.terms(d);
         for (const auto &t : terms) {
-            if constexpr (isLikelyCached) {
+            if constexpr (isLikelyCached) { // NOLINT
                 if (DS2I_UNLIKELY(not gain_cache.has_value(t))) {
                     const auto &from_deg  = from_lex[t];
                     const auto &to_deg    = to_lex[t];
@@ -158,7 +160,7 @@ void compute_move_gains_caching(document_range<Iter> &            range,
                                            bp::expb(logn1, logn2, from_deg - 1, to_deg + 1);
                     gain_cache.set(t, term_gain);
                 }
-            } else {
+            } else { // NOLINT
                 if (DS2I_LIKELY(not gain_cache.has_value(t))) {
                     const auto &from_deg  = from_lex[t];
                     const auto &to_deg    = to_lex[t];

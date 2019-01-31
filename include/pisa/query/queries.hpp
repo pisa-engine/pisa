@@ -27,7 +27,7 @@ using term_id_vec = std::vector<term_id_type>;
 
 inline bool read_query(term_id_vec &ret,
                        std::istream &is = std::cin,
-                       std::function<term_id_type(std::string)> process_term = [](auto str) {
+                       std::function<term_id_type(std::string)> const &process_term = [](auto str) {
                            return std::stoi(str);
                        })
 {
@@ -114,8 +114,8 @@ template <typename Index, typename WandType>
     return std::make_pair(cursors, score_functions);
 }
 
-std::function<term_id_type(std::string &&)> term_processor(std::optional<std::string> terms_file,
-                                                           bool stem)
+inline std::function<term_id_type(std::string &&)> term_processor(
+    std::optional<std::string> terms_file, bool stem)
 {
     if (terms_file) {
         auto to_id = [m = std::make_shared<std::unordered_map<std::string, term_id_type>>(
@@ -127,13 +127,10 @@ std::function<term_id_type(std::string &&)> term_processor(std::optional<std::st
                 stem::Porter2 stemmer{};
                 return to_id(stemmer.stem(str));
             };
-        } else {
-            return to_id;
         }
+        return to_id;
     }
-    else {
-        return [](auto str) { return std::stoi(str); };
-    }
+    return [](auto str) { return std::stoi(str); };
 }
 
 } // namespace query

@@ -5,8 +5,6 @@
 template <class T>
 class single_init_entry {
    public:
-    single_init_entry() : m_value(), m_generation(0) {}
-
     const T &value() const { return m_value; }
     bool     has_value(size_t generation) const { return m_generation == generation; }
     void     set(size_t generation, const T &v) {
@@ -15,8 +13,8 @@ class single_init_entry {
     }
 
    private:
-    T      m_value;
-    size_t m_generation;
+    T m_value{};
+    size_t m_generation{0};
 };
 
 
