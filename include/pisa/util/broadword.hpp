@@ -8,13 +8,17 @@
 
 namespace pisa { namespace broadword {
 
-    static const uint64_t ones_step_4  = 0x1111111111111111ULL;
-    static const uint64_t ones_step_8  = 0x0101010101010101ULL;
-    static const uint64_t ones_step_9  = 1ULL << 0 | 1ULL << 9 | 1ULL << 18 | 1ULL << 27 | 1ULL << 36 | 1ULL << 45 | 1ULL << 54;
-    static const uint64_t msbs_step_8  = 0x80ULL * ones_step_8;
-    static const uint64_t msbs_step_9  = 0x100ULL * ones_step_9;
-    static const uint64_t incr_step_8  = 0x80ULL << 56 | 0x40ULL << 48 | 0x20ULL << 40 | 0x10ULL << 32 | 0x8ULL << 24 | 0x4ULL << 16 | 0x2ULL << 8 | 0x1;
-    static const uint64_t inv_count_step_9 = 1ULL << 54 | 2ULL << 45 | 3ULL << 36 | 4ULL << 27 | 5ULL << 18 | 6ULL << 9 | 7ULL;
+    static const uint64_t ones_step_4 = 0x1111111111111111ULL;
+    static const uint64_t ones_step_8 = 0x0101010101010101ULL;
+    static const uint64_t ones_step_9 = 1ULL << 0u | 1ULL << 9u | 1ULL << 18u | 1ULL << 27u |
+                                        1ULL << 36u | 1ULL << 45u | 1ULL << 54u;
+    static const uint64_t msbs_step_8 = 0x80ULL * ones_step_8;
+    static const uint64_t msbs_step_9 = 0x100ULL * ones_step_9;
+    static const uint64_t incr_step_8 = 0x80ULL << 56u | 0x40ULL << 48u | 0x20ULL << 40u |
+                                        0x10ULL << 32u | 0x8ULL << 24u | 0x4ULL << 16u |
+                                        0x2ULL << 8u | 0x1u;
+    static const uint64_t inv_count_step_9 =
+        1ULL << 54u | 2ULL << 45u | 3ULL << 36u | 4ULL << 27u | 5ULL << 18u | 6ULL << 9u | 7ULL;
 
     static const uint64_t magic_mask_1 = 0x5555555555555555ULL;
     static const uint64_t magic_mask_2 = 0x3333333333333333ULL;
@@ -25,35 +29,37 @@ namespace pisa { namespace broadword {
 
     inline uint64_t leq_step_8(uint64_t x, uint64_t y)
     {
-        return ((((y | msbs_step_8) - (x & ~msbs_step_8)) ^ (x ^ y)) & msbs_step_8) >> 7;
+        return ((((y | msbs_step_8) - (x & ~msbs_step_8)) ^ (x ^ y)) & msbs_step_8) >> 7u;
     }
 
     inline uint64_t uleq_step_8(uint64_t x, uint64_t y)
     {
-        return (((((y | msbs_step_8) - (x & ~msbs_step_8)) ^ (x ^ y)) ^ (x & ~y)) & msbs_step_8) >> 7;
+        return (((((y | msbs_step_8) - (x & ~msbs_step_8)) ^ (x ^ y)) ^ (x & ~y)) & msbs_step_8) >>
+               7u;
     }
 
     inline uint64_t zcompare_step_8(uint64_t x)
     {
-        return ((x | ((x | msbs_step_8) - ones_step_8)) & msbs_step_8) >> 7;
+        return ((x | ((x | msbs_step_8) - ones_step_8)) & msbs_step_8) >> 7u;
     }
 
     inline uint64_t uleq_step_9(uint64_t x, uint64_t y)
     {
-        return (((((y | msbs_step_9) - (x & ~msbs_step_9)) | (x ^ y)) ^ (x & ~y)) & msbs_step_9 ) >> 8;
+        return (((((y | msbs_step_9) - (x & ~msbs_step_9)) | (x ^ y)) ^ (x & ~y)) & msbs_step_9) >>
+               8u;
     }
 
     inline uint64_t byte_counts(uint64_t x)
     {
-        x = x - ((x & 0xa * ones_step_4) >> 1);
-        x = (x & 3 * ones_step_4) + ((x >> 2) & 3 * ones_step_4);
-        x = (x + (x >> 4)) & 0x0f * ones_step_8;
+        x = x - ((x & 0xau * ones_step_4) >> 1);
+        x = (x & 3u * ones_step_4) + ((x >> 2u) & 3u * ones_step_4);
+        x = (x + (x >> 4u)) & 0x0fu * ones_step_8;
         return x;
     }
 
     inline uint64_t bytes_sum(uint64_t x)
     {
-        return x * ones_step_8 >> 56;
+        return x * ones_step_8 >> 56u;
     }
 
     inline uint64_t popcount(uint64_t x)
@@ -72,9 +78,9 @@ namespace pisa { namespace broadword {
 
     inline uint64_t reverse_bits(uint64_t x)
     {
-        x = ((x >> 1) & magic_mask_1) | ((x & magic_mask_1) << 1);
-        x = ((x >> 2) & magic_mask_2) | ((x & magic_mask_2) << 2);
-        x = ((x >> 4) & magic_mask_3) | ((x & magic_mask_3) << 4);
+        x = ((x >> 1u) & magic_mask_1) | ((x & magic_mask_1) << 1u);
+        x = ((x >> 2u) & magic_mask_2) | ((x & magic_mask_2) << 2u);
+        x = ((x >> 4u) & magic_mask_3) | ((x & magic_mask_3) << 4u);
         return reverse_bytes(x);
     }
 
@@ -87,17 +93,17 @@ namespace pisa { namespace broadword {
         const uint64_t k_step_8 = k * ones_step_8;
         const uint64_t geq_k_step_8 = (((k_step_8 | msbs_step_8) - byte_sums) & msbs_step_8);
 #if USE_POPCNT
-        const uint64_t place = intrinsics::popcount(geq_k_step_8) * 8;
+        const uint64_t place = intrinsics::popcount(geq_k_step_8) * 8u;
 #else
-        const uint64_t place = ((geq_k_step_8 >> 7) * ones_step_8 >> 53) & ~uint64_t(0x7);
+        const uint64_t place = ((geq_k_step_8 >> 7u) * ones_step_8 >> 53u) & ~uint64_t(0x7);
 #endif
-        const uint64_t byte_rank = k - (((byte_sums << 8 ) >> place) & uint64_t(0xFF));
-        return place + tables::select_in_byte[((x >> place) & 0xFF ) | (byte_rank << 8)];
+        const uint64_t byte_rank = k - (((byte_sums << 8u) >> place) & uint64_t(0xFF));
+        return place + tables::select_in_byte[((x >> place) & 0xFFu) | (byte_rank << 8u)]; // NOLINT
     }
 
     inline uint64_t same_msb(uint64_t x, uint64_t y)
     {
-        return (x ^ y) <= (x & y);
+        return static_cast<uint64_t>((x ^ y) <= (x & y));
     }
 
     namespace detail {
@@ -119,13 +125,12 @@ namespace pisa { namespace broadword {
     inline uint8_t bit_position(uint64_t x)
     {
         assert(popcount(x) == 1);
-        return detail::debruijn64_mapping
-            [(x * detail::debruijn64) >> 58];
+        return detail::debruijn64_mapping[(x * detail::debruijn64) >> 58u]; // NOLINT
     }
 
     inline uint8_t msb(uint64_t x, unsigned long& ret)
     {
-        return intrinsics::bsr64(&ret, x);
+        return static_cast<uint8_t>(intrinsics::bsr64(&ret, x));
     }
 
     inline uint8_t msb(uint64_t x)
@@ -138,7 +143,7 @@ namespace pisa { namespace broadword {
 
     inline uint8_t lsb(uint64_t x, unsigned long& ret)
     {
-        return intrinsics::bsf64(&ret, x);
+        return static_cast<uint8_t>(intrinsics::bsf64(&ret, x));
     }
 
     inline uint8_t lsb(uint64_t x)

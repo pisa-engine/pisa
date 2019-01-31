@@ -15,7 +15,7 @@ namespace pisa {
                 interpolative = 2
             };
 
-            typedef uint8_t compr_param_type;
+            using compr_param_type = uint8_t;
             static compr_param_type compr_params(block_type t)
             {
                 switch (t) {
@@ -28,8 +28,10 @@ namespace pisa {
             static const size_t block_types = 3;
             static const uint64_t block_size = 128;
 
-            static void encode(uint32_t const*, uint32_t,
-                               size_t, std::vector<uint8_t>&)
+            static void encode(uint32_t const * /* unused */,
+                               uint32_t /* unused */,
+                               size_t /* unused */,
+                               std::vector<uint8_t> & /* unused */)
             {
                 throw std::runtime_error("Mixed block indexes can only be created by transformation");
             }
@@ -83,12 +85,12 @@ namespace pisa {
                 if (type == block_type::pfor) {
                     auto const& possLogs = optpfor_block::codec_type::possLogs;
                     uint32_t b = possLogs[param];
-                    uint32_t max_b = (uint32_t)fv[feature_type::max_b]; // float is exact up to 2^24
-                    if (b > max_b && possLogs[param - 1] >= max_b) return false; // useless
-                    if (max_b - b > 28) return false; // exception coder can't handle this
+                    auto max_b = (uint32_t)fv[feature_type::max_b]; // float is exact up to 2^24
+                    if (b > max_b && possLogs[param - 1] >= max_b) { return false; } // useless
+                    if (max_b - b > 28) { return false; } // exception coder can't handle this
                     uint32_t exceptions = 0;
                     for (size_t i = 0; i < n; ++i) {
-                        if (in[i] >= (uint32_t(1) << b)) {
+                        if (in[i] >= (uint32_t(1) << b)) { // NOLINT
                             exceptions += 1;
                         }
                     }
@@ -128,7 +130,7 @@ namespace pisa {
                 values_statistics(values, fv);
 
                 for (uint8_t t = 0; t < block_types; ++t) {
-                    block_type type = (block_type)t;
+                    auto type = (block_type)t;
                     for (compr_param_type param = 0; param < compr_params(type); ++param) {
                         buf.clear();
                         if (!compression_stats(type, param, values.data(),
@@ -136,7 +138,7 @@ namespace pisa {
                             continue;
                         }
 
-                        uint16_t space = (uint16_t)buf.size();
+                        auto space = (uint16_t)buf.size();
                         float time = 0;
                         if (values.size() == block_size) { // only predict time for full blocks
                             time = predictors[t](fv) * access_count;
@@ -199,52 +201,57 @@ namespace pisa {
             {
                 block_type type = block_type::interpolative;
                 if (DS2I_LIKELY(n == block_size)) {
-                    type = (block_type)*in++;
+                    type = (block_type)*in++; // NOLINT
                 }
 
                 // use ifs instead of a switch to enable DS2I_LIKELY
                 if (DS2I_LIKELY(type == block_type::varint)) { // optimize for the fastest codec
                     return varint_G8IU_block::decode(in, out, sum_of_values, n);
-                } else if (type == block_type::pfor) {
-                    return optpfor_block::decode(in, out, sum_of_values, n);
-                } else if (type == block_type::interpolative) {
-                    return interpolative_block::decode(in, out, sum_of_values, n);
-                } else {
-                    assert(false);
-                    __builtin_unreachable();
                 }
+                if (type == block_type::pfor) {
+                    return optpfor_block::decode(in, out, sum_of_values, n);
+                }
+                if (type == block_type::interpolative) {
+                    return interpolative_block::decode(in, out, sum_of_values, n);
+                }
+                assert(false);
+                __builtin_unreachable();
             }
         };
 
-    typedef std::vector<pisa::time_prediction::predictor> predictors_vec_type;
+        using predictors_vec_type = std::vector<pisa::time_prediction::predictor>;
 
-    predictors_vec_type load_predictors(const char* predictors_filename)
-    {
-        std::vector<time_prediction::predictor> predictors(mixed_block::block_types);
+        inline predictors_vec_type load_predictors(const char *predictors_filename)
+        {
+            std::vector<time_prediction::predictor> predictors(mixed_block::block_types);
 
-        std::ifstream fin(predictors_filename);
+            std::ifstream fin(predictors_filename);
 
-        std::string line;
-        while (std::getline(fin, line)) {
-            std::istringstream is(line);
-            std::string field;
-            size_t type;
-            is >> field >> type;
-            if (field != "type") { throw std::invalid_argument("Invalid input format"); }
-            std::vector<std::pair<std::string, float>> values;
-            while (true) {
-                float value;
-                if (!(is >> field >> value)) break;
-                values.emplace_back(field, value);
+            std::string line;
+            while (std::getline(fin, line)) {
+                std::istringstream is(line);
+                std::string field;
+                size_t type;
+                is >> field >> type;
+                if (field != "type") {
+                    throw std::invalid_argument("Invalid input format");
+                }
+                std::vector<std::pair<std::string, float>> values;
+                while (true) {
+                    float value;
+                    if (not(is >> field >> value)) {
+                        break;
+                    }
+                    values.emplace_back(field, value);
+                }
+
+                if (type >= mixed_block::block_types) {
+                    throw std::invalid_argument("Invalid type while loading predictors");
+                }
+                predictors[type] = time_prediction::predictor(values);
             }
 
-            if (type >= mixed_block::block_types) {
-                throw std::invalid_argument("Invalid type while loading predictors");
-            }
-            predictors[type] = time_prediction::predictor(values);
-        }
-
-        return predictors;
+            return predictors;
     }
 
 }

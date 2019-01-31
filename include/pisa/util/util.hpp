@@ -30,7 +30,7 @@ namespace pisa {
     inline IntType1 ceil_div(IntType1 dividend, IntType2 divisor)
     {
         // XXX(ot): put some static check that IntType1 >= IntType2
-        IntType1 d = IntType1(divisor);
+        auto d = IntType1(divisor);
         return IntType1(dividend + d - 1) / d;
     }
 
@@ -54,7 +54,7 @@ namespace pisa {
     // stolen from folly
     template <class T>
     inline void do_not_optimize_away(T&& datum) {
-        asm volatile("" : "+r" (datum));
+        asm volatile("" : "+r"(datum)); // NOLINT
     }
 
     template <typename T>
@@ -80,13 +80,9 @@ namespace pisa {
         : public std::iterator<std::forward_iterator_tag,
                                typename std::result_of<ValueFunctor(State)>::type> {
 
-    public:
-        function_iterator()
-        {}
-
-        function_iterator(State initial_state)
-            : m_state(initial_state)
-        {}
+       public:
+        function_iterator() = default;
+        explicit function_iterator(State initial_state) : m_state(initial_state) {}
 
         friend inline
         void swap(function_iterator& lhs, function_iterator& rhs)
@@ -96,7 +92,7 @@ namespace pisa {
         }
 
         // XXX why isn't this inherited from std::iterator?
-        typedef typename std::result_of<ValueFunctor(State)>::type value_type;
+        using value_type = typename std::result_of<ValueFunctor(State)>::type;
 
         value_type operator*() const
         {
@@ -111,7 +107,7 @@ namespace pisa {
             return *this;
         }
 
-        function_iterator operator++(int)
+        function_iterator operator++(int) &
         {
             function_iterator it(*this);
             operator++();
@@ -133,24 +129,20 @@ namespace pisa {
     };
 
     template <typename State, typename AdvanceFunctor, typename ValueFunctor>
-    function_iterator<State, AdvanceFunctor, ValueFunctor>
-    make_function_iterator(State initial_state, AdvanceFunctor, ValueFunctor)
+    function_iterator<State, AdvanceFunctor, ValueFunctor> make_function_iterator(
+        State initial_state, AdvanceFunctor /* advance_functor */, ValueFunctor /* value_functor */)
     {
         return function_iterator<State, AdvanceFunctor, ValueFunctor>(initial_state);
     }
 
 
     struct stats_line {
-        stats_line()
-            : first(true)
-        {
-            std::cout << "{";
-        }
-
-        ~stats_line()
-        {
-            std::cout << "}" << std::endl;
-        }
+        stats_line() { std::cout << "{"; }
+        stats_line(stats_line const &) = default;
+        stats_line(stats_line &&) noexcept = default;
+        stats_line &operator=(stats_line const &) = default;
+        stats_line &operator=(stats_line &&) noexcept = default;
+        ~stats_line() { std::cout << "}" << std::endl; }
 
         template <typename K, typename T>
         stats_line& operator()(K const& key, T const& value)
@@ -246,7 +238,7 @@ namespace pisa {
             emit(std::make_tuple(p.first, p.second));
         }
 
-        bool first;
+        bool first{true};
     };
 
 }

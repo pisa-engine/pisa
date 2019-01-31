@@ -15,25 +15,25 @@ struct map_flags {
 };
 
 struct size_node;
-typedef std::shared_ptr<size_node> size_node_ptr;
+using size_node_ptr = std::shared_ptr<size_node>;
 
 struct size_node {
-    size_node() : size(0) {}
+    size_node() {}
 
-    std::string name;
-    size_t size;
-    std::vector<size_node_ptr> children;
+    std::string name{};
+    size_t size{0};
+    std::vector<size_node_ptr> children{};
 
     void dump(std::ostream &os = std::cerr, size_t depth = 0) {
         os << std::string(depth * 4, ' ') << name << ": " << size << '\n';
-        for (size_t i = 0; i < children.size(); ++i) {
-            children[i]->dump(os, depth + 1);
+        for (auto &child : children) {
+            child->dump(os, depth + 1);
         }
     }
 };
 
 namespace detail {
-class freeze_visitor {
+class freeze_visitor { // NOLINT
    public:
     freeze_visitor(std::ofstream &fout, uint64_t flags)
         : m_fout(fout), m_flags(flags), m_written(0) {
@@ -79,7 +79,7 @@ class freeze_visitor {
     uint64_t m_written;
 };
 
-class map_visitor {
+class map_visitor { // NOLINT
    public:
     map_visitor(const char *base_address, uint64_t flags)
         : m_base(base_address), m_cur(m_base), m_flags(flags) {
@@ -136,14 +136,17 @@ class map_visitor {
 
 class sizeof_visitor {
    public:
-    sizeof_visitor(bool with_tree = false) : m_size(0) {
+    explicit sizeof_visitor(bool with_tree = false)
+    {
         if (with_tree) {
             m_cur_size_node = std::make_shared<size_node>();
         }
     }
 
     sizeof_visitor(const sizeof_visitor &) = delete;
+    sizeof_visitor(sizeof_visitor &&) = delete;
     sizeof_visitor &operator=(const sizeof_visitor &) = delete;
+    sizeof_visitor &operator=(sizeof_visitor &&) = delete;
 
     template <typename T>
     typename std::enable_if<!std::is_pod<T>::value, sizeof_visitor &>::type operator()(
@@ -200,7 +203,7 @@ class sizeof_visitor {
         return node;
     }
 
-    size_t m_size;
+    size_t m_size{0};
     size_node_ptr m_cur_size_node;
 };
 

@@ -14,35 +14,37 @@
 #include "wand_utils.hpp"
 #include "global_parameters.hpp"
 
-
 namespace pisa {
-namespace {
-    static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
+
+namespace { // NOLINT
+
+static const size_t score_bits_size = broadword::msb(configuration::get().reference_size); // NOLINT
+
 }
 
     class uniform_score_compressor{
 
-    public:
-        class builder{
-        public:
-            builder(uint64_t num_docs, global_parameters const& params)
-                : m_params(params)
-                , m_num_docs((num_docs+1) << score_bits_size)
-                , m_docs_sequences(params)
+       public:
+        class builder {
+           public:
+            builder(uint64_t num_docs, global_parameters const &params)
+                : m_params(params),
+                  m_num_docs((num_docs + 1) << score_bits_size),
+                  m_docs_sequences(params)
             {}
 
             std::vector<uint32_t> compress_data(std::vector<float> effective_scores){
                 float quant = 1.f/configuration::get().reference_size;
 
-                //Partition scores.
+                // Partition scores.
                 std::vector<uint32_t> score_indexes;
                 score_indexes.reserve(effective_scores.size());
-                for(const auto& score: effective_scores) {
+                for (const auto &score : effective_scores) {
                     size_t pos = 1;
-                    while (score > quant*pos)
+                    while (score > quant * pos) {
                         pos++;
-                    score_indexes.push_back(pos-1);
-
+                    }
+                    score_indexes.push_back(pos - 1);
                 }
                 return score_indexes;
             }
@@ -59,7 +61,9 @@ namespace {
                     temp.push_back(elem);
                 }
 
-                if (!n) throw std::invalid_argument("List must be nonempty");
+                if (n == 0u) {
+                    throw std::invalid_argument("List must be nonempty");
+                }
                 bit_vector_builder docs_bits;
                 write_gamma_nonzero(docs_bits, n);
                 Sequence::write(docs_bits, temp.begin(),
@@ -84,8 +88,6 @@ namespace {
             global_parameters m_params;
             uint64_t m_num_docs;
             bitvector_collection::builder m_docs_sequences;
-
-
         };
 
         static float inline score(uint32_t index){
@@ -95,10 +97,10 @@ namespace {
 
     };
 
-    template<typename Scorer = bm25, typename score_compressor = uniform_score_compressor>
+    template <typename Scorer = bm25, typename score_compressor = uniform_score_compressor>
     class wand_data_compressed {
-    public:
-        class builder{
+       public:
+        class builder {
            public:
             builder(partition_type                type,
                     binary_freq_collection const &coll,
@@ -111,7 +113,10 @@ namespace {
                 spdlog::info("Storing max weight for each list and for each block...");
             }
 
-            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
+            float add_sequence(binary_freq_collection::sequence const &seq,
+                               binary_freq_collection const &coll,
+                               std::vector<float> const &norm_lens)
+            {
 
                 if (seq.docs.size() > configuration::get().threshold_wand_list) {
 
@@ -134,7 +139,6 @@ namespace {
                 }
 
                 return max_term_weight.back();
-
             }
 
             void build(wand_data_compressed &wdata) {
@@ -154,11 +158,11 @@ namespace {
             typename score_compressor::builder compressor_builder;
         };
 
-        class enumerator{
+        class enumerator {
             friend class wand_data_compressed;
-        public:
-            enumerator(compact_elias_fano::enumerator docs_enum)
-                : m_docs_enum(docs_enum)
+
+           public:
+            explicit enumerator(compact_elias_fano::enumerator docs_enum) : m_docs_enum(docs_enum)
             {
                 reset();
             }
@@ -168,15 +172,16 @@ namespace {
                 uint64_t val = m_docs_enum.move(0).second;
                 m_cur_docid = val >> score_bits_size;
                 uint64_t mask = configuration::get().reference_size - 1;
-		m_cur_score_index = (val & mask);
+                m_cur_score_index = (val & mask);
             }
 
-            void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
-                if(docid() != lower_bound) {
+            void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound)
+            {
+                if (docid() != lower_bound) {
                     lower_bound = lower_bound << score_bits_size;
                     auto val = m_docs_enum.next_geq(lower_bound);
                     m_cur_docid = val.second >> score_bits_size;
-		    uint64_t mask = configuration::get().reference_size - 1;
+                    uint64_t mask = configuration::get().reference_size - 1;
                     m_cur_score_index = (val.second & mask);
                 }
             }
@@ -190,8 +195,8 @@ namespace {
             }
 
         private:
-            uint64_t m_cur_docid;
-            uint64_t m_cur_score_index;
+            uint64_t m_cur_docid{};
+            uint64_t m_cur_score_index{};
             compact_elias_fano::enumerator m_docs_enum;
         };
 
@@ -229,10 +234,9 @@ namespace {
                 (m_docs_sequences, "m_docs_sequences");
         }
 
-    private:
-        global_parameters m_params;
-        uint64_t m_num_docs;
-        bitvector_collection m_docs_sequences;
+       private:
+        global_parameters m_params{};
+        uint64_t m_num_docs{};
+        bitvector_collection m_docs_sequences{};
     };
-
-}
+    } // namespace pisa

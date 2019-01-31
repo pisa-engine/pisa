@@ -14,11 +14,10 @@ namespace pisa {
 
     template<typename Scorer=bm25, typename block_wand_type=wand_data_raw<bm25> >
     class wand_data {
-    public:
-
+       public:
         using wand_data_enumerator = typename block_wand_type::enumerator;
 
-        wand_data() { }
+        wand_data() = default;
 
         template<typename LengthsIterator>
         wand_data(LengthsIterator len_it, uint64_t num_docs,
@@ -35,7 +34,7 @@ namespace pisa {
                 lens_sum += len;
             }
 
-            float avg_len = float(lens_sum / double(num_docs));
+            auto avg_len = static_cast<float>(lens_sum / double(num_docs));
             for(auto& norm_len: norm_lens) {
                 norm_len /= avg_len;
             }

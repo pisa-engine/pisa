@@ -24,20 +24,23 @@ namespace pisa {
                                                   posting_type const,
                                                   posting_type>::type *;
 
-        base_binary_collection(const char *filename) {
+        explicit base_binary_collection(const char *filename)
+        {
             std::error_code error;
             m_file.map(filename, error);
             if ( error ) {
                 std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
                 throw std::runtime_error("Error opening file");
             }
-            m_data      = reinterpret_cast<pointer>(m_file.data());
+            m_data = reinterpret_cast<pointer>(m_file.data());
             m_data_size = m_file.size() / sizeof(m_data[0]);
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
             // Indicates that the application expects to access this address range in a sequential manner
             auto ret = posix_madvise((void*)m_data, m_data_size, POSIX_MADV_SEQUENTIAL);
-            if (ret) spdlog::error("Error calling madvice: {}", errno);
+            if (ret) {
+                spdlog::error("Error calling madvice: {}", errno);
+            }
 #endif
         }
 
@@ -111,7 +114,9 @@ namespace pisa {
             void read()
             {
                 assert(m_pos <= m_collection->m_data_size);
-                if (m_pos == m_collection->m_data_size) return;
+                if (m_pos == m_collection->m_data_size) {
+                    return;
+                }
 
                 size_t n = 0;
                 size_t pos = m_pos;
@@ -121,12 +126,13 @@ namespace pisa {
                 auto begin = &m_collection->m_data[pos];
 
                 m_next_pos = pos + n;
-                m_cur_seq  = S(begin, begin + n);
+                m_cur_seq = S(begin, std::next(begin, n));
             }
 
-            base_binary_collection const *     m_collection;
-            size_t                             m_pos, m_next_pos;
-            S                                  m_cur_seq;
+            base_binary_collection const *m_collection;
+            size_t m_pos{};
+            size_t m_next_pos{};
+            S m_cur_seq{};
         };
 
        private:

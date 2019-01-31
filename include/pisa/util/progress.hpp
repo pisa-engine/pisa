@@ -10,13 +10,26 @@ namespace pisa {
 class progress {
 
    public:
-    progress(const std::string &name, size_t goal) : m_name(name) {
+    progress(std::string name, size_t goal) : m_name(std::move(name))
+    {
         if (goal == 0) {
             throw std::runtime_error("goal must be positive");
         }
         m_goal = goal;
     }
-    ~progress() {
+    progress(progress const &other)
+        : m_name(other.m_name),
+          m_count(other.m_count),
+          m_goal(other.m_goal),
+          m_start(other.m_start),
+          m_mut{},
+          m_status{}
+    {}
+    progress(progress &&other) = delete;
+    progress &operator=(progress const &other) = delete;
+    progress &operator=(progress &&other) = delete;
+    ~progress()
+    {
         m_status.notify_one();
         std::unique_lock<std::mutex> lock(m_mut);
         print_status();
@@ -32,10 +45,8 @@ class progress {
    private:
     std::string m_name;
     size_t m_count = 0;
-    size_t m_goal  = 0;
-
+    size_t m_goal = 0;
     std::chrono::time_point<std::chrono::steady_clock> m_start = std::chrono::steady_clock::now();
-
     std::mutex m_mut;
     std::condition_variable m_status;
 

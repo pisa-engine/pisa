@@ -59,15 +59,17 @@ void dump_stats(Collection &coll, std::string const &type, uint64_t postings) {
         "freqs_size", freqs_size)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
 }
 
-void emit(std::ostream &os, const uint32_t *vals, size_t n) {
+inline void emit(std::ostream &os, const uint32_t *vals, size_t n)
+{
     os.write(reinterpret_cast<const char *>(vals), sizeof(*vals) * n);
 }
 
 void emit(std::ostream &os, uint32_t val) { emit(os, &val, 1); }
 
-void reorder_inverted_index(const std::string &          input_basename,
-                            const std::string &          output_basename,
-                            const std::vector<uint32_t> &mapping) {
+inline void reorder_inverted_index(const std::string &input_basename,
+                                   const std::string &output_basename,
+                                   const std::vector<uint32_t> &mapping)
+{
     std::ofstream output_mapping(output_basename + ".mapping");
     emit(output_mapping, mapping.data(), mapping.size());
 
@@ -115,9 +117,10 @@ void reorder_inverted_index(const std::string &          input_basename,
     }
 }
 
-void sample_inverted_index(const std::string &input_basename,
-                           const std::string &output_basename,
-                           const uint32_t     max_doc) {
+inline void sample_inverted_index(const std::string &input_basename,
+                                  const std::string &output_basename,
+                                  const uint32_t max_doc)
+{
 
     binary_collection input_sizes((input_basename + ".sizes").c_str());
     auto              sizes = *input_sizes.begin();

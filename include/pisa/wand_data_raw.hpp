@@ -13,23 +13,17 @@ namespace pisa {
 
     template<typename Scorer = bm25>
     class wand_data_raw {
-    public:
-        wand_data_raw() { }
+       public:
+        wand_data_raw() = default;
 
-        class builder{
+        class builder {
            public:
-            builder(partition_type                type,
-                    binary_freq_collection const &coll,
-                    global_parameters const &     params)
+            builder(partition_type _type,
+                    [[maybe_unused]] binary_freq_collection const &coll,
+                    [[maybe_unused]] global_parameters const &params)
+                : type(_type)
             {
-                (void) coll;
-                (void) params;
-                this->type = type;
                 spdlog::info("Storing max weight for each list and for each block...");
-                total_elements = 0;
-                total_blocks = 0;
-                effective_list = 0;
-                blocks_start.push_back(0);
             }
 
             float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
@@ -66,12 +60,12 @@ namespace pisa {
             }
 
             partition_type type;
-            uint64_t total_elements;
-            uint64_t total_blocks;
-            uint64_t effective_list;
-            std::vector<float> max_term_weight;
-            std::vector<uint64_t> blocks_start;
-            std::vector<float> block_max_term_weight;
+            uint64_t total_elements{0};
+            uint64_t total_blocks{0};
+            uint64_t effective_list{0};
+            std::vector<float> max_term_weight{};
+            std::vector<uint64_t> blocks_start{0};
+            std::vector<float> block_max_term_weight{};
             std::vector<uint32_t> block_docid;
         };
         class enumerator{

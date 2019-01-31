@@ -29,7 +29,9 @@ namespace pisa {
             void add_posting_list(uint64_t n, DocsIterator docs_begin,
                                   FreqsIterator freqs_begin, uint64_t occurrences)
             {
-                if (!n) throw std::invalid_argument("List must be nonempty");
+                if (n == 0u) {
+                    throw std::invalid_argument("List must be nonempty");
+                }
 
                 tbb::parallel_invoke(
                     [&] {
@@ -139,14 +141,13 @@ namespace pisa {
 
             document_enumerator(typename DocsSequence::enumerator docs_enum,
                                 typename FreqsSequence::enumerator freqs_enum)
-                : m_docs_enum(docs_enum)
-                , m_freqs_enum(freqs_enum)
+                : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum)
             {
                 reset();
             }
 
-            uint64_t m_cur_pos;
-            uint64_t m_cur_docid;
+            uint64_t m_cur_pos{};
+            uint64_t m_cur_docid{};
             typename DocsSequence::enumerator m_docs_enum;
             typename FreqsSequence::enumerator m_freqs_enum;
         };
@@ -206,7 +207,7 @@ namespace pisa {
 
     private:
         global_parameters m_params;
-        uint64_t m_num_docs;
+        uint64_t m_num_docs{0};
         bitvector_collection m_docs_sequences;
         bitvector_collection m_freqs_sequences;
     };

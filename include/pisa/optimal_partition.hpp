@@ -7,8 +7,8 @@
 
 namespace pisa {
 
-    typedef uint32_t posting_t ;
-    typedef uint64_t cost_t;
+    using posting_t = uint32_t;
+    using cost_t = uint64_t;
 
     struct optimal_partition {
 
@@ -29,11 +29,7 @@ namespace pisa {
             cost_t cost_upper_bound; // The maximum cost for this window
 
             cost_window(ForwardIterator begin, posting_t base, cost_t cost_upper_bound)
-                : start_it(begin)
-                , end_it(begin)
-                , min_p(base)
-                , max_p(0)
-                , cost_upper_bound(cost_upper_bound)
+                : start_it(begin), end_it(begin), min_p(base), cost_upper_bound(cost_upper_bound)
             {}
 
             uint64_t universe() const
@@ -62,13 +58,16 @@ namespace pisa {
 
         };
 
-        optimal_partition()
-        {}
+        optimal_partition() = default;
 
         template <typename ForwardIterator, typename CostFunction>
         optimal_partition(ForwardIterator begin,
-                          posting_t base, posting_t universe, uint64_t size,
-                          CostFunction cost_fun, double eps1, double eps2)
+                          posting_t base,
+                          posting_t universe,
+                          uint64_t size,
+                          CostFunction cost_fun,
+                          double eps1,
+                          double eps2)
         {
             cost_t single_block_cost = cost_fun(universe - base, size);
             std::vector<cost_t> min_cost(size + 1, single_block_cost);
@@ -80,7 +79,9 @@ namespace pisa {
             cost_t cost_bound = cost_lb;
             while (eps1 == 0 || cost_bound < cost_lb / eps1) {
                 windows.emplace_back(begin, base, cost_bound);
-                if (cost_bound >= single_block_cost) break;
+                if (cost_bound >= single_block_cost) {
+                    break;
+                }
                 cost_bound = cost_bound * (1 + eps2);
             }
 
