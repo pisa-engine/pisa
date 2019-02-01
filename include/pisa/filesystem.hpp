@@ -5,8 +5,8 @@
 
 namespace pisa {
 
-[[nodiscard]] auto ls(boost::filesystem::path                  dir,
-                      std::function<bool(std::string const &)> predicate)
+[[nodiscard]] inline auto ls(boost::filesystem::path const &dir,
+                             std::function<bool(std::string const &)> const &predicate)
 {
     std::vector<boost::filesystem::path> files;
     for (auto it = boost::filesystem::directory_iterator(dir);

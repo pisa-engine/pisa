@@ -10,24 +10,23 @@ namespace pisa {
 
     template <typename IndexedSequence>
     class sequence_collection {
-    public:
-        typedef typename IndexedSequence::enumerator enumerator_type;
+       public:
+        using enumerator_type = typename IndexedSequence::enumerator;
 
-        sequence_collection()
-        {}
+        sequence_collection() = default;
 
         class builder {
-        public:
-            builder(global_parameters const& params)
-                : m_queue(1 << 24)
-                , m_params(params)
-                , m_sequences(params)
+           public:
+            explicit builder(global_parameters const &params)
+                : m_queue(1 << 24), m_params(params), m_sequences(params)
             {}
 
             template <typename Iterator>
             void add_sequence(Iterator begin, uint64_t last_element, uint64_t n)
             {
-                if (!n) throw std::invalid_argument("Sequence must be nonempty");
+                if (n == 0u) {
+                    throw std::invalid_argument("Sequence must be nonempty");
+                }
 
                 // make_shared does not seem to work
                 std::shared_ptr<sequence_adder<Iterator>>
@@ -56,7 +55,7 @@ namespace pisa {
                     , n(n)
                 {}
 
-                virtual void prepare()
+                void prepare() override
                 {
                     // store approximation of the universe as smallest power of two
                     // that can represent last_element
@@ -68,10 +67,7 @@ namespace pisa {
                                            b.m_params);
                 }
 
-                virtual void commit()
-                {
-                    b.m_sequences.append(bits);
-                }
+                void commit() override { b.m_sequences.append(bits); }
 
                 builder& b;
                 Iterator begin;
@@ -121,7 +117,7 @@ namespace pisa {
 
     private:
         global_parameters m_params;
-        size_t m_size;
+        size_t m_size{0};
         bitvector_collection m_sequences;
     };
 }
