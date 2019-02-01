@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cstddef>
 
+#include <gsl/gsl>
+
 #include "topk_queue.hpp"
 
 namespace pisa {
@@ -15,37 +17,46 @@ struct Lazy_Accumulator {
 
     static_assert(std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>,
                   "must be unsigned number");
+    static_assert(counter_bit_size > 0, "Counter must be at least one bit long");
+    static_assert(counter_bit_size <= sizeof(Descriptor),
+                  "Counter must be at most as long as descriptor");
+
     constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
-    constexpr static auto counters_in_descriptor = descriptor_size_in_bits / counter_bit_size;
-    constexpr static auto cycle = (1u << counter_bit_size);
-    constexpr static Descriptor mask = (1u << counter_bit_size) - 1;
+    constexpr static auto counters_in_descriptor =
+        descriptor_size_in_bits / static_cast<uint8_t>(counter_bit_size);
+    constexpr static auto cycle = (1u << static_cast<uint8_t>(counter_bit_size));
+    constexpr static Descriptor mask = (1u << static_cast<uint8_t>(counter_bit_size)) - 1u;
 
     struct Block {
         Descriptor                                descriptor{};
         std::array<float, counters_in_descriptor> accumulators{};
 
         [[nodiscard]] auto counter(int pos) const noexcept -> int {
-            if constexpr (counter_bit_size == 8) {
-                return static_cast<int>(*(reinterpret_cast<uint8_t const *>(&descriptor) + pos));
-            } else {
-                return (descriptor >> (pos * counter_bit_size)) & mask;
+            if constexpr (counter_bit_size == 8) { // NOLINT
+                return static_cast<int>(
+                    *std::next(reinterpret_cast<uint8_t const *>(&descriptor), pos));
+            }
+            else { // NOLINT
+                return (descriptor >> static_cast<uint8_t>(pos * counter_bit_size)) & mask;
             }
         }
 
         void reset_counter(int pos, int counter)
         {
-            if constexpr (counter_bit_size == 8) {
-                *(reinterpret_cast<uint8_t *>(&descriptor) + pos) = static_cast<uint8_t>(counter);
-            } else {
-                auto const shift = pos * counter_bit_size;
+            if constexpr (counter_bit_size == 8) { // NOLINT
+                *std::next(reinterpret_cast<uint8_t *>(&descriptor), pos) =
+                    static_cast<uint8_t>(counter);
+            }
+            else { // NOLINT
+                auto const shift = static_cast<uint8_t>(pos * counter_bit_size);
                 descriptor &= ~(mask << shift);
                 descriptor |= static_cast<Descriptor>(counter) << shift;
             }
-            accumulators[pos] = 0;
+            gsl::at(accumulators, pos) = 0;
         }
     };
 
-    Lazy_Accumulator(std::size_t size)
+    explicit Lazy_Accumulator(std::size_t size)
         : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor)
     {}
 

@@ -16,8 +16,8 @@ namespace pisa {
 ///     do_stuff();
 /// });
 /// ```
-template<class Unit>
-Unit run_with_timer(std::function<void()> fn)
+template <class Unit>
+Unit run_with_timer(std::function<void()> const &fn)
 {
     auto start_time = std::chrono::steady_clock::now();
     fn();
@@ -33,8 +33,8 @@ Unit run_with_timer(std::function<void()> fn)
 ///     []() { do_stuff(); },
 ///     [](const auto& time) { log(time); });
 /// ```
-template<class Unit, class Handler>
-void run_with_timer(std::function<void()> fn, Handler handler)
+template <class Unit, class Handler>
+void run_with_timer(std::function<void()> const &fn, Handler handler)
 {
     auto start_time = std::chrono::steady_clock::now();
     fn();

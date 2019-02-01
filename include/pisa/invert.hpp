@@ -36,6 +36,7 @@ class Integer {
     Integer(Integer &&) noexcept = default;
     Integer &operator=(Integer const &) = default;
     Integer &operator=(Integer &&) noexcept = default;
+    ~Integer() = default;
 
     explicit operator T() const { return m_val; }
     [[nodiscard]] T get() const { return m_val; }
@@ -166,7 +167,7 @@ struct Batch {
     ranges::iota_view<Document_Id, Document_Id> document_ids;
 };
 
-std::vector<std::pair<Term_Id, Document_Id>> map_to_postings(Batch batch)
+inline std::vector<std::pair<Term_Id, Document_Id>> map_to_postings(Batch batch)
 {
     auto docid = batch.document_ids.begin();
     std::vector<std::pair<Term_Id, Document_Id>> postings;
@@ -179,10 +180,10 @@ std::vector<std::pair<Term_Id, Document_Id>> map_to_postings(Batch batch)
     return postings;
 }
 
-void join_term(std::vector<Document_Id> &lower_doc,
-               std::vector<Frequency> &lower_freq,
-               std::vector<Document_Id> &higher_doc,
-               std::vector<Frequency> &higher_freq)
+inline void join_term(std::vector<Document_Id> &lower_doc,
+                      std::vector<Frequency> &lower_freq,
+                      std::vector<Document_Id> &higher_doc,
+                      std::vector<Frequency> &higher_freq)
 {
     if (lower_doc.back() == higher_doc.front()) {
         lower_freq.back() += higher_freq.front();
@@ -202,7 +203,7 @@ struct Inverted_Index {
     std::vector<std::uint32_t> document_sizes{};
 
     Inverted_Index() = default;
-    Inverted_Index(Inverted_Index &, tbb::split) {}
+    Inverted_Index(Inverted_Index & /* other_index */, tbb::split /* split */) {}
     Inverted_Index(std::unordered_map<Term_Id, std::vector<Document_Id>> documents,
                    std::unordered_map<Term_Id, std::vector<Frequency>> frequencies,
                    std::vector<std::uint32_t> document_sizes = {})
@@ -280,9 +281,9 @@ void write(std::string const &                     basename,
     write_sequence(sstream, gsl::span<uint32_t const>(index.document_sizes));
 }
 
-auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
-                  Document_Id                         first_document_id,
-                  size_t                              threads)
+inline auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
+                         Document_Id first_document_id,
+                         size_t threads)
 {
     std::vector<uint32_t> document_sizes(documents.size());
     std::transform(std::execution::par_unseq,
@@ -322,11 +323,11 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
     return index;
 }
 
-[[nodiscard]] auto build_batches(std::string const &input_basename,
-                                 std::string const &output_basename,
-                                 uint32_t           term_count,
-                                 size_t             batch_size,
-                                 size_t             threads) -> uint32_t
+[[nodiscard]] inline auto build_batches(std::string const &input_basename,
+                                        std::string const &output_basename,
+                                        uint32_t term_count,
+                                        size_t batch_size,
+                                        size_t threads) -> uint32_t
 {
     uint32_t          batch = 0;
     binary_collection coll(input_basename.c_str());
@@ -353,7 +354,9 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
     return batch;
 }
 
-void merge_batches(std::string const &output_basename, uint32_t batch_count, uint32_t term_count)
+inline void merge_batches(std::string const &output_basename,
+                          uint32_t batch_count,
+                          uint32_t term_count)
 {
     std::vector<binary_collection> doc_collections;
     std::vector<binary_collection> freq_collections;
@@ -402,11 +405,11 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
     }
 }
 
-void invert_forward_index(std::string const &input_basename,
-                          std::string const &output_basename,
-                          uint32_t           term_count,
-                          size_t             batch_size,
-                          size_t             threads)
+inline void invert_forward_index(std::string const &input_basename,
+                                 std::string const &output_basename,
+                                 uint32_t term_count,
+                                 size_t batch_size,
+                                 size_t threads)
 {
     uint32_t batch_count =
         invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);

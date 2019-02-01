@@ -13,5 +13,6 @@ Checks: |
     -clang-analyzer-core.UndefinedBinaryOperatorResult,
     -cppcoreguidelines-pro-type-reinterpret-cast,
     -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -cppcoreguidelines-pro-bounds-constant-array-index,
     -hicpp-no-array-decay,
     -bugprone-exception-escape
