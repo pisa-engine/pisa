@@ -18,7 +18,7 @@ namespace pisa {
         class builder {
            public:
             explicit builder(global_parameters const &params)
-                : m_queue(1 << 24), m_params(params), m_sequences(params)
+                : m_queue(1u << 24u), m_params(params), m_sequences(params)
             {}
 
             template <typename Iterator>
