@@ -9,6 +9,7 @@
 #include <unordered_map>
 
 #include <Porter2/Porter2.hpp>
+#include <range/v3/view/enumerate.hpp>
 #include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
@@ -21,8 +22,39 @@
 #include "wand_data_raw.hpp"
 
 namespace pisa {
-typedef uint32_t                  term_id_type;
-typedef std::vector<term_id_type> term_id_vec;
+
+using term_id_type = uint32_t;
+using term_id_vec = std::vector<term_id_type>;
+
+struct Query {
+    std::optional<std::string> id;
+    std::vector<term_id_type> terms;
+};
+
+[[nodiscard]] inline auto parse_query(std::string const &query_string,
+                                      std::function<term_id_type(std::string)> process_term)
+    -> Query
+{
+    std::optional<std::string> id = std::nullopt;
+    std::vector<term_id_type> parsed_query;
+    auto colon = std::find(query_string.begin(), query_string.end(), ':');
+    if (colon != query_string.end()) {
+        id = std::string(query_string.begin(), colon);
+    }
+    auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
+    std::istringstream iline(std::string(pos, query_string.end()));
+    std::string term;
+    while (iline >> term) {
+        try {
+            parsed_query.push_back(process_term(term));
+        } catch (std::invalid_argument& err) {
+            spdlog::warn("Could not parse `{}` to a number", term);
+        } catch (std::out_of_range& err) {
+            spdlog::warn("Term `{}` not found and will be ignored", term);
+        }
+    }
+    return {id, parsed_query};
+}
 
 bool read_query(term_id_vec &ret,
                 std::istream &is = std::cin,
@@ -32,19 +64,10 @@ bool read_query(term_id_vec &ret,
 {
     ret.clear();
     std::string line;
-    if (!std::getline(is, line))
+    if (!std::getline(is, line)) {
         return false;
-    std::istringstream iline(line);
-    std::string term;
-    while (iline >> term) {
-        try {
-            ret.push_back(process_term(term));
-        } catch (std::invalid_argument& err) {
-            spdlog::warn("Could not parse `{}` to a number", term);
-        } catch (std::out_of_range& err) {
-            spdlog::warn("Term `{}` not found and will be ignored", term);
-        }
     }
+    ret = parse_query(line, process_term).terms;
     return true;
 }
 
