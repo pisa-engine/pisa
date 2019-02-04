@@ -3,10 +3,11 @@
 
 #include "test_common.hpp"
 
+#include "accumulator/lazy_accumulator.hpp"
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
-#include "accumulator/lazy_accumulator.hpp"
+#include "query/scored_range.hpp"
 
 namespace pisa { namespace test {
 
@@ -55,6 +56,22 @@ namespace pisa { namespace test {
             for (auto const& q: queries) {
                 or_q(q);
                 op_q(q);
+                REQUIRE(or_q.topk().size() == op_q.topk().size());
+                for (size_t i = 0; i < or_q.topk().size(); ++i) {
+                    REQUIRE(or_q.topk()[i].first ==
+                            Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+                }
+            }
+        }
+
+        template <typename QueryOp>
+        void test_with_ranges(QueryOp &op_q) const
+        {
+            ranked_or_taat_query<index_type, WandType> or_q(index, wdata, 10);
+
+            for (auto const &q : queries) {
+                or_q(q);
+                op_q(gsl::make_span(scored_ranges(index, wdata, q)));
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     REQUIRE(or_q.topk()[i].first ==
@@ -119,4 +136,11 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
 TEST_CASE_METHOD(pisa::test::index_initialization, "topk_size_ranked_or")
 {
     test_k_size();
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_ranges")
+{
+    pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
+        index, wdata, 10);
+    test_with_ranges(ranked_or_taat_q);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl/span"
 #include "tbb/parallel_invoke.h"
 
 #include "bitvector_collection.hpp"
@@ -73,6 +74,128 @@ namespace pisa {
         {
             return m_num_docs;
         }
+
+        class Posting_Range {
+           public:
+            explicit Posting_Range(freq_index const &index, uint32_t term)
+                : index_(index), term_(term)
+            {
+            }
+            Posting_Range(Posting_Range &&) noexcept = default;
+            Posting_Range &operator=(Posting_Range &&) noexcept = default;
+            ~Posting_Range() = default;
+
+            Posting_Range(Posting_Range const &) = delete;
+            Posting_Range &operator=(Posting_Range const &) = delete;
+
+            [[nodiscard]] auto size() const -> int64_t { return cursor().size(); } // TODO: clearly
+            [[nodiscard]] auto first_document() const { return 0u; }
+            [[nodiscard]] auto last_document() const { return index_.num_docs(); }
+            [[nodiscard]] auto cursor() const
+            {
+                auto docs_it = index_.m_docs_sequences.get(index_.m_params, term_);
+                auto freqs_it = index_.m_freqs_sequences.get(index_.m_params, term_);
+
+                uint64_t occurrences = read_gamma_nonzero(docs_it);
+                uint64_t n = 1;
+                if (occurrences > 1) {
+                    n = docs_it.take(ceil_log2(occurrences + 1));
+                }
+
+                typename DocsSequence::enumerator docs_enum(index_.m_docs_sequences.bits(),
+                                                            docs_it.position(),
+                                                            index_.num_docs(),
+                                                            n,
+                                                            index_.m_params);
+
+                typename FreqsSequence::enumerator freqs_enum(index_.m_freqs_sequences.bits(),
+                                                              freqs_it.position(),
+                                                              occurrences + 1,
+                                                              n,
+                                                              index_.m_params);
+
+                return Cursor(docs_enum, freqs_enum);
+            }
+
+           private:
+            freq_index const &index_;
+            uint32_t term_;
+        };
+
+        class Cursor {
+           public:
+            void reset()
+            {
+                m_cur_pos = 0;
+                m_cur_docid = m_docs_enum.move(0).second;
+            }
+
+            void DS2I_FLATTEN_FUNC next()
+            {
+                auto val = m_docs_enum.next();
+                m_cur_pos = val.first;
+                m_cur_docid = val.second;
+            }
+
+            void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound)
+            {
+                auto val = m_docs_enum.next_geq(lower_bound);
+                m_cur_pos = val.first;
+                m_cur_docid = val.second;
+            }
+
+            void DS2I_FLATTEN_FUNC move(uint64_t position)
+            {
+                auto val = m_docs_enum.move(position);
+                m_cur_pos = val.first;
+                m_cur_docid = val.second;
+            }
+
+            uint64_t docid() const
+            {
+                return m_cur_docid;
+            }
+
+            uint64_t DS2I_FLATTEN_FUNC freq()
+            {
+                return m_freqs_enum.move(m_cur_pos).second;
+            }
+
+            uint64_t position() const
+            {
+                return m_cur_pos;
+            }
+
+            uint64_t size() const
+            {
+                return m_docs_enum.size();
+            }
+
+            typename DocsSequence::enumerator const& docs_enum() const
+            {
+                return m_docs_enum;
+            }
+
+            typename FreqsSequence::enumerator const& freqs_enum() const
+            {
+                return m_freqs_enum;
+            }
+
+           private:
+            friend class freq_index;
+
+            Cursor(typename DocsSequence::enumerator docs_enum,
+                   typename FreqsSequence::enumerator freqs_enum)
+                : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum)
+            {
+                reset();
+            }
+
+            uint64_t m_cur_pos;
+            uint64_t m_cur_docid;
+            typename DocsSequence::enumerator m_docs_enum;
+            typename FreqsSequence::enumerator m_freqs_enum;
+        };
 
         class document_enumerator {
         public:
@@ -150,6 +273,12 @@ namespace pisa {
             typename DocsSequence::enumerator m_docs_enum;
             typename FreqsSequence::enumerator m_freqs_enum;
         };
+
+        [[nodiscard]] auto posting_range(uint32_t term) const -> Posting_Range
+        {
+            assert(term < size());
+            return Posting_Range(*this, term);
+        }
 
         document_enumerator operator[](size_t i) const
         {

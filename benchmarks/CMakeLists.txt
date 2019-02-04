@@ -17,3 +17,9 @@ add_executable(scan_perftest scan_perftest.cpp)
 target_link_libraries(scan_perftest
   pisa
 )
+
+add_executable(traversal traversal.cpp)
+target_link_libraries(traversal
+  pisa
+  celero
+)

@@ -58,3 +58,6 @@
 [submodule "external/range-v3"]
 	path = external/range-v3
 	url = https://github.com/ericniebler/range-v3.git
+[submodule "external/Celero"]
+	path = external/Celero
+	url = https://github.com/DigitalInBlue/Celero.git

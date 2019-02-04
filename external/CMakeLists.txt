@@ -101,3 +101,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 
 # Add range-v3
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
+
+# Add Celero
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Celero)

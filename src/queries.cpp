@@ -43,7 +43,7 @@ void op_perftest(Functor query_func, // XXX!!!
 
     if (false) {
         for (auto t : query_times) {
-            std::cout << (t / 1000) << std::endl;
+            std::cout << (t / 1000) << '\n';
         }
     } else {
         std::sort(query_times.begin(), query_times.end());
@@ -97,7 +97,7 @@ void perftest(const std::string &index_filename,
     if (wand_data_filename) {
         std::error_code error;
         md.map(*wand_data_filename, error);
-        if(error){
+        if (error) {
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
         }

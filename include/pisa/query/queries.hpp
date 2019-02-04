@@ -81,8 +81,6 @@ struct Score_Function {
     }
 };
 
-// TODO: These are functions common to query processing in general.
-//       They should be moved out of this file.
 namespace query {
 
 template <typename Index, typename WandType>

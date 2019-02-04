@@ -17,6 +17,26 @@ class ranked_or_taat_query {
     ranked_or_taat_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(wdata), m_topk(k), m_accumulators(index.num_docs()) {}
 
+    template <typename Scored_Range>
+    auto operator()(gsl::span<Scored_Range> posting_ranges) -> int64_t
+    {
+        m_topk.clear();
+        if (posting_ranges.empty()) {
+            return 0;
+        }
+        m_accumulators.init();
+        for (auto const &range : posting_ranges) {
+            auto cursor = range.cursor();
+            for (; cursor.docid() < range.last_document(); cursor.next()) {
+                m_accumulators.accumulate(cursor.docid(), cursor.score());
+            }
+            break;
+        }
+        m_accumulators.aggregate(m_topk);
+        m_topk.finalize();
+        return m_topk.topk().size();
+    }
+
     uint64_t operator()(term_id_vec terms) {
         auto [cursors, score_functions] = query::cursors_with_scores(m_index, m_wdata, terms);
         m_topk.clear();
@@ -30,6 +50,7 @@ class ranked_or_taat_query {
             for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
                 m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
             }
+            break;
         }
         m_accumulators.aggregate(m_topk);
         m_topk.finalize();
