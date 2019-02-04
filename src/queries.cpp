@@ -11,6 +11,7 @@
 #include "index_types.hpp"
 #include "accumulator/lazy_accumulator.hpp"
 #include "query/queries.hpp"
+#include "query/scored_range.hpp"
 #include "timer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
@@ -130,7 +131,7 @@ void perftest(const std::string &index_filename,
         } else if (t == "wand" && wand_data_filename) {
             query_fun = wand_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun =block_max_wand_query<IndexType, WandType>(index, wdata, k);
+            query_fun = block_max_wand_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = block_max_maxscore_query<IndexType, WandType>(index, wdata, k);
         }  else if (t == "ranked_or" && wand_data_filename) {
@@ -139,9 +140,15 @@ void perftest(const std::string &index_filename,
             query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
+        } else if (t == "Ranked_Or_Taat" && wand_data_filename) {
+            auto taatq =
+                std::make_unique<pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>>(
+                    index, wdata, k);
+            query_fun = [&, taatq = std::move(taatq)](term_id_vec terms) {
+                return taatq->operator()(gsl::make_span(scored_ranges(index, wdata, terms)));
+            };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            query_fun =
-                pisa::make_ranked_or_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
+            query_fun = pisa::make_ranked_or_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
         } else {
             spdlog::error("Unsupported query type: {}", t);
             break;
