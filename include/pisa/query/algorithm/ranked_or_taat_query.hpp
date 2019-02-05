@@ -30,7 +30,6 @@ class ranked_or_taat_query {
             for (; cursor.docid() < range.last_document(); cursor.next()) {
                 m_accumulators.accumulate(cursor.docid(), cursor.score());
             }
-            break;
         }
         m_accumulators.aggregate(m_topk);
         m_topk.finalize();
@@ -50,7 +49,6 @@ class ranked_or_taat_query {
             for (; cursor.docid() < m_accumulators.size(); cursor.next()) {
                 m_accumulators.accumulate(cursor.docid(), score(cursor.docid(), cursor.freq()));
             }
-            break;
         }
         m_accumulators.aggregate(m_topk);
         m_topk.finalize();

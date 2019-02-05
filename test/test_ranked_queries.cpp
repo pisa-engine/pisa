@@ -1,6 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <range/v3/to_container.hpp>
+
 #include "test_common.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
@@ -71,7 +73,7 @@ namespace pisa { namespace test {
 
             for (auto const &q : queries) {
                 or_q(q);
-                op_q(gsl::make_span(scored_ranges(index, wdata, q)));
+                op_q(gsl::make_span(max_scored_ranges(index, wdata, q)));
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     REQUIRE(or_q.topk()[i].first ==
@@ -143,4 +145,10 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_ranges")
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
         index, wdata, 10);
     test_with_ranges(ranked_or_taat_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "wand_ranges")
+{
+    pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
+    test_with_ranges(wand_q);
 }

@@ -317,6 +317,8 @@ struct block_posting_list {
 
     class Posting_Range {
        public:
+        using cursor_type = Block_Cursor<BlockCodec, Profile>;
+
         Posting_Range(global_parameters const &params,
                       size_t size,
                       size_t num_docs,
