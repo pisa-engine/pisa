@@ -29,12 +29,7 @@ struct wand_query {
             return 0;
         }
 
-        std::vector<cursor_type> cursors;
-        std::transform(posting_ranges.begin(),
-                       posting_ranges.end(),
-                       std::back_inserter(cursors),
-                       [](auto const &range) { return range.cursor(); });
-
+        std::vector<cursor_type> cursors = query::open_cursors(posting_ranges);
         std::vector<cursor_type *> ordered_cursors(cursors.size());
         std::transform(cursors.begin(), cursors.end(), ordered_cursors.begin(), [](auto &cursor) {
             return &cursor;

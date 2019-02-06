@@ -1,6 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <numeric>
 #include <vector>
+
 #include "query/queries.hpp"
 
 namespace pisa {
@@ -11,6 +14,79 @@ struct maxscore_query {
     typedef bm25 scorer_type;
 
     maxscore_query(Index const &index, WandType const &wdata, uint64_t k) : m_index(index), m_wdata(&wdata), m_topk(k) {}
+
+    template <typename Max_Scored_Range>
+    auto operator()(gsl::span<Max_Scored_Range> posting_ranges) -> int64_t
+    {
+        using cursor_type = typename Max_Scored_Range::cursor_type;
+        m_topk.clear();
+        if (posting_ranges.empty()) {
+            return 0;
+        }
+
+        std::vector<cursor_type> cursors = query::open_cursors(posting_ranges);
+        std::sort(cursors.begin(), cursors.end(), [](auto const &lhs, auto const &rhs) {
+            return lhs.max_score() < rhs.max_score();
+        });
+
+        std::vector<float> upper_bounds(cursors.size());
+        std::transform(cursors.begin(),
+                       cursors.end(),
+                       upper_bounds.begin(),
+                       [](auto const &cursor) { return cursor.max_score(); });
+        std::partial_sum(upper_bounds.begin(), upper_bounds.end(), upper_bounds.begin());
+
+        auto first_essential = cursors.begin();
+        auto first_essential_bound = upper_bounds.begin();
+        auto current_doc = std::min_element(cursors.begin(),
+                                            cursors.end(),
+                                            [](auto const &lhs, auto const &rhs) {
+                                                return lhs.docid() < rhs.docid();
+                                            })
+                               ->docid();
+
+        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
+        while (first_essential != cursors.end() && current_doc < last_document) {
+            auto score = 0.f;
+            auto next_doc = last_document;
+            std::for_each(first_essential, cursors.end(), [&](auto &cursor) {
+                if (cursor.docid() == current_doc) {
+                    score += cursor.score();
+                    cursor.next();
+                }
+                if (auto id = cursor.docid(); id < next_doc) {
+                    next_doc = id;
+                }
+            });
+
+            for_each_pair_until(std::reverse_iterator(first_essential),
+                                cursors.rend(),
+                                std::reverse_iterator(first_essential_bound),
+                                upper_bounds.rend(),
+                                [&](auto &cursor, auto const &bound) {
+                                    return not m_topk.would_enter(score + bound);
+                                },
+                                [&](auto &cursor, auto const & /*bound*/) {
+                                    cursor.next_geq(current_doc);
+                                    if (cursor.docid() == current_doc) {
+                                        score += cursor.score();
+                                    }
+                                });
+
+            if (m_topk.insert(score, current_doc)) {
+                while (first_essential < cursors.end() &&
+                       not m_topk.would_enter(*first_essential_bound)) {
+                    ++first_essential;
+                    ++first_essential_bound;
+                }
+            }
+
+            current_doc = next_doc;
+        }
+
+        m_topk.finalize();
+        return m_topk.topk().size();
+    }
 
     uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();

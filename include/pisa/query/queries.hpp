@@ -130,6 +130,19 @@ std::function<term_id_type(std::string &&)> term_processor(std::optional<std::st
     }
 }
 
+template <typename Range>
+[[nodiscard]] auto open_cursors(gsl::span<Range> posting_ranges)
+    -> std::vector<typename Range::cursor_type>
+{
+    using cursor_type = typename Range::cursor_type;
+    std::vector<cursor_type> cursors;
+    std::transform(posting_ranges.begin(),
+                   posting_ranges.end(),
+                   std::back_inserter(cursors),
+                   [](auto const &range) { return range.cursor(); });
+    return cursors;
+}
+
 } // namespace query
 } // namespace pisa
 

@@ -23,10 +23,11 @@ using namespace pisa;
 
 template <typename Functor>
 void op_perftest(Functor query_func, // XXX!!!
-                 std::vector<pisa::term_id_vec> const &queries,
+                 std::vector<term_id_vec> const &queries,
                  std::string const &index_type,
                  std::string const &query_type,
-                 size_t runs) {
+                 size_t runs)
+{
 
     std::vector<double> query_times;
 
@@ -122,43 +123,71 @@ void perftest(const std::string &index_filename,
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
             query_fun = and_query<IndexType, false>(index);
-        } else if (t == "and_freq") {
+        }
+        else if (t == "and_freq") {
             query_fun = and_query<IndexType, true>(index);
-        } else if (t == "or") {
+        }
+        else if (t == "or") {
             query_fun = or_query<IndexType, false>(index);
-        } else if (t == "or_freq") {
+        }
+        else if (t == "or_freq") {
             query_fun = or_query<IndexType, true>(index);
-        } else if (t == "wand" && wand_data_filename) {
+        }
+        else if (t == "wand" && wand_data_filename) {
             query_fun = wand_query<IndexType, WandType>(index, wdata, k);
-        } else if (t == "Wand" && wand_data_filename) {
+        }
+        else if (t == "Wand" && wand_data_filename) {
             query_fun = [&index,
                          &wdata,
-                         wq = std::make_shared<pisa::wand_query<IndexType, WandType>>(
-                             index, wdata, k)](term_id_vec terms) {
+                         wq = std::make_shared<wand_query<IndexType, WandType>>(index, wdata, k)](
+                            term_id_vec terms) {
                 return wq->operator()(gsl::make_span(max_scored_ranges(index, wdata, terms)));
             };
-        } else if (t == "block_max_wand" && wand_data_filename) {
+        }
+        else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = block_max_wand_query<IndexType, WandType>(index, wdata, k);
-        } else if (t == "block_max_maxscore" && wand_data_filename) {
+        }
+        else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = block_max_maxscore_query<IndexType, WandType>(index, wdata, k);
-        }  else if (t == "ranked_or" && wand_data_filename) {
+        }
+        else if (t == "ranked_or" && wand_data_filename) {
             query_fun = ranked_or_query<IndexType, WandType>(index, wdata, k);
-        } else if (t == "maxscore" && wand_data_filename) {
+        }
+        else if (t == "Ranked_Or" && wand_data_filename) {
+            query_fun = [&index,
+                         &wdata,
+                         q = std::make_shared<ranked_or_query<IndexType, WandType>>(
+                             index, wdata, k)](term_id_vec terms) {
+                return q->operator()(gsl::make_span(scored_ranges(index, wdata, terms)));
+            };
+        }
+        else if (t == "maxscore" && wand_data_filename) {
             query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
-        } else if (t == "ranked_or_taat" && wand_data_filename) {
-            query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
-        } else if (t == "Ranked_Or_Taat" && wand_data_filename) {
-            query_fun =
-                [&index,
-                 &wdata,
-                 taatq = std::make_shared<
-                     pisa::ranked_or_taat_query<IndexType, WandType, pisa::Simple_Accumulator>>(
-                     index, wdata, k)](term_id_vec terms) {
-                    return taatq->operator()(gsl::make_span(scored_ranges(index, wdata, terms)));
-                };
-        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            query_fun = pisa::make_ranked_or_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
-        } else {
+        }
+        else if (t == "Maxscore" && wand_data_filename) {
+            query_fun = [&index,
+                         &wdata,
+                         msq = std::make_shared<maxscore_query<IndexType, WandType>>(
+                             index, wdata, k)](term_id_vec terms) {
+                return msq->operator()(gsl::make_span(max_scored_ranges(index, wdata, terms)));
+            };
+        }
+        else if (t == "ranked_or_taat" && wand_data_filename) {
+            query_fun = make_ranked_or_taat_query<Simple_Accumulator>(index, wdata, k);
+        }
+        else if (t == "Ranked_Or_Taat" && wand_data_filename) {
+            query_fun = [&index,
+                         &wdata,
+                         taatq = std::make_shared<
+                             ranked_or_taat_query<IndexType, WandType, Simple_Accumulator>>(
+                             index, wdata, k)](term_id_vec terms) {
+                return taatq->operator()(gsl::make_span(scored_ranges(index, wdata, terms)));
+            };
+        }
+        else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+            query_fun = make_ranked_or_taat_query<Lazy_Accumulator<4>>(index, wdata, k);
+        }
+        else {
             spdlog::error("Unsupported query type: {}", t);
             break;
         }

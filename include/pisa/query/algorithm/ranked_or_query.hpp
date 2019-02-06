@@ -2,6 +2,9 @@
 
 #include <vector>
 #include <string>
+
+#include <gsl/span>
+
 #include "query/queries.hpp"
 
 namespace pisa {
@@ -14,6 +17,43 @@ struct ranked_or_query {
 
     ranked_or_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
+
+    template <typename Scored_Range>
+    auto operator()(gsl::span<Scored_Range> posting_ranges) -> int64_t
+    {
+        m_topk.clear();
+        if (posting_ranges.empty()) {
+            return 0;
+        }
+
+        auto cursors = query::open_cursors(posting_ranges);
+        auto current_doc = std::min_element(cursors.begin(),
+                                            cursors.end(),
+                                            [](auto const &lhs, auto const &rhs) {
+                                                return lhs.docid() < rhs.docid();
+                                            })
+                               ->docid();
+
+        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
+        while (current_doc < last_document) {
+            float score = 0.f;
+            auto next_doc = last_document;
+            for (auto& cursor : cursors) {
+                if (cursor.docid() == current_doc) {
+                    score += cursor.score();
+                    cursor.next();
+                }
+                if (cursor.docid() < next_doc) {
+                    next_doc = cursor.docid();
+                }
+            }
+            m_topk.insert(score);
+            current_doc = next_doc;
+        }
+
+        m_topk.finalize();
+        return m_topk.topk().size();
+    }
 
     uint64_t operator()(term_id_vec terms) {
         m_topk.clear();

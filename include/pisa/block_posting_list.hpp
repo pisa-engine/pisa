@@ -47,7 +47,6 @@ class Block_Cursor {
     }
 
     void DS2I_ALWAYSINLINE next_geq(uint64_t lower_bound) {
-        assert(lower_bound >= m_cur_docid || position() == 0);
         if (DS2I_UNLIKELY(lower_bound > m_cur_block_max)) {
             // binary search seems to perform worse here
             if (lower_bound > block_max(m_blocks - 1)) {

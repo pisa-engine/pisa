@@ -143,6 +143,8 @@ TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "topk_size_rank
     test_k_size();
 }
 
+/// Range-based
+
 TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "ranked_or_taat_ranges")
 {
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
@@ -155,6 +157,20 @@ TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "wand_ranges")
     pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
     test_with_ranges(wand_q);
 }
+
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "ranked_or_ranges")
+{
+    pisa::ranked_or_query<index_type, WandType> ranked_or_q(index, wdata, 10);
+    test_with_ranges(ranked_or_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "maxscore_ranges")
+{
+    pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10);
+    test_with_ranges(maxscore_q);
+}
+
+/// DRAAT
 
 TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "draat_taat")
 {
@@ -174,6 +190,22 @@ TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "draat_wand")
     test_with_ranges(q);
 }
 
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "draat_ranked_or")
+{
+    auto q = pisa::draat_query(
+        pisa::ranked_or_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
+    test_with_ranges(q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "draat maxscore_ranges")
+{
+    auto q = draat_query(
+        pisa::maxscore_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
+    test_with_ranges(q);
+}
+
+/// Block index
+
 TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block draat taat")
 {
     auto q = pisa::draat_query(
@@ -189,5 +221,19 @@ TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block dr
 {
     auto q = pisa::draat_query(
         pisa::wand_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
+    test_with_ranges(q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block draat ranked_or")
+{
+    auto q = pisa::draat_query(
+        pisa::ranked_or_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
+    test_with_ranges(q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block draat maxscore")
+{
+    auto q = pisa::draat_query(
+        pisa::maxscore_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
     test_with_ranges(q);
 }

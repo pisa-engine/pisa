@@ -13,6 +13,50 @@ struct ranked_and_query {
     ranked_and_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
 
+    template <typename Scored_Range>
+    auto operator()(gsl::span<Scored_Range> posting_ranges) -> int64_t
+    {
+        m_topk.clear();
+        if (posting_ranges.empty()) {
+            return 0;
+        }
+
+        auto cursors = query::open_cursors(posting_ranges);
+        std::sort(cursors.begin(), cursors.end(), [](auto const &lhs, auto const &rhs) {
+            return lhs.size() < rhs.size();
+        });
+
+        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
+        auto candidate = cursors[0].docid();
+        int list_idx = 1;
+        while (candidate < last_document) {
+            for (; list_idx < cursors.size(); ++list_idx) {
+                cursors[list_idx].next_geq(candidate);
+                if (cursors[list_idx].docid() != candidate) {
+                    candidate = cursors[list_idx].docid();
+                    list_idx = 0;
+                    break;
+                }
+            }
+
+            if (list_idx == cursors.size()) {
+                m_topk.insert(std::accumulate(cursors.begin(),
+                                              cursors.end(),
+                                              0.f,
+                                              [](auto acc, auto const &cursor) {
+                                                  return acc + cursor.score();
+                                              }),
+                              cursors[0].docid());
+                cursors[0].next();
+                candidate = cursors[0].docid();
+                list_idx = 1;
+            }
+        }
+
+        m_topk.finalize();
+        return m_topk.topk().size();
+    }
+
     uint64_t operator()(term_id_vec terms) {
         size_t results = 0;
         m_topk.clear();
