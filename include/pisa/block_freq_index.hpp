@@ -87,7 +87,8 @@ namespace pisa {
         [[nodiscard]] auto posting_range(uint32_t term) const
         {
             assert(term < size());
-            return Posting_Range(m_params, m_size, m_num_docs, m_endpoints, m_lists, term);
+            return Posting_Range(
+                m_params, m_size, m_num_docs, m_endpoints, m_lists, term, 0u, num_docs());
         }
 
         document_enumerator operator[](size_t i) const

@@ -36,6 +36,7 @@ class Scored_Cursor {
 template <typename Frequency_Range, typename Term_Scorer>
 class Scored_Range {
    public:
+    using document_type = uint32_t;
     using cursor_type = Scored_Cursor<typename Frequency_Range::cursor_type, Term_Scorer>;
 
     explicit Scored_Range(Frequency_Range &&freq_range, Term_Scorer scorer)
@@ -53,6 +54,10 @@ class Scored_Range {
     [[nodiscard]] auto cursor() const -> cursor_type
     {
         return Scored_Cursor{freq_range_.cursor(), scorer_};
+    }
+    [[nodiscard]] auto operator()(document_type low, document_type hi) const
+    {
+        return Scored_Range(freq_range_(low, hi), scorer_);
     }
 
    private:
@@ -93,6 +98,7 @@ class Max_Scored_Range {
    public:
     using scored_range_type = Scored_Range<Frequency_Range, Term_Scorer>;
     using cursor_type = Max_Scored_Cursor<typename Frequency_Range::cursor_type, Term_Scorer>;
+    using document_type = uint32_t;
 
     explicit Max_Scored_Range(scored_range_type &&scored_range, float max_score)
         : scored_range_(std::forward<scored_range_type>(scored_range)), max_score_(max_score)
@@ -109,6 +115,10 @@ class Max_Scored_Range {
     [[nodiscard]] auto cursor() const -> cursor_type
     {
         return Max_Scored_Cursor{scored_range_.cursor(), max_score_};
+    }
+    [[nodiscard]] auto operator()(document_type low, document_type hi) const
+    {
+        return Max_Scored_Range(scored_range_(low, hi), max_score_);
     }
     [[nodiscard]] auto max_score() const noexcept -> float { return max_score_; }
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl/gsl_assert"
 #include "gsl/span"
 #include "tbb/parallel_invoke.h"
 
@@ -153,9 +154,13 @@ namespace pisa {
         class Posting_Range {
            public:
             using cursor_type = Cursor;
+            using document_type = uint32_t;
 
-            explicit Posting_Range(freq_index const &index, uint32_t term)
-                : index_(index), term_(term)
+            Posting_Range(freq_index const &index,
+                          uint32_t term,
+                          document_type first,
+                          document_type last)
+                : index_(index), term_(term), first_(first), last_(last)
             {
             }
             Posting_Range(Posting_Range &&) noexcept = default;
@@ -166,8 +171,8 @@ namespace pisa {
             Posting_Range &operator=(Posting_Range const &) = delete;
 
             [[nodiscard]] auto size() const -> int64_t { return cursor().size(); } // TODO: clearly
-            [[nodiscard]] auto first_document() const { return 0u; }
-            [[nodiscard]] auto last_document() const { return index_.num_docs(); }
+            [[nodiscard]] auto first_document() const -> document_type { return first_; }
+            [[nodiscard]] auto last_document() const -> document_type { return last_; }
             [[nodiscard]] auto cursor() const
             {
                 auto docs_it = index_.m_docs_sequences.get(index_.m_params, term_);
@@ -191,12 +196,24 @@ namespace pisa {
                                                               n,
                                                               index_.m_params);
 
-                return Cursor(docs_enum, freqs_enum);
+                auto cursor = Cursor(docs_enum, freqs_enum);
+                if (first_ > 0u) {
+                    cursor.next_geq(first_);
+                }
+                return cursor;
+            }
+            [[nodiscard]] auto operator()(document_type low, document_type hi) const
+                -> Posting_Range
+            {
+                Expects(low < hi and low >= first_ and hi <= last_);
+                return Posting_Range(index_, term_, low, hi);
             }
 
            private:
             freq_index const &index_;
             uint32_t term_;
+            document_type first_;
+            document_type last_;
         };
 
         class document_enumerator {
@@ -279,7 +296,7 @@ namespace pisa {
         [[nodiscard]] auto posting_range(uint32_t term) const -> Posting_Range
         {
             assert(term < size());
-            return Posting_Range(*this, term);
+            return Posting_Range(*this, term, 0u, num_docs());
         }
 
         document_enumerator operator[](size_t i) const

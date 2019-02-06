@@ -4,24 +4,13 @@
 #include <optional>
 #include <vector>
 
+#include "algorithm/for_each.hpp"
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
-
-template <typename Iterator, typename StopCond, typename Function>
-Iterator for_each_until(Iterator first, Iterator last, StopCond stop_condition, Function fn)
-{
-    for (; first != last; ++first) {
-        if (stop_condition(*first)) {
-            break;
-        }
-        fn(*first);
-    }
-    return first;
-}
 
 template <typename Index, typename WandType>
 struct wand_query {
@@ -57,13 +46,12 @@ struct wand_query {
             });
         };
 
-        uint64_t num_docs = m_index.num_docs();
-
+        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
         auto find_pivot = [&](size_t &pivot) {
             float upper_bound = 0;
             bool found_pivot = false;
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot]->docid() == num_docs) {
+                if (ordered_cursors[pivot]->docid() >= last_document) {
                     break;
                 }
                 upper_bound += ordered_cursors[pivot]->max_score();

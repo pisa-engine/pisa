@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gsl/gsl_assert>
+
 #include "codec/block_codecs.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "global_parameters.hpp"
@@ -11,17 +13,15 @@ namespace pisa {
 template <typename BlockCodec, bool Profile = false>
 class Block_Cursor {
    public:
-    Block_Cursor(uint8_t const *data,
-                 uint64_t       universe,
-                 size_t         term_id = 0)
-        : m_n(0) // just to silence warnings
-          ,
+    Block_Cursor(uint8_t const *data, uint64_t universe, size_t term_id = 0)
+        : m_n(0),
           m_base(TightVariableByte::decode(data, &m_n, 1)),
           m_blocks(ceil_div(m_n, BlockCodec::block_size)),
           m_block_maxs(m_base),
           m_block_endpoints(m_block_maxs + 4 * m_blocks),
           m_blocks_data(m_block_endpoints + 4 * (m_blocks - 1)),
-          m_universe(universe) {
+          m_universe(universe)
+    {
         if (Profile) {
             // std::cout << "OPEN\t" << m_term_id << "\t" << m_blocks << "\n";
             m_block_profile = block_profiler::open_list(term_id, m_blocks);
@@ -318,19 +318,24 @@ struct block_posting_list {
     class Posting_Range {
        public:
         using cursor_type = Block_Cursor<BlockCodec, Profile>;
+        using document_type = uint32_t;
 
         Posting_Range(global_parameters const &params,
                       size_t size,
                       size_t num_docs,
                       bit_vector const &endpoints,
                       mapper::mappable_vector<uint8_t> const &lists,
-                      uint32_t term)
-            : m_params(params),
-              m_size(size),
-              m_num_docs(num_docs),
-              m_endpoints(endpoints),
-              m_lists(lists),
-              m_term(term)
+                      uint32_t term,
+                      document_type first,
+                      document_type last)
+            : params_(params),
+              term_count_(size),
+              document_count_(num_docs),
+              endpoints_(endpoints),
+              lists_(lists),
+              term_(term),
+              first_(first),
+              last_(last)
         {}
         Posting_Range(Posting_Range &&) noexcept = default;
         Posting_Range &operator=(Posting_Range &&) noexcept = default;
@@ -340,22 +345,35 @@ struct block_posting_list {
         Posting_Range &operator=(Posting_Range const &) = delete;
 
         [[nodiscard]] auto size() const -> int64_t { return cursor().size(); } // TODO: clearly
-        [[nodiscard]] auto first_document() const { return 0u; }
-        [[nodiscard]] auto last_document() const { return m_num_docs; }
+        [[nodiscard]] auto first_document() const { return first_; }
+        [[nodiscard]] auto last_document() const { return last_; }
         [[nodiscard]] auto cursor() const {
             compact_elias_fano::enumerator endpoints(
-                m_endpoints, 0, m_lists.size(), m_size, m_params);
-            auto endpoint = endpoints.move(m_term).second;
-            return Block_Cursor<BlockCodec, Profile>(m_lists.data() + endpoint, m_num_docs, m_term);
+                endpoints_, 0, lists_.size(), term_count_, params_);
+            auto endpoint = endpoints.move(term_).second;
+            auto cursor =
+                Block_Cursor<BlockCodec, Profile>(lists_.data() + endpoint, document_count_, term_);
+            if (first_ > 0u) {
+                cursor.next_geq(first_);
+            }
+            return cursor;
+        }
+        [[nodiscard]] auto operator()(document_type low, document_type hi) const -> Posting_Range
+        {
+            Expects(low < hi and low >= first_ and hi <= last_);
+            return Posting_Range(
+                params_, term_count_, document_count_, endpoints_, lists_, term_, low, hi);
         }
 
        private:
-        global_parameters const &m_params;
-        size_t m_size;
-        size_t m_num_docs;
-        bit_vector const &m_endpoints;
-        mapper::mappable_vector<uint8_t> const &m_lists;
-        uint32_t m_term;
+        global_parameters const &params_;
+        size_t term_count_;
+        size_t document_count_;
+        bit_vector const &endpoints_;
+        mapper::mappable_vector<uint8_t> const &lists_;
+        uint32_t term_;
+        document_type first_;
+        document_type last_;
     };
 
     using Cursor = Block_Cursor<BlockCodec, Profile>;

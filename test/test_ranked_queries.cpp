@@ -13,16 +13,17 @@
 
 namespace pisa { namespace test {
 
+    template<typename Index>
     struct index_initialization {
 
-        typedef single_index index_type;
-        typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
+        using index_type = Index;
+        using WandType = wand_data<bm25, wand_data_raw<bm25>>;
         index_initialization()
             : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection")
             , document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes")
             , wdata(document_sizes.begin()->begin(), collection.num_docs(), collection)
         {
-            index_type::builder builder(collection.num_docs(), params);
+            typename index_type::builder builder(collection.num_docs(), params);
             for (auto const& plist: collection) {
                 uint64_t freqs_sum = std::accumulate(plist.freqs.begin(),
                                                      plist.freqs.end(), uint64_t(0));
@@ -101,25 +102,27 @@ namespace pisa { namespace test {
 
 }}
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
+using namespace pisa;
+
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "wand")
 {
     pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
     test_against_or(wand_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "maxscore")
 {
     pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10);
     test_against_or(maxscore_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "block_max_maxscore")
 {
     pisa::block_max_maxscore_query<index_type, WandType> bmm_q(index, wdata, 10);
     test_against_or(bmm_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "ranked_or_taat")
 {
 
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
@@ -127,7 +130,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
     test_against_or(ranked_or_taat_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "ranked_or_taat_lazy")
 {
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Lazy_Accumulator<8>> ranked_or_taat_q(
         index, wdata, 10);
@@ -135,20 +138,56 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
 }
 
 /// Issue #26 https://github.com/pisa-engine/pisa/issues/26
-TEST_CASE_METHOD(pisa::test::index_initialization, "topk_size_ranked_or")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "topk_size_ranked_or")
 {
     test_k_size();
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_ranges")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "ranked_or_taat_ranges")
 {
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
         index, wdata, 10);
     test_with_ranges(ranked_or_taat_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "wand_ranges")
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "wand_ranges")
 {
     pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
     test_with_ranges(wand_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "draat_taat")
+{
+    auto q = pisa::draat_query(
+        pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator>(
+            index, wdata, 10),
+        1003,
+        index.num_docs(),
+        10);
+    test_with_ranges(q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "draat_wand")
+{
+    auto q = pisa::draat_query(
+        pisa::wand_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
+    test_with_ranges(q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block draat taat")
+{
+    auto q = pisa::draat_query(
+        pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator>(
+            index, wdata, 10),
+        1003,
+        index.num_docs(),
+        10);
+    test_with_ranges(q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block draat wand")
+{
+    auto q = pisa::draat_query(
+        pisa::wand_query<index_type, WandType>(index, wdata, 10), 1003, index.num_docs(), 10);
+    test_with_ranges(q);
 }
