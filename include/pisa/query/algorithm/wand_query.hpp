@@ -1,18 +1,27 @@
 #pragma once
 
 #include <algorithm>
+#include <optional>
 #include <vector>
 
-#include <range/v3/algorithm/sort.hpp>
-#include <range/v3/to_container.hpp>
-#include <range/v3/view/all.hpp>
-#include <range/v3/view/transform.hpp>
-
+#include "query/queries.hpp"
 #include "scorer/bm25.hpp"
 #include "topk_queue.hpp"
-#include "query/queries.hpp"
+#include "util/util.hpp"
 
 namespace pisa {
+
+template <typename Iterator, typename StopCond, typename Function>
+Iterator for_each_until(Iterator first, Iterator last, StopCond stop_condition, Function fn)
+{
+    for (; first != last; ++first) {
+        if (stop_condition(*first)) {
+            break;
+        }
+        fn(*first);
+    }
+    return first;
+}
 
 template <typename Index, typename WandType>
 struct wand_query {
@@ -31,91 +40,73 @@ struct wand_query {
             return 0;
         }
 
-        auto docid_order = [](auto const &lhs, auto const &rhs) {
-            return lhs.get().docid() < rhs.get().docid();
+        std::vector<cursor_type> cursors;
+        std::transform(posting_ranges.begin(),
+                       posting_ranges.end(),
+                       std::back_inserter(cursors),
+                       [](auto const &range) { return range.cursor(); });
+
+        std::vector<cursor_type *> ordered_cursors(cursors.size());
+        std::transform(cursors.begin(), cursors.end(), ordered_cursors.begin(), [](auto &cursor) {
+            return &cursor;
+        });
+
+        auto sort_cursors = [&]() {
+            std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](auto *lhs, auto *rhs) {
+                return lhs->docid() < rhs->docid();
+            });
         };
 
-        std::vector<cursor_type> cursors =
-            ranges::view::all(posting_ranges) |
-            ranges::view::transform([](auto const &range) { return range.cursor(); }) |
-            ranges::to_vector;
-
-        std::vector<std::reference_wrapper<cursor_type>> ordered_cursors =
-            ranges::view::all(cursors) |
-            ranges::view::transform([](auto &cursor) { return std::ref(cursor); }) |
-            ranges::to_vector;
-        //std::sort(ordered_cursors.begin(), ordered_cursors.end(), docid_order);
-        ranges::sort(ordered_cursors, docid_order);
-
         uint64_t num_docs = m_index.num_docs();
-        //auto find_pivot = [&]() {
-        //    float upper_bound = 0;
-        //    int pivot;
-        //    bool found_pivot = false;
-        //    for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-        //        if (ordered_cursors.docid() == num_docs) {
-        //            break;
-        //        }
-        //        upper_bound += ordered_cursors.max_score();
-        //        if (m_topk.would_enter(upper_bound)) {
-        //            found_pivot = true;
-        //            break;
-        //        }
-        //    }
-        //    return found_pivot;
-        //};
 
-        while (true) {
-            // find pivot
+        auto find_pivot = [&](size_t &pivot) {
             float upper_bound = 0;
-            int pivot;
             bool found_pivot = false;
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot].get().docid() == num_docs) {
+                if (ordered_cursors[pivot]->docid() == num_docs) {
                     break;
                 }
-                upper_bound += ordered_cursors[pivot].get().max_score();
+                upper_bound += ordered_cursors[pivot]->max_score();
                 if (m_topk.would_enter(upper_bound)) {
                     found_pivot = true;
                     break;
                 }
             }
+            return found_pivot;
+        };
 
-            // no pivot found, we can stop the search
-            if (not found_pivot) {
-                break;
-            }
-
-            // check if pivot is a possible match
-            uint64_t pivot_id = ordered_cursors[pivot].get().docid();
-            if (pivot_id == ordered_cursors[0].get().docid()) {
-                float score = 0;
-                for (auto &cursor : ordered_cursors) {
-                    if (cursor.get().docid() != pivot_id) {
-                        break;
-                    }
-                    score += cursor.get().score();
-                    cursor.get().next();
-                }
-
+        sort_cursors();
+        size_t pivot;
+        while (find_pivot(pivot)) {
+            auto pivot_id = ordered_cursors[pivot]->docid();
+            if (pivot_id == ordered_cursors[0]->docid()) {
+                float score = 0.f;
+                for_each_until(ordered_cursors.begin(),
+                               ordered_cursors.end(),
+                               [&](auto &cursor) { return cursor->docid() != pivot_id; },
+                               [&](auto &cursor) {
+                                   score += cursor->score();
+                                   cursor->next();
+                               });
                 m_topk.insert(score, pivot_id);
-                ranges::sort(ordered_cursors, docid_order);
+                sort_cursors();
             }
             else {
-                // no match, move farthest list up to the pivot
-                uint64_t next_list = pivot;
-                for (; ordered_cursors[next_list].get().docid() == pivot_id; --next_list) {
-                }
-                ordered_cursors[next_list].get().next_geq(pivot_id);
-                // bubble down the advanced list
-                for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
-                    if (ordered_cursors[i].get().docid() < ordered_cursors[i - 1].get().docid()) {
-                        std::swap(ordered_cursors[i], ordered_cursors[i - 1]);
-                    }
-                    else {
-                        break;
-                    }
-                }
+                auto next_pos = std::find_if(
+                    std::make_reverse_iterator(std::next(ordered_cursors.begin(), pivot)),
+                    ordered_cursors.rend(),
+                    [&](auto &cursor) { return cursor->docid() != pivot_id; });
+                (*next_pos)->next_geq(pivot_id);
+                auto prev_pos = std::next(ordered_cursors.begin(),
+                                          std::distance(next_pos, ordered_cursors.rend()) - 1);
+                for_each_until(
+                    std::next(prev_pos),
+                    ordered_cursors.end(),
+                    [&](auto &cursor) { return cursor->docid() >= (*prev_pos)->docid(); },
+                    [&](auto &cursor) {
+                        std::swap(cursor, (*prev_pos));
+                        ++prev_pos;
+                    });
             }
         }
 
