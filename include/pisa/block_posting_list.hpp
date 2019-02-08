@@ -1,242 +1,198 @@
 #pragma once
 
+#include <limits>
+
+#include <gsl/span>
 #include <gsl/gsl_assert>
 
 #include "codec/block_codecs.hpp"
 #include "codec/compact_elias_fano.hpp"
+#include "cursor.hpp"
 #include "global_parameters.hpp"
 #include "util/block_profiler.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
 
-template <typename BlockCodec, bool Profile = false>
+template <typename BlockCodec>
 class Block_Cursor {
    public:
-    Block_Cursor(uint8_t const *data, uint64_t universe, size_t term_id = 0)
-        : m_n(0),
-          m_base(TightVariableByte::decode(data, &m_n, 1)),
-          m_blocks(ceil_div(m_n, BlockCodec::block_size)),
-          m_block_maxs(m_base),
-          m_block_endpoints(m_block_maxs + 4 * m_blocks),
-          m_blocks_data(m_block_endpoints + 4 * (m_blocks - 1)),
-          m_universe(universe)
+    using document_type = uint32_t;
+
+    Block_Cursor(std::uint32_t posting_list_length,
+                 std::uint32_t block_count,
+                 gsl::span<std::uint32_t const> max_documents,
+                 gsl::span<std::uint32_t const> endpoints,
+                 uint8_t const *block_data,
+                 std::uint32_t term_id,
+                 document_type last_document)
+        : posting_list_length_(posting_list_length),
+          block_count_(block_count),
+          max_documents_(std::move(max_documents)),
+          endpoints_(std::move(endpoints)),
+          block_data_(block_data),
+          term_id_(term_id),
+          last_document_(last_document)
     {
-        if (Profile) {
-            // std::cout << "OPEN\t" << m_term_id << "\t" << m_blocks << "\n";
-            m_block_profile = block_profiler::open_list(term_id, m_blocks);
-        }
-        m_docs_buf.resize(BlockCodec::block_size);
-        m_freqs_buf.resize(BlockCodec::block_size);
+        document_buffer_.resize(BlockCodec::block_size);
+        frequency_buffer_.resize(BlockCodec::block_size);
         reset();
+    }
+
+    [[nodiscard]] static auto make(uint8_t const *data,
+                                   uint32_t term_id,
+                                   document_type last_document) -> Block_Cursor<BlockCodec>
+    {
+        uint32_t posting_list_length;
+        uint8_t const *base = TightVariableByte::decode(data, &posting_list_length, 1);
+        uint32_t block_count = ceil_div(posting_list_length, BlockCodec::block_size);
+        gsl::span<uint32_t const> max_documents(reinterpret_cast<uint32_t const *>(base),
+                                                block_count);
+        gsl::span<uint32_t const> block_endpoints(max_documents.data() + max_documents.size(),
+                                                  block_count - 1);
+        uint8_t const *blocks_data =
+            reinterpret_cast<uint8_t const *>(block_endpoints.data() + block_endpoints.size());
+        return Block_Cursor<BlockCodec>(posting_list_length,
+                                        block_count,
+                                        max_documents,
+                                        block_endpoints,
+                                        blocks_data,
+                                        term_id,
+                                        last_document);
     }
 
     void reset() { decode_docs_block(0); }
 
     void DS2I_ALWAYSINLINE next() {
-        ++m_pos_in_block;
-        if (DS2I_UNLIKELY(m_pos_in_block == m_cur_block_size)) {
-            if (m_cur_block + 1 == m_blocks) {
-                m_cur_docid = m_universe;
+        ++current_.pos_in_block;
+        if (DS2I_UNLIKELY(current_.pos_in_block == current_.block_size)) {
+            if (current_.block + 1 == block_count_) {
+                current_.docid = pisa::cursor::document_bound;
                 return;
             }
-            decode_docs_block(m_cur_block + 1);
-        } else {
-            m_cur_docid += m_docs_buf[m_pos_in_block] + 1;
+            decode_docs_block(current_.block + 1);
+        }
+        else {
+            current_.docid += document_buffer_[current_.pos_in_block] + 1;
+            if (DS2I_UNLIKELY(docid() >= last_document_)) {
+                current_.docid = pisa::cursor::document_bound;
+            }
         }
     }
 
-    void DS2I_ALWAYSINLINE next_geq(uint64_t lower_bound) {
-        if (DS2I_UNLIKELY(lower_bound > m_cur_block_max)) {
-            // binary search seems to perform worse here
-            if (lower_bound > block_max(m_blocks - 1)) {
-                m_cur_docid = m_universe;
+    void DS2I_ALWAYSINLINE next_geq(document_type lower_bound)
+    {
+        if (DS2I_UNLIKELY(lower_bound >= last_document_)) {
+            current_.docid = pisa::cursor::document_bound;
+            return;
+        }
+        if (DS2I_UNLIKELY(lower_bound > max_documents_[current_.block])) {
+            if (lower_bound > max_documents_[block_count_ - 1]) {
+                current_.docid = pisa::cursor::document_bound;
                 return;
             }
-
-            uint64_t block = m_cur_block + 1;
-            while (block_max(block) < lower_bound) {
+            auto block = current_.block + 1;
+            while (max_documents_[block] < lower_bound) {
                 ++block;
             }
-
             decode_docs_block(block);
         }
 
         while (docid() < lower_bound) {
-            m_cur_docid += m_docs_buf[++m_pos_in_block] + 1;
-            assert(m_pos_in_block < m_cur_block_size);
+            current_.docid += document_buffer_[++current_.pos_in_block] + 1;
+            if (DS2I_UNLIKELY(docid() >= last_document_)) {
+                current_.docid = pisa::cursor::document_bound;
+                return;
+            }
+            assert(current_.pos_in_block < current_.block_size);
         }
     }
 
-    void DS2I_ALWAYSINLINE move(uint64_t pos) {
+    void DS2I_ALWAYSINLINE move(uint64_t pos)
+    {
         assert(pos >= position());
         uint64_t block = pos / BlockCodec::block_size;
-        if (DS2I_UNLIKELY(block != m_cur_block)) {
+        if (DS2I_UNLIKELY(block != current_.block)) {
             decode_docs_block(block);
         }
         while (position() < pos) {
-            m_cur_docid += m_docs_buf[++m_pos_in_block] + 1;
+            current_.docid += document_buffer_[++current_.pos_in_block] + 1;
         }
     }
 
-    uint64_t docid() const { return m_cur_docid; }
-
-    uint64_t DS2I_ALWAYSINLINE freq() {
-        if (!m_freqs_decoded) {
+    [[nodiscard]] auto docid() const noexcept -> uint32_t { return current_.docid; }
+    [[nodiscard]] auto DS2I_ALWAYSINLINE freq() -> uint32_t
+    {
+        if (not frequencies_decoded_) {
             decode_freqs_block();
         }
-        return m_freqs_buf[m_pos_in_block] + 1;
+        return frequency_buffer_[current_.pos_in_block] + 1;
     }
 
-    uint64_t position() const { return m_cur_block * BlockCodec::block_size + m_pos_in_block; }
-
-    uint64_t size() const { return m_n; }
-
-    uint64_t num_blocks() const { return m_blocks; }
-
-    uint64_t stats_freqs_size() const {
-        // XXX rewrite in terms of get_blocks()
-        uint64_t              bytes      = 0;
-        uint8_t const *       ptr        = m_blocks_data;
-        static const uint64_t block_size = BlockCodec::block_size;
-        std::vector<uint32_t> buf(block_size);
-        for (size_t b = 0; b < m_blocks; ++b) {
-            uint32_t cur_block_size =
-                ((b + 1) * block_size <= size()) ? block_size : (size() % block_size);
-
-            uint32_t       cur_base = (b ? block_max(b - 1) : uint32_t(-1)) + 1;
-            uint8_t const *freq_ptr = BlockCodec::decode(
-                ptr, buf.data(), block_max(b) - cur_base - (cur_block_size - 1), cur_block_size);
-            ptr = BlockCodec::decode(freq_ptr, buf.data(), uint32_t(-1), cur_block_size);
-            bytes += ptr - freq_ptr;
-        }
-
-        return bytes;
+    [[nodiscard]] auto position() const noexcept
+    {
+        return current_.block * BlockCodec::block_size + current_.pos_in_block;
     }
 
-    struct block_data {
-        uint32_t index;
-        uint32_t max;
-        uint32_t size;
-        uint32_t doc_gaps_universe;
-
-        void append_docs_block(std::vector<uint8_t> &out) const {
-            out.insert(out.end(), docs_begin, freqs_begin);
-        }
-
-        void append_freqs_block(std::vector<uint8_t> &out) const {
-            out.insert(out.end(), freqs_begin, end);
-        }
-
-        void decode_doc_gaps(std::vector<uint32_t> &out) const {
-            out.resize(size);
-            BlockCodec::decode(docs_begin, out.data(), doc_gaps_universe, size);
-        }
-
-        void decode_freqs(std::vector<uint32_t> &out) const {
-            out.resize(size);
-            BlockCodec::decode(freqs_begin, out.data(), uint32_t(-1), size);
-        }
-
-       private:
-        friend class document_enumerator;
-
-        uint8_t const *docs_begin;
-        uint8_t const *freqs_begin;
-        uint8_t const *end;
-    };
-
-    std::vector<block_data> get_blocks() {
-        std::vector<block_data> blocks;
-
-        uint8_t const *       ptr        = m_blocks_data;
-        static const uint64_t block_size = BlockCodec::block_size;
-        std::vector<uint32_t> buf(block_size);
-        for (size_t b = 0; b < m_blocks; ++b) {
-            blocks.emplace_back();
-            uint32_t cur_block_size =
-                ((b + 1) * block_size <= size()) ? block_size : (size() % block_size);
-
-            uint32_t cur_base      = (b ? block_max(b - 1) : uint32_t(-1)) + 1;
-            uint32_t gaps_universe = block_max(b) - cur_base - (cur_block_size - 1);
-
-            blocks.back().index             = b;
-            blocks.back().size              = cur_block_size;
-            blocks.back().docs_begin        = ptr;
-            blocks.back().doc_gaps_universe = gaps_universe;
-            blocks.back().max               = block_max(b);
-
-            uint8_t const *freq_ptr =
-                BlockCodec::decode(ptr, buf.data(), gaps_universe, cur_block_size);
-            blocks.back().freqs_begin = freq_ptr;
-            ptr = BlockCodec::decode(freq_ptr, buf.data(), uint32_t(-1), cur_block_size);
-            blocks.back().end = ptr;
-        }
-
-        assert(blocks.size() == num_blocks());
-        return blocks;
-    }
+    [[nodiscard]] auto size() const -> uint32_t { return posting_list_length_; }
+    [[nodiscard]] auto block_count() const { return block_count_; }
 
    private:
-    uint32_t block_max(uint32_t block) const { return ((uint32_t const *)m_block_maxs)[block]; }
-
-    void DS2I_NOINLINE decode_docs_block(uint64_t block) {
-        static const uint64_t block_size = BlockCodec::block_size;
-        uint32_t       endpoint   = block ? ((uint32_t const *)m_block_endpoints)[block - 1] : 0;
-        uint8_t const *block_data = m_blocks_data + endpoint;
-        m_cur_block_size =
+    void DS2I_NOINLINE decode_docs_block(uint32_t block)
+    {
+        constexpr auto block_size = BlockCodec::block_size;
+        uint32_t block_offset = block > 0u ? endpoints_[block - 1] : 0u;
+        uint8_t const *block_data = std::next(block_data_, block_offset);
+        current_.block_size =
             ((block + 1) * block_size <= size()) ? block_size : (size() % block_size);
-        uint32_t cur_base  = (block ? block_max(block - 1) : uint32_t(-1)) + 1;
-        m_cur_block_max    = block_max(block);
-        m_freqs_block_data = BlockCodec::decode(block_data,
-                                                m_docs_buf.data(),
-                                                m_cur_block_max - cur_base - (m_cur_block_size - 1),
-                                                m_cur_block_size);
-        intrinsics::prefetch(m_freqs_block_data);
+        uint32_t first_document_offset = block > 0u ? max_documents_[block - 1] + 1u : 0u;
+        auto sum_of_values =
+            max_documents_[block] - first_document_offset - (current_.block_size - 1);
+        frequency_block_data_ = BlockCodec::decode(
+            block_data, &document_buffer_[0], sum_of_values, current_.block_size);
+        intrinsics::prefetch(frequency_block_data_);
 
-        m_docs_buf[0] += cur_base;
+        document_buffer_[0] += first_document_offset;
 
-        m_cur_block     = block;
-        m_pos_in_block  = 0;
-        m_cur_docid     = m_docs_buf[0];
-        m_freqs_decoded = false;
-        if (Profile) {
-            ++m_block_profile[2 * m_cur_block];
+        current_.block = block;
+        current_.pos_in_block = 0;
+        current_.docid = document_buffer_[0];
+        if (current_.docid >= last_document_) {
+            current_.docid = pisa::cursor::document_bound;
         }
+        frequencies_decoded_ = false;
     }
 
     void DS2I_NOINLINE decode_freqs_block() {
+        uint32_t block_size = ((current_.block + 1) * BlockCodec::block_size <= size())
+                                  ? BlockCodec::block_size
+                                  : (size() % BlockCodec::block_size);
         uint8_t const *next_block = BlockCodec::decode(
-            m_freqs_block_data, m_freqs_buf.data(), uint32_t(-1), m_cur_block_size);
+            frequency_block_data_, frequency_buffer_.data(), uint32_t(-1), block_size);
         intrinsics::prefetch(next_block);
-        m_freqs_decoded = true;
-
-        if (Profile) {
-            ++m_block_profile[2 * m_cur_block + 1];
-        }
+        frequencies_decoded_ = true;
     }
 
-    uint32_t       m_n;
-    uint8_t const *m_base;
-    uint32_t       m_blocks;
-    uint8_t const *m_block_maxs;
-    uint8_t const *m_block_endpoints;
-    uint8_t const *m_blocks_data;
-    uint64_t       m_universe;
+    uint32_t posting_list_length_;
+    uint32_t block_count_;
+    gsl::span<uint32_t const> max_documents_;
+    gsl::span<uint32_t const> endpoints_;
+    uint8_t const *block_data_;
+    uint32_t term_id_;
+    document_type last_document_;
 
-    uint32_t m_cur_block;
-    uint32_t m_pos_in_block;
-    uint32_t m_cur_block_max;
-    uint32_t m_cur_block_size;
-    uint32_t m_cur_docid;
+    struct Current_Data {
+        uint32_t block = 0;
+        uint32_t pos_in_block = 0;
+        uint32_t block_size = 0;
+        uint32_t docid = 0;
+    } current_;
 
-    uint8_t const *m_freqs_block_data;
-    bool           m_freqs_decoded;
+    uint8_t const *frequency_block_data_ = nullptr;
+    bool frequencies_decoded_ = false;
 
-    std::vector<uint32_t> m_docs_buf;
-    std::vector<uint32_t> m_freqs_buf;
-
-    block_profiler::counter_type *m_block_profile;
+    std::vector<uint32_t> document_buffer_{};
+    std::vector<uint32_t> frequency_buffer_{};
 };
 
 template <typename BlockCodec, bool Profile = false>
@@ -316,7 +272,7 @@ struct block_posting_list {
 
     class Posting_Range {
        public:
-        using cursor_type = Block_Cursor<BlockCodec, Profile>;
+        using cursor_type = Block_Cursor<BlockCodec>;
         using document_type = uint32_t;
 
         Posting_Range(global_parameters const &params,
@@ -343,15 +299,18 @@ struct block_posting_list {
         Posting_Range(Posting_Range const &) = delete;
         Posting_Range &operator=(Posting_Range const &) = delete;
 
-        [[nodiscard]] auto size() const -> int64_t { return cursor().size(); } // TODO: clearly
+        [[nodiscard]] auto size() const
+            -> int64_t // TODO(michal): clearly have to do it more efficiently
+        {
+            return cursor().size();
+        }
         [[nodiscard]] auto first_document() const { return first_; }
         [[nodiscard]] auto last_document() const { return last_; }
-        [[nodiscard]] auto cursor() const {
+        [[nodiscard]] auto cursor() const -> cursor_type {
             compact_elias_fano::enumerator endpoints(
                 endpoints_, 0, lists_.size(), term_count_, params_);
             auto endpoint = endpoints.move(term_).second;
-            auto cursor =
-                Block_Cursor<BlockCodec, Profile>(lists_.data() + endpoint, document_count_, term_);
+            auto cursor = cursor_type::make(lists_.data() + endpoint, term_, last_);
             if (first_ > 0u) {
                 cursor.next_geq(first_);
             }
@@ -375,7 +334,7 @@ struct block_posting_list {
         document_type last_;
     };
 
-    using Cursor = Block_Cursor<BlockCodec, Profile>;
+    using Cursor = Block_Cursor<BlockCodec>;
 
     class document_enumerator {
        public:
@@ -391,7 +350,7 @@ struct block_posting_list {
               m_blocks_data(m_block_endpoints + 4 * (m_blocks - 1)),
               m_universe(universe) {
             if (Profile) {
-                // std::cout << "OPEN\t" << m_term_id << "\t" << m_blocks << "\n";
+                //std::cout << "OPEN\t" << m_term_id << "\t" << m_blocks << "\n";
                 m_block_profile = block_profiler::open_list(term_id, m_blocks);
             }
             m_docs_buf.resize(BlockCodec::block_size);

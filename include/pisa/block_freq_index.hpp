@@ -81,14 +81,21 @@ namespace pisa {
         }
 
         using Posting_Range = typename block_posting_list<BlockCodec, Profile>::Posting_Range;
-        using Cursor = Block_Cursor<BlockCodec, Profile>;
-        typedef typename block_posting_list<BlockCodec, Profile>::document_enumerator document_enumerator;
+        using Cursor = Block_Cursor<BlockCodec>;
+        typedef typename block_posting_list<BlockCodec, Profile>::document_enumerator
+            document_enumerator;
 
         [[nodiscard]] auto posting_range(uint32_t term) const
         {
             assert(term < size());
-            return Posting_Range(
-                m_params, m_size, m_num_docs, m_endpoints, m_lists, term, 0u, num_docs());
+            return Posting_Range(m_params,
+                                 m_size,
+                                 m_num_docs,
+                                 m_endpoints,
+                                 m_lists,
+                                 term,
+                                 0u,
+                                 pisa::cursor::document_bound);
         }
 
         document_enumerator operator[](size_t i) const

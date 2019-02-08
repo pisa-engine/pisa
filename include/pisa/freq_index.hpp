@@ -7,6 +7,7 @@
 #include "bitvector_collection.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "codec/integer_codes.hpp"
+#include "cursor.hpp"
 #include "global_parameters.hpp"
 
 namespace pisa {
@@ -78,6 +79,8 @@ namespace pisa {
 
         class Cursor {
            public:
+            using document_type = uint32_t;
+
             void reset()
             {
                 m_cur_pos = 0;
@@ -139,8 +142,9 @@ namespace pisa {
             friend class freq_index;
 
             Cursor(typename DocsSequence::enumerator docs_enum,
-                   typename FreqsSequence::enumerator freqs_enum)
-                : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum)
+                   typename FreqsSequence::enumerator freqs_enum,
+                   document_type last_document)
+                : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum), m_last(last_document)
             {
                 reset();
             }
@@ -149,6 +153,7 @@ namespace pisa {
             uint64_t m_cur_docid;
             typename DocsSequence::enumerator m_docs_enum;
             typename FreqsSequence::enumerator m_freqs_enum;
+            document_type m_last;
         };
 
         class Posting_Range {
@@ -196,7 +201,7 @@ namespace pisa {
                                                               n,
                                                               index_.m_params);
 
-                auto cursor = Cursor(docs_enum, freqs_enum);
+                auto cursor = Cursor(docs_enum, freqs_enum, last_);
                 if (first_ > 0u) {
                     cursor.next_geq(first_);
                 }

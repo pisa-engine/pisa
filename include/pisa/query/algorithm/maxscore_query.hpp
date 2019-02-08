@@ -13,7 +13,9 @@ struct maxscore_query {
 
     typedef bm25 scorer_type;
 
-    maxscore_query(Index const &index, WandType const &wdata, uint64_t k) : m_index(index), m_wdata(&wdata), m_topk(k) {}
+    maxscore_query(Index const &index, WandType const &wdata, uint64_t k)
+        : m_index(index), m_wdata(&wdata), m_topk(k)
+    {}
 
     template <typename Max_Scored_Range>
     auto operator()(gsl::span<Max_Scored_Range> posting_ranges) -> int64_t
@@ -45,10 +47,9 @@ struct maxscore_query {
                                             })
                                ->docid();
 
-        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
-        while (first_essential != cursors.end() && current_doc < last_document) {
+        while (first_essential != cursors.end() && current_doc < pisa::cursor::document_bound) {
             auto score = 0.f;
-            auto next_doc = last_document;
+            auto next_doc = pisa::cursor::document_bound;
             std::for_each(first_essential, cursors.end(), [&](auto &cursor) {
                 if (cursor.docid() == current_doc) {
                     score += cursor.score();

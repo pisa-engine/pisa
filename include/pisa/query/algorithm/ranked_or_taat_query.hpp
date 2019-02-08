@@ -1,9 +1,10 @@
 #pragma once
 
-#include "util/intrinsics.hpp"
+#include "cursor.hpp"
+#include "query/queries.hpp"
 #include "scorer/bm25.hpp"
 #include "topk_queue.hpp"
-#include "query/queries.hpp"
+#include "util/intrinsics.hpp"
 
 #include "accumulator/simple_accumulator.hpp"
 
@@ -27,7 +28,7 @@ class ranked_or_taat_query {
         m_accumulators.init();
         for (auto const &range : posting_ranges) {
             auto cursor = range.cursor();
-            for (; cursor.docid() < range.last_document(); cursor.next()) {
+            for (; cursor.docid() < pisa::cursor::document_bound; cursor.next()) {
                 m_accumulators.accumulate(cursor.docid(), cursor.score());
             }
         }

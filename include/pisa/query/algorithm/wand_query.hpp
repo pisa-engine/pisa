@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "algorithm/for_each.hpp"
+#include "cursor.hpp"
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
 #include "topk_queue.hpp"
@@ -41,12 +42,11 @@ struct wand_query {
             });
         };
 
-        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
         auto find_pivot = [&](size_t &pivot) {
             float upper_bound = 0;
             bool found_pivot = false;
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot]->docid() >= last_document) {
+                if (ordered_cursors[pivot]->docid() >= pisa::cursor::document_bound) {
                     break;
                 }
                 upper_bound += ordered_cursors[pivot]->max_score();

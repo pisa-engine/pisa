@@ -4,6 +4,7 @@
 #include <range/v3/view/all.hpp>
 #include <range/v3/view/transform.hpp>
 
+#include "cursor.hpp"
 #include "query/queries.hpp"
 
 namespace pisa {
@@ -15,9 +16,13 @@ class Scored_Cursor {
         : freq_cursor_(freq_cursor), scorer_(std::move(scorer))
     {}
     Scored_Cursor(Scored_Cursor const &) = default;
-    Scored_Cursor(Scored_Cursor &&) noexcept = default;
+    Scored_Cursor(Scored_Cursor &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Cursor>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     Scored_Cursor &operator=(Scored_Cursor const &) = default;
-    Scored_Cursor& operator=(Scored_Cursor &&) noexcept = default;
+    Scored_Cursor &operator=(Scored_Cursor &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Cursor>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     ~Scored_Cursor() = default;
 
     void reset() { freq_cursor_.reset(); }
@@ -43,9 +48,13 @@ class Scored_Range {
         : freq_range_(std::move(freq_range)), scorer_(std::move(scorer))
     {}
     Scored_Range(Scored_Range const &) = delete;
-    Scored_Range(Scored_Range &&) noexcept = default;
+    Scored_Range(Scored_Range &&) noexcept(noexcept(std::move(std::declval<Frequency_Range>())) and
+                                           noexcept(std::move(std::declval<Term_Scorer>()))) =
+        default;
     Scored_Range &operator=(Scored_Range const &) = delete;
-    Scored_Range &operator=(Scored_Range &&) noexcept = default;
+    Scored_Range &operator=(Scored_Range &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Range>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     ~Scored_Range() = default;
 
     [[nodiscard]] auto size() const -> int64_t { return freq_range_.size(); }
@@ -74,9 +83,13 @@ class Max_Scored_Cursor {
         : scored_cursor_(std::forward<scored_cursor_type>(scored_cursor)), max_score_(max_score)
     {}
     Max_Scored_Cursor(Max_Scored_Cursor const &) = default;
-    Max_Scored_Cursor(Max_Scored_Cursor &&) noexcept = default;
+    Max_Scored_Cursor(Max_Scored_Cursor &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Cursor>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     Max_Scored_Cursor &operator=(Max_Scored_Cursor const &) = default;
-    Max_Scored_Cursor &operator=(Max_Scored_Cursor &&) noexcept = default;
+    Max_Scored_Cursor &operator=(Max_Scored_Cursor &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Cursor>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     ~Max_Scored_Cursor() = default;
 
     void reset() { scored_cursor_.reset(); }
@@ -86,6 +99,14 @@ class Max_Scored_Cursor {
     [[nodiscard]] auto docid() const { return scored_cursor_.docid(); }
     [[nodiscard]] auto score() { return scored_cursor_.score(); }
     [[nodiscard]] auto position() const { return scored_cursor_.position(); }
+    [[nodiscard]] auto operator!=(cursor::Sentinel end) const -> bool
+    {
+        return scored_cursor_ != end;
+    }
+    [[nodiscard]] auto operator==(cursor::Sentinel end) const -> bool
+    {
+        return scored_cursor_ == end;
+    }
     [[nodiscard]] auto max_score() const noexcept -> float { return max_score_; }
 
    private:
@@ -104,9 +125,13 @@ class Max_Scored_Range {
         : scored_range_(std::forward<scored_range_type>(scored_range)), max_score_(max_score)
     {}
     Max_Scored_Range(Max_Scored_Range const &) = delete;
-    Max_Scored_Range(Max_Scored_Range &&) noexcept = default;
+    Max_Scored_Range(Max_Scored_Range &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Range>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     Max_Scored_Range &operator=(Max_Scored_Range const &) = delete;
-    Max_Scored_Range &operator=(Max_Scored_Range &&) noexcept = default;
+    Max_Scored_Range &operator=(Max_Scored_Range &&) noexcept(
+        noexcept(std::move(std::declval<Frequency_Range>())) and
+        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
     ~Max_Scored_Range() = default;
 
     [[nodiscard]] auto size() const -> int64_t { return scored_range_.size(); }

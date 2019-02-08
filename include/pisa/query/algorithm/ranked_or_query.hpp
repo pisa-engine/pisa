@@ -5,6 +5,7 @@
 
 #include <gsl/span>
 
+#include "cursor.hpp"
 #include "query/queries.hpp"
 
 namespace pisa {
@@ -34,10 +35,9 @@ struct ranked_or_query {
                                             })
                                ->docid();
 
-        auto last_document = posting_ranges[0].last_document(); // TODO: check if all the same?
-        while (current_doc < last_document) {
+        while (current_doc < pisa::cursor::document_bound) {
             float score = 0.f;
-            auto next_doc = last_document;
+            auto next_doc = pisa::cursor::document_bound;
             for (auto& cursor : cursors) {
                 if (cursor.docid() == current_doc) {
                     score += cursor.score();

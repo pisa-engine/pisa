@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 namespace pisa {
 
 template <typename Iterator, typename StopCond, typename Function>
