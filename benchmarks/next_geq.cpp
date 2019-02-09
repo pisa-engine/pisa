@@ -18,10 +18,12 @@ using namespace pisa;
 struct Vector_Cursor {
     [[nodiscard]] auto docid() const noexcept -> uint32_t { return *documents_; }
     [[nodiscard]] auto score() const noexcept -> float { return *scores_; }
-    void next()
+    void next_geq(uint32_t doc)
     {
-        ++documents_;
-        ++scores_;
+        while (*documents_ < doc) {
+            ++documents_;
+            ++scores_;
+        }
     }
 
     std::vector<uint32_t>::const_iterator documents_;
@@ -91,7 +93,13 @@ class Index_Fixture : public celero::TestFixture {
         }
     }
 
-    void setUp(const celero::TestFixture::ExperimentValue &x) override
+    virtual std::vector<celero::TestFixture::ExperimentValue> getExperimentValues() const override
+    {
+        return std::vector<celero::TestFixture::ExperimentValue>{
+            uint64_t{100}, uint64_t{500}, uint64_t{1000}, uint64_t{5000}};
+    }
+
+    void setUp(const celero::TestFixture::ExperimentValue &stride) override
     {
         uint32_t first_term = 0u;
         uint32_t last_term = 1000u;
@@ -108,6 +116,7 @@ class Index_Fixture : public celero::TestFixture {
             vector_cursors.push_back(vector_ranges.back().cursor());
             enumerators.push_back(index[term_id]);
         }
+        this->stride = stride.Value;
     }
 
     void tearDown() override
@@ -137,40 +146,49 @@ class Index_Fixture : public celero::TestFixture {
     std::vector<score_function_type> scorers;
     std::vector<scored_range_type> scored_ranges;
     std::vector<scored_cursor_type> scored_cursors;
+    uint64_t stride = 0;
 };
 
-BASELINE_F(Traversal, Vectors, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
+BASELINE_F(Next_GEQ, Vectors, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
 {
     for (auto &&cursor : vector_cursors) {
-        for (; cursor.docid() < pisa::cursor::document_bound; cursor.next()) {
+        uint32_t doc = 0;
+        for (; cursor.docid() < pisa::cursor::document_bound; cursor.next_geq(doc)) {
             celero::DoNotOptimizeAway(cursor.score());
+            doc += stride;
         }
     }
 }
 
-BENCHMARK_F(Traversal, enumerator, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
+BENCHMARK_F(Next_GEQ, enumerator, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
 {
     for (auto &&[enumerator, scorer] : ranges::view::zip(enumerators, scorers)) {
-        for (; enumerator.docid() < index.num_docs(); enumerator.next()) {
+        uint32_t doc = 0;
+        for (; enumerator.docid() < index.num_docs(); enumerator.next_geq(doc)) {
             celero::DoNotOptimizeAway(scorer(enumerator.docid(), enumerator.freq()));
+            doc += stride;
         }
     }
 }
 
-BENCHMARK_F(Traversal, Freq_Cursor, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
+BENCHMARK_F(Next_GEQ, Freq_Cursor, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
 {
     for (auto &&[cursor, scorer] : ranges::view::zip(freq_cursors, scorers)) {
-        for (; cursor.docid() < pisa::cursor::document_bound; cursor.next()) {
+        uint32_t doc = 0;
+        for (; cursor.docid() < pisa::cursor::document_bound; cursor.next_geq(doc)) {
             celero::DoNotOptimizeAway(scorer(cursor.docid(), cursor.freq()));
+            doc += stride;
         }
     }
 }
 
-BENCHMARK_F(Traversal, Scored_Cursor, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
+BENCHMARK_F(Next_GEQ, Scored_Cursor, Index_Fixture<pisa::block_simdbp_index>, 50, 1)
 {
     for (auto &&cursor : scored_cursors) {
-        for (; cursor.docid() < pisa::cursor::document_bound; cursor.next()) {
+        uint32_t doc = 0;
+        for (; cursor.docid() < pisa::cursor::document_bound; cursor.next_geq(doc)) {
             celero::DoNotOptimizeAway(cursor.score());
+            doc += stride;
         }
     }
 }

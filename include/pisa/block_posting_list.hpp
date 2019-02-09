@@ -100,11 +100,11 @@ class Block_Cursor {
 
         while (docid() < lower_bound) {
             current_.docid += document_buffer_[++current_.pos_in_block] + 1;
-            if (DS2I_UNLIKELY(docid() >= last_document_)) {
-                current_.docid = pisa::cursor::document_bound;
-                return;
-            }
             assert(current_.pos_in_block < current_.block_size);
+        }
+        if (DS2I_UNLIKELY(docid() >= last_document_)) {
+            current_.docid = pisa::cursor::document_bound;
+            return;
         }
     }
 

@@ -23,3 +23,9 @@ target_link_libraries(traversal
   pisa
   celero
 )
+
+add_executable(next_geq next_geq.cpp)
+target_link_libraries(next_geq
+  pisa
+  celero
+)
