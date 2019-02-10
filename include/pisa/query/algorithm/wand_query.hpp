@@ -13,6 +13,18 @@
 
 namespace pisa {
 
+template <typename Iterator>
+void bubble_down(Iterator pos, Iterator last)
+{
+    for_each_until(std::next(pos),
+                   last,
+                   [&](auto &cursor) { return cursor->docid() >= (*pos)->docid(); },
+                   [&](auto &cursor) {
+                       std::swap(cursor, (*pos));
+                       ++pos;
+                   });
+}
+
 template <typename Index, typename WandType>
 struct wand_query {
 
@@ -80,16 +92,9 @@ struct wand_query {
                     ordered_cursors.rend(),
                     [&](auto &cursor) { return cursor->docid() != pivot_id; });
                 (*next_pos)->next_geq(pivot_id);
-                auto prev_pos = std::next(ordered_cursors.begin(),
-                                          std::distance(next_pos, ordered_cursors.rend()) - 1);
-                for_each_until(
-                    std::next(prev_pos),
-                    ordered_cursors.end(),
-                    [&](auto &cursor) { return cursor->docid() >= (*prev_pos)->docid(); },
-                    [&](auto &cursor) {
-                        std::swap(cursor, (*prev_pos));
-                        ++prev_pos;
-                    });
+                bubble_down(std::next(ordered_cursors.begin(),
+                                      std::distance(next_pos, ordered_cursors.rend()) - 1),
+                            ordered_cursors.end());
             }
         }
 

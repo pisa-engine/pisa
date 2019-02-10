@@ -168,7 +168,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "single wand_ra
     test_with_ranges(wand_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block wand_ranges", "[.]")
+TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block wand_ranges")
 {
     pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
     test_with_ranges(wand_q);
@@ -192,9 +192,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization<single_index>, "single maxscor
     test_with_ranges(maxscore_q);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>,
-                 "block maxscore_ranges",
-                 "[.]")
+TEST_CASE_METHOD(pisa::test::index_initialization<block_simdbp_index>, "block maxscore_ranges")
 {
     pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10);
     test_with_ranges(maxscore_q);

@@ -6,13 +6,15 @@
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
+#include "query/scored_range.hpp"
 
 namespace pisa {
 namespace test {
 
+template<typename Index = opt_index>
 struct index_initialization {
 
-    typedef opt_index                                                             index_type;
+    using index_type = Index;
     typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> WandTypeUniform;
     typedef wand_data<bm25, wand_data_raw<bm25>>                                  WandTypePlain;
 
@@ -31,7 +33,7 @@ struct index_initialization {
                         collection.num_docs(),
                         collection,
                         partition_type::variable_blocks) {
-        index_type::builder builder(collection.num_docs(), params);
+        typename index_type::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
                 std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
@@ -42,8 +44,9 @@ struct index_initialization {
 
         term_id_vec   q;
         std::ifstream qfile(DS2I_SOURCE_DIR "/test/test_data/queries");
-        while (read_query(q, qfile))
+        while (read_query(q, qfile)) {
             queries.push_back(q);
+        }
     }
 
     global_parameters        params;
@@ -70,16 +73,45 @@ struct index_initialization {
             op_q.clear_topk();
         }
     }
+
+    template <typename QueryOp>
+    void test_with_ranges(QueryOp &op_q) const
+    {
+        wand_query<index_type, WandTypePlain> or_q(index, wdata, 10);
+
+        for (auto const &q : queries) {
+            or_q(q);
+            op_q(gsl::make_span(block_max_scored_ranges(index, wdata, q)));
+            REQUIRE(or_q.topk().size() == op_q.topk().size());
+            for (size_t i = 0; i < or_q.topk().size(); ++i) {
+                REQUIRE(or_q.topk()[i].first ==
+                        Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            }
+            op_q.clear_topk();
+        }
+    }
 };
 
 } // namespace test
 } // namespace pisa
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand") {
+TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>, "block_max_wand")
+{
     pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
     pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
     pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10);
     test_against_wand(block_max_wand_uniform_q);
     test_against_wand(block_max_wand_q);
     test_against_wand(block_max_wand_fixed_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>,
+                 "block_max_wand: ranges")
+{
+    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
+    pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
+    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10);
+    test_with_ranges(block_max_wand_q);
+    test_with_ranges(block_max_wand_uniform_q);
+    test_with_ranges(block_max_wand_fixed_q);
 }
