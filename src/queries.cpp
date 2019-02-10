@@ -147,6 +147,14 @@ void perftest(const std::string &index_filename,
         else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = block_max_wand_query<IndexType, WandType>(index, wdata, k);
         }
+        else if (t == "Block_Max_Wand" && wand_data_filename) {
+            query_fun = [&index,
+                         &wdata,
+                         wq = std::make_shared<block_max_wand_query<IndexType, WandType>>(
+                             index, wdata, k)](term_id_vec terms) {
+                return wq->operator()(gsl::make_span(block_max_scored_ranges(index, wdata, terms)));
+            };
+        }
         else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = block_max_maxscore_query<IndexType, WandType>(index, wdata, k);
         }
