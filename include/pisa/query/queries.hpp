@@ -143,6 +143,16 @@ template <typename Range>
     return cursors;
 }
 
+template<typename Cursor>
+[[nodiscard]] auto map_to_pointers(gsl::span<Cursor> cursors)
+{
+    std::vector<Cursor *> ordered_cursors(cursors.size());
+    std::transform(cursors.begin(), cursors.end(), ordered_cursors.begin(), [](auto &cursor) {
+        return &cursor;
+    });
+    return ordered_cursors;
+}
+
 } // namespace query
 } // namespace pisa
 

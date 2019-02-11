@@ -5,6 +5,7 @@
 
 #include "ds2i_config.hpp"
 #include "index_types.hpp"
+#include "query/algorithm/draat_query.hpp"
 #include "query/queries.hpp"
 #include "query/scored_range.hpp"
 
@@ -68,9 +69,9 @@ struct index_initialization {
             REQUIRE(or_q.topk().size() == op_q.topk().size());
 
             for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
+                REQUIRE(or_q.topk()[i].first ==
+                        Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
             }
-            op_q.clear_topk();
         }
     }
 
@@ -87,7 +88,6 @@ struct index_initialization {
                 REQUIRE(or_q.topk()[i].first ==
                         Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
             }
-            op_q.clear_topk();
         }
     }
 };
@@ -95,7 +95,7 @@ struct index_initialization {
 } // namespace test
 } // namespace pisa
 
-TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>, "block_max_wand")
+TEST_CASE_METHOD(pisa::test::index_initialization<>, "block_max_wand")
 {
     pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
     pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
@@ -114,4 +114,62 @@ TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>,
     test_with_ranges(block_max_wand_q);
     test_with_ranges(block_max_wand_uniform_q);
     test_with_ranges(block_max_wand_fixed_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>,
+                 "block_max_wand: draat")
+{
+    auto block_max_wand_q =
+        pisa::draat_query(pisa::block_max_wand_query<index_type, WandTypePlain>(index, wdata, 10),
+                          1003,
+                          index.num_docs(),
+                          10);
+    auto block_max_wand_uniform_q = pisa::draat_query(
+        pisa::block_max_wand_query<index_type, WandTypeUniform>(index, wdata_uniform, 10),
+        1003,
+        index.num_docs(),
+        10);
+    auto block_max_wand_fixed_q = pisa::draat_query(
+        pisa::block_max_wand_query<index_type, WandTypePlain>(index, wdata_fixed, 10),
+        1003,
+        index.num_docs(),
+        10);
+    test_with_ranges(block_max_wand_q);
+    test_with_ranges(block_max_wand_uniform_q);
+    test_with_ranges(block_max_wand_fixed_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>,
+                 "block_max_maxscore: ranges")
+{
+    pisa::block_max_maxscore_query<index_type, WandTypePlain> bmm_q(index, wdata, 10);
+    pisa::block_max_maxscore_query<index_type, WandTypeUniform> bmm_uniform_q(
+        index, wdata_uniform, 10);
+    pisa::block_max_wand_query<index_type, WandTypePlain> bmm_fixed_q(index, wdata_fixed, 10);
+    test_with_ranges(bmm_q);
+    test_with_ranges(bmm_uniform_q);
+    test_with_ranges(bmm_fixed_q);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization<pisa::block_simdbp_index>,
+                 "block_max_maxscore: draat")
+{
+    auto bmm_q = pisa::draat_query(
+        pisa::block_max_maxscore_query<index_type, WandTypePlain>(index, wdata, 10),
+        1003,
+        index.num_docs(),
+        10);
+    auto bmm_uniform_q = pisa::draat_query(
+        pisa::block_max_maxscore_query<index_type, WandTypeUniform>(index, wdata_uniform, 10),
+        1003,
+        index.num_docs(),
+        10);
+    auto bmm_fixed_q = pisa::draat_query(
+        pisa::block_max_maxscore_query<index_type, WandTypePlain>(index, wdata_fixed, 10),
+        1003,
+        index.num_docs(),
+        10);
+    test_with_ranges(bmm_q);
+    test_with_ranges(bmm_uniform_q);
+    test_with_ranges(bmm_fixed_q);
 }

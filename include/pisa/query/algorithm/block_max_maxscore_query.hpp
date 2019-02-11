@@ -1,6 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <vector>
+
+#include "algorithm/for_each.hpp"
+#include "algorithm/numeric.hpp"
 #include "query/queries.hpp"
 
 namespace pisa {
@@ -8,10 +12,102 @@ namespace pisa {
 template <typename Index, typename WandType>
 struct block_max_maxscore_query {
 
-    typedef bm25 scorer_type;
+    using scorer_type = bm25;
 
     block_max_maxscore_query(Index const &index, WandType const &wdata, uint64_t k)
         : m_index(index), m_wdata(&wdata), m_topk(k) {}
+
+    template <typename Block_Max_Scored_Range>
+    auto operator()(gsl::span<Block_Max_Scored_Range> posting_ranges) -> int64_t
+    {
+        using cursor_type = typename Block_Max_Scored_Range::cursor_type;
+        m_topk.clear();
+        if (posting_ranges.empty()) {
+            return 0;
+        }
+
+        std::vector<cursor_type> cursor_handles = query::open_cursors(posting_ranges);
+        std::vector<cursor_type *> cursors = query::map_to_pointers(gsl::make_span(cursor_handles));
+
+        std::sort(cursors.begin(), cursors.end(), [](auto const *lhs, auto const *rhs) {
+            return lhs->max_score() < rhs->max_score();
+        });
+
+        std::vector<float> upper_bounds(cursors.size());
+        std::transform(cursors.begin(),
+                       cursors.end(),
+                       upper_bounds.begin(),
+                       [](auto const *cursor) { return cursor->max_score(); });
+        std::partial_sum(upper_bounds.begin(), upper_bounds.end(), upper_bounds.begin());
+
+        auto first_essential = cursors.begin();
+        auto first_essential_bound = upper_bounds.begin();
+        auto current_doc = (*std::min_element(cursors.begin(),
+                                              cursors.end(),
+                                              [](auto const *lhs, auto const *rhs) {
+                                                  return lhs->docid() < rhs->docid();
+                                              }))
+                               ->docid();
+
+        while (first_essential != cursors.end() && current_doc < pisa::cursor::document_bound) {
+            auto score = 0.f;
+            auto next_doc = pisa::cursor::document_bound;
+            std::for_each(first_essential, cursors.end(), [&](auto *cursor) {
+                if (cursor->docid() == current_doc) {
+                    score += cursor->score();
+                    cursor->next();
+                }
+                if (auto id = cursor->docid(); id < next_doc) {
+                    next_doc = id;
+                }
+            });
+
+            float block_upper_bound = 0u;
+            if (first_essential != cursors.begin()) {
+                block_upper_bound = *std::reverse_iterator(first_essential_bound);
+                auto first_nonessential = std::reverse_iterator(first_essential);
+                for_each(first_nonessential,
+                         cursors.rend(),
+                         [&](auto *cursor) {
+                             block_upper_bound -=
+                                 cursor->max_score() - cursor->block_max_score(current_doc);
+                         },
+                         while_holds([&](auto * /* cursor */) {
+                             return m_topk.would_enter(score + block_upper_bound);
+                         }));
+            }
+
+            if (m_topk.would_enter(score + block_upper_bound)) {
+                auto first_nonessential = std::reverse_iterator(first_essential);
+                pisa::for_each(first_nonessential,
+                               cursors.rend(),
+                               [&](auto *cursor) {
+                                   cursor->next_geq(current_doc);
+                                   if (cursor->docid() == current_doc) {
+                                       block_upper_bound += cursor->score();
+                                   }
+                                   block_upper_bound -= cursor->block_max_score();
+                               },
+                               while_holds([&](auto *) {
+                                   return m_topk.would_enter(score + block_upper_bound);
+                               }));
+                score += block_upper_bound;
+            }
+
+            if (m_topk.insert(score, current_doc)) {
+                while (first_essential < cursors.end() &&
+                       not m_topk.would_enter(*first_essential_bound)) {
+                    ++first_essential;
+                    ++first_essential_bound;
+                }
+            }
+
+            current_doc = next_doc;
+        }
+
+        m_topk.finalize();
+        return m_topk.topk().size();
+    }
 
     uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();

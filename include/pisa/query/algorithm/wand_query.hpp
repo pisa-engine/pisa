@@ -16,13 +16,13 @@ namespace pisa {
 template <typename Iterator>
 void bubble_down(Iterator pos, Iterator last)
 {
-    for_each_until(std::next(pos),
-                   last,
-                   [&](auto &cursor) { return cursor->docid() >= (*pos)->docid(); },
-                   [&](auto &cursor) {
-                       std::swap(cursor, (*pos));
-                       ++pos;
-                   });
+    for_each(std::next(pos),
+             last,
+             while_holds([&](auto &cursor) { return cursor->docid() < (*pos)->docid(); }),
+             [&](auto &cursor) {
+                 std::swap(cursor, (*pos));
+                 ++pos;
+             });
 }
 
 template <typename Index, typename WandType>
@@ -43,10 +43,8 @@ struct wand_query {
         }
 
         std::vector<cursor_type> cursors = query::open_cursors(posting_ranges);
-        std::vector<cursor_type *> ordered_cursors(cursors.size());
-        std::transform(cursors.begin(), cursors.end(), ordered_cursors.begin(), [](auto &cursor) {
-            return &cursor;
-        });
+        std::vector<cursor_type *> ordered_cursors =
+            query::map_to_pointers(gsl::make_span(cursors));
 
         auto sort_cursors = [&]() {
             std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](auto *lhs, auto *rhs) {
@@ -76,13 +74,13 @@ struct wand_query {
             auto pivot_id = ordered_cursors[pivot]->docid();
             if (pivot_id == ordered_cursors[0]->docid()) {
                 float score = 0.f;
-                for_each_until(ordered_cursors.begin(),
-                               ordered_cursors.end(),
-                               [&](auto &cursor) { return cursor->docid() != pivot_id; },
-                               [&](auto &cursor) {
-                                   score += cursor->score();
-                                   cursor->next();
-                               });
+                for_each(ordered_cursors.begin(),
+                         ordered_cursors.end(),
+                         while_holds([&](auto &cursor) { return cursor->docid() == pivot_id; }),
+                         [&](auto &cursor) {
+                             score += cursor->score();
+                             cursor->next();
+                         });
                 m_topk.insert(score, pivot_id);
                 sort_cursors();
             }

@@ -60,19 +60,19 @@ struct maxscore_query {
                 }
             });
 
-            for_each_pair_until(std::reverse_iterator(first_essential),
-                                cursors.rend(),
-                                std::reverse_iterator(first_essential_bound),
-                                upper_bounds.rend(),
-                                [&](auto &cursor, auto const &bound) {
-                                    return not m_topk.would_enter(score + bound);
-                                },
-                                [&](auto &cursor, auto const & /*bound*/) {
-                                    cursor.next_geq(current_doc);
-                                    if (cursor.docid() == current_doc) {
-                                        score += cursor.score();
-                                    }
-                                });
+            for_each_pair(std::reverse_iterator(first_essential),
+                          cursors.rend(),
+                          std::reverse_iterator(first_essential_bound),
+                          upper_bounds.rend(),
+                          while_holds([&](auto &cursor, auto const &bound) {
+                              return m_topk.would_enter(score + bound);
+                          }),
+                          [&](auto &cursor, auto const & /*bound*/) {
+                              cursor.next_geq(current_doc);
+                              if (cursor.docid() == current_doc) {
+                                  score += cursor.score();
+                              }
+                          });
 
             if (m_topk.insert(score, current_doc)) {
                 while (first_essential < cursors.end() &&

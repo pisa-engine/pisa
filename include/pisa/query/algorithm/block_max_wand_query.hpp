@@ -14,23 +14,22 @@ template <typename Cursor>
 {
     return [&top_k, &ordered_cursors](auto pivot_id, auto block_upper_bound) {
         float score = 0.f;
-        auto pos = for_each_until(ordered_cursors.begin(),
-                                  ordered_cursors.end(),
-                                  [&](auto const *cursor) {
-                                      return cursor->docid() != pivot_id or
-                                             not top_k.would_enter(block_upper_bound);
-                                  },
-                                  [&](auto *cursor) {
-                                      auto partial_score = cursor->score();
-                                      score += partial_score;
-                                      block_upper_bound -=
-                                          cursor->block_max_score() - partial_score;
-                                      cursor->next();
-                                  });
-        for_each_until(pos,
-                       ordered_cursors.end(),
-                       [&](auto const *cursor) { return cursor->docid() != pivot_id; },
-                       [&](auto *cursor) { cursor->next(); });
+        auto pos = for_each(ordered_cursors.begin(),
+                            ordered_cursors.end(),
+                            while_holds([&](auto const *cursor) {
+                                return cursor->docid() == pivot_id and
+                                       top_k.would_enter(block_upper_bound);
+                            }),
+                            [&](auto *cursor) {
+                                auto partial_score = cursor->score();
+                                score += partial_score;
+                                block_upper_bound -= cursor->block_max_score() - partial_score;
+                                cursor->next();
+                            });
+        for_each(pos,
+                 ordered_cursors.end(),
+                 while_holds([&](auto const *cursor) { return cursor->docid() == pivot_id; }),
+                 [&](auto *cursor) { cursor->next(); });
         return score;
     };
 }
@@ -69,10 +68,8 @@ struct block_max_wand_query {
         }
 
         std::vector<cursor_type> cursors = query::open_cursors(posting_ranges);
-        std::vector<cursor_type *> ordered_cursors(cursors.size());
-        std::transform(cursors.begin(), cursors.end(), ordered_cursors.begin(), [](auto &cursor) {
-            return &cursor;
-        });
+        std::vector<cursor_type *> ordered_cursors =
+            query::map_to_pointers(gsl::make_span(cursors));
 
         auto sort_cursors = [&]() {
             std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](auto *lhs, auto *rhs) {

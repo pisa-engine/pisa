@@ -164,11 +164,10 @@ class Block_Max_Scored_Cursor {
     {}
     Block_Max_Scored_Cursor(Block_Max_Scored_Cursor const &) = default;
     Block_Max_Scored_Cursor(Block_Max_Scored_Cursor &&) noexcept(
-        noexcept(std::move(std::declval<Frequency_Cursor>())) and
-        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
+        noexcept(std::move(std::declval<scored_cursor_type>())) and
+        noexcept(std::move(std::declval<Wand_Cursor>()))) = default;
     Block_Max_Scored_Cursor &operator=(Block_Max_Scored_Cursor const &) = default;
-    Block_Max_Scored_Cursor &operator=(Block_Max_Scored_Cursor &&) noexcept(
-        noexcept_move_assignment<scored_cursor_type>()) = default;
+    Block_Max_Scored_Cursor &operator=(Block_Max_Scored_Cursor &&) = default;
     ~Block_Max_Scored_Cursor() = default;
 
     void reset() { scored_cursor_.reset(); }
@@ -179,7 +178,7 @@ class Block_Max_Scored_Cursor {
     [[nodiscard]] auto score() { return scored_cursor_.score(); }
     [[nodiscard]] auto position() const { return scored_cursor_.position(); }
     [[nodiscard]] auto max_score() const -> float { return max_score_; }
-    [[nodiscard]] auto block_max_score() -> float { return block_max_score(docid()); }
+    [[nodiscard]] auto block_max_score() -> float { return wand_cursor_.score() * term_weight_; }
     [[nodiscard]] auto block_max_score(document_type id) -> float
     {
         if (wand_cursor_.docid() < id) {
@@ -219,8 +218,7 @@ class Block_Max_Scored_Range {
     {}
     Block_Max_Scored_Range(Block_Max_Scored_Range const &) = delete;
     Block_Max_Scored_Range(Block_Max_Scored_Range &&) noexcept(
-        noexcept(std::move(std::declval<Frequency_Range>())) and
-        noexcept(std::move(std::declval<Term_Scorer>()))) = default;
+        noexcept(std::move(std::declval<scored_range_type>()))) = default;
     Block_Max_Scored_Range &operator=(Block_Max_Scored_Range const &) = delete;
     Block_Max_Scored_Range &operator=(Block_Max_Scored_Range &&) = default;
     ~Block_Max_Scored_Range() = default;
@@ -235,7 +233,8 @@ class Block_Max_Scored_Range {
     }
     [[nodiscard]] auto operator()(document_type low, document_type hi) const
     {
-        return Block_Max_Scored_Range(scored_range_(low, hi), wand_data_, term_weight_);
+        return Block_Max_Scored_Range(
+            scored_range_(low, hi), wand_data_, term_weight_, max_score_, term_);
     }
 
    private:
