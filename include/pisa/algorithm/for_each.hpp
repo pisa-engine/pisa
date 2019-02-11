@@ -52,7 +52,7 @@ std::pair<Iterator1, Iterator2> for_each_pair(Iterator1 first1,
                                               Function fn)
 {
     for (; first1 != last1; ++first1, ++first2) {
-        if (not stop_condition(*first1, *first2)) {
+        if (not pred(*first1, *first2)) {
             break;
         }
         fn(*first1, *first2);
