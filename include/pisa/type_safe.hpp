@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdint>
+#include <functional>
+#include <ostream>
+
 namespace pisa {
 
 template <class Tag, class T, T default_value = 0>
