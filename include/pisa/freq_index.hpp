@@ -92,6 +92,9 @@ namespace pisa {
                 auto val = m_docs_enum.next();
                 m_cur_pos = val.first;
                 m_cur_docid = val.second;
+                if (m_cur_docid >= m_last) {
+                    m_cur_docid = cursor::document_bound;
+                }
             }
 
             void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound)
@@ -99,6 +102,9 @@ namespace pisa {
                 auto val = m_docs_enum.next_geq(lower_bound);
                 m_cur_pos = val.first;
                 m_cur_docid = val.second;
+                if (m_cur_docid >= m_last) {
+                    m_cur_docid = cursor::document_bound;
+                }
             }
 
             void DS2I_FLATTEN_FUNC move(uint64_t position)

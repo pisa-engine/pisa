@@ -19,6 +19,10 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
 
+if (CMAKE_BUILD_TYPE EQUAL "Release")
+    add_compile_definitions(GSL_UNENFORCED_ON_CONTRACT_VIOLATION)
+endif()
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # include(external/external.cmake)
