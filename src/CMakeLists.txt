@@ -81,3 +81,9 @@ target_link_libraries(read_collection
   pisa
   CLI11
 )
+
+add_executable(partition_fwd_index partition_fwd_index.cpp)
+target_link_libraries(partition_fwd_index
+  pisa
+  CLI11
+)

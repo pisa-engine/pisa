@@ -1,7 +1,7 @@
 ---
 AccessModifierOffset: -1
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
 AlignEscapedNewlinesLeft: true
 AlignTrailingComments: false
 AllowAllParametersOfDeclarationOnNextLine: true
@@ -12,7 +12,7 @@ AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBinaryOperators: false
-BreakBeforeBraces: Attach
+BreakBeforeBraces: Stroustrup
 BreakConstructorInitializersBeforeComma: false
 ColumnLimit:     100
 CommentPragmas:  '^@atd'

@@ -19,109 +19,12 @@
 #include "spdlog/spdlog.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
+#include "type_safe.hpp"
 
 #include "binary_collection.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
-
-template <class Tag, class T, T default_value = 0>
-class Integer {
-   public:
-    using difference_type = T;
-
-    Integer() : m_val(default_value) {}
-    explicit Integer(T val) : m_val(val) {}
-    Integer(Integer const &) = default;
-    Integer(Integer &&) noexcept = default;
-    Integer &operator=(Integer const &) = default;
-    Integer &operator=(Integer &&) noexcept = default;
-
-    explicit operator T() const { return m_val; }
-    [[nodiscard]] T get() const { return m_val; }
-
-    [[nodiscard]] bool operator==(Integer const &other) const { return m_val == other.m_val; }
-    [[nodiscard]] bool operator!=(Integer const &other) const { return m_val != other.m_val; }
-    [[nodiscard]] bool operator<(Integer const &other) const { return m_val < other.m_val; }
-    [[nodiscard]] bool operator<=(Integer const &other) const { return m_val <= other.m_val; }
-    [[nodiscard]] bool operator>(Integer const &other) const { return m_val > other.m_val; }
-    [[nodiscard]] bool operator>=(Integer const &other) const { return m_val >= other.m_val; }
-
-    Integer &operator++() {
-        ++m_val;
-        return *this;
-    }
-    Integer operator++(int) const { return Integer{m_val++}; }
-
-    [[nodiscard]] Integer operator+(T difference) const { return Integer(m_val + difference); }
-    Integer &             operator+=(T difference) {
-        m_val += difference;
-        return *this;
-    }
-    [[nodiscard]] Integer operator+(Integer const &other) const {
-        return Integer(m_val + other.m_val);
-    }
-    Integer &operator+=(Integer const &other) {
-        m_val += other.m_val;
-        return *this;
-    }
-    [[nodiscard]] Integer operator-(Integer const &other) const {
-        return Integer(m_val - other.m_val);
-    }
-    Integer &operator-=(Integer const &other) {
-        m_val -= other.m_val;
-        return *this;
-    }
-
-   private:
-    T m_val;
-};
-
-} // namespace pisa
-
-namespace std {
-
-template <class Tag, class T, T default_value>
-struct hash<pisa::Integer<Tag, T, default_value>> {
-    constexpr auto operator()(pisa::Integer<Tag, T, default_value> const &key) const noexcept {
-        return hash<T>{}(static_cast<T>(key));
-    }
-};
-
-} // namespace std
-
-namespace pisa {
-
-template <class Tag, class T, T default_value>
-std::ostream &operator<<(std::ostream &os, Integer<Tag, T, default_value> id) {
-    return os << static_cast<T>(id);
-}
-
-struct document_id_tag {};
-using Document_Id = Integer<document_id_tag, std::int32_t>;
-struct term_id_tag {};
-using Term_Id = Integer<term_id_tag, std::int32_t>;
-struct frequency_tag {};
-using Frequency = Integer<frequency_tag, std::int32_t>;
-
-namespace literals {
-
-inline Document_Id operator"" _d(unsigned long long n)  // NOLINT
-{
-    return Document_Id(n);
-}
-
-inline Term_Id operator"" _t(unsigned long long n)  // NOLINT
-{
-    return Term_Id(n);
-}
-
-inline Frequency operator"" _f(unsigned long long n)  // NOLINT
-{
-    return Frequency(n);
-}
-
-} // namespace literals
 
 template <typename T>
 std::vector<T> concatenate(std::vector<std::vector<T>> const &containers)
@@ -383,7 +286,8 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
 
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");
-    write_sequence(dos, gsl::make_span<uint32_t const>(&term_count, 1));
+    auto document_count = static_cast<uint32_t>(document_sizes.size());
+    write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
     for ([[maybe_unused]] auto _ : ranges::view::iota(0, term_count)) {
         std::vector<uint32_t> dlist;
         for (auto &iter : doc_iterators) {
