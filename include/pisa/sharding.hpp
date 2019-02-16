@@ -2,6 +2,7 @@
 
 #include <random>
 #include <string>
+#include <unordered_map>
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -28,6 +29,55 @@
 namespace pisa {
 
 using pisa::literals::operator""_d;
+using pisa::literals::operator""_s;
+
+auto mapping_from_files(std::istream *full_titles, gsl::span<std::istream *> shard_titles)
+    -> Vector<Document_Id, Shard_Id>
+{
+    std::unordered_map<std::string, Shard_Id> map;
+    Shard_Id shard_id{};
+    for (auto *is : shard_titles) {
+        io::for_each_line(*is, [&](auto const &title) {
+            if (auto pos = map.find(title); pos == map.end()) {
+                map[title] = shard_id;
+            }
+            else {
+                spdlog::warn(
+                    "Document {} already belongs to shard {}: mapping for shard {} ignored",
+                    title,
+                    pos->second.as_int(),
+                    shard_id);
+            }
+        });
+        shard_id += 1;
+    }
+
+    Vector<Document_Id, Shard_Id> result;
+    result.reserve(map.size());
+    io::for_each_line(*full_titles, [&](auto const &title) {
+        if (auto pos = map.find(title); pos != map.end()) {
+            result.push_back(pos->second);
+        }
+        else {
+            spdlog::warn("No shard assignment for document {}; will be assigned to shard 0", title);
+            result.push_back(0_s);
+        }
+    });
+    return result;
+}
+
+auto mapping_from_files(std::string const &full_titles, gsl::span<std::string const> shard_titles)
+    -> Vector<Document_Id, Shard_Id>
+{
+    std::ifstream fis(full_titles);
+    std::vector<std::unique_ptr<std::ifstream>> shard_is;
+    std::vector<std::istream *> shard_pointers;
+    for (auto const &shard_file : shard_titles) {
+        shard_is.push_back(std::make_unique<std::ifstream>(shard_file));
+        shard_pointers.push_back(shard_is.back().get());
+    }
+    return mapping_from_files(&fis, gsl::span<std::istream *>(shard_pointers));
+}
 
 auto create_random_mapping(int document_count,
                            int shard_count,

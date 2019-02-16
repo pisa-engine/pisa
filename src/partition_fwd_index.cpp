@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
 
     std::string input_basename;
     std::string output_basename;
+    std::vector<std::string> shard_files;
     int threads = std::thread::hardware_concurrency();
     int shard_count;
 
@@ -38,13 +39,30 @@ int main(int argc, char **argv) {
     app.add_option("-i,--input", input_basename, "Forward index filename")->required();
     app.add_option("-o,--output", output_basename, "Basename of partitioned shards")->required();
     app.add_option("-j,--threads", threads, "Thread count");
-    app.add_option("-s,--shards", shard_count, "Number of shards");
+    auto random_option
+        = app.add_option("-r,--random-shards", shard_count, "Number of random shards");
+    auto shard_files_option
+        = app.add_option("-s,--shard-files", shard_files, "List of files with shard titles");
+    random_option->excludes(shard_files_option);
+    shard_files_option->excludes(random_option);
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
-    auto mapping = create_random_mapping(input_basename, shard_count);
-    partition_fwd_index(input_basename, output_basename, mapping);
+
+    if (*random_option) {
+        auto mapping = create_random_mapping(input_basename, shard_count);
+        partition_fwd_index(input_basename, output_basename, mapping);
+    }
+    else if (*shard_files_option) {
+        auto mapping = mapping_from_files(fmt::format("{}.documents", input_basename),
+                                          gsl::make_span(shard_files));
+        partition_fwd_index(input_basename, output_basename, mapping);
+    }
+    else {
+        spdlog::error("You must define either --random-shards or --shard-files");
+        std::exit(1);
+    }
 
     return 0;
 }

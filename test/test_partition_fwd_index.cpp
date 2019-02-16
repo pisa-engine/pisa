@@ -9,6 +9,7 @@
 #include <boost/filesystem.hpp>
 #include <fmt/ostream.h>
 #include <gsl/span>
+#include <range/v3/action/transform.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/stride.hpp>
@@ -36,6 +37,19 @@ using index_type          = invert::Inverted_Index<iterator_type>;
         return record;
     }
     return std::nullopt;
+}
+
+TEST_CASE("mapping_from_files", "[invert][unit]")
+{
+    std::istringstream full("D00\nD01\nD02\nD03\nD04\nD05\nD06\nD07\nD08\nD09\nD010\nD11");
+    std::vector<std::unique_ptr<std::istream>> shards;
+    shards.push_back(std::make_unique<std::istringstream>("D00\nD01\nD02"));
+    shards.push_back(std::make_unique<std::istringstream>("D02\nD03\nD04"));
+    shards.push_back(std::make_unique<std::istringstream>("D06\nD07\nD08\nD09\nD010\nD11"));
+    auto stream_pointers = ranges::view::transform(shards, [](auto const &s) { return s.get(); })
+                           | ranges::to_vector;
+    REQUIRE(mapping_from_files(&full, gsl::span<std::istream *>(stream_pointers)).as_vector()
+            == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s});
 }
 
 TEST_CASE("create_random_mapping", "[invert][unit]")
