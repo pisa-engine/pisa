@@ -97,10 +97,10 @@ term_freq_vec query_freqs(term_id_vec terms) {
 template <typename Scorer, typename Wand>
 struct Score_Function {
     float query_weight;
-    std::reference_wrapper<Wand const> wdata;
+    const Wand&  wdata;
 
     [[nodiscard]] auto operator()(uint32_t doc, uint32_t freq) const -> float {
-        return query_weight * Scorer::doc_term_weight(freq, wdata.get().norm_len(doc));
+        return query_weight * Scorer::doc_term_weight(freq, wdata.norm_len(doc));
     }
 };
 
@@ -128,7 +128,7 @@ template <typename Index, typename WandType>
         uint64_t num_docs = index.num_docs();
         auto     q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
         cursors.push_back(std::move(list));
-        score_functions.push_back({q_weight, std::cref(wdata)});
+        score_functions.push_back({q_weight, wdata});
     }
     return std::make_pair(cursors, score_functions);
 }
