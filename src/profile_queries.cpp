@@ -15,6 +15,10 @@
 #include "query/queries.hpp"
 #include "util/util.hpp"
 
+#include "cursor/cursor.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+
 template <typename QueryOperator>
 void op_profile(QueryOperator const& query_op,
                 std::vector<pisa::term_id_vec> const& queries)
@@ -86,17 +90,32 @@ void profile(const std::string index_filename,
 
     for (auto const& t: query_types) {
         spdlog::info("Query type: {}", t);
+        std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            op_profile(and_query<typename add_profiling<IndexType>::type, false>(index, index.num_docs()), queries);
+            query_fun = [&](term_id_vec terms){
+                and_query<typename add_profiling<IndexType>::type, false> and_q(index, index.num_docs());
+                remove_duplicate_terms(terms);
+                return and_q(make_cursors(index, terms));
+            };
         } else if (t == "ranked_and" && wand_data_filename) {
-            op_profile(ranked_and_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10, index.num_docs()), queries);
+            query_fun = [&](term_id_vec terms){
+                ranked_and_query<typename add_profiling<IndexType>::type, WandType> ranked_and_q(index, wdata, 10, index.num_docs());
+                return ranked_and_q(make_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "wand" && wand_data_filename) {
-            op_profile(wand_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10, index.num_docs()), queries);
+            query_fun = [&](term_id_vec terms){
+                wand_query<typename add_profiling<IndexType>::type, WandType> wand_q(index, wdata, 10, index.num_docs());
+                return wand_q(make_max_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "maxscore" && wand_data_filename) {
-            op_profile(maxscore_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10, index.num_docs()), queries);
+            query_fun = [&](term_id_vec terms){
+                maxscore_query<typename add_profiling<IndexType>::type, WandType> maxscore_q(index, wdata, 10, index.num_docs());
+                return maxscore_q(make_max_scored_cursors(index, wdata, terms));
+            };
         } else {
             spdlog::error("Unsupported query type: {}", t);
         }
+        op_profile(query_fun, queries);
     }
 
     block_profiler::dump(std::cout);

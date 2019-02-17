@@ -1,46 +1,25 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 #include "query/queries.hpp"
 
 namespace pisa {
 
-
 template <typename Index, typename WandType>
 struct ranked_or_query {
-
     typedef bm25 scorer_type;
 
     ranked_or_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
         : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
 
-    uint64_t operator()(term_id_vec terms) {
+    template <typename Cursor>
+    uint64_t operator()(std::vector<Cursor> &&cursors) {
         m_topk.clear();
-        if (terms.empty())
-            return 0;
-
-        auto query_term_freqs = query_freqs(terms);
-
-        typedef typename Index::document_enumerator enum_type;
-        struct scored_enum {
-            enum_type docs_enum;
-            float     q_weight;
-        };
-
-        std::vector<scored_enum> enums;
-        enums.reserve(query_term_freqs.size());
-
-        for (auto term : query_term_freqs) {
-            auto list     = m_index[term.first];
-            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), m_index.num_docs());
-            enums.push_back(scored_enum{std::move(list), q_weight});
-        }
-
+        if (cursors.empty()) return 0;
         uint64_t cur_doc =
-            std::min_element(enums.begin(),
-                             enums.end(),
-                             [](scored_enum const &lhs, scored_enum const &rhs) {
+            std::min_element(cursors.begin(), cursors.end(),
+                             [](Cursor const &lhs, Cursor const &rhs) {
                                  return lhs.docs_enum.docid() < rhs.docs_enum.docid();
                              })
                 ->docs_enum.docid();
@@ -49,14 +28,14 @@ struct ranked_or_query {
             float    score    = 0;
             float    norm_len = m_wdata->norm_len(cur_doc);
             uint64_t next_doc = m_max_docid;
-            for (size_t i = 0; i < enums.size(); ++i) {
-                if (enums[i].docs_enum.docid() == cur_doc) {
-                    score += enums[i].q_weight *
-                             scorer_type::doc_term_weight(enums[i].docs_enum.freq(), norm_len);
-                    enums[i].docs_enum.next();
+            for (size_t i = 0; i < cursors.size(); ++i) {
+                if (cursors[i].docs_enum.docid() == cur_doc) {
+                    score += cursors[i].q_weight *
+                             scorer_type::doc_term_weight(cursors[i].docs_enum.freq(), norm_len);
+                    cursors[i].docs_enum.next();
                 }
-                if (enums[i].docs_enum.docid() < next_doc) {
-                    next_doc = enums[i].docs_enum.docid();
+                if (cursors[i].docs_enum.docid() < next_doc) {
+                    next_doc = cursors[i].docs_enum.docid();
                 }
             }
 
@@ -74,7 +53,7 @@ struct ranked_or_query {
     Index const &   m_index;
     WandType const *m_wdata;
     topk_queue      m_topk;
-    uint64_t m_max_docid;
+    uint64_t        m_max_docid;
 };
 
-} // namespace pisa
+}  // namespace pisa

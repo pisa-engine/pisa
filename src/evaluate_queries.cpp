@@ -15,6 +15,7 @@
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include "cursor/max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -50,10 +51,10 @@ void evaluate_queries(const std::string &index_filename,
     }
 
     auto docmap = io::read_string_vector(documents_filename);
-    wand_query<IndexType, WandType> query_func(index, wdata, k, index.num_docs());
+    wand_query<IndexType, WandType> wand_q(index, wdata, k, index.num_docs());
     for (auto const &[qid, query] : enumerate(queries)) {
-        query_func(query.terms);
-        auto results = query_func.topk();
+        wand_q(make_max_scored_cursors(index, wdata, query.terms));
+        auto results = wand_q.topk();
         for (auto &&[rank, result] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      query.id.value_or(std::to_string(qid)),

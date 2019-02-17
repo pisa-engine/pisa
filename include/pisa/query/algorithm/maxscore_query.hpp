@@ -13,70 +13,52 @@ struct maxscore_query {
     maxscore_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
     : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
 
-    uint64_t operator()(term_id_vec const &terms) {
+    template<typename Cursor>
+    uint64_t operator()(std::vector<Cursor> &&cursors) {
         m_topk.clear();
-        if (terms.empty())
+        if (cursors.empty())
             return 0;
 
-        auto query_term_freqs = query_freqs(terms);
-
-        typedef typename Index::document_enumerator enum_type;
-        struct scored_enum {
-            enum_type docs_enum;
-            float     q_weight;
-            float     max_weight;
-        };
-
-        std::vector<scored_enum> enums;
-        enums.reserve(query_term_freqs.size());
-
-        for (auto term : query_term_freqs) {
-            auto list       = m_index[term.first];
-            auto q_weight   = scorer_type::query_term_weight(term.second, list.size(), m_index.num_docs());
-            auto max_weight = q_weight * m_wdata->max_term_weight(term.first);
-            enums.push_back(scored_enum{std::move(list), q_weight, max_weight});
-        }
-
-        std::vector<scored_enum *> ordered_enums;
-        ordered_enums.reserve(enums.size());
-        for (auto &en : enums) {
-            ordered_enums.push_back(&en);
+        std::vector<Cursor *> ordered_cursors;
+        ordered_cursors.reserve(cursors.size());
+        for (auto &en : cursors) {
+            ordered_cursors.push_back(&en);
         }
 
         // sort enumerators by increasing maxscore
         std::sort(
-            ordered_enums.begin(), ordered_enums.end(), [](scored_enum *lhs, scored_enum *rhs) {
+            ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
                 return lhs->max_weight < rhs->max_weight;
             });
 
-        std::vector<float> upper_bounds(ordered_enums.size());
-        upper_bounds[0] = ordered_enums[0]->max_weight;
-        for (size_t i = 1; i < ordered_enums.size(); ++i) {
-            upper_bounds[i] = upper_bounds[i - 1] + ordered_enums[i]->max_weight;
+        std::vector<float> upper_bounds(ordered_cursors.size());
+        upper_bounds[0] = ordered_cursors[0]->max_weight;
+        for (size_t i = 1; i < ordered_cursors.size(); ++i) {
+            upper_bounds[i] = upper_bounds[i - 1] + ordered_cursors[i]->max_weight;
         }
 
         uint64_t non_essential_lists = 0;
         uint64_t cur_doc =
-            std::min_element(enums.begin(),
-                             enums.end(),
-                             [](scored_enum const &lhs, scored_enum const &rhs) {
+            std::min_element(cursors.begin(),
+                             cursors.end(),
+                             [](Cursor const &lhs, Cursor const &rhs) {
                                  return lhs.docs_enum.docid() < rhs.docs_enum.docid();
                              })
                 ->docs_enum.docid();
 
-        while (non_essential_lists < ordered_enums.size() && cur_doc < m_max_docid) {
+        while (non_essential_lists < ordered_cursors.size() && cur_doc < m_max_docid) {
             float    score    = 0;
             float    norm_len = m_wdata->norm_len(cur_doc);
             uint64_t next_doc = m_max_docid;
-            for (size_t i = non_essential_lists; i < ordered_enums.size(); ++i) {
-                if (ordered_enums[i]->docs_enum.docid() == cur_doc) {
+            for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
+                if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
                     score +=
-                        ordered_enums[i]->q_weight *
-                        scorer_type::doc_term_weight(ordered_enums[i]->docs_enum.freq(), norm_len);
-                    ordered_enums[i]->docs_enum.next();
+                        ordered_cursors[i]->q_weight *
+                        scorer_type::doc_term_weight(ordered_cursors[i]->docs_enum.freq(), norm_len);
+                    ordered_cursors[i]->docs_enum.next();
                 }
-                if (ordered_enums[i]->docs_enum.docid() < next_doc) {
-                    next_doc = ordered_enums[i]->docs_enum.docid();
+                if (ordered_cursors[i]->docs_enum.docid() < next_doc) {
+                    next_doc = ordered_cursors[i]->docs_enum.docid();
                 }
             }
 
@@ -85,17 +67,17 @@ struct maxscore_query {
                 if (!m_topk.would_enter(score + upper_bounds[i])) {
                     break;
                 }
-                ordered_enums[i]->docs_enum.next_geq(cur_doc);
-                if (ordered_enums[i]->docs_enum.docid() == cur_doc) {
+                ordered_cursors[i]->docs_enum.next_geq(cur_doc);
+                if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
                     score +=
-                        ordered_enums[i]->q_weight *
-                        scorer_type::doc_term_weight(ordered_enums[i]->docs_enum.freq(), norm_len);
+                        ordered_cursors[i]->q_weight *
+                        scorer_type::doc_term_weight(ordered_cursors[i]->docs_enum.freq(), norm_len);
                 }
             }
 
             if (m_topk.insert(score)) {
                 // update non-essential lists
-                while (non_essential_lists < ordered_enums.size() &&
+                while (non_essential_lists < ordered_cursors.size() &&
                        !m_topk.would_enter(upper_bounds[non_essential_lists])) {
                     non_essential_lists += 1;
                 }
