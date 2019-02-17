@@ -26,7 +26,8 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
     if (type == "warc") {
         return [](std::istream &in) -> std::optional<Document_Record> {
             warcpp::Warc_Record record;
-            if (warcpp::read_warc_record(in, record)) {
+            warcpp::read_warc_record(in, record);
+            if (in) {
                 return std::make_optional<Document_Record>(record);
             }
             return std::nullopt;
