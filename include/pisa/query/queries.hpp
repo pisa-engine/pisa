@@ -20,6 +20,7 @@
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include "scorer/score_function.hpp"
 
 namespace pisa {
 
@@ -93,16 +94,6 @@ term_freq_vec query_freqs(term_id_vec terms) {
 
     return query_term_freqs;
 }
-
-template <typename Scorer, typename Wand>
-struct Score_Function {
-    float query_weight;
-    const Wand&  wdata;
-
-    [[nodiscard]] auto operator()(uint32_t doc, uint32_t freq) const -> float {
-        return query_weight * Scorer::doc_term_weight(freq, wdata.norm_len(doc));
-    }
-};
 
 // TODO: These are functions common to query processing in general.
 //       They should be moved out of this file.
