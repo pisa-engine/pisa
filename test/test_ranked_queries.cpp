@@ -50,7 +50,7 @@ namespace pisa { namespace test {
         template <typename QueryOp>
         void test_against_or(QueryOp &op_q) const
         {
-            ranked_or_query<index_type, WandType> or_q(index, wdata, 10);
+            ranked_or_query<index_type, WandType> or_q(index, wdata, 10, index.num_docs());
 
             for (auto const& q: queries) {
                 or_q(q);
@@ -65,8 +65,8 @@ namespace pisa { namespace test {
 
         void test_k_size() const
         {
-            ranked_or_query<index_type, WandType> or_10(index, wdata, 10);
-            ranked_or_query<index_type, WandType> or_1(index, wdata, 1);
+            ranked_or_query<index_type, WandType> or_10(index, wdata, 10, index.num_docs());
+            ranked_or_query<index_type, WandType> or_1(index, wdata, 1, index.num_docs());
 
             for (auto const &q : queries) {
                 or_10(q);
@@ -84,19 +84,19 @@ namespace pisa { namespace test {
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
 {
-    pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
+    pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10, index.num_docs());
     test_against_or(wand_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore")
 {
-    pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10);
+    pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10, index.num_docs());
     test_against_or(maxscore_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 {
-    pisa::block_max_maxscore_query<index_type, WandType> bmm_q(index, wdata, 10);
+    pisa::block_max_maxscore_query<index_type, WandType> bmm_q(index, wdata, 10, index.num_docs());
     test_against_or(bmm_q);
 }
 
@@ -104,14 +104,14 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
 
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
-        index, wdata, 10);
+        index, wdata, 10, index.num_docs());
     test_against_or(ranked_or_taat_q);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
 {
     pisa::ranked_or_taat_query<index_type, WandType, pisa::Lazy_Accumulator<8>> ranked_or_taat_q(
-        index, wdata, 10);
+        index, wdata, 10, index.num_docs());
     test_against_or(ranked_or_taat_q);
 }
 

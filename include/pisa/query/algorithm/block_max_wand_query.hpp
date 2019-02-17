@@ -9,8 +9,8 @@ template <typename Index, typename WandType>
 struct block_max_wand_query {
     typedef bm25 scorer_type;
 
-    block_max_wand_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(&wdata), m_topk(k) {}
+    block_max_wand_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
+        : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
 
     uint64_t operator()(term_id_vec const &terms) {
         m_topk.clear();
@@ -18,7 +18,6 @@ struct block_max_wand_query {
         if (terms.empty())
             return 0;
         auto                                            query_term_freqs = query_freqs(terms);
-        uint64_t                                        num_docs         = m_index.num_docs();
         typedef typename Index::document_enumerator     enum_type;
         typedef typename WandType::wand_data_enumerator wdata_enum;
 
@@ -35,7 +34,7 @@ struct block_max_wand_query {
         for (auto term : query_term_freqs) {
             auto list     = m_index[term.first];
             auto w_enum   = m_wdata->getenum(term.first);
-            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
+            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), m_index.num_docs());
 
             float max_weight = q_weight * m_wdata->max_term_weight(term.first);
             enums.push_back(scored_enum{std::move(list), w_enum, q_weight, max_weight});
@@ -63,10 +62,10 @@ struct block_max_wand_query {
             float    upper_bound = 0.f;
             size_t   pivot;
             bool     found_pivot = false;
-            uint64_t pivot_id    = num_docs;
+            uint64_t pivot_id    = m_max_docid;
 
             for (pivot = 0; pivot < ordered_enums.size(); ++pivot) {
-                if (ordered_enums[pivot]->docs_enum.docid() == num_docs) {
+                if (ordered_enums[pivot]->docs_enum.docid() == m_max_docid) {
                     break;
                 }
 
@@ -159,8 +158,7 @@ struct block_max_wand_query {
                     }
                 }
 
-                // TO BE FIXED (change with num_docs())
-                uint64_t next_jump = uint64_t(-2);
+                uint64_t next_jump = m_max_docid;
 
                 if (pivot + 1 < ordered_enums.size()) {
                     next_jump = ordered_enums[pivot + 1]->docs_enum.docid();
@@ -210,6 +208,7 @@ struct block_max_wand_query {
     Index const &   m_index;
     WandType const *m_wdata;
     topk_queue      m_topk;
+    uint64_t m_max_docid;
 };
 
 } // namespace pisa

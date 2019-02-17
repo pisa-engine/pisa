@@ -10,8 +10,8 @@ struct ranked_and_query {
 
     typedef bm25 scorer_type;
 
-    ranked_and_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(&wdata), m_topk(k) {}
+    ranked_and_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
+        : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
 
     uint64_t operator()(term_id_vec terms) {
         size_t results = 0;
@@ -21,7 +21,6 @@ struct ranked_and_query {
 
         auto query_term_freqs = query_freqs(terms);
 
-        uint64_t                                    num_docs = m_index.num_docs();
         typedef typename Index::document_enumerator enum_type;
         struct scored_enum {
             enum_type docs_enum;
@@ -33,7 +32,7 @@ struct ranked_and_query {
 
         for (auto term : query_term_freqs) {
             auto list     = m_index[term.first];
-            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
+            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), m_index.num_docs());
             enums.push_back(scored_enum{std::move(list), q_weight});
         }
 
@@ -44,7 +43,7 @@ struct ranked_and_query {
 
         uint64_t candidate = enums[0].docs_enum.docid();
         size_t   i         = 1;
-        while (candidate < m_index.num_docs()) {
+        while (candidate < m_max_docid) {
             for (; i < enums.size(); ++i) {
                 enums[i].docs_enum.next_geq(candidate);
                 if (enums[i].docs_enum.docid() != candidate) {
@@ -86,6 +85,7 @@ struct ranked_and_query {
     Index const &   m_index;
     WandType const *m_wdata;
     topk_queue      m_topk;
+    uint64_t m_max_docid;
 };
 
 } // namespace pisa

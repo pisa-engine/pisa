@@ -8,7 +8,7 @@ namespace pisa {
 template <typename Index, bool with_freqs>
 struct or_query {
 
-    or_query(Index const &index) : m_index(index) {}
+    or_query(Index const &index, uint64_t max_docid) : m_index(index),  m_max_docid(max_docid) {}
 
     uint64_t operator()(term_id_vec terms) const {
         if (terms.empty())
@@ -31,9 +31,9 @@ struct or_query {
                                             })
                                ->docid();
 
-        while (cur_doc < m_index.num_docs()) {
+        while (cur_doc < m_max_docid) {
             results += 1;
-            uint64_t next_doc = m_index.num_docs();
+            uint64_t next_doc = m_max_docid;
             for (size_t i = 0; i < enums.size(); ++i) {
                 if (enums[i].docid() == cur_doc) {
                     if (with_freqs) {
@@ -54,6 +54,7 @@ struct or_query {
 
    private:
     Index const &m_index;
+    uint64_t m_max_docid;
 };
 
 } // namespace pisa

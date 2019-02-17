@@ -50,7 +50,7 @@ void evaluate_queries(const std::string &index_filename,
     }
 
     auto docmap = io::read_string_vector(documents_filename);
-    wand_query<IndexType, WandType> query_func(index, wdata, k);
+    wand_query<IndexType, WandType> query_func(index, wdata, k, index.num_docs());
     for (auto const &[qid, query] : enumerate(queries)) {
         query_func(query.terms);
         auto results = query_func.topk();

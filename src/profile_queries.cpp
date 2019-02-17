@@ -87,13 +87,13 @@ void profile(const std::string index_filename,
     for (auto const& t: query_types) {
         spdlog::info("Query type: {}", t);
         if (t == "and") {
-            op_profile(and_query<typename add_profiling<IndexType>::type, false>(index), queries);
+            op_profile(and_query<typename add_profiling<IndexType>::type, false>(index, index.num_docs()), queries);
         } else if (t == "ranked_and" && wand_data_filename) {
-            op_profile(ranked_and_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
+            op_profile(ranked_and_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10, index.num_docs()), queries);
         } else if (t == "wand" && wand_data_filename) {
-            op_profile(wand_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
+            op_profile(wand_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10, index.num_docs()), queries);
         } else if (t == "maxscore" && wand_data_filename) {
-            op_profile(maxscore_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10), queries);
+            op_profile(maxscore_query<typename add_profiling<IndexType>::type, WandType>(index, wdata, 10, index.num_docs()), queries);
         } else {
             spdlog::error("Unsupported query type: {}", t);
         }

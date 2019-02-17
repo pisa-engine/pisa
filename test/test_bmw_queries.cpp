@@ -57,7 +57,7 @@ struct index_initialization {
 
     template <typename QueryOp>
     void test_against_wand(QueryOp &op_q) const {
-        wand_query<index_type, WandTypePlain> or_q(index, wdata, 10);
+        wand_query<index_type, WandTypePlain> or_q(index, wdata, 10, index.num_docs());
 
         for (auto const &q : queries) {
             or_q(q);
@@ -76,9 +76,9 @@ struct index_initialization {
 } // namespace pisa
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand") {
-    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
-    pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
-    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10);
+    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10, index.num_docs());
+    pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10, index.num_docs());
+    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10, index.num_docs());
     test_against_wand(block_max_wand_uniform_q);
     test_against_wand(block_max_wand_q);
     test_against_wand(block_max_wand_fixed_q);

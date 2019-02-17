@@ -8,7 +8,7 @@ namespace pisa {
 template <typename Index, bool with_freqs>
 struct and_query {
 
-    and_query(Index const &index) : m_index(index) {}
+    and_query(Index const &index, uint64_t max_docid) : m_index(index), m_max_docid(max_docid) {}
 
     uint64_t operator()(term_id_vec terms) const {
         if (terms.empty())
@@ -31,7 +31,7 @@ struct and_query {
         uint64_t results   = 0;
         uint64_t candidate = enums[0].docid();
         size_t   i         = 1;
-        while (candidate < m_index.num_docs()) {
+        while (candidate < m_max_docid) {
             for (; i < enums.size(); ++i) {
                 enums[i].next_geq(candidate);
                 if (enums[i].docid() != candidate) {
@@ -59,6 +59,7 @@ struct and_query {
 
    private:
     Index const &m_index;
+    uint64_t m_max_docid;
 };
 
 } // namespace pisa

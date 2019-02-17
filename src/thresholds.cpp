@@ -45,7 +45,7 @@ void thresholds(const std::string &                   index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    wand_query<IndexType, WandType> query_func(index, wdata, k);
+    wand_query<IndexType, WandType> query_func(index, wdata, k, index.num_docs());
     for (auto const &query : queries) {
         query_func(query);
         auto  results   = query_func.topk();
@@ -63,7 +63,6 @@ using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_sc
 int main(int argc, const char **argv)
 {
     std::string type;
-    std::string query_type;
     std::string index_filename;
     std::optional<std::string> terms_file;
     boost::optional<std::string> wand_data_filename;
