@@ -13,9 +13,10 @@ Performant Indexes and Search for Academia
    :maxdepth: 4
    :caption: Contents:
 
-   getting-started
+   getting_started
    parsing
-   compress-index
-   query-index
+   compress_index
+   query_index
+   document_reordering
    
    
