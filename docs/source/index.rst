@@ -8,3 +8,14 @@ Welcome to PISA
 
 Performant Indexes and Search for Academia
 
+
+.. toctree::
+   :maxdepth: 4
+   :caption: Contents:
+
+   getting-started
+   parsing
+   compress-index
+   query-index
+   
+   
