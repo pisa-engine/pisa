@@ -28,46 +28,7 @@ To build the code:
     $ cd build
     $ cmake .. -DCMAKE_BUILD_TYPE=Release
     $ make
-
-## Usage
-
-### Create an index
-
-To create an index use the command `create_freq_index`. The available index
-types are listed in `index_types.hpp`. 
-
-    create_freq_index - a tool for creating an index.
-    Usage:
-      create_freq_index [OPTION...]
-
-      -h, --help                 Print help
-      -t, --type type_name       Index type
-      -c, --collection basename  Collection basename
-      -o, --out filename         Output filename
-          --check                Check the correctness of the index (default:
-                                 false) 
-
-For example, to create an index using the
-optimal partitioning algorithm using the test collection, execute the command:
-
-    $ ./bin/create_freq_index -t opt -c ../test/test_data/test_collection -o test_collection.index.opt --check
-
-where `test/test_data/test_collection` is the _basename_ of the collection, that
-is the name without the `.{docs,freqs,sizes}` extensions, and
-`test_collection.index.opt` is the filename of the output index. `--check`
-perform a verification step to check the correctness of the index.
-
-### Build additional data
-
-To perform BM25 queries it is necessary to build an additional file containing
-the parameters needed to compute the score, such as the document lengths. The
-file can be built with the following command:
-
-    $ ./bin/create_wand_data -c ../test/test_data/test_collection -o test_collection.wand
-
-If you want to compress the file append `--compress` at the end of the command.
-
-
+    
 ## Run unit tests
 
 To run the unit tests simply perform a `make test`.
