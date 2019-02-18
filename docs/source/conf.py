@@ -19,7 +19,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'pisa'
+project = 'PISA'
 copyright = '2019, PISA'
 author = 'PISA'
 
@@ -86,6 +86,7 @@ html_theme_options = {
     'logo': 'img/logo.png',
     'github_user': 'pisa-engine',
     'github_repo': 'pisa',
+    'github_type': 'star',
     'github_button': True,
     'github_banner': False,
     'logo_name': False,
@@ -140,7 +141,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pisa.tex', 'pisa Documentation',
+    (master_doc, 'pisa.tex', 'PISA Documentation',
      'PISA', 'manual'),
 ]
 
@@ -150,7 +151,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pisa', 'pisa Documentation',
+    (master_doc, 'pisa', 'PISA Documentation',
      [author], 1)
 ]
 
@@ -161,8 +162,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pisa', 'pisa Documentation',
-     author, 'pisa', 'One line description of project.',
+    (master_doc, 'pisa', 'PISA Documentation',
+     author, 'PISA', 'One line description of project.',
      'Miscellaneous'),
 ]
 
