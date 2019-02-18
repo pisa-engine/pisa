@@ -11,8 +11,6 @@ namespace pisa {
 
 template <typename Acc = Simple_Accumulator>
 class ranked_or_taat_query {
-    using scorer_type = bm25;
-
    public:
     ranked_or_taat_query(uint64_t k, uint64_t max_docid)
         : m_topk(k), m_max_docid(max_docid), m_accumulator(max_docid) {}
@@ -25,10 +23,10 @@ class ranked_or_taat_query {
         }
         m_accumulator.init();
 
-        for (uint32_t term = 0; term < cursors.size(); ++term) {
-            auto &cursor = cursors[term];
-            for (; cursor.docs_enum.docid() < m_max_docid; cursor.docs_enum.next()) {
+        for(auto&& cursor : cursors) {
+            while(cursor.docs_enum.docid() < m_max_docid) {
                 m_accumulator.accumulate(cursor.docs_enum.docid(), cursor.scorer(cursor.docs_enum.docid(), cursor.docs_enum.freq()));
+                cursor.docs_enum.next();
             }
         }
         m_accumulator.aggregate(m_topk);

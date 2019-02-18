@@ -118,8 +118,8 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
 
-    auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::ranked_or_taat_query<pisa::Simple_Accumulator> ranked_or_taat_q(10, index.num_docs());
+    pisa::ranked_or_taat_query<pisa::Simple_Accumulator> ranked_or_taat_q(10, index.num_docs());
+    auto query_fun = [&, ranked_or_taat_q](pisa::term_id_vec terms) mutable {
         ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
         return ranked_or_taat_q;
     };
@@ -128,7 +128,7 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
 {
-    auto query_fun = [&](pisa::term_id_vec terms){
+    auto query_fun = [&, ranked_or_taat_q](pisa::term_id_vec terms) mutable {
         pisa::ranked_or_taat_query<pisa::Lazy_Accumulator<4>> ranked_or_taat_q(10, index.num_docs());
         ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
         return ranked_or_taat_q;

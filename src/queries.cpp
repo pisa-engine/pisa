@@ -173,13 +173,13 @@ void perftest(const std::string &index_filename,
                 return maxscore_q(make_max_scored_cursors(index, wdata, terms));
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            query_fun = [&](term_id_vec terms){
-                ranked_or_taat_query<Simple_Accumulator> ranked_or_taat_q(k, index.num_docs());
+            ranked_or_taat_query<Simple_Accumulator> ranked_or_taat_q(k, index.num_docs());
+            query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
                 return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            query_fun = [&](term_id_vec terms){
-                ranked_or_taat_query<Lazy_Accumulator<4>> ranked_or_taat_q(k, index.num_docs());
+            ranked_or_taat_query<Lazy_Accumulator<4>> ranked_or_taat_q(k, index.num_docs());
+            query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
                 return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
             };
         } else {
