@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cstdint>
 template <typename Scorer, typename Wand>
 struct Score_Function {
     float query_weight;
