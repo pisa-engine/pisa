@@ -1,6 +1,10 @@
 Document Reordering
 ===================
 
+Random Ordering
+===============
+
+
 Recursive Graph Bisection
 ============================
 
