@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'pisa'
-copyright = '2019, Antonio Mallia'
-author = 'Antonio Mallia'
+copyright = '2019, PISA'
+author = 'PISA'
 
 # The short X.Y version
 version = ''
@@ -131,7 +131,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'pisa.tex', 'pisa Documentation',
-     'Antonio Mallia', 'manual'),
+     'PISA', 'manual'),
 ]
 
 
