@@ -18,3 +18,5 @@ target/
 CMakeCache.txt
 CMakeFiles/
 Testing/
+
+docs/_build/
