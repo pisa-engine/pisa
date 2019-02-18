@@ -82,7 +82,17 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    'logo': 'img/logo.png',
+    'github_user': 'pisa-engine',
+    'github_repo': 'pisa',
+    'github_button': True,
+    'github_banner': False,
+    'logo_name': False,
+
+
+}
+
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

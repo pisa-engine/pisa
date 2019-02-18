@@ -3,18 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pisa's documentation!
-================================
+Welcome to PISA
+===============
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+Performant Indexes and Search for Academia
 
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
