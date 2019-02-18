@@ -14,6 +14,7 @@ Performant Indexes and Search for Academia
    :caption: Contents:
 
    getting_started
+   index_format
    parsing
    compress_index
    query_index
