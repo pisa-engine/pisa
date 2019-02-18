@@ -15,8 +15,8 @@ namespace pisa { namespace test {
         typedef single_index index_type;
         typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
         index_initialization()
-            : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection")
-            , document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes")
+            : collection(PISA_SOURCE_DIR "/test/test_data/test_collection")
+            , document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes")
             , wdata(document_sizes.begin()->begin(), collection.num_docs(), collection)
         {
             index_type::builder builder(collection.num_docs(), params);
@@ -29,11 +29,11 @@ namespace pisa { namespace test {
             builder.build(index);
 
             term_id_vec q;
-            std::ifstream qfile(DS2I_SOURCE_DIR "/test/test_data/queries");
+            std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
             while (read_query(q, qfile)) queries.push_back(q);
 
             std::string t;
-            std::ifstream tin(DS2I_SOURCE_DIR "/test/test_data/top5_thresholds");
+            std::ifstream tin(PISA_SOURCE_DIR "/test/test_data/top5_thresholds");
             while (std::getline(tin, t)) {
                 thresholds.push_back(std::stof(t));
             }

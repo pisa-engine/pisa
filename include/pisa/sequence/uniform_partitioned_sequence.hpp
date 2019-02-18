@@ -160,7 +160,7 @@ namespace pisa {
                 slow_move();
             }
 
-            value_type DS2I_ALWAYSINLINE move(uint64_t position)
+            value_type PISA_ALWAYSINLINE move(uint64_t position)
             {
                 assert(position <= size());
                 m_position = position;
@@ -176,9 +176,9 @@ namespace pisa {
 
             // note: this is instantiated oly if BaseSequence has next_geq
             template<typename Q = base_sequence_enumerator,  typename = if_has_next_geq<Q>>
-            value_type DS2I_ALWAYSINLINE next_geq(uint64_t lower_bound)
+            value_type PISA_ALWAYSINLINE next_geq(uint64_t lower_bound)
             {
-                if (DS2I_LIKELY(lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound)) {
+                if (PISA_LIKELY(lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound)) {
                     auto val = m_partition_enum.next_geq(lower_bound - m_cur_base);
                     m_position = m_cur_begin + val.first;
                     return value_type(m_position, m_cur_base + val.second);
@@ -186,11 +186,11 @@ namespace pisa {
                 return slow_next_geq(lower_bound);
             }
 
-            value_type DS2I_ALWAYSINLINE next()
+            value_type PISA_ALWAYSINLINE next()
             {
                 ++m_position;
 
-                if (DS2I_LIKELY(m_position < m_cur_end)) {
+                if (PISA_LIKELY(m_position < m_cur_end)) {
                     uint64_t val = m_cur_base + m_partition_enum.next().second;
                     return value_type(m_position, val);
                 }
@@ -204,7 +204,7 @@ namespace pisa {
 
             uint64_t prev_value() const
             {
-                if (DS2I_UNLIKELY(m_position == m_cur_begin)) {
+                if (PISA_UNLIKELY(m_position == m_cur_begin)) {
                     return m_cur_partition ? m_cur_base - 1 : 0;
                 } else {
                     return m_cur_base + m_partition_enum.prev_value();
@@ -218,9 +218,9 @@ namespace pisa {
             // next(), causing the code to grow. Since next is called in very
             // tight loops, on microbenchmarks this causes an improvement of
             // about 3ns on my i7 3Ghz
-            value_type DS2I_NOINLINE slow_next()
+            value_type PISA_NOINLINE slow_next()
             {
-                if (DS2I_UNLIKELY(m_position == m_size)) {
+                if (PISA_UNLIKELY(m_position == m_size)) {
                     assert(m_cur_partition == m_partitions - 1);
                     auto val = m_partition_enum.next();
                     assert(val.first == m_partition_enum.size()); (void)val;
@@ -232,7 +232,7 @@ namespace pisa {
                 return value_type(m_position, val);
             }
 
-            value_type DS2I_NOINLINE slow_move()
+            value_type PISA_NOINLINE slow_move()
             {
                 if (m_position == size()) {
                     if (m_partitions > 1) {
@@ -247,7 +247,7 @@ namespace pisa {
                 return value_type(m_position, val);
             }
 
-            value_type DS2I_NOINLINE slow_next_geq(uint64_t lower_bound)
+            value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
             {
                 if (m_partitions == 1) {
                     if (lower_bound < m_cur_base) {

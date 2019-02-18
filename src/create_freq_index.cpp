@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
             input, params, output_filename, check, type);                   \
         /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
         spdlog::error("Unknown type {}", type);

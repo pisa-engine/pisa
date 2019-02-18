@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(DS2I CXX C)
+project(PISA CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,8 +10,8 @@ option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 
 configure_file(
-  ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp.in
-  ${DS2I_SOURCE_DIR}/include/pisa/ds2i_config.hpp
+  ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp.in
+  ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp
   ESCAPE_QUOTES)
 
 if(NOT CMAKE_BUILD_TYPE)

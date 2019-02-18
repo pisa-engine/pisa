@@ -20,13 +20,13 @@ struct topk_queue {
     bool insert(float score) { return insert(score, 0); }
 
     bool insert(float score, uint64_t docid) {
-        if (DS2I_UNLIKELY(score < m_threshold)) {
+        if (PISA_UNLIKELY(score < m_threshold)) {
             return false;
         }
         m_q.emplace_back(score, docid);
-        if (DS2I_UNLIKELY(m_q.size() <= m_k)) {
+        if (PISA_UNLIKELY(m_q.size() <= m_k)) {
             std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
-            if(DS2I_UNLIKELY(m_q.size() == m_k)) {
+            if(PISA_UNLIKELY(m_q.size() == m_k)) {
                 m_threshold = m_q.front().first;
             }
         } else {
