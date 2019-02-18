@@ -1,9 +1,6 @@
 Query an index
 ==============
 
-Usage
---------------
-
 ```
 queries - a tool for performing queries on an index.
 Usage: ./bin/queries [OPTIONS]
@@ -31,6 +28,17 @@ be used (`or`, `wand`, ..., see `queries.cpp`), and also multiple operators
 separated by colon (`and:or:wand`).
 
 If the WAND file is compressed, please append `--compressed-wand` flag.
+
+## Build additional data
+
+To perform BM25 queries it is necessary to build an additional file containing
+the parameters needed to compute the score, such as the document lengths. The
+file can be built with the following command:
+
+    $ ./bin/create_wand_data -c ../test/test_data/test_collection -o test_collection.wand
+
+If you want to compress the file append `--compress` at the end of the command.
+
 
 Query algorithms
 ================
