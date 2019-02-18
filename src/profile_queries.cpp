@@ -93,24 +93,24 @@ void profile(const std::string index_filename,
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
             query_fun = [&](term_id_vec terms){
-                and_query<typename add_profiling<IndexType>::type, false> and_q(index, index.num_docs());
+                and_query<false> and_q(index.num_docs());
                 remove_duplicate_terms(terms);
-                return and_q(make_cursors(index, terms));
+                return and_q(make_cursors<typename add_profiling<IndexType>::type>(index, terms));
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                ranked_and_query<typename add_profiling<IndexType>::type, WandType> ranked_and_q(index, wdata, 10, index.num_docs());
-                return ranked_and_q(make_scored_cursors(index, wdata, terms));
+                ranked_and_query ranked_and_q(10, index.num_docs());
+                return ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms));
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                wand_query<typename add_profiling<IndexType>::type, WandType> wand_q(index, wdata, 10, index.num_docs());
-                return wand_q(make_max_scored_cursors(index, wdata, terms));
+                wand_query wand_q(10, index.num_docs());
+                return wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms));
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                maxscore_query<typename add_profiling<IndexType>::type, WandType> maxscore_q(index, wdata, 10, index.num_docs());
-                return maxscore_q(make_max_scored_cursors(index, wdata, terms));
+                maxscore_query maxscore_q(10, index.num_docs());
+                return maxscore_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms));
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);

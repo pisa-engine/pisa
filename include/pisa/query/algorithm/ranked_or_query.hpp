@@ -6,12 +6,11 @@
 
 namespace pisa {
 
-template <typename Index, typename WandType>
 struct ranked_or_query {
     typedef bm25 scorer_type;
 
-    ranked_or_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
-        : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
+    ranked_or_query(uint64_t k, uint64_t max_docid)
+        : m_topk(k), m_max_docid(max_docid) {}
 
     template <typename Cursor>
     uint64_t operator()(std::vector<Cursor> &&cursors) {
@@ -26,12 +25,10 @@ struct ranked_or_query {
 
         while (cur_doc < m_max_docid) {
             float    score    = 0;
-            float    norm_len = m_wdata->norm_len(cur_doc);
             uint64_t next_doc = m_max_docid;
             for (size_t i = 0; i < cursors.size(); ++i) {
                 if (cursors[i].docs_enum.docid() == cur_doc) {
-                    score += cursors[i].q_weight *
-                             scorer_type::doc_term_weight(cursors[i].docs_enum.freq(), norm_len);
+                    score += cursors[i].scorer(cursors[i].docs_enum.docid(), cursors[i].docs_enum.freq());
                     cursors[i].docs_enum.next();
                 }
                 if (cursors[i].docs_enum.docid() < next_doc) {
@@ -50,8 +47,6 @@ struct ranked_or_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    Index const &   m_index;
-    WandType const *m_wdata;
     topk_queue      m_topk;
     uint64_t        m_max_docid;
 };

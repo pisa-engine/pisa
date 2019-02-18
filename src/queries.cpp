@@ -125,61 +125,61 @@ void perftest(const std::string &index_filename,
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
             query_fun = [&](term_id_vec terms){
-                and_query<IndexType, false> and_q(index, index.num_docs());
+                and_query<false> and_q(index.num_docs());
                 remove_duplicate_terms(terms);
                 return and_q(make_cursors(index, terms));
             };
         } else if (t == "and_freq") {
             query_fun = [&](term_id_vec terms){
-                and_query<IndexType, true> and_q(index, index.num_docs());
+                and_query<true> and_q(index.num_docs());
                 remove_duplicate_terms(terms);
                 return and_q(make_cursors(index, terms));
             };
         } else if (t == "or") {
             query_fun = [&](term_id_vec terms){
-                or_query<IndexType, false> or_q(index, index.num_docs());
+                or_query<false> or_q(index.num_docs());
                 remove_duplicate_terms(terms);
                 return or_q(make_cursors(index, terms));
             };
         } else if (t == "or_freq") {
             query_fun = [&](term_id_vec terms){
-                or_query<IndexType, false> or_q(index, index.num_docs());
+                or_query<true> or_q(index.num_docs());
                 remove_duplicate_terms(terms);
                 return or_q(make_cursors(index, terms));
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                wand_query<IndexType, WandType> wand_q(index, wdata, k, index.num_docs());
+                wand_query wand_q(k, index.num_docs());
                 return wand_q(make_max_scored_cursors(index, wdata, terms));
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                block_max_wand_query<IndexType, WandType> block_max_wand_q(index, wdata, k, index.num_docs());
+                block_max_wand_query block_max_wand_q(k, index.num_docs());
                 return block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms));
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                block_max_maxscore_query<IndexType, WandType> block_max_maxscore_q(index, wdata, k, index.num_docs());
+                block_max_maxscore_query block_max_maxscore_q(k, index.num_docs());
                 return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms));
             };
         }  else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                ranked_or_query<IndexType, WandType> ranked_or_q(index, wdata, k, index.num_docs());
+                ranked_or_query ranked_or_q(k, index.num_docs());
                 return ranked_or_q(make_scored_cursors(index, wdata, terms));
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                maxscore_query<IndexType, WandType> maxscore_q(index, wdata, k, index.num_docs());
+                maxscore_query maxscore_q(k, index.num_docs());
                 return maxscore_q(make_max_scored_cursors(index, wdata, terms));
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                ranked_or_taat_query<IndexType, WandType, Simple_Accumulator> ranked_or_taat_q(index, wdata, k, index.num_docs());
+                ranked_or_taat_query<Simple_Accumulator> ranked_or_taat_q(k, index.num_docs());
                 return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                ranked_or_taat_query<IndexType, WandType, Lazy_Accumulator<4>> ranked_or_taat_q(index, wdata, k, index.num_docs());
+                ranked_or_taat_query<Lazy_Accumulator<4>> ranked_or_taat_q(k, index.num_docs());
                 return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
             };
         } else {

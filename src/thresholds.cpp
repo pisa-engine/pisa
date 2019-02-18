@@ -46,7 +46,7 @@ void thresholds(const std::string &                   index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    wand_query<IndexType, WandType> wand_q(index, wdata, k, index.num_docs());
+    wand_query wand_q(k, index.num_docs());
     for (auto const &query : queries) {
         wand_q(make_max_scored_cursors(index, wdata, query));
         auto  results   = wand_q.topk();

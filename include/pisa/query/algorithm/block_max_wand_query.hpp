@@ -5,12 +5,11 @@
 
 namespace pisa {
 
-template <typename Index, typename WandType>
 struct block_max_wand_query {
     typedef bm25 scorer_type;
 
-    block_max_wand_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
-        : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
+    block_max_wand_query(uint64_t k, uint64_t max_docid)
+        : m_topk(k), m_max_docid(max_docid) {}
 
     template<typename Cursor>
     uint64_t operator()(std::vector<Cursor> &&cursors) {
@@ -80,14 +79,11 @@ struct block_max_wand_query {
                 // check if pivot is a possible match
                 if (pivot_id == ordered_cursors[0]->docs_enum.docid()) {
                     float score    = 0;
-                    float norm_len = m_wdata->norm_len(pivot_id);
-
                     for (Cursor *en : ordered_cursors) {
                         if (en->docs_enum.docid() != pivot_id) {
                             break;
                         }
-                        float part_score = en->q_weight * scorer_type::doc_term_weight(
-                                                              en->docs_enum.freq(), norm_len);
+                        float part_score = en->scorer(en->docs_enum.docid(), en->docs_enum.freq());
                         score += part_score;
                         block_upper_bound -= en->w.score() * en->q_weight - part_score;
                         if (!m_topk.would_enter(block_upper_bound)) {
@@ -184,8 +180,6 @@ struct block_max_wand_query {
     topk_queue const &get_topk() const { return m_topk; }
 
    private:
-    Index const &   m_index;
-    WandType const *m_wdata;
     topk_queue      m_topk;
     uint64_t m_max_docid;
 };

@@ -8,13 +8,12 @@
 
 namespace pisa {
 
-template <typename Index, typename WandType>
 struct wand_query {
 
     typedef bm25 scorer_type;
 
-    wand_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
-        : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
+    wand_query(uint64_t k, uint64_t max_docid)
+        : m_topk(k), m_max_docid(max_docid) {}
 
     template<typename Cursor>
     uint64_t operator()(std::vector<Cursor> &&cursors) {
@@ -62,13 +61,11 @@ struct wand_query {
             uint64_t pivot_id = ordered_cursors[pivot]->docs_enum.docid();
             if (pivot_id == ordered_cursors[0]->docs_enum.docid()) {
                 float score    = 0;
-                float norm_len = m_wdata->norm_len(pivot_id);
                 for (Cursor *en : ordered_cursors) {
                     if (en->docs_enum.docid() != pivot_id) {
                         break;
                     }
-                    score +=
-                        en->q_weight * scorer_type::doc_term_weight(en->docs_enum.freq(), norm_len);
+                    score += en->scorer(en->docs_enum.docid(), en->docs_enum.freq());
                     en->docs_enum.next();
                 }
 
@@ -100,8 +97,6 @@ struct wand_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    Index const &   m_index;
-    WandType const *m_wdata;
     topk_queue      m_topk;
     uint64_t        m_max_docid;
 };

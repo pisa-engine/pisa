@@ -5,13 +5,12 @@
 
 namespace pisa {
 
-template <typename Index, typename WandType>
 struct maxscore_query {
 
     typedef bm25 scorer_type;
 
-    maxscore_query(Index const &index, WandType const &wdata, uint64_t k, uint64_t max_docid)
-    : m_index(index), m_wdata(&wdata), m_topk(k), m_max_docid(max_docid) {}
+    maxscore_query(uint64_t k, uint64_t max_docid)
+    : m_topk(k), m_max_docid(max_docid) {}
 
     template<typename Cursor>
     uint64_t operator()(std::vector<Cursor> &&cursors) {
@@ -48,13 +47,10 @@ struct maxscore_query {
 
         while (non_essential_lists < ordered_cursors.size() && cur_doc < m_max_docid) {
             float    score    = 0;
-            float    norm_len = m_wdata->norm_len(cur_doc);
             uint64_t next_doc = m_max_docid;
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
                 if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
-                    score +=
-                        ordered_cursors[i]->q_weight *
-                        scorer_type::doc_term_weight(ordered_cursors[i]->docs_enum.freq(), norm_len);
+                    score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
                     ordered_cursors[i]->docs_enum.next();
                 }
                 if (ordered_cursors[i]->docs_enum.docid() < next_doc) {
@@ -69,9 +65,7 @@ struct maxscore_query {
                 }
                 ordered_cursors[i]->docs_enum.next_geq(cur_doc);
                 if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
-                    score +=
-                        ordered_cursors[i]->q_weight *
-                        scorer_type::doc_term_weight(ordered_cursors[i]->docs_enum.freq(), norm_len);
+                    score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
                 }
             }
 
@@ -93,8 +87,6 @@ struct maxscore_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    Index const &   m_index;
-    WandType const *m_wdata;
     topk_queue      m_topk;
     uint64_t        m_max_docid;
 

@@ -5,10 +5,10 @@
 
 namespace pisa {
 
-template <typename Index, bool with_freqs>
+template <bool with_freqs>
 struct or_query {
 
-    or_query(Index const &index, uint64_t max_docid) : m_index(index),  m_max_docid(max_docid) {}
+    or_query(uint64_t max_docid) :   m_max_docid(max_docid) {}
 
     template<typename Cursor>
     uint64_t operator()(std::vector<Cursor> &&cursors) const {
@@ -45,7 +45,6 @@ struct or_query {
     }
 
    private:
-    Index const &m_index;
     uint64_t m_max_docid;
 };
 
