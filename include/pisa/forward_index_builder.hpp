@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <functional>
 #include <numeric>
@@ -100,15 +101,17 @@ void parse_html_content(std::string &&content, std::function<void(std::string &&
     if (content.empty()) {
         return;
     }
-    std::regex term_pattern("(\\w)+");
-    auto term_it = std::sregex_iterator(content.begin(), content.end(), term_pattern);
-    for (auto term_it = std::sregex_iterator(content.begin(), content.end(), term_pattern);
-         term_it != std::sregex_iterator();
-         ++term_it)
-    {
-        if (term_it->length() > 0) {
-            process(term_it->str());
+    auto pos = content.begin();
+    auto end = content.end();
+    auto is_alpha_numeric = [](char ch) -> bool {
+        return std::isalnum(static_cast<unsigned char>(ch));
+    };
+    while (pos != end) {
+        auto term_end = std::find_if_not(pos, end, is_alpha_numeric);
+        if (pos != term_end) {
+            process(std::string(pos, term_end));
         }
+        pos = std::find_if(term_end, end, is_alpha_numeric);
     }
 }
 
