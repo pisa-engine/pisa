@@ -9,7 +9,7 @@
 #include <gsl/span>
 #include <warcpp/warcpp.hpp>
 
-#include "ds2i_config.hpp"
+#include "pisa_config.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
 #include "parsing/html.hpp"
