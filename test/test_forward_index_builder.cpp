@@ -3,11 +3,11 @@
 #include <cstdio>
 #include <string>
 
-#include "Porter2/Porter2.hpp"
-#include "boost/filesystem.hpp"
-#include "catch2/catch.hpp"
-#include "gsl/span"
-#include "warcpp/warcpp.hpp"
+#include <Porter2/Porter2.hpp>
+#include <boost/filesystem.hpp>
+#include <catch2/catch.hpp>
+#include <gsl/span>
+#include <warcpp/warcpp.hpp>
 
 #include "ds2i_config.hpp"
 #include "filesystem.hpp"
@@ -16,14 +16,13 @@
 #include "temporary_directory.hpp"
 
 using namespace boost::filesystem;
+using namespace pisa;
 
 TEST_CASE("Batch file name", "[parsing][forward_index]")
 {
     std::string basename = "basename";
-    REQUIRE(pisa::Forward_Index_Builder<pisa::Plaintext_Record>::batch_file(basename, 0) ==
-            basename + ".batch.0");
-    REQUIRE(pisa::Forward_Index_Builder<pisa::Plaintext_Record>::batch_file(basename, 10) ==
-            basename + ".batch.10");
+    REQUIRE(Forward_Index_Builder::batch_file(basename, 0) == basename + ".batch.0");
+    REQUIRE(Forward_Index_Builder::batch_file(basename, 10) == basename + ".batch.10");
 }
 
 TEST_CASE("Write document to stream", "[parsing][forward_index]")
@@ -36,8 +35,7 @@ TEST_CASE("Write document to stream", "[parsing][forward_index]")
            4, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
          {{}, {0, 0, 0, 0}}}));
     WHEN("List of term IDs is written to stream") {
-        pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_document(
-            os, term_ids.begin(), term_ids.end());
+        Forward_Index_Builder::write_document(os, term_ids.begin(), term_ids.end());
         THEN("Encoded sequence is " << encoded_sequence) { REQUIRE(os.str() == encoded_sequence); }
     }
 }
@@ -52,7 +50,7 @@ TEST_CASE("Write header", "[parsing][forward_index]")
          {10, {1, 0, 0, 0, 10, 0, 0, 0}}}));
     GIVEN("Document count is " << document_count)
     WHEN("Header is written to stream") {
-        pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_header(os, document_count);
+        Forward_Index_Builder::write_header(os, document_count);
         THEN("Encoded header is " << encoded_header) { REQUIRE(os.str() == encoded_header); }
     }
 }
@@ -91,19 +89,20 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
     auto identity = [](std::string const &term) -> std::string { return term; };
 
     GIVEN("a few test records") {
-        std::vector<pisa::Plaintext_Record> records{
-            {"Doc10", "lorem ipsum dolor sit amet consectetur adipiscing elit"},
-            {"Doc11", "integer rutrum felis et sagittis dapibus"},
-            {"Doc12", "vivamus ac velit nec purus molestie tincidunt"},
-            {"Doc13", "vivamus eu quam vitae lacus porta tempus quis eu metus"},
-            {"Doc14", "curabitur a justo vitae turpis feugiat molestie eu ac nunc"}};
+        std::vector<Document_Record> records{
+            Plaintext_Record{"Doc10", "lorem ipsum dolor sit amet consectetur adipiscing elit"},
+            Plaintext_Record{"Doc11", "integer rutrum felis et sagittis dapibus"},
+            Plaintext_Record{"Doc12", "vivamus ac velit nec purus molestie tincidunt"},
+            Plaintext_Record{"Doc13", "vivamus eu quam vitae lacus porta tempus quis eu metus"},
+            Plaintext_Record{"Doc14",
+                             "curabitur a justo vitae turpis feugiat molestie eu ac nunc"}};
         WHEN("write a batch to temp directory") {
             Temporary_Directory tmpdir;
             auto output_file = tmpdir.path() / "fwd";
-            pisa::Forward_Index_Builder<pisa::Plaintext_Record>::Batch_Process bp{
-                7, records, pisa::Document_Id{10}, output_file.string()};
-            pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
-            builder.run(bp, identity, pisa::parse_plaintext_content);
+            Forward_Index_Builder::Batch_Process bp{
+                7, records, Document_Id{10}, output_file.string()};
+            Forward_Index_Builder builder;
+            builder.run(bp, identity, parse_plaintext_content);
             THEN("documents are in check") {
                 std::vector<std::string> expected_documents{
                     "Doc10", "Doc11", "Doc12", "Doc13", "Doc14"};
@@ -122,7 +121,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
                 REQUIRE(terms == expected_terms);
             }
             THEN("term IDs") {
-                pisa::binary_collection coll((output_file.string() + ".batch.7").c_str());
+                binary_collection coll((output_file.string() + ".batch.7").c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
                     auto seq = *seq_iter;
@@ -140,20 +139,19 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
     }
 }
 
-void write_batch(std::string const &                       basename,
-                 std::vector<std::string> const &          documents,
-                 std::vector<std::string> const &          terms,
+void write_batch(std::string const &basename,
+                 std::vector<std::string> const &documents,
+                 std::vector<std::string> const &terms,
                  std::vector<std::vector<uint32_t>> const &collection)
 {
     std::string document_file = basename + ".documents";
-    std::string term_file     = basename + ".terms";
+    std::string term_file = basename + ".terms";
     write_lines(document_file, gsl::make_span(documents));
     write_lines(term_file, gsl::make_span(terms));
     std::ofstream os(basename);
-    pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_header(os, collection.size());
-    for (auto const& seq : collection) {
-        pisa::Forward_Index_Builder<pisa::Plaintext_Record>::write_document(
-            os, seq.begin(), seq.end());
+    Forward_Index_Builder::write_header(os, collection.size());
+    for (auto const &seq : collection) {
+        Forward_Index_Builder::write_document(os, seq.begin(), seq.end());
     }
 }
 
@@ -161,8 +159,10 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
 {
     Temporary_Directory tmpdir;
     auto dir = tmpdir.path();
-    GIVEN("Three batches on disk") {
-        std::vector<path> batch_paths{dir / "fwd.batch.0", dir / "fwd.batch.1", dir / "fwd.batch.2"};
+    GIVEN("Three batches on disk")
+    {
+        std::vector<path> batch_paths{
+            dir / "fwd.batch.0", dir / "fwd.batch.1", dir / "fwd.batch.2"};
         write_batch(batch_paths[0].string(),
                     {"Doc10", "Doc11"},
                     {"lorem",
@@ -214,7 +214,7 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
 
         WHEN("Merging function is called") {
             auto output_file = (dir / "fwd").string();
-            pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
+            Forward_Index_Builder builder;
             builder.merge(output_file, 5, 3);
 
             THEN("documents are in check") {
@@ -235,7 +235,7 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
                 REQUIRE(terms == expected_terms);
             }
             THEN("term IDs") {
-                pisa::binary_collection coll((output_file).c_str());
+                binary_collection coll((output_file).c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
                     auto seq = *seq_iter;
@@ -252,24 +252,27 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
         }
     }
 }
+
 TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
 {
     std::vector<std::string> vec;
     auto map_word = [&](std::string &&word) { vec.push_back(word); };
-    SECTION("empty") {
-        pisa::parse_html_content("<a/>", map_word);
+    SECTION("empty")
+    {
+        parse_html_content("<a/>", map_word);
         REQUIRE(vec == std::vector<std::string>{});
     }
-    SECTION("non-empty") {
-        pisa::parse_html_content("<a>lorem</a>ipsum", map_word);
+    SECTION("non-empty")
+    {
+        parse_html_content("<a>lorem</a>ipsum", map_word);
         REQUIRE(vec == std::vector<std::string>{"lorem", "ipsum"});
     }
 }
 
 [[nodiscard]] auto load_term_map(std::string const& basename) -> std::vector<std::string> {
     std::vector<std::string> map;
-    std::ifstream            is(basename + ".terms");
-    std::string              str;
+    std::ifstream is(basename + ".terms");
+    std::string str;
     while (std::getline(is, str)) {
         map.push_back(str);
     }
@@ -278,8 +281,8 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
 
 TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
 {
-    auto next_record = [](std::istream &in) -> std::optional<pisa::Plaintext_Record> {
-        pisa::Plaintext_Record record;
+    auto next_record = [](std::istream &in) -> std::optional<Document_Record> {
+        Plaintext_Record record;
         if (in >> record) {
             return record;
         }
@@ -297,24 +300,24 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
             std::string output = (dir / "fwd").string();
 
             std::ifstream is(input);
-            pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
+            Forward_Index_Builder builder;
             builder.build(
                 is,
                 output,
                 next_record,
                 [](std::string &&term) -> std::string { return std::forward<std::string>(term); },
-                pisa::parse_plaintext_content,
+                parse_plaintext_content,
                 batch_size,
                 thread_count);
 
             THEN("The collection mapped to terms matches input") {
                 auto term_map = load_term_map(output);
-                pisa::binary_collection coll((output).c_str());
+                binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 REQUIRE(*seq_iter->begin() == 10000);
                 ++seq_iter;
                 std::ifstream plain_is(input);
-                std::optional<pisa::Plaintext_Record> record = std::nullopt;
+                std::optional<Document_Record> record = std::nullopt;
                 while ((record = next_record(plain_is)).has_value()) {
                     std::vector<std::string> original_body;
                     std::istringstream content_stream(record->content());
@@ -329,87 +332,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     REQUIRE(produced_body == original_body);
                     ++seq_iter;
                 }
-                auto batch_files = pisa::ls(dir, [](auto const &filename) {
-                    return filename.find("batch") != std::string::npos;
-                });
-                REQUIRE(batch_files.empty());
-            }
-        }
-    }
-}
-
-TEST_CASE("Build forward index (WARC)", "[.][parsing][forward_index][integration]")
-{
-    auto next_record = [](std::istream &in) -> std::optional<warcpp::Warc_Record> {
-        warcpp::Warc_Record record;
-        if (read_warc_record(in, record)) {
-            return std::make_optional(record);
-        }
-        return std::nullopt;
-    };
-    auto process_term = [&](std::string &&term) -> std::string {
-        std::transform(term.begin(),
-                       term.end(),
-                       term.begin(),
-                       [](unsigned char c) { return std::tolower(c); });
-        return stem::Porter2{}.stem(term);
-    };
-    auto next_plain_record = [](std::istream &in) -> std::optional<pisa::Plaintext_Record> {
-        pisa::Plaintext_Record record;
-        if (in >> record) {
-            return record;
-        }
-        return std::nullopt;
-    };
-
-    GIVEN("A plaintext collection file") {
-        std::string input(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.warc");
-        REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
-        int thread_count = 2;
-        int batch_size   = 123;
-        WHEN("Build a forward index") {
-            Temporary_Directory tmpdir;
-            auto dir = tmpdir.path();
-            std::string output = (dir / "fwd").string();
-
-            std::ifstream is(input);
-            pisa::Forward_Index_Builder<warcpp::Warc_Record> builder;
-            builder.build(is,
-                          output,
-                          next_record,
-                          process_term,
-                          pisa::parse_html_content,
-                          batch_size,
-                          thread_count);
-
-            THEN("The collection mapped to terms matches input") {
-                auto term_map = load_term_map(output);
-                pisa::binary_collection coll((output).c_str());
-                auto seq_iter = coll.begin();
-                CHECK(*seq_iter->begin() == 10000);
-                ++seq_iter;
-                std::ifstream plain_is(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
-                std::ifstream doc_is(output + ".documents");
-                std::optional<pisa::Plaintext_Record> record = std::nullopt;
-                while ((record = next_plain_record(plain_is)).has_value()) {
-                    std::string doc;
-                    std::getline(doc_is, doc);
-                    REQUIRE(doc == record->trecid());
-                    std::vector<std::string> original_body;
-                    std::istringstream content_stream(record->content());
-                    std::string term;
-                    while (content_stream >> term) {
-                        original_body.push_back(std::move(term));
-                    }
-                    std::vector<std::string> produced_body;
-                    for (auto term_id : *seq_iter) {
-                        produced_body.push_back(term_map[term_id]);
-                    }
-                    std::cerr << doc << '\n';
-                    CHECK(produced_body == original_body);
-                    ++seq_iter;
-                }
-                auto batch_files = pisa::ls(dir, [](auto const &filename) {
+                auto batch_files = ls(dir, [](auto const &filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());
