@@ -30,7 +30,7 @@ using posting_vector_type = std::vector<std::pair<Term_Id, Document_Id>>;
 using iterator_type       = decltype(std::declval<posting_vector_type>().begin());
 using index_type          = invert::Inverted_Index<iterator_type>;
 
-[[nodiscard]] auto next_plaintext_record(std::istream &in) -> std::optional<pisa::Plaintext_Record>
+[[nodiscard]] auto next_plaintext_record(std::istream &in) -> std::optional<Document_Record>
 {
     pisa::Plaintext_Record record;
     if (in >> record) {
@@ -87,7 +87,7 @@ void build_fwd_index(std::string const &output)
 {
     std::string input(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
     std::ifstream is(input);
-    pisa::Forward_Index_Builder<pisa::Plaintext_Record> builder;
+    pisa::Forward_Index_Builder builder;
     builder.build(is,
                   output,
                   next_plaintext_record,
