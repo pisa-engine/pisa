@@ -69,6 +69,7 @@ matrix:
       osx_image: xcode10.1
       compiler: clang
       env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
+    - os: windows
 
 # Install dependencies
 before_install:
