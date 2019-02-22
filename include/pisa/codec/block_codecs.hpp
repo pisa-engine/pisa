@@ -144,7 +144,7 @@ namespace pisa {
                        bufptr + ceil_div(bw.size(), 8));
         }
 
-        static uint8_t const* DS2I_NOINLINE decode(uint8_t const* in, uint32_t* out,
+        static uint8_t const* PISA_NOINLINE decode(uint8_t const* in, uint32_t* out,
                                                  uint32_t sum_of_values, size_t n)
         {
             assert(n <= block_size);
@@ -226,13 +226,13 @@ namespace pisa {
             out.insert(out.end(), buf.data(), buf.data() + out_len);
         }
 
-        static uint8_t const* DS2I_NOINLINE decode(uint8_t const* in, uint32_t* out,
+        static uint8_t const* PISA_NOINLINE decode(uint8_t const* in, uint32_t* out,
                                                  uint32_t sum_of_values, size_t n)
         {
             thread_local codec_type optpfor_codec; // pfor decoding is *not* thread-safe
             assert(n <= block_size);
 
-            if (DS2I_UNLIKELY(n < block_size)) {
+            if (PISA_UNLIKELY(n < block_size)) {
                 return interpolative_block::decode(in, out, sum_of_values, n);
             }
 
@@ -301,14 +301,14 @@ namespace pisa {
             out.insert(out.end(), buf.data(), buf.data() + out_len);
         }
 
-        // we only allow varint to be inlined (others have DS2I_NOILINE)
+        // we only allow varint to be inlined (others have PISA_NOILINE)
         static uint8_t const* decode(uint8_t const* in, uint32_t* out,
                                      uint32_t sum_of_values, size_t n)
         {
             static codec_type varint_codec; // decodeBlock is thread-safe
             assert(n <= block_size);
 
-            if (DS2I_UNLIKELY(n < block_size)) {
+            if (PISA_UNLIKELY(n < block_size)) {
                 return interpolative_block::decode(in, out, sum_of_values, n);
             }
 

@@ -1,0 +1,3 @@
+#pragma once
+
+#define PISA_SOURCE_DIR "@PISA_SOURCE_DIR@"

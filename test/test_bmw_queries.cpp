@@ -3,7 +3,7 @@
 
 #include "test_common.hpp"
 
-#include "ds2i_config.hpp"
+#include "pisa_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
 
@@ -17,8 +17,8 @@ struct index_initialization {
     typedef wand_data<bm25, wand_data_raw<bm25>>                                  WandTypePlain;
 
     index_initialization()
-        : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection"),
-          document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes"),
+        : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
+          document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
@@ -41,7 +41,7 @@ struct index_initialization {
         builder.build(index);
 
         term_id_vec   q;
-        std::ifstream qfile(DS2I_SOURCE_DIR "/test/test_data/queries");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         while (read_query(q, qfile))
             queries.push_back(q);
     }

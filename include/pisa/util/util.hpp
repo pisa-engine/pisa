@@ -13,15 +13,15 @@
 
 #include "util/broadword.hpp"
 
-#define DS2I_LIKELY(x) __builtin_expect(!!(x), 1)
-#define DS2I_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#define DS2I_NOINLINE __attribute__((noinline))
-#define DS2I_ALWAYSINLINE __attribute__((always_inline))
+#define PISA_LIKELY(x) __builtin_expect(!!(x), 1)
+#define PISA_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#define PISA_NOINLINE __attribute__((noinline))
+#define PISA_ALWAYSINLINE __attribute__((always_inline))
 
 #if defined(__GNUC__) && !defined(__clang__)
-#define DS2I_FLATTEN_FUNC  __attribute__((always_inline,flatten))
+#define PISA_FLATTEN_FUNC  __attribute__((always_inline,flatten))
 #else
-#    define DS2I_FLATTEN_FUNC DS2I_ALWAYSINLINE
+#    define PISA_FLATTEN_FUNC PISA_ALWAYSINLINE
 #endif
 
 namespace pisa {

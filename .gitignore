@@ -2,7 +2,7 @@
 
 build/
 data/
-ds2i_config.hpp
+pisa_config.hpp
 
 # Python junk
 *.pyc

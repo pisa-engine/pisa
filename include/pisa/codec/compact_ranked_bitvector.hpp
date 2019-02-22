@@ -49,7 +49,7 @@ namespace pisa {
             uint64_t end;
         };
 
-        static DS2I_FLATTEN_FUNC uint64_t
+        static PISA_FLATTEN_FUNC uint64_t
         bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
         {
             return offsets(0, universe, n, params).end;
@@ -136,9 +136,9 @@ namespace pisa {
 
                 // optimize small forward skips
                 uint64_t skip = position - m_position;
-                if (DS2I_LIKELY(position > m_position && skip <= linear_scan_threshold)) {
+                if (PISA_LIKELY(position > m_position && skip <= linear_scan_threshold)) {
                     m_position = position;
-                    if (DS2I_UNLIKELY(m_position == size())) {
+                    if (PISA_UNLIKELY(m_position == size())) {
                         m_value = m_of.universe;
                     } else {
                         bit_vector::unary_enumerator he = m_enumerator;
@@ -162,14 +162,14 @@ namespace pisa {
                 }
 
                 uint64_t diff = lower_bound - m_value;
-                if (DS2I_LIKELY(lower_bound > m_value
+                if (PISA_LIKELY(lower_bound > m_value
                            && diff <= linear_scan_threshold)) {
                     // optimize small skips
                     bit_vector::unary_enumerator he = m_enumerator;
                     uint64_t val;
                     do {
                         m_position += 1;
-                        if (DS2I_LIKELY(m_position < size())) {
+                        if (PISA_LIKELY(m_position < size())) {
                             val = he.next() - m_of.bits_offset;
                         } else {
                             m_position = size();
@@ -191,7 +191,7 @@ namespace pisa {
                 m_position += 1;
                 assert(m_position <= size());
 
-                if (DS2I_LIKELY(m_position < size())) {
+                if (PISA_LIKELY(m_position < size())) {
                     m_value = read_next();
                 } else {
                     m_value = m_of.universe;
@@ -211,7 +211,7 @@ namespace pisa {
                 }
 
                 uint64_t pos = 0;
-                if (DS2I_LIKELY(m_position < size())) {
+                if (PISA_LIKELY(m_position < size())) {
                     pos = m_bv->predecessor1(m_enumerator.position() - 1);
                 } else {
                     pos = m_bv->predecessor1(m_of.end - 1);
@@ -222,10 +222,10 @@ namespace pisa {
 
         private:
 
-            value_type DS2I_NOINLINE slow_move(uint64_t position)
+            value_type PISA_NOINLINE slow_move(uint64_t position)
             {
                 uint64_t skip = position - m_position;
-                if (DS2I_UNLIKELY(position == size())) {
+                if (PISA_UNLIKELY(position == size())) {
                     m_position = position;
                     m_value = m_of.universe;
                     return value();
@@ -252,11 +252,11 @@ namespace pisa {
             }
 
 
-            value_type DS2I_NOINLINE slow_next_geq(uint64_t lower_bound)
+            value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
             {
                 using broadword::popcount;
 
-                if (DS2I_UNLIKELY(lower_bound >= m_of.universe)) {
+                if (PISA_UNLIKELY(lower_bound >= m_of.universe)) {
                     return move(size());
                 }
 

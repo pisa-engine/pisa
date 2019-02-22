@@ -9,7 +9,7 @@
 #include <gsl/span>
 #include <warcpp/warcpp.hpp>
 
-#include "ds2i_config.hpp"
+#include "pisa_config.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
 #include "parsing/html.hpp"
@@ -290,7 +290,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
     };
 
     GIVEN("A plaintext collection file") {
-        std::string input(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
+        std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
         REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
         int thread_count = GENERATE(2, 8);
         int batch_size   = GENERATE(123, 10000);

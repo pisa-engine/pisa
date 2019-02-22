@@ -40,20 +40,20 @@ namespace pisa {
     private:
         configuration()
         {
-            fillvar("DS2I_K", k, 10);
-            fillvar("DS2I_BLOCK_SIZE", block_size, 5);
-            fillvar("DS2I_EPS1", eps1, 0.03);
-            fillvar("DS2I_EPS2", eps2, 0.3);
-            fillvar("DS2I_EPS3", eps3, 0.01);
-            fillvar("DS2I_FIXCOST", fix_cost, 64);
-            fillvar("DS2I_LOG_PART", log_partition_size, 7);
-            fillvar("DS2I_THRESHOLD_WAND_LIST", threshold_wand_list, 0);
-            fillvar("DS2I_THREADS", worker_threads, std::thread::hardware_concurrency());
-            fillvar("DS2I_HEURISTIC_GREEDY", heuristic_greedy, false);
-            fillvar("DS2I_FIXED_COST_WAND_PARTITION", fixed_cost_wand_partition, 12.0);
-            fillvar("DS2I_EPS1_WAND", eps1_wand, 0.01);
-            fillvar("DS2I_EPS2_WAND", eps2_wand, 0.4);
-            fillvar("DS2I_SCORE_REFERENCES_SIZE", reference_size, 128);
+            fillvar("PISA_K", k, 10);
+            fillvar("PISA_BLOCK_SIZE", block_size, 5);
+            fillvar("PISA_EPS1", eps1, 0.03);
+            fillvar("PISA_EPS2", eps2, 0.3);
+            fillvar("PISA_EPS3", eps3, 0.01);
+            fillvar("PISA_FIXCOST", fix_cost, 64);
+            fillvar("PISA_LOG_PART", log_partition_size, 7);
+            fillvar("PISA_THRESHOLD_WAND_LIST", threshold_wand_list, 0);
+            fillvar("PISA_THREADS", worker_threads, std::thread::hardware_concurrency());
+            fillvar("PISA_HEURISTIC_GREEDY", heuristic_greedy, false);
+            fillvar("PISA_FIXED_COST_WAND_PARTITION", fixed_cost_wand_partition, 12.0);
+            fillvar("PISA_EPS1_WAND", eps1_wand, 0.01);
+            fillvar("PISA_EPS2_WAND", eps2_wand, 0.4);
+            fillvar("PISA_SCORE_REFERENCES_SIZE", reference_size, 128);
         }
 
         template <typename T, typename T2>
