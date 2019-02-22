@@ -10,8 +10,9 @@ struct or_query {
 
     or_query(uint64_t max_docid) :   m_max_docid(max_docid) {}
 
-    template<typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors) const {
+    template<typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors) const {
+        using Cursor = typename CursorRange::value_type;
         if (cursors.empty())
             return 0;
 
@@ -28,7 +29,7 @@ struct or_query {
             uint64_t next_doc = m_max_docid;
             for (size_t i = 0; i < cursors.size(); ++i) {
                 if (cursors[i].docid() == cur_doc) {
-                    if (with_freqs) {
+                    if constexpr (with_freqs) {
                         do_not_optimize_away(cursors[i].freq());
                     }
                     cursors[i].next();

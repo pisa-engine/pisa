@@ -12,8 +12,9 @@ struct ranked_and_query {
     ranked_and_query(uint64_t k, uint64_t max_docid)
         : m_topk(k), m_max_docid(max_docid) {}
 
-    template <typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors) {
+    template <typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors) {
+        using Cursor = typename CursorRange::value_type;
         size_t results = 0;
         m_topk.clear();
         if (cursors.empty())

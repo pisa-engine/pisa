@@ -10,8 +10,9 @@ struct and_query {
 
     and_query(uint64_t max_docid) : m_max_docid(max_docid) {}
 
-    template<typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors) const {
+    template<typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors) const {
+        using Cursor = typename CursorRange::value_type;
         if (cursors.empty())
             return 0;
 
@@ -43,7 +44,7 @@ struct and_query {
             if (i == ordered_cursors.size()) {
                 results += 1;
 
-                if (with_freqs) {
+                if constexpr (with_freqs) {
                     for (i = 0; i < ordered_cursors.size(); ++i) {
                         do_not_optimize_away(ordered_cursors[i]->freq());
                     }

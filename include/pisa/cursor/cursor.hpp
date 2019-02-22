@@ -7,15 +7,14 @@ namespace pisa {
 
 template <typename Index>
 [[nodiscard]] auto make_cursors(Index const &index, term_id_vec terms) {
-    auto query_term_freqs = query_freqs(terms);
-    typedef typename Index::document_enumerator cursor;
+    remove_duplicate_terms(terms);
+    using cursor          = typename Index::document_enumerator;
 
     std::vector<cursor> cursors;
-    cursors.reserve(query_term_freqs.size());
+    cursors.reserve(terms.size());
+    std::transform(terms.begin(), terms.end(), std::back_inserter(cursors),
+                   [&](auto &&term) { return index[term]; });
 
-    for (auto term : query_term_freqs) {
-        cursors.push_back(index[term.first]);
-    }
     return cursors;
 }
 

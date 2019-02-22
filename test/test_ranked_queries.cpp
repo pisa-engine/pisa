@@ -15,8 +15,8 @@ namespace pisa { namespace test {
 
     struct index_initialization {
 
-        typedef single_index IndexType;
-        typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
+        using IndexType = single_index;
+        using WandType = wand_data<bm25, wand_data_raw<bm25>>;
         index_initialization()
             : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection")
             , document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes")

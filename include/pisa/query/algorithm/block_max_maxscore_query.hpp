@@ -12,8 +12,9 @@ struct block_max_maxscore_query {
     block_max_maxscore_query(uint64_t k, uint64_t max_docid)
         : m_topk(k), m_max_docid(max_docid) {}
 
-    template<typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors) {
+    template<typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors) {
+        using Cursor = typename CursorRange::value_type;
         m_topk.clear();
         if (cursors.empty())
             return 0;

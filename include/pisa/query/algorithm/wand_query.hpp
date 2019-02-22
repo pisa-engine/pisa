@@ -15,8 +15,9 @@ struct wand_query {
     wand_query(uint64_t k, uint64_t max_docid)
         : m_topk(k), m_max_docid(max_docid) {}
 
-    template<typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors) {
+    template<typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors) {
+        using Cursor = typename CursorRange::value_type;
         m_topk.clear();
         if (cursors.empty())
             return 0;
@@ -75,8 +76,7 @@ struct wand_query {
             } else {
                 // no match, move farthest list up to the pivot
                 uint64_t next_list = pivot;
-                for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list)
-                    ;
+                for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list) {}
                 ordered_cursors[next_list]->docs_enum.next_geq(pivot_id);
                 // bubble down the advanced list
                 for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {

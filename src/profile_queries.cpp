@@ -94,7 +94,6 @@ void profile(const std::string index_filename,
         if (t == "and") {
             query_fun = [&](term_id_vec terms){
                 and_query<false> and_q(index.num_docs());
-                remove_duplicate_terms(terms);
                 return and_q(make_cursors<typename add_profiling<IndexType>::type>(index, terms));
             };
         } else if (t == "ranked_and" && wand_data_filename) {

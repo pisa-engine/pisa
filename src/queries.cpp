@@ -126,25 +126,21 @@ void perftest(const std::string &index_filename,
         if (t == "and") {
             query_fun = [&](term_id_vec terms){
                 and_query<false> and_q(index.num_docs());
-                remove_duplicate_terms(terms);
                 return and_q(make_cursors(index, terms));
             };
         } else if (t == "and_freq") {
             query_fun = [&](term_id_vec terms){
                 and_query<true> and_q(index.num_docs());
-                remove_duplicate_terms(terms);
                 return and_q(make_cursors(index, terms));
             };
         } else if (t == "or") {
             query_fun = [&](term_id_vec terms){
                 or_query<false> or_q(index.num_docs());
-                remove_duplicate_terms(terms);
                 return or_q(make_cursors(index, terms));
             };
         } else if (t == "or_freq") {
             query_fun = [&](term_id_vec terms){
                 or_query<true> or_q(index.num_docs());
-                remove_duplicate_terms(terms);
                 return or_q(make_cursors(index, terms));
             };
         } else if (t == "wand" && wand_data_filename) {
