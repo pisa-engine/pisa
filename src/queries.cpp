@@ -15,6 +15,10 @@
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include "cursor/cursor.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -120,28 +124,60 @@ void perftest(const std::string &index_filename,
         spdlog::info("Query type: {}", t);
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            query_fun = and_query<IndexType, false>(index);
+            query_fun = [&](term_id_vec terms){
+                and_query<false> and_q(index.num_docs());
+                return and_q(make_cursors(index, terms));
+            };
         } else if (t == "and_freq") {
-            query_fun = and_query<IndexType, true>(index);
+            query_fun = [&](term_id_vec terms){
+                and_query<true> and_q(index.num_docs());
+                return and_q(make_cursors(index, terms));
+            };
         } else if (t == "or") {
-            query_fun = or_query<IndexType, false>(index);
+            query_fun = [&](term_id_vec terms){
+                or_query<false> or_q(index.num_docs());
+                return or_q(make_cursors(index, terms));
+            };
         } else if (t == "or_freq") {
-            query_fun = or_query<IndexType, true>(index);
+            query_fun = [&](term_id_vec terms){
+                or_query<true> or_q(index.num_docs());
+                return or_q(make_cursors(index, terms));
+            };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = wand_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                wand_query wand_q(k, index.num_docs());
+                return wand_q(make_max_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun =block_max_wand_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                block_max_wand_query block_max_wand_q(k, index.num_docs());
+                return block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = block_max_maxscore_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                block_max_maxscore_query block_max_maxscore_q(k, index.num_docs());
+                return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms));
+            };
         }  else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = ranked_or_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                ranked_or_query ranked_or_q(k, index.num_docs());
+                return ranked_or_q(make_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                maxscore_query maxscore_q(k, index.num_docs());
+                return maxscore_q(make_max_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
+            ranked_or_taat_query<Simple_Accumulator> ranked_or_taat_q(k, index.num_docs());
+            query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
+                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
+            };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            query_fun =
-                pisa::make_ranked_or_taat_query<pisa::Lazy_Accumulator<4>>(index, wdata, k);
+            ranked_or_taat_query<Lazy_Accumulator<4>> ranked_or_taat_q(k, index.num_docs());
+            query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
+                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
+            };
         } else {
             spdlog::error("Unsupported query type: {}", t);
             break;

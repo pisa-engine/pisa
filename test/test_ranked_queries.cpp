@@ -7,19 +7,22 @@
 #include "index_types.hpp"
 #include "query/queries.hpp"
 #include "accumulator/lazy_accumulator.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
 
 namespace pisa { namespace test {
 
     struct index_initialization {
 
-        typedef single_index index_type;
-        typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
+        using IndexType = single_index;
+        using WandType = wand_data<bm25, wand_data_raw<bm25>>;
         index_initialization()
             : collection(PISA_SOURCE_DIR "/test/test_data/test_collection")
             , document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes")
             , wdata(document_sizes.begin()->begin(), collection.num_docs(), collection)
         {
-            index_type::builder builder(collection.num_docs(), params);
+            IndexType::builder builder(collection.num_docs(), params);
             for (auto const& plist: collection) {
                 uint64_t freqs_sum = std::accumulate(plist.freqs.begin(),
                                                      plist.freqs.end(), uint64_t(0));
@@ -42,19 +45,19 @@ namespace pisa { namespace test {
         global_parameters params;
         binary_freq_collection collection;
         binary_collection document_sizes;
-        index_type index;
+        IndexType index;
         std::vector<term_id_vec> queries;
         std::vector<float> thresholds;
         WandType wdata;
 
-        template <typename QueryOp>
-        void test_against_or(QueryOp &op_q) const
+        template <typename QueryFun>
+        void test_against_or(QueryFun &query_fun) const
         {
-            ranked_or_query<index_type, WandType> or_q(index, wdata, 10);
+            ranked_or_query or_q(10, index.num_docs());
 
             for (auto const& q: queries) {
-                or_q(q);
-                op_q(q);
+                or_q(make_scored_cursors(index, wdata, q));
+                auto op_q = query_fun(q);
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     REQUIRE(or_q.topk()[i].first ==
@@ -65,12 +68,12 @@ namespace pisa { namespace test {
 
         void test_k_size() const
         {
-            ranked_or_query<index_type, WandType> or_10(index, wdata, 10);
-            ranked_or_query<index_type, WandType> or_1(index, wdata, 1);
+            ranked_or_query or_10(10, index.num_docs());
+            ranked_or_query or_1(1, index.num_docs());
 
             for (auto const &q : queries) {
-                or_10(q);
-                or_1(q);
+                or_10(make_scored_cursors(index, wdata, q));
+                or_1(make_scored_cursors(index, wdata, q));
                 if (not or_10.topk().empty()) {
                     REQUIRE(not or_1.topk().empty());
                     REQUIRE(or_1.topk().front().first ==
@@ -84,38 +87,55 @@ namespace pisa { namespace test {
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
 {
-    pisa::wand_query<index_type, WandType> wand_q(index, wdata, 10);
-    test_against_or(wand_q);
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::wand_query wand_q(10, index.num_docs());
+        wand_q(make_max_scored_cursors(index, wdata, terms));
+        return wand_q;
+    };
+    test_against_or(query_fun);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "maxscore")
 {
-    pisa::maxscore_query<index_type, WandType> maxscore_q(index, wdata, 10);
-    test_against_or(maxscore_q);
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::maxscore_query maxscore_q(10, index.num_docs());
+        maxscore_q(make_max_scored_cursors(index, wdata, terms));
+        return maxscore_q;
+    };
+    test_against_or(query_fun);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_maxscore")
 {
-    pisa::block_max_maxscore_query<index_type, WandType> bmm_q(index, wdata, 10);
-    test_against_or(bmm_q);
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::block_max_maxscore_query block_max_maxscore_q(10, index.num_docs());
+        block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms));
+        return block_max_maxscore_q;
+    };
+    test_against_or(query_fun);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat")
 {
 
-    pisa::ranked_or_taat_query<index_type, WandType, pisa::Simple_Accumulator> ranked_or_taat_q(
-        index, wdata, 10);
-    test_against_or(ranked_or_taat_q);
+    pisa::ranked_or_taat_query<pisa::Simple_Accumulator> ranked_or_taat_q(10, index.num_docs());
+    auto query_fun = [&, ranked_or_taat_q](pisa::term_id_vec terms) mutable {
+        ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
+        return ranked_or_taat_q;
+    };
+    test_against_or(query_fun);
 }
 
 TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
 {
-    pisa::ranked_or_taat_query<index_type, WandType, pisa::Lazy_Accumulator<8>> ranked_or_taat_q(
-        index, wdata, 10);
-    test_against_or(ranked_or_taat_q);
+    pisa::ranked_or_taat_query<pisa::Lazy_Accumulator<4>> ranked_or_taat_q(10, index.num_docs());
+    auto query_fun = [&, ranked_or_taat_q](pisa::term_id_vec terms) mutable {
+        ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
+        return ranked_or_taat_q;
+    };
+    test_against_or(query_fun);
 }
 
-/// Issue #26 https://github.com/pisa-engine/pisa/issues/26
 TEST_CASE_METHOD(pisa::test::index_initialization, "topk_size_ranked_or")
 {
     test_k_size();
