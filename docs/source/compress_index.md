@@ -60,8 +60,12 @@ Partitioned Elias Fano
 
 QMX
 ---
-> Andrew Trotman. 2014. Compression, SIMD, and Postings Lists. In Proceedings of the 2014 Australasian Document Computing Symposium (ADCS '14), J. Shane Culpepper, Laurence Park, and Guido Zuccon (Eds.). ACM, New York, NY, USA, Pages 50, 8 pages. DOI: https://doi.org/10.1145/2682862.2682870
+Quantities, Multipliers, and eXtractor (QMX) packs as many integers as possible into 128-bit words (Quantities) and stores the selectors (eXtractors) separately in a different stream. The selectors are compressed (Multipliers) with
+RLE (Run-Length Encoding).
 
+To compress an index using QMX use the index type `block_qmx`.
+
+> Andrew Trotman. 2014. Compression, SIMD, and Postings Lists. In Proceedings of the 2014 Australasian Document Computing Symposium (ADCS '14), J. Shane Culpepper, Laurence Park, and Guido Zuccon (Eds.). ACM, New York, NY, USA, Pages 50, 8 pages. DOI: https://doi.org/10.1145/2682862.2682870
 
 SIMD-BP128
 ----------
