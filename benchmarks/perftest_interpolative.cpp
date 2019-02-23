@@ -5,6 +5,8 @@
 
 #include "util/util.hpp"
 #include "codec/block_codecs.hpp"
+#include "util/do_not_optimize_away.hpp"
+
 
 int main()
 {

@@ -5,9 +5,10 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "index_types.hpp"
 #include "util/util.hpp"
+#include "util/do_not_optimize_away.hpp"
 #include "dec_time_prediction.hpp"
 
 namespace pisa {

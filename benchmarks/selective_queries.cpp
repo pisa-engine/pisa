@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 
 #include "index_types.hpp"

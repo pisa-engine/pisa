@@ -9,7 +9,7 @@
 
 #include "mio/mmap.hpp"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "index_types.hpp"
 #include "wand_data_compressed.hpp"
 #include "query/queries.hpp"
