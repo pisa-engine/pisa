@@ -3,11 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-# Welcome to PISA
-
+Welcome to PISA
+===============
 
 Performant Indexes and Search for Academia
-## Description 
+Description 
+------------
 
 PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
 
