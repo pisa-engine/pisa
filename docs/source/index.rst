@@ -22,6 +22,9 @@ Some features of PISA are listed below:
 * Implementation of document reordering;
 * Free and open-source with permissive license;
 
+.. note:: PISA is still in its **initial release** and many new features are going to come in the next versions. Contributions are also welcome!
+
+
 .. toctree::	
    :maxdepth: 4	
    :caption: Contents:	
