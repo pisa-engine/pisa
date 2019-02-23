@@ -2,6 +2,7 @@
 
 # PISA: Performant Indexes and Search for Academia 
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d6e8ce050a5c42c1b38e4fc1af247a6d)](https://app.codacy.com/app/amallia/pisa?utm_source=github.com&utm_medium=referral&utm_content=pisa-engine/pisa&utm_campaign=Badge_Grade_Dashboard)
 [![Build Status](https://travis-ci.com/pisa-engine/pisa.svg?branch=master)](https://travis-ci.com/pisa-engine/pisa)
 [![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
 [![Documentation Status](https://readthedocs.org/projects/pisa/badge/?version=latest)](https://pisa.readthedocs.io/en/latest/?badge=latest)
