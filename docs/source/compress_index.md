@@ -28,9 +28,22 @@ perform a verification step to check the correctness of the index.
 Compression Algorithms
 ======================
 
-Interpolative
--------------
+Binary Interpolative Coding
+---------------------------
+Binary Interpolative Coding (BIC) directly encodes a monotonically increasing sequence. At each step of this recursive algorithm, the middle element *m* is encoded by a number *m − l − p*, where *l* is the lowest value and *p* is the position of *m* in the currently encoded sequence. Then we recursively encode the values to the left and right of *m*. BIC encodings are very space-efficient, particularly on
+clustered data; however, decoding is relatively slow.
+
+To compress an index using BIC use the index type `block_interpolative`.
+
 > Alistair Moffat, Lang Stuiver: Binary Interpolative Coding for Effective Index Compression. Inf. Retr. 3(1): 25-47 (2000)
+
+Elias-Fano
+----------
+Elias-Fano coding splits each number into two parts, a low part consisting of $$l = \lceil\log \frac{u}{n}\rceil$$ right-most bits, and a high part consisting of the remaining $$\lceil\log u\rceil - l$$ left-most bits.
+
+To compress an index using Elias-Fano use the index type `ef`.
+
+> Sebastiano Vigna. 2013. Quasi-succinct indices. In Proceedings of the sixth ACM international conference on Web search and data mining (WSDM ‘13). ACM, New York, NY, USA, 83-92.
 
 MaskedVByte
 -----------
