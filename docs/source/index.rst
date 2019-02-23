@@ -7,17 +7,3 @@ Welcome to PISA
 ===============
 
 Performant Indexes and Search for Academia
-
-
-.. toctree::
-   :maxdepth: 4
-   :caption: Contents:
-
-   getting_started
-   index_format
-   parsing
-   compress_index
-   query_index
-   document_reordering
-   
-   
