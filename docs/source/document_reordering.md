@@ -1,26 +1,24 @@
-Document Reordering
-===================
-
-Random Ordering
-===============
+# Document Reordering
 
 
-Recursive Graph Bisection
-============================
+## Random Ordering
+
+
+
+## Recursive Graph Bisection
+
 
 Recursive graph bisection algorithm used for inverted indexed reordering.
 
 
-Description
------------
+### Description
 
 Implementation of the *Recursive Graph Bisection* (aka *BP*) algorithm which is currently the state-of-the-art for minimizing the compressed space used by an inverted index (or graph) through document reordering.
 The  algorithm tries to minimize an objective function directly related to the number of bits needed to storea graph or an index using a delta-encoding scheme.
 
 >  L.  Dhulipala,  I.  Kabiljo,  B.  Karrer,  G.  Ottaviano,  S.  Pupyrev,  andA.  Shalita.   Compressing  graphs  and  indexes  with  recursive  graph  bisec-tion.  InProc. SIGKDD, pages 1535–1544, 2016.
 
-Usage
------
+### Usage
 
 ```
 Recursive graph bisection algorithm used for inverted indexed reordering.
