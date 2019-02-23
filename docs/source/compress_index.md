@@ -39,7 +39,7 @@ To compress an index using BIC use the index type `block_interpolative`.
 
 Elias-Fano
 ----------
-Given a monotonically increasing integer sequence *S* of size *n*, such that \(S_{n-1} < u\), we can encode it in binary using $\lceil\log u\rceil$ bits.
+Given a monotonically increasing integer sequence *S* of size *n*, such that \\(S_{n-1} < u\\), we can encode it in binary using $\lceil\log u\rceil$ bits.
 Elias-Fano coding splits each number into two parts, a low part consisting of $l = \lceil\log \frac{u}{n}\rceil$ right-most bits, and a high part consisting of the remaining $\lceil\log u\rceil - l$ left-most bits. The low parts are explicitly written in binary for all numbers, in a single stream of bits. The high parts are compressed by writing, in negative-unary form, the gaps between the high parts of consecutive numbers.
 
 To compress an index using Elias-Fano use the index type `ef`.
