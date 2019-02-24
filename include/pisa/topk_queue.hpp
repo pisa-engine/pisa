@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include "util/util.hpp"
+#include "util/likely.hpp"
 
 namespace pisa {
 
