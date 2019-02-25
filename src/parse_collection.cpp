@@ -3,6 +3,7 @@
 #include <CLI/CLI.hpp>
 #include <Porter2/Porter2.hpp>
 #include <boost/te.hpp>
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
 #include <warcpp/warcpp.hpp>
@@ -25,9 +26,21 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
     }
     if (type == "warc") {
         return [](std::istream &in) -> std::optional<Document_Record> {
-            warcpp::Warc_Record record;
-            if (warcpp::read_warc_record(in, record)) {
-                return std::make_optional<Document_Record>(record);
+            while (not in.eof()) {
+                auto record = warcpp::match(warcpp::read_subsequent_record(in),
+                                            [](warcpp::Record const &rec) {
+                                                if (not rec.valid_response()) {
+                                                    return std::optional<Document_Record>{};
+                                                }
+                                                return std::make_optional<Document_Record>(rec);
+                                            },
+                                            [](warcpp::Error const &error) {
+                                                spdlog::warn("Skipped invalid record: {}", error);
+                                                return std::optional<Document_Record>{};
+                                            });
+                if (record) {
+                    return record;
+                }
             }
             return std::nullopt;
         };
@@ -67,6 +80,17 @@ content_parser(std::optional<std::string> const &type) {
 
 int main(int argc, char **argv) {
 
+    auto valid_basename = [](std::string const &basename) {
+        boost::filesystem::path p(basename);
+        auto parent = p.parent_path();
+        if (not boost::filesystem::exists(parent) or not boost::filesystem::is_directory(parent)) {
+            return fmt::format("Basename {} invalid: path {} is not an existing directory",
+                               basename,
+                               parent.string());
+        }
+        return std::string();
+    };
+
     std::string input_basename;
     std::string output_filename;
     std::string format = "plaintext";
@@ -76,7 +100,9 @@ int main(int argc, char **argv) {
     std::optional<std::string> content_parser_type = std::nullopt;
 
     CLI::App app{"parse_collection - parse collection and store as forward index."};
-    app.add_option("-o,--output", output_filename, "Forward index filename")->required();
+    app.add_option("-o,--output", output_filename, "Forward index filename")
+        ->required()
+        ->check(valid_basename);
     app.add_option("-j,--threads", threads, "Thread count");
     app.add_option(
         "-b,--batch-size", batch_size, "Number of documents to process in one thread", true);
@@ -84,7 +110,6 @@ int main(int argc, char **argv) {
     app.add_option("--stemmer", stemmer, "Stemmer type");
     app.add_option("--content-parser", content_parser_type, "Content parser type");
     CLI11_PARSE(app, argc, argv);
-
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
 

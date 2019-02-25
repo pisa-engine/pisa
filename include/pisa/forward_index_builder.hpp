@@ -274,27 +274,20 @@ class Forward_Index_Builder {
         queue.set_capacity((threads - 1) * 2);
         while (true) {
             std::optional<Document_Record> record = std::nullopt;
-            try {
-                if (not (record = next_record(is))) {
-                    auto last_batch_size = record_batch.size();
-                    Batch_Process bp{
-                        batch_number, std::move(record_batch), first_document, output_file};
-                    queue.push(0);
-                    batch_group.run(
-                        [bp = std::move(bp), process_term, this, &queue, &process_content]() {
-                            run(std::move(bp), process_term, process_content);
-                            int x;
-                            queue.try_pop(x);
-                        });
-                    ++batch_number;
-                    first_document += last_batch_size;
-                    break;
-                }
-            } catch (warcpp::Warc_Format_Error &err) {
-                continue;
-            }
-            if (not record->valid()) {
-                continue;
+            if (not(record = next_record(is))) {
+                auto          last_batch_size = record_batch.size();
+                Batch_Process bp{
+                    batch_number, std::move(record_batch), first_document, output_file};
+                queue.push(0);
+                batch_group.run(
+                    [bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                        run(std::move(bp), process_term, process_content);
+                        int x;
+                        queue.try_pop(x);
+                    });
+                ++batch_number;
+                first_document += last_batch_size;
+                break;
             }
             record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
             if (record_batch.size() == batch_size) {
