@@ -12,13 +12,18 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/te.hpp>
+#include <pstl/algorithm>
+#include <pstl/execution>
+#include <range/v3/to_container.hpp>
 #include <range/v3/view/iota.hpp>
+#include <range/v3/view/transform.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task_group.h>
 
 #include "binary_collection.hpp"
+#include "io.hpp"
 #include "parsing/html.hpp"
 #include "warcpp/warcpp.hpp"
 
@@ -190,12 +195,22 @@ class Forward_Index_Builder {
                      bp.first_document + bp.records.size());
     }
 
-    void merge(std::string const &basename,
-               std::ptrdiff_t     document_count,
-               std::ptrdiff_t     batch_count) const
+    [[nodiscard]] static auto reverse_mapping(std::vector<std::string> &&terms)
+        -> std::unordered_map<std::string, Term_Id>
     {
-        using term_map_type =
-            std::map<std::string, std::unordered_map<std::ptrdiff_t, std::ptrdiff_t>>;
+        std::unordered_map<std::string, Term_Id> mapping;
+        Term_Id term_id{0};
+        for (std::string &term : terms) {
+            mapping.emplace(std::move(term), term_id);
+            ++term_id;
+        }
+        return mapping;
+    }
+
+    void merge(std::string const &basename,
+               std::ptrdiff_t document_count,
+               std::ptrdiff_t batch_count) const
+    {
         std::ofstream title_os(basename + ".documents");
         std::ofstream url_os(basename + ".urls");
         std::ofstream term_os(basename + ".terms");
@@ -211,36 +226,40 @@ class Forward_Index_Builder {
             url_os << url_is.rdbuf();
         }
 
-        spdlog::info("Mapping terms");
-        term_map_type term_map;
-        std::vector<std::vector<std::ptrdiff_t>> id_mappings(batch_count);
+        spdlog::info("Collecting terms");
+        std::vector<std::string> terms;
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            auto mid = terms.size();
             std::ifstream terms_is(batch_file(basename, batch) + ".terms");
             std::string term;
-            std::ptrdiff_t batch_term_id = 0;
             while (std::getline(terms_is, term)) {
-                term_map[term][batch] = batch_term_id++;
+                terms.push_back(term);
             }
-            id_mappings[batch].resize(batch_term_id);
+            std::sort(std::execution::par_unseq, std::next(terms.begin(), mid), terms.end());
+            std::inplace_merge(
+                std::execution::par, terms.begin(), std::next(terms.begin(), mid), terms.end());
         }
+        terms.erase(std::unique(std::execution::par, terms.begin(), terms.end()), terms.end());
+        terms.shrink_to_fit();
 
-        spdlog::info("Mapping IDs and writing terms");
-        std::ptrdiff_t term_id = 0;
-        for (auto const &[term, idmap] : term_map) {
-            term_os << term << '\n';
-            for (auto const &[batch, batch_term_id] : idmap) {
-                id_mappings[batch][batch_term_id] = term_id;
-            }
-            ++term_id;
-        }
+        spdlog::info("Writing terms");
+        for (auto const& term : terms) { term_os << term << '\n'; }
+
+        spdlog::info("Mapping terms");
+        auto term_mapping = reverse_mapping(std::move(terms));
 
         spdlog::info("Remapping IDs");
         for (auto batch : ranges::view::iota(0, batch_count)) {
-            auto &mapping = id_mappings[batch];
+            auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
+            std::vector<Term_Id> mapping(batch_terms.size());
+            std::transform(batch_terms.begin(),
+                           batch_terms.end(),
+                           mapping.begin(),
+                           [&](auto const &bterm) { return term_mapping[bterm]; });
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
-                    term_id = mapping[term_id];
+                    term_id = static_cast<std::ptrdiff_t>(mapping[term_id]);
                 }
             }
         }

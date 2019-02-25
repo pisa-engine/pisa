@@ -1,7 +1,7 @@
 ---
 AccessModifierOffset: -1
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
 AlignEscapedNewlinesLeft: true
 AlignTrailingComments: false
 AllowAllParametersOfDeclarationOnNextLine: true
@@ -12,7 +12,7 @@ AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBinaryOperators: false
-BreakBeforeBraces: Attach
+BreakBeforeBraces: WebKit
 BreakConstructorInitializersBeforeComma: false
 ColumnLimit:     100
 CommentPragmas:  '^@atd'
@@ -26,7 +26,7 @@ IndentCaseLabels: false
 IndentFunctionDeclarationAfterType: false
 IndentWidth:     4
 MaxEmptyLinesToKeep: 1
-NamespaceIndentation: None
+NamespaceIndentation: Inner
 ObjCSpaceBeforeProtocolList: false
 PenaltyBreakBeforeFirstCallParameter: 10
 PenaltyBreakComment: 60
