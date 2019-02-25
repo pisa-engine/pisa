@@ -6,6 +6,8 @@
 
 #include "global_parameters.hpp"
 #include "util/util.hpp"
+#include "util/compiler_attribute.hpp"
+#include "util/likely.hpp"
 
 namespace pisa {
 

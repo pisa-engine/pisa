@@ -8,7 +8,7 @@
 #include "boost/algorithm/string/predicate.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 #include "scorer/bm25.hpp"
 #include "configuration.hpp"

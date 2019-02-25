@@ -8,7 +8,7 @@
 #include "boost/lexical_cast.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 #include "stxxl/vector"
 #include "stxxl/io"

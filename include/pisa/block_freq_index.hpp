@@ -1,6 +1,6 @@
 #pragma once
 
-#include "succinct/mappable_vector.hpp"
+#include "mappable/mappable_vector.hpp"
 #include "bit_vector.hpp"
 
 #include "codec/compact_elias_fano.hpp"

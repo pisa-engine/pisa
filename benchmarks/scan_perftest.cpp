@@ -1,11 +1,12 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "sequence_collection.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
 #include "util/util.hpp"
+#include "util/do_not_optimize_away.hpp"
 
 using pisa::get_time_usecs;
 using pisa::do_not_optimize_away;

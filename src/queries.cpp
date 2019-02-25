@@ -6,7 +6,7 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 #include "index_types.hpp"
 #include "accumulator/lazy_accumulator.hpp"

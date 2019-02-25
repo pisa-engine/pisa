@@ -6,6 +6,8 @@
 #include "VarIntG8IU.h"
 #include "interpolative_coding.hpp"
 #include "util/util.hpp"
+#include "util/compiler_attribute.hpp"
+#include "util/likely.hpp"
 
 namespace pisa {
 

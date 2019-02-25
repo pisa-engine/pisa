@@ -5,7 +5,7 @@
 
 #include "mio/mmap.hpp"
 
-#include "succinct/mappable_vector.hpp"
+#include "mappable/mappable_vector.hpp"
 
 namespace pisa {
 namespace mapper {
