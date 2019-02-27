@@ -16,6 +16,12 @@ To parse a collection into a forward index, use `parse_collection` command:
       -f,--format TEXT=plaintext  Input format
       --stemmer TEXT              Stemmer type
       --content-parser TEXT       Content parser type
+      --debug                     Print debug messages
+
+      Subcommands:
+        merge                       Merge previously produced batch files.
+                                    When parsing process was killed during merging, use this
+                                    command to finish merging without having to restart building batches.
 
 For example:
 

@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
     ptrdiff_t   batch_size = 100'000;
     std::optional<std::string> stemmer = std::nullopt;
     std::optional<std::string> content_parser_type = std::nullopt;
+    bool debug = false;
 
     CLI::App app{"parse_collection - parse collection and store as forward index."};
     app.add_option("-o,--output", output_filename, "Forward index filename")
@@ -109,18 +110,38 @@ int main(int argc, char **argv) {
     app.add_option("-f,--format", format, "Input format", true);
     app.add_option("--stemmer", stemmer, "Stemmer type");
     app.add_option("--content-parser", content_parser_type, "Content parser type");
+    app.add_flag("--debug", debug, "Print debug messages");
+
+    size_t batch_count, document_count;
+    CLI::App *merge_cmd = app.add_subcommand("merge",
+                                             "Merge previously produced batch files. "
+                                             "When parsing process was killed during merging, "
+                                             "use this command to finish merging without "
+                                             "having to restart building batches.");
+    merge_cmd->add_option("--batch-count", batch_count, "Number of batches")->required();
+    merge_cmd->add_option("--document-count", document_count, "Number of documents")->required();
+
     CLI11_PARSE(app, argc, argv);
+
+    if (debug) {
+        spdlog::set_level(spdlog::level::debug);
+    }
+
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
 
     Forward_Index_Builder builder;
-    builder.build(std::cin,
-                  output_filename,
-                  record_parser(format),
-                  term_processor(stemmer),
-                  content_parser(content_parser_type),
-                  batch_size,
-                  threads);
+    if (merge_cmd) {
+        builder.merge(output_filename, document_count, batch_count);
+    } else {
+        builder.build(std::cin,
+                      output_filename,
+                      record_parser(format),
+                      term_processor(stemmer),
+                      content_parser(content_parser_type),
+                      batch_size,
+                      threads);
+    }
 
     return 0;
 }

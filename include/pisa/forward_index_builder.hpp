@@ -6,12 +6,14 @@
 #include <functional>
 #include <numeric>
 #include <optional>
-#include <vector>
-#include <string>
 #include <sstream>
+#include <stack>
+#include <string>
+#include <vector>
 
 #include <boost/filesystem.hpp>
 #include <boost/te.hpp>
+#include <gsl/gsl_assert>
 #include <pstl/algorithm>
 #include <pstl/execution>
 #include <range/v3/to_container.hpp>
@@ -207,6 +209,55 @@ class Forward_Index_Builder {
         return mapping;
     }
 
+    [[nodiscard]] static auto collect_terms(std::string const &basename, std::ptrdiff_t batch_count)
+    {
+        struct Term_Span {
+            size_t first;
+            size_t last;
+            size_t lvl;
+        };
+        std::stack<Term_Span> spans;
+        std::vector<std::string> terms;
+        auto merge_spans = [&](Term_Span lhs, Term_Span rhs) {
+            Expects(lhs.last == rhs.first);
+            auto first = std::next(terms.begin(), lhs.first);
+            auto mid = std::next(terms.begin(), lhs.last);
+            auto last = std::next(terms.begin(), rhs.last);
+            std::inplace_merge(std::execution::par, first, mid, last);
+            terms.erase(std::unique(std::execution::par, first, last), last);
+            return Term_Span{lhs.first, terms.size(), lhs.lvl + 1};
+        };
+        auto push_span = [&](Term_Span s) {
+            while (not spans.empty() and spans.top().lvl == s.lvl) {
+                s = merge_spans(spans.top(), s);
+                spans.pop();
+            }
+            spans.push(s);
+        };
+
+        spdlog::info("Collecting terms");
+        for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Collecting terms] Batch {}/{}", batch, batch_count);
+            auto mid = terms.size();
+            std::ifstream terms_is(batch_file(basename, batch) + ".terms");
+            std::string term;
+            while (std::getline(terms_is, term)) {
+                terms.push_back(term);
+            }
+            std::sort(std::execution::par_unseq, std::next(terms.begin(), mid), terms.end());
+            push_span(Term_Span{mid, terms.size(), 0u});
+        }
+        while (spans.size() > 1) {
+            auto rhs = spans.top();
+            spans.pop();
+            auto lhs = spans.top();
+            spans.pop();
+            spans.push(merge_spans(lhs, rhs));
+        }
+        terms.shrink_to_fit();
+        return terms;
+    }
+
     void merge(std::string const &basename,
                std::ptrdiff_t document_count,
                std::ptrdiff_t batch_count) const
@@ -217,30 +268,18 @@ class Forward_Index_Builder {
 
         spdlog::info("Merging titles");
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
             std::ifstream title_is(batch_file(basename, batch) + ".documents");
             title_os << title_is.rdbuf();
         }
         spdlog::info("Merging URLs");
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
             std::ifstream url_is(batch_file(basename, batch) + ".urls");
             url_os << url_is.rdbuf();
         }
 
-        spdlog::info("Collecting terms");
-        std::vector<std::string> terms;
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            auto mid = terms.size();
-            std::ifstream terms_is(batch_file(basename, batch) + ".terms");
-            std::string term;
-            while (std::getline(terms_is, term)) {
-                terms.push_back(term);
-            }
-            std::sort(std::execution::par_unseq, std::next(terms.begin(), mid), terms.end());
-            std::inplace_merge(
-                std::execution::par, terms.begin(), std::next(terms.begin(), mid), terms.end());
-        }
-        terms.erase(std::unique(std::execution::par, terms.begin(), terms.end()), terms.end());
-        terms.shrink_to_fit();
+        auto terms = collect_terms(basename, batch_count);
 
         spdlog::info("Writing terms");
         for (auto const& term : terms) { term_os << term << '\n'; }
@@ -250,6 +289,7 @@ class Forward_Index_Builder {
 
         spdlog::info("Remapping IDs");
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Remapping IDs] Batch {}/{}", batch, batch_count);
             auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
             std::vector<Term_Id> mapping(batch_terms.size());
             std::transform(batch_terms.begin(),
@@ -268,6 +308,7 @@ class Forward_Index_Builder {
         std::ofstream os(basename);
         write_header(os, document_count);
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
             std::ifstream is(batch_file(basename, batch));
             is.ignore(8);
             os << is.rdbuf();
