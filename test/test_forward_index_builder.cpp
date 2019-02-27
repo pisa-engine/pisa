@@ -259,12 +259,29 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
     auto map_word = [&](std::string &&word) { vec.push_back(word); };
     SECTION("empty")
     {
-        parse_html_content("<a/>", map_word);
+        parse_html_content(
+            "HTTP/1.1 200 OK\n"
+            "Content-Length: 16254\n\n"
+            "<a/>",
+            map_word);
         REQUIRE(vec == std::vector<std::string>{});
     }
     SECTION("non-empty")
     {
-        parse_html_content("<a>lorem</a>ipsum", map_word);
+        parse_html_content(
+            "HTTP/1.1 200 OK\n"
+            "Content-Length: 16254\n\n"
+            "<a>lorem</a>ipsum",
+            map_word);
+        REQUIRE(vec == std::vector<std::string>{"lorem", "ipsum"});
+    }
+    SECTION("non-empty with CR")
+    {
+        parse_html_content(
+            "HTTP/1.1 200 OK\n"
+            "Content-Length: 16254\n\r\n"
+            "<a>lorem</a>ipsum",
+            map_word);
         REQUIRE(vec == std::vector<std::string>{"lorem", "ipsum"});
     }
 }

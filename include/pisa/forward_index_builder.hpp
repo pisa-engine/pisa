@@ -31,6 +31,8 @@
 
 namespace pisa {
 
+using namespace std::string_view_literals;
+
 struct Document_Record : boost::te::poly<Document_Record> {
     using boost::te::poly<Document_Record>::poly;
 
@@ -104,7 +106,19 @@ void parse_plaintext_content(std::string &&content, std::function<void(std::stri
 }
 
 void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
-    content = parsing::html::cleantext(std::move(content));
+    content = parsing::html::cleantext([&]() {
+        auto pos = content.begin();
+        while (pos != content.end()) {
+            pos = std::find(pos, content.end(), '\n');
+            pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
+                return c == '\n' or not std::isspace(c);
+            });
+            if (pos != content.end() and *pos == '\n') {
+                return std::string_view(&*pos, std::distance(pos, content.end()));
+            }
+        }
+        return ""sv;
+    }());
     if (content.empty()) {
         return;
     }
@@ -303,6 +317,7 @@ class Forward_Index_Builder {
                 }
             }
         }
+        term_mapping.clear();
 
         spdlog::info("Concatenating batches");
         std::ofstream os(basename);
