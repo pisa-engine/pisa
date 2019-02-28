@@ -17,7 +17,7 @@ struct wand_query {
 
     template<typename CursorRange>
     uint64_t operator()(CursorRange &&cursors) {
-        using Cursor = typename CursorRange::value_type;
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
         m_topk.clear();
         if (cursors.empty())
             return 0;
@@ -43,7 +43,7 @@ struct wand_query {
             size_t pivot;
             bool   found_pivot = false;
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot]->docs_enum.docid() == m_max_docid) {
+                if (ordered_cursors[pivot]->docs_enum.docid() >= m_max_docid) {
                     break;
                 }
                 upper_bound += ordered_cursors[pivot]->max_weight;

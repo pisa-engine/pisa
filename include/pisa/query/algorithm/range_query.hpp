@@ -18,22 +18,29 @@ struct range_query {
             return 0;
         }
 
-        for (size_t end = m_range_size; end < m_max_docid; end += m_range_size) {
-            QueryAlg queryAlg(m_k, end);
-            queryAlg(cursors);
-            auto small_topk = queryAlg.topk();
-            for (const auto& entry : small_topk) {
-                m_topk.insert(entry.first, entry.second);
-            }
+        size_t end = m_range_size;
+        for (; end <= m_max_docid; end += m_range_size) {
+            processRange(cursors, end);
         }
-        return m_topk.size();
-
-
+        if (end < m_max_docid + m_range_size) {
+            processRange(cursors, m_max_docid);
+        }
+        
         m_topk.finalize();
         return m_topk.topk().size();
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
+
+    template<typename CursorRange>
+    void processRange(CursorRange &&cursors, size_t end) {
+        QueryAlg queryAlg(m_k, end);
+        queryAlg(cursors);
+        auto small_topk = queryAlg.topk();
+        for (const auto& entry : small_topk) {
+            m_topk.insert(entry.first, entry.second);
+        }
+    }
 
    private:
     uint64_t        m_k;
