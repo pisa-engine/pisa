@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     spdlog::info("Number of threads: {}", threads);
 
     Forward_Index_Builder builder;
-    if (merge_cmd) {
+    if (*merge_cmd) {
         builder.merge(output_filename, document_count, batch_count);
     } else {
         builder.build(std::cin,
