@@ -39,6 +39,10 @@ file can be built with the following command:
     $ ./bin/create_wand_data -c ../test/test_data/test_collection -o test_collection.wand
 
 If you want to compress the file append `--compress` at the end of the command.
+When using variable-sized blocks (for VBMW) via the `--variable-block` parameter,
+you can also specify lambda with the `-l <float>` or `--lambda <float>` flags. 
+The value of lambda impacts the mean size of the variable blocks that are
+output. See the VBMW paper (listed below) for more details.
 
 
 ## Query algorithms
