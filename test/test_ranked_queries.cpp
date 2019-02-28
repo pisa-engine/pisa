@@ -136,6 +136,16 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
     test_against_or(query_fun);
 }
 
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query")
+{
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::range_query<pisa::wand_query> wand_q(10, index.num_docs(), 128);
+        wand_q(make_max_scored_cursors(index, wdata, terms));
+        return wand_q;
+    };
+    test_against_or(query_fun);
+}
+
 TEST_CASE_METHOD(pisa::test::index_initialization, "topk_size_ranked_or")
 {
     test_k_size();
