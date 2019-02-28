@@ -22,7 +22,7 @@ namespace pisa {
 
         template<typename LengthsIterator>
         wand_data(LengthsIterator len_it, uint64_t num_docs,
-                      binary_freq_collection const &coll, partition_type type = partition_type::fixed_blocks) {
+                      binary_freq_collection const &coll, partition_type type = partition_type::fixed_blocks, const float lambda = 0.0f) {
             std::vector<float> norm_lens(num_docs);
             std::vector<float> max_term_weight;
             global_parameters params;
@@ -44,7 +44,7 @@ namespace pisa {
             {
                 pisa::progress progress("Processing posting lists", coll.size());
                 for (auto const &seq: coll) {
-                    auto v = builder.add_sequence(seq, coll, norm_lens);
+                    auto v = builder.add_sequence(seq, coll, norm_lens, lambda);
                     max_term_weight.push_back(v);
                     progress.update(1);
                 }
