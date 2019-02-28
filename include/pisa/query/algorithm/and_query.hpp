@@ -9,8 +9,6 @@ namespace pisa {
 template <bool with_freqs>
 struct and_query {
 
-    and_query(uint64_t max_docid) : m_max_docid(max_docid) {}
-
     template<typename CursorRange>
     uint64_t operator()(CursorRange &&cursors) const {
         using Cursor = typename CursorRange::value_type;
@@ -58,8 +56,6 @@ struct and_query {
         return results;
     }
 
-   private:
-    uint64_t m_max_docid;
 };
 
 } // namespace pisa
