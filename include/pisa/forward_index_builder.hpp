@@ -1,28 +1,38 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <functional>
 #include <numeric>
 #include <optional>
-#include <vector>
-#include <string>
 #include <sstream>
+#include <stack>
+#include <string>
+#include <vector>
 
 #include <boost/filesystem.hpp>
 #include <boost/te.hpp>
+#include <gsl/gsl_assert>
+#include <pstl/algorithm>
+#include <pstl/execution>
+#include <range/v3/to_container.hpp>
 #include <range/v3/view/iota.hpp>
+#include <range/v3/view/transform.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task_group.h>
 
 #include "binary_collection.hpp"
+#include "io.hpp"
 #include "parsing/html.hpp"
 #include "type_safe.hpp"
 #include "warcpp/warcpp.hpp"
 
 namespace pisa {
+
+using namespace std::string_view_literals;
 
 struct Document_Record : boost::te::poly<Document_Record> {
     using boost::te::poly<Document_Record>::poly;
@@ -63,19 +73,33 @@ void parse_plaintext_content(std::string &&content, std::function<void(std::stri
 }
 
 void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
-    content = parsing::html::cleantext(std::move(content));
+    content = parsing::html::cleantext([&]() {
+        auto pos = content.begin();
+        while (pos != content.end()) {
+            pos = std::find(pos, content.end(), '\n');
+            pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
+                return c == '\n' or not std::isspace(c);
+            });
+            if (pos != content.end() and *pos == '\n') {
+                return std::string_view(&*pos, std::distance(pos, content.end()));
+            }
+        }
+        return ""sv;
+    }());
     if (content.empty()) {
         return;
     }
-    std::regex term_pattern("(\\w)+");
-    auto term_it = std::sregex_iterator(content.begin(), content.end(), term_pattern);
-    for (auto term_it = std::sregex_iterator(content.begin(), content.end(), term_pattern);
-         term_it != std::sregex_iterator();
-         ++term_it)
-    {
-        if (term_it->length() > 0) {
-            process(term_it->str());
+    auto pos = content.begin();
+    auto end = content.end();
+    auto is_alpha_numeric = [](char ch) -> bool {
+        return std::isalnum(static_cast<unsigned char>(ch));
+    };
+    while (pos != end) {
+        auto term_end = std::find_if_not(pos, end, is_alpha_numeric);
+        if (pos != term_end) {
+            process(std::string(pos, term_end));
         }
+        pos = std::find_if(term_end, end, is_alpha_numeric);
     }
 }
 
@@ -154,65 +178,119 @@ class Forward_Index_Builder {
                      bp.first_document + bp.records.size());
     }
 
-    void merge(std::string const &basename,
-               std::ptrdiff_t     document_count,
-               std::ptrdiff_t     batch_count) const
+    [[nodiscard]] static auto reverse_mapping(std::vector<std::string> &&terms)
+        -> std::unordered_map<std::string, Term_Id>
     {
-        using term_map_type =
-            std::map<std::string, std::unordered_map<std::ptrdiff_t, std::ptrdiff_t>>;
+        std::unordered_map<std::string, Term_Id> mapping;
+        Term_Id term_id{0};
+        for (std::string &term : terms) {
+            mapping.emplace(std::move(term), term_id);
+            ++term_id;
+        }
+        return mapping;
+    }
+
+    [[nodiscard]] static auto collect_terms(std::string const &basename, std::ptrdiff_t batch_count)
+    {
+        struct Term_Span {
+            size_t first;
+            size_t last;
+            size_t lvl;
+        };
+        std::stack<Term_Span> spans;
+        std::vector<std::string> terms;
+        auto merge_spans = [&](Term_Span lhs, Term_Span rhs) {
+            Expects(lhs.last == rhs.first);
+            auto first = std::next(terms.begin(), lhs.first);
+            auto mid = std::next(terms.begin(), lhs.last);
+            auto last = std::next(terms.begin(), rhs.last);
+            std::inplace_merge(std::execution::par, first, mid, last);
+            terms.erase(std::unique(std::execution::par, first, last), last);
+            return Term_Span{lhs.first, terms.size(), lhs.lvl + 1};
+        };
+        auto push_span = [&](Term_Span s) {
+            while (not spans.empty() and spans.top().lvl == s.lvl) {
+                s = merge_spans(spans.top(), s);
+                spans.pop();
+            }
+            spans.push(s);
+        };
+
+        spdlog::info("Collecting terms");
+        for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Collecting terms] Batch {}/{}", batch, batch_count);
+            auto mid = terms.size();
+            std::ifstream terms_is(batch_file(basename, batch) + ".terms");
+            std::string term;
+            while (std::getline(terms_is, term)) {
+                terms.push_back(term);
+            }
+            std::sort(std::execution::par_unseq, std::next(terms.begin(), mid), terms.end());
+            push_span(Term_Span{mid, terms.size(), 0u});
+        }
+        while (spans.size() > 1) {
+            auto rhs = spans.top();
+            spans.pop();
+            auto lhs = spans.top();
+            spans.pop();
+            spans.push(merge_spans(lhs, rhs));
+        }
+        terms.shrink_to_fit();
+        return terms;
+    }
+
+    void merge(std::string const &basename,
+               std::ptrdiff_t document_count,
+               std::ptrdiff_t batch_count) const
+    {
         std::ofstream title_os(basename + ".documents");
         std::ofstream url_os(basename + ".urls");
         std::ofstream term_os(basename + ".terms");
 
         spdlog::info("Merging titles");
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
             std::ifstream title_is(batch_file(basename, batch) + ".documents");
             title_os << title_is.rdbuf();
         }
         spdlog::info("Merging URLs");
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
             std::ifstream url_is(batch_file(basename, batch) + ".urls");
             url_os << url_is.rdbuf();
         }
 
-        spdlog::info("Mapping terms");
-        term_map_type term_map;
-        std::vector<std::vector<std::ptrdiff_t>> id_mappings(batch_count);
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            std::ifstream terms_is(batch_file(basename, batch) + ".terms");
-            std::string term;
-            std::ptrdiff_t batch_term_id = 0;
-            while (std::getline(terms_is, term)) {
-                term_map[term][batch] = batch_term_id++;
-            }
-            id_mappings[batch].resize(batch_term_id);
-        }
+        auto terms = collect_terms(basename, batch_count);
 
-        spdlog::info("Mapping IDs and writing terms");
-        std::ptrdiff_t term_id = 0;
-        for (auto const &[term, idmap] : term_map) {
-            term_os << term << '\n';
-            for (auto const &[batch, batch_term_id] : idmap) {
-                id_mappings[batch][batch_term_id] = term_id;
-            }
-            ++term_id;
-        }
+        spdlog::info("Writing terms");
+        for (auto const& term : terms) { term_os << term << '\n'; }
+
+        spdlog::info("Mapping terms");
+        auto term_mapping = reverse_mapping(std::move(terms));
 
         spdlog::info("Remapping IDs");
         for (auto batch : ranges::view::iota(0, batch_count)) {
-            auto &mapping = id_mappings[batch];
+            spdlog::debug("[Remapping IDs] Batch {}/{}", batch, batch_count);
+            auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
+            std::vector<Term_Id> mapping(batch_terms.size());
+            std::transform(batch_terms.begin(),
+                           batch_terms.end(),
+                           mapping.begin(),
+                           [&](auto const &bterm) { return term_mapping[bterm]; });
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
-                    term_id = mapping[term_id];
+                    term_id = static_cast<std::ptrdiff_t>(mapping[term_id]);
                 }
             }
         }
+        term_mapping.clear();
 
         spdlog::info("Concatenating batches");
         std::ofstream os(basename);
         write_header(os, document_count);
         for (auto batch : ranges::view::iota(0, batch_count)) {
+            spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
             std::ifstream is(batch_file(basename, batch));
             is.ignore(8);
             os << is.rdbuf();
@@ -242,27 +320,20 @@ class Forward_Index_Builder {
         queue.set_capacity((threads - 1) * 2);
         while (true) {
             std::optional<Document_Record> record = std::nullopt;
-            try {
-                if (not (record = next_record(is))) {
-                    auto last_batch_size = record_batch.size();
-                    Batch_Process bp{
-                        batch_number, std::move(record_batch), first_document, output_file};
-                    queue.push(0);
-                    batch_group.run(
-                        [bp = std::move(bp), process_term, this, &queue, &process_content]() {
-                            run(std::move(bp), process_term, process_content);
-                            int x;
-                            queue.try_pop(x);
-                        });
-                    ++batch_number;
-                    first_document += last_batch_size;
-                    break;
-                }
-            } catch (warcpp::Warc_Format_Error &err) {
-                continue;
-            }
-            if (not record->valid()) {
-                continue;
+            if (not(record = next_record(is))) {
+                auto          last_batch_size = record_batch.size();
+                Batch_Process bp{
+                    batch_number, std::move(record_batch), first_document, output_file};
+                queue.push(0);
+                batch_group.run(
+                    [bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                        run(std::move(bp), process_term, process_content);
+                        int x;
+                        queue.try_pop(x);
+                    });
+                ++batch_number;
+                first_document += last_batch_size;
+                break;
             }
             record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
             if (record_batch.size() == batch_size) {

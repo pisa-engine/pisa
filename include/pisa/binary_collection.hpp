@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 
+#include "fmt/format.h"
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
@@ -28,7 +29,7 @@ namespace pisa {
             std::error_code error;
             m_file.map(filename, error);
             if ( error ) {
-                std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
+                spdlog::error("Error mapping file {}: {}", filename, error.message());
                 throw std::runtime_error("Error opening file");
             }
             m_data      = reinterpret_cast<pointer>(m_file.data());

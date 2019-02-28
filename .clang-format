@@ -11,7 +11,7 @@ AlwaysBreakBeforeMultilineStrings: true
 AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
 BinPackParameters: false
-BreakBeforeBinaryOperators: true
+BreakBeforeBinaryOperators: false
 BreakBeforeBraces: WebKit
 BreakConstructorInitializersBeforeComma: false
 ColumnLimit:     100

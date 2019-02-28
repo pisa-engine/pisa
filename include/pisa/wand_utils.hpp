@@ -46,11 +46,15 @@ template <typename Scorer = bm25>
 std::pair<std::vector<uint32_t>, std::vector<float>>
 variable_block_partition(binary_freq_collection const &coll,
                          binary_freq_collection::sequence const &seq,
-                         std::vector<float> const &norm_lens) {
+                         std::vector<float> const &norm_lens,
+                         const float lambda = 0.0f) {
 
   auto eps1 = configuration::get().eps1_wand;
   auto eps2 = configuration::get().eps2_wand;
   auto fixed_cost = configuration::get().fixed_cost_wand_partition;
+  // Use input param
+  if (lambda != 0.0f)
+      fixed_cost = lambda;
 
   // Auxiliary vector
   using doc_score_t = std::pair<uint64_t, float>;

@@ -63,7 +63,7 @@ matrix:
       addons:
           apt:
               sources: *all_sources
-              packages: ['clang-6.0', 'libstdc++-8-dev']
+              packages: ['clang-6.0', 'libstdc++-7-dev']
       env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
     - os: osx
       osx_image: xcode10.1
