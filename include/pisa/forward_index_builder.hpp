@@ -280,7 +280,7 @@ class Forward_Index_Builder {
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
-                    term_id = static_cast<std::ptrdiff_t>(mapping[term_id]);
+                    term_id = static_cast<std::int32_t>(mapping[term_id]);
                 }
             }
         }
