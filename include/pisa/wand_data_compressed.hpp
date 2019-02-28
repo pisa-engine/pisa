@@ -111,12 +111,12 @@ namespace {
                 spdlog::info("Storing max weight for each list and for each block...");
             }
 
-            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
+            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens, const float lambda = 0.0f){
 
                 if (seq.docs.size() > configuration::get().threshold_wand_list) {
 
                     auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
-                                                      : variable_block_partition(coll, seq, norm_lens));
+                                                      : variable_block_partition(coll, seq, norm_lens, lambda));
 
                     auto ind = compressor_builder.compress_data(t.second);
 
