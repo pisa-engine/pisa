@@ -4,7 +4,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
-#include "succinct/mappable_vector.hpp"
+#include "mappable/mappable_vector.hpp"
 #include "util/util.hpp"
 #include "wand_data_raw.hpp"
 #include "util/progress.hpp"

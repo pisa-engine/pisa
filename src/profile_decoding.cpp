@@ -5,9 +5,10 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "index_types.hpp"
 #include "util/util.hpp"
+#include "util/do_not_optimize_away.hpp"
 #include "dec_time_prediction.hpp"
 
 namespace pisa {
@@ -122,7 +123,7 @@ int main(int /* argc */, const char** argv)
                 (index_filename, p);                    \
             /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_BLOCK_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
         spdlog::error("Unknown type {}", type);

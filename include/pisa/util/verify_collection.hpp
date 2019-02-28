@@ -3,7 +3,7 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "util/util.hpp"
 
 template<typename InputCollection, typename Collection>

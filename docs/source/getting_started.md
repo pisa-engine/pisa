@@ -1,5 +1,4 @@
-Getting Started
-===============
+# Getting Started
 
 ## Building the code
 

@@ -3,7 +3,7 @@
 #include "spdlog/spdlog.h"
 
 #include "index_types.hpp"
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
 

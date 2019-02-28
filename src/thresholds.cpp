@@ -7,7 +7,7 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 #include "index_types.hpp"
 #include "io.hpp"
@@ -15,6 +15,7 @@
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include "cursor/max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -45,10 +46,10 @@ void thresholds(const std::string &                   index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    wand_query<IndexType, WandType> query_func(index, wdata, k);
+    wand_query wand_q(k, index.num_docs());
     for (auto const &query : queries) {
-        query_func(query);
-        auto  results   = query_func.topk();
+        wand_q(make_max_scored_cursors(index, wdata, query));
+        auto  results   = wand_q.topk();
         float threshold = 0.0;
         if (results.size() == k) {
             threshold = results.back().first;
@@ -63,7 +64,6 @@ using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_sc
 int main(int argc, const char **argv)
 {
     std::string type;
-    std::string query_type;
     std::string index_filename;
     std::optional<std::string> terms_file;
     boost::optional<std::string> wand_data_filename;
@@ -125,7 +125,7 @@ int main(int argc, const char **argv)
         }                                                                                \
         /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {

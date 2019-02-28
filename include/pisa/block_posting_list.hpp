@@ -107,10 +107,10 @@ namespace pisa {
                 decode_docs_block(0);
             }
 
-            void DS2I_ALWAYSINLINE next()
+            void PISA_ALWAYSINLINE next()
             {
                 ++m_pos_in_block;
-                if (DS2I_UNLIKELY(m_pos_in_block == m_cur_block_size)) {
+                if (PISA_UNLIKELY(m_pos_in_block == m_cur_block_size)) {
                     if (m_cur_block + 1 == m_blocks) {
                         m_cur_docid = m_universe;
                         return;
@@ -121,10 +121,10 @@ namespace pisa {
                 }
             }
 
-            void DS2I_ALWAYSINLINE next_geq(uint64_t lower_bound)
+            void PISA_ALWAYSINLINE next_geq(uint64_t lower_bound)
             {
                 assert(lower_bound >= m_cur_docid || position() == 0);
-                if (DS2I_UNLIKELY(lower_bound > m_cur_block_max)) {
+                if (PISA_UNLIKELY(lower_bound > m_cur_block_max)) {
                     // binary search seems to perform worse here
                     if (lower_bound > block_max(m_blocks - 1)) {
                         m_cur_docid = m_universe;
@@ -145,11 +145,11 @@ namespace pisa {
                 }
             }
 
-            void DS2I_ALWAYSINLINE move(uint64_t pos)
+            void PISA_ALWAYSINLINE move(uint64_t pos)
             {
                 assert(pos >= position());
                 uint64_t block = pos / BlockCodec::block_size;
-                if (DS2I_UNLIKELY(block != m_cur_block)) {
+                if (PISA_UNLIKELY(block != m_cur_block)) {
                     decode_docs_block(block);
                 }
                 while (position() < pos) {
@@ -162,7 +162,7 @@ namespace pisa {
                 return m_cur_docid;
             }
 
-            uint64_t DS2I_ALWAYSINLINE freq()
+            uint64_t PISA_ALWAYSINLINE freq()
             {
                 if (!m_freqs_decoded) {
                     decode_freqs_block();
@@ -289,7 +289,7 @@ namespace pisa {
                 return ((uint32_t const*)m_block_maxs)[block];
             }
 
-            void DS2I_NOINLINE decode_docs_block(uint64_t block)
+            void PISA_NOINLINE decode_docs_block(uint64_t block)
             {
                 static const uint64_t block_size = BlockCodec::block_size;
                 uint32_t endpoint = block
@@ -318,7 +318,7 @@ namespace pisa {
                 }
             }
 
-            void DS2I_NOINLINE decode_freqs_block()
+            void PISA_NOINLINE decode_freqs_block()
             {
                 uint8_t const* next_block = BlockCodec::decode(m_freqs_block_data, m_freqs_buf.data(),
                                                                uint32_t(-1), m_cur_block_size);

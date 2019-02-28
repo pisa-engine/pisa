@@ -5,57 +5,35 @@
 
 namespace pisa {
 
-template <typename Index, typename WandType>
 struct block_max_wand_query {
     typedef bm25 scorer_type;
 
-    block_max_wand_query(Index const &index, WandType const &wdata, uint64_t k)
-        : m_index(index), m_wdata(&wdata), m_topk(k) {}
+    block_max_wand_query(uint64_t k, uint64_t max_docid)
+        : m_topk(k), m_max_docid(max_docid) {}
 
-    uint64_t operator()(term_id_vec const &terms) {
+    template<typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors) {
+        using Cursor = typename CursorRange::value_type;
         m_topk.clear();
 
-        if (terms.empty())
+        if (cursors.empty())
             return 0;
-        auto                                            query_term_freqs = query_freqs(terms);
-        uint64_t                                        num_docs         = m_index.num_docs();
-        typedef typename Index::document_enumerator     enum_type;
-        typedef typename WandType::wand_data_enumerator wdata_enum;
 
-        struct scored_enum {
-            enum_type  docs_enum;
-            wdata_enum w;
-            float      q_weight;
-            float      max_weight;
-        };
-
-        std::vector<scored_enum> enums;
-        enums.reserve(query_term_freqs.size());
-
-        for (auto term : query_term_freqs) {
-            auto list     = m_index[term.first];
-            auto w_enum   = m_wdata->getenum(term.first);
-            auto q_weight = scorer_type::query_term_weight(term.second, list.size(), num_docs);
-
-            float max_weight = q_weight * m_wdata->max_term_weight(term.first);
-            enums.push_back(scored_enum{std::move(list), w_enum, q_weight, max_weight});
+        std::vector<Cursor *> ordered_cursors;
+        ordered_cursors.reserve(cursors.size());
+        for (auto &en : cursors) {
+            ordered_cursors.push_back(&en);
         }
 
-        std::vector<scored_enum *> ordered_enums;
-        ordered_enums.reserve(enums.size());
-        for (auto &en : enums) {
-            ordered_enums.push_back(&en);
-        }
-
-        auto sort_enums = [&]() {
+        auto sort_cursors = [&]() {
             // sort enumerators by increasing docid
             std::sort(
-                ordered_enums.begin(), ordered_enums.end(), [](scored_enum *lhs, scored_enum *rhs) {
+                ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
                     return lhs->docs_enum.docid() < rhs->docs_enum.docid();
                 });
         };
 
-        sort_enums();
+        sort_cursors();
 
         while (true) {
 
@@ -63,19 +41,19 @@ struct block_max_wand_query {
             float    upper_bound = 0.f;
             size_t   pivot;
             bool     found_pivot = false;
-            uint64_t pivot_id    = num_docs;
+            uint64_t pivot_id    = m_max_docid;
 
-            for (pivot = 0; pivot < ordered_enums.size(); ++pivot) {
-                if (ordered_enums[pivot]->docs_enum.docid() == num_docs) {
+            for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
+                if (ordered_cursors[pivot]->docs_enum.docid() == m_max_docid) {
                     break;
                 }
 
-                upper_bound += ordered_enums[pivot]->max_weight;
+                upper_bound += ordered_cursors[pivot]->max_weight;
                 if (m_topk.would_enter(upper_bound)) {
                     found_pivot = true;
-                    pivot_id    = ordered_enums[pivot]->docs_enum.docid();
-                    for (; pivot + 1 < ordered_enums.size() &&
-                           ordered_enums[pivot + 1]->docs_enum.docid() == pivot_id;
+                    pivot_id    = ordered_cursors[pivot]->docs_enum.docid();
+                    for (; pivot + 1 < ordered_cursors.size() &&
+                           ordered_cursors[pivot + 1]->docs_enum.docid() == pivot_id;
                          ++pivot)
                         ;
                     break;
@@ -90,33 +68,30 @@ struct block_max_wand_query {
             double block_upper_bound = 0;
 
             for (size_t i = 0; i < pivot + 1; ++i) {
-                if (ordered_enums[i]->w.docid() < pivot_id) {
-                    ordered_enums[i]->w.next_geq(pivot_id);
+                if (ordered_cursors[i]->w.docid() < pivot_id) {
+                    ordered_cursors[i]->w.next_geq(pivot_id);
                 }
 
-                block_upper_bound += ordered_enums[i]->w.score() * ordered_enums[i]->q_weight;
+                block_upper_bound += ordered_cursors[i]->w.score() * ordered_cursors[i]->q_weight;
             }
 
             if (m_topk.would_enter(block_upper_bound)) {
 
                 // check if pivot is a possible match
-                if (pivot_id == ordered_enums[0]->docs_enum.docid()) {
+                if (pivot_id == ordered_cursors[0]->docs_enum.docid()) {
                     float score    = 0;
-                    float norm_len = m_wdata->norm_len(pivot_id);
-
-                    for (scored_enum *en : ordered_enums) {
+                    for (Cursor *en : ordered_cursors) {
                         if (en->docs_enum.docid() != pivot_id) {
                             break;
                         }
-                        float part_score = en->q_weight * scorer_type::doc_term_weight(
-                                                              en->docs_enum.freq(), norm_len);
+                        float part_score = en->scorer(en->docs_enum.docid(), en->docs_enum.freq());
                         score += part_score;
                         block_upper_bound -= en->w.score() * en->q_weight - part_score;
                         if (!m_topk.would_enter(block_upper_bound)) {
                             break;
                         }
                     }
-                    for (scored_enum *en : ordered_enums) {
+                    for (Cursor *en : ordered_cursors) {
                         if (en->docs_enum.docid() != pivot_id) {
                             break;
                         }
@@ -125,20 +100,20 @@ struct block_max_wand_query {
 
                     m_topk.insert(score, pivot_id);
                     // resort by docid
-                    sort_enums();
+                    sort_cursors();
 
                 } else {
 
                     uint64_t next_list = pivot;
-                    for (; ordered_enums[next_list]->docs_enum.docid() == pivot_id; --next_list)
+                    for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list)
                         ;
-                    ordered_enums[next_list]->docs_enum.next_geq(pivot_id);
+                    ordered_cursors[next_list]->docs_enum.next_geq(pivot_id);
 
                     // bubble down the advanced list
-                    for (size_t i = next_list + 1; i < ordered_enums.size(); ++i) {
-                        if (ordered_enums[i]->docs_enum.docid() <=
-                            ordered_enums[i - 1]->docs_enum.docid()) {
-                            std::swap(ordered_enums[i], ordered_enums[i - 1]);
+                    for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
+                        if (ordered_cursors[i]->docs_enum.docid() <=
+                            ordered_cursors[i - 1]->docs_enum.docid()) {
+                            std::swap(ordered_cursors[i], ordered_cursors[i - 1]);
                         } else {
                             break;
                         }
@@ -150,45 +125,44 @@ struct block_max_wand_query {
                 uint64_t next;
                 uint64_t next_list = pivot;
 
-                float q_weight = ordered_enums[next_list]->q_weight;
+                float q_weight = ordered_cursors[next_list]->q_weight;
 
                 for (uint64_t i = 0; i < pivot; i++) {
-                    if (ordered_enums[i]->q_weight > q_weight) {
+                    if (ordered_cursors[i]->q_weight > q_weight) {
                         next_list = i;
-                        q_weight  = ordered_enums[i]->q_weight;
+                        q_weight  = ordered_cursors[i]->q_weight;
                     }
                 }
 
-                // TO BE FIXED (change with num_docs())
-                uint64_t next_jump = uint64_t(-2);
+                uint64_t next_jump = m_max_docid;
 
-                if (pivot + 1 < ordered_enums.size()) {
-                    next_jump = ordered_enums[pivot + 1]->docs_enum.docid();
+                if (pivot + 1 < ordered_cursors.size()) {
+                    next_jump = ordered_cursors[pivot + 1]->docs_enum.docid();
                 }
 
                 for (size_t i = 0; i <= pivot; ++i) {
-                    if (ordered_enums[i]->w.docid() < next_jump)
-                        next_jump = std::min(ordered_enums[i]->w.docid(), next_jump);
+                    if (ordered_cursors[i]->w.docid() < next_jump)
+                        next_jump = std::min(ordered_cursors[i]->w.docid(), next_jump);
                 }
 
                 next = next_jump + 1;
-                if (pivot + 1 < ordered_enums.size()) {
-                    if (next > ordered_enums[pivot + 1]->docs_enum.docid()) {
-                        next = ordered_enums[pivot + 1]->docs_enum.docid();
+                if (pivot + 1 < ordered_cursors.size()) {
+                    if (next > ordered_cursors[pivot + 1]->docs_enum.docid()) {
+                        next = ordered_cursors[pivot + 1]->docs_enum.docid();
                     }
                 }
 
-                if (next <= ordered_enums[pivot]->docs_enum.docid()) {
-                    next = ordered_enums[pivot]->docs_enum.docid() + 1;
+                if (next <= ordered_cursors[pivot]->docs_enum.docid()) {
+                    next = ordered_cursors[pivot]->docs_enum.docid() + 1;
                 }
 
-                ordered_enums[next_list]->docs_enum.next_geq(next);
+                ordered_cursors[next_list]->docs_enum.next_geq(next);
 
                 // bubble down the advanced list
-                for (size_t i = next_list + 1; i < ordered_enums.size(); ++i) {
-                    if (ordered_enums[i]->docs_enum.docid() <
-                        ordered_enums[i - 1]->docs_enum.docid()) {
-                        std::swap(ordered_enums[i], ordered_enums[i - 1]);
+                for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
+                    if (ordered_cursors[i]->docs_enum.docid() <
+                        ordered_cursors[i - 1]->docs_enum.docid()) {
+                        std::swap(ordered_cursors[i], ordered_cursors[i - 1]);
                     } else {
                         break;
                     }
@@ -207,9 +181,8 @@ struct block_max_wand_query {
     topk_queue const &get_topk() const { return m_topk; }
 
    private:
-    Index const &   m_index;
-    WandType const *m_wdata;
     topk_queue      m_topk;
+    uint64_t m_max_docid;
 };
 
 } // namespace pisa

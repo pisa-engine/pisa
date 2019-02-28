@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 
 #include "index_types.hpp"
@@ -71,7 +71,7 @@ int main(int, const char** argv) {
                 (index_filename, type);
             /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
         spdlog::error("Unknown type {}", type);

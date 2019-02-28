@@ -9,7 +9,7 @@ namespace pisa {
 
     struct strict_elias_fano {
 
-        static DS2I_FLATTEN_FUNC uint64_t
+        static PISA_FLATTEN_FUNC uint64_t
         bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
         {
             assert(universe >= n);

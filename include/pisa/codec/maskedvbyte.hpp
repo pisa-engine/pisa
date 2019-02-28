@@ -30,7 +30,7 @@ struct maskedvbyte_block {
                                  uint32_t sum_of_values,
                                  size_t n) {
         assert(n <= block_size);
-        if (DS2I_UNLIKELY(n < block_size)) {
+        if (PISA_UNLIKELY(n < block_size)) {
             return interpolative_block::decode(in, out, sum_of_values, n);
         }
         auto read = masked_vbyte_decode(in, out, n);

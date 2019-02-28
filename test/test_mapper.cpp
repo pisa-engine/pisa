@@ -5,7 +5,7 @@
 
 #include "mio/mmap.hpp"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 TEST_CASE("basic_map")
 {

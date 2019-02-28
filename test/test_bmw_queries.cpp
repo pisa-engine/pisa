@@ -3,9 +3,11 @@
 
 #include "test_common.hpp"
 
-#include "ds2i_config.hpp"
+#include "pisa_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
 
 namespace pisa {
 namespace test {
@@ -17,8 +19,8 @@ struct index_initialization {
     typedef wand_data<bm25, wand_data_raw<bm25>>                                  WandTypePlain;
 
     index_initialization()
-        : collection(DS2I_SOURCE_DIR "/test/test_data/test_collection"),
-          document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes"),
+        : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
+          document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
@@ -41,7 +43,7 @@ struct index_initialization {
         builder.build(index);
 
         term_id_vec   q;
-        std::ifstream qfile(DS2I_SOURCE_DIR "/test/test_data/queries");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         while (read_query(q, qfile))
             queries.push_back(q);
     }
@@ -55,13 +57,13 @@ struct index_initialization {
     WandTypePlain            wdata_fixed;
     WandTypeUniform          wdata_uniform;
 
-    template <typename QueryOp>
-    void test_against_wand(QueryOp &op_q) const {
-        wand_query<index_type, WandTypePlain> or_q(index, wdata, 10);
+    template <typename QueryFun>
+    void test_against_wand(QueryFun &query_fun) const {
+        wand_query or_q(10, index.num_docs());
 
         for (auto const &q : queries) {
-            or_q(q);
-            op_q(q);
+            or_q(make_max_scored_cursors(index, wdata, q));
+            auto op_q = query_fun(q);
             REQUIRE(or_q.topk().size() == op_q.topk().size());
 
             for (size_t i = 0; i < or_q.topk().size(); ++i) {
@@ -75,11 +77,32 @@ struct index_initialization {
 } // namespace test
 } // namespace pisa
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand") {
-    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_q(index, wdata, 10);
-    pisa::block_max_wand_query<index_type, WandTypeUniform> block_max_wand_uniform_q(index, wdata_uniform, 10);
-    pisa::block_max_wand_query<index_type, WandTypePlain>   block_max_wand_fixed_q(index, wdata_fixed, 10);
-    test_against_wand(block_max_wand_uniform_q);
-    test_against_wand(block_max_wand_q);
-    test_against_wand(block_max_wand_fixed_q);
+TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_plain") {
+
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::block_max_wand_query   block_max_wand_q(10, index.num_docs());
+        block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms));
+        return block_max_wand_q;
+    };
+    test_against_wand(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_uniform") {
+
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::block_max_wand_query block_max_wand_q(10, index.num_docs());
+        block_max_wand_q(make_block_max_scored_cursors(index, wdata_uniform, terms));
+        return block_max_wand_q;
+    };
+    test_against_wand(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_fixed") {
+
+    auto query_fun = [&](pisa::term_id_vec terms){
+        pisa::block_max_wand_query   block_max_wand_q(10, index.num_docs());
+        block_max_wand_q(make_block_max_scored_cursors(index, wdata_fixed, terms));
+        return block_max_wand_q;
+    };
+    test_against_wand(query_fun);
 }

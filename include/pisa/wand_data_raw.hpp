@@ -2,12 +2,13 @@
 
 #include "spdlog/spdlog.h"
 
-#include "succinct/mappable_vector.hpp"
+#include "mappable/mappable_vector.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
 #include "wand_utils.hpp"
 #include "global_parameters.hpp"
+#include "util/compiler_attribute.hpp"
 
 namespace pisa {
 
@@ -88,7 +89,7 @@ namespace pisa {
                         {}
 
 
-            void DS2I_NOINLINE next_geq(uint64_t lower_bound) {
+            void PISA_NOINLINE next_geq(uint64_t lower_bound) {
                 while (cur_pos + 1 < block_number &&
                         m_block_docid[block_start + cur_pos] <
                        lower_bound) {
@@ -97,16 +98,16 @@ namespace pisa {
             }
 
 
-            float DS2I_FLATTEN_FUNC score() const {
+            float PISA_FLATTEN_FUNC score() const {
                 return m_block_max_term_weight[block_start + cur_pos];
             }
 
-            uint64_t DS2I_FLATTEN_FUNC docid() const {
+            uint64_t PISA_FLATTEN_FUNC docid() const {
                 return m_block_docid[block_start + cur_pos];
             }
 
 
-            uint64_t DS2I_FLATTEN_FUNC find_next_skip() {
+            uint64_t PISA_FLATTEN_FUNC find_next_skip() {
                 return m_block_docid[cur_pos + block_start];
             }
 

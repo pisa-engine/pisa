@@ -171,7 +171,7 @@ namespace {
 		m_cur_score_index = (val & mask);
             }
 
-            void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
+            void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
                 if(docid() != lower_bound) {
                     lower_bound = lower_bound << score_bits_size;
                     auto val = m_docs_enum.next_geq(lower_bound);
@@ -181,11 +181,11 @@ namespace {
                 }
             }
 
-            float DS2I_FLATTEN_FUNC score()  {
+            float PISA_FLATTEN_FUNC score()  {
                 return score_compressor::score(m_cur_score_index);
             }
 
-            uint64_t DS2I_FLATTEN_FUNC docid() const {
+            uint64_t PISA_FLATTEN_FUNC docid() const {
                 return m_cur_docid;
             }
 

@@ -8,16 +8,30 @@ Welcome to PISA
 
 Performant Indexes and Search for Academia
 
+Description 
+------------
 
-.. toctree::
-   :maxdepth: 4
-   :caption: Contents:
+PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
 
-   getting_started
-   index_format
-   parsing
-   compress_index
-   query_index
-   document_reordering
-   
-   
+Some features of PISA are listed below:
+
+* Written in C++ for performance;
+* Indexing & Parsing capabilities;
+* Many index compression methods implemented;
+* Many query processing algorithms implemented;
+* Implementation of document reordering;
+* Free and open-source with permissive license;
+
+.. note:: PISA is still in its **initial release** and many new features are going to come in the next versions. Contributions are also welcome!
+
+
+.. toctree::	
+   :maxdepth: 4	
+   :caption: Contents:	
+
+   getting_started	
+   index_format	
+   parsing	
+   compress_index	
+   query_index	
+   document_reordering	
