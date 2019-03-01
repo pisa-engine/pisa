@@ -59,10 +59,10 @@ struct index_initialization {
 
     template <typename QueryFun>
     void test_against_wand(QueryFun &query_fun) const {
-        wand_query or_q(10, index.num_docs());
+        wand_query or_q(10);
 
         for (auto const &q : queries) {
-            or_q(make_max_scored_cursors(index, wdata, q));
+            or_q(make_max_scored_cursors(index, wdata, q), index.num_docs());
             auto op_q = query_fun(q);
             REQUIRE(or_q.topk().size() == op_q.topk().size());
 

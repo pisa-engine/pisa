@@ -88,8 +88,8 @@ namespace pisa { namespace test {
 TEST_CASE_METHOD(pisa::test::index_initialization, "wand")
 {
     auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::wand_query wand_q(10, index.num_docs());
-        wand_q(make_max_scored_cursors(index, wdata, terms));
+        pisa::wand_query wand_q(10);
+        wand_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
         return wand_q;
     };
     test_against_or(query_fun);

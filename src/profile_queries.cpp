@@ -98,13 +98,13 @@ void profile(const std::string index_filename,
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                ranked_and_query ranked_and_q(10, index.num_docs());
-                return ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms));
+                ranked_and_query ranked_and_q(10);
+                return ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                wand_query wand_q(10, index.num_docs());
-                return wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms));
+                wand_query wand_q(10);
+                return wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms), index.num_docs());
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){

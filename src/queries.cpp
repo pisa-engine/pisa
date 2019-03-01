@@ -145,8 +145,8 @@ void perftest(const std::string &index_filename,
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                wand_query wand_q(k, index.num_docs());
-                return wand_q(make_max_scored_cursors(index, wdata, terms));
+                wand_query wand_q(k);
+                return wand_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
