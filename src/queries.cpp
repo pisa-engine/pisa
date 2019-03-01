@@ -126,12 +126,12 @@ void perftest(const std::string &index_filename,
         if (t == "and") {
             query_fun = [&](term_id_vec terms){
                 and_query<false> and_q;
-                return and_q(make_cursors(index, terms), index.num_docs());
+                return and_q(make_scored_cursors(index, wdata, terms), index.num_docs()).size();
             };
         } else if (t == "and_freq") {
             query_fun = [&](term_id_vec terms){
                 and_query<true> and_q;
-                return and_q(make_cursors(index, terms), index.num_docs());
+                return and_q(make_scored_cursors(index, wdata, terms), index.num_docs()).size();
             };
         } else if (t == "or") {
             query_fun = [&](term_id_vec terms){
