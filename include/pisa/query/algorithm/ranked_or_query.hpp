@@ -14,7 +14,7 @@ struct ranked_or_query {
 
     template <typename CursorRange>
     uint64_t operator()(CursorRange &&cursors) {
-        using Cursor = typename CursorRange::value_type;
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
         m_topk.clear();
         if (cursors.empty()) return 0;
         uint64_t cur_doc =

@@ -13,7 +13,7 @@ struct and_query {
 
     template<typename CursorRange>
     uint64_t operator()(CursorRange &&cursors) const {
-        using Cursor = typename CursorRange::value_type;
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty())
             return 0;
 

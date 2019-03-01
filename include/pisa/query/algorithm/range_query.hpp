@@ -18,13 +18,12 @@ struct range_query {
             return 0;
         }
 
-        size_t end = m_range_size;
-        for (; end <= m_max_docid; end += m_range_size) {
-            processRange(cursors, end);
+        
+        for (size_t end = m_range_size; 
+             end + m_range_size <= m_max_docid; end += m_range_size) {
+            process_range(cursors, end);
         }
-        if (end < m_max_docid + m_range_size) {
-            processRange(cursors, m_max_docid);
-        }
+        process_range(cursors, m_max_docid);
         
         m_topk.finalize();
         return m_topk.topk().size();
@@ -33,7 +32,7 @@ struct range_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
     template<typename CursorRange>
-    void processRange(CursorRange &&cursors, size_t end) {
+    void process_range(CursorRange &&cursors, size_t end) {
         QueryAlg queryAlg(m_k, end);
         queryAlg(cursors);
         auto small_topk = queryAlg.topk();
