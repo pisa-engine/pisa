@@ -12,11 +12,11 @@ struct wand_query {
 
     typedef bm25 scorer_type;
 
-    wand_query(uint64_t k, uint64_t max_docid)
-        : m_topk(k), m_max_docid(max_docid) {}
+    wand_query(uint64_t k)
+        : m_topk(k) {}
 
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename CursorRange::value_type;
         m_topk.clear();
         if (cursors.empty())
@@ -43,7 +43,7 @@ struct wand_query {
             size_t pivot;
             bool   found_pivot = false;
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot]->docs_enum.docid() == m_max_docid) {
+                if (ordered_cursors[pivot]->docs_enum.docid() >= max_docid) {
                     break;
                 }
                 upper_bound += ordered_cursors[pivot]->max_weight;
@@ -98,7 +98,6 @@ struct wand_query {
 
    private:
     topk_queue      m_topk;
-    uint64_t        m_max_docid;
 };
 
 } // namespace pisa
