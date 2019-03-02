@@ -17,9 +17,9 @@
 #include <tbb/task_scheduler_init.h>
 
 #include "binary_freq_collection.hpp"
-#include "ds2i_config.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "pisa_config.hpp"
 #include "sharding.hpp"
 #include "temporary_directory.hpp"
 
