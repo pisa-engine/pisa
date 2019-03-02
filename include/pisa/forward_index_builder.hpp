@@ -280,7 +280,7 @@ class Forward_Index_Builder {
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
-                    term_id = static_cast<std::int32_t>(mapping[term_id]);
+                    term_id = mapping[term_id].as_int();
                 }
             }
         }
@@ -308,7 +308,7 @@ class Forward_Index_Builder {
                std::size_t                   threads) const
     {
         if (threads < 2) {
-            spdlog::error("Building forward index needs at least 2 threads");
+            spdlog::error("Building forward index requires at least 2 threads");
             std::abort();
         }
         Document_Id    first_document{0};

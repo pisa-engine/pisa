@@ -10,6 +10,7 @@
 #include <fmt/ostream.h>
 #include <gsl/span>
 #include <range/v3/action/transform.hpp>
+#include <range/v3/algorithm/stable_sort.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/stride.hpp>
@@ -109,6 +110,96 @@ auto shard_elements(Container const &container, Shard_Id shard_id, int shard_cou
     return elems;
 }
 
+TEST_CASE("copy_sequence", "[invert][unit]")
+{
+    GIVEN("A test forward index")
+    {
+        Temporary_Directory dir;
+        std::string fwd_basename = (dir.path() / "fwd").string();
+        std::string output = (dir.path() / "copy").string();
+        int document_count = 10'000;
+        build_fwd_index(fwd_basename);
+
+        WHEN("All sequences are copied")
+        {
+            {
+                std::ifstream is(fwd_basename);
+                std::ofstream os(output);
+                for ([[maybe_unused]] auto _ : ranges::view::ints(0, document_count)) {
+                    copy_sequence(is, os);
+                }
+            }
+
+            THEN("Files are identical")
+            {
+                auto actual = io::load_data(output);
+                auto expected = io::load_data(fwd_basename);
+                expected.resize(actual.size());
+                REQUIRE(actual == expected);
+            }
+        }
+    }
+}
+
+TEST_CASE("Rearrange sequences", "[invert][integration]")
+{
+    GIVEN("A test forward index")
+    {
+        Temporary_Directory dir;
+        std::string fwd_basename = (dir.path() / "fwd").string();
+        std::string output_basename = (dir.path() / "shards").string();
+        int document_count = 10'000;
+        build_fwd_index(fwd_basename);
+
+        WHEN("Rearrange the sequences in a round-robin manner")
+        {
+            auto mapping = round_robin_mapping(document_count, 13);
+            REQUIRE(mapping.size() == document_count);
+            rearrange_sequences(fwd_basename, output_basename, mapping);
+            auto shard_ids = ranges::view::iota(0_s, 13_s);
+
+            THEN("Sequences are properly rearranged")
+            {
+                auto full = binary_collection(fwd_basename.c_str());
+                auto full_iter = ++full.begin();
+                std::vector<std::vector<std::uint32_t>> expected;
+                std::transform(
+                    full_iter, full.end(), std::back_inserter(expected), [](auto const &seq) {
+                        return std::vector<std::uint32_t>(seq.begin(), seq.end());
+                    });
+                auto sorted_mapping = mapping.entries() | ranges::to_vector;
+                ranges::stable_sort(sorted_mapping, [](auto const &lhs, auto const &rhs) {
+                    return std::make_pair(lhs.second, lhs.first)
+                           < std::make_pair(rhs.second, rhs.first);
+                });
+                expected = ranges::view::transform(
+                               sorted_mapping,
+                               [&](auto &&entry) { return expected[entry.first.as_int()]; })
+                           | ranges::to_vector;
+
+                auto pos = expected.begin();
+                for (auto shard : shard_ids) {
+                    //std::vector<std::vector<std::uint32_t>> actual;
+                    spdlog::info("Testing shard {}", shard.as_int());
+                    spdlog::default_logger()->flush();
+                    auto shard_coll = binary_collection(
+                        fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str());
+                    size_t doc = 0u;
+                    CAPTURE(shard);
+                    CAPTURE(doc);
+                    for (auto iter = ++shard_coll.begin(); iter != shard_coll.end();
+                         ++iter, ++pos)
+                    {
+                        auto seq = *iter;
+                        REQUIRE(*pos == std::vector<std::uint32_t>(seq.begin(), seq.end()));
+                    }
+                }
+            }
+
+        }
+    }
+}
+
 TEST_CASE("partition_fwd_index", "[invert][integration]")
 {
     tbb::task_scheduler_init init(1);
@@ -155,7 +246,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                 }
                 Shard_Id shard = 0_s;
                 for (auto doc : ranges::view::iota(0_d, Document_Id{document_count})) {
-                    std::clog << "verifying document " << doc << '\n';
+                    CAPTURE(doc);
                     auto full_seq = *full_iter;
                     auto shard_seq = *shard_iterators[shard.as_int()];
                     std::vector<std::string> expected_documents(full_seq.size());

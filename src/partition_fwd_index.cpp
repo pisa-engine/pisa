@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
     std::vector<std::string> shard_files;
     int threads = std::thread::hardware_concurrency();
     int shard_count;
+    bool debug = false;
 
     CLI::App app{"Partition a forward index"};
     app.add_option("-i,--input", input_basename, "Forward index filename")->required();
@@ -45,7 +46,12 @@ int main(int argc, char **argv) {
         = app.add_option("-s,--shard-files", shard_files, "List of files with shard titles");
     random_option->excludes(shard_files_option);
     shard_files_option->excludes(random_option);
+    app.add_flag("--debug", debug, "Print debug messages");
     CLI11_PARSE(app, argc, argv);
+
+    if (debug) {
+        spdlog::set_level(spdlog::level::debug);
+    }
 
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
