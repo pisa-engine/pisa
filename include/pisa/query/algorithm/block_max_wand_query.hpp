@@ -44,7 +44,7 @@ struct block_max_wand_query {
             uint64_t pivot_id    = m_max_docid;
 
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot]->docs_enum.docid() == m_max_docid) {
+                if (ordered_cursors[pivot]->docs_enum.docid() >= m_max_docid) {
                     break;
                 }
 

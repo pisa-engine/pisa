@@ -1,5 +1,6 @@
 #define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <boost/te.hpp>
+#include <catch2/catch.hpp>
 
 #include "test_common.hpp"
 
@@ -136,24 +137,63 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "ranked_or_taat_lazy")
     test_against_or(query_fun);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "range_query") { 
-    // normally, we wouldn't erase for efficiency reasons, but here only testing correctness 
-    // BTW. in the coming versions of Catch2, there will be a template generator, so no erasure will be necessary 
-    // using fn_type = std::function
-    //     <uint64_t(decltype(
-    //     make_block_max_scored_cursors(index, wdata, pisa::term_id_vec{})))>; 
-    // auto query_type = GENERATE(fn_type, pisa::wand_query, pisa::maxscore_query); 
-    // CAPTURE(query_type); 
-    // auto query_fun = [&](pisa::term_id_vec terms) { 
-    //     pisa::range_query<fn_type> q(10, index.num_docs(), 128); 
-    //     q(make_block_max_scored_cursors(index, wdata, terms)); 
-    //     return q; 
-    // }; 
-    // test_against_or(query_fun); 
-    auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::range_query<pisa::wand_query> wand_q(10, index.num_docs(), 128);
-        wand_q(make_max_scored_cursors(index, wdata, terms));
-        return wand_q;
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query: ranked_or")
+{
+    auto query_fun = [&](pisa::term_id_vec terms) {
+        pisa::range_query<pisa::ranked_or_query> q(10, index.num_docs(), 128);
+        q(make_scored_cursors(index, wdata, terms));
+        return q;
+    };
+    test_against_or(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query: ranked_or_taat")
+{
+    auto query_fun = [&](pisa::term_id_vec terms) {
+        pisa::range_query<pisa::ranked_or_taat_query<pisa::Simple_Accumulator>> q(
+            10, index.num_docs(), 128);
+        q(make_scored_cursors(index, wdata, terms));
+        return q;
+    };
+    test_against_or(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query: wand")
+{
+    auto query_fun = [&](pisa::term_id_vec terms) {
+        pisa::range_query<pisa::wand_query> q(10, index.num_docs(), 128);
+        q(make_max_scored_cursors(index, wdata, terms));
+        return q;
+    };
+    test_against_or(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query: maxscore")
+{
+    auto query_fun = [&](pisa::term_id_vec terms) {
+        pisa::range_query<pisa::maxscore_query> q(10, index.num_docs(), 128);
+        q(make_max_scored_cursors(index, wdata, terms));
+        return q;
+    };
+    test_against_or(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query: bmw")
+{
+    auto query_fun = [&](pisa::term_id_vec terms) {
+        pisa::range_query<pisa::block_max_wand_query> q(10, index.num_docs(), 128);
+        q(make_block_max_scored_cursors(index, wdata, terms));
+        return q;
+    };
+    test_against_or(query_fun);
+}
+
+TEST_CASE_METHOD(pisa::test::index_initialization, "range_query: bmm")
+{
+    auto query_fun = [&](pisa::term_id_vec terms) {
+        pisa::range_query<pisa::block_max_maxscore_query> q(10, index.num_docs(), 128);
+        q(make_block_max_scored_cursors(index, wdata, terms));
+        return q;
     };
     test_against_or(query_fun);
 }
