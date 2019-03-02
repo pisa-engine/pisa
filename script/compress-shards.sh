@@ -3,7 +3,7 @@
 print_usage()
 {
     echo "USAGE:"
-    echo "\tinvert-shards <PROGRAM> <INPUT_BASENAME> <OUTPUT_BASENAME> [program flags]"
+    echo "\tcompress-shards <PROGRAM> <INPUT_BASENAME> <OUTPUT_BASENAME> [program flags]"
     exit 1
 }
 
@@ -17,11 +17,11 @@ shift 3
 
 INPUT_DIR=`dirname $INPUT_BASENAME`
 
-find ${INPUT_DIR} -type f -regextype posix-extended -regex ".*${INPUT_BASENAME}\\.([0-9]){3}" | \
+find ${INPUT_DIR} -type f -regextype posix-extended -regex ".*${INPUT_BASENAME}\\.([0-9]){3}\\.docs" | \
 while read SHARD_BASENAME; do
+    SHARD_BASENAME=`echo ${SHARD_BASENAME} | sed 's/\.docs$//'`
     NUMBER=`echo ${SHARD_BASENAME} | egrep -o '[0-9]{3}'`
-    TERM_COUNT=`cat "${SHARD_BASENAME}.terms" | wc -l`
-    CMD="${PROGRAM} -i ${SHARD_BASENAME} -o "${OUTPUT_BASENAME}.${NUMBER}" --term-count ${TERM_COUNT} $@"
+    CMD="${PROGRAM} -c ${SHARD_BASENAME} -o "${OUTPUT_BASENAME}.${NUMBER}" $@"
     echo ${CMD}
-    ${CMD}
+    #${CMD}
 done
