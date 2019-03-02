@@ -150,33 +150,35 @@ void perftest(const std::string &index_filename,
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                block_max_wand_query block_max_wand_q(k, index.num_docs());
-                return block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms));
+                block_max_wand_query block_max_wand_q(k);
+                return block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                block_max_maxscore_query block_max_maxscore_q(k, index.num_docs());
-                return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms));
+                block_max_maxscore_query block_max_maxscore_q(k);
+                return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
             };
         }  else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                ranked_or_query ranked_or_q(k, index.num_docs());
-                return ranked_or_q(make_scored_cursors(index, wdata, terms));
+                ranked_or_query ranked_or_q(k);
+                return ranked_or_q(make_scored_cursors(index, wdata, terms), index.num_docs());
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                maxscore_query maxscore_q(k, index.num_docs());
-                return maxscore_q(make_max_scored_cursors(index, wdata, terms));
+                maxscore_query maxscore_q(k);
+                return maxscore_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            ranked_or_taat_query<Simple_Accumulator> ranked_or_taat_q(k, index.num_docs());
+            Simple_Accumulator accumulator(index.num_docs());
+            ranked_or_taat_query ranked_or_taat_q(k);
             query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
-                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
+                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(), accumulator);
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            ranked_or_taat_query<Lazy_Accumulator<4>> ranked_or_taat_q(k, index.num_docs());
+            Lazy_Accumulator<4> accumulator(index.num_docs());
+            ranked_or_taat_query ranked_or_taat_q(k);
             query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
-                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms));
+                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(), accumulator);
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);

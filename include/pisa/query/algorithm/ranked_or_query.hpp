@@ -9,11 +9,11 @@ namespace pisa {
 struct ranked_or_query {
     typedef bm25 scorer_type;
 
-    ranked_or_query(uint64_t k, uint64_t max_docid)
-        : m_topk(k), m_max_docid(max_docid) {}
+    ranked_or_query(uint64_t k)
+        : m_topk(k){}
 
     template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename CursorRange::value_type;
         m_topk.clear();
         if (cursors.empty()) return 0;
@@ -24,9 +24,9 @@ struct ranked_or_query {
                              })
                 ->docs_enum.docid();
 
-        while (cur_doc < m_max_docid) {
+        while (cur_doc < max_docid) {
             float    score    = 0;
-            uint64_t next_doc = m_max_docid;
+            uint64_t next_doc = max_docid;
             for (size_t i = 0; i < cursors.size(); ++i) {
                 if (cursors[i].docs_enum.docid() == cur_doc) {
                     score += cursors[i].scorer(cursors[i].docs_enum.docid(), cursors[i].docs_enum.freq());
@@ -49,7 +49,6 @@ struct ranked_or_query {
 
    private:
     topk_queue      m_topk;
-    uint64_t        m_max_docid;
 };
 
 }  // namespace pisa

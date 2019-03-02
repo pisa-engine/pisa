@@ -108,8 +108,8 @@ void profile(const std::string index_filename,
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
-                maxscore_query maxscore_q(10, index.num_docs());
-                return maxscore_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms));
+                maxscore_query maxscore_q(10);
+                return maxscore_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms), index.num_docs());
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);

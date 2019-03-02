@@ -80,8 +80,8 @@ struct index_initialization {
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_plain") {
 
     auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::block_max_wand_query   block_max_wand_q(10, index.num_docs());
-        block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms));
+        pisa::block_max_wand_query   block_max_wand_q(10);
+        block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
         return block_max_wand_q;
     };
     test_against_wand(query_fun);
@@ -90,8 +90,8 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_plain") {
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_uniform") {
 
     auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::block_max_wand_query block_max_wand_q(10, index.num_docs());
-        block_max_wand_q(make_block_max_scored_cursors(index, wdata_uniform, terms));
+        pisa::block_max_wand_query block_max_wand_q(10);
+        block_max_wand_q(make_block_max_scored_cursors(index, wdata_uniform, terms), index.num_docs());
         return block_max_wand_q;
     };
     test_against_wand(query_fun);
@@ -100,8 +100,8 @@ TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_uniform") {
 TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_fixed") {
 
     auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::block_max_wand_query   block_max_wand_q(10, index.num_docs());
-        block_max_wand_q(make_block_max_scored_cursors(index, wdata_fixed, terms));
+        pisa::block_max_wand_query   block_max_wand_q(10);
+        block_max_wand_q(make_block_max_scored_cursors(index, wdata_fixed, terms), index.num_docs());
         return block_max_wand_q;
     };
     test_against_wand(query_fun);
