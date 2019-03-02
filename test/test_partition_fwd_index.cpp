@@ -86,7 +86,7 @@ auto round_robin_mapping(int document_count, int shard_count)
 
 void build_fwd_index(std::string const &output)
 {
-    std::string input(DS2I_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
+    std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
     std::ifstream is(input);
     pisa::Forward_Index_Builder builder;
     builder.build(is,
