@@ -23,5 +23,5 @@ while read SHARD_BASENAME; do
     NUMBER=`echo ${SHARD_BASENAME} | egrep -o '[0-9]{3}'`
     CMD="${PROGRAM} -c ${SHARD_BASENAME} -o "${OUTPUT_BASENAME}.${NUMBER}" $@"
     echo ${CMD}
-    #${CMD}
+    ${CMD}
 done

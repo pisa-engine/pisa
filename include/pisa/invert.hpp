@@ -245,11 +245,7 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
         spdlog::info(
             "Inverting [{}, {})", documents_processed, documents_processed + documents.size());
         auto index = invert_range(documents, Document_Id(documents_processed), threads);
-
-        std::ostringstream batch_name_stream;
-        batch_name_stream << output_basename << ".batch." << batch;
-        write(batch_name_stream.str(), index, term_count);
-
+        write(fmt::format("{}.batch.{}", output_basename, batch), index, term_count);
         documents_processed += documents.size();
         batch += 1;
     }
@@ -288,7 +284,7 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
     std::ofstream fos(output_basename + ".freqs");
     auto document_count = static_cast<uint32_t>(document_sizes.size());
     write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
-    for ([[maybe_unused]] auto _ : ranges::view::iota(0, term_count)) {
+    for (auto term_id : ranges::view::iota(0, term_count)) {
         std::vector<uint32_t> dlist;
         for (auto &iter : doc_iterators) {
             auto seq = *iter;
@@ -300,6 +296,21 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
             auto seq = *iter;
             flist.insert(flist.end(), seq.begin(), seq.end());
             ++iter;
+        }
+        if (dlist.size() != flist.size()) {
+            auto msg = fmt::format(
+                "Document and frequency lists must be equal length"
+                "but are {} and {} (term {})",
+                dlist.size(),
+                flist.size(),
+                term_id);
+            spdlog::error(msg);
+            throw std::runtime_error(msg);
+        }
+        if (dlist.size() == 0u) {
+            auto msg = fmt::format("Posting list must be non-empty (term {})", term_id);
+            spdlog::error(msg);
+            throw std::runtime_error(msg);
         }
         write_sequence(dos, gsl::span<uint32_t const>(dlist));
         write_sequence(fos, gsl::span<uint32_t const>(flist));

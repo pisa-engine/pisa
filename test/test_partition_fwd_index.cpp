@@ -259,6 +259,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                                    shard_seq.end(),
                                    actual_documents.begin(),
                                    [&](auto const &id) { return shard_terms[shard.as_int()][id]; });
+                    REQUIRE(actual_documents == expected_documents);
                     shard += 1_s;
                     if (shard == 13_s) {
                         shard = 0_s;
