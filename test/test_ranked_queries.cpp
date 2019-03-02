@@ -118,8 +118,6 @@ TEMPLATE_TEST_CASE_METHOD(test::index_initialization,
                           range_query<block_max_wand_query>,
                           range_query<block_max_maxscore_query>)
 {
-    auto range_length = GENERATE(as<int>(), 53, 128);
-    CAPTURE(range_length);
     using super = test::index_initialization<TestType>;
-    super::test_against_or(TestType(10, super::index.num_docs(), range_length));
+    super::test_against_or(TestType(10, super::index.num_docs(), 128));
 }
