@@ -13,9 +13,6 @@ namespace pisa {
     public:
         typedef typename IndexedSequence::enumerator enumerator_type;
 
-        sequence_collection()
-        {}
-
         class builder {
         public:
             builder(global_parameters const& params)
@@ -121,7 +118,7 @@ namespace pisa {
 
     private:
         global_parameters m_params;
-        size_t m_size;
+        size_t m_size = 0;
         bitvector_collection m_sequences;
     };
 }
