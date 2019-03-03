@@ -32,7 +32,7 @@ matrix:
           packages:
             - g++-7
             - lcov
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=Off"
     - os: linux
       dist: xenial
       compiler: gcc
