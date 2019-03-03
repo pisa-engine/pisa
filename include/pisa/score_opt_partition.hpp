@@ -154,9 +154,8 @@ namespace pisa {
                         window.advance_end();
                     }
 
-                    wand_cost_t window_cost;
                     while (true) {
-                        window_cost = window.cost();
+                        wand_cost_t window_cost = window.cost();
 
                         if ((min_cost[i] + window_cost < min_cost[window.end])) {
                             min_cost[window.end] = min_cost[i] + window_cost;
