@@ -83,10 +83,10 @@ script:
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
         make -j2;
-        travis_wait 120 ctest -j2;
+        ctest -j2;
       fi
 
 after_success:
   - if [[ "${COVERAGE}" == "On" ]]; then 
-      travis_wait 120 bash <(curl -s https://codecov.io/bash);
+      bash <(curl -s https://codecov.io/bash);
     fi
