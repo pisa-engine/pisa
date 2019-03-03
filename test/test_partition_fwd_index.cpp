@@ -117,7 +117,7 @@ TEST_CASE("copy_sequence", "[invert][unit]")
         Temporary_Directory dir;
         std::string fwd_basename = (dir.path() / "fwd").string();
         std::string output = (dir.path() / "copy").string();
-        int document_count = 10'000;
+        int document_count = 1'000;
         build_fwd_index(fwd_basename);
 
         WHEN("All sequences are copied")
@@ -148,7 +148,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
         Temporary_Directory dir;
         std::string fwd_basename = (dir.path() / "fwd").string();
         std::string output_basename = (dir.path() / "shards").string();
-        int document_count = 10'000;
+        int document_count = 1'000;
         build_fwd_index(fwd_basename);
 
         WHEN("Rearrange the sequences in a round-robin manner")
@@ -208,7 +208,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
         Temporary_Directory dir;
         std::string fwd_basename = (dir.path() / "fwd").string();
         std::string output_basename = (dir.path() / "shards").string();
-        int document_count = 10'000;
+        int document_count = 1'000;
         build_fwd_index(fwd_basename);
 
         WHEN("Partition the forward index in a round-robin manner")
