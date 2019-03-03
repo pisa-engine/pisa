@@ -11,11 +11,10 @@ void verify_collection(InputCollection const &input, const char *filename) {
     Collection coll;
     mio::mmap_source m(filename);
     pisa::mapper::map(coll, m);
-    size_t size=0;
     spdlog::info("Checking the written data, just to be extra safe...");
     size_t s = 0;
     for (auto seq: input) {
-        size = seq.docs.size();
+        size_t size = seq.docs.size();
         auto e = coll[s];
         if (e.size() != size) {
             spdlog::error("sequence {} has wrong length! ({} != {})", s, e.size(), size);
