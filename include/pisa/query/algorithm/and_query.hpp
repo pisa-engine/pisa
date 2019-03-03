@@ -11,7 +11,7 @@ struct and_query {
 
     template<typename CursorRange>
     auto operator()(CursorRange &&cursors, uint32_t max_docid) const {
-        using Cursor = typename CursorRange::value_type;
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
 
         using Doc_t = uint32_t;
         using Score_t = float;
@@ -19,7 +19,6 @@ struct and_query {
         using Result_t = typename std::conditional<with_freqs, DocScore_t, Doc_t>::type;
 
         std::vector<Result_t> results;
-
         if (cursors.empty())
             return results;
 

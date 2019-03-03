@@ -16,7 +16,7 @@ class ranked_or_taat_query {
 
     template <typename CursorRange, typename Acc>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, Acc accumulator) {
-        using Cursor = typename CursorRange::value_type;
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
         m_topk.clear();
         if (cursors.empty()) {
             return 0;
