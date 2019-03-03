@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <random>
 #include <string>
 #include <unordered_map>
@@ -187,8 +188,10 @@ auto process_shard(std::string const &input_basename,
     }
 
     spdlog::debug("[Shard {}] Remapping term IDs", shard_id.as_int());
-    std::exclusive_scan(
-        std::execution::seq, has_term.begin(), has_term.end(), has_term.begin(), 0u);
+    if (auto pos = std::find(has_term.begin(), has_term.end(), 1u); pos != has_term.end()) {
+        *pos = 0u;
+    }
+    std::partial_sum(has_term.begin(), has_term.end(), has_term.begin());
     auto remapped_term_id = [&](auto term) { return has_term[term]; };
     spdlog::debug("[Shard {}] Writing remapped collection", shard_id.as_int());
     for (auto iter = ++shard.begin(); iter != shard.end(); ++iter) {

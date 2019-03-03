@@ -237,12 +237,16 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                 std::vector<binary_collection> shards;
                 std::vector<typename binary_collection::const_iterator> shard_iterators;
                 std::vector<std::vector<std::string>> shard_terms;
+                shards.reserve(13);
+                shard_iterators.reserve(13);
+                shard_terms.reserve(13);
                 for (auto shard : shard_ids) {
                     shards.push_back(binary_collection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str()));
                     shard_terms.push_back(io::read_string_vector(
                         fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str()));
                     shard_iterators.push_back(++shards.back().begin());
+                    shards.back();
                 }
                 Shard_Id shard = 0_s;
                 for (auto doc : ranges::view::iota(0_d, Document_Id{document_count})) {
@@ -260,6 +264,8 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                                    actual_documents.begin(),
                                    [&](auto const &id) { return shard_terms[shard.as_int()][id]; });
                     REQUIRE(actual_documents == expected_documents);
+                    ++full_iter;
+                    ++shard_iterators[shard.as_int()];
                     shard += 1_s;
                     if (shard == 13_s) {
                         shard = 0_s;
