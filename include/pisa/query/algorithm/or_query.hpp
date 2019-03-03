@@ -8,10 +8,8 @@ namespace pisa {
 template <bool with_freqs>
 struct or_query {
 
-    or_query(uint64_t max_docid) :   m_max_docid(max_docid) {}
-
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) const {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty())
             return 0;
@@ -24,9 +22,9 @@ struct or_query {
                                             })
                                ->docid();
 
-        while (cur_doc < m_max_docid) {
+        while (cur_doc < max_docid) {
             results += 1;
-            uint64_t next_doc = m_max_docid;
+            uint64_t next_doc = max_docid;
             for (size_t i = 0; i < cursors.size(); ++i) {
                 if (cursors[i].docid() == cur_doc) {
                     if constexpr (with_freqs) {
@@ -44,9 +42,6 @@ struct or_query {
 
         return results;
     }
-
-   private:
-    uint64_t m_max_docid;
 };
 
 } // namespace pisa

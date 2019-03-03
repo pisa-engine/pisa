@@ -135,13 +135,13 @@ void perftest(const std::string &index_filename,
             };
         } else if (t == "or") {
             query_fun = [&](term_id_vec terms){
-                or_query<false> or_q(index.num_docs());
-                return or_q(make_cursors(index, terms));
+                or_query<false> or_q;
+                return or_q(make_cursors(index, terms), index.num_docs());
             };
         } else if (t == "or_freq") {
             query_fun = [&](term_id_vec terms){
-                or_query<true> or_q(index.num_docs());
-                return or_q(make_cursors(index, terms));
+                or_query<true> or_q;
+                return or_q(make_cursors(index, terms), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
