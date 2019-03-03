@@ -9,30 +9,29 @@
 
 namespace pisa {
 
-template <typename Acc = Simple_Accumulator>
 class ranked_or_taat_query {
    public:
-    ranked_or_taat_query(uint64_t k, uint64_t max_docid)
-        : m_topk(k), m_max_docid(max_docid), m_accumulator(max_docid) {}
+    ranked_or_taat_query(uint64_t k)
+        : m_topk(k) {}
 
-    template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) {
+    template <typename CursorRange, typename Acc>
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, Acc accumulator) {
         using Cursor = typename CursorRange::value_type;
         m_topk.clear();
         if (cursors.empty()) {
             return 0;
         }
-        m_accumulator.init();
+        accumulator.init();
 
         for (auto &&cursor : cursors) {
-            while (cursor.docs_enum.docid() < m_max_docid) {
-                m_accumulator.accumulate(
+            while (cursor.docs_enum.docid() < max_docid) {
+                accumulator.accumulate(
                     cursor.docs_enum.docid(),
                     cursor.scorer(cursor.docs_enum.docid(), cursor.docs_enum.freq()));
                 cursor.docs_enum.next();
             }
         }
-        m_accumulator.aggregate(m_topk);
+        accumulator.aggregate(m_topk);
         m_topk.finalize();
         return m_topk.topk().size();
     }
@@ -41,8 +40,6 @@ class ranked_or_taat_query {
 
    private:
     topk_queue m_topk;
-    uint64_t   m_max_docid;
-    Acc        m_accumulator;
 };
 
 };  // namespace pisa

@@ -9,11 +9,10 @@ struct ranked_and_query {
 
     typedef bm25 scorer_type;
 
-    ranked_and_query(uint64_t k, uint64_t max_docid)
-        : m_topk(k), m_max_docid(max_docid) {}
+    ranked_and_query(uint64_t k) : m_topk(k) {}
 
     template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename CursorRange::value_type;
         size_t results = 0;
         m_topk.clear();
@@ -34,7 +33,7 @@ struct ranked_and_query {
 
         uint64_t candidate = ordered_cursors[0]->docs_enum.docid();
         size_t   i         = 1;
-        while (candidate < m_max_docid) {
+        while (candidate < max_docid) {
             for (; i < ordered_cursors.size(); ++i) {
                 ordered_cursors[i]->docs_enum.next_geq(candidate);
                 if (ordered_cursors[i]->docs_enum.docid() != candidate) {
@@ -72,7 +71,6 @@ struct ranked_and_query {
 
    private:
     topk_queue      m_topk;
-    uint64_t m_max_docid;
 };
 
 } // namespace pisa

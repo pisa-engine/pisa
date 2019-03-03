@@ -8,11 +8,11 @@ namespace pisa {
 struct block_max_wand_query {
     typedef bm25 scorer_type;
 
-    block_max_wand_query(uint64_t k, uint64_t max_docid)
-        : m_topk(k), m_max_docid(max_docid) {}
+    block_max_wand_query(uint64_t k)
+        : m_topk(k) {}
 
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename CursorRange::value_type;
         m_topk.clear();
 
@@ -41,10 +41,10 @@ struct block_max_wand_query {
             float    upper_bound = 0.f;
             size_t   pivot;
             bool     found_pivot = false;
-            uint64_t pivot_id    = m_max_docid;
+            uint64_t pivot_id    = max_docid;
 
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
-                if (ordered_cursors[pivot]->docs_enum.docid() == m_max_docid) {
+                if (ordered_cursors[pivot]->docs_enum.docid() >= max_docid) {
                     break;
                 }
 
@@ -134,7 +134,7 @@ struct block_max_wand_query {
                     }
                 }
 
-                uint64_t next_jump = m_max_docid;
+                uint64_t next_jump = max_docid;
 
                 if (pivot + 1 < ordered_cursors.size()) {
                     next_jump = ordered_cursors[pivot + 1]->docs_enum.docid();
@@ -182,7 +182,6 @@ struct block_max_wand_query {
 
    private:
     topk_queue      m_topk;
-    uint64_t m_max_docid;
 };
 
 } // namespace pisa

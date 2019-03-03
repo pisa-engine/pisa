@@ -87,3 +87,9 @@ target_link_libraries(partition_fwd_index
   pisa
   CLI11
 )
+
+add_executable(compute_intersection compute_intersection.cpp)
+target_link_libraries(compute_intersection
+  pisa
+  CLI11
+)
