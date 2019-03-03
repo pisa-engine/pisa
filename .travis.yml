@@ -32,7 +32,7 @@ matrix:
           packages:
             - g++-7
             - lcov
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On"
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=On && BUILD_TYPE=Release"
     - os: linux
       dist: xenial
       compiler: gcc
@@ -40,7 +40,7 @@ matrix:
         apt:
           sources: *all_sources
           packages: ['g++-7']
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On"
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On && BUILD_TYPE=Debug"
     - os: linux
       dist: xenial
       compiler: gcc
@@ -48,7 +48,7 @@ matrix:
         apt:
           sources: *all_sources
           packages: ['g++-8']
-      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && BUILD_TYPE=Debug""
     - os: linux
       dist: xenial
       compiler: clang
@@ -56,7 +56,7 @@ matrix:
           apt:
               sources: *all_sources
               packages: ['clang-5.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off && BUILD_TYPE=Debug""
     - os: linux
       dist: xenial
       compiler: clang
@@ -64,11 +64,11 @@ matrix:
           apt:
               sources: *all_sources
               packages: ['clang-6.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && BUILD_TYPE=Debug""
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off && BUILD_TYPE=Debug""
 
 # Install dependencies
 before_install:
@@ -80,7 +80,7 @@ before_install:
 
 script:
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
+    - cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
         make -j2;
         ctest -j2;
