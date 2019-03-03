@@ -310,7 +310,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
         std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
         REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
         int thread_count = GENERATE(2, 8);
-        int batch_size   = GENERATE(123, 10000);
+        int batch_size   = GENERATE(123, 1000);
         WHEN("Build a forward index") {
             Temporary_Directory tmpdir;
             auto dir = tmpdir.path();
@@ -331,7 +331,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 auto term_map = load_term_map(output);
                 binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
-                REQUIRE(*seq_iter->begin() == 10000);
+                REQUIRE(*seq_iter->begin() == 1000);
                 ++seq_iter;
                 std::ifstream plain_is(input);
                 std::optional<Document_Record> record = std::nullopt;

@@ -14,5 +14,19 @@
 
 [Official Documentation](http://pisa.readthedocs.io)
 
+Description 
+------------
+
+PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
+
+Some features of PISA are listed below:
+
+* Written in C++ for performance;
+* Indexing & Parsing capabilities;
+* Many index compression methods implemented;
+* Many query processing algorithms implemented;
+* Implementation of document reordering;
+* Free and open-source with permissive license;
+
 #### Credits
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).
