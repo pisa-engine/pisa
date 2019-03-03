@@ -85,3 +85,10 @@ For example, following the above example:
         shard_prefix_inverted \         # basename to shard inverted indexes
         shard_prefix_inverted_simdbp \  # basename to shard compressed indexes
         -t block_simdbp --check         # any arguments to be appended to each program execution
+
+Note that this script can be also used for creating WAND data by replacing the program:
+
+    $ compress-shards.sh \
+        /path/to/create_wand_data \     # provide path to program
+        shard_prefix_inverted \         # basename to shard inverted indexes
+        shard_prefix_inverted_wand      # basename to shard compressed indexes
