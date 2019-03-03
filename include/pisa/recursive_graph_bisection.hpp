@@ -43,8 +43,8 @@ class document_range {
 
     document_range(Iterator                                    first,
                    Iterator                                    last,
-                   std::reference_wrapper<const forward_index> fwdidx,
-                   std::reference_wrapper<std::vector<double>> gains)
+                   const std::reference_wrapper<const forward_index> &fwdidx,
+                   const std::reference_wrapper<std::vector<double>> &gains)
         : m_first(first), m_last(last), m_fwdidx(fwdidx), m_gains(gains) {}
 
     Iterator       begin() { return m_first; }
