@@ -11,13 +11,13 @@
 
 using namespace pisa;
 
+using WandTypeUniform = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
+using WandTypePlain = wand_data<bm25, wand_data_raw<bm25>>;
+
 template <typename Index>
 struct IndexData {
 
     static std::unique_ptr<IndexData> data;
-
-    using WandTypeUniform = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
-    using WandTypePlain = wand_data<bm25, wand_data_raw<bm25>>;
 
     IndexData()
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
@@ -25,15 +25,7 @@ struct IndexData {
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
-                partition_type::variable_blocks),
-          wdata_fixed(document_sizes.begin()->begin(),
-                      collection.num_docs(),
-                      collection,
-                      partition_type::fixed_blocks),
-          wdata_uniform(document_sizes.begin()->begin(),
-                        collection.num_docs(),
-                        collection,
-                        partition_type::variable_blocks)
+                partition_type::variable_blocks)
     {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
@@ -57,8 +49,6 @@ struct IndexData {
     Index index;
     std::vector<term_id_vec> queries;
     WandTypePlain wdata;
-    WandTypePlain wdata_fixed;
-    WandTypeUniform wdata_uniform;
 
     [[nodiscard]] static auto get()
     {
@@ -95,17 +85,22 @@ auto test(Wand &wdata)
 TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
 {
     auto data = IndexData<single_index>::get();
-    test(data->wdata);
-}
 
-TEST_CASE("block_max_wand_fixed", "[bmw][query][ranked][integration]", )
-{
-    auto data = IndexData<single_index>::get();
-    test(data->wdata_fixed);
-}
-
-TEST_CASE("block_max_wand_uniform", "[bmw][query][ranked][integration]", )
-{
-    auto data = IndexData<single_index>::get();
-    test(data->wdata_uniform);
+    SECTION("Regular") { test(data->wdata); }
+    SECTION("Fixed")
+    {
+        WandTypePlain wdata_fixed(data->document_sizes.begin()->begin(),
+                                  data->collection.num_docs(),
+                                  data->collection,
+                                  partition_type::fixed_blocks);
+        test(wdata_fixed);
+    }
+    SECTION("Uniform")
+    {
+        WandTypeUniform wdata_uniform(data->document_sizes.begin()->begin(),
+                                      data->collection.num_docs(),
+                                      data->collection,
+                                      partition_type::variable_blocks);
+        test(wdata_uniform);
+    }
 }
