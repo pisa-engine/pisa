@@ -56,7 +56,7 @@ struct add_profiling<pisa::block_freq_index<BlockType, false>> {
 
 
 template <typename IndexType>
-void profile(const std::string index_filename,
+void profile(const std::string &index_filename,
 
              const std::optional<std::string> &wand_data_filename,
              std::vector<pisa::term_id_vec> const& queries,
