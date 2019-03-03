@@ -81,3 +81,9 @@ target_link_libraries(read_collection
   pisa
   CLI11
 )
+
+add_executable(compute_intersection compute_intersection.cpp)
+target_link_libraries(compute_intersection
+  pisa
+  CLI11
+)

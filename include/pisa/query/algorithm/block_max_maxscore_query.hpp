@@ -9,11 +9,11 @@ struct block_max_maxscore_query {
 
     typedef bm25 scorer_type;
 
-    block_max_maxscore_query(uint64_t k, uint64_t max_docid)
-        : m_topk(k), m_max_docid(max_docid) {}
+    block_max_maxscore_query(uint64_t k)
+        : m_topk(k) {}
 
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors) {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         m_topk.clear();
         if (cursors.empty())
@@ -46,9 +46,9 @@ struct block_max_maxscore_query {
                              })
                 ->docs_enum.docid();
 
-        while (non_essential_lists < ordered_cursors.size() && cur_doc < m_max_docid) {
+        while (non_essential_lists < ordered_cursors.size() && cur_doc < max_docid) {
             float    score    = 0;
-            uint64_t next_doc = m_max_docid;
+            uint64_t next_doc = max_docid;
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
                 if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
                     score +=
@@ -106,6 +106,5 @@ struct block_max_maxscore_query {
 
    private:
     topk_queue      m_topk;
-    uint64_t m_max_docid;
 };
 } // namespace pisa

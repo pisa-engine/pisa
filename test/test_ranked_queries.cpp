@@ -56,10 +56,11 @@ namespace pisa { namespace test {
 
         void test_against_or(QueryFun &&op_q) const
         {
-            ranked_or_query or_q(10, index.num_docs());
+            ranked_or_query or_q(10);
+
             for (auto const& q: queries) {
-                or_q(make_scored_cursors(index, wdata, q));
-                op_q(make_block_max_scored_cursors(index, wdata, q));
+                or_q(make_scored_cursors(index, wdata, q), index.num_docs());
+                op_q(make_block_max_scored_cursors(index, wdata, q), index.num_docs());
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     REQUIRE(or_q.topk()[i].first ==
@@ -70,12 +71,12 @@ namespace pisa { namespace test {
 
         void test_k_size() const
         {
-            ranked_or_query or_10(10, index.num_docs());
-            ranked_or_query or_1(1, index.num_docs());
+            ranked_or_query or_10(10);
+            ranked_or_query or_1(1);
 
             for (auto const &q : queries) {
-                or_10(make_scored_cursors(index, wdata, q));
-                or_1(make_scored_cursors(index, wdata, q));
+                or_10(make_scored_cursors(index, wdata, q), index.num_docs());
+                or_1(make_scored_cursors(index, wdata, q), index.num_docs());
                 if (not or_10.topk().empty()) {
                     REQUIRE(not or_1.topk().empty());
                     REQUIRE(or_1.topk().front().first ==
@@ -100,8 +101,11 @@ TEMPLATE_TEST_CASE_METHOD(test::index_initialization,
                           block_max_maxscore_query)
 {
     using super = test::index_initialization<TestType>;
-    super::test_against_or(TestType(10, super::index.num_docs()));
+    super::test_against_or(TestType(10));
 }
+
+
+
 
 TEST_CASE_METHOD(test::index_initialization<ranked_or_query>, "Ranked query test")
 {
