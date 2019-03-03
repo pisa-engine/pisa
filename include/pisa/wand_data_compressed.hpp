@@ -157,7 +157,7 @@ namespace {
         class enumerator{
             friend class wand_data_compressed;
         public:
-            enumerator(compact_elias_fano::enumerator docs_enum)
+            enumerator(const compact_elias_fano::enumerator &docs_enum)
                 : m_docs_enum(docs_enum)
             {
                 reset();
