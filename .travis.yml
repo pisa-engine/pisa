@@ -88,5 +88,5 @@ script:
 
 after_success:
   - if [[ "${COVERAGE}" == "On" ]]; then 
-      bash <(curl -s https://codecov.io/bash);
+      travis_wait 120 bash <(curl -s https://codecov.io/bash);
     fi
