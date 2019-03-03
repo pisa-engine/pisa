@@ -9,16 +9,17 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 
-namespace pisa {
-namespace test {
+using namespace pisa;
 
-struct index_initialization {
+template <typename Index>
+struct IndexData {
 
-    typedef opt_index                                                             index_type;
-    typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> WandTypeUniform;
-    typedef wand_data<bm25, wand_data_raw<bm25>>                                  WandTypePlain;
+    static std::unique_ptr<IndexData> data;
 
-    index_initialization()
+    using WandTypeUniform = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
+    using WandTypePlain = wand_data<bm25, wand_data_raw<bm25>>;
+
+    IndexData()
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
@@ -32,8 +33,9 @@ struct index_initialization {
           wdata_uniform(document_sizes.begin()->begin(),
                         collection.num_docs(),
                         collection,
-                        partition_type::variable_blocks) {
-        index_type::builder builder(collection.num_docs(), params);
+                        partition_type::variable_blocks)
+    {
+        typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
                 std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
@@ -42,67 +44,68 @@ struct index_initialization {
         }
         builder.build(index);
 
-        term_id_vec   q;
+        term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
-        while (read_query(q, qfile))
+        while (read_query(q, qfile)) {
             queries.push_back(q);
+        }
     }
 
-    global_parameters        params;
-    binary_freq_collection   collection;
-    binary_collection        document_sizes;
-    index_type               index;
+    global_parameters params;
+    binary_freq_collection collection;
+    binary_collection document_sizes;
+    Index index;
     std::vector<term_id_vec> queries;
-    WandTypePlain            wdata;
-    WandTypePlain            wdata_fixed;
-    WandTypeUniform          wdata_uniform;
+    WandTypePlain wdata;
+    WandTypePlain wdata_fixed;
+    WandTypeUniform wdata_uniform;
 
-    template <typename QueryFun>
-    void test_against_wand(QueryFun &query_fun) const {
-        wand_query or_q(10);
-
-        for (auto const &q : queries) {
-            or_q(make_max_scored_cursors(index, wdata, q), index.num_docs());
-            auto op_q = query_fun(q);
-            REQUIRE(or_q.topk().size() == op_q.topk().size());
-
-            for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
-            }
-            op_q.clear_topk();
+    [[nodiscard]] static auto get()
+    {
+        if (IndexData::data == nullptr) {
+            IndexData::data = std::make_unique<IndexData<Index>>();
         }
+        return IndexData::data.get();
     }
 };
 
-} // namespace test
-} // namespace pisa
+template <typename Index>
+std::unique_ptr<IndexData<Index>> IndexData<Index>::data = nullptr;
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_plain") {
+template <typename Wand>
+auto test(Wand &wdata)
+{
+    auto data = IndexData<single_index>::get();
+    block_max_wand_query op_q(10);
+    wand_query wand_q(10);
 
-    auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::block_max_wand_query   block_max_wand_q(10);
-        block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
-        return block_max_wand_q;
-    };
-    test_against_wand(query_fun);
+    for (auto const &q : data->queries) {
+        wand_q(make_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
+        op_q(make_block_max_scored_cursors(data->index, wdata, q), data->index.num_docs());
+        REQUIRE(wand_q.topk().size() == op_q.topk().size());
+
+        for (size_t i = 0; i < wand_q.topk().size(); ++i) {
+            REQUIRE(wand_q.topk()[i].first ==
+                    Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
+        }
+        op_q.clear_topk();
+    }
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_uniform") {
-
-    auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::block_max_wand_query block_max_wand_q(10);
-        block_max_wand_q(make_block_max_scored_cursors(index, wdata_uniform, terms), index.num_docs());
-        return block_max_wand_q;
-    };
-    test_against_wand(query_fun);
+TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
+{
+    auto data = IndexData<single_index>::get();
+    test(data->wdata);
 }
 
-TEST_CASE_METHOD(pisa::test::index_initialization, "block_max_wand_fixed") {
+TEST_CASE("block_max_wand_fixed", "[bmw][query][ranked][integration]", )
+{
+    auto data = IndexData<single_index>::get();
+    test(data->wdata_fixed);
+}
 
-    auto query_fun = [&](pisa::term_id_vec terms){
-        pisa::block_max_wand_query   block_max_wand_q(10);
-        block_max_wand_q(make_block_max_scored_cursors(index, wdata_fixed, terms), index.num_docs());
-        return block_max_wand_q;
-    };
-    test_against_wand(query_fun);
+TEST_CASE("block_max_wand_uniform", "[bmw][query][ranked][integration]", )
+{
+    auto data = IndexData<single_index>::get();
+    test(data->wdata_uniform);
 }
