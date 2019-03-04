@@ -8,6 +8,7 @@
 #include <tbb/task_scheduler_init.h>
 #include <warcpp/warcpp.hpp>
 
+#include "cli.hpp"
 #include "forward_index_builder.hpp"
 
 using namespace pisa;
@@ -78,48 +79,27 @@ content_parser(std::optional<std::string> const &type) {
     std::abort();
 }
 
-int main(int argc, char **argv) {
-
-    auto valid_basename = [](std::string const &basename) {
-        boost::filesystem::path p(basename);
-        auto parent = p.parent_path();
-        if (not boost::filesystem::exists(parent) or not boost::filesystem::is_directory(parent)) {
-            return fmt::format("Basename {} invalid: path {} is not an existing directory",
-                               basename,
-                               parent.string());
-        }
-        return std::string();
-    };
-
-    std::string input_basename;
-    std::string output_filename;
-    std::string format = "plaintext";
-    size_t      threads = std::thread::hardware_concurrency();
-    ptrdiff_t   batch_size = 100'000;
-    std::optional<std::string> stemmer = std::nullopt;
-    std::optional<std::string> content_parser_type = std::nullopt;
-    bool debug = false;
-
+int main(int argc, char **argv)
+{
     CLI::App app{"parse_collection - parse collection and store as forward index."};
-    app.add_option("-o,--output", output_filename, "Forward index filename")
-        ->required()
-        ->check(valid_basename);
-    app.add_option("-j,--threads", threads, "Thread count");
-    app.add_option(
-        "-b,--batch-size", batch_size, "Number of documents to process in one thread", true);
-    app.add_option("-f,--format", format, "Input format", true);
-    app.add_option("--stemmer", stemmer, "Stemmer type");
-    app.add_option("--content-parser", content_parser_type, "Content parser type");
-    app.add_flag("--debug", debug, "Print debug messages");
+    auto output = option<std::string>(app, "-o,--ouput", "Forward index filename")
+                      .with(required, check(valid_basename));
+    auto threads = options::threads(app);
+    auto stemmer = options::stemmer(app);
+    auto record_format = options::record_format(app);
+    auto content_parser_type = options::content_parser(app);
+    auto debug = options::debug(app);
+    auto batch_size = options::batch_size(app, default_value = 10'000u);
 
-    size_t batch_count, document_count;
     CLI::App *merge_cmd = app.add_subcommand("merge",
                                              "Merge previously produced batch files. "
                                              "When parsing process was killed during merging, "
                                              "use this command to finish merging without "
                                              "having to restart building batches.");
-    merge_cmd->add_option("--batch-count", batch_count, "Number of batches")->required();
-    merge_cmd->add_option("--document-count", document_count, "Number of documents")->required();
+    auto batch_count =
+        option<std::size_t>(*merge_cmd, "--batch-count", "Number of batches").with(required);
+    auto document_count =
+        option<std::size_t>(*merge_cmd, "--document-count", "Number of documents").with(required);
 
     CLI11_PARSE(app, argc, argv);
 
@@ -127,20 +107,20 @@ int main(int argc, char **argv) {
         spdlog::set_level(spdlog::level::debug);
     }
 
-    tbb::task_scheduler_init init(threads);
-    spdlog::info("Number of threads: {}", threads);
+    tbb::task_scheduler_init init(*threads);
+    spdlog::info("Number of threads: {}", *threads);
 
     Forward_Index_Builder builder;
     if (*merge_cmd) {
-        builder.merge(output_filename, document_count, batch_count);
+        builder.merge(*output, *document_count, *batch_count);
     } else {
         builder.build(std::cin,
-                      output_filename,
-                      record_parser(format),
-                      term_processor(stemmer),
+                      *output,
+                      record_parser(*record_format),
+                      term_processor(*stemmer),
                       content_parser(content_parser_type),
-                      batch_size,
-                      threads);
+                      *batch_size,
+                      *threads);
     }
 
     return 0;

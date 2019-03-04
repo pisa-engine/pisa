@@ -9,13 +9,14 @@
 
 #include "mappable/mapper.hpp"
 
+#include "cli.hpp"
+#include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -24,9 +25,8 @@ using ranges::view::enumerate;
 
 template <typename IndexType, typename WandType>
 void evaluate_queries(const std::string &index_filename,
-                      const boost::optional<std::string> &wand_data_filename,
+                      const std::optional<std::string> &wand_data_filename,
                       const std::vector<Query> &queries,
-                      const boost::optional<std::string> &thresholds_filename,
                       std::string const &type,
                       uint64_t k,
                       std::string const &documents_filename,
@@ -72,31 +72,19 @@ using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_sc
 
 int main(int argc, const char **argv)
 {
-    std::string type;
-    std::string query_type;
-    std::string index_filename;
-    std::optional<std::string> terms_file;
-    std::string documents_file;
-    boost::optional<std::string> wand_data_filename;
-    boost::optional<std::string> query_filename;
-    boost::optional<std::string> thresholds_filename;
-    uint64_t k = configuration::get().k;
-    bool compressed = false;
-    bool nostem = false;
-
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
-    app.add_option("-t,--type", type, "Index type")->required();
-    app.add_option("-i,--index", index_filename, "Collection basename")->required();
-    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
-    app.add_option("-q,--query", query_filename, "Queries filename");
-    app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("-k", k, "k value");
-    auto *terms_opt =
-        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
-    app.add_option("--documents", documents_file, "Text file with documents in separate lines")
-        ->required();
+    auto type = options::index_type(app);
+    auto index_basename = options::index_basename(app).with(required);
+    auto wand_data_filename = options::wand_data(app).with(required);
+    auto compressed = options::wand_compressed(app);
+    auto k = options::k(app);
+    auto query_filename = option<std::string>(app, "-q,--query", "Query filename");
+    auto terms_file = option<std::string>(app, "--terms", "Text file with terms in separate lines");
+    auto documents_file =
+        option<std::string>(app, "--documents", "Text file with documents in separate lines")
+            .with(required);
+    auto nostem = flag(app, "--nostem", "Do not stem terms").with(needs(terms_file));
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;
@@ -108,41 +96,29 @@ int main(int argc, const char **argv)
     if (query_filename) {
         std::ifstream is(*query_filename);
         io::for_each_line(is, push_query);
-    }
-    else {
+    } else {
         io::for_each_line(std::cin, push_query);
     }
 
     /**/
     if (false) { // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    }                                                                                              \
-    else if (type == BOOST_PP_STRINGIZE(T))                                                        \
-    {                                                                                              \
-        if (compressed) {                                                                          \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,          \
-                                                                          wand_data_filename,      \
-                                                                          queries,                 \
-                                                                          thresholds_filename,     \
-                                                                          type,                    \
-                                                                          k,                       \
-                                                                          documents_file);         \
-        }                                                                                          \
-        else {                                                                                     \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,              \
-                                                                      wand_data_filename,          \
-                                                                      queries,                     \
-                                                                      thresholds_filename,         \
-                                                                      type,                        \
-                                                                      k,                           \
-                                                                      documents_file);             \
-        }                                                                                          \
+#define LOOP_BODY(R, DATA, T)                                                              \
+    }                                                                                      \
+    else if (*type == BOOST_PP_STRINGIZE(T))                                               \
+    {                                                                                      \
+        if (compressed) {                                                                  \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(                 \
+                *index_basename, *wand_data_filename, queries, *type, *k, documents_file); \
+        } else {                                                                           \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(                     \
+                *index_basename, *wand_data_filename, queries, *type, *k, documents_file); \
+        }                                                                                  \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
     }
     else {
-        spdlog::error("Unknown type {}", type);
+        spdlog::error("Unknown type {}", *type);
     }
 }
