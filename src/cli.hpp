@@ -6,9 +6,17 @@
 
 #include <CLI/CLI.hpp>
 #include <CLI/Option.hpp>
+#include <CLI/Optional.hpp>
 #include <boost/filesystem.hpp>
 
 namespace pisa {
+
+template <typename T>
+struct is_optional : std::false_type {};
+
+template <typename T>
+struct is_optional<std::optional<T>> : std::true_type {
+};
 
 template <typename T>
 std::ostream &operator<<(std::ostream &os, std::optional<T> const &value)
@@ -53,12 +61,6 @@ class Option {
 
     explicit operator bool() const { return static_cast<bool>(*option_); }
 
-    template <class = std::enable_if_t<not std::is_same_v<T, bool>>>
-    operator T() const
-    {
-        return *value_;
-    }
-
     [[nodiscard]] auto opt() -> CLI::Option * { return option_; }
 
    private:
@@ -71,7 +73,7 @@ class Option {
     return Option<bool>(app.add_flag(name, description));
 }
 
-template <class T, class U = T>
+template <class T, class U = T, class = std::enable_if_t<not is_optional<T>::value>>
 [[nodiscard]] auto option(CLI::App &app,
                           std::string const &name,
                           std::string const &description,
@@ -82,6 +84,13 @@ template <class T, class U = T>
         *val = def->value;
     }
     return Option<T>(app.add_option(name, *val, description, def.has_value()));
+}
+
+template <class T, class = std::enable_if_t<is_optional<T>::value>>
+[[nodiscard]] auto option(CLI::App &app, std::string const &name, std::string const &description)
+{
+    auto val = std::make_unique<T>();
+    return Option<T>(app.add_option(name, *val, description));
 }
 
 [[nodiscard]] auto valid_basename(std::string const &basename) -> std::string
@@ -149,11 +158,9 @@ namespace options {
         return option<std::string>(app, "--record-fmt", "Record format", def);
     }
 
-    template <typename U = std::optional<std::string>>
-    [[nodiscard]] auto content_parser(CLI::App &app,
-                                      std::optional<DefaultValue<U>> def = std::nullopt)
+    [[nodiscard]] auto content_parser(CLI::App &app)
     {
-        return option<std::optional<std::string>>(app, "--content-parser", "Content parser", def);
+        return option<std::optional<std::string>>(app, "--content-parser", "Content parser");
     }
 
     [[nodiscard]] auto index_type(CLI::App &app)

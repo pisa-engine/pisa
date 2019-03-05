@@ -88,7 +88,7 @@ int main(int argc, const char **argv)
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(*terms_file, not nostem);
     auto push_query = [&](std::string const &query_line) {
         queries.push_back(parse_query(query_line, process_term));
     };
@@ -102,17 +102,17 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) { // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                              \
-    }                                                                                      \
-    else if (*type == BOOST_PP_STRINGIZE(T))                                               \
-    {                                                                                      \
-        if (compressed) {                                                                  \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(                 \
-                *index_basename, *wand_data_filename, queries, *type, *k, documents_file); \
-        } else {                                                                           \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(                     \
-                *index_basename, *wand_data_filename, queries, *type, *k, documents_file); \
-        }                                                                                  \
+#define LOOP_BODY(R, DATA, T)                                                               \
+    }                                                                                       \
+    else if (*type == BOOST_PP_STRINGIZE(T))                                                \
+    {                                                                                       \
+        if (compressed) {                                                                   \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(                  \
+                *index_basename, *wand_data_filename, queries, *type, *k, *documents_file); \
+        } else {                                                                            \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(                      \
+                *index_basename, *wand_data_filename, queries, *type, *k, *documents_file); \
+        }                                                                                   \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

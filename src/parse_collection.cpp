@@ -118,7 +118,7 @@ int main(int argc, char **argv)
                       *output,
                       record_parser(*record_format),
                       term_processor(*stemmer),
-                      content_parser(content_parser_type),
+                      content_parser(*content_parser_type),
                       *batch_size,
                       *threads);
     }
