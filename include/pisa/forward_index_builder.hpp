@@ -53,9 +53,6 @@ struct Document_Record : boost::te::poly<Document_Record> {
             [](auto const &self, auto &result) { result = &self.url(); }, *this, result);
         return *result;
     }
-    [[nodiscard]] auto valid() const -> bool {
-        return boost::te::call<bool>([](auto const &self) { return self.valid(); }, *this);
-    }
 };
 
 using process_term_function_type = std::function<std::string(std::string &&)>;
@@ -174,6 +171,10 @@ class Forward_Index_Builder {
              process_term_function_type    process_term,
              process_content_function_type process_content) const
     {
+        spdlog::debug("[Batch {}] Processing documents [{}, {})",
+                      bp.batch_number,
+                      bp.first_document,
+                      bp.first_document + bp.records.size());
         auto basename = batch_file(bp.output_file, bp.batch_number);
 
         std::ofstream os(basename);
@@ -364,6 +365,7 @@ class Forward_Index_Builder {
                 first_document += last_batch_size;
                 break;
             }
+            spdlog::debug("Parsed document {}", record->trecid());
             record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
             if (record_batch.size() == batch_size) {
                 Batch_Process bp{
