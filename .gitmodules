@@ -63,4 +63,4 @@
 	url = https://github.com/boost-experimental/te.git
 [submodule "external/trecpp"]
 	path = external/trecpp
-	url = git@github.com:pisa-engine/trecpp.git
+	url = https://github.com/pisa-engine/trecpp.git
