@@ -44,14 +44,14 @@ void test_block_codec()
 
 TEST_CASE("block_codecs")
 {
-    test_block_codec<ds2i::optpfor_block>();
-    test_block_codec<ds2i::varint_G8IU_block>();
-    test_block_codec<ds2i::streamvbyte_block>();
-    test_block_codec<ds2i::maskedvbyte_block>();
-    test_block_codec<ds2i::interpolative_block>();
-    test_block_codec<ds2i::qmx_block>();
-    test_block_codec<ds2i::varintgb_block>();
-    test_block_codec<ds2i::simple8b_block>();
-    test_block_codec<ds2i::simdbp_block>();
-    test_block_codec<ds2i::simple16_block>();
+    test_block_codec<pisa::optpfor_block>();
+    test_block_codec<pisa::varint_G8IU_block>();
+    test_block_codec<pisa::streamvbyte_block>();
+    test_block_codec<pisa::maskedvbyte_block>();
+    test_block_codec<pisa::interpolative_block>();
+    test_block_codec<pisa::qmx_block>();
+    test_block_codec<pisa::varintgb_block>();
+    test_block_codec<pisa::simple8b_block>();
+    test_block_codec<pisa::simdbp_block>();
+    test_block_codec<pisa::simple16_block>();
 }

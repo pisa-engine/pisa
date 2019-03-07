@@ -1,66 +1,92 @@
 sudo: require
 language: cpp
-dist: trusty
 
 branches:
   only:
     - master
 
+common_sources: &all_sources
+  - ubuntu-toolchain-r-test
+  - llvm-toolchain-xenial-6.0
+
 env:
   global:
-    - DEPS_DIR=${TRAVIS_BUILD_DIR}/deps
-    - BOOST_URL="http://sourceforge.net/projects/boost/files/boost/1.63.0/boost_1_63_0.tar.gz"
-    - BOOST_VERSION="1_63_0"
     - CODECOV_TOKEN="e3f86b6b-0770-4816-9b7d-19b0c550229f"
 
 
 cache:
-  directories:
-    - ${DEPS_DIR}
-
-
+  - ccache
+  - apt: true
+  - directories:
+    - ${TRAVIS_BUILD_DIR}/build/external
+  
 matrix:
+  fast_finish: true
   include:
-    # works on Precise and Trusty
     - os: linux
-      addons:
+      dist: xenial
+      compiler: gcc
+      addons: &gcc7
         apt:
-          sources:
-            - ubuntu-toolchain-r-test
+          sources: *all_sources
           packages:
             - g++-7
             - lcov
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=Off"
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      addons: &gcc7
+        apt:
+          sources: *all_sources
+          packages: ['g++-7']
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On"
+    - os: linux
+      dist: xenial
+      compiler: gcc
+      addons: &gcc8
+        apt:
+          sources: *all_sources
+          packages: ['g++-8']
+      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off"
+    - os: linux
+      dist: xenial
+      compiler: clang
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-5.0', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
+    - os: linux
+      dist: xenial
+      compiler: clang
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-6.0', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+    - os: osx
+      osx_image: xcode10.1
+      compiler: clang
+      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
 
 # Install dependencies
 before_install:
-  - eval "${MATRIX_EVAL}"
-  - |
-    if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
-      # create dirs for source and install
-      mkdir -p ${DEPS_DIR}/boost${BOOST_VERSION}
-      mkdir -p ${DEPS_DIR}/boost
-      # download
-      travis_retry wget --no-check-certificate --quiet -O - ${BOOST_URL} | tar --strip-components=1 -xz -C ${DEPS_DIR}/boost${BOOST_VERSION}
-      pushd ${DEPS_DIR}/boost${BOOST_VERSION}
-      # configure and install
-      ./bootstrap.sh --prefix=${DEPS_DIR}/boost/ --with-libraries=iostreams,test,filesystem,system,thread
-      ./b2 -d0 install
-      popd
-      if [[ -d ${DEPS_DIR}/boost ]]; then
-        CMAKE_OPTIONS+=" -DBOOST_ROOT=${DEPS_DIR}/boost";
-        export LD_LIBRARY_PATH=$DEPS_DIR/boost/lib:$LD_LIBRARY_PATH
-      fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
+      brew install ccache;
+      export PATH="/usr/local/opt/ccache/libexec:$PATH";
     fi
+  - eval "${MATRIX_EVAL}"
 
 script:
-    - mkdir build
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=On ${CMAKE_OPTIONS} ..
-    - make
-    - ctest
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
+    - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
+        make -j2;
+        ctest -j2;
+      fi
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - if [[ "${COVERAGE}" == "On" ]]; then 
+      bash <(curl -s https://codecov.io/bash);
+    fi

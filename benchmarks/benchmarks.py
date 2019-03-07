@@ -164,7 +164,7 @@ def build_indexes(basename, fast=False, check=False):
 
     check_opt = '--check' if check else ''
     env = os.environ.copy()
-    env['DS2I_THREADS'] = str(MAX_THREADS) if fast else '0'
+    env['PISA_THREADS'] = str(MAX_THREADS) if fast else '0'
     for index_type in INDEX_TYPES:
         print >> sys.stderr, '\nBuilding %(index_type)s index' % locals()
         if not fast:
@@ -179,7 +179,7 @@ def build_indexes(basename, fast=False, check=False):
 
     if not fast:
         # run opt again at full speed
-        env['DS2I_THREADS'] = str(MAX_THREADS)
+        env['PISA_THREADS'] = str(MAX_THREADS)
         index_type = 'opt'
         print >> sys.stderr, '\nBuilding %(index_type)s index' % locals()
         drop_caches()
@@ -202,10 +202,10 @@ def uniform_part_sizes(basename):
     scriptdir = SCRIPTDIR
 
     env = os.environ.copy()
-    env['DS2I_THREADS'] = '1'
+    env['PISA_THREADS'] = '1'
     logfilename = logfile(basename, 'uniform_part_sizes')
     for l in xrange(5, 11):
-        env['DS2I_LOG_PART'] = str(l)
+        env['PISA_LOG_PART'] = str(l)
         check_call((NUMACTL +
                     '%(scriptdir)s/build/create_freq_index uniform '
                     '%(basename)s.bin '
@@ -218,7 +218,7 @@ def sweep_eps(basename):
     scriptdir = SCRIPTDIR
 
     env = os.environ.copy()
-    env['DS2I_THREADS'] = MAX_THREADS
+    env['PISA_THREADS'] = MAX_THREADS
 
     drop_caches()
     # Dry run to ensure data is in page cache
@@ -228,22 +228,22 @@ def sweep_eps(basename):
                 '> /dev/null') % locals(),
                shell=True, env=env)
 
-    env['DS2I_THREADS'] = 1
+    env['PISA_THREADS'] = 1
 
-    env['DS2I_EPS1'] = str(0)
+    env['PISA_EPS1'] = str(0)
     logfilename = logfile(basename, 'sweep_eps2')
     for l in xrange(25, 525, 25):
-        env['DS2I_EPS2'] = str(l / 1000.0)
+        env['PISA_EPS2'] = str(l / 1000.0)
         check_call((NUMACTL +
                     '%(scriptdir)s/build/create_freq_index opt '
                     '%(basename)s.bin '
                     '>> %(logfilename)s') % locals(),
                    shell=True, env=env)
 
-    env['DS2I_EPS2'] = str(0.3)
+    env['PISA_EPS2'] = str(0.3)
     logfilename = logfile(basename, 'sweep_eps1')
     for l in xrange(0, 105, 5):
-        env['DS2I_EPS1'] = str(l / 1000.0)
+        env['PISA_EPS1'] = str(l / 1000.0)
         check_call((NUMACTL +
                     '%(scriptdir)s/build/create_freq_index opt '
                     '%(basename)s.bin '

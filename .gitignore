@@ -2,7 +2,7 @@
 
 build/
 data/
-ds2i_config.hpp
+pisa_config.hpp
 
 # Python junk
 *.pyc
@@ -17,5 +17,6 @@ target/
 # CMake junk
 CMakeCache.txt
 CMakeFiles/
-Makefile
 Testing/
+
+docs/_build/

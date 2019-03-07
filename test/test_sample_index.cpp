@@ -21,6 +21,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
+#include "temporary_directory.hpp"
 
 #include <vector>
 #include <cstdlib>
@@ -30,13 +31,14 @@
 TEST_CASE( "sample_index_full")
 {
     // given
-    using ds2i::binary_freq_collection;
+    using pisa::binary_freq_collection;
     std::string input("test_data/test_collection");
-    std::string output("temp_collection");
+    Temporary_Directory tmpdir;
+    std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
 
     // when
-    ds2i::sample_inverted_index(input, output, 10000);
+    pisa::sample_inverted_index(input, output, 10000);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -57,14 +59,15 @@ TEST_CASE( "sample_index_full")
 TEST_CASE( "sample_index")
 {
     // given
-    using ds2i::binary_freq_collection;
+    using pisa::binary_freq_collection;
     std::string input("test_data/test_collection");
-    std::string output("temp_collection");
+    Temporary_Directory tmpdir;
+    std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
     size_t doc_limit = 2000;
 
     // when
-    ds2i::sample_inverted_index(input, output, doc_limit);
+    pisa::sample_inverted_index(input, output, doc_limit);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
