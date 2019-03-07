@@ -90,6 +90,7 @@ target_link_libraries(pisa INTERFACE
     Boost::filesystem
     Porter2
     warcpp
+    trecpp
     spdlog
     fmt::fmt
     range-v3

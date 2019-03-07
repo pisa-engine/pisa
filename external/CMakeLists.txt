@@ -93,6 +93,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 # Add warcpp
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 
+# Add trecpp
+set(TRECPP_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/trecpp)
+
 # Add fmt
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
 

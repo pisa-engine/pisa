@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
+#include <trecpp/trecpp.hpp>
 #include <warcpp/warcpp.hpp>
 
 #include "forward_index_builder.hpp"
@@ -20,6 +21,24 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
             Plaintext_Record record;
             if (in >> record) {
                 return std::make_optional<Document_Record>(record);
+            }
+            return std::nullopt;
+        };
+    }
+    if (type == "trecweb") {
+        return [](std::istream &in) -> std::optional<Document_Record> {
+            while (not in.eof()) {
+                auto record = trecpp::match(trecpp::read_subsequent_record(in),
+                                            [](trecpp::Record const &rec) {
+                                                return std::make_optional<Document_Record>(rec);
+                                            },
+                                            [](trecpp::Error const &error) {
+                                                spdlog::warn("Skipped invalid record: {}", error);
+                                                return std::optional<Document_Record>{};
+                                            });
+                if (record) {
+                    return record;
+                }
             }
             return std::nullopt;
         };
