@@ -8,6 +8,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/null_sink.h>
 #include <spdlog/spdlog.h>
 
 #include "mappable/mapper.hpp"
@@ -224,6 +226,9 @@ using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
 using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
 
 int main(int argc, const char **argv) {
+
+    spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
+
     std::string type;
     std::string query_type;
     std::string index_filename;
@@ -235,6 +240,7 @@ int main(int argc, const char **argv) {
     bool compressed = false;
     bool nostem = false;
     bool extract = false;
+    bool silent = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -250,7 +256,12 @@ int main(int argc, const char **argv) {
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times")->needs(terms_opt);
+    app.add_flag("--silent", silent, "Suppress logging");
     CLI11_PARSE(app, argc, argv);
+
+    if (silent) {
+        spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("default"));
+    }
 
     std::vector<Query> queries;
     auto process_term = query::term_processor(terms_file, not nostem);
