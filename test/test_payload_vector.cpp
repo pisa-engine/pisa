@@ -13,7 +13,7 @@ using namespace std::literals::string_view_literals;
 
 TEST_CASE("Test string-payload vector", "[payload_vector][unit]")
 {
-    std::vector<std::uint32_t> offsets{0, 3, 6, 10, 13};
+    std::vector<detail::size_type> offsets{0, 3, 6, 10, 13};
     std::vector<std::byte> payloads{std::byte{'a'},
                                     std::byte{'b'},
                                     std::byte{'c'},
@@ -27,8 +27,7 @@ TEST_CASE("Test string-payload vector", "[payload_vector][unit]")
                                     std::byte{'k'},
                                     std::byte{'l'},
                                     std::byte{'m'}};
-    Payload_Vector<std::string_view, std::uint32_t> vec(gsl::make_span(offsets),
-                                                        gsl::make_span(payloads));
+    Payload_Vector<std::string_view> vec(gsl::make_span(offsets), gsl::make_span(payloads));
     SECTION("size") { REQUIRE(vec.size() == 4); }
     SECTION("iterator equality")
     {
@@ -101,4 +100,45 @@ TEST_CASE("Test string-payload vector", "[payload_vector][unit]")
         CHECK(std::lower_bound(vec.begin(), vec.end(), "def"sv) == std::next(vec.begin()));
         CHECK(std::lower_bound(vec.begin(), vec.end(), "dew"sv) == std::next(vec.begin(), 2));
     }
+}
+
+TEST_CASE("Test payload vector container", "[payload_vector][unit]")
+{
+    std::vector<std::string> vec{"abc", "def", "ghij", "klm"};
+    std::ostringstream str;
+    auto container = encode_payload_vector(gsl::span<std::string const>(vec));
+    Payload_Vector<std::string_view> pvec(container);
+    REQUIRE(std::vector<std::string>(vec.begin(), vec.end()) == vec);
+}
+
+TEST_CASE("Test payload vector encoding", "[payload_vector][unit]")
+{
+    std::vector<std::string> vec{"abc", "def", "ghij", "klm"};
+    std::ostringstream str;
+    encode_payload_vector(gsl::span<std::string const>(vec)).to_stream(str);
+    auto encoded = str.str();
+    REQUIRE(std::vector<char>(encoded.begin(), encoded.end()) == std::vector<char>{
+            /* length */ 4, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 0 */ 0, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 1 */ 3, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 2 */ 6, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 3 */ 10, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 4 */ 13, 0, 0, 0, 0, 0, 0, 0,
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'});
+}
+
+TEST_CASE("Test payload vector decoding", "[payload_vector][unit]")
+{
+    std::vector<char> data{
+            /* length */ 4, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 0 */ 0, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 1 */ 3, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 2 */ 6, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 3 */ 10, 0, 0, 0, 0, 0, 0, 0,
+            /* offset 4 */ 13, 0, 0, 0, 0, 0, 0, 0,
+            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'};
+    auto vec = Payload_Vector<std::string_view>::from(
+        gsl::make_span(reinterpret_cast<std::byte const *>(data.data()), data.size()));
+    REQUIRE(std::vector<std::string>(vec.begin(), vec.end()) ==
+            std::vector<std::string>{"abc", "def", "ghij", "klm"});
 }
