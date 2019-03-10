@@ -50,7 +50,8 @@ void evaluate_queries(const std::string &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    auto docmap = io::read_string_vector(documents_filename);
+    auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
+    auto docmap = Payload_Vector<>::from(*source);
     wand_query wand_q(k);
     for (auto const &[qid, query] : enumerate(queries)) {
         wand_q(make_max_scored_cursors(index, wdata, query.terms), index.num_docs());
@@ -59,7 +60,7 @@ void evaluate_queries(const std::string &index_filename,
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      query.id.value_or(std::to_string(qid)),
                                      iteration,
-                                     docmap.at(result.second),
+                                     docmap[result.second],
                                      rank,
                                      result.first,
                                      run_id);
@@ -92,11 +93,9 @@ int main(int argc, const char **argv)
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    auto *terms_opt =
-        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
-    app.add_option("--documents", documents_file, "Text file with documents in separate lines")
-        ->required();
+    app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;

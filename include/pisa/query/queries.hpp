@@ -9,18 +9,20 @@
 #include <unordered_map>
 
 #include <Porter2/Porter2.hpp>
+#include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
 #include "io.hpp"
+#include "payload_vector.hpp"
 #include "query/queries.hpp"
+#include "scorer/score_function.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "scorer/score_function.hpp"
 
 namespace pisa {
 
@@ -95,30 +97,29 @@ term_freq_vec query_freqs(term_id_vec terms) {
     return query_term_freqs;
 }
 
-// TODO: These are functions common to query processing in general.
-//       They should be moved out of this file.
 namespace query {
 
-std::function<term_id_type(std::string &&)> term_processor(std::optional<std::string> terms_file,
-                                                           bool stem)
-{
-    if (terms_file) {
-        auto to_id = [m = std::make_shared<std::unordered_map<std::string, term_id_type>>(
-                          io::read_string_map<term_id_type>(*terms_file))](auto str) {
-            return m->at(str);
-        };
-        if (stem) {
-            return [=](auto str) {
-                stem::Porter2 stemmer{};
-                return to_id(stemmer.stem(str));
+    std::function<term_id_type(std::string &&)> term_processor(
+        std::optional<std::string> terms_file, bool stem)
+    {
+        if (terms_file) {
+            auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
+            auto terms = Payload_Vector<>::from(*source);
+            auto to_id = [source = std::move(source), terms = std::move(terms)](auto str) {
+                auto pos = std::lower_bound(terms.begin(), terms.end(), std::string_view(str));
+                return std::distance(terms.begin(), pos);
             };
+            if (stem) {
+                return [=](auto str) {
+                    stem::Porter2 stemmer{};
+                    return to_id(stemmer.stem(str));
+                };
+            } else {
+                return to_id;
+            }
         } else {
-            return to_id;
+            return [](auto str) { return std::stoi(str); };
         }
-    }
-    else {
-        return [](auto str) { return std::stoi(str); };
-    }
 }
 
 } // namespace query

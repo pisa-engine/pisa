@@ -229,7 +229,7 @@ class Payload_Vector {
     }
 
     [[nodiscard]]
-    constexpr auto operator[](size_type idx) -> payload_type
+    constexpr auto operator[](size_type idx) const -> payload_type
     {
         return *(begin() + idx);
     }

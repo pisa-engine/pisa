@@ -226,12 +226,14 @@ int main(int argc, const char **argv) {
         std::filebuf fb;
         if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is, process_term))
+            while (read_query(q, is, process_term)) {
                 queries.push_back(q);
+            }
         }
     } else {
-        while (read_query(q))
+        while (read_query(q)) {
             queries.push_back(q);
+        }
     }
 
     /**/
