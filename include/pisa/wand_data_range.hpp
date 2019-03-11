@@ -16,7 +16,7 @@ class wand_data_range {
    public:
 
     template<typename List>
-    std::vector<float> compute(List &list, std::function<float(uint64_t)> norm_lens) const {
+    std::vector<float> compute_block_max_scores(List &list, std::function<float(uint64_t)> norm_lens) const {
         std::vector<float> block_max_scores(m_blocks_num, 0.0f);
         for (int i = 0; i < list.size(); ++i) {
             auto docid = list.docid();
@@ -32,40 +32,41 @@ class wand_data_range {
 
     class builder {
        public:
-        builder(partition_type                type,
+        builder(partition_type type,
                 binary_freq_collection const &coll,
-                global_parameters const &     params) {
+                [[maybe_unused]] global_parameters const & params):
+                blocks_num(ceil_div(coll.num_docs(), range_size)),
+                type(type),
+                total_elements(0),
+                blocks_start{0},
+                block_max_term_weight{} {
             (void)params;
-            this->type = type;
-            blocks_num = ceil_div(coll.num_docs(), range_size);
             auto posting_lists = std::distance(coll.begin(), coll.end());
             spdlog::info("Storing max weight for each list and for each block...");
             spdlog::info("Range size: {}. Number of docs: {}. Blocks per posting list: {}. Posting lists: {}."
-                , range_size, coll.num_docs(), blocks_num, posting_lists);
-            total_elements = 0;
-            blocks_start.push_back(0);
+                , range_size, coll.num_docs(), blocks_num, posting_lists);   
         }
 
-        float add_sequence(binary_freq_collection::sequence const &seq,
-                           binary_freq_collection const &          coll,
-                           std::vector<float> const &              norm_lens) {
+        float add_term_sequence(binary_freq_collection::sequence const &term_seq,
+                                binary_freq_collection const &          coll,
+                                std::vector<float> const &              norm_lens) {
             float max_score =0.0f;
 
             std::vector<float> b_max(blocks_num, 0.0f);
-            for (auto i = 0; i < seq.docs.size(); ++i) {
-                uint64_t docid = *(seq.docs.begin() + i);
-                uint64_t freq = *(seq.freqs.begin() + i);
+            for (auto i = 0; i < term_seq.docs.size(); ++i) {
+                uint64_t docid = *(term_seq.docs.begin() + i);
+                uint64_t freq = *(term_seq.freqs.begin() + i);
                 float score = Scorer::doc_term_weight(freq, norm_lens[docid]);
                 max_score = std::max(max_score, score);
                 size_t pos = docid/range_size;
                 float &bm = b_max[pos];
                 bm = std::max(bm, score);
             }
-            if (seq.docs.size() >= min_list_lenght) {
+            if (term_seq.docs.size() >= min_list_lenght) {
                 block_max_term_weight.insert(
                     block_max_term_weight.end(), b_max.begin(), b_max.end());
                 blocks_start.push_back(b_max.size() + blocks_start.back());
-                total_elements += seq.docs.size();
+                total_elements += term_seq.docs.size();
             } else{
                 blocks_start.push_back(blocks_start.back());
             }
@@ -77,7 +78,7 @@ class wand_data_range {
             wdata.m_blocks_start.steal(blocks_start);
             wdata.m_block_max_term_weight.steal(block_max_term_weight);
             spdlog::info("number of elements / number of blocks: {}",
-                         static_cast<float>(total_elements) / static_cast<float>(wdata.m_block_max_term_weight.size()));
+                         static_cast<float>(total_elements) / wdata.m_block_max_term_weight.size());
         }
 
         uint64_t           blocks_num;
@@ -122,11 +123,12 @@ class wand_data_range {
             m_blocks_start[i], m_block_max_term_weight);
     }
 
-    static std::vector<bool> compute_live_blocks(std::vector<enumerator> &enums, float threasold, uint64_t begin, uint64_t end) {
-        size_t len = ceil_div((end - begin), range_size);
+    static std::vector<bool> compute_live_blocks(std::vector<enumerator> &enums, 
+                             float threshold, std::pair<int, int> document_range) {
+        size_t len = ceil_div((document_range.second - document_range.first), range_size);
         std::vector<bool> live_blocks(len);
         for(auto&& e : enums) {
-            e.next_geq(begin);
+            e.next_geq(document_range.first);
         }
         for (size_t i = 0; i < len; ++i) {
             float score = 0.0f;
@@ -134,7 +136,7 @@ class wand_data_range {
                 score += e.score();
                 e.next_block();
             }
-            live_blocks[i] = (score > threasold);
+            live_blocks[i] = (score > threshold);
         }
         return live_blocks;
     }

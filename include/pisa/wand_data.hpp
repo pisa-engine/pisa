@@ -42,7 +42,7 @@ namespace pisa {
             typename block_wand_type::builder builder(type, coll, params);
 
             for (auto const &seq: coll) {
-                auto v = builder.add_sequence(seq, coll, norm_lens);
+                auto v = builder.add_term_sequence(seq, coll, norm_lens);
                 max_term_weight.push_back(v);
                 if ((max_term_weight.size() % 1000000) == 0) {
                     spdlog::info("{} lists processed", max_term_weight.size());
