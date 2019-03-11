@@ -7,7 +7,7 @@
 #include "util/broadword.hpp"
 #include "util/util.hpp"
 
-#include "succinct/mappable_vector.hpp"
+#include "mappable/mappable_vector.hpp"
 
 namespace pisa {
 

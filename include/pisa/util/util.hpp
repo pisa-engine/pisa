@@ -13,17 +13,6 @@
 
 #include "util/broadword.hpp"
 
-#define DS2I_LIKELY(x) __builtin_expect(!!(x), 1)
-#define DS2I_UNLIKELY(x) __builtin_expect(!!(x), 0)
-#define DS2I_NOINLINE __attribute__((noinline))
-#define DS2I_ALWAYSINLINE __attribute__((always_inline))
-
-#if defined(__GNUC__) && !defined(__clang__)
-#define DS2I_FLATTEN_FUNC  __attribute__((always_inline,flatten))
-#else
-#    define DS2I_FLATTEN_FUNC DS2I_ALWAYSINLINE
-#endif
-
 namespace pisa {
 
     template <typename IntType1, typename IntType2>
@@ -49,12 +38,6 @@ namespace pisa {
         auto now = std::chrono::system_clock::now();
         auto duration = now.time_since_epoch();
         return std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
-    }
-
-    // stolen from folly
-    template <class T>
-    inline void do_not_optimize_away(T&& datum) {
-        asm volatile("" : "+r" (datum));
     }
 
     template <typename T>

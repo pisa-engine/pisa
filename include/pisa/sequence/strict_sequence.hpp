@@ -29,7 +29,7 @@ struct strict_sequence {
         return params;
     }
 
-    static DS2I_FLATTEN_FUNC uint64_t bitsize(global_parameters const &params,
+    static PISA_FLATTEN_FUNC uint64_t bitsize(global_parameters const &params,
                                               uint64_t universe,
                                               uint64_t n) {
         uint64_t best_cost = all_ones_sequence::bitsize(params, universe, n);

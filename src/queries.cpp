@@ -6,14 +6,19 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 #include "index_types.hpp"
+#include "accumulator/lazy_accumulator.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include "cursor/cursor.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -119,25 +124,62 @@ void perftest(const std::string &index_filename,
         spdlog::info("Query type: {}", t);
         std::function<uint64_t(term_id_vec)> query_fun;
         if (t == "and") {
-            query_fun = and_query<IndexType, false>(index);
+            query_fun = [&](term_id_vec terms){
+                and_query<false> and_q;
+                return and_q(make_scored_cursors(index, wdata, terms), index.num_docs()).size();
+            };
         } else if (t == "and_freq") {
-            query_fun = and_query<IndexType, true>(index);
+            query_fun = [&](term_id_vec terms){
+                and_query<true> and_q;
+                return and_q(make_scored_cursors(index, wdata, terms), index.num_docs()).size();
+            };
         } else if (t == "or") {
-            query_fun = or_query<IndexType, false>(index);
+            query_fun = [&](term_id_vec terms){
+                or_query<false> or_q;
+                return or_q(make_cursors(index, terms), index.num_docs());
+            };
         } else if (t == "or_freq") {
-            query_fun = or_query<IndexType, true>(index);
+            query_fun = [&](term_id_vec terms){
+                or_query<true> or_q;
+                return or_q(make_cursors(index, terms), index.num_docs());
+            };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = wand_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                wand_query wand_q(k);
+                return wand_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
+            };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun =block_max_wand_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                block_max_wand_query block_max_wand_q(k);
+                return block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
+            };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = block_max_maxscore_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                block_max_maxscore_query block_max_maxscore_q(k);
+                return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
+            };
         }  else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = ranked_or_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                ranked_or_query ranked_or_q(k);
+                return ranked_or_q(make_scored_cursors(index, wdata, terms), index.num_docs());
+            };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = maxscore_query<IndexType, WandType>(index, wdata, k);
+            query_fun = [&](term_id_vec terms){
+                maxscore_query maxscore_q(k);
+                return maxscore_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
+            };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            query_fun = pisa::make_ranked_or_taat_query<pisa::Simple_Accumulator>(index, wdata, k);
+            Simple_Accumulator accumulator(index.num_docs());
+            ranked_or_taat_query ranked_or_taat_q(k);
+            query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
+                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(), accumulator);
+            };
+        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+            Lazy_Accumulator<4> accumulator(index.num_docs());
+            ranked_or_taat_query ranked_or_taat_q(k);
+            query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
+                return ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(), accumulator);
+            };
         } else {
             spdlog::error("Unsupported query type: {}", t);
             break;
@@ -153,13 +195,16 @@ int main(int argc, const char **argv) {
     std::string type;
     std::string query_type;
     std::string index_filename;
+    std::optional<std::string> terms_file;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
+    bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
+    app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-a,--algorithm", query_type, "Query algorithm")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
@@ -168,7 +213,12 @@ int main(int argc, const char **argv) {
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
+    auto *terms_opt =
+        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
+
+    auto process_term = query::term_processor(terms_file, not nostem);
 
     std::vector<term_id_vec> queries;
     term_id_vec q;
@@ -176,7 +226,7 @@ int main(int argc, const char **argv) {
         std::filebuf fb;
         if (fb.open(*query_filename, std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is))
+            while (read_query(q, is, process_term))
                 queries.push_back(q);
         }
     } else {
@@ -208,7 +258,7 @@ int main(int argc, const char **argv) {
         }                                                                              \
         /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {

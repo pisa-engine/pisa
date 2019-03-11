@@ -1,6 +1,7 @@
 #pragma once
 
 #include "global_parameters.hpp"
+#include "bit_vector.hpp"
 #include "util/util.hpp"
 
 namespace pisa {

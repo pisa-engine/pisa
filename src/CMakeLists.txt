@@ -26,6 +26,12 @@ target_link_libraries(queries
   CLI11
 )
 
+add_executable(evaluate_queries evaluate_queries.cpp)
+target_link_libraries(evaluate_queries
+  pisa
+  CLI11
+)
+
 add_executable(thresholds thresholds.cpp)
 target_link_libraries(thresholds
   pisa
@@ -72,6 +78,12 @@ target_link_libraries(invert
 
 add_executable(read_collection read_collection.cpp)
 target_link_libraries(read_collection
+  pisa
+  CLI11
+)
+
+add_executable(compute_intersection compute_intersection.cpp)
+target_link_libraries(compute_intersection
   pisa
   CLI11
 )

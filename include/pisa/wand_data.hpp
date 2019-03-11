@@ -4,9 +4,10 @@
 
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
-#include "succinct/mappable_vector.hpp"
+#include "mappable/mappable_vector.hpp"
 #include "util/util.hpp"
 #include "wand_data_raw.hpp"
+#include "util/progress.hpp"
 
 class enumerator;
 namespace pisa {
@@ -21,7 +22,7 @@ namespace pisa {
 
         template<typename LengthsIterator>
         wand_data(LengthsIterator len_it, uint64_t num_docs,
-                      binary_freq_collection const &coll, partition_type type = partition_type::fixed_blocks) {
+                      binary_freq_collection const &coll, partition_type type = partition_type::fixed_blocks, const float lambda = 0.0f) {
             std::vector<float> norm_lens(num_docs);
             std::vector<float> max_term_weight;
             global_parameters params;
@@ -40,18 +41,14 @@ namespace pisa {
             }
 
             typename block_wand_type::builder builder(type, coll, params);
-
-            for (auto const &seq: coll) {
-                auto v = builder.add_term_sequence(seq, coll, norm_lens);
-                max_term_weight.push_back(v);
-                if ((max_term_weight.size() % 1000000) == 0) {
-                    spdlog::info("{} lists processed", max_term_weight.size());
+            {
+                pisa::progress progress("Processing posting lists", coll.size());
+                for (auto const &seq: coll) {
+                    auto v = builder.add_sequence(seq, coll, norm_lens, lambda);
+                    max_term_weight.push_back(v);
+                    progress.update(1);
                 }
             }
-            if ((max_term_weight.size() % 1000000) != 0) {
-                spdlog::info("{} lists processed", max_term_weight.size());
-            }
-
             builder.build(m_block_wand);
             m_norm_lens.steal(norm_lens);
             m_max_term_weight.steal(max_term_weight);

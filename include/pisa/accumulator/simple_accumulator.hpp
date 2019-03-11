@@ -1,4 +1,9 @@
 #pragma once
+#include <vector>
+#include <cstddef>
+#include <algorithm>
+
+#include "topk_queue.hpp"
 
 namespace pisa {
 

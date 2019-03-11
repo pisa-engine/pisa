@@ -21,7 +21,7 @@ const Log2<4096> log2;
 
 namespace bp {
 
-DS2I_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2) {
+PISA_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2) {
     __m128 _deg    = _mm_cvtepi32_ps(_mm_set_epi32(deg1, deg1, deg2, deg2));
     __m128 _log    = _mm_set_ps(logn1, log2(deg1 + 1), logn2, log2(deg2 + 1));
     __m128 _result = _mm_mul_ps(_deg, _log);
@@ -51,14 +51,14 @@ class document_range {
     Iterator       end() { return m_last; }
     std::ptrdiff_t size() const { return std::distance(m_first, m_last); }
 
-    DS2I_ALWAYSINLINE document_partition<Iterator> split() const {
+    PISA_ALWAYSINLINE document_partition<Iterator> split() const {
         Iterator mid = std::next(m_first, size() / 2);
         return {document_range(m_first, mid, m_fwdidx, m_gains),
                 document_range(mid, m_last, m_fwdidx, m_gains),
                 term_count()};
     }
 
-    DS2I_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const {
+    PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const {
         assert(left < right);
         assert(right <= size());
         return document_range(
@@ -151,7 +151,7 @@ void compute_move_gains_caching(document_range<Iter> &            range,
         auto   terms = range.terms(d);
         for (const auto &t : terms) {
             if constexpr (isLikelyCached) {
-                if (DS2I_UNLIKELY(not gain_cache.has_value(t))) {
+                if (PISA_UNLIKELY(not gain_cache.has_value(t))) {
                     const auto &from_deg  = from_lex[t];
                     const auto &to_deg    = to_lex[t];
                     const auto  term_gain = bp::expb(logn1, logn2, from_deg, to_deg) -
@@ -159,7 +159,7 @@ void compute_move_gains_caching(document_range<Iter> &            range,
                     gain_cache.set(t, term_gain);
                 }
             } else {
-                if (DS2I_LIKELY(not gain_cache.has_value(t))) {
+                if (PISA_LIKELY(not gain_cache.has_value(t))) {
                     const auto &from_deg  = from_lex[t];
                     const auto &to_deg    = to_lex[t];
                     const auto  term_gain = bp::expb(logn1, logn2, from_deg, to_deg) -
@@ -192,7 +192,7 @@ void swap(document_partition<Iterator> &partition, degree_map_pair &degrees) {
     auto lit   = left.begin();
     auto rit   = right.begin();
     for (; lit != left.end() && rit != right.end(); ++lit, ++rit) {
-        if (DS2I_UNLIKELY(left.gain(*lit) + right.gain(*rit) <= 0)) {
+        if (PISA_UNLIKELY(left.gain(*lit) + right.gain(*rit) <= 0)) {
             break;
         }
         {

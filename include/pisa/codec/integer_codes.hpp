@@ -1,5 +1,7 @@
 #pragma once
 
+#include "bit_vector.hpp"
+
 namespace pisa {
 
     // note: n can be 0

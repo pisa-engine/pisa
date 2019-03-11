@@ -1,6 +1,7 @@
 #pragma once
 
 #include "QMX/qmx.hpp"
+#include "codec/block_codecs.hpp"
 
 namespace pisa {
 struct qmx_block {
@@ -31,7 +32,7 @@ struct qmx_block {
                                  size_t n) {
         static QMX::compress_integer_qmx_improved qmx_codec; // decodeBlock is thread-safe
         assert(n <= block_size);
-        if (DS2I_UNLIKELY(n < block_size)) {
+        if (PISA_UNLIKELY(n < block_size)) {
             return interpolative_block::decode(in, out, sum_of_values, n);
         }
         uint32_t enc_len = 0;

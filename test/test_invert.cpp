@@ -4,13 +4,13 @@
 #include <cstdio>
 #include <string>
 
-#include <tbb/task_scheduler_init.h>
 #include <boost/filesystem.hpp>
 #include <gsl/span>
+#include <range/v3/view/iota.hpp>
+#include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
-#include "ds2i_config.hpp"
-#include "enumerate.hpp"
+#include "pisa_config.hpp"
 #include "filesystem.hpp"
 #include "invert.hpp"
 #include "temporary_directory.hpp"
@@ -29,7 +29,7 @@ TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][un
     std::vector<gsl::span<Term_Id const>> spans = {gsl::make_span(documents[0]),
                                                    gsl::make_span(documents[1])};
 
-    auto postings = invert::map_to_postings(invert::Batch{spans, enumerate(0_d, 2_d)});
+    auto postings = invert::map_to_postings(invert::Batch{spans, ranges::view::iota(0_d, 2_d)});
     REQUIRE(postings == std::vector<std::pair<Term_Id, Document_Id>>{{0_t, 0_d},
                                                                      {1_t, 0_d},
                                                                      {2_t, 0_d},
@@ -223,9 +223,11 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
                          {6_t, {1_f, 4_f}},
                          {7_t, {1_f}},
                          {8_t, {3_f, 1_f, 1_f}},
-                         {9_t, {1_f, 1_f, 1_f, 1_f}}});
+                         {9_t, {1_f, 1_f, 1_f, 1_f}}},
+                        {5, 9, 6, 3, 11});
     REQUIRE(index.documents == expected.documents);
     REQUIRE(index.frequencies == expected.frequencies);
+    REQUIRE(index.document_sizes == expected.document_sizes);
 }
 
 TEST_CASE("Invert collection", "[invert][unit]")
@@ -276,6 +278,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
                     /* size */ 1, /* Term 7 */ 1,
                     /* size */ 3, /* Term 8 */ 3, 1, 1,
                     /* size */ 4, /* Term 9 */ 1, 1, 1, 1};
+                std::vector<uint32_t> size_data{/* size */ 5, /* sizes */ 5, 9, 6, 3, 11};
                 mio::mmap_source mm;
                 std::error_code error;
                 mm.map((index_basename + ".docs").c_str(), error);
@@ -287,8 +290,14 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 std::vector<uint32_t> f(
                     reinterpret_cast<uint32_t const *>(mmf.data()),
                     reinterpret_cast<uint32_t const *>(mmf.data()) + mmf.size() / sizeof(uint32_t));
+                mio::mmap_source mms;
+                mms.map((index_basename + ".sizes").c_str(), error);
+                std::vector<uint32_t> s(
+                    reinterpret_cast<uint32_t const *>(mms.data()),
+                    reinterpret_cast<uint32_t const *>(mms.data()) + mms.size() / sizeof(uint32_t));
                 REQUIRE(d == document_data);
                 REQUIRE(f == frequency_data);
+                REQUIRE(s == size_data);
                 auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const &filename) {
                     return filename.find("batch") != std::string::npos;
                 });

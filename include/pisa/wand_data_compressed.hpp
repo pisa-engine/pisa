@@ -2,8 +2,6 @@
 
 #include "spdlog/spdlog.h"
 
-#include "succinct/mappable_vector.hpp"
-
 #include "binary_freq_collection.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
@@ -113,12 +111,12 @@ namespace {
                 spdlog::info("Storing max weight for each list and for each block...");
             }
 
-            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens){
+            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens, const float lambda = 0.0f){
 
                 if (seq.docs.size() > configuration::get().threshold_wand_list) {
 
                     auto t = ((type == partition_type::fixed_blocks) ? static_block_partition(seq, norm_lens)
-                                                      : variable_block_partition(coll, seq, norm_lens));
+                                                      : variable_block_partition(coll, seq, norm_lens, lambda));
 
                     auto ind = compressor_builder.compress_data(t.second);
 
@@ -173,7 +171,7 @@ namespace {
 		m_cur_score_index = (val & mask);
             }
 
-            void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
+            void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
                 if(docid() != lower_bound) {
                     lower_bound = lower_bound << score_bits_size;
                     auto val = m_docs_enum.next_geq(lower_bound);
@@ -183,11 +181,11 @@ namespace {
                 }
             }
 
-            float DS2I_FLATTEN_FUNC score()  {
+            float PISA_FLATTEN_FUNC score()  {
                 return score_compressor::score(m_cur_score_index);
             }
 
-            uint64_t DS2I_FLATTEN_FUNC docid() const {
+            uint64_t PISA_FLATTEN_FUNC docid() const {
                 return m_cur_docid;
             }
 

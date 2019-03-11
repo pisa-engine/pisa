@@ -83,21 +83,21 @@ namespace pisa {
                 m_cur_docid = m_docs_enum.move(0).second;
             }
 
-            void DS2I_FLATTEN_FUNC next()
+            void PISA_FLATTEN_FUNC next()
             {
                 auto val = m_docs_enum.next();
                 m_cur_pos = val.first;
                 m_cur_docid = val.second;
             }
 
-            void DS2I_FLATTEN_FUNC next_geq(uint64_t lower_bound)
+            void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound)
             {
                 auto val = m_docs_enum.next_geq(lower_bound);
                 m_cur_pos = val.first;
                 m_cur_docid = val.second;
             }
 
-            void DS2I_FLATTEN_FUNC move(uint64_t position)
+            void PISA_FLATTEN_FUNC move(uint64_t position)
             {
                 auto val = m_docs_enum.move(position);
                 m_cur_pos = val.first;
@@ -109,7 +109,7 @@ namespace pisa {
                 return m_cur_docid;
             }
 
-            uint64_t DS2I_FLATTEN_FUNC freq()
+            uint64_t PISA_FLATTEN_FUNC freq()
             {
                 return m_freqs_enum.move(m_cur_pos).second;
             }
