@@ -40,7 +40,6 @@ class wand_data_range {
                 total_elements(0),
                 blocks_start{0},
                 block_max_term_weight{} {
-            (void)params;
             auto posting_lists = std::distance(coll.begin(), coll.end());
             spdlog::info("Storing max weight for each list and for each block...");
             spdlog::info("Range size: {}. Number of docs: {}. Blocks per posting list: {}. Posting lists: {}."
