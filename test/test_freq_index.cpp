@@ -8,7 +8,7 @@
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/positive_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 
 #include <vector>

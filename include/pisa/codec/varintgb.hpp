@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include "codec/block_codecs.hpp"
 
 #include "FastPFor/headers/common.h"
 
@@ -257,7 +259,7 @@ struct varintgb_block {
                                  size_t         n) {
         thread_local VarIntGB<false> varintgb_codec;
         assert(n <= block_size);
-        if (DS2I_UNLIKELY(n < block_size)) {
+        if (PISA_UNLIKELY(n < block_size)) {
             return interpolative_block::decode(in, out, sum_of_values, n);
         }
         auto read = varintgb_codec.decodeArray(in, n, out);

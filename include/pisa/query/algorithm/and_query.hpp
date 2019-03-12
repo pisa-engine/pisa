@@ -1,61 +1,74 @@
 #pragma once
 
+#include <vector>
+#include "query/queries.hpp"
+#include "util/do_not_optimize_away.hpp"
+
 namespace pisa {
 
-template <typename Index, bool with_freqs>
+template <bool with_freqs>
 struct and_query {
 
-    and_query(Index const &index) : m_index(index) {}
+    template<typename CursorRange>
+    auto operator()(CursorRange &&cursors, uint32_t max_docid) const {
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
 
-    uint64_t operator()(term_id_vec terms) const {
-        if (terms.empty())
-            return 0;
-        remove_duplicate_terms(terms);
+        using Doc_t = uint32_t;
+        using Score_t = float;
+        using DocScore_t = std::pair<Doc_t, Score_t>;
+        using Result_t = typename std::conditional<with_freqs, DocScore_t, Doc_t>::type;
 
-        typedef typename Index::document_enumerator enum_type;
-        std::vector<enum_type>                      enums;
-        enums.reserve(terms.size());
+        std::vector<Result_t> results;
+        if (cursors.empty())
+            return results;
 
-        for (auto term : terms) {
-            enums.push_back(m_index[term]);
+        std::vector<Cursor *> ordered_cursors;
+        ordered_cursors.reserve(cursors.size());
+        for (auto &en : cursors) {
+            ordered_cursors.push_back(&en);
         }
 
+
         // sort by increasing frequency
-        std::sort(enums.begin(), enums.end(), [](enum_type const &lhs, enum_type const &rhs) {
-            return lhs.size() < rhs.size();
+        std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
+            return lhs->docs_enum.size() < rhs->docs_enum.size();
         });
 
-        uint64_t results   = 0;
-        uint64_t candidate = enums[0].docid();
+        uint32_t candidate = ordered_cursors[0]->docs_enum.docid();
         size_t   i         = 1;
-        while (candidate < m_index.num_docs()) {
-            for (; i < enums.size(); ++i) {
-                enums[i].next_geq(candidate);
-                if (enums[i].docid() != candidate) {
-                    candidate = enums[i].docid();
+
+
+
+        while (candidate < max_docid) {
+            for (; i < ordered_cursors.size(); ++i) {
+                ordered_cursors[i]->docs_enum.next_geq(candidate);
+                if (ordered_cursors[i]->docs_enum.docid() != candidate) {
+                    candidate = ordered_cursors[i]->docs_enum.docid();
                     i         = 0;
                     break;
                 }
             }
 
-            if (i == enums.size()) {
-                results += 1;
+            if (i == ordered_cursors.size()) {
 
-                if (with_freqs) {
-                    for (i = 0; i < enums.size(); ++i) {
-                        do_not_optimize_away(enums[i].freq());
+                if constexpr (with_freqs) {
+                    auto score = 0.0f;
+                    for (i = 0; i < ordered_cursors.size(); ++i) {
+                        score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
                     }
+                    results.emplace_back(candidate, score);
+                } else {
+                    results.push_back(candidate);
                 }
-                enums[0].next();
-                candidate = enums[0].docid();
+
+                ordered_cursors[0]->docs_enum.next();
+                candidate = ordered_cursors[0]->docs_enum.docid();
                 i         = 1;
             }
         }
         return results;
     }
 
-   private:
-    Index const &m_index;
 };
 
 } // namespace pisa

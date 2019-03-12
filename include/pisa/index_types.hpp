@@ -47,10 +47,10 @@ using block_mixed_index         = block_freq_index<pisa::mixed_block>;
 
 } // namespace pisa
 
-#define DS2I_INDEX_TYPES                                                                    \
+#define PISA_INDEX_TYPES                                                                    \
     (ef)(single)(uniform)(opt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(         \
         block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
         block_simple16)(block_simdbp)(block_mixed)
-#define DS2I_BLOCK_INDEX_TYPES                                                                    \
+#define PISA_BLOCK_INDEX_TYPES                                                                    \
     (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
         block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)(block_mixed)

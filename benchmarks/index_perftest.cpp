@@ -1,9 +1,10 @@
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 
 #include "index_types.hpp"
 #include "util/util.hpp"
+#include "util/do_not_optimize_away.hpp"
 
 using pisa::get_time_usecs;
 using pisa::do_not_optimize_away;
@@ -132,7 +133,7 @@ int main(int argc, const char** argv) {
                 (index_filename, type);             \
             /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
     } else {
         spdlog::error("Unknown type {}", type);

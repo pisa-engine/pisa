@@ -5,7 +5,7 @@
 #include "test_rank_select_common.hpp"
 
 #include <cstdlib>
-#include "succinct/mapper.hpp"
+#include "mappable/mapper.hpp"
 #include "bit_vector.hpp"
 
 TEST_CASE("bit_vector")

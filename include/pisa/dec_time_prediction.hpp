@@ -3,6 +3,7 @@
 #include <array>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 #include "boost/preprocessor/seq/enum.hpp"
 #include "boost/preprocessor/seq/for_each.hpp"
@@ -10,14 +11,14 @@
 
 #include "util/util.hpp"
 
-#define DS2I_FEATURE_TYPES (n)(size)(sum_of_logs)(entropy)(nonzeros)(max_b)(pfor_b)(pfor_exceptions)
+#define PISA_FEATURE_TYPES (n)(size)(sum_of_logs)(entropy)(nonzeros)(max_b)(pfor_b)(pfor_exceptions)
 
 namespace pisa { namespace time_prediction {
 
-    constexpr size_t num_features = BOOST_PP_SEQ_SIZE(DS2I_FEATURE_TYPES);
+    constexpr size_t num_features = BOOST_PP_SEQ_SIZE(PISA_FEATURE_TYPES);
 
     enum class feature_type {
-        BOOST_PP_SEQ_ENUM(DS2I_FEATURE_TYPES), end
+        BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end
     };
 
     feature_type parse_feature_type(std::string const& name)
@@ -27,7 +28,7 @@ namespace pisa { namespace time_prediction {
             } else if (name == BOOST_PP_STRINGIZE(T)) { \
                 return feature_type::T;                \
                     /**/
-            BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_FEATURE_TYPES);
+            BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_FEATURE_TYPES);
 #undef LOOP_BODY
         } else {
             throw std::invalid_argument("Invalid feature name " + name);
@@ -42,7 +43,7 @@ namespace pisa { namespace time_prediction {
             case feature_type::T: return BOOST_PP_STRINGIZE(T); \
             /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, DS2I_FEATURE_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_FEATURE_TYPES);
 #undef LOOP_BODY
         default: throw std::invalid_argument("Invalid feature type");
         }

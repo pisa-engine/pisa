@@ -6,6 +6,8 @@
 
 #include "global_parameters.hpp"
 #include "util/util.hpp"
+#include "util/compiler_attribute.hpp"
+#include "util/likely.hpp"
 
 namespace pisa {
 
@@ -60,7 +62,7 @@ namespace pisa {
             uint64_t end;
         };
 
-        static DS2I_FLATTEN_FUNC uint64_t
+        static PISA_FLATTEN_FUNC uint64_t
         bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
         {
             return offsets(0, universe, n, params).end;
@@ -164,9 +166,9 @@ namespace pisa {
 
                 uint64_t skip = position - m_position;
                 // optimize small forward skips
-                if (DS2I_LIKELY(position > m_position && skip <= linear_scan_threshold)) {
+                if (PISA_LIKELY(position > m_position && skip <= linear_scan_threshold)) {
                     m_position = position;
-                    if (DS2I_UNLIKELY(m_position == size())) {
+                    if (PISA_UNLIKELY(m_position == size())) {
                         m_value = m_of.universe;
                     } else {
                         bit_vector::unary_enumerator he = m_high_enumerator;
@@ -193,14 +195,14 @@ namespace pisa {
                 uint64_t cur_high = m_value >> m_of.lower_bits;
                 uint64_t high_diff = high_lower_bound - cur_high;
 
-                if (DS2I_LIKELY(lower_bound > m_value
+                if (PISA_LIKELY(lower_bound > m_value
                               && high_diff <= linear_scan_threshold)) {
                     // optimize small skips
                     next_reader next_value(*this, m_position + 1);
                     uint64_t val;
                     do {
                         m_position += 1;
-                        if (DS2I_LIKELY(m_position < size())) {
+                        if (PISA_LIKELY(m_position < size())) {
                             val = next_value();
                         } else {
                             m_position = size();
@@ -226,7 +228,7 @@ namespace pisa {
                 m_position += 1;
                 assert(m_position <= size());
 
-                if (DS2I_LIKELY(m_position < size())) {
+                if (PISA_LIKELY(m_position < size())) {
                     m_value = read_next();
                 } else {
                     m_value = m_of.universe;
@@ -241,7 +243,7 @@ namespace pisa {
                 }
 
                 uint64_t prev_high = 0;
-                if (DS2I_LIKELY(m_position < size())) {
+                if (PISA_LIKELY(m_position < size())) {
                     prev_high = m_bv->predecessor1(m_high_enumerator.position() - 1);
                 } else {
                     prev_high = m_bv->predecessor1(m_of.lower_bits_offset - 1);
@@ -267,9 +269,9 @@ namespace pisa {
             }
         private:
 
-            value_type DS2I_NOINLINE slow_move(uint64_t position)
+            value_type PISA_NOINLINE slow_move(uint64_t position)
             {
-                if (DS2I_UNLIKELY(position == size())) {
+                if (PISA_UNLIKELY(position == size())) {
                     m_position = position;
                     m_value = m_of.universe;
                     return value();
@@ -295,9 +297,9 @@ namespace pisa {
                 return value();
             }
 
-            value_type DS2I_NOINLINE slow_next_geq(uint64_t lower_bound)
+            value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
             {
-                if (DS2I_UNLIKELY(lower_bound >= m_of.universe)) {
+                if (PISA_UNLIKELY(lower_bound >= m_of.universe)) {
                     return move(size());
                 }
 
@@ -329,7 +331,7 @@ namespace pisa {
 
                 next_reader read_value(*this, m_position);
                 while (true) {
-                    if (DS2I_UNLIKELY(m_position == size())) {
+                    if (PISA_UNLIKELY(m_position == size())) {
                         m_value = m_of.universe;
                         return value();
                     }

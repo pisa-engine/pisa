@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 template <class T>
 class single_init_entry {
    public:

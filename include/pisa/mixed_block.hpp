@@ -198,12 +198,12 @@ namespace pisa {
                                          uint32_t sum_of_values, size_t n)
             {
                 block_type type = block_type::interpolative;
-                if (DS2I_LIKELY(n == block_size)) {
+                if (PISA_LIKELY(n == block_size)) {
                     type = (block_type)*in++;
                 }
 
-                // use ifs instead of a switch to enable DS2I_LIKELY
-                if (DS2I_LIKELY(type == block_type::varint)) { // optimize for the fastest codec
+                // use ifs instead of a switch to enable PISA_LIKELY
+                if (PISA_LIKELY(type == block_type::varint)) { // optimize for the fastest codec
                     return varint_G8IU_block::decode(in, out, sum_of_values, n);
                 } else if (type == block_type::pfor) {
                     return optpfor_block::decode(in, out, sum_of_values, n);

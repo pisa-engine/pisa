@@ -51,7 +51,7 @@ namespace pisa {
                 // the most common cases
                 uint64_t prev = m_cur;
                 if (position != m_position + 1) {
-                    if (DS2I_UNLIKELY(position == 0)) {
+                    if (PISA_UNLIKELY(position == 0)) {
                         // we need to special-case position 0
                         m_cur = m_base_enum.move(0).second;
                         m_position = 0;

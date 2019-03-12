@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "succinct/mappable_vector.hpp"
+// #include "succinct/mappable_vector.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
@@ -48,7 +48,7 @@ class wand_data_range {
                 , range_size, coll.num_docs(), blocks_num, posting_lists);   
         }
 
-        float add_term_sequence(binary_freq_collection::sequence const &term_seq,
+        float add_sequence(binary_freq_collection::sequence const &term_seq,
                                 binary_freq_collection const &          coll,
                                 std::vector<float> const &              norm_lens) {
             float max_score =0.0f;

@@ -1,7 +1,9 @@
 #pragma once
 
-#include <gumbo.h>
 #include <string>
+#include <string_view>
+
+#include "gumbo.h"
 
 namespace pisa::parsing::html {
 
@@ -27,9 +29,9 @@ namespace pisa::parsing::html {
     return std::string();
 }
 
-[[nodiscard]] auto cleantext(std::string const& html) -> std::string
+[[nodiscard]] auto cleantext(std::string_view html) -> std::string
 {
-    GumboOutput *output  = gumbo_parse(html.c_str());
+    GumboOutput *output = gumbo_parse_with_options(&kGumboDefaultOptions, html.data(), html.size());
     std::string  content = cleantext(output->root);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
     return content;
