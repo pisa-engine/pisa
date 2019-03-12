@@ -9,6 +9,7 @@
 #include "index_types.hpp"
 #include "query/queries.hpp"
 #include "wand_data_range.hpp"
+#include "scorer/score_function.hpp"
 
 using namespace pisa;
 
@@ -61,7 +62,7 @@ TEST_CASE("wand_data_range") {
             if(seq.docs.size() < 1024) {
                 auto max = wdata_range.max_term_weight(i);
                 auto &w   = wdata_range.get_block_wand();
-                const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, [&](uint64_t d) { return wdata_range.norm_len(d); });
+                const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, Score_Function<Scorer, wdata_range>);
                 WandTypeRange::enumerator we(0, bm);
                 for (auto j = 0; j < seq.docs.size(); ++j) {
                     auto docid = *(seq.docs.begin() + j);
@@ -88,7 +89,7 @@ TEST_CASE("wand_data_range") {
             if(enums.size() == 5) break;
         }
 
-        std::pair<int, int> doc_range(0, collection.num_docs());
+        std::pair<uint32_t, uint32_t> doc_range(0, collection.num_docs());
         auto live_blocks = WandTypeRange::compute_live_blocks(enums, 0, doc_range);
 
         REQUIRE(live_blocks.size() == ceil_div(collection.num_docs(),64));

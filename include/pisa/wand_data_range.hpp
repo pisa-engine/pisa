@@ -13,22 +13,24 @@ namespace pisa {
 
 template <size_t range_size = 128, size_t min_list_lenght = 1024, typename Scorer = bm25>
 class wand_data_range {
-   public:
-
-    template<typename List>
-    std::vector<float> compute_block_max_scores(List &list, std::function<float(uint64_t)> norm_lens) const {
-        std::vector<float> block_max_scores(m_blocks_num, 0.0f);
+   public: 
+    template<typename List, typename Fn>
+    void for_each_posting(List &list, Fn func) {
         for (int i = 0; i < list.size(); ++i) {
-            auto docid = list.docid();
-            auto freq = list.freq();
-            list.next();
-            float score = Scorer::doc_term_weight(freq, norm_lens(docid));
-            size_t pos = docid/range_size;
-            float &bm = block_max_scores[pos];
-            bm = std::max(bm, score);
+            func(list.docid(), list.freq());
+            list.next();           
         }
-        return block_max_scores;
     }
+
+    template<typename List, typename Fn>
+    auto compute_block_max_scores(List& list, Fn scorer) {
+        std::vector<float> block_max_scores(m_blocks_num, 0.0f);
+        for_each_posting(list, [&](auto docid, auto freq) {
+            float& current_max = block_max_scores[docid / range_size];
+            current_max = std::max(current_max, scorer(docid, freq));
+        });
+        return block_max_scores;
+    };
 
     class builder {
        public:
@@ -39,8 +41,7 @@ class wand_data_range {
                 type(type),
                 total_elements(0),
                 blocks_start{0},
-                block_max_term_weight{} {
-            (void)params;
+                block_max_term_weight{} {;
             auto posting_lists = std::distance(coll.begin(), coll.end());
             spdlog::info("Storing max weight for each list and for each block...");
             spdlog::info("Range size: {}. Number of docs: {}. Blocks per posting list: {}. Posting lists: {}."
@@ -124,7 +125,7 @@ class wand_data_range {
     }
 
     static std::vector<bool> compute_live_blocks(std::vector<enumerator> &enums, 
-                             float threshold, std::pair<int, int> document_range) {
+                             float threshold, std::pair<uint32_t, uint32_t> document_range) {
         size_t len = ceil_div((document_range.second - document_range.first), range_size);
         std::vector<bool> live_blocks(len);
         for(auto&& e : enums) {
