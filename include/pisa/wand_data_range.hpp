@@ -50,7 +50,8 @@ class wand_data_range {
 
         float add_sequence(binary_freq_collection::sequence const &term_seq,
                                 binary_freq_collection const &          coll,
-                                std::vector<float> const &              norm_lens) {
+                                std::vector<float> const &              norm_lens,
+				[[maybe_unused]] float lambda) {
             float max_score =0.0f;
 
             std::vector<float> b_max(blocks_num, 0.0f);
@@ -99,19 +100,19 @@ class wand_data_range {
               block_start(_block_start),
               m_block_max_term_weight(block_max_term_weight) {}
 
-        void DS2I_NOINLINE next_block() {
+        void PISA_NOINLINE next_block() {
             cur_pos += 1;
         }
 
-        void DS2I_NOINLINE next_geq(uint64_t lower_bound) {
+        void PISA_NOINLINE next_geq(uint64_t lower_bound) {
             cur_pos = lower_bound/range_size;
         }
 
-        float DS2I_FLATTEN_FUNC score() const {
+        float PISA_FLATTEN_FUNC score() const {
             return m_block_max_term_weight[block_start + cur_pos];
         }
 
-        uint64_t DS2I_FLATTEN_FUNC docid() const { return (cur_pos+1) * range_size; }
+        uint64_t PISA_FLATTEN_FUNC docid() const { return (cur_pos+1) * range_size; }
 
        private:
         uint64_t                              cur_pos;
