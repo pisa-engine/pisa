@@ -5,7 +5,7 @@
 
 #include "test_common.hpp"
 
-#include "ds2i_config.hpp"
+#include "pisa_config.hpp"
 #include "index_types.hpp"
 #include "query/queries.hpp"
 #include "wand_data_range.hpp"
