@@ -15,7 +15,7 @@ template <size_t range_size = 128, size_t min_list_lenght = 1024, typename Score
 class wand_data_range {
    public: 
     template<typename List, typename Fn>
-    void for_each_posting(List &list, Fn func) {
+    void for_each_posting(List &list, Fn func) const {
         for (int i = 0; i < list.size(); ++i) {
             func(list.docid(), list.freq());
             list.next();           
@@ -23,7 +23,7 @@ class wand_data_range {
     }
 
     template<typename List, typename Fn>
-    auto compute_block_max_scores(List& list, Fn scorer) {
+    auto compute_block_max_scores(List& list, Fn scorer) const {
         std::vector<float> block_max_scores(m_blocks_num, 0.0f);
         for_each_posting(list, [&](auto docid, auto freq) {
             float& current_max = block_max_scores[docid / range_size];

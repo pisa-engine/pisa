@@ -62,7 +62,8 @@ TEST_CASE("wand_data_range") {
             if(seq.docs.size() < 1024) {
                 auto max = wdata_range.max_term_weight(i);
                 auto &w   = wdata_range.get_block_wand();
-                const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, Score_Function<Scorer, wdata_range>);
+                Score_Function<Scorer, WandType> score_func{1.f, wdata_range};
+                const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, score_func);
                 WandTypeRange::enumerator we(0, bm);
                 for (auto j = 0; j < seq.docs.size(); ++j) {
                     auto docid = *(seq.docs.begin() + j);
