@@ -2,11 +2,10 @@
 
 #include "spdlog/spdlog.h"
 
-// #include "succinct/mappable_vector.hpp"
-
 #include "binary_freq_collection.hpp"
 #include "scorer/bm25.hpp"
 #include "util/util.hpp"
+#include "global_parameters.hpp"
 #include "wand_utils.hpp"
 
 namespace pisa {
