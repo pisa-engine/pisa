@@ -18,8 +18,8 @@ TEST_CASE("wand_data_range") {
     typedef wand_data<bm25, WandTypeRange> WandType;
     using Scorer = bm25;
 
-    binary_freq_collection collection(DS2I_SOURCE_DIR "/test/test_data/test_collection");
-    binary_collection      document_sizes(DS2I_SOURCE_DIR "/test/test_data/test_collection.sizes");
+    binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
+    binary_collection      document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
     WandType          wdata_range(document_sizes.begin()->begin(),
                               collection.num_docs(),
                               collection);
