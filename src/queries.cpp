@@ -1,10 +1,16 @@
+#include <algorithm>
 #include <iostream>
+#include <numeric>
 #include <optional>
+#include <string>
 
-#include "boost/algorithm/string/classification.hpp"
-#include "boost/algorithm/string/split.hpp"
-#include "mio/mmap.hpp"
-#include "spdlog/spdlog.h"
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <mio/mmap.hpp>
+#include <range/v3/view/enumerate.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/sinks/null_sink.h>
+#include <spdlog/spdlog.h>
 
 #include "mappable/mapper.hpp"
 
@@ -23,20 +29,43 @@
 #include "CLI/CLI.hpp"
 
 using namespace pisa;
+using ranges::view::enumerate;
+
+template <typename Fn>
+void extract_times(Fn fn,
+                   std::vector<Query> const &queries,
+                   std::string const &index_type,
+                   std::string const &query_type,
+                   size_t runs,
+                   std::ostream &os)
+{
+    std::vector<std::size_t> times(runs);
+    for (auto &&[qid, query] : enumerate(queries)) {
+        do_not_optimize_away(fn(query.terms));
+        std::generate(times.begin(), times.end(), [&fn, &terms = query.terms]() {
+            return run_with_timer<std::chrono::microseconds>(
+                       [&]() { do_not_optimize_away(fn(terms)); })
+                .count();
+        });
+        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>());
+        os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
+    }
+}
 
 template <typename Functor>
-void op_perftest(Functor query_func, // XXX!!!
-                 std::vector<pisa::term_id_vec> const &queries,
+void op_perftest(Functor query_func,
+                 std::vector<Query> const &queries,
                  std::string const &index_type,
                  std::string const &query_type,
-                 size_t runs) {
+                 size_t runs)
+{
 
     std::vector<double> query_times;
 
     for (size_t run = 0; run <= runs; ++run) {
         for (auto const &query : queries) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query);
+                uint64_t result = query_func(query.terms);
                 do_not_optimize_away(result);
             });
             if (run != 0) { // first run is not timed
@@ -71,11 +100,12 @@ void op_perftest(Functor query_func, // XXX!!!
 template <typename IndexType, typename WandType>
 void perftest(const std::string &index_filename,
               const std::optional<std::string> &wand_data_filename,
-              const std::vector<term_id_vec> &queries,
+              const std::vector<Query> &queries,
               const std::optional<std::string> &thresholds_filename,
               std::string const &type,
               std::string const &query_type,
-              uint64_t k)
+              uint64_t k,
+              bool extract)
 {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
@@ -85,7 +115,7 @@ void perftest(const std::string &index_filename,
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
     for (auto const &q : queries) {
-        for (auto t : q) {
+        for (auto t : q.terms) {
             if (!warmed_up.count(t)) {
                 index.warmup(t);
                 warmed_up.insert(t);
@@ -184,14 +214,21 @@ void perftest(const std::string &index_filename,
             spdlog::error("Unsupported query type: {}", t);
             break;
         }
-        op_perftest(query_fun, queries, type, t, 2);
+        if (extract) {
+            extract_times(query_fun, queries, type, t, 2, std::cout);
+        } else {
+            op_perftest(query_fun, queries, type, t, 2);
+        }
     }
 }
 
-typedef wand_data<bm25, wand_data_raw<bm25>> wand_raw_index;
-typedef wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wand_uniform_index;
+using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
+using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
 
 int main(int argc, const char **argv) {
+
+    spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
+
     std::string type;
     std::string query_type;
     std::string index_filename;
@@ -202,6 +239,8 @@ int main(int argc, const char **argv) {
     uint64_t k = configuration::get().k;
     bool compressed = false;
     bool nostem = false;
+    bool extract = false;
+    bool silent = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -216,29 +255,37 @@ int main(int argc, const char **argv) {
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    app.add_flag("--extract", extract, "Extract individual query times")->needs(terms_opt);
+    app.add_flag("--silent", silent, "Suppress logging");
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, not nostem);
+    if (silent) {
+        spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("default"));
+    }
 
-    std::vector<term_id_vec> queries;
-    term_id_vec q;
+    std::vector<Query> queries;
+    auto process_term = query::term_processor(terms_file, not nostem);
+    auto push_query = [&](std::string const &query_line) {
+        queries.push_back(parse_query(query_line, process_term));
+    };
+
+    if (extract) {
+        std::cout << "qid\tusec\n";
+    }
+
     if (query_filename) {
-        std::filebuf fb;
-        if (fb.open(*query_filename, std::ios::in)) {
-            std::istream is(&fb);
-            while (read_query(q, is, process_term))
-                queries.push_back(q);
-        }
+        std::ifstream is(*query_filename);
+        io::for_each_line(is, push_query);
     } else {
-        while (read_query(q))
-            queries.push_back(q);
+        io::for_each_line(std::cin, push_query);
     }
 
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                          \
     }                                                                                  \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                          \
+    else if (type == BOOST_PP_STRINGIZE(T))                                            \
+    {                                                                                  \
         if (compressed) {                                                              \
             perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
                                                                   wand_data_filename,  \
@@ -246,7 +293,8 @@ int main(int argc, const char **argv) {
                                                                   thresholds_filename, \
                                                                   type,                \
                                                                   query_type,          \
-                                                                  k);                  \
+                                                                  k,                   \
+                                                                  extract);            \
         } else {                                                                       \
             perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
                                                               wand_data_filename,      \
@@ -254,7 +302,8 @@ int main(int argc, const char **argv) {
                                                               thresholds_filename,     \
                                                               type,                    \
                                                               query_type,              \
-                                                              k);                      \
+                                                              k,                       \
+                                                              extract);                \
         }                                                                              \
         /**/
 
