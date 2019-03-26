@@ -212,9 +212,8 @@ int main(int argc, const char **argv) {
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    app.add_option("-T,--thresholds", thresholds_filename, "k value");
-    auto *terms_opt =
-        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_option("-T,--thresholds", thresholds_filename, "Threshold file");
+    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 

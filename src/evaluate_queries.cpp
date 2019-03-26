@@ -85,7 +85,7 @@ int main(int argc, const char **argv)
     bool compressed = false;
     bool nostem = false;
 
-    CLI::App app{"queries - a tool for performing queries on an index."};
+    CLI::App app{"Retrieves query results in TREC format."};
     app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
