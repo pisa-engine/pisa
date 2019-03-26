@@ -1,6 +1,6 @@
 # Query an index
 
-## Usage 
+## Usage
 
     queries - a tool for performing queries on an index.
     Usage: ./bin/queries [OPTIONS]
@@ -16,12 +16,11 @@
       -q,--query TEXT             Queries filename
       --compressed-wand           Compressed wand input file
       -k UINT                     k value
-      -T,--thresholds TEXT        k value
-      --terms TEXT                Text file with terms in separate lines
+      -T,--thresholds TEXT        Threshold file
+      --terms TEXT                Term lexicon
       --nostem Needs: --terms     Do not stem terms
       --extract Needs: --terms    Extract individual query times
       --silent                    Suppress logging
-
 
 Now it is possible to query the index.
 The command `queries` parses each line of the standard input (or a file if `-q` present)

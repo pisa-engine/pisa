@@ -10,6 +10,10 @@
 
 namespace pisa::io {
 
+class Line : public std::string {
+    friend std::istream &operator>>(std::istream &is, Line &line) { return std::getline(is, line); }
+};
+
 template <typename Integral>
 [[nodiscard]] inline auto read_string_map(std::string const &filename)
     -> std::unordered_map<std::string, Integral>
