@@ -28,10 +28,11 @@ int main(int argc, const char **argv) {
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
     app.add_option("-l,--lambda", lambda, "Lambda parameter for variable blocks");
-    app.add_flag("--variable-block", variable_block, "Variable length blocks");
+    auto var_block_opt = app.add_flag("--variable-block", variable_block, "Variable length blocks");
     app.add_flag("--compress", compress, "Compress additional data");
-    app.add_flag("--range", range, "Create docid-range based data");
+    app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
 
+    
     CLI11_PARSE(app, argc, argv);
 
     partition_type p_type =
