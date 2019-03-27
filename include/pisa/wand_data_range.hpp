@@ -18,7 +18,7 @@ class wand_data_range {
     template <typename List, typename Fn>
     void for_each_posting(List &list, Fn func) const
     {
-        for (int i = 0; i < list.size(); ++i) {
+        while (list.position() < list.size()) {
             func(list.docid(), list.freq());
             list.next();
         }
