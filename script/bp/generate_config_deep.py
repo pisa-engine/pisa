@@ -8,15 +8,15 @@ def make_net(left, right, iterations, level, minsize, out):
     q1 = (left + mid) // 2
     q3 = (mid + right) // 2
 
-    print(level, iterations, left, mid, mid, right, file=out)
-    print(level + 1, iterations, left, q1, q1, mid, file=out)
-    print(level + 1, iterations, mid, q3, q3, right, file=out)
-    print(level + 2, iterations, left, q1, mid, q3, file=out)
-    print(level + 2, iterations, q1, mid, q3, right, file=out)
-    print(level + 3, iterations, left, q1, q1, mid, file=out)
-    print(level + 3, iterations, mid, q3, q3, right, file=out)
-    print(level + 4, iterations, left, q1, q3, right, file=out)
-    print(level + 4, iterations, q1, mid, mid, q3, file=out)
+    print(level, iterations, left, mid, mid, right, 0, file=out)
+    print(level + 1, iterations, left, q1, q1, mid, 0, file=out)
+    print(level + 1, iterations, mid, q3, q3, right, 0, file=out)
+    print(level + 2, iterations, left, q1, mid, q3, 0, file=out)
+    print(level + 2, iterations, q1, mid, q3, right, 0, file=out)
+    print(level + 3, iterations, left, q1, q1, mid, 0, file=out)
+    print(level + 3, iterations, mid, q3, q3, right, 0, file=out)
+    print(level + 4, iterations, left, q1, q3, right, 0, file=out)
+    print(level + 4, iterations, q1, mid, mid, q3, 0, file=out)
 
     if q1 - left > minsize:
         make_net(left, mid, iterations, level + 5, minsize, out)
