@@ -41,7 +41,7 @@ release = ''
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.githubpages',
-    'recommonmark'
+    'm2r'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -51,11 +51,6 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 
-from recommonmark.parser import CommonMarkParser
-
-source_parsers = {
-    '.md': CommonMarkParser,
-}
 
 source_suffix = ['.rst', '.md']
 # source_suffix = '.rst'
