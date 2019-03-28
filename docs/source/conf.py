@@ -41,6 +41,7 @@ release = ''
 extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.githubpages',
+    'sphinx.ext.viewcode', 
     'm2r'
 ]
 
