@@ -19,7 +19,7 @@
       -T,--thresholds TEXT        k value
       --terms TEXT                Text file with terms in separate lines
       --nostem Needs: --terms     Do not stem terms
-      --extract Needs: --terms    Extract individual query times
+      --extract                   Extract individual query times
       --silent                    Suppress logging
 
 

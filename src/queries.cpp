@@ -255,7 +255,7 @@ int main(int argc, const char **argv) {
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
-    app.add_flag("--extract", extract, "Extract individual query times")->needs(terms_opt);
+    app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
     CLI11_PARSE(app, argc, argv);
 
