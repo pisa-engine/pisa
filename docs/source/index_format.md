@@ -21,3 +21,28 @@ A _collection_ consists of 3 files, `<basename>.docs`, `<basename>.freqs`,
 * `<basename>.sizes` is composed of a single binary sequence whose length is the
   same as the number of documents in the collection, and the i-th element of the
   sequence is the size (number of terms) of the i-th document.
+
+
+### Reading the collection using Python
+
+```python
+import numpy as np
+
+class Collection:
+    def __init__(self, collection_name):
+        self.docs = np.fromfile(open(collection_name + '.docs', "r"), dtype=np.uint32)
+        self.freqs = np.fromfile(open(collection_name + ".freqs", "r"), dtype=np.uint32)
+
+    def __iter__(self):
+        i = 2
+        while i < len(docs):
+            size = self.docs[i]
+            yield (self.docs[i+1:size+i+1], self.freqs[i+1:size+i+1])
+            i+=size+1
+   
+    def __next__(self):
+        return self
+
+for idx, a in enumerate(Collection('test_collection')):
+    print(idx, a)
+```
