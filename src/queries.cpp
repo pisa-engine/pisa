@@ -227,7 +227,7 @@ using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_sc
 
 int main(int argc, const char **argv) {
 
-    spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
+    spdlog::set_default_logger(spdlog::stderr_color_mt("null"));
 
     std::string type;
     std::string query_type;
