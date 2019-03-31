@@ -16,12 +16,17 @@
       -q,--query TEXT             Queries filename
       --compressed-wand           Compressed wand input file
       -k UINT                     k value
-      -T,--thresholds TEXT        Threshold file
+      -T,--thresholds TEXT        k value
       --terms TEXT                Text file with terms in separate lines
       --nostem Needs: --terms     Do not stem terms
+      --extract                   Extract individual query times
+      --silent                    Suppress logging
 
-Now it is possible to query the index. The command `queries` parses each line of the standard input as a tab-separated collection of term-ids, where the i-th
-term is the i-th list in the input collection.
+
+Now it is possible to query the index.
+The command `queries` parses each line of the standard input (or a file if `-q` present)
+as a tab-separated collection of term IDs (or words if `--terms` present),
+where the i-th term is the i-th list in the input collection.
 
     $ ./bin/queries -t opt -a and -i test_collection.index.opt -w test_collection.wand -q ../test/test_data/queries
 

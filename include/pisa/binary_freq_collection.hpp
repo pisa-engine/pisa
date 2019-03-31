@@ -56,12 +56,12 @@ namespace pisa {
             iterator()
             {}
 
-            value_type const& operator*() const
+            sequence const& operator*() const
             {
                 return m_cur_seq;
             }
 
-            value_type const* operator->() const
+            sequence const* operator->() const
             {
                 return &m_cur_seq;
             }
