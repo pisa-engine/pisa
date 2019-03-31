@@ -259,7 +259,7 @@ int main(int argc, const char **argv) {
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
-        spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("default"));
+        spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("null"));
     }
 
     std::vector<Query> queries;
