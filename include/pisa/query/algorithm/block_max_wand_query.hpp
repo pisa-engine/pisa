@@ -142,7 +142,7 @@ struct block_max_wand_query {
 
                 for (size_t i = 0; i <= pivot; ++i) {
                     if (ordered_cursors[i]->w.docid() < next_jump)
-                        next_jump = std::min(ordered_cursors[i]->w.docid(), next_jump);
+                        next_jump = std::min(ordered_cursors[i]->w.find_next_docid(), next_jump);
                 }
 
                 next = next_jump + 1;
