@@ -12,7 +12,7 @@
 
 namespace pisa {
 
-    template<typename Scorer = bm25>
+    template<typename Scorer = bm25, bool ls_runtime = false>
     class wand_data_raw {
     public:
         wand_data_raw() { }
@@ -97,6 +97,14 @@ namespace pisa {
                 }
             }
 
+            uint64_t PISA_FLATTEN_FUNC find_next_docis_ls_runtime() const {
+                auto tmp_pos = cur_pos;
+                while (tmp_pos + 2 < block_number &&
+                    m_block_max_term_weight[block_start + tmp_pos + 1] <= score()){
+                        ++tmp_pos;
+                }   
+                return m_block_docid[block_start + tmp_pos];
+            }
 
             float PISA_FLATTEN_FUNC score() const {
                 return m_block_max_term_weight[block_start + cur_pos];
@@ -105,7 +113,14 @@ namespace pisa {
             uint64_t PISA_FLATTEN_FUNC docid() const {
                 return m_block_docid[block_start + cur_pos];
             }
-
+            
+            uint64_t PISA_FLATTEN_FUNC find_next_docid() const { 
+                if constexpr(ls_runtime){
+                    return find_next_docis_ls_runtime();
+                } else {
+                    return docid();
+                }
+            }
 
             uint64_t PISA_FLATTEN_FUNC find_next_skip() {
                 return m_block_docid[cur_pos + block_start];

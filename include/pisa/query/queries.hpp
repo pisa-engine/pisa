@@ -19,6 +19,7 @@
 #include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
+#include "wand_data_compressed_ls.hpp"
 #include "wand_data_raw.hpp"
 #include "scorer/score_function.hpp"
 

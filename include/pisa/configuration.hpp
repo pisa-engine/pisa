@@ -32,7 +32,7 @@ namespace pisa {
         size_t worker_threads;
         size_t threshold_wand_list;
         size_t reference_size;
-
+        size_t ls_max_value;
 
 
         bool heuristic_greedy;
@@ -54,6 +54,7 @@ namespace pisa {
             fillvar("PISA_EPS1_WAND", eps1_wand, 0.01);
             fillvar("PISA_EPS2_WAND", eps2_wand, 0.4);
             fillvar("PISA_SCORE_REFERENCES_SIZE", reference_size, 128);
+            fillvar("DS2I_LONG_SKIP_MAX_VALUE", ls_max_value, 7);
         }
 
         template <typename T, typename T2>

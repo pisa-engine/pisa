@@ -95,7 +95,7 @@ namespace {
 
     };
 
-    template<typename Scorer = bm25, typename score_compressor = uniform_score_compressor>
+    template<typename Scorer = bm25, typename score_compressor = uniform_score_compressor, bool ls_runtime = false>
     class wand_data_compressed {
     public:
         class builder{
@@ -158,7 +158,7 @@ namespace {
             friend class wand_data_compressed;
         public:
             enumerator(compact_elias_fano::enumerator docs_enum)
-                : m_docs_enum(docs_enum)
+                : m_docs_enum(docs_enum), ls_next_docid(0), ls_next_docid_valid(false)
             {
                 reset();
             }
@@ -168,7 +168,7 @@ namespace {
                 uint64_t val = m_docs_enum.move(0).second;
                 m_cur_docid = val >> score_bits_size;
                 uint64_t mask = configuration::get().reference_size - 1;
-		m_cur_score_index = (val & mask);
+		        m_cur_score_index = (val & mask);
             }
 
             void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
@@ -176,9 +176,51 @@ namespace {
                     lower_bound = lower_bound << score_bits_size;
                     auto val = m_docs_enum.next_geq(lower_bound);
                     m_cur_docid = val.second >> score_bits_size;
-		    uint64_t mask = configuration::get().reference_size - 1;
+		            uint64_t mask = configuration::get().reference_size - 1;
                     m_cur_score_index = (val.second & mask);
+                     if constexpr(ls_runtime){
+                        ls_next_docid_valid = false;
+                    }
                 }
+            }
+
+            uint64_t PISA_FLATTEN_FUNC find_next_docis_ls_runtime() {
+                if (!ls_next_docid_valid) {
+                    auto nv = m_docs_enum.scan_reader();
+                    uint64_t score;
+                    uint64_t position = m_docs_enum.position();
+                    uint64_t mask = configuration::get().reference_size - 1;
+                    uint64_t val = m_docs_enum.value().second;
+                    uint64_t old_val = 0;
+
+                    do {
+                        ++position;
+                        old_val = val >> score_bits_size;
+                        if (PISA_LIKELY(position < m_docs_enum.size())) {
+                            val = nv();
+                        } else {
+                            position = m_docs_enum.size();
+                            val = m_docs_enum.universe();
+                            break;
+                        }    
+
+                        score = (val & mask);
+                    
+                    } while (score <= m_cur_score_index);
+
+                    ls_next_docid = old_val;
+                    ls_next_docid_valid = true;
+                }
+
+                return ls_next_docid;
+            }
+
+            uint64_t PISA_FLATTEN_FUNC find_next_docid() {
+                if constexpr(ls_runtime){
+                    return find_next_docis_ls_runtime();
+                } else {
+                    return docid();
+                }       
             }
 
             float PISA_FLATTEN_FUNC score()  {
@@ -192,6 +234,8 @@ namespace {
         private:
             uint64_t m_cur_docid;
             uint64_t m_cur_score_index;
+            uint64_t ls_next_docid;
+            bool ls_next_docid_valid;
             compact_elias_fano::enumerator m_docs_enum;
         };
 
