@@ -13,6 +13,9 @@ using namespace pisa;
 
 using WandTypeUniform = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
 using WandTypePlain = wand_data<bm25, wand_data_raw<bm25>>;
+using WandTypeUniformLs = wand_data<bm25, wand_data_compressed_ls<bm25, uniform_score_compressor_ls>>;
+using WandTypePlainLsr = wand_data<bm25, wand_data_raw<bm25, true>>;
+using WandTypeUniformLsr = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor, true>>;
 
 template <typename Index>
 struct IndexData {
@@ -102,5 +105,32 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                                       data->collection,
                                       partition_type::variable_blocks);
         test(wdata_uniform);
+    }
+
+    SECTION("compressed longer-skipping")
+    {
+        WandTypeUniformLs wdata_uniform_ls(data->document_sizes.begin()->begin(),
+                                      data->collection.num_docs(),
+                                      data->collection,
+                                      partition_type::variable_blocks);
+        test(wdata_uniform_ls);
+    }
+
+    SECTION("Plain longer-skipping runtime")
+    {
+        WandTypePlainLsr wdata_plain_ls_runtime(data->document_sizes.begin()->begin(),
+                                      data->collection.num_docs(),
+                                      data->collection,
+                                      partition_type::variable_blocks);
+        test(wdata_plain_ls_runtime);
+    }
+
+    SECTION("compressed longer-skipping runtime")
+    {
+        WandTypeUniformLsr wdata_uniform_ls_runtime(data->document_sizes.begin()->begin(),
+                                      data->collection.num_docs(),
+                                      data->collection,
+                                      partition_type::variable_blocks);
+        test(wdata_uniform_ls_runtime);
     }
 }
