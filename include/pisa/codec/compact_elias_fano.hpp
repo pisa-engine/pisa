@@ -258,6 +258,19 @@ namespace pisa {
                 return ((prev_high - prev_pos - 1) << m_of.lower_bits) | prev_low;
             }
 
+            uint64_t skip_no_move(uint64_t add_index)
+            {
+                uint64_t retvalue = m_value;
+
+                if (add_index) {
+                    uint64_t h = m_high_enumerator.skip_no_move(add_index - 1) - (m_of.higher_bits_offset + m_position + 1 + add_index);
+                    uint64_t l = m_bv->get_word56(m_of.lower_bits_offset + (m_position + add_index ) * m_of.lower_bits) & m_of.mask;
+                    retvalue = (h << (m_of.lower_bits)) | l;
+                }
+
+                return retvalue;
+            }
+
             uint64_t position() const
             {
                 return m_position;
@@ -267,6 +280,39 @@ namespace pisa {
             {
                 return value_type(m_position, m_value);
             }
+
+            struct next_reader_no_move {
+                next_reader_no_move(enumerator& e, uint64_t position)
+                    : e(e)
+                    , high_enumerator(e.m_high_enumerator)
+                    , high_base(e.m_of.higher_bits_offset + position + 1)
+                    , lower_bits(e.m_of.lower_bits)
+                    , lower_base(e.m_of.lower_bits_offset + position * lower_bits)
+                    , mask(e.m_of.mask)
+                    , bv(*e.m_bv)
+                {}
+
+                uint64_t operator()()
+                {
+                    uint64_t high = high_enumerator.next() - high_base;
+                    uint64_t low = bv.get_word56(lower_base) & mask;
+                    high_base += 1;
+                    lower_base += lower_bits;
+                    return (high << lower_bits) | low;
+                }
+
+                enumerator& e;
+                bit_vector::unary_enumerator high_enumerator;
+                uint64_t high_base, lower_bits, lower_base, mask;
+                bit_vector const& bv;
+            };
+
+            inline uint64_t universe() const {
+                return m_of.universe;
+            }
+            next_reader_no_move scan_reader() {
+                return next_reader_no_move(*this, m_position + 1);
+            } 
         private:
 
             value_type PISA_NOINLINE slow_move(uint64_t position)
@@ -296,6 +342,39 @@ namespace pisa {
                 m_value = read_next();
                 return value();
             }
+
+
+            struct next_reader {
+                next_reader(enumerator& e, uint64_t position)
+                    : e(e)
+                    , high_enumerator(e.m_high_enumerator)
+                    , high_base(e.m_of.higher_bits_offset + position + 1)
+                    , lower_bits(e.m_of.lower_bits)
+                    , lower_base(e.m_of.lower_bits_offset + position * lower_bits)
+                    , mask(e.m_of.mask)
+                    , bv(*e.m_bv)
+                {}
+
+                ~next_reader()
+                {
+                    e.m_high_enumerator = high_enumerator;
+                }
+
+                uint64_t operator()()
+                {
+                    uint64_t high = high_enumerator.next() - high_base;
+                    uint64_t low = bv.get_word56(lower_base) & mask;
+                    high_base += 1;
+                    lower_base += lower_bits;
+                    return (high << lower_bits) | low;
+                }
+
+                enumerator& e;
+                bit_vector::unary_enumerator high_enumerator;
+                uint64_t high_base, lower_bits, lower_base, mask;
+                bit_vector const& bv;
+            };
+            
 
             value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
             {
@@ -361,36 +440,7 @@ namespace pisa {
                 return ((high - m_position - 1) << m_of.lower_bits) | read_low();
             }
 
-            struct next_reader {
-                next_reader(enumerator& e, uint64_t position)
-                    : e(e)
-                    , high_enumerator(e.m_high_enumerator)
-                    , high_base(e.m_of.higher_bits_offset + position + 1)
-                    , lower_bits(e.m_of.lower_bits)
-                    , lower_base(e.m_of.lower_bits_offset + position * lower_bits)
-                    , mask(e.m_of.mask)
-                    , bv(*e.m_bv)
-                {}
 
-                ~next_reader()
-                {
-                    e.m_high_enumerator = high_enumerator;
-                }
-
-                uint64_t operator()()
-                {
-                    uint64_t high = high_enumerator.next() - high_base;
-                    uint64_t low = bv.get_word56(lower_base) & mask;
-                    high_base += 1;
-                    lower_base += lower_bits;
-                    return (high << lower_bits) | low;
-                }
-
-                enumerator& e;
-                bit_vector::unary_enumerator high_enumerator;
-                uint64_t high_base, lower_bits, lower_base, mask;
-                bit_vector const& bv;
-            };
 
             inline uint64_t pointer(uint64_t offset, uint64_t i) const
             {
