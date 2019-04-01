@@ -9,6 +9,7 @@
 #include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
+#include "wand_data_compressed_ls.hpp"
 #include "wand_data_raw.hpp"
 #include "wand_data_range.hpp"
 
@@ -23,6 +24,7 @@ int main(int argc, const char **argv) {
     bool        variable_block = false;
     bool        compress       = false;
     bool        range          = false;
+    bool        ls_opt         = false;
 
     CLI::App app{"create_wand_data - a tool for creating additional data for query processing."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
@@ -31,6 +33,7 @@ int main(int argc, const char **argv) {
     auto var_block_opt = app.add_flag("--variable-block", variable_block, "Variable length blocks");
     app.add_flag("--compress", compress, "Compress additional data");
     app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
+    app.add_flag("--ls-opt", ls_opt, "Compress additional data and add ls skip information");
 
     
     CLI11_PARSE(app, argc, argv);
@@ -45,7 +48,11 @@ int main(int argc, const char **argv) {
     binary_collection      sizes_coll((input_basename + ".sizes").c_str());
     binary_freq_collection coll(input_basename.c_str());
 
-    if (compress) {
+    if (ls_opt){
+        wand_data<bm25, wand_data_compressed_ls<bm25, uniform_score_compressor_ls>> wdata(
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type, lambda);
+        mapper::freeze(wdata, output_filename.c_str());
+    } else if (compress) {
         wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type, lambda);
         mapper::freeze(wdata, output_filename.c_str());

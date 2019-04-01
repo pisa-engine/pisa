@@ -20,6 +20,7 @@
 #include "timer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
+#include "wand_data_compressed_ls.hpp"
 #include "wand_data_raw.hpp"
 #include "cursor/cursor.hpp"
 #include "cursor/scored_cursor.hpp"
@@ -222,8 +223,12 @@ void perftest(const std::string &index_filename,
     }
 }
 
+
 using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
+using wand_raw_lsr_index = wand_data<bm25, wand_data_raw<bm25, true>>;
 using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
+using wand_uniform_lsr_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor, true>>;
+using wand_uniform_ls_index = wand_data<bm25, wand_data_compressed_ls<bm25, uniform_score_compressor_ls>>;
 
 int main(int argc, const char **argv) {
 
@@ -241,6 +246,8 @@ int main(int argc, const char **argv) {
     bool nostem = false;
     bool extract = false;
     bool silent = false;
+    bool ls_runtime = false;
+    bool ls_opt = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -257,6 +264,8 @@ int main(int argc, const char **argv) {
     app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
+    app.add_flag("--ls-opt", ls_opt, "Use precomputed longer skipping and compressed wand");
+    app.add_flag("--ls-runtime", ls_runtime, "Use longer-skipping runtime optimization.");
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -282,29 +291,61 @@ int main(int argc, const char **argv) {
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                          \
-    }                                                                                  \
-    else if (type == BOOST_PP_STRINGIZE(T))                                            \
-    {                                                                                  \
-        if (compressed) {                                                              \
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                  wand_data_filename,  \
-                                                                  queries,             \
-                                                                  thresholds_filename, \
-                                                                  type,                \
-                                                                  query_type,          \
-                                                                  k,                   \
-                                                                  extract);            \
-        } else {                                                                       \
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                              wand_data_filename,      \
-                                                              queries,                 \
-                                                              thresholds_filename,     \
-                                                              type,                    \
-                                                              query_type,              \
-                                                              k,                       \
-                                                              extract);                \
-        }                                                                              \
+#define LOOP_BODY(R, DATA, T)                                                   \
+    }                                                                           \
+    else if (type == BOOST_PP_STRINGIZE(T)) {                                   \
+        if (ls_opt) {                                                           \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_ls_index>(           \
+                index_filename,                                                 \
+                wand_data_filename,                                             \
+                queries,                                                        \
+                thresholds_filename,                                            \
+                type, query_type,                                               \
+                k,                                                              \
+                extract);                                                       \
+        } else if (ls_runtime){                                                 \
+            if (compressed){                                                    \
+                perftest<BOOST_PP_CAT(T, _index), wand_uniform_lsr_index>(      \
+                    index_filename,                                             \
+                    wand_data_filename,                                         \
+                    queries,                                                    \
+                    thresholds_filename,                                        \
+                    type,                                                       \
+                    query_type,                                                 \
+                    k,                                                          \
+                    extract);                                                   \
+            } else {                                                            \
+                perftest<BOOST_PP_CAT(T, _index), wand_raw_lsr_index>(          \
+                    index_filename,                                             \
+                    wand_data_filename,                                         \
+                    queries,                                                    \
+                    thresholds_filename,                                        \
+                    type,                                                       \
+                    query_type,                                                 \
+                    k,                                                          \
+                    extract);                                                   \
+            }                                                                   \
+        } else if(compressed) {                                                 \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(              \
+                index_filename,                                                 \
+                wand_data_filename,                                             \
+                queries,                                                        \
+                thresholds_filename,                                            \
+                type,                                                           \
+                query_type,                                                     \
+                k,                                                              \
+                extract);                                                       \
+        } else {                                                                \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(                  \
+                index_filename,                                                 \
+                wand_data_filename,                                             \
+                queries,                                                        \
+                thresholds_filename,                                            \
+                type,                                                           \
+                query_type,                                                     \
+                k,                                                              \
+                extract);                                                       \
+        }                                                                       \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
@@ -314,3 +355,4 @@ int main(int argc, const char **argv) {
         spdlog::error("Unknown type {}", type);
     }
 }
+
