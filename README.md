@@ -14,19 +14,40 @@
 
 [Official Documentation](http://pisa.readthedocs.io)
 
-Description 
-------------
+Longer Skipping
+-------
 
-PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
+### Create longer skipping precomputed wand file
 
-Some features of PISA are listed below:
+```bash
+/bin/create_wand_data -c <collection> --ls-opt -o <output>
+```
 
-* Written in C++ for performance;
-* Indexing & Parsing capabilities;
-* Many index compression methods implemented;
-* Many query processing algorithms implemented;
-* Implementation of document reordering;
-* Free and open-source with permissive license;
+Changing default settings:
+* PISA_LONG_SKIP_MAX_VALUE - max block skipping. The higher this values the more the bits used for longer skipping information.
+
+
+### Queries
+
+```bash
+
+# ls runtime in plain-wand
+./bin/queries -t <index_type> -a block_max_wand -i <index> -w <plain-wand> -q <query-file> --ls-runtime
+
+# ls runtime in compressed-wand
+./bin/queries -t <index_type> -a block_max_wand -i <index> -w <compressed-wand> -q <query-file> --ls-runtime --compressed-wand
+
+# ls precomputed in compressed-wand
+./bin/queries -t <index_type> -a block_max_wand -i <index> -w <compressed-wand-ls> -q <query-file> --ls-opt
+
+```
+
+
+
+
 
 #### Credits
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).
+
+
+
