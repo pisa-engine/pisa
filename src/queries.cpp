@@ -47,7 +47,7 @@ void extract_times(Fn fn,
                        [&]() { do_not_optimize_away(fn(terms)); })
                 .count();
         });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>());
+        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
         os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
     }
 }
