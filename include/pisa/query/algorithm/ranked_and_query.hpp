@@ -14,7 +14,6 @@ struct ranked_and_query {
     template <typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        size_t results = 0;
         m_topk.clear();
         if (cursors.empty())
             return 0;
@@ -50,18 +49,13 @@ struct ranked_and_query {
                 }
 
                 m_topk.insert(score, ordered_cursors[0]->docs_enum.docid());
-
-                results++;
-                if (results >= m_topk.size() * 2)
-                    break;
-
                 ordered_cursors[0]->docs_enum.next();
                 candidate = ordered_cursors[0]->docs_enum.docid();
                 i         = 1;
             }
         }
 
-        //    m_topk.finalize();
+        m_topk.finalize();
         return m_topk.topk().size();
     }
 
