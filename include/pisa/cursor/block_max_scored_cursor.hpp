@@ -18,6 +18,16 @@ struct block_max_scored_cursor {
     float      max_weight;
 };
 
+template <typename WandType, typename CursorType>
+auto get_enums(CursorType&& cursors) {
+    using wdata_enum = typename WandType::wand_data_enumerator;
+    std::vector<wdata_enum> enums;
+    for (auto& c : cursors) {
+        enums.push_back(c.w);
+    }
+    return enums;
+}
+
 template <typename Index, typename WandType>
 [[nodiscard]] auto make_block_max_scored_cursors(Index const &index, WandType const &wdata,
                                                  term_id_vec terms) {

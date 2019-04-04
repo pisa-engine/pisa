@@ -18,6 +18,8 @@ struct topk_queue {
         return lhs.first > rhs.first;
     }
 
+    float getThreshold() const { return m_threshold; }
+    
     bool insert(float score) { return insert(score, 0); }
 
     bool insert(float score, uint64_t docid) {
