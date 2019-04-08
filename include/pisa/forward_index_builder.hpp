@@ -102,19 +102,32 @@ void parse_plaintext_content(std::string &&content, std::function<void(std::stri
     }
 }
 
+[[nodiscard]] auto is_http(std::string_view content) -> bool
+{
+    auto start = std::find_if(
+        content.begin(), content.end(), [](unsigned char c) { return not std::isspace(c); });
+    if (start == content.end()) {
+        return false;
+    }
+    return std::string_view(&*start, 4) == "HTTP"sv;
+}
+
 void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
     content = parsing::html::cleantext([&]() {
         auto pos = content.begin();
-        while (pos != content.end()) {
-            pos = std::find(pos, content.end(), '\n');
-            pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
-                return c == '\n' or not std::isspace(c);
-            });
-            if (pos != content.end() and *pos == '\n') {
-                return std::string_view(&*pos, std::distance(pos, content.end()));
+        if (is_http(content)) {
+            while (pos != content.end()) {
+                pos = std::find(pos, content.end(), '\n');
+                pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
+                    return c == '\n' or not std::isspace(c);
+                });
+                if (pos != content.end() and *pos == '\n') {
+                    return std::string_view(&*pos, std::distance(pos, content.end()));
+                }
             }
+            return ""sv;
         }
-        return ""sv;
+        return std::string_view(content);
     }());
     if (content.empty()) {
         return;
