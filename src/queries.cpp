@@ -275,8 +275,11 @@ int main(int argc, const char **argv) {
     std::unordered_set<term_id_type> stopwords;
     if (stopwords_filename) {
         std::ifstream is(*stopwords_filename);
-        io::for_each_line(is,
-                          [&](auto &&word) { stopwords.insert(process_term(std::move(word))); });
+        io::for_each_line(is, [&](auto &&word) {
+            if (auto processed_term = process_term(std::move(word)); process_term) {
+                stopwords.insert(*processed_term);
+            }
+        });
     }
 
     std::vector<Query> queries;
