@@ -241,6 +241,7 @@ int main(int argc, const char **argv) {
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
+    std::optional<std::string> stopwords_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
     bool nostem = false;
@@ -256,6 +257,7 @@ int main(int argc, const char **argv) {
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
@@ -268,10 +270,18 @@ int main(int argc, const char **argv) {
         spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("default"));
     }
 
-    std::vector<Query> queries;
     auto process_term = query::term_processor(terms_file, not nostem);
+
+    std::unordered_set<term_id_type> stopwords;
+    if (stopwords_filename) {
+        std::ifstream is(*stopwords_filename);
+        io::for_each_line(is,
+                          [&](auto &&word) { stopwords.insert(process_term(std::move(word))); });
+    }
+
+    std::vector<Query> queries;
     auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term));
+        queries.push_back(parse_query(query_line, process_term, stopwords));
     };
 
     if (extract) {

@@ -80,6 +80,7 @@ int main(int argc, const char **argv)
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
+    std::optional<std::string> stopwords_filename;
     uint64_t k = configuration::get().k;
     bool compressed = false;
     bool nostem = false;
@@ -91,6 +92,7 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-k", k, "k value");
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
@@ -101,8 +103,16 @@ int main(int argc, const char **argv)
 
     std::vector<Query> queries;
     auto process_term = query::term_processor(terms_file, not nostem);
+
+    std::unordered_set<term_id_type> stopwords;
+    if (stopwords_filename) {
+        std::ifstream is(*stopwords_filename);
+        io::for_each_line(is,
+                          [&](auto &&word) { stopwords.insert(process_term(std::move(word))); });
+    }
+
     auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term));
+        queries.push_back(parse_query(query_line, process_term, stopwords));
     };
 
     if (query_filename) {

@@ -32,9 +32,10 @@ struct Query {
     std::vector<term_id_type> terms;
 };
 
-[[nodiscard]] inline auto parse_query(std::string const &query_string,
-                                      std::function<term_id_type(std::string)> process_term)
-    -> Query
+[[nodiscard]] inline auto parse_query(
+    std::string const &query_string,
+    std::function<term_id_type(std::string)> process_term,
+    std::optional<std::unordered_set<term_id_type>> const &stopwords = std::nullopt) -> Query
 {
     std::optional<std::string> id = std::nullopt;
     std::vector<term_id_type> parsed_query;
@@ -47,7 +48,10 @@ struct Query {
     std::string term;
     while (iline >> term) {
         try {
-            parsed_query.push_back(process_term(term));
+            auto processed = process_term(term);
+            if (not stopwords or stopwords->find(processed) == stopwords->end()) {
+                parsed_query.push_back(std::move(processed));
+            }
         } catch (std::invalid_argument& err) {
             spdlog::warn("Could not parse `{}` to a number", term);
         } catch (std::out_of_range& err) {
