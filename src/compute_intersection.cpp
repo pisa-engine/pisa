@@ -7,6 +7,7 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 #include "index_types.hpp"
+#include <optional>
 
 using namespace pisa;
 
@@ -56,7 +57,6 @@ int main(int argc, const char **argv) {
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     bool                       compressed = false;
-    bool                       nostem     = false;
 
     CLI::App app{"compute_intersection - a tool for pre-computing intersections of terms."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -67,7 +67,7 @@ int main(int argc, const char **argv) {
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, std::nullopt);
 
     std::vector<term_id_vec> queries;
     term_id_vec              q;

@@ -241,9 +241,10 @@ int main(int argc, const char **argv) {
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
+    std::optional<std::string> stemmer = std::nullopt;
+
     uint64_t k = configuration::get().k;
     bool compressed = false;
-    bool nostem = false;
     bool extract = false;
     bool silent = false;
 
@@ -257,9 +258,8 @@ int main(int argc, const char **argv) {
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
-    auto *terms_opt =
-        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    auto *terms_opt = app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
     CLI11_PARSE(app, argc, argv);
@@ -269,7 +269,7 @@ int main(int argc, const char **argv) {
     }
 
     std::vector<Query> queries;
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, stemmer);
     auto push_query = [&](std::string const &query_line) {
         queries.push_back(parse_query(query_line, process_term));
     };

@@ -91,6 +91,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 # Add Porter2
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 
+# Add KrovetzStemmer
+set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer)
+
 # Add warcpp
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 
