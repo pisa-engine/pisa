@@ -8,61 +8,59 @@
 #include <string>
 #include <unordered_map>
 
+#include <spdlog/spdlog.h>
+#include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <Porter2/Porter2.hpp>
 #include <range/v3/view/enumerate.hpp>
-#include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
+#include "scorer/score_function.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "scorer/score_function.hpp"
 
 namespace pisa {
 
 using term_id_type = uint32_t;
-using term_id_vec = std::vector<term_id_type>;
+using term_id_vec  = std::vector<term_id_type>;
 
 struct Query {
     std::optional<std::string> id;
-    std::vector<term_id_type> terms;
+    std::vector<term_id_type>  terms;
 };
 
-[[nodiscard]] inline auto parse_query(std::string const &query_string,
+[[nodiscard]] inline auto parse_query(std::string const &                      query_string,
                                       std::function<term_id_type(std::string)> process_term)
-    -> Query
-{
+    -> Query {
     std::optional<std::string> id = std::nullopt;
-    std::vector<term_id_type> parsed_query;
-    auto colon = std::find(query_string.begin(), query_string.end(), ':');
+    std::vector<term_id_type>  parsed_query;
+    auto                       colon = std::find(query_string.begin(), query_string.end(), ':');
     if (colon != query_string.end()) {
         id = std::string(query_string.begin(), colon);
     }
-    auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
+    auto               pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
     std::istringstream iline(std::string(pos, query_string.end()));
-    std::string term;
+    std::string        term;
     while (iline >> term) {
         try {
             parsed_query.push_back(process_term(term));
-        } catch (std::invalid_argument& err) {
+        } catch (std::invalid_argument &err) {
             spdlog::warn("Could not parse `{}` to a number", term);
-        } catch (std::out_of_range& err) {
+        } catch (std::out_of_range &err) {
             spdlog::warn("Term `{}` not found and will be ignored", term);
         }
     }
     return {id, parsed_query};
 }
 
-bool read_query(term_id_vec &ret,
-                std::istream &is = std::cin,
+bool read_query(term_id_vec &ret, std::istream &is = std::cin,
                 std::function<term_id_type(std::string)> process_term = [](auto str) {
                     return std::stoi(str);
-                })
-{
+                }) {
     ret.clear();
     std::string line;
     if (!std::getline(is, line)) {
@@ -100,37 +98,41 @@ term_freq_vec query_freqs(term_id_vec terms) {
 namespace query {
 
 std::function<term_id_type(std::string &&)> term_processor(std::optional<std::string> terms_file,
-                                                           bool stem)
-{
+                                                           std::optional<std::string> const &type) {
     if (terms_file) {
         auto to_id = [m = std::make_shared<std::unordered_map<std::string, term_id_type>>(
                           io::read_string_map<term_id_type>(*terms_file))](auto str) {
             return m->at(str);
         };
-        if (stem) {
+        if (not type) {
+            return to_id;
+        }
+        if (*type == "porter2") {
             return [=](auto str) {
                 stem::Porter2 stemmer{};
                 return to_id(stemmer.stem(str));
             };
-        } else {
-            return to_id;
+        }
+        if (*type == "krovetz") {
+            return [=](auto str) {
+                stem::KrovetzStemmer stemmer{};
+                return to_id(stemmer.kstem_stemmer(str));
+            };
         }
     }
-    else {
-        return [](auto str) { return std::stoi(str); };
-    }
+    return [](auto str) { return std::stoi(str); };
 }
 
-} // namespace query
-} // namespace pisa
+}  // namespace query
+}  // namespace pisa
 
 #include "algorithm/and_query.hpp"
 #include "algorithm/block_max_maxscore_query.hpp"
 #include "algorithm/block_max_wand_query.hpp"
 #include "algorithm/maxscore_query.hpp"
 #include "algorithm/or_query.hpp"
+#include "algorithm/range_query.hpp"
 #include "algorithm/ranked_and_query.hpp"
 #include "algorithm/ranked_or_query.hpp"
-#include "algorithm/wand_query.hpp"
 #include "algorithm/ranked_or_taat_query.hpp"
-#include "algorithm/range_query.hpp"
+#include "algorithm/wand_query.hpp"
