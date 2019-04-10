@@ -2,6 +2,7 @@
 
 #include <CLI/CLI.hpp>
 #include <Porter2/Porter2.hpp>
+#include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <boost/te.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -91,6 +92,14 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
                 return std::tolower(c);
             });
             return stem::Porter2{}.stem(term);
+        };
+    }
+    if (*type == "krovetz") {
+        return [](std::string &&term) -> std::string {
+            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
+            return stem::KrovetzStemmer{}.kstem_stemmer(term);
         };
     }
     spdlog::error("Unknown stemmer type: {}", *type);
