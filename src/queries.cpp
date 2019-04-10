@@ -258,9 +258,8 @@ int main(int argc, const char **argv) {
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
-    app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-
-    app.add_option("--stemmer", stemmer, "Stemmer type");
+    auto *terms_opt = app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
     CLI11_PARSE(app, argc, argv);
