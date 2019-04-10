@@ -89,6 +89,7 @@ target_link_libraries(pisa INTERFACE
     gumbo::gumbo
     Boost::filesystem
     Porter2
+    KrovetzStemmer
     warcpp
     trecpp
     spdlog

@@ -1,5 +1,5 @@
-#include <vector>
 #include <optional>
+#include <vector>
 
 #include "CLI/CLI.hpp"
 #include "index_types.hpp"
@@ -54,7 +54,6 @@ int main(int argc, const char **argv)
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     bool compressed = false;
-    bool nostem = false;
 
     CLI::App app{"compute_intersection - a tool for pre-computing intersections of terms."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -65,7 +64,7 @@ int main(int argc, const char **argv)
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, std::nullopt);
 
     std::vector<Query> queries;
     auto push_query = [&](std::string const &query_line) {

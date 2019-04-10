@@ -69,9 +69,10 @@ int main(int argc, const char **argv)
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
+    std::optional<std::string> stemmer = std::nullopt;
+
     uint64_t k = configuration::get().k;
     bool compressed = false;
-    bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -83,10 +84,10 @@ int main(int argc, const char **argv)
     app.add_option("-k", k, "k value");
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, stemmer);
 
     std::vector<Query> queries;
     auto push_query = [&](std::string const &query_line) {
