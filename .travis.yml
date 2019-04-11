@@ -90,13 +90,14 @@ after_success:
   - if [[ "${COVERAGE}" == "On" ]]; then 
       bash <(curl -s https://codecov.io/bash);
     fi
-  - if [[ "$TRAVIS_BRANCH" = "master" -a "${DOCKER}" == "On"]]; then 
-      curl -X POST
-      -H "Content-Type: application/json"
-      -H "Travis-API-Version: 3"
-      -H "Accept: application/json"
-      -H "Authorization: token ${TRAVIS_API_TOKEN}"
-      -d '{"request": {"branch":"master"}}'
-      'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests';
+  - if [[ "$TRAVIS_BRANCH" = "master" -a "${DOCKER}" == "On"]]; then
+      curl -s -X POST \
+      -H "Content-Type:application/json" \
+      -H "Travis-API-Version:3" \
+      -H "Accept:application/json" \
+      -H "Authorization:token ${TRAVIS_API_TOKEN}" \
+      -d '{"request":{"branch":"master"}}' \
+      'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests'
     fi
+
 
