@@ -90,7 +90,7 @@ after_success:
   - if [[ "${COVERAGE}" == "On" ]]; then 
       bash <(curl -s https://codecov.io/bash);
     fi
-  - if [ "$TRAVIS_BRANCH" = "master" -a "${DOCKER}" == "On"]; then
+  - if [[ "$TRAVIS_BRANCH" = "master" && "${DOCKER}" == "On"]]; then
       curl -s -X POST \
       -H "Content-Type:application/json" \
       -H "Travis-API-Version:3" \
