@@ -97,7 +97,7 @@ after_success:
       -H "Accept:application/json" \
       -H "Authorization:token ${TRAVIS_API_TOKEN}" \
       -d '{"request":{"branch":"master"}}' \
-      'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests';
+      'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests'
     fi
 
 
