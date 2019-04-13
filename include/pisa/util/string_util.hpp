@@ -1,5 +1,9 @@
 #pragma once
 
+#include <algorithm>
+#include <string>
+#include <utility>
+
 namespace pisa {
 namespace util {
 std::string ltrim(const std::string &&str) {
