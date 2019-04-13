@@ -85,25 +85,19 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
 {
     if (not type) {
         return [](std::string &&term) -> std::string {
-            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                return std::tolower(c);
-            });
+            std::transform(term.begin(), term.end(), term.begin(), std::tolower);
             return term;
         };
     }
     if (*type == "porter2") {
         return [](std::string &&term) -> std::string {
-            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                return std::tolower(c);
-            });
+            std::transform(term.begin(), term.end(), term.begin(), std::tolower);
             return stem::Porter2{}.stem(term);
         };
     }
     if (*type == "krovetz") {
         return [](std::string &&term) -> std::string {
-            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                return std::tolower(c);
-            });
+            std::transform(term.begin(), term.end(), term.begin(), std::tolower);
             return stem::KrovetzStemmer{}.kstem_stemmer(term);
         };
     }
