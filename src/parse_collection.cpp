@@ -84,7 +84,12 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
 std::function<std::string(std::string &&)> term_processor(std::optional<std::string> const &type)
 {
     if (not type) {
-        return [](std::string &&term) -> std::string { return std::forward<std::string>(term); };
+        return [](std::string &&term) -> std::string {
+            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
+            return term;
+        };
     }
     if (*type == "porter2") {
         return [](std::string &&term) -> std::string {
