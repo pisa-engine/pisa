@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <string>
 #include <utility>
+#include <locale>
 
 namespace pisa {
 namespace util {
