@@ -1,8 +1,11 @@
 #include <fstream>
-#include <string>
 #include <optional>
+#include <string>
+
+#include "pisa/util/string_util.hpp"
 
 #include "CLI/CLI.hpp"
+
 namespace detail {
 
 static std::string const TOP       = "<top>";
@@ -13,30 +16,11 @@ static std::string const NUM_END   = "</num>";
 static std::string const TITLE     = "<title>";
 static std::string const TITLE_END = "</title>";
 static std::string const DESC      = "<desc>";
-static std::string const DESC_ATT   = "Description:";
+static std::string const DESC_ATT  = "Description:";
 static std::string const DESC_END  = "</desc>";
-static std::string const NARR       = "<narr>";
-static std::string const NARR_ATT   = "Narrative:";
-static std::string const NARR_END   = "</narr>";
-
-std::string ltrim(const std::string &&str) {
-    auto trimmed = str;
-    auto it2     = std::find_if(trimmed.begin(), trimmed.end(), [](char ch) {
-        return !std::isspace<char>(ch, std::locale::classic());
-    });
-    trimmed.erase(trimmed.begin(), it2);
-    return trimmed;
-}
-
-std::string rtrim(const std::string &&str) {
-    auto trimmed = str;
-    auto it1     = std::find_if(trimmed.rbegin(), trimmed.rend(), [](char ch) {
-        return !std::isspace<char>(ch, std::locale::classic());
-    });
-    trimmed.erase(it1.base(), trimmed.end());
-    return trimmed;
-}
-std::string trim(const std::string &&str) { return ltrim(rtrim(std::forward<decltype(str)>(str))); }
+static std::string const NARR      = "<narr>";
+static std::string const NARR_ATT  = "Narrative:";
+static std::string const NARR_END  = "</narr>";
 
 struct Topic {
     std::string num;
@@ -45,7 +29,7 @@ struct Topic {
     std::string narr;
 };
 
-bool consume(std::istream &is, std::string const &token) {
+void consume(std::istream &is, std::string const &token, bool strict = true) {
     is >> std::ws;
     for (auto pos = token.begin(); pos != token.end(); ++pos) {
         if (is.get() != *pos) {
@@ -53,10 +37,12 @@ bool consume(std::istream &is, std::string const &token) {
             for (auto rpos = std::reverse_iterator(pos); rpos != token.rend(); ++rpos) {
                 is.putback(*rpos);
             }
-            return false;
+            if (strict) {
+                throw std::runtime_error("Could not consume tag: " + token);
+            }
+            break;
         }
     }
-    return true;
 }
 
 template <typename Pred>
@@ -72,41 +58,41 @@ std::ostream &read_until(std::istream &is, Pred pred, std::ostream &os) {
 }
 
 std::optional<Topic> next_topic(std::ifstream &is) {
-    if(is.eof()) return std::nullopt;
+    is >> std::ws;
+    if (is.eof()) return std::nullopt;
+
     Topic              topic;
     std::ostringstream os;
-    is >> std::ws;
-    if(not detail::consume(is, TOP)){
-        return std::nullopt;
-    };
+
+    detail::consume(is, TOP);
+
     detail::consume(is, NUM);
     detail::consume(is, NUM_ATT);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.num = trim(os.str());
-    detail::consume(is, NUM_END);
+    topic.num = pisa::util::trim(os.str());
+    detail::consume(is, NUM_END, false);
 
-    os.clear();
+    os.str("");
     detail::consume(is, TITLE);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.title = trim(os.str());
-    detail::consume(is, TITLE_END);
+    topic.title = pisa::util::trim(os.str());
+    detail::consume(is, TITLE_END, false);
 
-    os.clear();
+    os.str("");
     detail::consume(is, DESC);
-    detail::consume(is, DESC_ATT);
+    detail::consume(is, DESC_ATT, false);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.desc = trim(os.str());
-    detail::consume(is, DESC_END);
+    topic.desc = pisa::util::trim(os.str());
+    detail::consume(is, DESC_END, false);
 
-    os.clear();
+    os.str("");
     detail::consume(is, NARR);
-    detail::consume(is, NARR_ATT);
+    detail::consume(is, NARR_ATT, false);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.narr = trim(os.str());
-    detail::consume(is, NARR_END);
+    topic.narr = pisa::util::trim(os.str());
+    detail::consume(is, NARR_END, false);
 
     detail::consume(is, TOP_END);
-
     return std::make_optional(topic);
 }
 
@@ -122,9 +108,17 @@ int main(int argc, char const *argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     std::ifstream infile(input_filename);
-    std::vector<detail::Topic> topics;
-    while(auto topic = detail::next_topic(infile)){
-        topics.push_back(topic.value());
-    }
+    std::ofstream title_file;
+    title_file.open(output_basename + ".title");
+    std::ofstream desc_file;
+    desc_file.open(output_basename + ".desc");
+    std::ofstream narr_file;
+    narr_file.open(output_basename + ".narr");
 
+    while (auto topic = detail::next_topic(infile)) {
+        auto t = topic.value();
+        title_file << t.num << ":" << t.title << std::endl;
+        desc_file << t.num << ":" << t.desc << std::endl;
+        narr_file << t.num << ":" << t.narr << std::endl;
+    }
 }
