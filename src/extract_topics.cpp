@@ -104,7 +104,7 @@ int main(int argc, char const *argv[]) {
 
     CLI::App app{"trec2query - a tool for converting TREC queries to PISA queries."};
     app.add_option("-i,--input", input_filename, "TREC query input file")->required();
-    app.add_option("-o,--output", output_basename, "Query output file")->required();
+    app.add_option("-o,--output", output_basename, "Output basename")->required();
     CLI11_PARSE(app, argc, argv);
 
     std::ifstream infile(input_filename);
