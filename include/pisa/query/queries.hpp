@@ -119,26 +119,20 @@ namespace query {
             };
             if (not stemmer_type) {
                 return [=](auto str) {
-                    std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                        return std::tolower(c);
-                    });
+                    std::transform(str.begin(), str.end(), str.begin(), std::tolower);
                     return to_id(str);
                 };
             }
             if (*stemmer_type == "porter2") {
                 return [=](auto str) {
-                    std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                        return std::tolower(c);
-                    });
+                    std::transform(str.begin(), str.end(), term.begin(), std::tolower);
                     stem::Porter2 stemmer{};
                     return to_id(stemmer.stem(str));
                 };
             }
             if (*stemmer_type == "krovetz") {
                 return [=](auto str) {
-                    std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                        return std::tolower(c);
-                    });
+                    std::transform(str.begin(), str.end(), str.begin(), std::tolower);
                     stem::KrovetzStemmer stemmer{};
                     return to_id(stemmer.kstem_stemmer(str));
                 };
