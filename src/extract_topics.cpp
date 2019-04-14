@@ -116,7 +116,7 @@ int main(int argc, char const *argv[]) {
     narr_file.open(output_basename + ".narr");
 
     while (auto topic = detail::next_topic(infile)) {
-        auto t = topic.value();
+        auto t = *topic;
         title_file << t.num << ":" << t.title << std::endl;
         desc_file << t.num << ":" << t.desc << std::endl;
         narr_file << t.num << ":" << t.narr << std::endl;
