@@ -125,7 +125,7 @@ namespace query {
             }
             if (*stemmer_type == "porter2") {
                 return [=](auto str) {
-                    std::transform(str.begin(), str.end(), term.begin(), ::tolower);
+                    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
                     stem::Porter2 stemmer{};
                     return to_id(stemmer.stem(str));
                 };
