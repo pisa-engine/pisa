@@ -2,8 +2,6 @@
 #include <optional>
 #include <string>
 
-#include "pisa/util/string_util.hpp"
-
 #include "CLI/CLI.hpp"
 
 namespace detail {
@@ -69,27 +67,27 @@ std::optional<Topic> next_topic(std::ifstream &is) {
     detail::consume(is, NUM);
     detail::consume(is, NUM_ATT);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.num = pisa::util::trim(os.str());
+    topic.num = boost::algorithm::trim(os.str());
     detail::consume(is, NUM_END, false);
 
     os.str("");
     detail::consume(is, TITLE);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.title = pisa::util::trim(os.str());
+    topic.title = boost::algorithm::trim(os.str());
     detail::consume(is, TITLE_END, false);
 
     os.str("");
     detail::consume(is, DESC);
     detail::consume(is, DESC_ATT, false);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.desc = pisa::util::trim(os.str());
+    topic.desc = boost::algorithm::trim(os.str());
     detail::consume(is, DESC_END, false);
 
     os.str("");
     detail::consume(is, NARR);
     detail::consume(is, NARR_ATT, false);
     read_until(is, [](auto ch) { return ch == '<'; }, os);
-    topic.narr = pisa::util::trim(os.str());
+    topic.narr = boost::algorithm::trim(os.str());
     detail::consume(is, NARR_END, false);
 
     detail::consume(is, TOP_END);
