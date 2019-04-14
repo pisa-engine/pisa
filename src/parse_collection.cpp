@@ -9,6 +9,7 @@
 #include <tbb/task_scheduler_init.h>
 #include <trecpp/trecpp.hpp>
 #include <warcpp/warcpp.hpp>
+#include <boost/algorithm/string.hpp>    
 
 #include "forward_index_builder.hpp"
 
@@ -84,21 +85,20 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
 std::function<std::string(std::string &&)> term_processor(std::optional<std::string> const &type)
 {
     if (not type) {
-        return [](std::string &&term) -> std::string { return std::forward<std::string>(term); };
+        return [](std::string &&term) -> std::string {
+            boost::algorithm::to_lower(term); 
+            return term;
+        };
     }
     if (*type == "porter2") {
         return [](std::string &&term) -> std::string {
-            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                return std::tolower(c);
-            });
+            boost::algorithm::to_lower(term); 
             return stem::Porter2{}.stem(term);
         };
     }
     if (*type == "krovetz") {
         return [](std::string &&term) -> std::string {
-            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                return std::tolower(c);
-            });
+            boost::algorithm::to_lower(term); 
             return stem::KrovetzStemmer{}.kstem_stemmer(term);
         };
     }
