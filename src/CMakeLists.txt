@@ -87,3 +87,9 @@ target_link_libraries(compute_intersection
   pisa
   CLI11
 )
+
+add_executable(extract_topics extract_topics.cpp)
+target_link_libraries(extract_topics
+  pisa
+  CLI11
+)
