@@ -13,6 +13,7 @@
 #include <Porter2/Porter2.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
+#include <boost/algorithm/string.hpp>    
 
 #include "index_types.hpp"
 #include "io.hpp"
@@ -123,16 +124,21 @@ namespace query {
                 return std::nullopt;
             };
             if (not stemmer_type) {
-                return to_id;
+                return [=](auto str) {
+                    boost::algorithm::to_lower(str); 
+                    return to_id(str);
+                };
             }
             if (*stemmer_type == "porter2") {
                 return [=](auto str) {
+                    boost::algorithm::to_lower(str); 
                     stem::Porter2 stemmer{};
                     return to_id(stemmer.stem(str));
                 };
             }
             if (*stemmer_type == "krovetz") {
                 return [=](auto str) {
+                    boost::algorithm::to_lower(str); 
                     stem::KrovetzStemmer stemmer{};
                     return to_id(stemmer.kstem_stemmer(str));
                 };

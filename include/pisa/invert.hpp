@@ -383,7 +383,8 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
 
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");
-    write_sequence(dos, gsl::make_span<uint32_t const>(&term_count, 1));
+    auto document_count = static_cast<uint32_t>(document_sizes.size());
+    write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
     for ([[maybe_unused]] auto _ : ranges::view::iota(0, term_count)) {
         std::vector<uint32_t> dlist;
         for (auto &iter : doc_iterators) {
