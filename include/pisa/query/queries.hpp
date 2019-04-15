@@ -134,3 +134,4 @@ std::function<term_id_type(std::string &&)> term_processor(std::optional<std::st
 #include "algorithm/wand_query.hpp"
 #include "algorithm/ranked_or_taat_query.hpp"
 #include "algorithm/range_query.hpp"
+#include "algorithm/block_max_ranked_and_query.hpp"
