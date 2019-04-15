@@ -74,7 +74,7 @@ struct Lazy_Accumulator {
         for (auto const &block : m_accumulators) {
             int pos = 0;
             for (auto const &score : block.accumulators) {
-                if (block.counter(pos++) == m_counter) {
+                if (block.counter(pos++) == m_counter && topk.would_enter(score)) {
                     topk.insert(score, docid);
                 }
                 ++docid;

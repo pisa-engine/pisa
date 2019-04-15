@@ -64,3 +64,6 @@
 [submodule "external/trecpp"]
 	path = external/trecpp
 	url = https://github.com/pisa-engine/trecpp.git
+[submodule "external/KrovetzStemmer"]
+	path = external/KrovetzStemmer
+	url = https://github.com/pisa-engine/KrovetzStemmer.git

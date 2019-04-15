@@ -47,7 +47,7 @@ void extract_times(Fn fn,
                        [&]() { do_not_optimize_away(fn(terms)); })
                 .count();
         });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>());
+        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
         os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
     }
 }
@@ -188,6 +188,11 @@ void perftest(const std::string &index_filename,
                 block_max_maxscore_query block_max_maxscore_q(k);
                 return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
             };
+        }  else if (t == "ranked_and" && wand_data_filename) {
+            query_fun = [&](term_id_vec terms){
+                ranked_and_query ranked_and_q(k);
+                return ranked_and_q(make_scored_cursors(index, wdata, terms), index.num_docs());
+            };
         }  else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
                 ranked_or_query ranked_or_q(k);
@@ -236,9 +241,10 @@ int main(int argc, const char **argv) {
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
+    std::optional<std::string> stopwords_filename;
+    std::optional<std::string> stemmer = std::nullopt;
     uint64_t k = configuration::get().k;
     bool compressed = false;
-    bool nostem = false;
     bool extract = false;
     bool silent = false;
 
@@ -251,10 +257,10 @@ int main(int argc, const char **argv) {
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
-    auto *terms_opt =
-        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    auto *terms_opt = app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
     CLI11_PARSE(app, argc, argv);
@@ -263,10 +269,21 @@ int main(int argc, const char **argv) {
         spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("default"));
     }
 
+    auto process_term = query::term_processor(terms_file, stemmer);
+
+    std::unordered_set<term_id_type> stopwords;
+    if (stopwords_filename) {
+        std::ifstream is(*stopwords_filename);
+        io::for_each_line(is, [&](auto &&word) {
+            if (auto processed_term = process_term(std::move(word)); process_term) {
+                stopwords.insert(*processed_term);
+            }
+        });
+    }
+
     std::vector<Query> queries;
-    auto process_term = query::term_processor(terms_file, not nostem);
     auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term));
+        queries.push_back(parse_query(query_line, process_term, stopwords));
     };
 
     if (extract) {
