@@ -2,6 +2,7 @@
 
 #include <CLI/CLI.hpp>
 #include <Porter2/Porter2.hpp>
+#include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <boost/te.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -12,6 +13,29 @@
 #include "forward_index_builder.hpp"
 
 using namespace pisa;
+
+template <typename ReadSubsequentRecordFn>
+[[nodiscard]] auto trec_record_parser(ReadSubsequentRecordFn read_subsequent_record)
+{
+    return
+        [=](std::istream &in) -> std::optional<Document_Record> {
+            while (not in.eof()) {
+                auto record = trecpp::match(
+                    read_subsequent_record(in),
+                    [](trecpp::Record const &rec) {
+                        return std::make_optional<Document_Record>(rec);
+                    },
+                    [](trecpp::Error const &error) {
+                        spdlog::warn("Skipped invalid record: {}", error);
+                        return std::optional<Document_Record>{};
+                    });
+                if (record) {
+                    return record;
+                }
+            }
+            return std::nullopt;
+        };
+}
 
 std::function<std::optional<Document_Record>(std::istream &)> record_parser(
     std::string const &type)
@@ -25,38 +49,27 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
             return std::nullopt;
         };
     }
+    if (type == "trectext") {
+        return trec_record_parser(trecpp::text::read_subsequent_record);
+    }
     if (type == "trecweb") {
-        return [](std::istream &in) -> std::optional<Document_Record> {
-            while (not in.eof()) {
-                auto record = trecpp::match(trecpp::read_subsequent_record(in),
-                                            [](trecpp::Record const &rec) {
-                                                return std::make_optional<Document_Record>(rec);
-                                            },
-                                            [](trecpp::Error const &error) {
-                                                spdlog::warn("Skipped invalid record: {}", error);
-                                                return std::optional<Document_Record>{};
-                                            });
-                if (record) {
-                    return record;
-                }
-            }
-            return std::nullopt;
-        };
+        return trec_record_parser(trecpp::web::read_subsequent_record);
     }
     if (type == "warc") {
         return [](std::istream &in) -> std::optional<Document_Record> {
             while (not in.eof()) {
-                auto record = warcpp::match(warcpp::read_subsequent_record(in),
-                                            [](warcpp::Record const &rec) {
-                                                if (not rec.valid_response()) {
-                                                    return std::optional<Document_Record>{};
-                                                }
-                                                return std::make_optional<Document_Record>(rec);
-                                            },
-                                            [](warcpp::Error const &error) {
-                                                spdlog::warn("Skipped invalid record: {}", error);
-                                                return std::optional<Document_Record>{};
-                                            });
+                auto record = warcpp::match(
+                    warcpp::read_subsequent_record(in),
+                    [](warcpp::Record const &rec) {
+                        if (not rec.valid_response()) {
+                            return std::optional<Document_Record>{};
+                        }
+                        return std::make_optional<Document_Record>(rec);
+                    },
+                    [](warcpp::Error const &error) {
+                        spdlog::warn("Skipped invalid record: {}", error);
+                        return std::optional<Document_Record>{};
+                    });
                 if (record) {
                     return record;
                 }
@@ -79,6 +92,14 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
                 return std::tolower(c);
             });
             return stem::Porter2{}.stem(term);
+        };
+    }
+    if (*type == "krovetz") {
+        return [](std::string &&term) -> std::string {
+            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
+                return std::tolower(c);
+            });
+            return stem::KrovetzStemmer{}.kstem_stemmer(term);
         };
     }
     spdlog::error("Unknown stemmer type: {}", *type);

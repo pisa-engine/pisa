@@ -6,6 +6,7 @@
 
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include "mappable/mapper.hpp"
 
@@ -73,6 +74,8 @@ using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_sc
 
 int main(int argc, const char **argv)
 {
+    spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
+
     std::string type;
     std::string query_type;
     std::string index_filename;
@@ -81,9 +84,10 @@ int main(int argc, const char **argv)
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
+    std::optional<std::string> stopwords_filename;
+    std::optional<std::string> stemmer = std::nullopt;
     uint64_t k = configuration::get().k;
     bool compressed = false;
-    bool nostem = false;
 
     CLI::App app{"Retrieves query results in TREC format."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -92,16 +96,28 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-k", k, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
-    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, stemmer);
+
+    std::unordered_set<term_id_type> stopwords;
+    if (stopwords_filename) {
+        std::ifstream is(*stopwords_filename);
+        io::for_each_line(is, [&](auto &&word) {
+            if (auto processed_term = process_term(std::move(word)); process_term) {
+                stopwords.insert(*processed_term);
+            }
+        });
+    }
+
     auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term));
+        queries.push_back(parse_query(query_line, process_term, stopwords));
     };
 
     if (query_filename) {

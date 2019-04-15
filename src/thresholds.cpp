@@ -22,12 +22,12 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void thresholds(const std::string &                   index_filename,
-                const boost::optional<std::string> &  wand_data_filename,
-                const std::vector<term_id_vec> &queries,
-                const boost::optional<std::string> &  thresholds_filename,
-                std::string const &                   type,
-                uint64_t                              k)
+void thresholds(const std::string &index_filename,
+                const boost::optional<std::string> &wand_data_filename,
+                const std::vector<Query> &queries,
+                const boost::optional<std::string> &thresholds_filename,
+                std::string const &type,
+                uint64_t k)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -48,7 +48,7 @@ void thresholds(const std::string &                   index_filename,
 
     wand_query wand_q(k);
     for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
+        wand_q(make_max_scored_cursors(index, wdata, query.terms), index.num_docs());
         auto  results   = wand_q.topk();
         float threshold = 0.0;
         if (results.size() == k) {
@@ -69,9 +69,10 @@ int main(int argc, const char **argv)
     boost::optional<std::string> wand_data_filename;
     boost::optional<std::string> query_filename;
     boost::optional<std::string> thresholds_filename;
+    std::optional<std::string> stemmer = std::nullopt;
+
     uint64_t k = configuration::get().k;
     bool compressed = false;
-    bool nostem = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -83,24 +84,20 @@ int main(int argc, const char **argv)
     app.add_option("-k", k, "k value");
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-    app.add_flag("--nostem", nostem, "Do not stem terms")->needs(terms_opt);
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, not nostem);
+    auto process_term = query::term_processor(terms_file, stemmer);
 
-    std::vector<term_id_vec> queries;
-    term_id_vec q;
+    std::vector<Query> queries;
+    auto push_query = [&](std::string const &query_line) {
+        queries.push_back(parse_query(query_line, process_term));
+    };
     if (query_filename) {
-        std::filebuf fb;
-        if (fb.open(*query_filename, std::ios::in)) {
-            std::istream is(&fb);
-            while (read_query(q, is, process_term)) {
-                queries.push_back(q);
-            }
-        }
+        std::ifstream is(*query_filename);
+        io::for_each_line(is, push_query);
     } else {
-        while (read_query(q))
-            queries.push_back(q);
+        io::for_each_line(std::cin, push_query);
     }
 
     /**/

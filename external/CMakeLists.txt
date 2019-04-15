@@ -8,6 +8,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/FastPFor EXCLUDE_FROM_ALL)
 target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 
 # Add CLI11
+set(CLI11_TESTING OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 
 # stxxl
@@ -89,6 +90,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
 # Add Porter2
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
+
+# Add KrovetzStemmer
+set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer)
 
 # Add warcpp
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)

@@ -8,10 +8,11 @@
 #include <string>
 #include <unordered_map>
 
+#include <spdlog/spdlog.h>
+#include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <Porter2/Porter2.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
-#include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
 #include "io.hpp"
@@ -28,15 +29,17 @@ namespace pisa {
 
 using term_id_type = uint32_t;
 using term_id_vec = std::vector<term_id_type>;
+using TermProcessor = std::function<std::optional<term_id_type>(std::string &&)>;
 
 struct Query {
     std::optional<std::string> id;
-    std::vector<term_id_type> terms;
+    std::vector<term_id_type>  terms;
 };
 
-[[nodiscard]] inline auto parse_query(std::string const &query_string,
-                                      std::function<term_id_type(std::string)> process_term)
-    -> Query
+[[nodiscard]] inline auto parse_query(
+    std::string const &query_string,
+    TermProcessor process_term,
+    std::optional<std::unordered_set<term_id_type>> const &stopwords = std::nullopt) -> Query
 {
     std::optional<std::string> id = std::nullopt;
     std::vector<term_id_type> parsed_query;
@@ -49,22 +52,27 @@ struct Query {
     std::string term;
     while (iline >> term) {
         try {
-            parsed_query.push_back(process_term(term));
+            auto processed = process_term(std::string(term));
+            if (processed) {
+                if (not stopwords or stopwords->find(*processed) == stopwords->end()) {
+                    parsed_query.push_back(std::move(*processed));
+                } else {
+                    spdlog::warn("Term `{}` not found and will be ignored", term);
+                }
+            } else {
+                spdlog::warn("Term `{}` not found and will be ignored", term);
+            }
         } catch (std::invalid_argument& err) {
             spdlog::warn("Could not parse `{}` to a number", term);
-        } catch (std::out_of_range& err) {
-            spdlog::warn("Term `{}` not found and will be ignored", term);
         }
     }
     return {id, parsed_query};
 }
 
-bool read_query(term_id_vec &ret,
-                std::istream &is = std::cin,
+bool read_query(term_id_vec &ret, std::istream &is = std::cin,
                 std::function<term_id_type(std::string)> process_term = [](auto str) {
                     return std::stoi(str);
-                })
-{
+                }) {
     ret.clear();
     std::string line;
     if (!std::getline(is, line)) {
@@ -99,39 +107,52 @@ term_freq_vec query_freqs(term_id_vec terms) {
 
 namespace query {
 
-    std::function<term_id_type(std::string &&)> term_processor(
-        std::optional<std::string> terms_file, bool stem)
+    TermProcessor term_processor(std::optional<std::string> terms_file,
+                                 std::optional<std::string> stemmer_type)
     {
         if (terms_file) {
             auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
             auto terms = Payload_Vector<>::from(*source);
-            auto to_id = [source = std::move(source), terms = std::move(terms)](auto str) {
+            auto to_id = [source = std::move(source),
+                          terms = std::move(terms)](auto str) -> std::optional<term_id_type>
+            {
                 auto pos = std::lower_bound(terms.begin(), terms.end(), std::string_view(str));
-                return std::distance(terms.begin(), pos);
+                if (*pos == std::string_view(str)) {
+                    return std::distance(terms.begin(), pos);
+                }
+                return std::nullopt;
             };
-            if (stem) {
+            if (not stemmer_type) {
+                return to_id;
+            }
+            if (*stemmer_type == "porter2") {
                 return [=](auto str) {
                     stem::Porter2 stemmer{};
                     return to_id(stemmer.stem(str));
                 };
-            } else {
-                return to_id;
             }
+            if (*stemmer_type == "krovetz") {
+                return [=](auto str) {
+                    stem::KrovetzStemmer stemmer{};
+                    return to_id(stemmer.kstem_stemmer(str));
+                };
+            }
+            throw std::invalid_argument("Unknown stemmer");
         } else {
-            return [](auto str) { return std::stoi(str); };
+            return [](auto str) { return std::make_optional<term_id_type>(std::stoi(str)); };
         }
-}
+    }
 
-} // namespace query
-} // namespace pisa
+}  // namespace query
+}  // namespace pisa
 
 #include "algorithm/and_query.hpp"
 #include "algorithm/block_max_maxscore_query.hpp"
 #include "algorithm/block_max_wand_query.hpp"
 #include "algorithm/maxscore_query.hpp"
 #include "algorithm/or_query.hpp"
+#include "algorithm/range_query.hpp"
 #include "algorithm/ranked_and_query.hpp"
 #include "algorithm/ranked_or_query.hpp"
-#include "algorithm/wand_query.hpp"
 #include "algorithm/ranked_or_taat_query.hpp"
-#include "algorithm/range_query.hpp"
+#include "algorithm/wand_query.hpp"
