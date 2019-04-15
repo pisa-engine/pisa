@@ -1,20 +1,20 @@
 #include <iostream>
 
+#include <functional>
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
 #include "boost/optional.hpp"
-#include <functional>
 
+#include "accumulator/lazy_accumulator.hpp"
 #include "mio/mmap.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
-#include "accumulator/lazy_accumulator.hpp"
 
 #include "mappable/mapper.hpp"
 
-#include "cursor/scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
@@ -65,15 +65,14 @@ void evaluate_queries(const std::string &                 index_filename,
     } else if (query_type == "block_max_wand" && wand_data_filename) {
         query_fun = [&](term_id_vec terms) {
             block_max_wand_query block_max_wand_q(k);
-            block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms),
-                                    index.num_docs());
+            block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
             return block_max_wand_q.topk();
         };
     } else if (query_type == "block_max_maxscore" && wand_data_filename) {
         query_fun = [&](term_id_vec terms) {
             block_max_maxscore_query block_max_maxscore_q(k);
             block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms),
-                                        index.num_docs());
+                                 index.num_docs());
             return block_max_maxscore_q.topk();
         };
     } else if (query_type == "ranked_and" && wand_data_filename) {
@@ -99,7 +98,7 @@ void evaluate_queries(const std::string &                 index_filename,
         ranked_or_taat_query ranked_or_taat_q(k);
         query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
             ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(),
-                                    accumulator);
+                             accumulator);
             return ranked_or_taat_q.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
@@ -107,7 +106,7 @@ void evaluate_queries(const std::string &                 index_filename,
         ranked_or_taat_query ranked_or_taat_q(k);
         query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
             ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(),
-                                    accumulator);
+                             accumulator);
             return ranked_or_taat_q.topk();
         };
     } else {
