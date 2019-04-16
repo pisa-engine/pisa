@@ -29,33 +29,43 @@ int main(int argc, char **argv)
     print->add_option("lexicon", lexicon_file, "Lexicon file path")->required();
     CLI11_PARSE(app, argc, argv);
 
-    if (*build) {
-        std::ifstream is(text_file);
-        encode_payload_vector(std::istream_iterator<io::Line>(is),
-                              std::istream_iterator<io::Line>())
-            .to_file(lexicon_file);
+    try {
+        if (*build) {
+            std::ifstream is(text_file);
+            encode_payload_vector(std::istream_iterator<io::Line>(is),
+                                  std::istream_iterator<io::Line>())
+                .to_file(lexicon_file);
+            return 0;
+        }
+        mio::mmap_source m(lexicon_file.c_str());
+        auto lexicon = Payload_Vector<>::from(m);
+        if (*print) {
+            for (auto const &elem : lexicon) {
+                std::cout << elem << '\n';
+            }
+            return 0;
+        } else if (*lookup) {
+            if (idx < lexicon.size()) {
+                std::cout << lexicon[idx] << '\n';
+                return 0;
+            } else {
+                spdlog::error(
+                    "Requested index {} too large for vector of size {}", idx, lexicon.size());
+                return 1;
+            }
+        } else if (*rlookup) {
+            auto pos = std::lower_bound(lexicon.begin(), lexicon.end(), std::string_view(value));
+            if (pos != lexicon.end() and *pos == std::string_view(value)) {
+                std::cout << std::distance(lexicon.begin(), pos) << '\n';
+                return 0;
+            } else {
+                spdlog::error("Requested term {} was not found", value);
+                return 1;
+            }
+        }
+        return 1;
+    } catch (std::runtime_error const &err) {
+        spdlog::error("{}", err.what());
         return 0;
     }
-    mio::mmap_source m(lexicon_file.c_str());
-    auto lexicon = Payload_Vector<>::from(m);
-    if (*print) {
-        for (auto const &elem : lexicon) {
-            std::cout << elem << '\n';
-        }
-    } else if (*lookup) {
-        if (idx < lexicon.size()) {
-            std::cout << lexicon[idx] << '\n';
-        } else {
-            spdlog::error(
-                "Requested index {} too large for vector of size {}", idx, lexicon.size());
-        }
-    } else if (*rlookup) {
-        auto pos = std::lower_bound(lexicon.begin(), lexicon.end(), std::string_view(value));
-        if (pos != lexicon.end() and *pos == std::string_view(value)) {
-            std::cout << std::distance(lexicon.begin(), pos) << '\n';
-        } else {
-            spdlog::error("Requested term {} was not found", value);
-        }
-    }
-    return 1;
 }

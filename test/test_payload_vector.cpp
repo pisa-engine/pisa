@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <string_view>
 
+#include <fmt/format.h>
 #include <gsl/span>
 
 #include "payload_vector.hpp"
@@ -11,22 +12,63 @@
 using namespace pisa;
 using namespace std::literals::string_view_literals;
 
+inline std::byte operator"" _b(unsigned long long n) { return std::byte(n); }
+inline std::byte operator"" _b(char c) { return std::byte(c); }
+
+TEST_CASE("Unpack head", "[payload_vector][unit]")
+{
+    std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
+    REQUIRE(unpack_head<std::byte>(bytes) ==
+            std::tuple(0_b, gsl::make_span(std::vector<std::byte>{1_b, 2_b, 3_b, 4_b, 5_b})));
+    auto [b, i, s] = unpack_head<std::byte, uint32_t>(bytes);
+    CHECK(b == 0_b);
+    CHECK(i == uint32_t(67305985));
+    CHECK(s == gsl::make_span(std::vector<std::byte>{5_b}));
+    REQUIRE_THROWS_MATCHES(
+        (unpack_head<std::byte, uint32_t, uint16_t>(bytes)),
+        std::runtime_error,
+        Catch::Predicate<std::runtime_error>([](std::runtime_error const &err) -> bool {
+            return std::string(err.what()) == "Cannot unpack span of size 6 into structure of size 7";
+        }));
+}
+
+TEST_CASE("Split span", "[payload_vector][unit]")
+{
+    std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
+    REQUIRE(split(bytes, 0) ==
+            std::tuple(gsl::make_span(std::vector<std::byte>{}),
+                       gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})));
+    REQUIRE(split(bytes, 4) ==
+            std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
+                       gsl::make_span(std::vector<std::byte>{4_b, 5_b})));
+    REQUIRE(split(bytes, 6) ==
+            std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
+                       gsl::make_span(std::vector<std::byte>{})));
+    REQUIRE_THROWS_MATCHES(
+        split(bytes, 7),
+        std::runtime_error,
+        Catch::Predicate<std::runtime_error>([](std::runtime_error const &err) -> bool {
+            return std::string(err.what()) == "Cannot split span of size 6 at position 7";
+        }));
+}
+
+TEST_CASE("Cast span", "[payload_vector][unit]")
+{
+    std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
+    REQUIRE(cast_span<uint16_t>(bytes) == gsl::make_span(std::vector<uint16_t>{256, 770, 1284}));
+    REQUIRE_THROWS_MATCHES(
+        cast_span<uint32_t>(bytes),
+        std::runtime_error,
+        Catch::Predicate<std::runtime_error>([](std::runtime_error const &err) -> bool {
+            return std::string(err.what()) == "Failed to cast byte-span to span of T of size 4";
+        }));
+}
+
 TEST_CASE("Test string-payload vector", "[payload_vector][unit]")
 {
     std::vector<detail::size_type> offsets{0, 3, 6, 10, 13};
-    std::vector<std::byte> payloads{std::byte{'a'},
-                                    std::byte{'b'},
-                                    std::byte{'c'},
-                                    std::byte{'d'},
-                                    std::byte{'e'},
-                                    std::byte{'f'},
-                                    std::byte{'g'},
-                                    std::byte{'h'},
-                                    std::byte{'i'},
-                                    std::byte{'j'},
-                                    std::byte{'k'},
-                                    std::byte{'l'},
-                                    std::byte{'m'}};
+    std::vector<std::byte> payloads{
+        'a'_b, 'b'_b, 'c'_b, 'd'_b, 'e'_b, 'f'_b, 'g'_b, 'h'_b, 'i'_b, 'j'_b, 'k'_b, 'l'_b, 'm'_b};
     Payload_Vector<std::string_view> vec(gsl::make_span(offsets), gsl::make_span(payloads));
     SECTION("size") { REQUIRE(vec.size() == 4); }
     SECTION("iterator equality")

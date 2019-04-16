@@ -101,6 +101,38 @@ namespace detail {
         }
     };
 
+    template <typename... Ts>
+    struct all_pod;
+
+    template <typename Head, typename... Tail>
+    struct all_pod<Head, Tail...> {
+        static const bool value = std::is_pod_v<Head> && all_pod<Tail...>::value;
+    };
+
+    template <typename T>
+    struct all_pod<T> {
+        static const bool value = std::is_pod_v<T>;
+    };
+
+    template <typename... Ts>
+    struct sizeofs;
+
+    template <typename Head, typename... Tail>
+    struct sizeofs<Head, Tail...> {
+        static const size_t value = sizeof(Head) + sizeofs<Tail...>::value;
+    };
+
+    template <typename T>
+    struct sizeofs<T> {
+        static const size_t value = sizeof(T);
+    };
+
+    struct test {
+        static_assert(sizeofs<std::byte>::value == 1);
+        static_assert(sizeofs<uint32_t>::value == 4);
+        static_assert(sizeofs<std::byte, uint32_t>::value == 5);
+    };
+
 } // namespace detail
 
 struct Payload_Vector_Container {
@@ -176,8 +208,12 @@ template <typename T>
 template <typename... T>
 auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<std::byte const>>
 {
-    static_assert(std::is_pod_v<T...>);
-    auto offset = sizeof(std::tuple<T...>);
+    static_assert(detail::all_pod<T...>::value);
+    auto offset = detail::sizeofs<T...>::value;
+    if (offset > mem.size()) {
+        throw std::runtime_error(fmt::format(
+            "Cannot unpack span of size {} into structure of size {}", mem.size(), offset));
+    }
     auto tail = mem.subspan(offset);
     auto head = std::make_tuple(cast_and_shift_offset<T>(mem.data(), offset)...);
     return std::tuple_cat(head, std::tuple<gsl::span<std::byte const>>(tail));
@@ -185,6 +221,10 @@ auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<s
 
 [[nodiscard]] auto split(gsl::span<std::byte const> mem, std::size_t offset)
 {
+    if (offset > mem.size()) {
+        throw std::runtime_error(
+            fmt::format("Cannot split span of size {} at position {}", mem.size(), offset));
+    }
     return std::tuple(mem.first(offset), mem.subspan(offset));
 }
 
@@ -192,7 +232,10 @@ template <typename T>
 [[nodiscard]] auto cast_span(gsl::span<std::byte const> mem) -> gsl::span<T const>
 {
     auto type_size = sizeof(T);
-    Expects(mem.size() % type_size == 0);
+    if (mem.size() % type_size != 0) {
+        throw std::runtime_error(
+            fmt::format("Failed to cast byte-span to span of T of size {}", type_size));
+    }
     return gsl::make_span(reinterpret_cast<T const *>(mem.data()), mem.size() / type_size);
 }
 
@@ -221,16 +264,40 @@ class Payload_Vector {
     }
 
     [[nodiscard]]
-    constexpr static auto from(gsl::span<std::byte const> mem) -> Payload_Vector
+    static auto from(gsl::span<std::byte const> mem) -> Payload_Vector
     {
-        auto [length, tail] = unpack_head<size_type>(mem);
-        auto [offsets, payloads] = split(tail, (length + 1u) * sizeof(size_type));
+        size_type length;
+        gsl::span<std::byte const> tail;
+        try {
+            std::tie(length, tail) = unpack_head<size_type>(mem);
+        } catch (std::runtime_error const& err) {
+            throw std::runtime_error(std::string("Failed to parse payload vector length: ") +
+                                     err.what());
+        }
+
+        gsl::span<std::byte const> offsets, payloads;
+        try {
+            std::tie(offsets, payloads) = split(tail, (length + 1u) * sizeof(size_type));
+        } catch (std::runtime_error const& err) {
+            throw std::runtime_error(std::string("Failed to parse payload vector offset table: ") +
+                                     err.what());
+        }
         return Payload_Vector<Payload_View>(cast_span<size_type>(offsets), payloads);
     }
 
     [[nodiscard]]
     constexpr auto operator[](size_type idx) const -> payload_type
     {
+        if (idx >= offsets_.size()) {
+            throw std::out_of_range(fmt::format(
+                "Index {} too large for payload vector of size {}", idx, offsets_.size()));
+        }
+        if (offsets_[idx] >= payloads_.size()) {
+            throw std::runtime_error(
+                fmt::format("Offset {} too large for payload array of {} bytes",
+                            offsets_[idx],
+                            payloads_.size()));
+        }
         return *(begin() + idx);
     }
 
