@@ -54,7 +54,7 @@ void evaluate_queries(const std::string &                 index_filename,
 
     auto docmap = io::read_string_vector(documents_filename);
 
-    std::function<std::vector<std::pair<float, uint64_t>>(term_id_vec)> query_fun;
+    std::function<const std::vector<std::pair<float, uint64_t>> &(term_id_vec)> query_fun;
 
     if (query_type == "wand" && wand_data_filename) {
         query_fun = [&](term_id_vec terms) {
