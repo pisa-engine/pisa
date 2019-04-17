@@ -58,11 +58,68 @@ void evaluate_queries(const std::string &index_filename,
 
     auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
     auto docmap = Payload_Vector<>::from(*source);
-    wand_query wand_q(k);
-    for (auto const &[qid, query] : enumerate(queries)) {
-        wand_q(make_max_scored_cursors(index, wdata, query.terms), index.num_docs());
-        auto results = wand_q.topk();
-        for (auto &&[rank, result] : enumerate(results)) {
+    std::function<std::vector<std::pair<float, uint64_t>>(term_id_vec)> query_fun;
+
+    if (query_type == "wand" && wand_data_filename) {
+        query_fun = [&](term_id_vec terms) {
+            wand_query wand_q(k);
+            wand_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
+            return wand_q.topk();
+        };
+    } else if (query_type == "block_max_wand" && wand_data_filename) {
+        query_fun = [&](term_id_vec terms) {
+            block_max_wand_query block_max_wand_q(k);
+            block_max_wand_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
+            return block_max_wand_q.topk();
+        };
+    } else if (query_type == "block_max_maxscore" && wand_data_filename) {
+        query_fun = [&](term_id_vec terms) {
+            block_max_maxscore_query block_max_maxscore_q(k);
+            block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, terms),
+                                 index.num_docs());
+            return block_max_maxscore_q.topk();
+        };
+    } else if (query_type == "ranked_and" && wand_data_filename) {
+        query_fun = [&](term_id_vec terms) {
+            ranked_and_query ranked_and_q(k);
+            ranked_and_q(make_scored_cursors(index, wdata, terms), index.num_docs());
+            return ranked_and_q.topk();
+        };
+    } else if (query_type == "ranked_or" && wand_data_filename) {
+        query_fun = [&](term_id_vec terms) {
+            ranked_or_query ranked_or_q(k);
+            ranked_or_q(make_scored_cursors(index, wdata, terms), index.num_docs());
+            return ranked_or_q.topk();
+        };
+    } else if (query_type == "maxscore" && wand_data_filename) {
+        query_fun = [&](term_id_vec terms) {
+            maxscore_query maxscore_q(k);
+            maxscore_q(make_max_scored_cursors(index, wdata, terms), index.num_docs());
+            return maxscore_q.topk();
+        };
+    } else if (query_type == "ranked_or_taat" && wand_data_filename) {
+        Simple_Accumulator   accumulator(index.num_docs());
+        ranked_or_taat_query ranked_or_taat_q(k);
+        query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
+            ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(),
+                             accumulator);
+            return ranked_or_taat_q.topk();
+        };
+    } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
+        Lazy_Accumulator<4>  accumulator(index.num_docs());
+        ranked_or_taat_query ranked_or_taat_q(k);
+        query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
+            ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(),
+                             accumulator);
+            return ranked_or_taat_q.topk();
+        };
+    } else {
+        spdlog::error("Unsupported query type: {}", query_type);
+    }
+
+    for (auto const & [ qid, query ] : enumerate(queries)) {
+        auto results = query_fun(query.terms);
+        for (auto && [ rank, result ] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      query.id.value_or(std::to_string(qid)),
                                      iteration,
