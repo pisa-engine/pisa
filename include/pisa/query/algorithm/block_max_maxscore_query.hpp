@@ -89,7 +89,7 @@ struct block_max_maxscore_query {
                 }
                 score += block_upper_bound;
             }
-            if (m_topk.insert(score)) {
+            if (m_topk.insert(score, cur_doc)) {
                 // update non-essential lists
                 while (non_essential_lists < ordered_cursors.size() &&
                        !m_topk.would_enter(upper_bounds[non_essential_lists])) {
