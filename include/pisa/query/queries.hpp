@@ -56,7 +56,7 @@ struct Query {
                 if (not stopwords or stopwords->find(*processed) == stopwords->end()) {
                     parsed_query.push_back(std::move(*processed));
                 } else {
-                    spdlog::warn("Term `{}` not found and will be ignored", term);
+                    spdlog::warn("Term `{}` is a stop word and will be ignored", term);
                 }
             } else {
                 spdlog::warn("Term `{}` not found and will be ignored", term);
