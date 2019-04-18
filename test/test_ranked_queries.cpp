@@ -1,6 +1,5 @@
 #define CATCH_CONFIG_MAIN
 
-#include <boost/te.hpp>
 #include <catch2/catch.hpp>
 #include <functional>
 
