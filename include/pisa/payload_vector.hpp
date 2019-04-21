@@ -6,8 +6,9 @@
 #include <string_view>
 #include <vector>
 
-#include <gsl/span>
+#include <fmt/format.h>
 #include <gsl/gsl_assert>
+#include <gsl/span>
 
 namespace pisa {
 
@@ -133,6 +134,17 @@ namespace detail {
         static_assert(sizeofs<std::byte, uint32_t>::value == 5);
     };
 
+    template <typename T, typename... Ts>
+    [[nodiscard]] static auto unpack(std::byte const *ptr) -> std::tuple<T, Ts...>
+    {
+        if constexpr (sizeof...(Ts) == 0u) {
+            return std::tuple<T>(*reinterpret_cast<const T *>(ptr));
+        } else {
+            return std::tuple_cat(std::tuple<T>(*reinterpret_cast<const T *>(ptr)),
+                                  unpack<Ts...>(ptr + sizeof(T)));
+        }
+    }
+
 } // namespace detail
 
 struct Payload_Vector_Container {
@@ -198,13 +210,6 @@ auto encode_payload_vector(gsl::span<std::string const> values)
     return encode_payload_vector(values.begin(), values.end());
 }
 
-template <typename T>
-[[nodiscard]] static auto cast_and_shift_offset(std::byte const *ptr, std::size_t &offset) -> T
-{
-    offset -= sizeof(T);
-    return *reinterpret_cast<const T *>(ptr + offset);
-}
-
 template <typename... T>
 auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<std::byte const>>
 {
@@ -215,7 +220,7 @@ auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<s
             "Cannot unpack span of size {} into structure of size {}", mem.size(), offset));
     }
     auto tail = mem.subspan(offset);
-    auto head = std::make_tuple(cast_and_shift_offset<T>(mem.data(), offset)...);
+    auto head = detail::unpack<T...>(mem.data());
     return std::tuple_cat(head, std::tuple<gsl::span<std::byte const>>(tail));
 }
 
