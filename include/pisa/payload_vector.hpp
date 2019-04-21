@@ -135,7 +135,7 @@ namespace detail {
     };
 
     template <typename T, typename... Ts>
-    [[nodiscard]] static auto unpack(std::byte const *ptr) -> std::tuple<T, Ts...>
+    [[nodiscard]] static constexpr auto unpack(std::byte const *ptr) -> std::tuple<T, Ts...>
     {
         if constexpr (sizeof...(Ts) == 0u) {
             return std::tuple<T>(*reinterpret_cast<const T *>(ptr));
@@ -211,7 +211,7 @@ auto encode_payload_vector(gsl::span<std::string const> values)
 }
 
 template <typename... T>
-auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<std::byte const>>
+constexpr auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<std::byte const>>
 {
     static_assert(detail::all_pod<T...>::value);
     auto offset = detail::sizeofs<T...>::value;
