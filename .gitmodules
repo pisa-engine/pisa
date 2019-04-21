@@ -58,9 +58,6 @@
 [submodule "external/range-v3"]
 	path = external/range-v3
 	url = https://github.com/ericniebler/range-v3.git
-[submodule "external/te"]
-	path = external/te
-	url = https://github.com/boost-experimental/te.git
 [submodule "external/trecpp"]
 	path = external/trecpp
 	url = https://github.com/pisa-engine/trecpp.git

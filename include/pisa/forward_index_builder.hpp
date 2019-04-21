@@ -12,7 +12,6 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
-#include <boost/te.hpp>
 #include <gsl/gsl_assert>
 #include <pstl/algorithm>
 #include <pstl/execution>
@@ -33,26 +32,21 @@ namespace pisa {
 
 using namespace std::string_view_literals;
 
-struct Document_Record : boost::te::poly<Document_Record> {
-    using boost::te::poly<Document_Record>::poly;
+struct Document_Record {
+    Document_Record(std::string title, std::string content, std::string url)
+        : title_(std::move(title)), content_(std::move(content)), url_(std::move(url))
+    {}
+    [[nodiscard]] auto title() noexcept -> std::string & { return title_; }
+    [[nodiscard]] auto title() const noexcept -> std::string const & { return title_; }
+    [[nodiscard]] auto content() noexcept -> std::string & { return content_; }
+    [[nodiscard]] auto content() const noexcept -> std::string const & { return content_; }
+    [[nodiscard]] auto url() noexcept -> std::string & { return url_; }
+    [[nodiscard]] auto url() const noexcept -> std::string const & { return url_; }
 
-    [[nodiscard]] auto content() -> std::string & {
-        std::string * result = nullptr;
-        boost::te::call([](auto &self, auto &result) { result = &self.content(); }, *this, result);
-        return *result;
-    }
-    [[nodiscard]] auto trecid() const -> std::string const & {
-        std::string const *result = nullptr;
-        boost::te::call(
-            [](auto const &self, auto &result) { result = &self.trecid(); }, *this, result);
-        return *result;
-    }
-    [[nodiscard]] auto url() const -> std::string const & {
-        std::string const *result = nullptr;
-        boost::te::call(
-            [](auto const &self, auto &result) { result = &self.url(); }, *this, result);
-        return *result;
-    }
+   private:
+    std::string title_;
+    std::string content_;
+    std::string url_;
 };
 
 using process_term_function_type = std::function<std::string(std::string &&)>;
@@ -199,7 +193,7 @@ class Forward_Index_Builder {
         std::map<std::string, uint32_t> map;
 
         for (auto &&record : bp.records) {
-            title_os << record.trecid() << '\n';
+            title_os << record.title() << '\n';
             url_os << record.url() << '\n';
 
             std::vector<uint32_t> term_ids;
@@ -378,7 +372,7 @@ class Forward_Index_Builder {
                 first_document += last_batch_size;
                 break;
             }
-            spdlog::debug("Parsed document {}", record->trecid());
+            spdlog::debug("Parsed document {}", record->title());
             record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
             if (record_batch.size() == batch_size) {
                 Batch_Process bp{
