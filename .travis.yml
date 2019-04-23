@@ -8,7 +8,6 @@ branches:
 common_sources: &all_sources
   - ubuntu-toolchain-r-test
   - llvm-toolchain-xenial-6.0
-  - llvm-toolchain-xenial-7
 
 env:
   global:
@@ -56,16 +55,16 @@ matrix:
       addons:
           apt:
               sources: *all_sources
-              packages: ['clang-6.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+              packages: ['clang-5.0', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
     - os: linux
       dist: xenial
       compiler: clang
       addons:
           apt:
               sources: *all_sources
-              packages: ['clang-7', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-7 && CXX=clang++-7 && COVERAGE=Off"
+              packages: ['clang-6.0', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
     - os: osx
       osx_image: xcode10.1
       compiler: clang
