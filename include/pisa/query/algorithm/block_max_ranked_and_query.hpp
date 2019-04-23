@@ -42,18 +42,20 @@ struct block_max_ranked_and_query {
                 block_upper_bound += ordered_cursors[block]->w.score() * ordered_cursors[block]->q_weight;
             }
             if (m_topk.would_enter(block_upper_bound)) {
-
+//std::cerr << "Might enter... " << candidate << std::endl;
                 for (; i < ordered_cursors.size(); ++i) {
                     ordered_cursors[i]->docs_enum.next_geq(candidate);
 
                     if (ordered_cursors[i]->docs_enum.docid() != candidate) {
                         candidate = ordered_cursors[i]->docs_enum.docid();
                         i         = 0;
+//          std::cerr << "Nope. Candidate is now " << candidate << std::endl;
                         break;
                     }
                 }
 
                 if (i == ordered_cursors.size()) {
+//std::cerr << "Scoring it..." << std::endl;
                     float score    = 0;
                     for (i = 0; i < ordered_cursors.size(); ++i) {
                         score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
@@ -66,13 +68,15 @@ struct block_max_ranked_and_query {
                 }
             }
             else {
-                ordered_cursors[0]->docs_enum.next();
-                candidate = ordered_cursors[0]->docs_enum.docid();
                 uint64_t next_jump = max_docid;
                 for (size_t j = 0; j < ordered_cursors.size(); ++j) {
                     next_jump = std::min(next_jump, ordered_cursors[j]->w.docid());
                 }
-                candidate = std::max(candidate, next_jump+1);
+//                std::cerr << "Candidate = " << candidate << " and next jump = " << next_jump+1 << std::endl;
+                if (candidate == next_jump+1)
+                  candidate = max_docid;
+                else
+                  candidate = next_jump + 1;
             }
         }
 
