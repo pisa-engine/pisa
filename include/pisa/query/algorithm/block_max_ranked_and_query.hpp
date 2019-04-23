@@ -66,17 +66,13 @@ struct block_max_ranked_and_query {
                 }
             }
             else {
-
                 ordered_cursors[0]->docs_enum.next();
-                // uint64_t next_jump = ordered_cursors[0]->docs_enum.docid();
-
-                // // Next jump is the last identifier in the current block arrangement
-                // for (size_t j = 1; j < ordered_cursors.size(); ++j) {
-                //     next_jump = std::max(ordered_cursors[j]->w.docid(), next_jump);
-                // }
-                // if (next_jump + 1 > ordered_cursors[0]->docs_enum.docid())
-                //   ordered_cursors[0]->docs_enum.next_geq(next_jump + 1);
-                candidate = ordered_cursors[0]->docs_enum.docid()+1;
+                candidate = ordered_cursors[0]->docs_enum.docid();
+                uint64_t next_jump = max_docid;
+                for (size_t j = 0; j < ordered_cursors.size(); ++j) {
+                    next_jump = std::min(next_jump, ordered_cursors[j]->w.docid());
+                }
+                candidate = std::max(candidate, next_jump+1);
             }
         }
 

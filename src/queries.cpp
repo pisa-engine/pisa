@@ -193,6 +193,11 @@ void perftest(const std::string &index_filename,
                 ranked_and_query ranked_and_q(k);
                 return ranked_and_q(make_scored_cursors(index, wdata, terms), index.num_docs());
             };
+        } else if (t == "block_max_ranked_and" && wand_data_filename) {
+            query_fun = [&](term_id_vec terms){
+                block_max_ranked_and_query block_max_ranked_and_q(k);
+                return block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, terms), index.num_docs());
+            }; 
         }  else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](term_id_vec terms){
                 ranked_or_query ranked_or_q(k);
