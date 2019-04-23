@@ -26,6 +26,7 @@
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "parsing/html.hpp"
+#include "payload_vector.hpp"
 #include "warcpp/warcpp.hpp"
 
 namespace pisa {
@@ -284,27 +285,39 @@ class Forward_Index_Builder {
                std::ptrdiff_t document_count,
                std::ptrdiff_t batch_count) const
     {
-        std::ofstream title_os(basename + ".documents");
-        std::ofstream url_os(basename + ".urls");
         std::ofstream term_os(basename + ".terms");
 
-        spdlog::info("Merging titles");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
-            std::ifstream title_is(batch_file(basename, batch) + ".documents");
-            title_os << title_is.rdbuf();
+        {
+            spdlog::info("Merging titles");
+            std::ofstream title_os(basename + ".documents");
+            for (auto batch : ranges::view::iota(0, batch_count)) {
+                spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
+                std::ifstream title_is(batch_file(basename, batch) + ".documents");
+                title_os << title_is.rdbuf();
+            }
         }
-        spdlog::info("Merging URLs");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
-            std::ifstream url_is(batch_file(basename, batch) + ".urls");
-            url_os << url_is.rdbuf();
+        {
+            spdlog::info("Creating document lexicon");
+            std::ifstream title_is(basename + ".documents");
+            encode_payload_vector(std::istream_iterator<io::Line>(title_is),
+                                  std::istream_iterator<io::Line>())
+                .to_file(basename + ".doclex");
+        }
+        {
+            spdlog::info("Merging URLs");
+            std::ofstream url_os(basename + ".urls");
+            for (auto batch : ranges::view::iota(0, batch_count)) {
+                spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
+                std::ifstream url_is(batch_file(basename, batch) + ".urls");
+                url_os << url_is.rdbuf();
+            }
         }
 
         auto terms = collect_terms(basename, batch_count);
 
         spdlog::info("Writing terms");
         for (auto const& term : terms) { term_os << term << '\n'; }
+        encode_payload_vector(terms.begin(), terms.end()).to_file(basename + ".termlex");
 
         spdlog::info("Mapping terms");
         auto term_mapping = reverse_mapping(std::move(terms));

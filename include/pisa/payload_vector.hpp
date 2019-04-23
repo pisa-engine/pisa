@@ -6,9 +6,12 @@
 #include <string_view>
 #include <vector>
 
+#include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <gsl/gsl_assert>
 #include <gsl/span>
+
+#include "payload_vector.hpp"
 
 namespace pisa {
 
@@ -147,11 +150,31 @@ namespace detail {
 
 } // namespace detail
 
-struct Payload_Vector_Container {
+struct Payload_Vector_Buffer {
     using size_type = detail::size_type;
 
     std::vector<size_type> const offsets;
     std::vector<std::byte> const payloads;
+
+    [[nodiscard]] static auto from_file(std::string const &filename) -> Payload_Vector_Buffer
+    {
+        boost::system::error_code ec;
+        auto file_size = boost::filesystem::file_size(boost::filesystem::path(filename));
+        std::ifstream is(filename);
+
+        size_type len;
+        is.read(reinterpret_cast<char *>(&len), sizeof(size_type));
+
+        auto offsets_bytes = (len + 1) * sizeof(size_type);
+        std::vector<size_type> offsets(len + 1);
+        is.read(reinterpret_cast<char *>(offsets.data()), offsets_bytes);
+
+        auto payloads_bytes = file_size - offsets_bytes - sizeof(size_type);
+        std::vector<std::byte> payloads(payloads_bytes);
+        is.read(reinterpret_cast<char *>(payloads.data()), payloads_bytes);
+
+        return Payload_Vector_Buffer{std::move(offsets), std::move(payloads)};
+    }
 
     void to_file(std::string const &filename) const
     {
@@ -171,7 +194,7 @@ struct Payload_Vector_Container {
     template <typename InputIterator, typename PayloadEncodingFn>
     [[nodiscard]] static auto make(InputIterator first,
                                    InputIterator last,
-                                   PayloadEncodingFn encoding_fn) -> Payload_Vector_Container
+                                   PayloadEncodingFn encoding_fn) -> Payload_Vector_Buffer
     {
         std::vector<size_type> offsets;
         offsets.push_back(0u);
@@ -180,14 +203,14 @@ struct Payload_Vector_Container {
             encoding_fn(*first, std::back_inserter(payloads));
             offsets.push_back(payloads.size());
         }
-        return Payload_Vector_Container{std::move(offsets), std::move(payloads)};
+        return Payload_Vector_Buffer{std::move(offsets), std::move(payloads)};
     }
 };
 
 template <typename InputIterator, typename PayloadEncodingFn>
 auto encode_payload_vector(InputIterator first, InputIterator last, PayloadEncodingFn encoding_fn)
 {
-    return Payload_Vector_Container::make(first, last, encoding_fn);
+    return Payload_Vector_Buffer::make(first, last, encoding_fn);
 }
 
 template <typename Payload, typename PayloadEncodingFn>
@@ -199,7 +222,7 @@ auto encode_payload_vector(gsl::span<Payload const> values, PayloadEncodingFn en
 template <typename InputIterator>
 auto encode_payload_vector(InputIterator first, InputIterator last)
 {
-    return Payload_Vector_Container::make(first, last, [](auto str, auto out_iter) {
+    return Payload_Vector_Buffer::make(first, last, [](auto str, auto out_iter) {
         std::transform(
             str.begin(), str.end(), out_iter, [](auto ch) { return static_cast<std::byte>(ch); });
     });
@@ -252,7 +275,7 @@ class Payload_Vector {
     using payload_type = Payload_View;
     using iterator = detail::Payload_Vector_Iterator<Payload_View>;
 
-    Payload_Vector(Payload_Vector_Container const &container)
+    Payload_Vector(Payload_Vector_Buffer const &container)
         : offsets_(container.offsets), payloads_(container.payloads)
     {}
 
@@ -275,7 +298,7 @@ class Payload_Vector {
         gsl::span<std::byte const> tail;
         try {
             std::tie(length, tail) = unpack_head<size_type>(mem);
-        } catch (std::runtime_error const& err) {
+        } catch (std::runtime_error const &err) {
             throw std::runtime_error(std::string("Failed to parse payload vector length: ") +
                                      err.what());
         }
