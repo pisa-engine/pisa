@@ -130,20 +130,23 @@ class wand_data_range {
         return enumerator(m_blocks_start[i], m_block_max_term_weight);
     }
 
-    static std::vector<bool> compute_live_blocks(std::vector<enumerator> &enums,
+    template <typename CursorRange>
+    static std::vector<bool> compute_live_blocks(CursorRange &&cursors,
                                                  float threshold,
                                                  std::pair<uint32_t, uint32_t> document_range)
     {
+        // std::cout << document_range.first << " " << threshold << std::endl;
         size_t len = ceil_div((document_range.second - document_range.first), range_size);
         std::vector<bool> live_blocks(len);
-        for (auto &&e : enums) {
-            e.next_geq(document_range.first);
+        for (auto &&c : cursors) {
+            c.w.next_geq(document_range.first);
         }
         for (size_t i = 0; i < len; ++i) {
             float score = 0.0f;
-            for (auto &&e : enums) {
-                score += e.score();
-                e.next_block();
+            for (auto &&c : cursors) {
+                score += c.q_weight * c.w.score();
+                std::cout << document_range.first << "-" << document_range.second << " " << c.q_weight << " " << c.w.score() << " " << threshold << std::endl;
+                c.w.next_block();
             }
             live_blocks[i] = (score > threshold);
         }

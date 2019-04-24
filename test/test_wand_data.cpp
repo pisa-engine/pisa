@@ -85,29 +85,29 @@ TEST_CASE("wand_data_range")
         }
     }
 
-    SECTION("Live block computation")
-    {
-        size_t i = 0;
-        std::vector<WandTypeRange::enumerator> enums;
-        for (auto const &seq : collection) {
-            if (seq.docs.size() >= 1024) {
-                enums.push_back(wdata_range.getenum(i));
-            }
-        }
+    // SECTION("Live block computation")
+    // {
+    //     size_t i = 0;
+    //     std::vector<WandTypeRange::enumerator> enums;
+    //     for (auto const &seq : collection) {
+    //         if (seq.docs.size() >= 1024) {
+    //             enums.push_back(wdata_range.getenum(i));
+    //         }
+    //     }
 
-        std::pair<uint32_t, uint32_t> doc_range(0, collection.num_docs());
-        auto live_blocks = WandTypeRange::compute_live_blocks(enums, 0, doc_range);
+    //     std::pair<uint32_t, uint32_t> doc_range(0, collection.num_docs());
+    //     auto live_blocks = WandTypeRange::compute_live_blocks(enums, 0, doc_range);
 
-        REQUIRE(live_blocks.size() == ceil_div(collection.num_docs(), 64));
+    //     REQUIRE(live_blocks.size() == ceil_div(collection.num_docs(), 64));
 
-        for (int i = 0; i < live_blocks.size(); ++i) {
-            if (live_blocks[i] == 0) {
-                for (auto &&e : enums) {
-                    e.next_geq(i * 64);
-                    REQUIRE(e.score() == 0);
-                }
-            }
-        }
-    }
+    //     for (int i = 0; i < live_blocks.size(); ++i) {
+    //         if (live_blocks[i] == 0) {
+    //             for (auto &&e : enums) {
+    //                 e.next_geq(i * 64);
+    //                 REQUIRE(e.score() == 0);
+    //             }
+    //         }
+    //     }
+    // }
 }
 

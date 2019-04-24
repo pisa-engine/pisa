@@ -24,7 +24,8 @@ struct IndexData {
     IndexData()
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
-          wdata(document_sizes.begin()->begin(), collection.num_docs(), collection)
+          wdata(document_sizes.begin()->begin(), collection.num_docs(), collection),
+          wdata_range(document_sizes.begin()->begin(), collection.num_docs(), collection)
     {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
@@ -36,7 +37,7 @@ struct IndexData {
         builder.build(index);
 
         term_id_vec q;
-        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries.f");
         while (read_query(q, qfile)) {
             queries.push_back(q);
         }
@@ -125,11 +126,7 @@ TEMPLATE_TEST_CASE("Ranked query test",
 TEMPLATE_TEST_CASE("Ranked query test",
                    "[query][ranked][integration]",
                    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-                   range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
-                   range_query_128<wand_query>,
-                   range_query_128<maxscore_query>,
-                   range_query_128<block_max_wand_query>,
-                   range_query_128<block_max_maxscore_query>)
+                   range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>)
 {
     auto data = IndexData<single_index>::get();
     TestType op_q(10);
@@ -137,13 +134,16 @@ TEMPLATE_TEST_CASE("Ranked query test",
 
     for (auto const &q : data->queries) {
         or_q(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, data->wdata_range, q),
+        op_q(make_range_block_max_scored_cursors(data->index, data->wdata_range, q),
              data->index.num_docs());
         REQUIRE(or_q.topk().size() == op_q.topk().size());
         for (size_t i = 0; i < or_q.topk().size(); ++i) {
+            std::cout << or_q.topk()[i].first << " " << or_q.topk()[i].second << " "
+                      << op_q.topk()[i].first << " " << op_q.topk()[i].second  << std::endl;
             REQUIRE(or_q.topk()[i].first ==
                     Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
         }
+        std::cout << std::endl;
     }
 }
 

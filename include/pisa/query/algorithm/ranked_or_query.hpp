@@ -37,7 +37,7 @@ struct ranked_or_query {
                 }
             }
 
-            m_topk.insert(score);
+            m_topk.insert(score, cur_doc);
             cur_doc = next_doc;
         }
 

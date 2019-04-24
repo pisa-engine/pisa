@@ -5,15 +5,17 @@
 #include "topk_queue.hpp"
 #include "wand_data_range.hpp"
 
+#include <math.h>
 namespace pisa {
 using WandTypeRange = wand_data_range<128, 1024, bm25>;
 
-template <typename QueryAlg, size_t block_size = 128>
+template <typename QueryAlg>
 struct range_query {
 
     range_query(uint64_t k) : m_k(k), m_topk(k) {}
 
     template <typename CursorRange>
+    // range_size: multiple of 128
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, size_t range_size)
     {
         m_topk.clear();
@@ -32,35 +34,27 @@ struct range_query {
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
-    template <typename WandType, typename CursorType>
-    auto get_enums(CursorType &&cursors)
-    {
-        using wdata_enum = typename WandType::wand_data_enumerator;
-        std::vector<wdata_enum> enums;
-        for (auto &c : cursors) {
-            enums.push_back(c.w);
-        }
-        return enums;
-    }
-
     template <typename CursorRange>
     void process_range(CursorRange &&cursors, size_t end, size_t range_size)
     {
-        size_t begin = end - range_size;
-        auto enums = get_enums<wand_data<bm25, WandTypeRange>, CursorRange>(cursors);
-        //auto enums = get_enums<WandTypeRange, CursorRange>(cursors);
+        size_t begin = (end / range_size - 1) * range_size;
         auto live_dead = WandTypeRange::compute_live_blocks(
-            enums, m_topk.getThreshold(), std::make_pair(begin, end));
+            cursors, m_topk.threshold(), std::make_pair(begin, end));
         for (int block = 0; block < live_dead.size(); ++block) {
-            if (live_dead[block]) {
-                size_t block_end = begin + (block + 1) * block_size;
+            // if (live_dead[block]) {
+            if(1) {
+                size_t block_end = std::min(begin + (block + 1) * 128, end);
                 for (auto &cursor : cursors) {
-                    cursor.docs_enum.next_geq(block_end - block_size);
+                    cursor.docs_enum.next_geq(begin + block * 128);
                 }
                 QueryAlg query_alg(m_k);
-                query_alg(cursors, end);
+                query_alg(cursors, block_end);
                 auto small_topk = query_alg.topk();
+                // std::cout << m_topk.threshold() << std::endl;
                 for (const auto &entry : small_topk) {
+                    if (entry.second > 128 && entry.second < 256) {
+                        std::cout << entry.first << " " << entry.second << " " << live_dead[block] << std::endl;
+                    }
                     m_topk.insert(entry.first, entry.second);
                 }
             }
