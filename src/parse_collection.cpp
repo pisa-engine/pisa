@@ -99,9 +99,10 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
         };
     }
     if (*type == "krovetz") {
+        static stem::KrovetzStemmer kstemmer;
         return [](std::string &&term) -> std::string {
             boost::algorithm::to_lower(term);
-            return stem::KrovetzStemmer{}.kstem_stemmer(term);
+            return kstemmer.kstem_stemmer(term);
         };
     }
     spdlog::error("Unknown stemmer type: {}", *type);
