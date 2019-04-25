@@ -1,6 +1,6 @@
 # Query an index
 
-## Usage 
+## Usage
 
     queries - a tool for performing queries on an index.
     Usage: ./bin/queries [OPTIONS]

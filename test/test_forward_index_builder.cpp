@@ -327,8 +327,13 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 batch_size,
                 thread_count);
 
-            THEN("The collection mapped to terms matches input") {
+            THEN("The collection mapped to terms matches input")
+            {
                 auto term_map = load_term_map(output);
+                auto term_lexicon_buffer = Payload_Vector_Buffer::from_file(output + ".termlex");
+                auto term_lexicon = Payload_Vector<std::string>(term_lexicon_buffer);
+                REQUIRE(std::vector<std::string>(term_lexicon.begin(), term_lexicon.end()) ==
+                        term_map);
                 binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 REQUIRE(*seq_iter->begin() == 1000);
@@ -353,6 +358,14 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());
+            }
+            AND_THEN("Document lexicon contains the same titles as text file")
+            {
+                auto documents = io::read_string_vector(output + ".documents");
+                auto doc_lexicon_buffer = Payload_Vector_Buffer::from_file(output + ".doclex");
+                auto doc_lexicon = Payload_Vector<std::string>(doc_lexicon_buffer);
+                REQUIRE(std::vector<std::string>(doc_lexicon.begin(), doc_lexicon.end()) ==
+                        documents);
             }
         }
     }

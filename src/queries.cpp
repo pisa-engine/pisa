@@ -232,7 +232,7 @@ using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_sc
 
 int main(int argc, const char **argv) {
 
-    spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
+    spdlog::set_default_logger(spdlog::stderr_color_mt("null"));
 
     std::string type;
     std::string query_type;
@@ -259,7 +259,7 @@ int main(int argc, const char **argv) {
     app.add_option("-k", k, "k value");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
-    auto *terms_opt = app.add_option("--terms", terms_file, "Text file with terms in separate lines");
+    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
