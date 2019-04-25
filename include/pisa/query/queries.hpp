@@ -11,11 +11,13 @@
 #include <spdlog/spdlog.h>
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <Porter2/Porter2.hpp>
+#include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <boost/algorithm/string.hpp>    
 
 #include "index_types.hpp"
 #include "io.hpp"
+#include "payload_vector.hpp"
 #include "query/queries.hpp"
 #include "scorer/score_function.hpp"
 #include "topk_queue.hpp"
@@ -110,11 +112,14 @@ namespace query {
                                  std::optional<std::string> stemmer_type)
     {
         if (terms_file) {
-            auto to_id = [m = std::make_shared<std::unordered_map<std::string, term_id_type>>(
-                              io::read_string_map<term_id_type>(*terms_file))](
-                             auto str) -> std::optional<term_id_type> {
-                if (auto pos = m->find(str); pos != m->end()) {
-                    return pos->second;
+            auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
+            auto terms = Payload_Vector<>::from(*source);
+            auto to_id = [source = std::move(source),
+                          terms = std::move(terms)](auto str) -> std::optional<term_id_type>
+            {
+                auto pos = std::lower_bound(terms.begin(), terms.end(), std::string_view(str));
+                if (*pos == std::string_view(str)) {
+                    return std::distance(terms.begin(), pos);
                 }
                 return std::nullopt;
             };
