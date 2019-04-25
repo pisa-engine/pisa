@@ -28,5 +28,7 @@ Some features of PISA are listed below:
 * Implementation of document reordering;
 * Free and open-source with permissive license;
 
+You want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/CONTRIBUTING.md) page.
+
 #### Credits
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).
