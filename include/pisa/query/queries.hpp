@@ -6,20 +6,22 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
-#include <spdlog/spdlog.h>
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <Porter2/Porter2.hpp>
+#include <boost/algorithm/string.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
-#include <boost/algorithm/string.hpp>
+#include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
 #include "io.hpp"
 #include "payload_vector.hpp"
 #include "query/queries.hpp"
 #include "scorer/score_function.hpp"
+#include "tokenizer.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
@@ -50,22 +52,23 @@ struct Query {
         id = std::string(query_string.begin(), colon);
     }
     auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
-    std::istringstream iline(std::string(pos, query_string.end()));
-    std::string term;
-    while (iline >> term) {
+    auto raw_query = std::string_view(&*pos, std::distance(pos, query_string.end()));
+    TermTokenizer tokenizer(raw_query);
+    for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
+        auto raw_term = *term_iter;
         try {
-            auto processed = process_term(std::string(term));
+            auto processed = process_term(std::string(raw_term));
             if (processed) {
                 if (not stopwords or stopwords->find(*processed) == stopwords->end()) {
                     parsed_query.push_back(std::move(*processed));
                 } else {
-                    spdlog::warn("Term `{}` is a stop word and will be ignored", term);
+                    spdlog::warn("Term `{}` is a stop word and will be ignored", *processed);
                 }
             } else {
-                spdlog::warn("Term `{}` not found and will be ignored", term);
+                spdlog::warn("Term `{}` not found and will be ignored", raw_term);
             }
         } catch (std::invalid_argument& err) {
-            spdlog::warn("Could not parse `{}` to a number", term);
+            spdlog::warn("Could not parse `{}` to a number", raw_term);
         }
     }
     return {id, parsed_query, {}};

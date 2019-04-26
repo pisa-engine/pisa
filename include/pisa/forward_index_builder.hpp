@@ -26,6 +26,7 @@
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "parsing/html.hpp"
+#include "tokenizer.hpp"
 #include "payload_vector.hpp"
 #include "warcpp/warcpp.hpp"
 
@@ -127,18 +128,8 @@ void parse_html_content(std::string &&content, std::function<void(std::string &&
     if (content.empty()) {
         return;
     }
-    auto pos = content.begin();
-    auto end = content.end();
-    auto is_alpha_numeric = [](char ch) -> bool {
-        return std::isalnum(static_cast<unsigned char>(ch));
-    };
-    while (pos != end) {
-        auto term_end = std::find_if_not(pos, end, is_alpha_numeric);
-        if (pos != term_end) {
-            process(std::string(pos, term_end));
-        }
-        pos = std::find_if(term_end, end, is_alpha_numeric);
-    }
+    TermTokenizer tokenizer(content);
+    std::for_each(tokenizer.begin(), tokenizer.end(), process);
 }
 
 class Forward_Index_Builder {
