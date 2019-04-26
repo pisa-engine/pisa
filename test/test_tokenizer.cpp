@@ -16,10 +16,10 @@ using namespace pisa;
 
 TEST_CASE("TermTokenizer")
 {
-    std::string str("w0rd, token-izer. pup's, U.S.a., us.");
+    std::string str("w0rd, token-izer. pup's, U.S.a., us., hel.lo");
     TermTokenizer tokenizer(str);
     REQUIRE(std::vector<std::string>(tokenizer.begin(), tokenizer.end()) ==
-            std::vector<std::string>{"w0rd", "token", "izer", "pup", "USa", "us"});
+            std::vector<std::string>{"w0rd", "token", "izer", "pup", "USa", "us", "hel", "lo"});
 }
 
 TEST_CASE("Parse query") {
