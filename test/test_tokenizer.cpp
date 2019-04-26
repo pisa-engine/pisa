@@ -5,10 +5,12 @@
 
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
+#include <gsl/span>
 
+#include "payload_vector.hpp"
 #include "query/queries.hpp"
-#include "tokenizer.hpp"
 #include "temporary_directory.hpp"
+#include "tokenizer.hpp"
 
 using namespace pisa;
 
@@ -17,25 +19,25 @@ TEST_CASE("TermTokenizer")
     std::string str("w0rd, token-izer. pup's, U.S.a., us.");
     TermTokenizer tokenizer(str);
     REQUIRE(std::vector<std::string>(tokenizer.begin(), tokenizer.end()) ==
-            std::vector<std::string>{"w0rd", "token", "izer", "pup's", "U.S.a.", "us"});
+            std::vector<std::string>{"w0rd", "token", "izer", "pup", "USa", "us"});
 }
 
 TEST_CASE("Parse query") {
     Temporary_Directory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
-    {
-        std::ofstream os(lexfile.string());
-        os << "obama\nterm2\ntree\nu.s.a.\nlol's";
-    }
+    encode_payload_vector(
+        gsl::make_span(std::vector<std::string>{"lol", "obama", "term2", "tree", "usa"}))
+        .to_file(lexfile.string());
 
     auto [query, id, parsed] =
         GENERATE(table<std::string, std::optional<std::string>, std::vector<term_id_type>>(
-            {{"17:obama family tree", "17", {0, 2}},
-             {"obama family tree", std::nullopt, {0, 2}},
-             {"obama, family, trees", std::nullopt, {0, 2}},
-             {"obama + family + tree", std::nullopt, {0, 2}},
-             {"lol's", std::nullopt, {4}},
-             {"U.S.A.!?", std::nullopt, {3}}}));
+            {{"17:obama family tree", "17", {1, 3}},
+             {"obama family tree", std::nullopt, {1, 3}},
+             {"obama, family, trees", std::nullopt, {1, 3}},
+             {"obama + family + tree", std::nullopt, {1, 3}},
+             {"lol's", std::nullopt, {0}},
+             {"U.S.A.!?", std::nullopt, {4}}}));
+    CAPTURE(query);
     TermProcessor process_term =
         query::term_processor(std::make_optional(lexfile.string()), "krovetz");
     auto q = parse_query(query, process_term);
