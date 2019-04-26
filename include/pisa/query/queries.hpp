@@ -13,7 +13,7 @@
 #include <Porter2/Porter2.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
-#include <boost/algorithm/string.hpp>    
+#include <boost/algorithm/string.hpp>
 
 #include "index_types.hpp"
 #include "io.hpp"
@@ -35,6 +35,7 @@ using TermProcessor = std::function<std::optional<term_id_type>(std::string &&)>
 struct Query {
     std::optional<std::string> id;
     std::vector<term_id_type>  terms;
+    std::vector<float>  term_weights;
 };
 
 [[nodiscard]] inline auto parse_query(
@@ -67,7 +68,7 @@ struct Query {
             spdlog::warn("Could not parse `{}` to a number", term);
         }
     }
-    return {id, parsed_query};
+    return {id, parsed_query, {}};
 }
 
 bool read_query(term_id_vec &ret, std::istream &is = std::cin,
@@ -125,20 +126,20 @@ namespace query {
             };
             if (not stemmer_type) {
                 return [=](auto str) {
-                    boost::algorithm::to_lower(str); 
+                    boost::algorithm::to_lower(str);
                     return to_id(str);
                 };
             }
             if (*stemmer_type == "porter2") {
                 return [=](auto str) {
-                    boost::algorithm::to_lower(str); 
+                    boost::algorithm::to_lower(str);
                     stem::Porter2 stemmer{};
                     return to_id(stemmer.stem(str));
                 };
             }
             if (*stemmer_type == "krovetz") {
                 return [=](auto str) {
-                    boost::algorithm::to_lower(str); 
+                    boost::algorithm::to_lower(str);
                     stem::KrovetzStemmer stemmer{};
                     return to_id(stemmer.kstem_stemmer(str));
                 };

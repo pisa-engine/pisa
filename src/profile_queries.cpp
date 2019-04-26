@@ -19,9 +19,11 @@
 #include "cursor/scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 
+using namespace pisa;
+
 template <typename QueryOperator>
 void op_profile(QueryOperator const& query_op,
-                std::vector<pisa::term_id_vec> const& queries)
+                std::vector<Query> const& queries)
 {
     using namespace pisa;
 
@@ -50,8 +52,8 @@ template <typename IndexType>
 struct add_profiling { typedef IndexType type; };
 
 template <typename BlockType>
-struct add_profiling<pisa::block_freq_index<BlockType, false>> {
-    typedef pisa::block_freq_index<BlockType, true> type;
+struct add_profiling<block_freq_index<BlockType, false>> {
+    typedef block_freq_index<BlockType, true> type;
 };
 
 
@@ -59,7 +61,7 @@ template <typename IndexType>
 void profile(const std::string index_filename,
 
              const std::optional<std::string> &wand_data_filename,
-             std::vector<pisa::term_id_vec> const& queries,
+             std::vector<Query> const& queries,
              std::string const& type,
              std::string const& query_type)
 {
@@ -90,26 +92,26 @@ void profile(const std::string index_filename,
 
     for (auto const& t: query_types) {
         spdlog::info("Query type: {}", t);
-        std::function<uint64_t(term_id_vec)> query_fun;
+        std::function<uint64_t(Query)> query_fun;
         if (t == "and") {
-            query_fun = [&](term_id_vec terms){
+            query_fun = [&](Query query){
                 and_query<false> and_q;
-                return and_q(make_scored_cursors<typename add_profiling<IndexType>::type>(index, wdata, terms), index.num_docs()).size();
+                return and_q(make_scored_cursors<typename add_profiling<IndexType>::type>(index, wdata, query), index.num_docs()).size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
-            query_fun = [&](term_id_vec terms){
+            query_fun = [&](Query query){
                 ranked_and_query ranked_and_q(10);
-                return ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms), index.num_docs());
+                return ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, query), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](term_id_vec terms){
+            query_fun = [&](Query query){
                 wand_query wand_q(10);
-                return wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms), index.num_docs());
+                return wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, query), index.num_docs());
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](term_id_vec terms){
+            query_fun = [&](Query query){
                 maxscore_query maxscore_q(10);
-                return maxscore_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, terms), index.num_docs());
+                return maxscore_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, query), index.num_docs());
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);
@@ -134,7 +136,7 @@ int main(int argc, const char** argv)
         args++;
     }
 
-    std::vector<term_id_vec> queries;
+    std::vector<Query> queries;
     term_id_vec q;
     if (std::string(argv[args]) == "--file") {
         args++;
@@ -142,10 +144,10 @@ int main(int argc, const char** argv)
         std::filebuf fb;
         if (fb.open(argv[args], std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is)) queries.push_back(q);
+            while (read_query(q, is)) queries.push_back({std::nullopt, q, {}});
         }
     } else {
-        while (read_query(q)) queries.push_back(q);
+        while (read_query(q)) queries.push_back({std::nullopt, q, {}});
     }
 
     if (false) {
