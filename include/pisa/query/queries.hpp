@@ -6,6 +6,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
@@ -50,7 +51,7 @@ struct Query {
         id = std::string(query_string.begin(), colon);
     }
     auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
-    auto raw_query = std::string(pos, query_string.end());
+    auto raw_query = std::string_view(&*pos, std::distance(pos, query_string.end()));
     TermTokenizer tokenizer(raw_query);
     for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
         auto raw_term = *term_iter;
