@@ -129,7 +129,7 @@ void evaluate_queries(const std::string &index_filename,
         std::stringstream result_list;
         for (auto && [ rank, result ] : enumerate(results)) {
             result_list << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     queries[query_idx].id.value_or(std::to_string(0)),
+                                     qid.value_or(std::to_string(0)),
                                      iteration,
                                      docmap[result.second],
                                      rank,
