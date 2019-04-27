@@ -7,7 +7,7 @@ To parse a collection into a forward index, use `parse_collection` command:
 
     parse_collection - parse collection and store as forward index.
     Usage: ./bin/parse_collection [OPTIONS]
-    
+
     Options:
       -h,--help                   Print this help message and exit
       -o,--output TEXT REQUIRED   Forward index filename
@@ -41,9 +41,13 @@ The above command will write the following files:
 - `cw09b.documents`: a new-line-delimited list of document titles (e.g., TREC-IDs),
   where document having ID N is on line N
 
-Right now, only `porter2` stemmer is supported.
+### Supported stemmers:
+- Porter2
+- Krovetz
 
-Supported formats are:
+### Supported formats:
 - `plaintext`: every line contains the document's title first, then any number of
              whitespaces, followed by the content delimited by a new line character,
+- `trextext`: TREC newswire collections
+- `trecweb`: TREC web collections
 - `warc`: Web ARChive format as defined in [the format specification](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.0/)

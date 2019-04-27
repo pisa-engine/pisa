@@ -13,7 +13,10 @@ struct Simple_Accumulator : public std::vector<float> {
     void accumulate(uint32_t doc, float score) { operator[](doc) += score; }
     void aggregate(topk_queue &topk) {
         uint64_t docid = 0u;
-        std::for_each(begin(), end(), [&](auto score) { topk.insert(score, docid++); });
+        std::for_each(begin(), end(), [&](auto score) { 
+            if(topk.would_enter(score)) { topk.insert(score, docid); } 
+            docid += 1;
+        });
     }
 };
 

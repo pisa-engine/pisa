@@ -90,12 +90,12 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
 
     GIVEN("a few test records") {
         std::vector<Document_Record> records{
-            Plaintext_Record{"Doc10", "lorem ipsum dolor sit amet consectetur adipiscing elit"},
-            Plaintext_Record{"Doc11", "integer rutrum felis et sagittis dapibus"},
-            Plaintext_Record{"Doc12", "vivamus ac velit nec purus molestie tincidunt"},
-            Plaintext_Record{"Doc13", "vivamus eu quam vitae lacus porta tempus quis eu metus"},
-            Plaintext_Record{"Doc14",
-                             "curabitur a justo vitae turpis feugiat molestie eu ac nunc"}};
+            Document_Record("Doc10", "lorem ipsum dolor sit amet consectetur adipiscing elit", ""),
+            Document_Record("Doc11", "integer rutrum felis et sagittis dapibus", ""),
+            Document_Record("Doc12", "vivamus ac velit nec purus molestie tincidunt", ""),
+            Document_Record("Doc13", "vivamus eu quam vitae lacus porta tempus quis eu metus", ""),
+            Document_Record(
+                "Doc14", "curabitur a justo vitae turpis feugiat molestie eu ac nunc", "")};
         WHEN("write a batch to temp directory") {
             Temporary_Directory tmpdir;
             auto output_file = tmpdir.path() / "fwd";
@@ -301,7 +301,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
     auto next_record = [](std::istream &in) -> std::optional<Document_Record> {
         Plaintext_Record record;
         if (in >> record) {
-            return record;
+            return Document_Record(record.trecid(), record.content(), record.url());
         }
         return std::nullopt;
     };
@@ -327,8 +327,13 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 batch_size,
                 thread_count);
 
-            THEN("The collection mapped to terms matches input") {
+            THEN("The collection mapped to terms matches input")
+            {
                 auto term_map = load_term_map(output);
+                auto term_lexicon_buffer = Payload_Vector_Buffer::from_file(output + ".termlex");
+                auto term_lexicon = Payload_Vector<std::string>(term_lexicon_buffer);
+                REQUIRE(std::vector<std::string>(term_lexicon.begin(), term_lexicon.end()) ==
+                        term_map);
                 binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 REQUIRE(*seq_iter->begin() == 1000);
@@ -353,6 +358,14 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());
+            }
+            AND_THEN("Document lexicon contains the same titles as text file")
+            {
+                auto documents = io::read_string_vector(output + ".documents");
+                auto doc_lexicon_buffer = Payload_Vector_Buffer::from_file(output + ".doclex");
+                auto doc_lexicon = Payload_Vector<std::string>(doc_lexicon_buffer);
+                REQUIRE(std::vector<std::string>(doc_lexicon.begin(), doc_lexicon.end()) ==
+                        documents);
             }
         }
     }

@@ -48,7 +48,7 @@ matrix:
         apt:
           sources: *all_sources
           packages: ['g++-8']
-      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && DOCKER=On"
     - os: linux
       dist: xenial
       compiler: clang
@@ -87,6 +87,19 @@ script:
       fi
 
 after_success:
-  - if [[ "${COVERAGE}" == "On" ]]; then 
+  - |-
+    if [[ "${COVERAGE}" == "On" ]]; then 
       bash <(curl -s https://codecov.io/bash);
     fi
+  - |-
+    if [[ "$TRAVIS_BRANCH" == "master" && "${DOCKER}" == "On" ]]; then
+      curl -s -X POST \
+      -H "Content-Type:application/json" \
+      -H "Travis-API-Version:3" \
+      -H "Accept:application/json" \
+      -H "Authorization:token ${TRAVIS_API_TOKEN}" \
+      -d '{"request":{"branch":"master"}}' \
+      'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests'
+    fi
+
+

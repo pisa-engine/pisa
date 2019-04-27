@@ -89,12 +89,12 @@ target_link_libraries(pisa INTERFACE
     gumbo::gumbo
     Boost::filesystem
     Porter2
+    KrovetzStemmer
     warcpp
     trecpp
     spdlog
     fmt::fmt
     range-v3
-    te
 )
 target_include_directories(pisa INTERFACE external)
 

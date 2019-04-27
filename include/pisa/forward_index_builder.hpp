@@ -12,7 +12,6 @@
 #include <vector>
 
 #include <boost/filesystem.hpp>
-#include <boost/te.hpp>
 #include <gsl/gsl_assert>
 #include <pstl/algorithm>
 #include <pstl/execution>
@@ -27,32 +26,29 @@
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "parsing/html.hpp"
+#include "tokenizer.hpp"
+#include "payload_vector.hpp"
 #include "warcpp/warcpp.hpp"
 
 namespace pisa {
 
 using namespace std::string_view_literals;
 
-struct Document_Record : boost::te::poly<Document_Record> {
-    using boost::te::poly<Document_Record>::poly;
+struct Document_Record {
+    Document_Record(std::string title, std::string content, std::string url)
+        : title_(std::move(title)), content_(std::move(content)), url_(std::move(url))
+    {}
+    [[nodiscard]] auto title() noexcept -> std::string & { return title_; }
+    [[nodiscard]] auto title() const noexcept -> std::string const & { return title_; }
+    [[nodiscard]] auto content() noexcept -> std::string & { return content_; }
+    [[nodiscard]] auto content() const noexcept -> std::string const & { return content_; }
+    [[nodiscard]] auto url() noexcept -> std::string & { return url_; }
+    [[nodiscard]] auto url() const noexcept -> std::string const & { return url_; }
 
-    [[nodiscard]] auto content() -> std::string & {
-        std::string * result = nullptr;
-        boost::te::call([](auto &self, auto &result) { result = &self.content(); }, *this, result);
-        return *result;
-    }
-    [[nodiscard]] auto trecid() const -> std::string const & {
-        std::string const *result = nullptr;
-        boost::te::call(
-            [](auto const &self, auto &result) { result = &self.trecid(); }, *this, result);
-        return *result;
-    }
-    [[nodiscard]] auto url() const -> std::string const & {
-        std::string const *result = nullptr;
-        boost::te::call(
-            [](auto const &self, auto &result) { result = &self.url(); }, *this, result);
-        return *result;
-    }
+   private:
+    std::string title_;
+    std::string content_;
+    std::string url_;
 };
 
 using process_term_function_type = std::function<std::string(std::string &&)>;
@@ -102,35 +98,38 @@ void parse_plaintext_content(std::string &&content, std::function<void(std::stri
     }
 }
 
+[[nodiscard]] auto is_http(std::string_view content) -> bool
+{
+    auto start = std::find_if(
+        content.begin(), content.end(), [](unsigned char c) { return not std::isspace(c); });
+    if (start == content.end()) {
+        return false;
+    }
+    return std::string_view(&*start, 4) == "HTTP"sv;
+}
+
 void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
     content = parsing::html::cleantext([&]() {
         auto pos = content.begin();
-        while (pos != content.end()) {
-            pos = std::find(pos, content.end(), '\n');
-            pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
-                return c == '\n' or not std::isspace(c);
-            });
-            if (pos != content.end() and *pos == '\n') {
-                return std::string_view(&*pos, std::distance(pos, content.end()));
+        if (is_http(content)) {
+            while (pos != content.end()) {
+                pos = std::find(pos, content.end(), '\n');
+                pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
+                    return c == '\n' or not std::isspace(c);
+                });
+                if (pos != content.end() and *pos == '\n') {
+                    return std::string_view(&*pos, std::distance(pos, content.end()));
+                }
             }
+            return ""sv;
         }
-        return ""sv;
+        return std::string_view(content);
     }());
     if (content.empty()) {
         return;
     }
-    auto pos = content.begin();
-    auto end = content.end();
-    auto is_alpha_numeric = [](char ch) -> bool {
-        return std::isalnum(static_cast<unsigned char>(ch));
-    };
-    while (pos != end) {
-        auto term_end = std::find_if_not(pos, end, is_alpha_numeric);
-        if (pos != term_end) {
-            process(std::string(pos, term_end));
-        }
-        pos = std::find_if(term_end, end, is_alpha_numeric);
-    }
+    TermTokenizer tokenizer(content);
+    std::for_each(tokenizer.begin(), tokenizer.end(), process);
 }
 
 class Forward_Index_Builder {
@@ -186,7 +185,7 @@ class Forward_Index_Builder {
         std::map<std::string, uint32_t> map;
 
         for (auto &&record : bp.records) {
-            title_os << record.trecid() << '\n';
+            title_os << record.title() << '\n';
             url_os << record.url() << '\n';
 
             std::vector<uint32_t> term_ids;
@@ -277,27 +276,39 @@ class Forward_Index_Builder {
                std::ptrdiff_t document_count,
                std::ptrdiff_t batch_count) const
     {
-        std::ofstream title_os(basename + ".documents");
-        std::ofstream url_os(basename + ".urls");
         std::ofstream term_os(basename + ".terms");
 
-        spdlog::info("Merging titles");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
-            std::ifstream title_is(batch_file(basename, batch) + ".documents");
-            title_os << title_is.rdbuf();
+        {
+            spdlog::info("Merging titles");
+            std::ofstream title_os(basename + ".documents");
+            for (auto batch : ranges::view::iota(0, batch_count)) {
+                spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
+                std::ifstream title_is(batch_file(basename, batch) + ".documents");
+                title_os << title_is.rdbuf();
+            }
         }
-        spdlog::info("Merging URLs");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
-            std::ifstream url_is(batch_file(basename, batch) + ".urls");
-            url_os << url_is.rdbuf();
+        {
+            spdlog::info("Creating document lexicon");
+            std::ifstream title_is(basename + ".documents");
+            encode_payload_vector(std::istream_iterator<io::Line>(title_is),
+                                  std::istream_iterator<io::Line>())
+                .to_file(basename + ".doclex");
+        }
+        {
+            spdlog::info("Merging URLs");
+            std::ofstream url_os(basename + ".urls");
+            for (auto batch : ranges::view::iota(0, batch_count)) {
+                spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
+                std::ifstream url_is(batch_file(basename, batch) + ".urls");
+                url_os << url_is.rdbuf();
+            }
         }
 
         auto terms = collect_terms(basename, batch_count);
 
         spdlog::info("Writing terms");
         for (auto const& term : terms) { term_os << term << '\n'; }
+        encode_payload_vector(terms.begin(), terms.end()).to_file(basename + ".termlex");
 
         spdlog::info("Mapping terms");
         auto term_mapping = reverse_mapping(std::move(terms));
@@ -365,7 +376,7 @@ class Forward_Index_Builder {
                 first_document += last_batch_size;
                 break;
             }
-            spdlog::debug("Parsed document {}", record->trecid());
+            spdlog::debug("Parsed document {}", record->title());
             record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
             if (record_batch.size() == batch_size) {
                 Batch_Process bp{

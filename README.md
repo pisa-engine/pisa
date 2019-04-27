@@ -1,6 +1,6 @@
 <p align="center"><img src="https://pisa-engine.github.io/images/logo250.png" width="250px"></p>
 
-# PISA: Performant Indexes and Search for Academia 
+# PISA: Performant Indexes and Search for Academia v0.2.0
 
 [![Build Status](https://travis-ci.com/pisa-engine/pisa.svg?branch=master)](https://travis-ci.com/pisa-engine/pisa)
 [![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
@@ -27,6 +27,8 @@ Some features of PISA are listed below:
 * Many query processing algorithms implemented;
 * Implementation of document reordering;
 * Free and open-source with permissive license;
+
+If you want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/CONTRIBUTING.md) page.
 
 #### Credits
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).

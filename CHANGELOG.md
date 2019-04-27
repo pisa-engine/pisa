@@ -1,0 +1,275 @@
+### Version 0.2.0
+- Create CONTRIBUTING.md
+- Added Contributing link
+- Update README.md
+- Implement tokenizer and use for query parsing. (#178)
+- Update default params for bmw25 to b=0.4 and k1=0.9 (#171)
+
+### Version 0.1.0
+- Initial commit
+- README
+- Initial import
+- Fix submodule repos and README
+- Fix build instructions
+- Singleton blocks
+- Implement random shuffling of docids
+- fix
+- Remove semiasync_queue from freq_index
+- Start using task_region
+- Implement parallel superblock optimization
+- Add benchmarks
+- fixes
+- Missing includes
+- VBMW implementation
+- Modified README.md
+- Fixed authors order
+- Update index_types.hpp
+- Delete elias_fano_score.hpp
+- Removed unused code
+- Update succinct
+- Updated stxxl
+- Fix in NextGeq and Reset in wand_data_compressed
+- Added clang format
+- Big refactor of the folder structure
+- Updated dependency and improved Readme
+- Code improved
+- Updated .gitignore
+- Removed typedefs if favour of aliases
+- removed extra spaces
+- Added cxxopts dep and used in create_freq_index
+- K taken as a CLI parameter with a fallback to configuration
+- Moved topk_queue to a separate file
+- Renamed to score_opt_partition.hpp
+- Small fixes to topk_queue
+- Updated Readme to be more concise
+- Set CMAKE_RUNTIME_OUTPUT_DIRECTORY
+- Fix in --check argument
+- Added virtual d-tor
+- Set output path for test binaries
+- Fixed has_next_geq type_trait to use SFINAE correctly
+- Re-organized source code
+- Removed Singleton blocks in all_ones_sequences
+- Added travis file
+- Added build badge
+- Added codecov (#10)
+- Limited branches for CI to master only
+- Project renamed
+- Updated badges
+- Improved portability and removed user_time (#13)
+- Portability (#14)
+- Updated FastPFor
+- Removed succinct dependency (#12)
+- Removed authors
+- Removed union in favour of boost::variant (#20)
+- Added streamvbyte & maskedvbyte (#21)
+- Code cleanup (#22)
+- Rm succinct (#24)
+- Update Title (#25)
+- Update .clang-format (#19)
+- Update CMakeLists.txt (#26)
+- Update README.md
+- Updated FastPFor (#29)
+- Qmx (#30)
+- Qmx (#31)
+- Added filter query script (#32)
+- Added VarintGB (#33)
+- Added Simple8b (#34)
+- Added simd binary packing (#35)
+- BMM implementation (#36)
+- Fix AND query (#37)
+- CLI11 (#39)
+- Added Simple16 codec (#18)
+- Revert "Added Simple16 codec (#18)" (#40)
+- Simple16 (#41)
+- Rebranding
+- Update semiasync_queue.hpp
+- Update README.md
+- Update shuffle_docids.cpp
+- Create evaluate_collection_ordering.cpp
+- Update CMakeLists.txt
+- Update GCC to 7 (#11)
+- Suppressed warnings (#13)
+- Network approach to BP algorithm (#10)
+- Create Recursive_Graph_Bisection.md (#17)
+- Top-k heap performance (Issue #15) (#16)
+- Removed boost task_group in favour of TBB (#20)
+- Mio (#21)
+- Support thresholds for query performance tests
+- Program to calculate top-k score thresholds
+- Threshold computation prgoram in CMake
+- Added catch2
+- Migrated all tests
+- Removed test with external file
+- Test showing the problem in #26 (#33)
+- Fix BMM (#32)
+- Replaced progress logger with progress bar
+- Removed boost as a system dependency (#34)
+- Added clang (#36)
+- Cleanup [ci skip] (#42)
+- Upgrade to C++17 (#44)
+- Removed m_terms (unused) (#49)
+- Merge remote-tracking branch 'origin/master' into thresholds
+- Thresholds for test queries
+- Update CMakeLists.txt
+- Update thresholds.cpp
+- Added Clang 5/6 and GCC 8 on Linux
+- Update README.md (#56)
+- Parsing (#37)
+- Threshold for correctness testing
+- General cleanup (#64)
+- Dead code block #65
+- Moved to std optional
+- Name fixes
+- Support parallel tests by using generated temp directories (#70)
+- Drop logger() in favor of spdlog
+- Add missing {}'s
+- Ranked OR TAAT (#73)
+- Expose Catch2 test cases to ctest (#69)
+- Removed unused variable
+- Travis cache (#77)
+- Add fmt and timer
+- Move timer to `pisa`
+- Added issue templates and code of conduct (#83)
+- Travis build in parallel (#86)
+- Added progress bar (#85)
+- Update issue templates (#84)
+- Created docs to specify the format of the indexes (#46)
+- Test pisa header files for self-sufficiency (#82)
+- Lazy accumulator (#88)
+- Add range-v3 and remove `enumerate` with `view::iota` (#92)
+- Create Query_Algorithms.md (#18)
+- Produce document sizes file (#94)
+- Cache build/external (#95)
+- Create Index_Compression.md (#19)
+- Terms with map (#97)
+- Update README.md (#103)
+- Tool for evaluating queries (#100)
+- Clean up parse_collection
+- Update warcpp
+- Modify warc parsing function to reflect changes in wracpp
+- Update LICENSE (#109)
+- Added initial documentation (#110)
+- Docs (#111)
+- Docs (#114)
+- Docs (#115)
+- Update README.md
+- Update README.md
+- Update README.md
+- Update index.rst
+- Create getting-started.rst
+- Create parsing.rst
+- Create compress-index.rst
+- Create query-index.rst
+- Create document_reordering.rst
+- Rename getting-started.rst to getting_started.rst
+- Update and rename compress-index.rst to compress_index.rst
+- Rename query-index.rst to query_index.rst
+- Update document_reordering.rst
+- Update index.rst
+- Clean up parse_collection (#107)
+- Update document_reordering.rst
+- Delete Recursive_Graph_Bisection.md
+- Rename Indexes_Format.md to index_format.md
+- Update conf.py
+- Update index.rst
+- Delete Queries.md
+- Update and rename query_index.rst to query_index.md
+- Delete Query_Algorithms.md
+- Update query_index.md
+- Delete Compression_Algorithms.md
+- Update compress_index.rst
+- Update query_index.md
+- Update README.md
+- Update and rename getting_started.rst to getting_started.md
+- Update README.md
+- Update and rename document_reordering.rst to document_reordering.md
+- Rename compress_index.rst to compress_index.md
+- Update conf.py
+- Update warcpp
+- Remove regex
+- Merge remote-tracking branch 'origin/master' into warc
+- Pisa (#116)
+- Range query (#108)
+- Update compress_index.md
+- Update compress_index.md
+- Update compress_index.md
+- Update compress_index.md
+- Update compress_index.md
+- Update compress_index.md
+- Update compress_index.md
+- Update document_reordering.md
+- Update compress_index.md
+- Update query_index.md
+- Update index.rst
+- Update index.rst
+- Update index.rst
+- Update index.rst
+- Update index.rst
+- Update index.rst
+- Update getting_started.md
+- Update index.rst
+- Update README.md
+- Cleanup (#120)
+- Upgrade warcpp
+- Upgrade warcpp
+- Fix merging swapping problem
+- Update parsing documentation
+- Improving merging performance + debug logging with `--debug`
+- Remove HTTP header when parsing HTML
+- Dereference subcommand.
+- Cli lambda (#122)
+- Pass max_docid in call operator (#124)
+- Update README.md
+- Query algo (#123)
+- Truncate clueweb1k.plaintext (#131)
+- Reuse index across ranked queries tests for speedup (#132)
+- Fix #128
+- Support trecweb record format
+- Upgrade trecpp to master
+- Extracting query times
+- Write logs to stderr and add --silent
+- Update docs
+- Added wand data range-based (#74)
+- Update conf.py
+- Update conf.py
+- Create requirements.readthedocs.txt
+- Fix CLI `needs` clause
+- Update index_format.md
+- Network BP (#141)
+- Update ranked_and_query.hpp (#144)
+- Add ranked_and into queries.cpp
+- Fix issue with per-query timings
+- Trectext (#153)
+- Added Krovetz stemmer
+- Added Krovetz to query processing and updated documentation
+- Updated Krovetz
+- Fix nostem in threshold
+- Update the heap (#158)
+- Deps update (#157)
+- Fix Stemmer
+- Update trecpp
+- Fix stemmer
+- Add heap score check to accumulation of top-k heap (#149)
+- Stopwords (#154)
+- Update invert.hpp (#161)
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Update .travis.yml
+- Fix query lowercase (#166)
+- Extract TREC topic (#165)
+- Added algorithm to evaluate_query (#168)
+- Bug fix (#169)
+- Revert "Bug fix (#169)"
+- Revert "Added algorithm to evaluate_query (#168)"
+- Update ranked_or_query.hpp
+- Select algorithm to use (#170)
+- Update maxscore_query.hpp
+- Update block_max_maxscore_query.hpp
+- Update simple_accumulator.hpp
+- Fix log message (#174)

@@ -256,7 +256,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 collection_filename, index_basename, term_count, batch_size, threads);
             THEN("Index is stored in binary_freq_collection format") {
                 std::vector<uint32_t> document_data{
-                    /* size */ 1, /* count */ 10,
+                    /* size */ 1, /* count */ 5,
                     /* size */ 3, /* Term 0 */ 0, 1, 4,
                     /* size */ 2, /* Term 1 */ 2, 4,
                     /* size */ 2, /* Term 2 */ 0, 1,
