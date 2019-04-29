@@ -11,16 +11,18 @@
 #include <unordered_map>
 #include <sstream>
 
-#include "boost/filesystem.hpp"
-#include "gsl/span"
-#include "pstl/algorithm"
-#include "pstl/execution"
-#include "range/v3/view/iota.hpp"
-#include "spdlog/spdlog.h"
-#include "tbb/concurrent_queue.h"
-#include "tbb/task_group.h"
+#include <boost/filesystem.hpp>
+#include <gsl/span>
+#include <pstl/algorithm>
+#include <pstl/execution>
+#include <range/v3/view/iota.hpp>
+#include <spdlog/spdlog.h>
+#include <tbb/concurrent_queue.h>
+#include <tbb/task_group.h>
+#include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
+#include "program/invert.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
@@ -322,30 +324,26 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
     return index;
 }
 
-[[nodiscard]] auto build_batches(std::string const &input_basename,
-                                 std::string const &output_basename,
-                                 uint32_t           term_count,
-                                 size_t             batch_size,
-                                 size_t             threads) -> uint32_t
+[[nodiscard]] auto build_batches(InvertSettings const &settings) -> uint32_t
 {
-    uint32_t          batch = 0;
-    binary_collection coll(input_basename.c_str());
-    auto              doc_iter            = ++coll.begin();
-    uint32_t          documents_processed = 0;
+    uint32_t batch = 0u;
+    binary_collection coll(settings.input_basename.c_str());
+    auto doc_iter = ++coll.begin();
+    uint32_t documents_processed = 0;
     while (doc_iter != coll.end()) {
         std::vector<gsl::span<Term_Id const>> documents;
-        for (; doc_iter != coll.end() && documents.size() < batch_size; ++doc_iter) {
+        for (; doc_iter != coll.end() && documents.size() < settings.batch_size; ++doc_iter) {
             auto document_sequence = *doc_iter;
             documents.emplace_back(reinterpret_cast<Term_Id const *>(document_sequence.begin()),
                                    document_sequence.size());
         }
         spdlog::info(
             "Inverting [{}, {})", documents_processed, documents_processed + documents.size());
-        auto index = invert_range(documents, Document_Id(documents_processed), threads);
+        auto index = invert_range(documents, Document_Id(documents_processed), settings.threads);
 
         std::ostringstream batch_name_stream;
-        batch_name_stream << output_basename << ".batch." << batch;
-        write(batch_name_stream.str(), index, term_count);
+        batch_name_stream << settings.output_basename << ".batch." << batch;
+        write(batch_name_stream.str(), index, settings.term_count);
 
         documents_processed += documents.size();
         batch += 1;
@@ -403,19 +401,16 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
     }
 }
 
-void invert_forward_index(std::string const &input_basename,
-                          std::string const &output_basename,
-                          uint32_t           term_count,
-                          size_t             batch_size,
-                          size_t             threads)
+void invert_forward_index(InvertSettings settings)
 {
-    uint32_t batch_count =
-        invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
-    invert::merge_batches(output_basename, batch_count, term_count);
+    tbb::task_scheduler_init init(settings.threads);
+    spdlog::info("Number of threads: {}", settings.threads);
+    uint32_t batch_count = invert::build_batches(settings);
+    invert::merge_batches(settings.output_basename, batch_count, settings.term_count);
 
     for (auto batch : ranges::view::iota(0, batch_count)) {
         std::ostringstream batch_name_stream;
-        batch_name_stream << output_basename << ".batch." << batch;
+        batch_name_stream << settings.output_basename << ".batch." << batch;
         auto batch_basename = batch_name_stream.str();
         boost::filesystem::remove(boost::filesystem::path{batch_basename + ".docs"});
         boost::filesystem::remove(boost::filesystem::path{batch_basename + ".freqs"});

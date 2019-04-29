@@ -1,6 +1,6 @@
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/test)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/test/program)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../external/Catch2/contrib)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../external/Catch2/contrib)
 include(CTest)
 include(Catch)
 
@@ -18,7 +18,3 @@ foreach(TEST_SRC ${TEST_SOURCES})
   # enable code coverage
   add_coverage(${TEST_SRC_NAME})
 endforeach(TEST_SRC)
-
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-add_subdirectory(program)

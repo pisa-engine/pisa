@@ -253,7 +253,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
             uint32_t term_count = 10;
             auto index_basename = (tmpdir.path() / "idx").string();
             invert::invert_forward_index(
-                collection_filename, index_basename, term_count, batch_size, threads);
+                {collection_filename, index_basename, threads, term_count, batch_size});
             THEN("Index is stored in binary_freq_collection format") {
                 std::vector<uint32_t> document_data{
                     /* size */ 1, /* count */ 5,
