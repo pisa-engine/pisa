@@ -101,14 +101,15 @@ struct computation_node {
     document_partition<Iterator> partition;
     bool                         cache;
 
-    static computation_node from_stream(std::istream &is, const document_range<Iterator> &range) {
-        int            level, iteration_count;
+    static computation_node from_stream(std::istream &is, const document_range<Iterator> &range)
+    {
+        int level, iteration_count;
         std::ptrdiff_t left_first, right_first, left_last, right_last;
-        bool           cache;
+        bool cache;
         is >> level >> iteration_count >> left_first >> left_last >> right_first >> right_last;
         document_partition<Iterator> partition{
             range(left_first, left_last), range(right_first, right_last), range.term_count()};
-        if (not (is >> std::noboolalpha >> cache)) {
+        if (not(is >> std::noboolalpha >> cache)) {
             cache = partition.size() > 64;
         }
         return computation_node{level, iteration_count, std::move(partition), cache};
@@ -215,7 +216,10 @@ void swap(document_partition<Iterator> &partition, degree_map_pair &degrees) {
 }
 
 template <class Iterator, class GainF>
-void process_partition(document_partition<Iterator> &partition, GainF gain_function) {
+void process_partition(document_partition<Iterator> &partition,
+                       GainF gain_function,
+                       int iterations = 20)
+{
     thread_local single_init_vector<size_t> left_degree(partition.left.term_count());
     left_degree.clear();
     thread_local single_init_vector<size_t> right_degree(partition.right.term_count());
@@ -224,7 +228,7 @@ void process_partition(document_partition<Iterator> &partition, GainF gain_funct
     compute_degrees(partition.right, right_degree);
     degree_map_pair degrees{left_degree, right_degree};
 
-    for (int iteration = 0; iteration < 20; ++iteration) {
+    for (int iteration = 0; iteration < iterations; ++iteration) {
         compute_gains(partition, degrees, gain_function);
         tbb::parallel_invoke(
             [&] {
@@ -292,11 +296,16 @@ void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, pr
         tbb::task_group level_group;
         std::for_each(first, last, [&level_group, last_level, &p](auto &node) {
             level_group.run([&]() {
-                std::sort(node.partition.left.begin(), node.partition.right.end());
+                std::sort(node.partition.left.begin(), node.partition.left.end());
+                std::sort(node.partition.right.begin(), node.partition.right.end());
                 if (node.cache) {
-                    process_partition(node.partition, compute_move_gains_caching<true, Iterator>);
+                    process_partition(node.partition,
+                                      compute_move_gains_caching<true, Iterator>,
+                                      node.iteration_count);
                 } else {
-                    process_partition(node.partition, compute_move_gains_caching<false, Iterator>);
+                    process_partition(node.partition,
+                                      compute_move_gains_caching<false, Iterator>,
+                                      node.iteration_count);
                 }
                 if (last_level) {
                     std::sort(node.partition.left.begin(), node.partition.left.end());

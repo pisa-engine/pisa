@@ -1,43 +1,78 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
+#include <KrovetzStemmer/KrovetzStemmer.hpp>
 #include <Porter2/Porter2.hpp>
-#include <boost/te.hpp>
+#include <boost/algorithm/string.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
+#include <trecpp/trecpp.hpp>
 #include <warcpp/warcpp.hpp>
 
 #include "forward_index_builder.hpp"
 
 using namespace pisa;
 
-std::function<std::optional<Document_Record>(std::istream &)> record_parser(
-    std::string const &type)
+template <typename ReadSubsequentRecordFn>
+[[nodiscard]] auto trec_record_parser(ReadSubsequentRecordFn read_subsequent_record)
+{
+    return [=](std::istream &in) -> std::optional<Document_Record> {
+        while (not in.eof()) {
+            auto record = trecpp::match(
+                read_subsequent_record(in),
+                [](trecpp::Record const &rec) {
+                    return std::make_optional<Document_Record>(
+                        std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
+                },
+                [](trecpp::Error const &error) {
+                    spdlog::warn("Skipped invalid record: {}", error);
+                    return std::optional<Document_Record>{};
+                });
+            if (record) {
+                return record;
+            }
+        }
+        return std::nullopt;
+    };
+}
+
+std::function<std::optional<Document_Record>(std::istream &)> record_parser(std::string const &type)
 {
     if (type == "plaintext") {
         return [](std::istream &in) -> std::optional<Document_Record> {
             Plaintext_Record record;
             if (in >> record) {
-                return std::make_optional<Document_Record>(record);
+                return std::make_optional<Document_Record>(std::move(record.trecid()),
+                                                           std::move(record.content()),
+                                                           std::move(record.url()));
             }
             return std::nullopt;
         };
     }
+    if (type == "trectext") {
+        return trec_record_parser(trecpp::text::read_subsequent_record);
+    }
+    if (type == "trecweb") {
+        return trec_record_parser(trecpp::web::read_subsequent_record);
+    }
     if (type == "warc") {
         return [](std::istream &in) -> std::optional<Document_Record> {
             while (not in.eof()) {
-                auto record = warcpp::match(warcpp::read_subsequent_record(in),
-                                            [](warcpp::Record const &rec) {
-                                                if (not rec.valid_response()) {
-                                                    return std::optional<Document_Record>{};
-                                                }
-                                                return std::make_optional<Document_Record>(rec);
-                                            },
-                                            [](warcpp::Error const &error) {
-                                                spdlog::warn("Skipped invalid record: {}", error);
-                                                return std::optional<Document_Record>{};
-                                            });
+                auto record = warcpp::match(
+                    warcpp::read_subsequent_record(in),
+                    [](warcpp::Record const &rec) {
+                        if (not rec.valid_response()) {
+                            return std::optional<Document_Record>{};
+                        }
+                        return std::make_optional<Document_Record>(std::move(rec.trecid()),
+                                                                   std::move(rec.content()),
+                                                                   std::move(rec.url()));
+                    },
+                    [](warcpp::Error const &error) {
+                        spdlog::warn("Skipped invalid record: {}", error);
+                        return std::optional<Document_Record>{};
+                    });
                 if (record) {
                     return record;
                 }
@@ -52,22 +87,31 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
 std::function<std::string(std::string &&)> term_processor(std::optional<std::string> const &type)
 {
     if (not type) {
-        return [](std::string &&term) -> std::string { return std::forward<std::string>(term); };
+        return [](std::string &&term) -> std::string {
+            boost::algorithm::to_lower(term);
+            return std::move(term);
+        };
     }
     if (*type == "porter2") {
         return [](std::string &&term) -> std::string {
-            std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
-                return std::tolower(c);
-            });
+            boost::algorithm::to_lower(term);
             return stem::Porter2{}.stem(term);
+        };
+    }
+    if (*type == "krovetz") {
+        static stem::KrovetzStemmer kstemmer;
+        return [](std::string &&term) -> std::string {
+            boost::algorithm::to_lower(term);
+            return kstemmer.kstem_stemmer(term);
         };
     }
     spdlog::error("Unknown stemmer type: {}", *type);
     std::abort();
 }
 
-std::function<void(std::string &&constent, std::function<void(std::string &&)>)>
-content_parser(std::optional<std::string> const &type) {
+std::function<void(std::string &&constent, std::function<void(std::string &&)>)> content_parser(
+    std::optional<std::string> const &type)
+{
     if (not type) {
         return parse_plaintext_content;
     }
@@ -78,7 +122,8 @@ content_parser(std::optional<std::string> const &type) {
     std::abort();
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     auto valid_basename = [](std::string const &basename) {
         boost::filesystem::path p(basename);
@@ -94,8 +139,8 @@ int main(int argc, char **argv) {
     std::string input_basename;
     std::string output_filename;
     std::string format = "plaintext";
-    size_t      threads = std::thread::hardware_concurrency();
-    ptrdiff_t   batch_size = 100'000;
+    size_t threads = std::thread::hardware_concurrency();
+    ptrdiff_t batch_size = 100'000;
     std::optional<std::string> stemmer = std::nullopt;
     std::optional<std::string> content_parser_type = std::nullopt;
     bool debug = false;
