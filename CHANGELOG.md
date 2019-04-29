@@ -1,3 +1,6 @@
+### Version 0.3.0
+- Parallel evaluate (#181)
+
 ### Version 0.2.0
 - Create CONTRIBUTING.md
 - Added Contributing link
