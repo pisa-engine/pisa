@@ -29,7 +29,7 @@ namespace options {
     int main(int argc, char const **argv)                                                \
     {                                                                                    \
         auto result = NAME##Settings::parse(argc, argv);                                 \
-        if (auto settings = std::get_if<InvertSettings>(&result); settings != nullptr) { \
+        if (auto settings = std::get_if<NAME##Settings>(&result); settings != nullptr) { \
             FUNCTION(*settings);                                                         \
         } else {                                                                         \
             return *std::get_if<int>(&result);                                           \
