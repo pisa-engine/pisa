@@ -35,7 +35,8 @@ using index_type          = invert::Inverted_Index<iterator_type>;
 {
     pisa::Plaintext_Record record;
     if (in >> record) {
-        return record;
+        return std::make_optional<Document_Record>(
+            std::move(record.trecid()), std::move(record.content()), std::move(record.url()));
     }
     return std::nullopt;
 }
@@ -57,8 +58,8 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
 {
     uint64_t seed = 88887;
     auto mapping = pisa::create_random_mapping(1000u, 13u, seed);
-    Vector<Shard_Id, int> counts(13, 0);
-    Vector<Document_Id> documents;
+    VecMap<Shard_Id, int> counts(13, 0);
+    VecMap<Document_Id> documents;
     for (auto &&[doc, shard] : mapping.entries()) {
         counts[shard] += 1;
         documents.push_back(doc);
@@ -73,7 +74,7 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
 
 auto round_robin_mapping(int document_count, int shard_count)
 {
-    Vector<Document_Id, Shard_Id> mapping(document_count);
+    VecMap<Document_Id, Shard_Id> mapping(document_count);
     Shard_Id shard = 0_s;
     for (auto doc : ranges::view::iota(0_d, Document_Id{document_count})) {
         mapping[doc] = shard++;

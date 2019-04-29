@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <gsl/span>
+#include <mio/mmap.hpp>
 #include <pstl/algorithm>
 #include <pstl/execution>
 #include <pstl/numeric>
@@ -22,10 +23,11 @@
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
 
+#include "binary_collection.hpp"
 #include "invert.hpp"
 #include "io.hpp"
 #include "type_safe.hpp"
-#include "vector.hpp"
+#include "vec_map.hpp"
 
 namespace pisa {
 
@@ -34,7 +36,7 @@ using pisa::literals::operator""_s;
 
 template <typename StreamRange>
 auto mapping_from_files(std::istream *full_titles, StreamRange &&shard_titles)
-    -> Vector<Document_Id, Shard_Id>
+    -> VecMap<Document_Id, Shard_Id>
 {
     std::unordered_map<std::string, Shard_Id> map;
     auto shard_id = 0_s;
@@ -53,7 +55,7 @@ auto mapping_from_files(std::istream *full_titles, StreamRange &&shard_titles)
         shard_id += 1;
     }
 
-    Vector<Document_Id, Shard_Id> result;
+    VecMap<Document_Id, Shard_Id> result;
     result.reserve(map.size());
     io::for_each_line(*full_titles, [&](auto const &title) {
         if (auto pos = map.find(title); pos != map.end()) {
@@ -67,7 +69,7 @@ auto mapping_from_files(std::istream *full_titles, StreamRange &&shard_titles)
 }
 
 auto mapping_from_files(std::string const &full_titles, gsl::span<std::string const> shard_titles)
-    -> Vector<Document_Id, Shard_Id>
+    -> VecMap<Document_Id, Shard_Id>
 {
     std::ifstream fis(full_titles);
     std::vector<std::unique_ptr<std::ifstream>> shard_is;
@@ -81,11 +83,11 @@ auto mapping_from_files(std::string const &full_titles, gsl::span<std::string co
 auto create_random_mapping(int document_count,
                            int shard_count,
                            std::optional<std::uint64_t> seed = std::nullopt)
-    -> Vector<Document_Id, Shard_Id>
+    -> VecMap<Document_Id, Shard_Id>
 {
     std::random_device rd;
     std::mt19937 g(seed.value_or(rd()));
-    Vector<Document_Id, Shard_Id> mapping(document_count);
+    VecMap<Document_Id, Shard_Id> mapping(document_count);
     auto shard_size = ceil_div(document_count, shard_count);
     auto documents = ranges::view::iota(0_d, Document_Id{document_count})
                      | ranges::to_vector
@@ -105,7 +107,7 @@ auto create_random_mapping(int document_count,
 auto create_random_mapping(std::string const &input_basename,
                            int shard_count,
                            std::optional<std::uint64_t> seed = std::nullopt)
-    -> Vector<Document_Id, Shard_Id>
+    -> VecMap<Document_Id, Shard_Id>
 {
     auto document_count = *(*binary_collection(input_basename.c_str()).begin()).begin();
     return create_random_mapping(document_count, shard_count, seed);
@@ -123,7 +125,7 @@ void copy_sequence(std::istream &is, std::ostream &os)
 
 auto rearrange_sequences(std::string const &input_basename,
                          std::string const &output_basename,
-                         Vector<Document_Id, Shard_Id> &mapping,
+                         VecMap<Document_Id, Shard_Id> &mapping,
                          std::optional<Shard_Id> shard_count = std::nullopt)
 {
     spdlog::info("Rearranging documents");
@@ -132,8 +134,8 @@ auto rearrange_sequences(std::string const &input_basename,
     }
     std::ifstream is(input_basename);
     std::ifstream dis(fmt::format("{}.documents", input_basename));
-    Vector<Shard_Id, std::ofstream> os;
-    Vector<Shard_Id, std::ofstream> dos;
+    VecMap<Shard_Id, std::ofstream> os;
+    VecMap<Shard_Id, std::ofstream> dos;
     for (auto shard : ranges::view::iota(0_s, *shard_count)) {
         spdlog::debug("Initializing file for shard {}", shard.as_int());
         auto filename = fmt::format("{}.{:03d}", output_basename, shard.as_int());
@@ -143,7 +145,7 @@ auto rearrange_sequences(std::string const &input_basename,
         dos.emplace_back(fmt::format("{}.documents", filename));
     }
     is.ignore(8);
-    Vector<Shard_Id, std::uint32_t> shard_sizes(shard_count->as_int(), 0u);
+    VecMap<Shard_Id, std::uint32_t> shard_sizes(shard_count->as_int(), 0u);
     spdlog::info("Copying sequences and titles");
     int idx = 0;
     for (auto shard : mapping) {
@@ -166,7 +168,7 @@ auto rearrange_sequences(std::string const &input_basename,
 auto process_shard(std::string const &input_basename,
                    std::string const &output_basename,
                    Shard_Id shard_id,
-                   Vector<Term_Id, std::string> const &terms)
+                   VecMap<Term_Id, std::string> const &terms)
 {
     auto basename = fmt::format("{}.{:03d}", output_basename, shard_id.as_int());
     auto shard = writable_binary_collection(basename.c_str());
@@ -204,9 +206,9 @@ auto process_shard(std::string const &input_basename,
 
 auto partition_fwd_index(std::string const &input_basename,
                          std::string const &output_basename,
-                         Vector<Document_Id, Shard_Id> &mapping)
+                         VecMap<Document_Id, Shard_Id> &mapping)
 {
-    auto terms = io::read_type_safe_string_vector<Term_Id>(fmt::format("{}.terms", input_basename));
+    auto terms = io::read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
     auto shard_ids = ranges::view::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);

@@ -20,7 +20,7 @@
 #include "io.hpp"
 #include "sharding.hpp"
 #include "util/util.hpp"
-#include "vector.hpp"
+#include "vec_map.hpp"
 
 using namespace pisa;
 using ranges::view::chunk;

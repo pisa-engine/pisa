@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "vector.hpp"
+#include "vec_map.hpp"
 
 namespace pisa::io {
 
@@ -41,10 +41,10 @@ template <typename Integral>
 }
 
 template <typename Key>
-[[nodiscard]] inline auto read_type_safe_string_vector(std::string const &filename)
-    -> Vector<Key, std::string>
+[[nodiscard]] inline auto read_string_vec_map(std::string const &filename)
+    -> VecMap<Key, std::string>
 {
-    Vector<Key, std::string> vec;
+    VecMap<Key, std::string> vec;
     std::ifstream is(filename);
     std::string line;
     while (std::getline(is, line)) {

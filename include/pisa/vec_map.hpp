@@ -7,14 +7,15 @@
 
 namespace pisa {
 
-/// A (potentially) type-safe vector.
+/// An associative map from type `K` that can be cast to `size_type`.
+/// It maps all values between 0 and `size()`.
 ///
 /// It derives from `std::vector<V>` and works essentially like one.
 /// The difference is that you define a key type as well, the outcome
 /// being that if you use a strong type key, you can differentiate between
-/// `Vector<IndexType_1, V>` and `Vector<IndexType_2, V>`.
+/// `VecMap<IndexType_1, V>` and `VecMap<IndexType_2, V>`.
 template <typename K, typename V = K, typename Allocator = std::allocator<V>>
-class Vector : protected std::vector<V> {
+class VecMap : protected std::vector<V> {
    public:
     using typename std::vector<V, Allocator>::value_type;
     using typename std::vector<V, Allocator>::reference;
@@ -57,38 +58,38 @@ class Vector : protected std::vector<V> {
     using std::vector<V, Allocator>::resize;
     using std::vector<V, Allocator>::swap;
 
-    Vector() noexcept(noexcept(Allocator())) : std::vector<V, Allocator>() {}
-    explicit Vector(Allocator const &alloc) noexcept : std::vector<V, Allocator>(alloc) {}
-    Vector(size_type count, V const &value, Allocator const &alloc = Allocator())
+    VecMap() noexcept(noexcept(Allocator())) : std::vector<V, Allocator>() {}
+    explicit VecMap(Allocator const &alloc) noexcept : std::vector<V, Allocator>(alloc) {}
+    VecMap(size_type count, V const &value, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(count, value, alloc)
     {}
-    explicit Vector(size_type count, Allocator const &alloc = Allocator())
+    explicit VecMap(size_type count, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(count, alloc)
     {}
     template <class InputIt>
-    Vector(InputIt first, InputIt last, Allocator const &alloc = Allocator())
+    VecMap(InputIt first, InputIt last, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(first, last, alloc)
     {}
-    Vector(Vector const &other) : std::vector<V, Allocator>(other) {}
-    Vector(Vector const &other, const Allocator &alloc) : std::vector<V, Allocator>(other, alloc) {}
-    Vector(Vector &&other) noexcept : std::vector<V, Allocator>(other) {}
-    Vector(Vector &&other, Allocator const &alloc) : std::vector<V, Allocator>(other, alloc) {}
-    Vector(std::initializer_list<V> init, Allocator const &alloc = Allocator())
+    VecMap(VecMap const &other) : std::vector<V, Allocator>(other) {}
+    VecMap(VecMap const &other, const Allocator &alloc) : std::vector<V, Allocator>(other, alloc) {}
+    VecMap(VecMap &&other) noexcept : std::vector<V, Allocator>(other) {}
+    VecMap(VecMap &&other, Allocator const &alloc) : std::vector<V, Allocator>(other, alloc) {}
+    VecMap(std::initializer_list<V> init, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(init, alloc)
     {}
-    ~Vector() = default;
+    ~VecMap() = default;
 
-    Vector &operator=(Vector const &other)
+    VecMap &operator=(VecMap const &other)
     {
         std::vector<V, Allocator>::operator=(other);
         return *this;
     };
-    Vector &operator=(Vector &&other) noexcept
+    VecMap &operator=(VecMap &&other) noexcept
     {
         std::vector<V, Allocator>::operator=(other);
         return *this;
     };
-    Vector &operator=(std::initializer_list<V> init)
+    VecMap &operator=(std::initializer_list<V> init)
     {
         std::vector<V, Allocator>::operator=(init);
         return *this;
@@ -110,13 +111,6 @@ class Vector : protected std::vector<V> {
 
     std::vector<V> const &as_vector() const { return *this; }
 
-    //auto entries()
-    //{
-    //    return iter::zip(
-    //        iter::imap([](auto const& idx) { return static_cast<K>(idx); }, iter::range(size())),
-    //        *this);
-    //}
-
     [[nodiscard]] auto entries() const
     {
         return ranges::view::zip(ranges::view::iota(static_cast<K>(0u), static_cast<K>(size())),
@@ -125,38 +119,38 @@ class Vector : protected std::vector<V> {
 };
 
 template <class K, class V, class Alloc>
-void swap(Vector<K, V, Alloc> &lhs, Vector<K, V, Alloc> &rhs) noexcept(noexcept(lhs.swap(rhs)))
+void swap(VecMap<K, V, Alloc> &lhs, VecMap<K, V, Alloc> &rhs) noexcept(noexcept(lhs.swap(rhs)))
 {
     return lhs.swap(rhs);
 }
 
 template <class K, class V, class Alloc>
-bool operator==(const Vector<K, V, Alloc> &lhs, const Vector<K, V, Alloc> &rhs)
+bool operator==(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() == rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-bool operator!=(const Vector<K, V, Alloc> &lhs, const Vector<K, V, Alloc> &rhs)
+bool operator!=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() != rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-bool operator<(const Vector<K, V, Alloc> &lhs, const Vector<K, V, Alloc> &rhs)
+bool operator<(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() < rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-bool operator<=(const Vector<K, V, Alloc> &lhs, const Vector<K, V, Alloc> &rhs)
+bool operator<=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() <= rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-bool operator>(const Vector<K, V, Alloc> &lhs, const Vector<K, V, Alloc> &rhs)
+bool operator>(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() > rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-bool operator>=(const Vector<K, V, Alloc> &lhs, const Vector<K, V, Alloc> &rhs)
+bool operator>=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() >= rhs.as_vector();
 }
