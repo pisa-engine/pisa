@@ -122,15 +122,19 @@ void evaluate_queries(const std::string &index_filename,
     auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
     auto docmap = Payload_Vector<>::from(*source);
 
+    std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
-    std::vector<std::string> trec_results(queries.size());
-
     tbb::parallel_for (size_t(0), queries.size(), [&] (size_t query_idx) {
         auto qid = queries[query_idx].id;
-        auto results = query_fun(queries[query_idx].terms);
-        std::stringstream result_list;
+        raw_results[query_idx] = query_fun(queries[query_idx].terms);
+    });
+    auto end_batch = std::chrono::steady_clock::now();
+   
+    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) { 
+        auto results = raw_results[query_idx];
+        auto qid = queries[query_idx].id;
         for (auto && [ rank, result ] : enumerate(results)) {
-            result_list << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
+            std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      qid.value_or(std::to_string(query_idx)),
                                      iteration,
                                      docmap[result.second],
@@ -138,11 +142,6 @@ void evaluate_queries(const std::string &index_filename,
                                      result.first,
                                      run_id);
         }
-        trec_results[query_idx] = result_list.str();
-    });
-    auto end_batch = std::chrono::steady_clock::now();
-    for (auto const &result : trec_results) {
-        std::cout << result << std::endl;
     }
     auto end_print = std::chrono::steady_clock::now();
     double batch_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
