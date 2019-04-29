@@ -22,7 +22,7 @@
 #include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
-#include "program/invert.hpp"
+#include "command/invert.hpp"
 #include "util/util.hpp"
 
 namespace pisa {

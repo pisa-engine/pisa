@@ -6,7 +6,7 @@
 #include <variant>
 #include <vector>
 
-#include "pisa/program/invert.hpp"
+#include "command/invert.hpp"
 
 using namespace pisa;
 

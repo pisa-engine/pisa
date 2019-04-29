@@ -21,4 +21,4 @@ endforeach(TEST_SRC)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-add_subdirectory(program)
+add_subdirectory(command)
