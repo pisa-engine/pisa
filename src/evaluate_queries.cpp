@@ -123,24 +123,32 @@ void evaluate_queries(const std::string &index_filename,
     auto docmap = Payload_Vector<>::from(*source);
 
     auto start_batch = std::chrono::steady_clock::now();
-    tbb::parallel_for (size_t(0), size_t(queries.size()), [&] (size_t query_idx) {
+    std::vector<std::string> trec_results(queries.size());
+
+    tbb::parallel_for (size_t(0), queries.size(), [&] (size_t query_idx) {
         auto qid = queries[query_idx].id;
         auto results = query_fun(queries[query_idx].terms);
         std::stringstream result_list;
         for (auto && [ rank, result ] : enumerate(results)) {
             result_list << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     qid.value_or(std::to_string(0)),
+                                     qid.value_or(std::to_string(query_idx)),
                                      iteration,
                                      docmap[result.second],
                                      rank,
                                      result.first,
                                      run_id);
         }
-        std::cout << result_list.str() << std::endl;
+        trec_results[query_idx] = result_list.str();
     });
     auto end_batch = std::chrono::steady_clock::now();
+    for (auto const &result : trec_results) {
+        std::cout << result << std::endl;
+    }
+    auto end_print = std::chrono::steady_clock::now();
     double batch_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
+    double batch_with_print_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
     spdlog::info("Time taken to process queries: {}ms", batch_ms);
+    spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
 }
 
 using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
