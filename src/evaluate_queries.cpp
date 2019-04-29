@@ -12,6 +12,10 @@
 
 #include "mappable/mapper.hpp"
 
+#include <thread>
+#include "tbb/parallel_for.h"
+#include "tbb/task_scheduler_init.h"
+
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
@@ -118,11 +122,20 @@ void evaluate_queries(const std::string &index_filename,
     auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
     auto docmap = Payload_Vector<>::from(*source);
 
-    for (auto const & [ qid, query ] : enumerate(queries)) {
-        auto results = query_fun(query.terms);
+    std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
+    auto start_batch = std::chrono::steady_clock::now();
+    tbb::parallel_for (size_t(0), queries.size(), [&] (size_t query_idx) {
+        auto qid = queries[query_idx].id;
+        raw_results[query_idx] = query_fun(queries[query_idx].terms);
+    });
+    auto end_batch = std::chrono::steady_clock::now();
+   
+    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) { 
+        auto results = raw_results[query_idx];
+        auto qid = queries[query_idx].id;
         for (auto && [ rank, result ] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     query.id.value_or(std::to_string(qid)),
+                                     qid.value_or(std::to_string(query_idx)),
                                      iteration,
                                      docmap[result.second],
                                      rank,
@@ -130,6 +143,11 @@ void evaluate_queries(const std::string &index_filename,
                                      run_id);
         }
     }
+    auto end_print = std::chrono::steady_clock::now();
+    double batch_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
+    double batch_with_print_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
+    spdlog::info("Time taken to process queries: {}ms", batch_ms);
+    spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
 }
 
 using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
@@ -150,6 +168,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> stopwords_filename;
     std::optional<std::string> stemmer = std::nullopt;
     uint64_t k = configuration::get().k;
+    size_t threads = std::thread::hardware_concurrency();
     bool compressed = false;
 
     CLI::App app{"Retrieves query results in TREC format."};
@@ -159,6 +178,7 @@ int main(int argc, const char **argv)
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
+    app.add_option("--threads", threads, "Thread Count");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-k", k, "k value");
@@ -166,6 +186,9 @@ int main(int argc, const char **argv)
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
+
+    tbb::task_scheduler_init init(threads);
+    spdlog::info("Number of threads: {}", threads);
 
     std::vector<Query> queries;
     auto process_term = query::term_processor(terms_file, stemmer);
