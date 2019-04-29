@@ -1,3 +1,13 @@
+### Version 0.3.0
+- Parallel evaluate (#181)
+
+### Version 0.2.0
+- Create CONTRIBUTING.md
+- Added Contributing link
+- Update README.md
+- Implement tokenizer and use for query parsing. (#178)
+- Update default params for bmw25 to b=0.4 and k1=0.9 (#171)
+
 ### Version 0.1.0
 - Initial commit
 - README

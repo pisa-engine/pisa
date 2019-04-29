@@ -6,8 +6,8 @@
 namespace pisa {
 
     struct bm25 {
-        static constexpr float b = 0.5;
-        static constexpr float k1 = 1.2;
+        static constexpr float b = 0.4;
+        static constexpr float k1 = 0.9;
 
 
         static float doc_term_weight(uint64_t freq, float norm_len)
