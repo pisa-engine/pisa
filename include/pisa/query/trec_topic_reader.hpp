@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <optional>
 #include <sstream>
@@ -83,6 +84,7 @@ class trec_topic_reader {
         consume(m_is, TITLE);
         read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.title = boost::algorithm::trim_copy(os.str());
+        boost::replace_all(topic.title, "\n", " ");
         consume(m_is, TITLE_END, false);
 
         os.str("");
@@ -90,6 +92,7 @@ class trec_topic_reader {
         consume(m_is, DESC_ATT, false);
         read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.desc = boost::algorithm::trim_copy(os.str());
+        boost::replace_all(topic.desc, "\n", " ");
         consume(m_is, DESC_END, false);
 
         os.str("");
@@ -97,6 +100,7 @@ class trec_topic_reader {
         consume(m_is, NARR_ATT, false);
         read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.narr = boost::algorithm::trim_copy(os.str());
+        boost::replace_all(topic.narr, "\n", " ");
         consume(m_is, NARR_END, false);
 
         consume(m_is, TOP_END);
