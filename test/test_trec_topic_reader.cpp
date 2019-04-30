@@ -59,9 +59,9 @@ TEST_CASE("Read multiple topics", "[unit]") {
     topic = reader.next_topic();
     REQUIRE(topic);
     REQUIRE((*topic).num == "302");
-    REQUIRE((*topic).title == "other title.  title continuation.");
+    REQUIRE((*topic).title == "other title.   title continuation.");
     REQUIRE((*topic).desc == "Some other description.");
-    REQUIRE((*topic).narr == "Some other narrative... narrative");
+    REQUIRE((*topic).narr == "Some other narrative ... narrative");
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 

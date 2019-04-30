@@ -1,6 +1,7 @@
 #pragma once
 
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <optional>
 #include <sstream>
