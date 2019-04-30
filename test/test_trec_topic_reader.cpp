@@ -35,16 +35,18 @@ TEST_CASE("Read multiple topics", "[unit]") {
         "<desc> Description: \n"
         "Some description here. \n"
         "<narr> Narrative:\n"
-        "Some narrative content. \n"
+        "Some narrative content.\n"
+        "Some other narrative content. \n"
         "</top>\n"
         "\n\n\n\n"
         "<top>\n"
         "<num> Number: 302 \n"
         "<title> other title. \n"
+        " title continuation. \n"
         "<desc>  \n"
         "Some other description. \n"
         "<narr>\n"
-        "Some other narrative. \n"
+        "Some other narrative\n... narrative"
         "</top>\n");
 
     pisa::trec_topic_reader reader(is);
@@ -53,13 +55,13 @@ TEST_CASE("Read multiple topics", "[unit]") {
     REQUIRE((*topic).num == "301");
     REQUIRE((*topic).title == "title here.");
     REQUIRE((*topic).desc == "Some description here.");
-    REQUIRE((*topic).narr == "Some narrative content.");
+    REQUIRE((*topic).narr == "Some narrative content. Some other narrative content.");
     topic = reader.next_topic();
     REQUIRE(topic);
     REQUIRE((*topic).num == "302");
-    REQUIRE((*topic).title == "other title.");
+    REQUIRE((*topic).title == "other title.  title continuation.");
     REQUIRE((*topic).desc == "Some other description.");
-    REQUIRE((*topic).narr == "Some other narrative.");
+    REQUIRE((*topic).narr == "Some other narrative... narrative");
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
