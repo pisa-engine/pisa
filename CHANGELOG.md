@@ -1,3 +1,6 @@
+### Version 0.3.1
+- Patch extract query (#186)
+
 ### Version 0.3.0
 - Parallel evaluate (#181)
 
