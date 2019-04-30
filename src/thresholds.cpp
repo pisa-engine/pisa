@@ -48,7 +48,7 @@ void thresholds(const std::string &index_filename,
 
     wand_query wand_q(k);
     for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, query.terms), index.num_docs());
+        wand_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
         auto  results   = wand_q.topk();
         float threshold = 0.0;
         if (results.size() == k) {

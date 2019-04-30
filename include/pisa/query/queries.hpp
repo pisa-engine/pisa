@@ -37,6 +37,7 @@ using TermProcessor = std::function<std::optional<term_id_type>(std::string &&)>
 struct Query {
     std::optional<std::string> id;
     std::vector<term_id_type>  terms;
+    std::vector<float>  term_weights;
 };
 
 [[nodiscard]] inline auto parse_query(
@@ -70,7 +71,7 @@ struct Query {
             spdlog::warn("Could not parse `{}` to a number", raw_term);
         }
     }
-    return {id, parsed_query};
+    return {id, parsed_query, {}};
 }
 
 bool read_query(term_id_vec &ret, std::istream &is = std::cin,

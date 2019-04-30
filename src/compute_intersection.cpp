@@ -35,7 +35,7 @@ void intersect(const std::string &index_filename,
 
     and_query<false> and_q;
     for (auto const &query : queries) {
-        auto results = and_q(make_scored_cursors(index, wdata, query.terms), index.num_docs());
+        auto results = and_q(make_scored_cursors(index, wdata, query), index.num_docs());
         for (auto &&t : query.terms) {
             std::cout << t << " ";
         }

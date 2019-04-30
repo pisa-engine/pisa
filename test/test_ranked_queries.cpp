@@ -34,11 +34,14 @@ struct IndexData {
         }
         builder.build(index);
 
+        auto process_term = [](auto str) { return std::stoi(str); };
+
         term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
-        while (read_query(q, qfile)) {
-            queries.push_back(q);
-        }
+        auto push_query = [&](std::string const &query_line) {
+            queries.push_back(parse_query(query_line, process_term, {}));
+        };
+        io::for_each_line(qfile, push_query);
 
         std::string t;
         std::ifstream tin(PISA_SOURCE_DIR "/test/test_data/top5_thresholds");
@@ -59,7 +62,7 @@ struct IndexData {
     binary_freq_collection collection;
     binary_collection document_sizes;
     Index index;
-    std::vector<term_id_vec> queries;
+    std::vector<Query> queries;
     std::vector<float> thresholds;
     wand_data<bm25, wand_data_raw<bm25>> wdata;
 };

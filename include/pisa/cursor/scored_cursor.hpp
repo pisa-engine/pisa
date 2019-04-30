@@ -17,7 +17,8 @@ struct scored_cursor {
 
 template <typename Index, typename WandType>
 [[nodiscard]] auto make_scored_cursors(Index const &index, WandType const &wdata,
-                                       term_id_vec terms) {
+                                       Query query) {
+    auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
     using scorer_type     = bm25;
     using Scorer          = Score_Function<scorer_type, WandType>;
