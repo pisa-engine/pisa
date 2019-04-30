@@ -98,13 +98,13 @@ TEMPLATE_TEST_CASE("Ranked query test",
                    wand_query,
                    maxscore_query,
                    block_max_wand_query,
-                   block_max_maxscore_query)
-                   //range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-                   //range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
-                   //range_query_128<wand_query>,
-                   //range_query_128<maxscore_query>,
-                   //range_query_128<block_max_wand_query>,
-                   //range_query_128<block_max_maxscore_query>)
+                   block_max_maxscore_query,
+                   range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
+                   range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+                   range_query_128<wand_query>,
+                   range_query_128<maxscore_query>,
+                   range_query_128<block_max_wand_query>,
+                   range_query_128<block_max_maxscore_query>)
 {
     auto data = IndexData<single_index>::get();
     TestType op_q(10);
@@ -121,30 +121,30 @@ TEMPLATE_TEST_CASE("Ranked query test",
     }
 }
 
-TEMPLATE_TEST_CASE("Ranked query test",
-                   "[query][ranked][integration]",
-                   range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-                   range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
-                   range_query_128<wand_query>,
-                   range_query_128<maxscore_query>,
-                   range_query_128<block_max_wand_query>,
-                   range_query_128<block_max_maxscore_query>)
-{
-    auto data = IndexData<single_index>::get();
-    TestType op_q(10);
-    ranked_or_query or_q(10);
+// TEMPLATE_TEST_CASE("Ranked query test",
+//                    "[query][ranked][integration]",
+//                    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
+//                    range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+//                    range_query_128<wand_query>,
+//                    range_query_128<maxscore_query>,
+//                    range_query_128<block_max_wand_query>,
+//                    range_query_128<block_max_maxscore_query>)
+// {
+//     auto data = IndexData<single_index>::get();
+//     TestType op_q(10);
+//     ranked_or_query or_q(10);
 
-    for (auto const &q : data->queries) {
-        or_q(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, data->wdata_range, q),
-             data->index.num_docs());
-        REQUIRE(or_q.topk().size() == op_q.topk().size());
-        for (size_t i = 0; i < or_q.topk().size(); ++i) {
-            REQUIRE(or_q.topk()[i].first ==
-                    Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
-        }
-    }
-}
+//     for (auto const &q : data->queries) {
+//         or_q(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
+//         op_q(make_block_max_scored_cursors(data->index, data->wdata_range, q),
+//              data->index.num_docs());
+//         REQUIRE(or_q.topk().size() == op_q.topk().size());
+//         for (size_t i = 0; i < or_q.topk().size(); ++i) {
+//             REQUIRE(or_q.topk()[i].first ==
+//                     Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+//         }
+//     }
+// }
 
 TEST_CASE("Top k")
 {
