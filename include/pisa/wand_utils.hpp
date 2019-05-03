@@ -11,10 +11,13 @@ enum class partition_type { fixed_blocks, variable_blocks };
 template <typename Scorer = bm25>
 std::pair<std::vector<uint32_t>, std::vector<float>>
 static_block_partition(binary_freq_collection::sequence const &seq,
-                       std::vector<float> const &norm_lens) {
+                       std::vector<float> const &norm_lens,
+                       const uint64_t in_block_size = 0) {
   std::vector<uint32_t> block_docid;
   std::vector<float> block_max_term_weight;
   uint64_t block_size = configuration::get().block_size;
+  if (in_block_size > 0)
+      block_size = in_block_size;
 
   // Auxiliary vector
   float max_score = 0;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
 
 #include "binary_freq_collection.hpp"
@@ -22,7 +23,7 @@ namespace pisa {
 
         template<typename LengthsIterator>
         wand_data(LengthsIterator len_it, uint64_t num_docs,
-                      binary_freq_collection const &coll, partition_type type = partition_type::fixed_blocks, const float lambda = 0.0f) {
+                      binary_freq_collection const &coll, partition_type type = partition_type::fixed_blocks, boost::variant<float, uint64_t> block_size = uint64_t(0)) {
             std::vector<float> norm_lens(num_docs);
             std::vector<float> max_term_weight;
             global_parameters params;
@@ -44,7 +45,7 @@ namespace pisa {
             {
                 pisa::progress progress("Processing posting lists", coll.size());
                 for (auto const &seq: coll) {
-                    auto v = builder.add_sequence(seq, coll, norm_lens, lambda);
+                    auto v = builder.add_sequence(seq, coll, norm_lens, block_size);
                     max_term_weight.push_back(v);
                     progress.update(1);
                 }

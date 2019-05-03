@@ -60,7 +60,7 @@ class wand_data_range {
         float add_sequence(binary_freq_collection::sequence const &term_seq,
                            binary_freq_collection const &coll,
                            std::vector<float> const &norm_lens,
-                           [[maybe_unused]] float lambda)
+                           [[maybe_unused]] boost::variant<float, uint64_t> block_size = uint64_t(0))
         {
             float max_score = 0.0f;
 
