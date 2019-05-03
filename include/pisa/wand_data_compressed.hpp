@@ -112,7 +112,7 @@ namespace {
                 spdlog::info("Storing max weight for each list and for each block...");
             }
 
-            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens, boost::variant<float, uint64_t> block_size = uint64_t(0)){
+            float add_sequence(binary_freq_collection::sequence const &seq, binary_freq_collection const &coll, std::vector<float> const & norm_lens, boost::variant<float, uint64_t> block_size) {
 
                 if (seq.docs.size() > configuration::get().threshold_wand_list) {
 

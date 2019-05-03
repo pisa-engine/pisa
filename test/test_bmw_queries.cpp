@@ -25,7 +25,9 @@ struct IndexData {
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
-                partition_type::variable_blocks)
+                partition_type::variable_blocks,
+                boost::variant<float, uint64_t>(float(0.0f)))
+ 
     {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
@@ -95,7 +97,8 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
         WandTypePlain wdata_fixed(data->document_sizes.begin()->begin(),
                                   data->collection.num_docs(),
                                   data->collection,
-                                  partition_type::fixed_blocks);
+                                  partition_type::fixed_blocks,
+                                  boost::variant<float, uint64_t>(uint64_t(0)));
         test(wdata_fixed);
     }
     SECTION("Uniform")
@@ -103,7 +106,8 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
         WandTypeUniform wdata_uniform(data->document_sizes.begin()->begin(),
                                       data->collection.num_docs(),
                                       data->collection,
-                                      partition_type::variable_blocks);
+                                      partition_type::variable_blocks,
+                                      boost::variant<float, uint64_t>(float(0.0f)));
         test(wdata_uniform);
     }
 }

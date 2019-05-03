@@ -48,7 +48,13 @@ int main(int argc, const char **argv)
     binary_collection sizes_coll((input_basename + ".sizes").c_str());
     binary_freq_collection coll(input_basename.c_str());
 
+    // Initialize the variant to the correct type
     boost::variant<float, uint64_t> block_size = uint64_t(0);
+    if (variable_block) {
+        block_size = 0.0f;
+    }
+
+    // Set block size based on configuration
     if (lambda != 0.0f && variable_block) {
         block_size = lambda;
     } else if (lambda != 0.0f && !variable_block) {
