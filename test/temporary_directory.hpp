@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 #include "boost/filesystem.hpp"
 
 struct Temporary_Directory {
@@ -16,6 +18,7 @@ struct Temporary_Directory {
         if (boost::filesystem::exists(dir_)) {
             boost::filesystem::remove_all(dir_);
         }
+        std::cerr << "Removed a tmp dir " << dir_.c_str() << '\n';
     }
 
     [[nodiscard]] auto path() -> boost::filesystem::path const & { return dir_; }

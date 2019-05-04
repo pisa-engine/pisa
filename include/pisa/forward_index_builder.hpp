@@ -26,8 +26,9 @@
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "parsing/html.hpp"
-#include "tokenizer.hpp"
 #include "payload_vector.hpp"
+#include "type_safe.hpp"
+#include "tokenizer.hpp"
 #include "warcpp/warcpp.hpp"
 
 namespace pisa {
@@ -55,40 +56,6 @@ using process_term_function_type = std::function<std::string(std::string &&)>;
 using process_content_function_type =
     std::function<void(std::string &&, std::function<void(std::string &&)>)>;
 
-template <class Tag, class T, T default_value = 0>
-class Id {
-   public:
-    Id() : m_val(default_value) {}
-    explicit Id(T val) : m_val(val) {}
-    explicit operator T() const { return m_val; }
-
-    [[nodiscard]] bool operator==(Id other) const { return m_val == other.m_val; }
-    [[nodiscard]] bool operator!=(Id other) const { return m_val != other.m_val; }
-
-    Id &operator++() {
-        ++m_val;
-        return *this;
-    }
-
-    [[nodiscard]] Id operator+(T difference) const { return Id(m_val + difference); }
-    Id &operator+=(T difference) {
-        m_val += difference;
-        return *this;
-    }
-
-   private:
-    T m_val;
-};
-
-template <class Tag, class T, T default_value>
-std::ostream &operator<<(std::ostream &os, Id<Tag, T, default_value> const &id) {
-    return os << static_cast<T>(id);
-}
-
-struct document_id_tag {};
-using Document_Id = Id<document_id_tag, std::ptrdiff_t>;
-struct term_id_tag {};
-using Term_Id = Id<term_id_tag, std::ptrdiff_t>;
 
 void parse_plaintext_content(std::string &&content, std::function<void(std::string &&)> process) {
     std::istringstream content_stream(content);
@@ -325,7 +292,7 @@ class Forward_Index_Builder {
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
-                    term_id = static_cast<std::ptrdiff_t>(mapping[term_id]);
+                    term_id = mapping[term_id].as_int();
                 }
             }
         }
@@ -352,6 +319,10 @@ class Forward_Index_Builder {
                std::ptrdiff_t                batch_size,
                std::size_t                   threads) const
     {
+        if (threads < 2) {
+            spdlog::error("Building forward index requires at least 2 threads");
+            std::abort();
+        }
         Document_Id    first_document{0};
         std::ptrdiff_t batch_number = 0;
 
@@ -394,7 +365,7 @@ class Forward_Index_Builder {
             }
         }
         batch_group.wait();
-        merge(output_file, static_cast<ptrdiff_t>(first_document), batch_number);
+        merge(output_file, first_document.as_int(), batch_number);
         remove_batches(output_file, batch_number);
     }
 
