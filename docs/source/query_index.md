@@ -48,7 +48,11 @@ If you want to compress the file append `--compress` at the end of the command.
 When using variable-sized blocks (for VBMW) via the `--variable-block` parameter,
 you can also specify lambda with the `-l <float>` or `--lambda <float>` flags. 
 The value of lambda impacts the mean size of the variable blocks that are
-output. See the VBMW paper (listed below) for more details.
+output. See the VBMW paper (listed below) for more details. If using fixed-sized
+blocks, which is the default, you can supply the desired block size using the
+`-b <UINT> ` or `--block-size <UINT>` arguments. Note that if using fixed/variable
+sized blocks, and the `-l` or `-b` parameters are not set, the default parameters
+will be used from the configuration file `configuration.hpp`.
 
 
 ## Query algorithms
