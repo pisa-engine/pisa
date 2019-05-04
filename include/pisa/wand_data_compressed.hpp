@@ -109,7 +109,7 @@ class wand_data_compressed {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
 
                 auto t =
-                    (block_size.type() == typeid(FixedBlock))
+                    block_size.type() == typeid(FixedBlock)
                         ? static_block_partition(
                               seq, norm_lens, boost::get<FixedBlock>(block_size).size)
                         : variable_block_partition(

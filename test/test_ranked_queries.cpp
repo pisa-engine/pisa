@@ -23,7 +23,11 @@ struct IndexData {
     IndexData()
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
-          wdata(document_sizes.begin()->begin(), collection.num_docs(), collection)
+          wdata(document_sizes.begin()->begin(),
+                collection.num_docs(),
+                collection,
+                BlockSize(FixedBlock()))
+
     {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
@@ -76,19 +80,21 @@ class ranked_or_taat_query_acc : public ranked_or_taat_query {
     using ranked_or_taat_query::ranked_or_taat_query;
 
     template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
-        Acc                          accumulator(max_docid);
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid)
+    {
+        Acc accumulator(max_docid);
         return ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
     }
 };
 
-template<typename T>
+template <typename T>
 class range_query_128 : public range_query<T> {
    public:
     using range_query<T>::range_query;
 
     template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid)
+    {
         return range_query<T>::operator()(cursors, max_docid, 128);
     }
 };

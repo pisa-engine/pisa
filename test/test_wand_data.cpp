@@ -7,11 +7,11 @@
 
 #include "test_common.hpp"
 
-#include "pisa_config.hpp"
 #include "index_types.hpp"
+#include "pisa_config.hpp"
 #include "query/queries.hpp"
-#include "wand_data_range.hpp"
 #include "scorer/score_function.hpp"
+#include "wand_data_range.hpp"
 
 using namespace pisa;
 
@@ -23,14 +23,18 @@ TEST_CASE("wand_data_range")
 
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
-    WandType wdata_range(document_sizes.begin()->begin(), collection.num_docs(), collection);
+    WandType wdata_range(document_sizes.begin()->begin(),
+                         collection.num_docs(),
+                         collection,
+                         BlockSize(FixedBlock()));
+
     SECTION("Precomputed block-max scores")
     {
         size_t term_id = 0;
-        for (auto const &seq: collection) {
+        for (auto const &seq : collection) {
             if (seq.docs.size() >= 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
-                auto w   = wdata_range.getenum(term_id);
+                auto w = wdata_range.getenum(term_id);
                 for (auto &&[docid, freq] : ranges::view::zip(seq.docs, seq.freqs)) {
                     float score = Scorer::doc_term_weight(freq, wdata_range.norm_len(docid));
                     w.next_geq(docid);
@@ -59,18 +63,17 @@ TEST_CASE("wand_data_range")
     SECTION("Compute at run time")
     {
         size_t term_id = 0;
-        for (auto const &seq: collection) {
+        for (auto const &seq : collection) {
             auto list = index[term_id];
             if (seq.docs.size() < 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
-                auto &w   = wdata_range.get_block_wand();
+                auto &w = wdata_range.get_block_wand();
                 Score_Function<Scorer, WandType> score_func{1.f, wdata_range};
                 const mapper::mappable_vector<float> bm =
                     w.compute_block_max_scores(list, score_func);
                 WandTypeRange::enumerator we(0, bm);
                 for (auto &&[pos, docid, freq] :
-                     ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs))
-                {
+                     ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs)) {
                     float score = Scorer::doc_term_weight(freq, wdata_range.norm_len(docid));
                     we.next_geq(docid);
                     CHECKED_ELSE(we.score() >= score)
@@ -110,4 +113,3 @@ TEST_CASE("wand_data_range")
         }
     }
 }
-

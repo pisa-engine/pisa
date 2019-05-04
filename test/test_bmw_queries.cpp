@@ -3,11 +3,11 @@
 
 #include "test_common.hpp"
 
-#include "pisa_config.hpp"
-#include "index_types.hpp"
-#include "query/queries.hpp"
-#include "cursor/max_scored_cursor.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "index_types.hpp"
+#include "pisa_config.hpp"
+#include "query/queries.hpp"
 
 using namespace pisa;
 
@@ -26,7 +26,7 @@ struct IndexData {
                 collection.num_docs(),
                 collection,
                 BlockSize(VariableBlock()))
- 
+
     {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {

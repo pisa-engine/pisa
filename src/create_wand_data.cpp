@@ -19,8 +19,8 @@ int main(int argc, const char **argv)
 {
     using namespace pisa;
 
-    float lambda = 0.0f;
-    uint64_t fixed_block_size = 0;
+    std::optional<float> lambda{};
+    std::optional<uint64_t> fixed_block_size{};
     std::string input_basename;
     std::string output_filename;
     bool variable_block = false;
@@ -48,18 +48,13 @@ int main(int argc, const char **argv)
     binary_collection sizes_coll((input_basename + ".sizes").c_str());
     binary_freq_collection coll(input_basename.c_str());
 
-    // Initialize the variant to the correct type, default arguments from config
-    BlockSize block_size = FixedBlock();
-    if (variable_block) {
-        block_size = VariableBlock();
-    }
-
-    // Set block size based on configuration
-    if (lambda != 0.0f && variable_block) {
-        block_size = VariableBlock(lambda);
-    } else if (fixed_block_size != 0 && !variable_block) {
-        block_size = FixedBlock(fixed_block_size);
-    }
+    auto const block_size = [&]() -> BlockSize {
+        if (variable_block) {
+            return fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
+        } else {
+            return lambda ? VariableBlock(*lambda) : VariableBlock();
+        }
+    }();
 
     if (compress) {
         wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wdata(
