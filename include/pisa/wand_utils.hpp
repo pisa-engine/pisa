@@ -1,5 +1,7 @@
 #pragma once
 
+#include "boost/variant.hpp"
+
 #include "binary_freq_collection.hpp"
 #include "configuration.hpp"
 #include "score_opt_partition.hpp"
