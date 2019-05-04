@@ -31,50 +31,47 @@ int main(int argc, const char **argv)
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
     auto var_block_opt = app.add_flag("--variable-block", variable_block, "Variable length blocks");
-    auto var_block_param_opt = app.add_option("-b,--block-size", fixed_block_size, "Block size for fixed-length blocks")->excludes(var_block_opt);
-    app.add_option("-l,--lambda", lambda, "Lambda parameter for variable blocks")->excludes(var_block_param_opt);
+    auto var_block_param_opt =
+        app.add_option("-b,--block-size", fixed_block_size, "Block size for fixed-length blocks")
+            ->excludes(var_block_opt);
+    app.add_option("-l,--lambda", lambda, "Lambda parameter for variable blocks")
+        ->excludes(var_block_param_opt)
+        ->needs(var_block_opt);
     app.add_flag("--compress", compress, "Compress additional data");
     app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
 
     CLI11_PARSE(app, argc, argv);
 
-    partition_type p_type =
-        variable_block ? partition_type::variable_blocks : partition_type::fixed_blocks;
-
-    std::string partition_type_name =
-        (p_type == partition_type::fixed_blocks) ? "static partition" : "variable partition";
+    std::string partition_type_name = (lambda) ? "variable partition" : "static partition";
     spdlog::info("Block based wand creation with {}", partition_type_name);
 
     binary_collection sizes_coll((input_basename + ".sizes").c_str());
     binary_freq_collection coll(input_basename.c_str());
 
-    // Initialize the variant to the correct type
-    boost::variant<float, uint64_t> block_size = uint64_t(0);
+    // Initialize the variant to the correct type, default arguments from config
+    BlockSize block_size = FixedBlock();
     if (variable_block) {
-        block_size = 0.0f;
+        block_size = VariableBlock();
     }
 
     // Set block size based on configuration
     if (lambda != 0.0f && variable_block) {
-        block_size = lambda;
-    } else if (lambda != 0.0f && !variable_block) {
-        spdlog::error("Lambda set without --variable-block. Ignoring.");
-        return EXIT_FAILURE;
+        block_size = VariableBlock(lambda);
     } else if (fixed_block_size != 0 && !variable_block) {
-        block_size = fixed_block_size;
+        block_size = FixedBlock(fixed_block_size);
     }
 
     if (compress) {
         wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
         wand_data<bm25, wand_data_range<128, 1024, bm25>> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
         wand_data<bm25, wand_data_raw<bm25>> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, p_type, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     }
 }

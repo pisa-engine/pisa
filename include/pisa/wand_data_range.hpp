@@ -29,7 +29,7 @@ class wand_data_range {
     {
         std::vector<float> block_max_scores(m_blocks_num, 0.0f);
         for_each_posting(list, [&](auto docid, auto freq) {
-            float& current_max = block_max_scores[docid / range_size];
+            float &current_max = block_max_scores[docid / range_size];
             current_max = std::max(current_max, scorer(docid, freq));
         });
         return block_max_scores;
@@ -37,11 +37,9 @@ class wand_data_range {
 
     class builder {
        public:
-        builder(partition_type type,
-                binary_freq_collection const &coll,
+        builder(binary_freq_collection const &coll,
                 [[maybe_unused]] global_parameters const &params)
             : blocks_num(ceil_div(coll.num_docs(), range_size)),
-              type(type),
               total_elements(0),
               blocks_start{0},
               block_max_term_weight{}
@@ -60,7 +58,7 @@ class wand_data_range {
         float add_sequence(binary_freq_collection::sequence const &term_seq,
                            binary_freq_collection const &coll,
                            std::vector<float> const &norm_lens,
-                           [[maybe_unused]] boost::variant<float, uint64_t> block_size)
+                           [[maybe_unused]] BlockSize block_size)
         {
             float max_score = 0.0f;
 
@@ -95,7 +93,6 @@ class wand_data_range {
         }
 
         uint64_t blocks_num;
-        partition_type type;
         uint64_t total_elements;
         std::vector<uint64_t> blocks_start;
         std::vector<float> block_max_term_weight;
@@ -108,7 +105,8 @@ class wand_data_range {
         enumerator(uint32_t _block_start,
                    mapper::mappable_vector<float> const &block_max_term_weight)
             : cur_pos(0), block_start(_block_start), m_block_max_term_weight(block_max_term_weight)
-        {}
+        {
+        }
 
         void PISA_NOINLINE next_block() { cur_pos += 1; }
         void PISA_NOINLINE next_geq(uint64_t lower_bound) { cur_pos = lower_bound / range_size; }
