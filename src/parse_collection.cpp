@@ -88,6 +88,7 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
                 if (std::get_if<wapopp::Error>(&result) != nullptr) {
                     spdlog::warn("Skpped invalid record. Reason: {}",
                                  std::get_if<wapopp::Error>(&result)->msg);
+                    spdlog::debug("Invalid record: {}", std::get_if<wapopp::Error>(&result)->json);
                 } else {
                     std::ostringstream os;
                     auto record = *std::get_if<wapopp::Record>(&result);
