@@ -64,3 +64,6 @@
 [submodule "external/KrovetzStemmer"]
 	path = external/KrovetzStemmer
 	url = https://github.com/pisa-engine/KrovetzStemmer.git
+[submodule "external/wapopp"]
+	path = external/wapopp
+	url = https://github.com/pisa-engine/wapopp.git
