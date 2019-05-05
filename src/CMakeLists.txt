@@ -68,6 +68,7 @@ add_executable(parse_collection parse_collection.cpp)
 target_link_libraries(parse_collection
   pisa
   CLI11
+  wapopp
 )
 
 add_executable(invert invert.cpp)

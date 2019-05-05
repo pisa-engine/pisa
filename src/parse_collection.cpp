@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
 #include <trecpp/trecpp.hpp>
+#include <wapopp/wapopp.hpp>
 #include <warcpp/warcpp.hpp>
 
 #include "forward_index_builder.hpp"
@@ -75,6 +76,44 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
                     });
                 if (record) {
                     return record;
+                }
+            }
+            return std::nullopt;
+        };
+    }
+    if (type == "wapo") {
+        return [](std::istream &in) -> std::optional<Document_Record> {
+            while (not in.eof()) {
+                auto result = wapopp::Record::read(in);
+                if (std::get_if<wapopp::Error>(&result) != nullptr) {
+                    spdlog::warn("Skpped invalid record. Reason: {}",
+                                 std::get_if<wapopp::Error>(&result)->msg);
+                    spdlog::debug("Invalid record: {}", std::get_if<wapopp::Error>(&result)->json);
+                } else {
+                    std::ostringstream os;
+                    auto record = *std::get_if<wapopp::Record>(&result);
+                    for (auto content : record.contents) {
+                        if (auto kicker = std::get_if<wapopp::Kicker>(&content);
+                            kicker != nullptr) {
+                            os << " " << kicker->content;
+                        } else if (auto title = std::get_if<wapopp::Title>(&content);
+                                   title != nullptr) {
+                            os << " " << title->content;
+                        } else if (auto byline = std::get_if<wapopp::Byline>(&content);
+                                   byline != nullptr) {
+                            os << " " << byline->content;
+                        } else if (auto text = std::get_if<wapopp::Text>(&content);
+                                   text != nullptr) {
+                            os << " " << text->content;
+                        } else if (auto author = std::get_if<wapopp::AuthorInfo>(&content);
+                                   author != nullptr) {
+                            os << " " << author->name << " " << author->bio;
+                        } else if (auto image = std::get_if<wapopp::Image>(&content);
+                                   image != nullptr) {
+                            os << " " << image->caption << " " << image->blurb << " ";
+                        }
+                    }
+                    return std::make_optional<Document_Record>(record.id, os.str(), record.url);
                 }
             }
             return std::nullopt;
