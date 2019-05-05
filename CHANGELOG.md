@@ -1,3 +1,7 @@
+### Version 0.4.0
+- Block params (#187)
+- Sharding forward index (#106)
+
 ### Version 0.3.1
 - Patch extract query (#186)
 
