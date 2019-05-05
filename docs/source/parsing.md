@@ -51,3 +51,4 @@ The above command will write the following files:
 - `trextext`: TREC newswire collections
 - `trecweb`: TREC web collections
 - `warc`: Web ARChive format as defined in [the format specification](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.0/)
+- `wapo`: TREC Washington Post Corpus
