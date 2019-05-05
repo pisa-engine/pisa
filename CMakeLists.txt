@@ -90,7 +90,6 @@ target_link_libraries(pisa INTERFACE
     Boost::filesystem
     Porter2
     KrovetzStemmer
-    wapopp
     warcpp
     trecpp
     spdlog
