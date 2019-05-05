@@ -1,3 +1,8 @@
+### Version 0.5.0
+- Moved files
+- Parsing Washington Post format (#189)
+- Upgrade wapopp (#190)
+
 ### Version 0.4.0
 - Block params (#187)
 - Sharding forward index (#106)
