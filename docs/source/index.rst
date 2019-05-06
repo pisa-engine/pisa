@@ -31,7 +31,8 @@ Some features of PISA are listed below:
 
    getting_started	
    index_format	
-   parsing	
+   parsing
+   sharding
    compress_index	
    query_index	
    document_reordering	
