@@ -81,6 +81,13 @@ void evaluate_queries(const std::string &index_filename,
                                  index.num_docs());
             return block_max_maxscore_q.topk();
         };
+    } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
+        query_fun = [&](Query query) {
+            block_max_ranked_and_query block_max_ranked_and_q(k);
+            block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, query),
+                                 index.num_docs());
+            return block_max_ranked_and_q.topk();
+        };
     } else if (query_type == "ranked_and" && wand_data_filename) {
         query_fun = [&](Query query) {
             ranked_and_query ranked_and_q(k);
