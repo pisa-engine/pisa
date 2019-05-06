@@ -16,7 +16,7 @@ PISA is a text search engine able to run on large-scale collections of documents
 Some features of PISA are listed below:
 
 * Written in C++ for performance;
-* Indexing & Parsing capabilities;
+* Indexing & Parsing & Sharding capabilities;
 * Many index compression methods implemented;
 * Many query processing algorithms implemented;
 * Implementation of document reordering;
