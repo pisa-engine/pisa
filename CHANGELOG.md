@@ -1,3 +1,12 @@
+### Version 0.6.0
+- Create pull_request_template.md
+- Create pull_request_template.md
+- Delete pull_request_template.md
+- Update README.md
+- Update index.rst
+- Update index.rst
+- BMA Clean (#191)
+
 ### Version 0.5.0
 - Moved files
 - Parsing Washington Post format (#189)

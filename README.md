@@ -1,6 +1,6 @@
 <p align="center"><img src="https://pisa-engine.github.io/images/logo250.png" width="250px"></p>
 
-# PISA: Performant Indexes and Search for Academia v0.5.0
+# PISA: Performant Indexes and Search for Academia v0.6.0
 
 [![Build Status](https://travis-ci.com/pisa-engine/pisa.svg?branch=master)](https://travis-ci.com/pisa-engine/pisa)
 [![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
