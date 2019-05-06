@@ -22,7 +22,7 @@
 template <typename Collection>
 void dump_index_specific_stats(Collection const &, std::string const &) {}
 
-void dump_index_specific_stats(pisa::uniform_index const &coll, std::string const &type) {
+void dump_index_specific_stats(pisa::uniformpef_index const &coll, std::string const &type) {
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
