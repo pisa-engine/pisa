@@ -49,7 +49,7 @@ TEST_CASE("wand_data_range")
             term_id += 1;
         }
     }
-    using index_type = opt_index;
+    using index_type = pefopt_index;
     index_type index;
     global_parameters params;
     index_type::builder builder(collection.num_docs(), params);
