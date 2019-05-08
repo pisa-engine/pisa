@@ -50,8 +50,10 @@ int main(int argc, const char **argv)
 
     auto const block_size = [&]() -> BlockSize {
         if (variable_block) {
+            spdlog::info("Lambda {}", *lambda);
             return lambda ? VariableBlock(*lambda) : VariableBlock();
         } else {
+            spdlog::info("Fixed block size: {}", *fixed_block_size);
             return fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
         }
     }();
