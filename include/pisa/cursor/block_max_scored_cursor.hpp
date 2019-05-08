@@ -57,8 +57,8 @@ template <typename Index, typename WandType>
                        auto q_weight   = scorer_type::query_term_weight(term.second, list.size(),
                                                                       index.num_docs());
                        auto max_weight = q_weight * wdata_range.max_term_weight(term.first);
-                       if (list.size() >= 1024) {
-                           std::cout << "precomputed" << std::endl;
+                       if (list.size() >= 0) {
+                        //    std::cout << "precomputed" << std::endl;
                            auto w_enum     = wdata_range.getenum(term.first);
                            return block_max_scored_cursor<Index, WandType, Scorer>{
                                std::move(list), w_enum, q_weight, {q_weight, wdata_range}, max_weight};
@@ -67,7 +67,7 @@ template <typename Index, typename WandType>
                            auto &w   = wdata_range.get_block_wand();
                            Scorer score_func{1.f, wdata_range};
                            const mapper::mappable_vector<float> bm =
-                               w.compute_block_max_scores(list, score_func); 
+                               w.compute_block_max_scores(list, score_func);
                            WandTypeRange::enumerator w_enum(0, bm);
                            return block_max_scored_cursor<Index, WandType, Scorer>{
                                std::move(list), w_enum, q_weight, {q_weight, wdata_range}, max_weight};

@@ -37,7 +37,7 @@ struct IndexData {
         builder.build(index);
 
         term_id_vec q;
-        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries.f");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         while (read_query(q, qfile)) {
             queries.push_back(q);
         }
@@ -138,12 +138,12 @@ TEMPLATE_TEST_CASE("Ranked query test",
              data->index.num_docs());
         REQUIRE(or_q.topk().size() == op_q.topk().size());
         for (size_t i = 0; i < or_q.topk().size(); ++i) {
-            std::cout << or_q.topk()[i].first << " " << or_q.topk()[i].second << " "
-                      << op_q.topk()[i].first << " " << op_q.topk()[i].second  << std::endl;
+            // std::cout << or_q.topk()[i].first << " " << or_q.topk()[i].second << " "
+            //           << op_q.topk()[i].first << " " << op_q.topk()[i].second  << std::endl;
             REQUIRE(or_q.topk()[i].first ==
                     Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
         }
-        std::cout << std::endl;
+        // std::cout << std::endl;
     }
 }
 

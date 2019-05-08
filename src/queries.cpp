@@ -28,8 +28,24 @@
 
 #include "CLI/CLI.hpp"
 
+
+#include "pisa_config.hpp"
+
+
 using namespace pisa;
 using ranges::view::enumerate;
+
+template <typename Acc>
+class ranked_or_taat_query_acc : public ranked_or_taat_query {
+   public:
+    using ranked_or_taat_query::ranked_or_taat_query;
+
+    template <typename CursorRange>
+    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
+        Acc                          accumulator(max_docid);
+        return ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
+    }
+};
 
 template <typename Fn>
 void extract_times(Fn fn,
@@ -125,6 +141,10 @@ void perftest(const std::string &index_filename,
 
     WandType wdata;
 
+    binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
+    binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
+    wand_data<bm25, wand_data_range<>> wdata_range(document_sizes.begin()->begin(), collection.num_docs(), collection);
+
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
     mio::mmap_source md;
@@ -208,6 +228,11 @@ void perftest(const std::string &index_filename,
             ranked_or_taat_query ranked_or_taat_q(k);
             query_fun = [&, ranked_or_taat_q](term_id_vec terms) mutable {
                 return ranked_or_taat_q(make_scored_cursors(index, wdata, terms), index.num_docs(), accumulator);
+            };
+        } else if (t == "live_range_taat") {
+            range_query<ranked_or_taat_query_acc<Simple_Accumulator>> live_range_taat_q(k);
+            query_fun = [&, live_range_taat_q](term_id_vec terms) mutable {
+                return live_range_taat_q(make_range_block_max_scored_cursors(index, wdata_range, terms), index.num_docs(), 128);
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
             Lazy_Accumulator<4> accumulator(index.num_docs());

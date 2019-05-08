@@ -74,7 +74,7 @@ class wand_data_range {
                 float &bm = b_max[pos];
                 bm = std::max(bm, score);
             }
-            if (term_seq.docs.size() >= min_list_lenght) {
+            if (term_seq.docs.size() >= 0) {
                 block_max_term_weight.insert(
                     block_max_term_weight.end(), b_max.begin(), b_max.end());
                 blocks_start.push_back(b_max.size() + blocks_start.back());
@@ -145,7 +145,7 @@ class wand_data_range {
             float score = 0.0f;
             for (auto &&c : cursors) {
                 score += c.q_weight * c.w.score();
-                std::cout << document_range.first << "-" << document_range.second << " " << c.q_weight << " " << c.w.score() << " " << threshold << std::endl;
+                // std::cout << document_range.first << "-" << document_range.second << " " << c.q_weight << " " << c.w.score() << " " << threshold << std::endl;
                 c.w.next_block();
             }
             live_blocks[i] = (score > threshold);
