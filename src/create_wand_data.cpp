@@ -50,9 +50,9 @@ int main(int argc, const char **argv)
 
     auto const block_size = [&]() -> BlockSize {
         if (variable_block) {
-            return fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
-        } else {
             return lambda ? VariableBlock(*lambda) : VariableBlock();
+        } else {
+            return fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
         }
     }();
 
