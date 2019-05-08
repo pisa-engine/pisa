@@ -1,3 +1,7 @@
+### Version 0.6.1
+- Fix logger names (#195)
+- Update create_wand_data.cpp (#193)
+
 ### Version 0.6.0
 - Create pull_request_template.md
 - Create pull_request_template.md
