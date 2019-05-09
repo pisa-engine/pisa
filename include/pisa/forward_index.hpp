@@ -6,7 +6,7 @@
 
 #include "binary_collection.hpp"
 #include "codec/block_codecs.hpp"
-#include "codec/varintgb.hpp"
+#include "codec/varintgb-detail.hpp"
 #include "util/progress.hpp"
 
 namespace pisa {
