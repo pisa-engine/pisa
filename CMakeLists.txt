@@ -69,12 +69,11 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/pisa/*.cpp")
+list(SORT PISA_SRC_FILES)
+
 include_directories(include)
-add_library(pisa
-    ${PROJECT_SOURCE_DIR}/src/pisa/tokenizer.cpp
-    ${PROJECT_SOURCE_DIR}/src/pisa/payload_vector.cpp
-    ${PROJECT_SOURCE_DIR}/src/pisa/parsing/stem.cpp
-    ${PROJECT_SOURCE_DIR}/src/pisa/query/queries.cpp)
+add_library(pisa ${PISA_SRC_FILES})
 target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
