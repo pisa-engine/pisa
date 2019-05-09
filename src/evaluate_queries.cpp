@@ -1,28 +1,29 @@
-#include <iostream>
-
 #include <functional>
+#include <iostream>
+#include <thread>
+
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
 #include "boost/optional.hpp"
-
-#include "accumulator/lazy_accumulator.hpp"
 #include "mio/mmap.hpp"
+#include "range/v3/view/enumerate.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
-
-#include "mappable/mapper.hpp"
-
-#include <thread>
 #include "tbb/parallel_for.h"
 #include "tbb/task_scheduler_init.h"
 
+#include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "mappable/mapper.hpp"
+#include "payload_vector.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 

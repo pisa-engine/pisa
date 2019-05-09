@@ -2,9 +2,13 @@
 #include <vector>
 
 #include "CLI/CLI.hpp"
+
 #include "index_types.hpp"
+#include "io.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
+#include "pisa/query/algorithm.hpp"
 #include "pisa/query/queries.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 

@@ -1,8 +1,6 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2/Porter2.hpp>
 #include <boost/algorithm/string.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -12,6 +10,7 @@
 #include <warcpp/warcpp.hpp>
 
 #include "forward_index_builder.hpp"
+#include "parsing/stem.hpp"
 
 using namespace pisa;
 
@@ -134,14 +133,13 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
     if (*type == "porter2") {
         return [](std::string &&term) -> std::string {
             boost::algorithm::to_lower(term);
-            return stem::Porter2{}.stem(term);
+            return porter2::stem(term);
         };
     }
     if (*type == "krovetz") {
-        static stem::KrovetzStemmer kstemmer;
         return [](std::string &&term) -> std::string {
             boost::algorithm::to_lower(term);
-            return kstemmer.kstem_stemmer(term);
+            return krovetz::stem(term);
         };
     }
     spdlog::error("Unknown stemmer type: {}", *type);

@@ -9,13 +9,15 @@
 
 #include "mappable/mapper.hpp"
 
+#include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 

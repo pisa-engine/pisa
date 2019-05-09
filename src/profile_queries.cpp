@@ -1,23 +1,24 @@
 #include <iostream>
-#include <thread>
 #include <optional>
+#include <thread>
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
 #include "boost/lexical_cast.hpp"
+#include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
-#include "mio/mmap.hpp"
-
-#include "mappable/mapper.hpp"
+#include "cursor/cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
-#include "wand_data_compressed.hpp"
+#include "mappable/mapper.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
-
-#include "cursor/cursor.hpp"
-#include "cursor/scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
+#include "wand_data.hpp"
+#include "wand_data_compressed.hpp"
+#include "wand_data_raw.hpp"
 
 using namespace pisa;
 

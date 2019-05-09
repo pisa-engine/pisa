@@ -72,6 +72,8 @@ find_package(Threads REQUIRED)
 include_directories(include)
 add_library(pisa
     ${PROJECT_SOURCE_DIR}/src/pisa/tokenizer.cpp
+    ${PROJECT_SOURCE_DIR}/src/pisa/payload_vector.cpp
+    ${PROJECT_SOURCE_DIR}/src/pisa/parsing/stem.cpp
     ${PROJECT_SOURCE_DIR}/src/pisa/query/queries.cpp)
 target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>

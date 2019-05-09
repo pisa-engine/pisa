@@ -11,6 +11,7 @@
 #include "pisa_config.hpp"
 #include "query/queries.hpp"
 #include "scorer/score_function.hpp"
+#include "wand_data.hpp"
 #include "wand_data_range.hpp"
 
 using namespace pisa;

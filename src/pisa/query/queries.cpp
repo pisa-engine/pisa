@@ -1,15 +1,13 @@
 #include <string_view>
 
-#include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2/Porter2.hpp>
 #include <boost/algorithm/string.hpp>
 #include <mio/mmap.hpp>
 #include <spdlog/spdlog.h>
 
+#include "parsing/stem.hpp"
 #include "payload_vector.hpp"
 #include "query/queries.hpp"
 #include "tokenizer.hpp"
-//#include "util/util.hpp"
 
 namespace pisa {
 
@@ -92,15 +90,13 @@ void remove_duplicate_terms(term_id_vec &terms)
         if (*stemmer_type == "porter2") {
             return [=](auto str) {
                 boost::algorithm::to_lower(str);
-                stem::Porter2 stemmer{};
-                return to_id(stemmer.stem(str));
+                return to_id(porter2::stem(str));
             };
         }
         if (*stemmer_type == "krovetz") {
             return [=](auto str) {
                 boost::algorithm::to_lower(str);
-                stem::KrovetzStemmer stemmer{};
-                return to_id(stemmer.kstem_stemmer(str));
+                return to_id(krovetz::stem(str));
             };
         }
         throw std::invalid_argument("Unknown stemmer");
