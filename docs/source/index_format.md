@@ -30,19 +30,22 @@ import numpy as np
 
 class Collection:
     def __init__(self, collection_name):
-        self.docs = np.fromfile(open(collection_name + '.docs', "r"), dtype=np.uint32)
-        self.freqs = np.fromfile(open(collection_name + ".freqs", "r"), dtype=np.uint32)
+        collection_dir = os.path.join(collection_name)
+        self.docs = np.memmap(collection_name + ".docs", dtype=np.uint32,
+              mode='r')
+        self.freqs = np.memmap(collection_name + ".freqs", dtype=np.uint32,
+              mode='r')
 
     def __iter__(self):
         i = 2
-        while i < len(docs):
+        while i < len(self.docs):
             size = self.docs[i]
-            yield (self.docs[i+1:size+i+1], self.freqs[i+1:size+i+1])
-            i+=size+1
-   
+            yield (self.docs[i+1:size+i+1], self.freqs[i-1:size+i-1])
+            i += size+1
+
     def __next__(self):
         return self
 
-for idx, a in enumerate(Collection('test_collection')):
-    print(idx, a)
+for idx, (docs, freqs) in enumerate(Collection('test_collection')):
+    print(idx, docs, freqs)
 ```
