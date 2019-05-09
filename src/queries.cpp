@@ -14,17 +14,18 @@
 
 #include "mappable/mapper.hpp"
 
-#include "index_types.hpp"
 #include "accumulator/lazy_accumulator.hpp"
-#include "query/queries.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "index_types.hpp"
+#include "query/algorithm.hpp"
 #include "timer.hpp"
 #include "util/util.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/cursor.hpp"
-#include "cursor/scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
-#include "cursor/block_max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 

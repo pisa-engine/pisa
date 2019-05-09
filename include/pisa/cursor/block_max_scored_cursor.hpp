@@ -1,8 +1,11 @@
 #pragma once
 
 #include <vector>
+
+#include "io.hpp"
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
+#include "scorer/score_function.hpp"
 
 namespace pisa {
 

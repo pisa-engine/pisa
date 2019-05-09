@@ -8,6 +8,23 @@
 #include "query/queries.hpp"
 #include "util/util.hpp"
 
+using namespace pisa;
+
+/// TODO: deprecated
+bool read_query(
+    term_id_vec &ret,
+    std::istream &is = std::cin,
+    std::function<term_id_type(std::string)> process_term = [](auto str) { return std::stoi(str); })
+{
+    ret.clear();
+    std::string line;
+    if (!std::getline(is, line)) {
+        return false;
+    }
+    ret = parse_query(line, process_term).terms;
+    return true;
+}
+
 template <typename IndexType>
 void selective_queries(const char* index_filename,
                        std::string const& type)
@@ -59,7 +76,6 @@ void selective_queries(const char* index_filename,
 
 
 int main(int, const char** argv) {
-    using namespace pisa;
 
     std::string type = argv[1];
     const char* index_filename = argv[2];

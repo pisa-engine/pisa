@@ -70,11 +70,13 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 include_directories(include)
-add_library(pisa INTERFACE)
-target_include_directories(pisa INTERFACE
+add_library(pisa
+    ${PROJECT_SOURCE_DIR}/src/pisa/tokenizer.cpp
+    ${PROJECT_SOURCE_DIR}/src/pisa/query/queries.cpp)
+target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa INTERFACE
+target_link_libraries(pisa PUBLIC
     Threads::Threads
     Boost::boost
     QMX
@@ -96,7 +98,7 @@ target_link_libraries(pisa INTERFACE
     fmt::fmt
     range-v3
 )
-target_include_directories(pisa INTERFACE external)
+target_include_directories(pisa PUBLIC external)
 
 add_subdirectory(src)
 

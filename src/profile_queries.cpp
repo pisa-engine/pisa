@@ -21,6 +21,21 @@
 
 using namespace pisa;
 
+/// TODO: deprecated
+bool read_query(
+    term_id_vec &ret,
+    std::istream &is = std::cin,
+    std::function<term_id_type(std::string)> process_term = [](auto str) { return std::stoi(str); })
+{
+    ret.clear();
+    std::string line;
+    if (!std::getline(is, line)) {
+        return false;
+    }
+    ret = parse_query(line, process_term).terms;
+    return true;
+}
+
 template <typename QueryOperator>
 void op_profile(QueryOperator const& query_op,
                 std::vector<Query> const& queries)
