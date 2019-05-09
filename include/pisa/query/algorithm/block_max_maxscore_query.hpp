@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "query/queries.hpp"
+#include "scorer/bm25.hpp"
 #include "topk_queue.hpp"
 
 namespace pisa {
