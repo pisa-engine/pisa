@@ -21,7 +21,7 @@ namespace pisa { namespace time_prediction {
         BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end
     };
 
-    feature_type parse_feature_type(std::string const& name)
+    inline feature_type parse_feature_type(std::string const &name)
     {
         if (false) {
 #define LOOP_BODY(R, DATA, T)                           \
@@ -36,7 +36,7 @@ namespace pisa { namespace time_prediction {
 
     }
 
-    std::string feature_name(feature_type f)
+    inline std::string feature_name(feature_type f)
     {
         switch (f) {
 #define LOOP_BODY(R, DATA, T)                       \
@@ -51,22 +51,19 @@ namespace pisa { namespace time_prediction {
 
     class feature_vector {
     public:
-        feature_vector()
-        {
-            std::fill(m_features.begin(), m_features.end(), 0);
-        }
+     feature_vector() { std::fill(m_features.begin(), m_features.end(), 0); }
 
-        float& operator[](feature_type f) { return m_features[(size_t)f]; }
-        float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
+     float &operator[](feature_type f) { return m_features[(size_t)f]; }
+     float const &operator[](feature_type f) const { return m_features[(size_t)f]; }
 
-        stats_line& dump(stats_line& sl) const
-        {
-            for (size_t i = 0; i < num_features; ++i) {
-                feature_type ft = (feature_type)i;
-                sl(feature_name(ft), (*this)[ft]);
-            }
-            return sl;
-        }
+     stats_line &dump(stats_line &sl) const
+     {
+         for (size_t i = 0; i < num_features; ++i) {
+             feature_type ft = (feature_type)i;
+             sl(feature_name(ft), (*this)[ft]);
+         }
+         return sl;
+     }
 
     protected:
         std::array<float, num_features> m_features;
@@ -74,39 +71,37 @@ namespace pisa { namespace time_prediction {
 
     class predictor : public feature_vector {
     public:
-        predictor()
-            : m_bias(0)
-        {}
+     predictor() : m_bias(0) {}
 
-        predictor(std::vector<std::pair<std::string, float>> const& values)
-        {
-            for (auto const& kv: values) {
-                if (kv.first == "bias") {
-                    bias() = kv.second;
-                } else {
-                    (*this)[parse_feature_type(kv.first)] = kv.second;
-                }
-            }
-        }
+     predictor(std::vector<std::pair<std::string, float>> const &values)
+     {
+         for (auto const &kv : values) {
+             if (kv.first == "bias") {
+                 bias() = kv.second;
+             } else {
+                 (*this)[parse_feature_type(kv.first)] = kv.second;
+             }
+         }
+     }
 
-        float& bias() { return m_bias; }
-        float const& bias() const { return m_bias; }
+     float &bias() { return m_bias; }
+     float const &bias() const { return m_bias; }
 
-        float operator()(feature_vector const& f) const
-        {
-            float result = bias();
-            for (size_t i = 0; i < num_features; ++i) {
-                feature_type ft = (feature_type)i;
-                result += (*this)[ft] * f[ft];
-            }
-            return result;
-        }
+     float operator()(feature_vector const &f) const
+     {
+         float result = bias();
+         for (size_t i = 0; i < num_features; ++i) {
+             feature_type ft = (feature_type)i;
+             result += (*this)[ft] * f[ft];
+         }
+         return result;
+     }
 
     protected:
-        float m_bias;
+     float m_bias;
     };
 
-    void values_statistics(std::vector<uint32_t> values, feature_vector& f)
+    inline void values_statistics(std::vector<uint32_t> values, feature_vector &f)
     {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
@@ -143,7 +138,9 @@ namespace pisa { namespace time_prediction {
         f[feature_type::max_b] = max_b;
     }
 
-    bool read_block_stats(std::istream& is, uint32_t& list_id, std::vector<uint32_t>& block_counts)
+    inline bool read_block_stats(std::istream &is,
+                                 uint32_t &list_id,
+                                 std::vector<uint32_t> &block_counts)
     {
         thread_local std::string line;
         uint32_t count;
@@ -157,5 +154,5 @@ namespace pisa { namespace time_prediction {
         return true;
     }
 
-
-}}
+} // namespace time_prediction
+} // namespace pisa
