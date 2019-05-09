@@ -58,6 +58,10 @@ struct Lazy_Accumulator {
             std::fill(first, last, std::byte{0});
         }
     }
+    void init(std::uint32_t first, std::uint32_t last)
+    {
+        init(); // TODO(michal): fix!
+    }
 
     void accumulate(std::ptrdiff_t const document, float score)
     {
@@ -81,6 +85,10 @@ struct Lazy_Accumulator {
             }
         };
         m_counter = (m_counter + 1) % cycle;
+    }
+    void aggregate(topk_queue &topk, std::uint32_t first, std::uint32_t last)
+    {
+        aggregate(topk); // TODO(michal): fix!
     }
 
     [[nodiscard]] auto size() const noexcept -> std::size_t { return m_size; }

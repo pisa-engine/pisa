@@ -11,7 +11,9 @@ using WandTypeRange = wand_data_range<128, 1024, bm25>;
 template <typename QueryAlg, size_t block_size = 128>
 struct range_query {
 
-    range_query(uint64_t k) : m_k(k), m_topk(k) {}
+    range_query(QueryAlg algorithm, uint64_t k)
+        : m_k(k), m_topk(k), m_algorithm(std::move(algorithm))
+    {}
 
     template <typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, size_t range_size)
@@ -21,8 +23,7 @@ struct range_query {
             return 0;
         }
 
-        for (size_t end = range_size;
-             end + range_size <= max_docid; end += range_size) {
+        for (size_t end = range_size; end + range_size <= max_docid; end += range_size) {
             process_range(cursors, end);
         }
         process_range(cursors, max_docid);
@@ -36,17 +37,17 @@ struct range_query {
     template <typename CursorRange>
     void process_range(CursorRange &&cursors, size_t end)
     {
-        QueryAlg query_alg(m_k);
-        query_alg(cursors, end);
-        auto &small_topk = query_alg.topk();
+        m_algorithm(cursors, end);
+        auto &small_topk = m_algorithm.topk();
         for (const auto &entry : small_topk) {
             m_topk.insert(entry.first, entry.second);
         }
-}
+    }
 
    private:
     uint64_t m_k;
     topk_queue m_topk;
+    QueryAlg m_algorithm;
 };
 
 } // namespace pisa

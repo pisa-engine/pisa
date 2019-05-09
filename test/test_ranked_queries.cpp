@@ -85,6 +85,8 @@ class range_query_128 : public range_query<T> {
    public:
     using range_query<T>::range_query;
 
+    range_query_128(uint64_t k) : range_query<T>(T(k), k) {}
+
     template <typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
         return range_query<T>::operator()(cursors, max_docid, 128);
