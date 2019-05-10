@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include "query/queries.hpp"
 #include "util/do_not_optimize_away.hpp"
 

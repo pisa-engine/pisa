@@ -1,9 +1,14 @@
 #pragma once
 
+#include <vector>
+
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
+#include "codec/list.hpp"
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
 #include "scorer/score_function.hpp"
-#include <vector>
 
 namespace pisa {
 
@@ -37,5 +42,21 @@ template <typename Index, typename WandType>
         });
     return cursors;
 }
+
+struct bm25;
+template <typename Scorer>
+struct wand_data_raw;
+#define LOOP_BODY(R, DATA, T)                                                              \
+    struct T;                                                                              \
+    template <typename Index, bool Profile>                                                \
+    struct block_freq_index;                                                               \
+    template <typename Scorer, typename block_wand_type>                                   \
+    struct wand_data;                                                                             \
+    extern template auto                                                                   \
+    make_scored_cursors<block_freq_index<T, false>, wand_data<bm25, wand_data_raw<bm25>>>( \
+        block_freq_index<T, false> const &, wand_data<bm25, wand_data_raw<bm25>> const &, Query);
+/**/
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+#undef LOOP_BODY
 
 } // namespace pisa
