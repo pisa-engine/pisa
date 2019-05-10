@@ -33,6 +33,18 @@ using uniform_index = freq_index<uniform_partitioned_sequence<>,
 using opt_index =
     freq_index<partitioned_sequence<>, positive_sequence<partitioned_sequence<strict_sequence>>>;
 
+extern template class pisa::block_freq_index<pisa::optpfor_block>;
+extern template class pisa::block_freq_index<pisa::varint_G8IU_block>;
+extern template class pisa::block_freq_index<pisa::streamvbyte_block>;
+extern template class pisa::block_freq_index<pisa::maskedvbyte_block>;
+extern template class pisa::block_freq_index<pisa::varintgb_block>;
+extern template class pisa::block_freq_index<pisa::interpolative_block>;
+extern template class pisa::block_freq_index<pisa::qmx_block>;
+extern template class pisa::block_freq_index<pisa::simple8b_block>;
+extern template class pisa::block_freq_index<pisa::simple16_block>;
+extern template class pisa::block_freq_index<pisa::simdbp_block>;
+extern template class pisa::block_freq_index<pisa::mixed_block>;
+
 using block_optpfor_index       = block_freq_index<pisa::optpfor_block>;
 using block_varintg8iu_index    = block_freq_index<pisa::varint_G8IU_block>;
 using block_streamvbyte_index   = block_freq_index<pisa::streamvbyte_block>;

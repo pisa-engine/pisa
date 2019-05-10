@@ -4,6 +4,7 @@
 #include "test_common.hpp"
 
 #include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/extern.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"

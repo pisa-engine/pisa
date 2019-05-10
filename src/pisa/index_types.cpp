@@ -1,13 +1,15 @@
-#include "index_types.hpp"
+#include "block_freq_index.hpp"
+#include "codec/block_codecs.hpp"
+#include "codec/maskedvbyte.hpp"
+#include "codec/qmx.hpp"
+#include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
+#include "codec/simple8b.hpp"
+#include "codec/streamvbyte.hpp"
+#include "codec/varintgb.hpp"
+#include "mixed_block.hpp"
 
 namespace pisa {
-
-using ef_index = freq_index<compact_elias_fano, positive_sequence<strict_elias_fano>>;
-using single_index = freq_index<indexed_sequence, positive_sequence<>>;
-using uniform_index = freq_index<uniform_partitioned_sequence<>,
-                                 positive_sequence<uniform_partitioned_sequence<strict_sequence>>>;
-using opt_index =
-    freq_index<partitioned_sequence<>, positive_sequence<partitioned_sequence<strict_sequence>>>;
 
 template class block_freq_index<pisa::optpfor_block>;
 template class block_freq_index<pisa::varint_G8IU_block>;
