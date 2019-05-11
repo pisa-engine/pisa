@@ -3,5 +3,17 @@
     "README.md": [
       ["^# PISA: Performant Indexes and Search for Academia ?v?(.*)", "# PISA: Performant Indexes and Search for Academia v[version]"]
     ]
+  },
+  "tag": {
+    "enabled": false
+  },
+  "release": {
+    "enabled": true,
+    "github": {
+      "enabled": true,
+      "open": false,
+      "draft": false,
+      "prerelease": false
+    }
   }
 }

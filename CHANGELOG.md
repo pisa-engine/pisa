@@ -1,3 +1,6 @@
+### Version 0.6.3
+- Fix python script to read the collection (#197)
+
 ### Version 0.6.2
 - Removed external/te
 
