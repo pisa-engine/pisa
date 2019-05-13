@@ -22,3 +22,5 @@ Testing/
 docs/_build/
 
 node_modules
+
+compile_commands.json
