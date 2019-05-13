@@ -10,10 +10,8 @@
 [![GitHub forks](https://img.shields.io/github/forks/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/network)
 [![GitHub stars](https://img.shields.io/github/stars/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/stargazers)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/pisa-engine/pisa/pulls)
+[![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/enQtNjM1NTk3NzIyMjE0LTQ3ZjI1MmU2ZjAyODE4YjNiNTY5YWYzMjg5Njc5ZDM5MzhhZDBiMGE5MTFhMTViN2ZjNzg0OTkzMDAwMDg3YTE)
 [![DOI](https://zenodo.org/badge/150449350.svg)](https://zenodo.org/badge/latestdoi/150449350)
-
-
-[Official Documentation](http://pisa.readthedocs.io)
 
 Description
 ------------
@@ -28,6 +26,8 @@ Some features of PISA are listed below:
 * Many query processing algorithms implemented;
 * Implementation of document reordering;
 * Free and open-source with permissive license;
+
+The best way to get started is by reading the [official documentation](http://pisa.readthedocs.io).
 
 If you want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/.github/CONTRIBUTING.md) page.
 
