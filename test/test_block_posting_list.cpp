@@ -3,14 +3,15 @@
 
 #include "test_generic_sequence.hpp"
 
+#include "codec/block_codec.hpp"
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
-#include "codec/streamvbyte.hpp"
 #include "codec/qmx.hpp"
-#include "codec/varintgb.hpp"
-#include "codec/simple8b.hpp"
-#include "codec/simple16.hpp"
 #include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
+#include "codec/simple8b.hpp"
+#include "codec/streamvbyte.hpp"
+#include "codec/varintgb.hpp"
 
 #include "block_posting_list.hpp"
 
@@ -19,19 +20,19 @@
 #include <algorithm>
 #include <random>
 
-
 template <typename PostingList>
-void test_block_posting_list_ops(uint8_t const* data, uint64_t n, uint64_t universe,
-                                 std::vector<uint64_t> const& docs,
-                                 std::vector<uint64_t> const& freqs)
+void test_block_posting_list_ops(uint8_t const *data,
+                                 uint64_t n,
+                                 uint64_t universe,
+                                 std::vector<uint64_t> const &docs,
+                                 std::vector<uint64_t> const &freqs,
+                                 pisa::BlockCodec codec)
 {
-        typename PostingList::document_enumerator e(data, universe);
-        REQUIRE(n == e.size());
-        for (size_t i = 0; i < n; ++i, e.next()) {
-            MY_REQUIRE_EQUAL(docs[i], e.docid(),
-                             "i = " << i << " size = " << n);
-            MY_REQUIRE_EQUAL(freqs[i], e.freq(),
-                             "i = " << i << " size = " << n);
+    typename PostingList::document_enumerator e(data, universe, codec);
+    REQUIRE(n == e.size());
+    for (size_t i = 0; i < n; ++i, e.next()) {
+        MY_REQUIRE_EQUAL(docs[i], e.docid(), "i = " << i << " size = " << n);
+        MY_REQUIRE_EQUAL(freqs[i], e.freq(), "i = " << i << " size = " << n);
         }
         // XXX better testing of next_geq
         for (size_t i = 0; i < n; ++i) {
@@ -58,10 +59,10 @@ void random_posting_data(uint64_t n, uint64_t universe,
                   []() { return (rand() % 256) + 1; });
 }
 
-template <typename BlockCodec>
+template <typename Codec>
 void test_block_posting_list()
 {
-    typedef pisa::block_posting_list<BlockCodec> posting_list_type;
+    typedef pisa::block_posting_list<> posting_list_type;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
@@ -70,17 +71,17 @@ void test_block_posting_list()
         std::vector<uint64_t> docs, freqs;
         random_posting_data(n, universe, docs, freqs);
         std::vector<uint8_t> data;
-        posting_list_type::write(data, n, docs.begin(), freqs.begin());
+        posting_list_type::write(data, n, docs.begin(), freqs.begin(), pisa::block_codec<Codec>());
 
-        test_block_posting_list_ops<posting_list_type>(data.data(), n, universe,
-                                                       docs, freqs);
+        test_block_posting_list_ops<posting_list_type>(
+            data.data(), n, universe, docs, freqs, pisa::block_codec<Codec>());
     }
 }
 
-template <typename BlockCodec>
+template <typename Codec>
 void test_block_posting_list_reordering()
 {
-    typedef pisa::block_posting_list<BlockCodec> posting_list_type;
+    typedef pisa::block_posting_list<> posting_list_type;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
@@ -89,18 +90,19 @@ void test_block_posting_list_reordering()
         std::vector<uint64_t> docs, freqs;
         random_posting_data(n, universe, docs, freqs);
         std::vector<uint8_t> data;
-        posting_list_type::write(data, n, docs.begin(), freqs.begin());
+        posting_list_type::write(data, n, docs.begin(), freqs.begin(), pisa::block_codec<Codec>());
 
         // reorder blocks
-        typename posting_list_type::document_enumerator e(data.data(), universe);
+        typename posting_list_type::document_enumerator e(
+            data.data(), universe, pisa::block_codec<Codec>());
         auto blocks = e.get_blocks();
         std::shuffle(blocks.begin() + 1, blocks.end(), std::mt19937(std::random_device()())); // leave first block in place
 
         std::vector<uint8_t> reordered_data;
-        posting_list_type::write_blocks(reordered_data, n, blocks);
+        posting_list_type::write_blocks(reordered_data, n, blocks, pisa::block_codec<Codec>());
 
-        test_block_posting_list_ops<posting_list_type>(reordered_data.data(), n, universe,
-                                                       docs, freqs);
+        test_block_posting_list_ops<posting_list_type>(
+            reordered_data.data(), n, universe, docs, freqs, pisa::block_codec<Codec>());
     }
 }
 

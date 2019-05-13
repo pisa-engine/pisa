@@ -3,8 +3,9 @@
 #include "mappable/mappable_vector.hpp"
 #include "bit_vector.hpp"
 
-#include "codec/compact_elias_fano.hpp"
 #include "block_posting_list.hpp"
+#include "codec/block_codec.hpp"
+#include "codec/compact_elias_fano.hpp"
 
 namespace pisa {
 
@@ -29,8 +30,8 @@ namespace pisa {
                                   FreqsIterator freqs_begin, uint64_t /* occurrences */)
             {
                 if (!n) throw std::invalid_argument("List must be nonempty");
-                block_posting_list<BlockCodec, Profile>::write(m_lists, n,
-                                                               docs_begin, freqs_begin);
+                block_posting_list<Profile>::write(
+                    m_lists, n, docs_begin, freqs_begin, block_codec<BlockCodec>());
                 m_endpoints.push_back(m_lists.size());
             }
 
@@ -38,7 +39,7 @@ namespace pisa {
             void add_posting_list(uint64_t n, BlockDataRange const& blocks)
             {
                 if (!n) throw std::invalid_argument("List must be nonempty");
-                block_posting_list<BlockCodec>::write_blocks(m_lists, n, blocks);
+                block_posting_list<Profile>::write_blocks(m_lists, n, blocks);
                 m_endpoints.push_back(m_lists.size());
             }
 
@@ -80,7 +81,7 @@ namespace pisa {
             return m_num_docs;
         }
 
-        typedef typename block_posting_list<BlockCodec, Profile>::document_enumerator document_enumerator;
+        typedef typename block_posting_list<Profile>::document_enumerator document_enumerator;
 
         document_enumerator operator[](size_t i) const
         {
@@ -90,7 +91,8 @@ namespace pisa {
                                                      m_params);
 
             auto endpoint = endpoints.move(i).second;
-            return document_enumerator(m_lists.data() + endpoint, num_docs(), i);
+            return document_enumerator(
+                m_lists.data() + endpoint, num_docs(), block_codec<BlockCodec>(), i);
         }
 
         void warmup(size_t i) const

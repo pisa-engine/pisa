@@ -14,14 +14,15 @@
 #include "stxxl/io"
 #include "stxxl/sort"
 
+#include "codec/block_codec.hpp"
 #include "configuration.hpp"
 #include "index_types.hpp"
-#include "util/util.hpp"
-#include "util/verify_collection.hpp"
 #include "mixed_block.hpp"
 #include "util/index_build_utils.hpp"
-#include "util/semiasync_queue.hpp"
 #include "util/progress.hpp"
+#include "util/semiasync_queue.hpp"
+#include "util/util.hpp"
+#include "util/verify_collection.hpp"
 
 typedef uint32_t block_id_type; // XXX for memory reasons, but would need size_t for very large indexes
 
@@ -270,7 +271,8 @@ struct list_transformer : pisa::semiasync_queue::job {
                                        docs_param, freqs_param);
         }
 
-        block_posting_list<mixed_block>::write_blocks(m_buf, m_e.size(), output_blocks);
+        block_posting_list<>::write_blocks(
+            m_buf, m_e.size(), output_blocks, block_codec<mixed_block>());
     }
 
     virtual void commit()
