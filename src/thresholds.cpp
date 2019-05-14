@@ -22,14 +22,15 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void thresholds(const std::string &index_filename,
+void thresholds(std::unique_ptr<IndexType> index_ptr,
+                const std::string &index_filename,
                 const boost::optional<std::string> &wand_data_filename,
                 const std::vector<Query> &queries,
                 const boost::optional<std::string> &thresholds_filename,
                 std::string const &type,
                 uint64_t k)
 {
-    IndexType index;
+    auto &index = *index_ptr;
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
 
@@ -102,29 +103,51 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                            \
-    }                                                                                    \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                            \
-        if (compressed) {                                                                \
-            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                    wand_data_filename,  \
-                                                                    queries,             \
-                                                                    thresholds_filename, \
-                                                                    type,                \
-                                                                    k);                  \
-        } else {                                                                         \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                                wand_data_filename,      \
-                                                                queries,                 \
-                                                                thresholds_filename,     \
-                                                                type,                    \
-                                                                k);                      \
-        }                                                                                \
+#define LOOP_BODY(R, DATA, T)                                        \
+    }                                                                \
+    else if (type == BOOST_PP_STRINGIZE(T))                          \
+    {                                                                \
+        if (compressed) {                                            \
+            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>( \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),         \
+                index_filename,                                      \
+                wand_data_filename,                                  \
+                queries,                                             \
+                thresholds_filename,                                 \
+                type,                                                \
+                k);                                                  \
+        } else {                                                     \
+            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(     \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),         \
+                index_filename,                                      \
+                wand_data_filename,                                  \
+                queries,                                             \
+                thresholds_filename,                                 \
+                type,                                                \
+                k);                                                  \
+        }                                                            \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
-
+    } else if (auto index = block_freq_index<>::from_type(type); index != nullptr) {
+        if (compressed) {
+            thresholds<block_freq_index<>, wand_raw_index>(std::move(index),
+                                                           index_filename,
+                                                           wand_data_filename,
+                                                           queries,
+                                                           thresholds_filename,
+                                                           type,
+                                                           k);
+        } else {
+            thresholds<block_freq_index<>, wand_uniform_index>(std::move(index),
+                                                               index_filename,
+                                                               wand_data_filename,
+                                                               queries,
+                                                               thresholds_filename,
+                                                               type,
+                                                               k);
+        }
     } else {
         spdlog::error("Unknown type {}", type);
     }

@@ -33,24 +33,10 @@ using uniform_index = freq_index<uniform_partitioned_sequence<>,
 using opt_index =
     freq_index<partitioned_sequence<>, positive_sequence<partitioned_sequence<strict_sequence>>>;
 
-using block_optpfor_index       = block_freq_index<pisa::optpfor_block>;
-using block_varintg8iu_index    = block_freq_index<pisa::varint_G8IU_block>;
-using block_streamvbyte_index   = block_freq_index<pisa::streamvbyte_block>;
-using block_maskedvbyte_index   = block_freq_index<pisa::maskedvbyte_block>;
-using block_varintgb_index      = block_freq_index<pisa::varintgb_block>;
-using block_interpolative_index = block_freq_index<pisa::interpolative_block>;
-using block_qmx_index           = block_freq_index<pisa::qmx_block>;
-using block_simple8b_index      = block_freq_index<pisa::simple8b_block>;
-using block_simple16_index      = block_freq_index<pisa::simple16_block>;
-using block_simdbp_index        = block_freq_index<pisa::simdbp_block>;
-using block_mixed_index         = block_freq_index<pisa::mixed_block>;
-
 } // namespace pisa
 
-#define PISA_INDEX_TYPES                                                                    \
-    (ef)(single)(uniform)(opt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(         \
-        block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
-        block_simple16)(block_simdbp)(block_mixed)
-#define PISA_BLOCK_INDEX_TYPES                                                                    \
-    (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
-        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)(block_mixed)
+#define PISA_INDEX_TYPES (ef)(single)(uniform)(opt)
+
+#define PISA_BLOCK_CODEC_TYPES                                                               \
+    (optpfor)(varint_G8IU)(streamvbyte)(maskedvbyte)(interpolative)(qmx)(varintgb)(simple8b)( \
+        simple16)(simdbp)(mixed)

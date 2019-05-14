@@ -98,7 +98,8 @@ void op_perftest(Functor query_func,
 }
 
 template <typename IndexType, typename WandType>
-void perftest(const std::string &index_filename,
+void perftest(std::unique_ptr<IndexType> index_ptr,
+              const std::string &index_filename,
               const std::optional<std::string> &wand_data_filename,
               const std::vector<Query> &queries,
               const std::optional<std::string> &thresholds_filename,
@@ -107,7 +108,7 @@ void perftest(const std::string &index_filename,
               uint64_t k,
               bool extract)
 {
-    IndexType index;
+    auto &index = *index_ptr;
     spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
@@ -304,34 +305,59 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                          \
-    }                                                                                  \
-    else if (type == BOOST_PP_STRINGIZE(T))                                            \
-    {                                                                                  \
-        if (compressed) {                                                              \
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                  wand_data_filename,  \
-                                                                  queries,             \
-                                                                  thresholds_filename, \
-                                                                  type,                \
-                                                                  query_type,          \
-                                                                  k,                   \
-                                                                  extract);            \
-        } else {                                                                       \
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                              wand_data_filename,      \
-                                                              queries,                 \
-                                                              thresholds_filename,     \
-                                                              type,                    \
-                                                              query_type,              \
-                                                              k,                       \
-                                                              extract);                \
-        }                                                                              \
+#define LOOP_BODY(R, DATA, T)                                      \
+    }                                                              \
+    else if (type == BOOST_PP_STRINGIZE(T))                        \
+    {                                                              \
+        if (compressed) {                                          \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>( \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),       \
+                index_filename,                                    \
+                wand_data_filename,                                \
+                queries,                                           \
+                thresholds_filename,                               \
+                type,                                              \
+                query_type,                                        \
+                k,                                                 \
+                extract);                                          \
+        } else {                                                   \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(     \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),       \
+                index_filename,                                    \
+                wand_data_filename,                                \
+                queries,                                           \
+                thresholds_filename,                               \
+                type,                                              \
+                query_type,                                        \
+                k,                                                 \
+                extract);                                          \
+        }                                                          \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
-
+    } else if (auto index = block_freq_index<>::from_type(type); index != nullptr) {
+        if (compressed) {
+            perftest<block_freq_index<>, wand_uniform_index>(std::move(index),
+                                                             index_filename,
+                                                             wand_data_filename,
+                                                             queries,
+                                                             thresholds_filename,
+                                                             type,
+                                                             query_type,
+                                                             k,
+                                                             extract);
+        } else {
+            perftest<block_freq_index<>, wand_raw_index>(std::move(index),
+                                                         index_filename,
+                                                         wand_data_filename,
+                                                         queries,
+                                                         thresholds_filename,
+                                                         type,
+                                                         query_type,
+                                                         k,
+                                                         extract);
+        }
     } else {
         spdlog::error("Unknown type {}", type);
     }

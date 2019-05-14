@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "CLI/CLI.hpp"
+#include "block_freq_index.hpp"
 #include "index_types.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
 #include "pisa/query/queries.hpp"
@@ -11,14 +12,14 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void intersect(const std::string &index_filename,
+void intersect(std::unique_ptr<IndexType> index,
+               const std::string &index_filename,
                const std::optional<std::string> &wand_data_filename,
                const std::vector<Query> &queries,
                std::string const &type)
 {
-    IndexType index;
     mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    mapper::map(*index, m);
 
     WandType wdata;
 
@@ -35,7 +36,7 @@ void intersect(const std::string &index_filename,
 
     and_query<false> and_q;
     for (auto const &query : queries) {
-        auto results = and_q(make_scored_cursors(index, wdata, query), index.num_docs());
+        auto results = and_q(make_scored_cursors(*index, wdata, query), index->num_docs());
         for (auto &&t : query.terms) {
             std::cout << t << " ";
         }
@@ -86,16 +87,32 @@ int main(int argc, const char **argv)
     {                                                               \
         if (compressed) {                                           \
             intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>( \
-                index_filename, wand_data_filename, queries, type); \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),        \
+                index_filename,                                     \
+                wand_data_filename,                                 \
+                queries,                                            \
+                type);                                              \
         } else {                                                    \
             intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(     \
-                index_filename, wand_data_filename, queries, type); \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),        \
+                index_filename,                                     \
+                wand_data_filename,                                 \
+                queries,                                            \
+                type);                                              \
         }                                                           \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
-
+        /**/
+    } else if (auto index = block_freq_index<>::from_type(type); index != nullptr) {
+        if (compressed) {
+            intersect<block_freq_index<>, wand_uniform_index>(
+                std::move(index), index_filename, wand_data_filename, queries, type);
+        } else {
+            intersect<block_freq_index<>, wand_raw_index>(
+                std::move(index), index_filename, wand_data_filename, queries, type);
+        }
     } else {
         spdlog::error("Unknown type {}", type);
     }

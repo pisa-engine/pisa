@@ -2,7 +2,21 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <string_view>
 #include <vector>
+
+#include "codec/block_codec.hpp"
+#include "codec/block_codecs.hpp"
+#include "codec/compact_elias_fano.hpp"
+#include "codec/maskedvbyte.hpp"
+#include "codec/qmx.hpp"
+#include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
+#include "codec/simple8b.hpp"
+#include "codec/streamvbyte.hpp"
+#include "codec/varintgb.hpp"
+#include "mixed_block.hpp"
 
 namespace pisa {
 
@@ -11,6 +25,35 @@ class BlockCodec {
     template <typename T>
     explicit BlockCodec(T /* codec */) : self_(std::make_shared<Impl<T>>())
     {
+    }
+
+    static auto from_type(std::string_view type) -> std::optional<BlockCodec>
+    {
+        if (type == "block_optpfor") {
+            return std::make_optional(BlockCodec(optpfor_block{}));
+        } else if (type == "block_varintg8iu") {
+            return std::make_optional(BlockCodec(varint_G8IU_block{}));
+        } else if (type == "block_streamvbyte") {
+            return std::make_optional(BlockCodec(streamvbyte_block{}));
+        } else if (type == "block_maskedvbyte") {
+            return std::make_optional(BlockCodec(maskedvbyte_block{}));
+        } else if (type == "block_interpolative") {
+            return std::make_optional(BlockCodec(interpolative_block{}));
+        } else if (type == "block_qmx") {
+            return std::make_optional(BlockCodec(qmx_block{}));
+        } else if (type == "block_varintgb") {
+            return std::make_optional(BlockCodec(varintgb_block{}));
+        } else if (type == "block_simple8b") {
+            return std::make_optional(BlockCodec(simple8b_block{}));
+        } else if (type == "block_simple16") {
+            return std::make_optional(BlockCodec(simple16_block{}));
+        } else if (type == "block_simdbp") {
+            return std::make_optional(BlockCodec(simdbp_block{}));
+        } else if (type == "block_mixed") {
+            return std::make_optional(BlockCodec(mixed_block{}));
+        } else {
+            return std::nullopt;
+        }
     }
 
     [[nodiscard]] auto block_size() const -> std::size_t

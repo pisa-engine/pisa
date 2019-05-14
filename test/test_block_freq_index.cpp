@@ -3,14 +3,15 @@
 
 #include "test_generic_sequence.hpp"
 
+#include "codec/block_codec.hpp"
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
-#include "codec/streamvbyte.hpp"
 #include "codec/qmx.hpp"
-#include "codec/varintgb.hpp"
-#include "codec/simple8b.hpp"
-#include "codec/simple16.hpp"
 #include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
+#include "codec/simple8b.hpp"
+#include "codec/streamvbyte.hpp"
+#include "codec/varintgb.hpp"
 #include "temporary_directory.hpp"
 
 #include "block_freq_index.hpp"
@@ -21,13 +22,15 @@
 #include <cstdlib>
 #include <algorithm>
 
+using namespace pisa;
+
 template <typename BlockCodec>
 void test_block_freq_index()
 {
     pisa::global_parameters params;
     uint64_t universe = 20000;
-    typedef pisa::block_freq_index<BlockCodec> collection_type;
-    typename collection_type::builder b(universe, params);
+    typedef pisa::block_freq_index<> collection_type;
+    typename collection_type::builder b(universe, params, block_codec<BlockCodec>());
 
     typedef std::vector<uint64_t> vec_type;
     std::vector<std::pair<vec_type, vec_type>> posting_lists(30);
@@ -47,13 +50,13 @@ void test_block_freq_index()
     Temporary_Directory tmpdir;
     auto filename = tmpdir.path().string() + "temp.bin";
     {
-        collection_type coll;
+        collection_type coll = make_block_freq_index<BlockCodec>();
         b.build(coll);
         pisa::mapper::freeze(coll, filename.c_str());
     }
 
     {
-        collection_type coll;
+        collection_type coll = make_block_freq_index<BlockCodec>();
         mio::mmap_source m(filename.c_str());
         pisa::mapper::map(coll, m);
 

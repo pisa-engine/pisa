@@ -32,7 +32,8 @@ using namespace pisa;
 using ranges::view::enumerate;
 
 template <typename IndexType, typename WandType>
-void evaluate_queries(const std::string &index_filename,
+void evaluate_queries(std::unique_ptr<IndexType> index_ptr,
+                      const std::string &index_filename,
                       const boost::optional<std::string> &wand_data_filename,
                       const std::vector<Query> &queries,
                       const boost::optional<std::string> &thresholds_filename,
@@ -43,7 +44,7 @@ void evaluate_queries(const std::string &index_filename,
                       std::string const &iteration = "Q0",
                       std::string const &run_id = "R0")
 {
-    IndexType index;
+    auto &index = *index_ptr;
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
 
@@ -223,33 +224,59 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                  \
-    }                                                                                          \
-    else if (type == BOOST_PP_STRINGIZE(T))                                                    \
-    {                                                                                          \
-        if (compressed) {                                                                      \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                          wand_data_filename,  \
-                                                                          queries,             \
-                                                                          thresholds_filename, \
-                                                                          type,                \
-                                                                          query_type,          \
-                                                                          k,                   \
-                                                                          documents_file);     \
-        } else {                                                                               \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                                      wand_data_filename,      \
-                                                                      queries,                 \
-                                                                      thresholds_filename,     \
-                                                                      type,                    \
-                                                                      query_type,              \
-                                                                      k,                       \
-                                                                      documents_file);         \
-        }                                                                                      \
+#define LOOP_BODY(R, DATA, T)                                              \
+    }                                                                      \
+    else if (type == BOOST_PP_STRINGIZE(T))                                \
+    {                                                                      \
+        if (compressed) {                                                  \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>( \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),               \
+                index_filename,                                            \
+                wand_data_filename,                                        \
+                queries,                                                   \
+                thresholds_filename,                                       \
+                type,                                                      \
+                query_type,                                                \
+                k,                                                         \
+                documents_file);                                           \
+        } else {                                                           \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(     \
+                std::make_unique<BOOST_PP_CAT(T, _index)>(),               \
+                index_filename,                                            \
+                wand_data_filename,                                        \
+                queries,                                                   \
+                thresholds_filename,                                       \
+                type,                                                      \
+                query_type,                                                \
+                k,                                                         \
+                documents_file);                                           \
+        }                                                                  \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
+    } else if (auto index = block_freq_index<>::from_type(type); index != nullptr) {
+        if (compressed) {
+            evaluate_queries<block_freq_index<>, wand_uniform_index>(std::move(index),
+                                                                     index_filename,
+                                                                     wand_data_filename,
+                                                                     queries,
+                                                                     thresholds_filename,
+                                                                     type,
+                                                                     query_type,
+                                                                     k,
+                                                                     documents_file);
+        } else {
+            evaluate_queries<block_freq_index<>, wand_raw_index>(std::move(index),
+                                                                 index_filename,
+                                                                 wand_data_filename,
+                                                                 queries,
+                                                                 thresholds_filename,
+                                                                 type,
+                                                                 query_type,
+                                                                 k,
+                                                                 documents_file);
+        }
     } else {
         spdlog::error("Unknown type {}", type);
     }

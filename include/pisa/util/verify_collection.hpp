@@ -6,9 +6,12 @@
 #include "mappable/mapper.hpp"
 #include "util/util.hpp"
 
-template<typename InputCollection, typename Collection>
-void verify_collection(InputCollection const &input, const char *filename) {
-    Collection coll;
+template <typename InputCollection, typename Collection>
+void verify_collection(InputCollection const &input,
+                       const char *filename,
+                       std::unique_ptr<Collection> coll_ptr)
+{
+    auto &coll = *coll_ptr;
     mio::mmap_source m(filename);
     pisa::mapper::map(coll, m);
     size_t size=0;

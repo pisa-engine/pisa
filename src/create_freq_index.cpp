@@ -48,17 +48,19 @@ void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &t
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
-template <typename InputCollection, typename CollectionType, typename Scorer = pisa::bm25>
+template <typename InputCollection, typename Index, typename Builder, typename Scorer = pisa::bm25>
 void create_collection(InputCollection const &input,
-                       pisa::global_parameters const &params,
+                       std::unique_ptr<Builder> builder_ptr,
+                       std::unique_ptr<Index> index,
                        const std::optional<std::string> &output_filename,
                        bool check,
-                       std::string const &seq_type) {
+                       std::string const &seq_type)
+{
+    auto &builder = *builder_ptr;
     using namespace pisa;
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 
-    typename CollectionType::builder builder(input.num_docs(), params);
     uint64_t size = 0;
     size_t postings = 0;
     {
@@ -74,7 +76,7 @@ void create_collection(InputCollection const &input,
         }
     }
 
-    CollectionType coll;
+    auto &coll = *index;
     builder.build(coll);
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("{} collection built in {} seconds", seq_type, elapsed_secs);
@@ -88,8 +90,13 @@ void create_collection(InputCollection const &input,
     if (output_filename) {
         mapper::freeze(coll, (*output_filename).c_str());
         if (check) {
-            verify_collection<InputCollection, CollectionType>(input,
-                                                               (*output_filename).c_str());
+            if constexpr (std::is_same_v<Index, block_freq_index<>>) {
+                verify_collection<InputCollection, Index>(
+                    input, (*output_filename).c_str(), block_freq_index<>::from_type(seq_type));
+            } else {
+                verify_collection<InputCollection, Index>(
+                    input, (*output_filename).c_str(), std::make_unique<Index>());
+            }
         }
     }
 }
@@ -115,15 +122,30 @@ int main(int argc, char **argv) {
     params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                               \
-    }                                                                       \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                               \
-        create_collection<binary_freq_collection, BOOST_PP_CAT(T, _index)>( \
-            input, params, output_filename, check, type);                   \
+#define LOOP_BODY(R, DATA, T)                                                                      \
+    }                                                                                              \
+    else if (type == BOOST_PP_STRINGIZE(T))                                                        \
+    {                                                                                              \
+        create_collection<binary_freq_collection, BOOST_PP_CAT(T, _index)>(                        \
+            input,                                                                                 \
+            std::make_unique<typename BOOST_PP_CAT(T, _index)::builder>(input.num_docs(), params), \
+            std::make_unique<BOOST_PP_CAT(T, _index)>(),                                           \
+            output_filename,                                                                       \
+            check,                                                                                 \
+            type);                                                                                 \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
+    } else if (auto codec = BlockCodec::from_type(type); codec != std::nullopt) {
+        create_collection<binary_freq_collection, block_freq_index<>>(
+            input,
+            std::make_unique<typename block_freq_index<>::builder>(
+                input.num_docs(), params, *codec),
+            std::make_unique<block_freq_index<>>(*codec),
+            output_filename,
+            check,
+            type);
     } else {
         spdlog::error("Unknown type {}", type);
     }
