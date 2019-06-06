@@ -125,9 +125,12 @@ int main(int argc, char const *argv[])
         documents.clear();
         reorder_inverted_index(input_basename, output_basename, mapping);
         if(documents_filename) {
-	   auto terms = Payload_Vector<>::from(*documents_filename);
-	   // do some reordering here
-           encode_payload_vector(terms.begin(), terms.end()).to_file(*reordered_documents_filename);
+	   auto documents = Payload_Vector<>::from(*documents_filename);
+	   std::vector<std::string> reordered_documents(documents.size());
+   	   for (size_t i = 0; i < documents.size(); ++i) {
+              reordered_documents[mapping[i]] = documents[i];
+           }
+           encode_payload_vector(reordered_documents.begin(), reordered_documents.end()).to_file(*reordered_documents_filename);
         }
     }
     return 0;
