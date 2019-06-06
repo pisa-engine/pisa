@@ -59,7 +59,6 @@ int main(int argc, char const *argv[])
     size_t threads = std::thread::hardware_concurrency();
     bool nogb = false;
     bool print = false;
-    size_t prelim = 0;
 
     CLI::App app{"Recursive graph bisection algorithm used for inverted indexed reordering."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
@@ -70,7 +69,6 @@ int main(int argc, char const *argv[])
     auto optdepth =
         app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
     app.add_option("-t,--threads", threads, "Thread count");
-    app.add_option("--prelim", prelim, "Precomputing limit");
     auto optconf = app.add_option("--config", config_file, "Node configuration file");
     app.add_flag("--nogb", nogb, "No VarIntGB compression in forward index");
     app.add_flag("-p,--print", print, "Print ordering to standard output");
