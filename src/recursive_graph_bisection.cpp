@@ -1,5 +1,6 @@
 #include <numeric>
 #include <thread>
+#include <optional>
 
 #include <CLI/CLI.hpp>
 #include <pstl/execution>
@@ -8,6 +9,7 @@
 
 #include "recursive_graph_bisection.hpp"
 #include "util/progress.hpp"
+#include "payload_vector.hpp"
 
 using namespace pisa;
 using iterator_type = std::vector<uint32_t>::iterator;
@@ -54,6 +56,8 @@ int main(int argc, char const *argv[])
     std::string input_fwd;
     std::string output_fwd;
     std::string config_file;
+    std::optional<std::string> documents_filename;
+    std::optional<std::string> reordered_documents_filename;
     size_t min_len = 0;
     size_t depth = 0;
     size_t threads = std::thread::hardware_concurrency();
@@ -65,6 +69,8 @@ int main(int argc, char const *argv[])
     app.add_option("-o,--output", output_basename, "Output basename");
     app.add_option("--store-fwdidx", output_fwd, "Output basename (forward index)");
     app.add_option("--fwdidx", input_fwd, "Use this forward index");
+    auto docs_opt = app.add_option("--documents", documents_filename, "Documents lexicon");
+    app.add_option("--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")->needs(docs_opt);
     app.add_option("-m,--min-len", min_len, "Minimum list threshold");
     auto optdepth =
         app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
@@ -116,6 +122,14 @@ int main(int argc, char const *argv[])
         fwd.clear();
         documents.clear();
         reorder_inverted_index(input_basename, output_basename, mapping);
+        if(documents_filename) {
+	   auto documents = Payload_Vector<>::from(*documents_filename);
+	   std::vector<std::string> reordered_documents(documents.size());
+   	   for (size_t i = 0; i < documents.size(); ++i) {
+              reordered_documents[mapping[i]] = documents[i];
+           }
+           encode_payload_vector(reordered_documents.begin(), reordered_documents.end()).to_file(*reordered_documents_filename);
+        }
     }
     return 0;
 }
