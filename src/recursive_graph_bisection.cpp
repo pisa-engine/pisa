@@ -1,5 +1,6 @@
 #include <numeric>
 #include <thread>
+#include <optional>
 
 #include <CLI/CLI.hpp>
 #include <pstl/execution>
@@ -54,6 +55,7 @@ int main(int argc, char const *argv[])
     std::string input_fwd;
     std::string output_fwd;
     std::string config_file;
+    std::optional<std::string> documents_filename;
     size_t min_len = 0;
     size_t depth = 0;
     size_t threads = std::thread::hardware_concurrency();
@@ -66,6 +68,7 @@ int main(int argc, char const *argv[])
     app.add_option("-o,--output", output_basename, "Output basename");
     app.add_option("--store-fwdidx", output_fwd, "Output basename (forward index)");
     app.add_option("--fwdidx", input_fwd, "Use this forward index");
+    app.add_option("--documents", documents_filename, "Documents lexicon");
     app.add_option("-m,--min-len", min_len, "Minimum list threshold");
     auto optdepth =
         app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
@@ -118,6 +121,9 @@ int main(int argc, char const *argv[])
         fwd.clear();
         documents.clear();
         reorder_inverted_index(input_basename, output_basename, mapping);
+        if(documents_filename) {
+          reorder_documents_lexicon((*documents_filename), mapping);
+        }
     }
     return 0;
 }
