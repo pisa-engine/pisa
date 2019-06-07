@@ -1,3 +1,9 @@
+### Version 0.6.4
+- Update README.md
+- Update README.md
+- Update recursive_graph_bisection.cpp (#202)
+- Update recursive_graph_bisection.cpp (#204)
+
 ### Version 0.6.3
 - Fix python script to read the collection (#197)
 
