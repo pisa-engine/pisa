@@ -122,11 +122,15 @@ int main(int argc, char const *argv[])
         fwd.clear();
         documents.clear();
         reorder_inverted_index(input_basename, output_basename, mapping);
+
         if(documents_filename) {
-	   auto documents = Payload_Vector<>::from(*documents_filename);
+           auto doc_buffer = Payload_Vector_Buffer::from_file(*documents_filename);
+	   auto documents = Payload_Vector<std::string>(doc_buffer);
 	   std::vector<std::string> reordered_documents(documents.size());
-   	   for (size_t i = 0; i < documents.size(); ++i) {
+   	   pisa::progress doc_reorder("Reordering documents vector", documents.size());
+	   for (size_t i = 0; i < documents.size(); ++i) {
               reordered_documents[mapping[i]] = documents[i];
+	      doc_reorder.update(1);
            }
            encode_payload_vector(reordered_documents.begin(), reordered_documents.end()).to_file(*reordered_documents_filename);
         }
