@@ -284,6 +284,7 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
     std::ofstream fos(output_basename + ".freqs");
     auto document_count = static_cast<uint32_t>(document_sizes.size());
     write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
+    size_t postings_count = 0;
     for (auto term_id : ranges::view::iota(0, term_count)) {
         std::vector<uint32_t> dlist;
         for (auto &iter : doc_iterators) {
@@ -312,9 +313,14 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
             spdlog::error(msg);
             throw std::runtime_error(msg);
         }
+	postings_count += dlist.size();
         write_sequence(dos, gsl::span<uint32_t const>(dlist));
         write_sequence(fos, gsl::span<uint32_t const>(flist));
     }
+
+    spdlog::info("Number of terms: {}", term_count);
+    spdlog::info("Number of documents: {}", document_count);
+    spdlog::info("Number of postings: {}", postings_count);
 }
 
 void invert_forward_index(std::string const &input_basename,
