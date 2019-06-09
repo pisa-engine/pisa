@@ -225,7 +225,7 @@ class Forward_Index_Builder {
             while (std::getline(terms_is, term)) {
                 terms.push_back(term);
             }
-            std::sort(std::execution::par_unseq, std::next(terms.begin(), mid), terms.end());
+            std::sort(std::next(terms.begin(), mid), terms.end());
             push_span(Term_Span{mid, terms.size(), 0u});
         }
         while (spans.size() > 1) {
