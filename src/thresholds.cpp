@@ -1,8 +1,8 @@
 #include <iostream>
+#include <optional>
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "boost/optional.hpp"
 
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
@@ -23,9 +23,9 @@ using namespace pisa;
 
 template <typename IndexType, typename WandType>
 void thresholds(const std::string &index_filename,
-                const boost::optional<std::string> &wand_data_filename,
+                const std::optional<std::string> &wand_data_filename,
                 const std::vector<Query> &queries,
-                const boost::optional<std::string> &thresholds_filename,
+                const std::optional<std::string> &thresholds_filename,
                 std::string const &type,
                 uint64_t k)
 {
@@ -66,9 +66,9 @@ int main(int argc, const char **argv)
     std::string type;
     std::string index_filename;
     std::optional<std::string> terms_file;
-    boost::optional<std::string> wand_data_filename;
-    boost::optional<std::string> query_filename;
-    boost::optional<std::string> thresholds_filename;
+    std::optional<std::string> wand_data_filename;
+    std::optional<std::string> query_filename;
+    std::optional<std::string> thresholds_filename;
     std::optional<std::string> stemmer = std::nullopt;
 
     uint64_t k = configuration::get().k;

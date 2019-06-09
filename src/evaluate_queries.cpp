@@ -1,9 +1,9 @@
 #include <iostream>
+#include <optional>
 
 #include <functional>
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "boost/optional.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "mio/mmap.hpp"
@@ -33,9 +33,9 @@ using ranges::view::enumerate;
 
 template <typename IndexType, typename WandType>
 void evaluate_queries(const std::string &index_filename,
-                      const boost::optional<std::string> &wand_data_filename,
+                      const std::optional<std::string> &wand_data_filename,
                       const std::vector<Query> &queries,
-                      const boost::optional<std::string> &thresholds_filename,
+                      const std::optional<std::string> &thresholds_filename,
                       std::string const &type,
                       std::string const &query_type,
                       uint64_t k,
@@ -169,9 +169,9 @@ int main(int argc, const char **argv)
     std::string index_filename;
     std::optional<std::string> terms_file;
     std::string documents_file;
-    boost::optional<std::string> wand_data_filename;
-    boost::optional<std::string> query_filename;
-    boost::optional<std::string> thresholds_filename;
+    std::optional<std::string> wand_data_filename;
+    std::optional<std::string> query_filename;
+    std::optional<std::string> thresholds_filename;
     std::optional<std::string> stopwords_filename;
     std::optional<std::string> stemmer = std::nullopt;
     uint64_t k = configuration::get().k;
