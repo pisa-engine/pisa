@@ -31,7 +31,12 @@ namespace pisa::parsing::html {
 
 [[nodiscard]] auto cleantext(std::string_view html) -> std::string
 {
-    GumboOutput *output = gumbo_parse_with_options(&kGumboDefaultOptions, html.data(), html.size());
+    GumboOptions options = kGumboDefaultOptions;
+    options.max_errors = 1000;
+    GumboOutput *output = gumbo_parse_with_options(&options, html.data(), html.size());
+    if (output->errors.length >= options.max_errors) {
+        return std::string();
+    }
     std::string  content = cleantext(output->root);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
     return content;
