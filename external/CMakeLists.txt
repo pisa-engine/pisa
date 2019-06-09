@@ -100,6 +100,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 
 # Add trecpp
 set(TRECPP_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
+set(TRECPP_BUILD_TOOL OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/trecpp)
 
 # Add trecpp

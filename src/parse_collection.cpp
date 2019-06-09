@@ -38,7 +38,9 @@ template <typename ReadSubsequentRecordFn>
     };
 }
 
-std::function<std::optional<Document_Record>(std::istream &)> record_parser(std::string const &type)
+std::function<std::optional<Document_Record>(std::istream &)> record_parser(
+        std::string const &type,
+        std::istream& is)
 {
     if (type == "plaintext") {
         return [](std::istream &in) -> std::optional<Document_Record> {
@@ -55,7 +57,25 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
         return trec_record_parser(trecpp::text::read_subsequent_record);
     }
     if (type == "trecweb") {
-        return trec_record_parser(trecpp::web::read_subsequent_record);
+        return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](
+                std::istream &in) -> std::optional<Document_Record> {
+            while (not in.eof()) {
+                auto record = trecpp::match(
+                    parser->read_record(),
+                    [](trecpp::Record const &rec) {
+                        return std::make_optional<Document_Record>(
+                            std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
+                    },
+                    [](trecpp::Error const &error) {
+                        spdlog::warn("Skipped invalid record: {}", error);
+                        return std::optional<Document_Record>{};
+                    });
+                if (record) {
+                    return record;
+                }
+            }
+            return std::nullopt;
+        };
     }
     if (type == "warc") {
         return [](std::istream &in) -> std::optional<Document_Record> {
@@ -220,7 +240,7 @@ int main(int argc, char **argv)
     } else {
         builder.build(std::cin,
                       output_filename,
-                      record_parser(format),
+                      record_parser(format, std::cin),
                       term_processor(stemmer),
                       content_parser(content_parser_type),
                       batch_size,
