@@ -35,6 +35,7 @@ namespace pisa::parsing::html {
     options.max_errors = 1000;
     GumboOutput *output = gumbo_parse_with_options(&options, html.data(), html.size());
     if (output->errors.length >= options.max_errors) {
+        gumbo_destroy_output(&kGumboDefaultOptions, output);
         return std::string();
     }
     std::string  content = cleantext(output->root);
