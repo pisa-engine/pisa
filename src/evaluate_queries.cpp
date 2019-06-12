@@ -40,8 +40,8 @@ void evaluate_queries(const std::string &index_filename,
                       std::string const &query_type,
                       uint64_t k,
                       std::string const &documents_filename,
-                      std::string const &iteration = "Q0",
-                      std::string const &run_id = "R0")
+                      std::string const &run_id = "R0",
+                      std::string const &iteration = "Q0")
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -174,6 +174,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> thresholds_filename;
     std::optional<std::string> stopwords_filename;
     std::optional<std::string> stemmer = std::nullopt;
+    std::string run_id = "R0";
     uint64_t k = configuration::get().k;
     size_t threads = std::thread::hardware_concurrency();
     bool compressed = false;
@@ -185,6 +186,7 @@ int main(int argc, const char **argv)
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
+    app.add_option("-r,--run", run_id, "Run identifier");
     app.add_option("--threads", threads, "Thread Count");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
@@ -209,6 +211,9 @@ int main(int argc, const char **argv)
             }
         });
     }
+
+    if (run_id.empty())
+        run_id = "R0";
 
     auto push_query = [&](std::string const &query_line) {
         queries.push_back(parse_query(query_line, process_term, stopwords));
@@ -235,7 +240,8 @@ int main(int argc, const char **argv)
                                                                           type,                \
                                                                           query_type,          \
                                                                           k,                   \
-                                                                          documents_file);     \
+                                                                          documents_file,      \
+                                                                          run_id);             \
         } else {                                                                               \
             evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
                                                                       wand_data_filename,      \
@@ -244,7 +250,8 @@ int main(int argc, const char **argv)
                                                                       type,                    \
                                                                       query_type,              \
                                                                       k,                       \
-                                                                      documents_file);         \
+                                                                      documents_file,          \
+                                                                      run_id);                 \
         }                                                                                      \
         /**/
 
