@@ -306,17 +306,18 @@ class Forward_Index_Builder {
 	    remapping_ids_progress.update(1);
         }
         term_mapping.clear();
-
-        std::ofstream os(basename);
-        write_header(os, document_count);
-	progress concatenating_batches_progress("Concatenating batches", batch_count);
-        for (auto batch : ranges::view::iota(0, batch_count)) {
-            spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
-            std::ifstream is(batch_file(basename, batch));
-            is.ignore(8);
-            os << is.rdbuf();
-	    concatenating_batches_progress.update(1);
-        }
+	{
+            std::ofstream os(basename);
+            write_header(os, document_count);
+	    progress concatenating_batches_progress("Concatenating batches", batch_count);
+            for (auto batch : ranges::view::iota(0, batch_count)) {
+                spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
+                std::ifstream is(batch_file(basename, batch));
+                is.ignore(8);
+                os << is.rdbuf();
+	        concatenating_batches_progress.update(1);
+            }
+	}
 
         spdlog::info("Success.");
     }
