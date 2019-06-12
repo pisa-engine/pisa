@@ -30,6 +30,7 @@
 #include "type_safe.hpp"
 #include "tokenizer.hpp"
 #include "warcpp/warcpp.hpp"
+#include "util/progress.hpp"
 
 namespace pisa {
 
@@ -183,9 +184,11 @@ class Forward_Index_Builder {
     {
         std::unordered_map<std::string, Term_Id> mapping;
         Term_Id term_id{0};
+	progress reverse_mapping_progress("Mapping terms", terms.size());
         for (std::string &term : terms) {
             mapping.emplace(std::move(term), term_id);
             ++term_id;
+	    reverse_mapping_progress.update(1);
         }
         return mapping;
     }
@@ -216,8 +219,8 @@ class Forward_Index_Builder {
             spans.push(s);
         };
 
-        spdlog::info("Collecting terms");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
+        progress collecting_terms_progress("Collecting terms", batch_count);
+	for (auto batch : ranges::view::iota(0, batch_count)) {
             spdlog::debug("[Collecting terms] Batch {}/{}", batch, batch_count);
             auto mid = terms.size();
             std::ifstream terms_is(batch_file(basename, batch) + ".terms");
@@ -227,7 +230,8 @@ class Forward_Index_Builder {
             }
             std::sort(std::next(terms.begin(), mid), terms.end());
             push_span(Term_Span{mid, terms.size(), 0u});
-        }
+            collecting_terms_progress.update(1);
+	}
         while (spans.size() > 1) {
             auto rhs = spans.top();
             spans.pop();
@@ -246,12 +250,13 @@ class Forward_Index_Builder {
         std::ofstream term_os(basename + ".terms");
 
         {
-            spdlog::info("Merging titles");
             std::ofstream title_os(basename + ".documents");
-            for (auto batch : ranges::view::iota(0, batch_count)) {
+            progress merging_titles_progress("Merging titles", batch_count);
+	    for (auto batch : ranges::view::iota(0, batch_count)) {
                 spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
                 std::ifstream title_is(batch_file(basename, batch) + ".documents");
                 title_os << title_is.rdbuf();
+		merging_titles_progress.update(1);
             }
         }
         {
@@ -262,25 +267,28 @@ class Forward_Index_Builder {
                 .to_file(basename + ".doclex");
         }
         {
-            spdlog::info("Merging URLs");
             std::ofstream url_os(basename + ".urls");
+	    progress merging_urls_progress("Merging URLs", batch_count);
             for (auto batch : ranges::view::iota(0, batch_count)) {
                 spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
                 std::ifstream url_is(batch_file(basename, batch) + ".urls");
                 url_os << url_is.rdbuf();
+		merging_urls_progress.update(1);
             }
         }
 
         auto terms = collect_terms(basename, batch_count);
 
-        spdlog::info("Writing terms");
-        for (auto const& term : terms) { term_os << term << '\n'; }
+	progress writing_terms_progress("Writing terms", terms.size());
+        for (auto const& term : terms) { 
+	    term_os << term << '\n'; 
+            writing_terms_progress.update(1);   	
+	}
         encode_payload_vector(terms.begin(), terms.end()).to_file(basename + ".termlex");
 
-        spdlog::info("Mapping terms");
         auto term_mapping = reverse_mapping(std::move(terms));
 
-        spdlog::info("Remapping IDs");
+	progress remapping_ids_progress("Remapping IDs", batch_count);
         for (auto batch : ranges::view::iota(0, batch_count)) {
             spdlog::debug("[Remapping IDs] Batch {}/{}", batch, batch_count);
             auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
@@ -295,17 +303,19 @@ class Forward_Index_Builder {
                     term_id = mapping[term_id].as_int();
                 }
             }
+	    remapping_ids_progress.update(1);
         }
         term_mapping.clear();
 
-        spdlog::info("Concatenating batches");
         std::ofstream os(basename);
         write_header(os, document_count);
+	progress concatenating_batches_progress("Concatenating batches", batch_count);
         for (auto batch : ranges::view::iota(0, batch_count)) {
             spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
             std::ifstream is(batch_file(basename, batch));
             is.ignore(8);
             os << is.rdbuf();
+	    concatenating_batches_progress.update(1);
         }
 
         spdlog::info("Success.");
