@@ -239,15 +239,16 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
     progress inverting_progress("Inverting", std::distance(doc_iter, coll.end()));
     while (doc_iter != coll.end()) {
         std::vector<gsl::span<Term_Id const>> documents;
-        for (; doc_iter != coll.end() && documents.size() < batch_size; ++doc_iter) {
+        auto start = doc_iter;
+	for (; doc_iter != coll.end() && documents.size() < batch_size; ++doc_iter) {
             auto document_sequence = *doc_iter;
             documents.emplace_back(reinterpret_cast<Term_Id const *>(document_sequence.begin()),
                                    document_sequence.size());
-	    inverting_progress.update(1);
         }
         auto index = invert_range(documents, Document_Id(documents_processed), threads);
         write(fmt::format("{}.batch.{}", output_basename, batch), index, term_count);
         documents_processed += documents.size();
+	inverting_progress.update(documents_processed);
         batch += 1;
     }
     return batch;
