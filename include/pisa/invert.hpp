@@ -23,6 +23,7 @@
 
 #include "binary_collection.hpp"
 #include "util/util.hpp"
+#include "util/progress.hpp"
 
 namespace pisa {
 
@@ -235,15 +236,15 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
     binary_collection coll(input_basename.c_str());
     auto              doc_iter            = ++coll.begin();
     uint32_t          documents_processed = 0;
+    progress inverting_progress("Inverting", std::distance(doc_iter, coll.end()));
     while (doc_iter != coll.end()) {
         std::vector<gsl::span<Term_Id const>> documents;
         for (; doc_iter != coll.end() && documents.size() < batch_size; ++doc_iter) {
             auto document_sequence = *doc_iter;
             documents.emplace_back(reinterpret_cast<Term_Id const *>(document_sequence.begin()),
                                    document_sequence.size());
+	    inverting_progress.update(1);
         }
-        spdlog::info(
-            "Inverting [{}, {})", documents_processed, documents_processed + documents.size());
         auto index = invert_range(documents, Document_Id(documents_processed), threads);
         write(fmt::format("{}.batch.{}", output_basename, batch), index, term_count);
         documents_processed += documents.size();
