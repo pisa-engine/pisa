@@ -1,3 +1,6 @@
+### Version 0.6.6
+- Fix: issue with using an old version of trecpp
+
 ### Version 0.6.5
 - Added node_modules to gitignore
 - Log stats on the inverted index (#208)
