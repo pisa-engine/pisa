@@ -1,3 +1,15 @@
+### Version 0.6.5
+- Added node_modules to gitignore
+- Log stats on the inverted index (#208)
+- Update TBB and PSTL (#211)
+- Integrate new trecpp version (#210)
+- Introduce error limit for gumbo (#213)
+- Updated CLI11 (#212)
+- Update trecpp (#214)
+- Fix sorting term bug (#209)
+- Fix memory leak in cleantext (#215)
+- Add run_id (#216)
+
 ### Version 0.6.4
 - Update README.md
 - Update README.md
