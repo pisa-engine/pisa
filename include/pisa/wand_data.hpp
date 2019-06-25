@@ -1,5 +1,5 @@
 #pragma once
-
+#include <numeric>
 #include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
 
@@ -28,6 +28,7 @@ class wand_data {
     {
         std::vector<float> norm_lens(num_docs);
         std::vector<float> max_term_weight;
+        std::vector<uint32_t> collection_terms_count;
         global_parameters params;
         double lens_sum = 0;
         spdlog::info("Reading sizes...");
@@ -47,6 +48,8 @@ class wand_data {
         {
             pisa::progress progress("Processing posting lists", coll.size());
             for (auto const &seq : coll) {
+                uint32_t term_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
+                collection_terms_count.push_back(term_count);
                 auto v = builder.add_sequence(seq, coll, norm_lens, block_size);
                 max_term_weight.push_back(v);
                 progress.update(1);
@@ -54,10 +57,13 @@ class wand_data {
         }
         builder.build(m_block_wand);
         m_norm_lens.steal(norm_lens);
+        m_collection_terms_count.steal(collection_terms_count);
         m_max_term_weight.steal(max_term_weight);
     }
 
     float norm_len(uint64_t doc_id) const { return m_norm_lens[doc_id]; }
+
+    uint32_t collection_term_frequency(uint64_t term_id) const { return m_collection_terms_count[term_id]; }
 
     float max_term_weight(uint64_t list) const { return m_max_term_weight[list]; }
 
@@ -74,6 +80,7 @@ class wand_data {
 
    private:
     block_wand_type m_block_wand;
+    mapper::mappable_vector<uint32_t> m_collection_terms_count;
     mapper::mappable_vector<float> m_norm_lens;
     mapper::mappable_vector<float> m_max_term_weight;
 };
