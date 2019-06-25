@@ -54,6 +54,8 @@ class uniform_score_compressor {
                 uint64_t elem = *(docs_begin + i);
                 elem = elem << score_bits_size;
                 elem += *(score_begin + i);
+
+                assert(i == 0 || temp.back() < elem);
                 temp.push_back(elem);
             }
 
@@ -97,28 +99,38 @@ class wand_data_compressed {
             spdlog::info("Storing max weight for each list and for each block...");
         }
 
+        template <typename Scorer>
         float add_sequence(binary_freq_collection::sequence const &seq,
                            binary_freq_collection const &coll,
                            std::vector<uint32_t> const &doc_lens,
                            float avg_len,
+                           Scorer scorer,
                            BlockSize block_size)
         {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
                 auto t =
                     block_size.type() == typeid(FixedBlock)
-                        ? static_block_partition(
-                              seq, doc_lens, avg_len, boost::get<FixedBlock>(block_size).size)
+                        ? static_block_partition(seq,
+                                                 doc_lens,
+                                                 avg_len,
+                                                 scorer,
+                                                 boost::get<FixedBlock>(block_size).size)
                         : variable_block_partition(coll,
                                                    seq,
                                                    doc_lens,
                                                    avg_len,
+                                                   scorer,
                                                    boost::get<VariableBlock>(block_size).lambda);
 
+                float max_score = *(std::max_element(t.second.begin(), t.second.end()));
+                for (auto &&s : t.second) {
+                    s /= max_score;
+                }
                 auto ind = compressor_builder.compress_data(t.second);
 
                 compressor_builder.add_posting_list(t.first.size(), t.first.begin(), ind.begin());
 
-                max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
+                max_term_weight.push_back(max_score);
                 total_elements += seq.docs.size();
                 total_blocks += t.first.size();
             } else {
@@ -151,7 +163,11 @@ class wand_data_compressed {
         friend class wand_data_compressed;
 
        public:
-        enumerator(compact_elias_fano::enumerator docs_enum) : m_docs_enum(docs_enum) { reset(); }
+        enumerator(compact_elias_fano::enumerator docs_enum, float max_term_weight)
+            : m_docs_enum(docs_enum), m_max_term_weight(max_term_weight)
+        {
+            reset();
+        }
 
         void reset()
         {
@@ -172,13 +188,17 @@ class wand_data_compressed {
             }
         }
 
-        float PISA_FLATTEN_FUNC score() { return uniform_score_compressor::score(m_cur_score_index); }
+        float PISA_FLATTEN_FUNC score()
+        {
+            return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;
+        }
 
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
 
        private:
         uint64_t m_cur_docid;
         uint64_t m_cur_score_index;
+        float m_max_term_weight;
         compact_elias_fano::enumerator m_docs_enum;
     };
 
@@ -186,7 +206,7 @@ class wand_data_compressed {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    enumerator get_enum(size_t i) const
+    enumerator get_enum(size_t i, float max_term_weight) const
     {
         assert(i < size());
         auto docs_it = m_docs_sequences.get(m_params, i);
@@ -195,7 +215,7 @@ class wand_data_compressed {
         typename compact_elias_fano::enumerator docs_enum(
             m_docs_sequences.bits(), docs_it.position(), num_docs(), n, m_params);
 
-        return enumerator(docs_enum);
+        return enumerator(docs_enum, max_term_weight);
     }
 
     template <typename Visitor>

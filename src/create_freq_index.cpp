@@ -10,7 +10,6 @@
 
 #include "mappable/mapper.hpp"
 
-#include "scorer/bm25.hpp"
 #include "configuration.hpp"
 #include "util/index_build_utils.hpp"
 #include "index_types.hpp"
@@ -48,7 +47,7 @@ void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &t
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
-template <typename InputCollection, typename CollectionType, typename Scorer = pisa::bm25>
+template <typename InputCollection, typename CollectionType>
 void create_collection(InputCollection const &input,
                        pisa::global_parameters const &params,
                        const std::optional<std::string> &output_filename,

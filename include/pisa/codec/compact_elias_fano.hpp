@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include "bit_vector.hpp"
 #include "util/broadword.hpp"
+#include "fmt/format.h"
 
 #include "global_parameters.hpp"
 #include "util/util.hpp"
@@ -107,7 +108,7 @@ namespace pisa {
                 uint64_t v = *it++;
 
                 if (i && v < last) {
-                    throw std::runtime_error("Sequence is not sorted");
+                    throw std::runtime_error(fmt::format("Sequence is not sorted. {} < {}",v,last));
                 }
 
                 assert(v < universe);

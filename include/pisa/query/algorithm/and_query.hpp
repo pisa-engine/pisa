@@ -6,17 +6,13 @@
 
 namespace pisa {
 
-template <bool with_freqs>
 struct and_query {
 
     template<typename CursorRange>
     auto operator()(CursorRange &&cursors, uint32_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
-        using Doc_t = uint32_t;
-        using Score_t = float;
-        using DocScore_t = std::pair<Doc_t, Score_t>;
-        using Result_t = typename std::conditional<with_freqs, DocScore_t, Doc_t>::type;
+        using Result_t = uint32_t;
 
         std::vector<Result_t> results;
         if (cursors.empty())
@@ -28,22 +24,19 @@ struct and_query {
             ordered_cursors.push_back(&en);
         }
 
-
         // sort by increasing frequency
         std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
-            return lhs->docs_enum.size() < rhs->docs_enum.size();
+            return lhs->size() < rhs->size();
         });
 
-        uint32_t candidate = ordered_cursors[0]->docs_enum.docid();
+        uint32_t candidate = ordered_cursors[0]->docid();
         size_t   i         = 1;
-
-
 
         while (candidate < max_docid) {
             for (; i < ordered_cursors.size(); ++i) {
-                ordered_cursors[i]->docs_enum.next_geq(candidate);
-                if (ordered_cursors[i]->docs_enum.docid() != candidate) {
-                    candidate = ordered_cursors[i]->docs_enum.docid();
+                ordered_cursors[i]->next_geq(candidate);
+                if (ordered_cursors[i]->docid() != candidate) {
+                    candidate = ordered_cursors[i]->docid();
                     i         = 0;
                     break;
                 }
@@ -51,18 +44,10 @@ struct and_query {
 
             if (i == ordered_cursors.size()) {
 
-                if constexpr (with_freqs) {
-                    auto score = 0.0f;
-                    for (i = 0; i < ordered_cursors.size(); ++i) {
-                        score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
-                    }
-                    results.emplace_back(candidate, score);
-                } else {
-                    results.push_back(candidate);
-                }
+                results.push_back(candidate);
 
-                ordered_cursors[0]->docs_enum.next();
-                candidate = ordered_cursors[0]->docs_enum.docid();
+                ordered_cursors[0]->next();
+                candidate = ordered_cursors[0]->docid();
                 i         = 1;
             }
         }

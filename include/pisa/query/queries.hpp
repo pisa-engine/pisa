@@ -15,12 +15,10 @@
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/spdlog.h>
-
 #include "index_types.hpp"
 #include "io.hpp"
 #include "payload_vector.hpp"
 #include "query/queries.hpp"
-#include "scorer/score_function.hpp"
 #include "tokenizer.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
