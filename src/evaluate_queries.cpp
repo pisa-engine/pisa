@@ -136,8 +136,8 @@ void evaluate_queries(const std::string &index_filename,
         raw_results[query_idx] = query_fun(queries[query_idx]);
     });
     auto end_batch = std::chrono::steady_clock::now();
-   
-    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) { 
+
+    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id;
         for (auto && [ rank, result ] : enumerate(results)) {
@@ -169,6 +169,7 @@ int main(int argc, const char **argv)
     std::string index_filename;
     std::optional<std::string> terms_file;
     std::string documents_file;
+    std::string scorer_name;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
@@ -187,6 +188,7 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_option("-r,--run", run_id, "Run identifier");
+    app.add_option("-s,--scorer", scorer_name, "Scorer function");
     app.add_option("--threads", threads, "Thread Count");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
