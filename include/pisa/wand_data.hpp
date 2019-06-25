@@ -21,20 +21,17 @@ class wand_data {
     wand_data() {}
 
     template <typename LengthsIterator>
-    wand_data(LengthsIterator len_it,
-              uint64_t num_docs,
-              binary_freq_collection const &coll,
-              BlockSize block_size)
-    {
-        std::vector<float> norm_lens(num_docs);
-        std::vector<float> max_term_weight;
+    wand_data(LengthsIterator len_it, uint64_t num_docs, binary_freq_collection const &coll,
+              BlockSize block_size) {
+        std::vector<float>    norm_lens(num_docs);
+        std::vector<float>    max_term_weight;
         std::vector<uint32_t> collection_terms_count;
-        global_parameters params;
-        double lens_sum = 0;
+        global_parameters     params;
+        double                lens_sum = 0;
         spdlog::info("Reading sizes...");
 
         for (size_t i = 0; i < num_docs; ++i) {
-            float len = *len_it++;
+            float len    = *len_it++;
             norm_lens[i] = len;
             lens_sum += len;
         }
@@ -59,11 +56,16 @@ class wand_data {
         m_norm_lens.steal(norm_lens);
         m_collection_terms_count.steal(collection_terms_count);
         m_max_term_weight.steal(max_term_weight);
+        m_lens_sum = lens_sum;
     }
+
+    double collection_len() const { return m_lens_sum; }
 
     float norm_len(uint64_t doc_id) const { return m_norm_lens[doc_id]; }
 
-    uint32_t collection_term_frequency(uint64_t term_id) const { return m_collection_terms_count[term_id]; }
+    uint32_t collection_term_frequency(uint64_t term_id) const {
+        return m_collection_terms_count[term_id];
+    }
 
     float max_term_weight(uint64_t list) const { return m_max_term_weight[list]; }
 
@@ -72,16 +74,17 @@ class wand_data {
     const block_wand_type &get_block_wand() const { return m_block_wand; }
 
     template <typename Visitor>
-    void map(Visitor &visit)
-    {
-        visit(m_block_wand, "m_block_wand")(m_norm_lens, "m_norm_lens")(m_max_term_weight,
-                                                                        "m_max_term_weight");
+    void map(Visitor &visit) {
+        visit(m_block_wand, "m_block_wand")(m_collection_terms_count, "m_collection_terms_count")(
+            m_norm_lens, "m_norm_lens")(m_max_term_weight, "m_max_term_weight")(m_lens_sum,
+                                                                                "m_lens_sum");
     }
 
    private:
-    block_wand_type m_block_wand;
+    block_wand_type                   m_block_wand;
     mapper::mappable_vector<uint32_t> m_collection_terms_count;
-    mapper::mappable_vector<float> m_norm_lens;
-    mapper::mappable_vector<float> m_max_term_weight;
+    mapper::mappable_vector<float>    m_norm_lens;
+    mapper::mappable_vector<float>    m_max_term_weight;
+    double                            m_lens_sum;
 };
-} // namespace pisa
+}  // namespace pisa
