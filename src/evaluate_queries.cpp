@@ -169,7 +169,7 @@ int main(int argc, const char **argv)
     std::string index_filename;
     std::optional<std::string> terms_file;
     std::string documents_file;
-    std::string scorer_name;
+    std::string scorer_name = "bm25";
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
@@ -226,6 +226,12 @@ int main(int argc, const char **argv)
         io::for_each_line(is, push_query);
     } else {
         io::for_each_line(std::cin, push_query);
+    }
+    
+    if(scorer_name == "bm25") {
+    } else if (scorer_name == "qld") {
+    } else {
+        spdlog::error("Unknown scorer {}", scorer_name); 
     }
 
     /**/
