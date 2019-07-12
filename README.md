@@ -13,8 +13,7 @@
 [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/enQtNjM1NTk3NzIyMjE0LTQ3ZjI1MmU2ZjAyODE4YjNiNTY5YWYzMjg5Njc5ZDM5MzhhZDBiMGE5MTFhMTViN2ZjNzg0OTkzMDAwMDg3YTE)
 [![DOI](https://zenodo.org/badge/150449350.svg)](https://zenodo.org/badge/latestdoi/150449350)
 
-Description
-------------
+## Description
 
 PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
 
@@ -30,6 +29,20 @@ Some features of PISA are listed below:
 The best way to get started is by reading the [official documentation](http://pisa.readthedocs.io).
 
 If you want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/.github/CONTRIBUTING.md) page.
+
+## Reference
+
+Reference to cite when you use PISA in a research paper:
+
+```
+@inproceedings{MSMS2019,
+  title={{PISA}: {P}erformant {I}ndexes and {S}earch for {A}cademia},
+  author={Mallia, Antonio and Siedlaczek, Michal and Mackenzie, Joel and Suel, Torsten},
+  booktitle={Proceedings of the Open-Source IR Replicability Challenge (OSIRRC 2019)},
+  year={2019}
+}
+```
+
 
 #### Credits
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).
