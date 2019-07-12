@@ -57,7 +57,7 @@ class wand_data {
 
     inline float norm_len(uint64_t doc_id) const
     {
-        return static_cast<float>(m_doc_lens[doc_id]) / m_avg_len;
+        return m_doc_lens[doc_id] / m_avg_len;
     }
 
     size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
