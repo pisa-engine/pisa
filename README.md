@@ -10,8 +10,11 @@
 [![GitHub forks](https://img.shields.io/github/forks/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/network)
 [![GitHub stars](https://img.shields.io/github/stars/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/stargazers)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/pisa-engine/pisa/pulls)
-[![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/enQtNjM1NTk3NzIyMjE0LTQ3ZjI1MmU2ZjAyODE4YjNiNTY5YWYzMjg5Njc5ZDM5MzhhZDBiMGE5MTFhMTViN2ZjNzg0OTkzMDAwMDg3YTE)
 [![DOI](https://zenodo.org/badge/150449350.svg)](https://zenodo.org/badge/latestdoi/150449350)
+
+## Join us on Slack
+Get in touch via Slack: [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/enQtNjM1NTk3NzIyMjE0LTQ3ZjI1MmU2ZjAyODE4YjNiNTY5YWYzMjg5Njc5ZDM5MzhhZDBiMGE5MTFhMTViN2ZjNzg0OTkzMDAwMDg3YTE)
+
 
 ## Description
 
