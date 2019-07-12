@@ -101,7 +101,7 @@ class wand_data_compressed {
 
         float add_sequence(binary_freq_collection::sequence const &seq,
                            binary_freq_collection const &coll,
-                           std::vector<float> const &doc_lens,
+                           std::vector<uint32_t> const &doc_lens,
                            float avg_len,
                            BlockSize block_size)
         {

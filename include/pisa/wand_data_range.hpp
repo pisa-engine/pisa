@@ -57,7 +57,7 @@ class wand_data_range {
 
         float add_sequence(binary_freq_collection::sequence const &term_seq,
                            binary_freq_collection const &coll,
-                           std::vector<float> const &doc_lens,
+                           std::vector<uint32_t> const &doc_lens,
                            float avg_len,
                            [[maybe_unused]] BlockSize block_size)
         {
