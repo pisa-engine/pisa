@@ -26,7 +26,7 @@ class wand_data {
               binary_freq_collection const &coll,
               BlockSize block_size)
     {
-        std::vector<float> doc_lens(num_docs);
+        std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
         global_parameters params;
         double lens_sum = 0;
@@ -55,7 +55,12 @@ class wand_data {
         m_avg_len = avg_len;
     }
 
-    float doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
+    inline float norm_len(uint64_t doc_id) const
+    {
+        return static_cast<float>(m_doc_lens[doc_id]) / m_avg_len;
+    }
+
+    size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
 
     float avg_len() const { return m_avg_len; }
 
@@ -74,7 +79,7 @@ class wand_data {
 
    private:
     block_wand_type m_block_wand;
-    mapper::mappable_vector<float> m_doc_lens;
+    mapper::mappable_vector<uint32_t> m_doc_lens;
     float m_avg_len;
     mapper::mappable_vector<float> m_max_term_weight;
 };

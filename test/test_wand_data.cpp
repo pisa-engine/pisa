@@ -37,7 +37,7 @@ TEST_CASE("wand_data_range")
                 auto w = wdata_range.getenum(term_id);
                 for (auto && [ docid, freq ] : ranges::view::zip(seq.docs, seq.freqs)) {
                     float score = Scorer::doc_term_weight(
-                        freq, wdata_range.doc_len(docid) / wdata_range.avg_len());
+                        freq, wdata_range.norm_len(docid));
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
                     {
