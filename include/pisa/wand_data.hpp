@@ -21,16 +21,19 @@ class wand_data {
     wand_data() {}
 
     template <typename LengthsIterator>
-    wand_data(LengthsIterator len_it, uint64_t num_docs, binary_freq_collection const &coll,
-              BlockSize block_size) {
+    wand_data(LengthsIterator len_it,
+              uint64_t num_docs,
+              binary_freq_collection const &coll,
+              BlockSize block_size)
+    {
         std::vector<float> doc_lens(num_docs);
         std::vector<float> max_term_weight;
-        global_parameters  params;
-        double             lens_sum = 0;
+        global_parameters params;
+        double lens_sum = 0;
         spdlog::info("Reading sizes...");
 
         for (size_t i = 0; i < num_docs; ++i) {
-            float len   = *len_it++;
+            float len = *len_it++;
             doc_lens[i] = len;
             lens_sum += len;
         }
@@ -63,15 +66,16 @@ class wand_data {
     const block_wand_type &get_block_wand() const { return m_block_wand; }
 
     template <typename Visitor>
-    void map(Visitor &visit) {
+    void map(Visitor &visit)
+    {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(m_avg_len, "m_avg_len")(
             m_max_term_weight, "m_max_term_weight");
     }
 
    private:
-    block_wand_type                m_block_wand;
+    block_wand_type m_block_wand;
     mapper::mappable_vector<float> m_doc_lens;
-    float                          m_avg_len;
+    float m_avg_len;
     mapper::mappable_vector<float> m_max_term_weight;
 };
-}  // namespace pisa
+} // namespace pisa
