@@ -36,7 +36,7 @@ TEST_CASE("wand_data_range")
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
                 for (auto &&[docid, freq] : ranges::view::zip(seq.docs, seq.freqs)) {
-                    float score = Scorer::doc_term_weight(freq, wdata_range.norm_len(docid));
+                    float score = Scorer::doc_term_weight(freq, wdata_range.doc_len(docid)/wdata_range.avg_len());
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
                     {
@@ -74,7 +74,7 @@ TEST_CASE("wand_data_range")
                 WandTypeRange::enumerator we(0, bm);
                 for (auto &&[pos, docid, freq] :
                      ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs)) {
-                    float score = Scorer::doc_term_weight(freq, wdata_range.norm_len(docid));
+                    float score = Scorer::doc_term_weight(freq, wdata_range.doc_len(docid)/wdata_range.avg_len());
                     we.next_geq(docid);
                     CHECKED_ELSE(we.score() >= score)
                     {

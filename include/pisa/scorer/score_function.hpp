@@ -7,6 +7,6 @@ struct Score_Function {
     const Wand& wdata;
 
     [[nodiscard]] float operator()(uint32_t doc, uint32_t freq) const {
-        return query_weight * Scorer::doc_term_weight(freq, wdata.norm_len(doc));
+        return query_weight * Scorer::doc_term_weight(freq, wdata.doc_len(doc)/wdata.avg_len());
     }
 };

@@ -17,23 +17,19 @@
 
 namespace pisa {
 namespace {
-    static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
+static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
 }
 
 class uniform_score_compressor {
-
    public:
     class builder {
        public:
         builder(uint64_t num_docs, global_parameters const &params)
             : m_params(params),
               m_num_docs((num_docs + 1) << score_bits_size),
-              m_docs_sequences(params)
-        {
-        }
+              m_docs_sequences(params) {}
 
-        std::vector<uint32_t> compress_data(std::vector<float> effective_scores)
-        {
+        std::vector<uint32_t> compress_data(std::vector<float> effective_scores) {
             float quant = 1.f / configuration::get().reference_size;
 
             // Partition scores.
@@ -41,26 +37,23 @@ class uniform_score_compressor {
             score_indexes.reserve(effective_scores.size());
             for (const auto &score : effective_scores) {
                 size_t pos = 1;
-                while (score > quant * pos)
-                    pos++;
+                while (score > quant * pos) pos++;
                 score_indexes.push_back(pos - 1);
             }
             return score_indexes;
         }
 
         template <typename Sequence = compact_elias_fano, typename DocsIterator>
-        void add_posting_list(uint64_t n, DocsIterator docs_begin, DocsIterator score_begin)
-        {
+        void add_posting_list(uint64_t n, DocsIterator docs_begin, DocsIterator score_begin) {
             std::vector<uint64_t> temp;
             for (size_t i = 0; i < n; ++i) {
                 uint64_t elem = *(docs_begin + i);
-                elem = elem << score_bits_size;
+                elem          = elem << score_bits_size;
                 elem += *(score_begin + i);
                 temp.push_back(elem);
             }
 
-            if (!n)
-                throw std::invalid_argument("List must be nonempty");
+            if (!n) throw std::invalid_argument("List must be nonempty");
             bit_vector_builder docs_bits;
             write_gamma_nonzero(docs_bits, n);
             Sequence::write(docs_bits, temp.begin(), m_num_docs, n, m_params);
@@ -74,13 +67,12 @@ class uniform_score_compressor {
         uint64_t num_docs() { return m_num_docs; }
 
        private:
-        global_parameters m_params;
-        uint64_t m_num_docs;
+        global_parameters             m_params;
+        uint64_t                      m_num_docs;
         bitvector_collection::builder m_docs_sequences;
     };
 
-    static float inline score(uint32_t index)
-    {
+    static float inline score(uint32_t index) {
         const float quant = 1.f / configuration::get().reference_size;
         return quant * (index + 1);
     }
@@ -95,25 +87,20 @@ class wand_data_compressed {
             : total_elements(0),
               total_blocks(0),
               params(params),
-              compressor_builder(coll.num_docs(), params)
-        {
+              compressor_builder(coll.num_docs(), params) {
             spdlog::info("Storing max weight for each list and for each block...");
         }
 
         float add_sequence(binary_freq_collection::sequence const &seq,
-                           binary_freq_collection const &coll,
-                           std::vector<float> const &norm_lens,
-                           BlockSize block_size)
-        {
-
+                           binary_freq_collection const &coll, std::vector<float> const &doc_lens,
+                           float avg_len, BlockSize block_size) {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
-
                 auto t =
                     block_size.type() == typeid(FixedBlock)
-                        ? static_block_partition(
-                              seq, norm_lens, boost::get<FixedBlock>(block_size).size)
-                        : variable_block_partition(
-                              coll, seq, norm_lens, boost::get<VariableBlock>(block_size).lambda);
+                        ? static_block_partition(seq, doc_lens, avg_len,
+                                                 boost::get<FixedBlock>(block_size).size)
+                        : variable_block_partition(coll, seq, doc_lens, avg_len,
+                                                   boost::get<VariableBlock>(block_size).lambda);
 
                 auto ind = compressor_builder.compress_data(t.second);
 
@@ -131,20 +118,19 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
-        void build(wand_data_compressed &wdata)
-        {
+        void build(wand_data_compressed &wdata) {
             wdata.m_num_docs = compressor_builder.num_docs();
-            wdata.m_params = compressor_builder.params();
+            wdata.m_params   = compressor_builder.params();
             compressor_builder.build(wdata.m_docs_sequences);
             spdlog::info("number of elements / number of blocks: {}",
                          (float)total_elements / (float)total_blocks);
         }
 
-        uint64_t total_elements;
-        uint64_t total_blocks;
-        std::vector<float> score_references;
-        std::vector<float> max_term_weight;
-        global_parameters const &params;
+        uint64_t                           total_elements;
+        uint64_t                           total_blocks;
+        std::vector<float>                 score_references;
+        std::vector<float>                 max_term_weight;
+        global_parameters const &          params;
         typename score_compressor::builder compressor_builder;
     };
 
@@ -154,21 +140,19 @@ class wand_data_compressed {
        public:
         enumerator(compact_elias_fano::enumerator docs_enum) : m_docs_enum(docs_enum) { reset(); }
 
-        void reset()
-        {
-            uint64_t val = m_docs_enum.move(0).second;
-            m_cur_docid = val >> score_bits_size;
-            uint64_t mask = configuration::get().reference_size - 1;
+        void reset() {
+            uint64_t val      = m_docs_enum.move(0).second;
+            m_cur_docid       = val >> score_bits_size;
+            uint64_t mask     = configuration::get().reference_size - 1;
             m_cur_score_index = (val & mask);
         }
 
-        void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound)
-        {
+        void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
             if (docid() != lower_bound) {
-                lower_bound = lower_bound << score_bits_size;
-                auto val = m_docs_enum.next_geq(lower_bound);
-                m_cur_docid = val.second >> score_bits_size;
-                uint64_t mask = configuration::get().reference_size - 1;
+                lower_bound       = lower_bound << score_bits_size;
+                auto val          = m_docs_enum.next_geq(lower_bound);
+                m_cur_docid       = val.second >> score_bits_size;
+                uint64_t mask     = configuration::get().reference_size - 1;
                 m_cur_score_index = (val.second & mask);
             }
         }
@@ -178,8 +162,8 @@ class wand_data_compressed {
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
 
        private:
-        uint64_t m_cur_docid;
-        uint64_t m_cur_score_index;
+        uint64_t                       m_cur_docid;
+        uint64_t                       m_cur_score_index;
         compact_elias_fano::enumerator m_docs_enum;
     };
 
@@ -187,12 +171,11 @@ class wand_data_compressed {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    enumerator get_enum(size_t i) const
-    {
+    enumerator get_enum(size_t i) const {
         assert(i < size());
         auto docs_it = m_docs_sequences.get(m_params, i);
 
-        uint64_t n = read_gamma_nonzero(docs_it);
+        uint64_t                                n = read_gamma_nonzero(docs_it);
         typename compact_elias_fano::enumerator docs_enum(
             m_docs_sequences.bits(), docs_it.position(), num_docs(), n, m_params);
 
@@ -200,15 +183,14 @@ class wand_data_compressed {
     }
 
     template <typename Visitor>
-    void map(Visitor &visit)
-    {
+    void map(Visitor &visit) {
         visit(m_params, "m_params")(m_num_docs, "m_num_docs")(m_docs_sequences, "m_docs_sequences");
     }
 
    private:
-    global_parameters m_params;
-    uint64_t m_num_docs;
+    global_parameters    m_params;
+    uint64_t             m_num_docs;
     bitvector_collection m_docs_sequences;
 };
 
-} // namespace pisa
+}  // namespace pisa
