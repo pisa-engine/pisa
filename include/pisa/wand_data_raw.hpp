@@ -33,18 +33,20 @@ class wand_data_raw {
 
         float add_sequence(binary_freq_collection::sequence const &seq,
                            binary_freq_collection const &coll,
-                           std::vector<float> const &norm_lens,
+                           std::vector<uint32_t> const &doc_lens,
+                           float avg_len,
                            BlockSize block_size)
         {
-
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
-
                 auto t =
                     block_size.type() == typeid(FixedBlock)
                         ? static_block_partition(
-                              seq, norm_lens, boost::get<FixedBlock>(block_size).size)
-                        : variable_block_partition(
-                              coll, seq, norm_lens, boost::get<VariableBlock>(block_size).lambda);
+                              seq, doc_lens, avg_len, boost::get<FixedBlock>(block_size).size)
+                        : variable_block_partition(coll,
+                                                   seq,
+                                                   doc_lens,
+                                                   avg_len,
+                                                   boost::get<VariableBlock>(block_size).lambda);
 
                 block_max_term_weight.insert(
                     block_max_term_weight.end(), t.second.begin(), t.second.end());
@@ -98,8 +100,8 @@ class wand_data_raw {
 
         void PISA_NOINLINE next_geq(uint64_t lower_bound)
         {
-            while (cur_pos + 1 < block_number &&
-                   m_block_docid[block_start + cur_pos] < lower_bound) {
+            while (cur_pos + 1 < block_number
+                   && m_block_docid[block_start + cur_pos] < lower_bound) {
                 cur_pos++;
             }
         }

@@ -21,7 +21,6 @@ namespace {
 }
 
 class uniform_score_compressor {
-
    public:
     class builder {
        public:
@@ -102,18 +101,20 @@ class wand_data_compressed {
 
         float add_sequence(binary_freq_collection::sequence const &seq,
                            binary_freq_collection const &coll,
-                           std::vector<float> const &norm_lens,
+                           std::vector<uint32_t> const &doc_lens,
+                           float avg_len,
                            BlockSize block_size)
         {
-
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
-
                 auto t =
                     block_size.type() == typeid(FixedBlock)
                         ? static_block_partition(
-                              seq, norm_lens, boost::get<FixedBlock>(block_size).size)
-                        : variable_block_partition(
-                              coll, seq, norm_lens, boost::get<VariableBlock>(block_size).lambda);
+                              seq, doc_lens, avg_len, boost::get<FixedBlock>(block_size).size)
+                        : variable_block_partition(coll,
+                                                   seq,
+                                                   doc_lens,
+                                                   avg_len,
+                                                   boost::get<VariableBlock>(block_size).lambda);
 
                 auto ind = compressor_builder.compress_data(t.second);
 

@@ -57,7 +57,8 @@ class wand_data_range {
 
         float add_sequence(binary_freq_collection::sequence const &term_seq,
                            binary_freq_collection const &coll,
-                           std::vector<float> const &norm_lens,
+                           std::vector<uint32_t> const &doc_lens,
+                           float avg_len,
                            [[maybe_unused]] BlockSize block_size)
         {
             float max_score = 0.0f;
@@ -66,7 +67,7 @@ class wand_data_range {
             for (auto i = 0; i < term_seq.docs.size(); ++i) {
                 uint64_t docid = *(term_seq.docs.begin() + i);
                 uint64_t freq = *(term_seq.freqs.begin() + i);
-                float score = Scorer::doc_term_weight(freq, norm_lens[docid]);
+                float score = Scorer::doc_term_weight(freq, doc_lens[docid] / avg_len);
                 max_score = std::max(max_score, score);
                 size_t pos = docid / range_size;
                 float &bm = b_max[pos];

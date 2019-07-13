@@ -35,8 +35,9 @@ TEST_CASE("wand_data_range")
             if (seq.docs.size() >= 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
-                for (auto &&[docid, freq] : ranges::view::zip(seq.docs, seq.freqs)) {
-                    float score = Scorer::doc_term_weight(freq, wdata_range.norm_len(docid));
+                for (auto && [ docid, freq ] : ranges::view::zip(seq.docs, seq.freqs)) {
+                    float score = Scorer::doc_term_weight(
+                        freq, wdata_range.norm_len(docid));
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
                     {
@@ -72,9 +73,10 @@ TEST_CASE("wand_data_range")
                 const mapper::mappable_vector<float> bm =
                     w.compute_block_max_scores(list, score_func);
                 WandTypeRange::enumerator we(0, bm);
-                for (auto &&[pos, docid, freq] :
+                for (auto && [ pos, docid, freq ] :
                      ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs)) {
-                    float score = Scorer::doc_term_weight(freq, wdata_range.norm_len(docid));
+                    float score = Scorer::doc_term_weight(
+                        freq, wdata_range.norm_len(docid));
                     we.next_geq(docid);
                     CHECKED_ELSE(we.score() >= score)
                     {

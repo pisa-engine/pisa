@@ -26,7 +26,7 @@ class wand_data {
               binary_freq_collection const &coll,
               BlockSize block_size)
     {
-        std::vector<float> norm_lens(num_docs);
+        std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
         global_parameters params;
         double lens_sum = 0;
@@ -34,30 +34,35 @@ class wand_data {
 
         for (size_t i = 0; i < num_docs; ++i) {
             float len = *len_it++;
-            norm_lens[i] = len;
+            doc_lens[i] = len;
             lens_sum += len;
         }
 
         float avg_len = float(lens_sum / double(num_docs));
-        for (auto &norm_len : norm_lens) {
-            norm_len /= avg_len;
-        }
 
         typename block_wand_type::builder builder(coll, params);
         {
             pisa::progress progress("Processing posting lists", coll.size());
             for (auto const &seq : coll) {
-                auto v = builder.add_sequence(seq, coll, norm_lens, block_size);
+                auto v = builder.add_sequence(seq, coll, doc_lens, avg_len, block_size);
                 max_term_weight.push_back(v);
                 progress.update(1);
             }
         }
         builder.build(m_block_wand);
-        m_norm_lens.steal(norm_lens);
+        m_doc_lens.steal(doc_lens);
         m_max_term_weight.steal(max_term_weight);
+        m_avg_len = avg_len;
     }
 
-    float norm_len(uint64_t doc_id) const { return m_norm_lens[doc_id]; }
+    inline float norm_len(uint64_t doc_id) const
+    {
+        return m_doc_lens[doc_id] / m_avg_len;
+    }
+
+    size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
+
+    float avg_len() const { return m_avg_len; }
 
     float max_term_weight(uint64_t list) const { return m_max_term_weight[list]; }
 
@@ -68,13 +73,14 @@ class wand_data {
     template <typename Visitor>
     void map(Visitor &visit)
     {
-        visit(m_block_wand, "m_block_wand")(m_norm_lens, "m_norm_lens")(m_max_term_weight,
-                                                                        "m_max_term_weight");
+        visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(m_avg_len, "m_avg_len")(
+            m_max_term_weight, "m_max_term_weight");
     }
 
    private:
     block_wand_type m_block_wand;
-    mapper::mappable_vector<float> m_norm_lens;
+    mapper::mappable_vector<uint32_t> m_doc_lens;
+    float m_avg_len;
     mapper::mappable_vector<float> m_max_term_weight;
 };
 } // namespace pisa
