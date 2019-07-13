@@ -76,7 +76,7 @@ TEST_CASE("wand_data_range")
                 for (auto && [ pos, docid, freq ] :
                      ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs)) {
                     float score = Scorer::doc_term_weight(
-                        freq, wdata_range.doc_len(docid) / wdata_range.avg_len());
+                        freq, wdata_range.norm_len(docid));
                     we.next_geq(docid);
                     CHECKED_ELSE(we.score() >= score)
                     {
