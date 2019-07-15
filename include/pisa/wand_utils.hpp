@@ -25,7 +25,8 @@ using BlockSize = boost::variant<FixedBlock, VariableBlock>;
 template <typename Scorer = bm25>
 std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     binary_freq_collection::sequence const &seq,
-    std::vector<float> const &doc_lens, float avg_len,
+    std::vector<uint32_t> const &doc_lens,
+    float avg_len,
     const uint64_t block_size)
 {
     std::vector<uint32_t> block_docid;
@@ -40,7 +41,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     for (i = 0; i < seq.docs.size(); ++i) {
         uint64_t docid = *(seq.docs.begin() + i);
         uint64_t freq = *(seq.freqs.begin() + i);
-        float score = Scorer::doc_term_weight(freq, doc_lens[docid]/avg_len);
+        float score = Scorer::doc_term_weight(freq, doc_lens[docid] / avg_len);
         max_score = std::max(max_score, score);
         if (i == 0 || (i / block_size) == current_block) {
             block_max_score = std::max(block_max_score, score);
@@ -61,7 +62,8 @@ template <typename Scorer = bm25>
 std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
     binary_freq_collection const &coll,
     binary_freq_collection::sequence const &seq,
-    std::vector<float> const &doc_lens, float avg_len,
+    std::vector<uint32_t> const &doc_lens,
+    float avg_len,
     const float lambda)
 {
 
@@ -77,7 +79,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
                    seq.freqs.begin(),
                    std::back_inserter(doc_score),
                    [&](const uint64_t &doc, const uint64_t &freq) -> doc_score_t {
-                       return {doc, Scorer::doc_term_weight(freq, doc_lens[doc]/avg_len)};
+                       return {doc, Scorer::doc_term_weight(freq, doc_lens[doc] / avg_len)};
                    });
 
     float estimated_idf = Scorer::query_term_weight(1, seq.docs.size(), coll.num_docs());
