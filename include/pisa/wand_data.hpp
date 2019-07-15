@@ -29,6 +29,7 @@ class wand_data {
               BlockSize block_size)
     {
         std::vector<uint32_t> doc_lens(num_docs);
+        uint32_t max_len = 0;
         std::vector<float> max_term_weight;
         std::vector<uint32_t> terms_count;
         global_parameters params;
@@ -37,6 +38,7 @@ class wand_data {
 
         for (size_t i = 0; i < num_docs; ++i) {
             float len = *len_it++;
+            max_len = std::max(max_len, len);
             doc_lens[i] = len;
             collection_len += len;
         }
@@ -59,6 +61,7 @@ class wand_data {
         m_max_term_weight.steal(max_term_weight);
         m_terms_count.steal(terms_count);
         m_avg_len = avg_len;
+        m_max_len = max_len;
         m_collection_len = collection_len;
     }
 
@@ -69,6 +72,8 @@ class wand_data {
     size_t term_count(uint64_t term_id) const { return m_terms_count[term_id]; }
 
     float avg_len() const { return m_avg_len; }
+
+    size_t max_len() const { return m_max_len; }
 
     uint64_t collection_len() const { return m_collection_len; }
 
@@ -82,7 +87,7 @@ class wand_data {
     void map(Visitor &visit)
     {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
-            m_terms_count, "m_terms_count")(m_avg_len, "m_avg_len")(
+            m_terms_count, "m_terms_count")(m_avg_len, "m_avg_len")(m_max_len, "m_max_len")(
             m_collection_len, "m_collection_len")(m_max_term_weight, "m_max_term_weight");
     }
 
@@ -91,6 +96,7 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_doc_lens;
     mapper::mappable_vector<uint32_t> m_terms_count;
     float m_avg_len;
+    uint32_t m_max_len;
     uint64_t m_collection_len;
     mapper::mappable_vector<float> m_max_term_weight;
 };
