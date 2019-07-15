@@ -158,7 +158,7 @@ void evaluate_queries(const std::string &index_filename,
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
-using wand_uniform_index = wand_data<wand_data_compressed<uniform_score_compressor>>;
+using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, const char **argv)
 {

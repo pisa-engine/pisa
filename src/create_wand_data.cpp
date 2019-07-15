@@ -59,7 +59,7 @@ int main(int argc, const char **argv)
     }();
 
     if (compress) {
-        wand_data<wand_data_compressed<uniform_score_compressor>> wdata(
+        wand_data<wand_data_compressed> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
