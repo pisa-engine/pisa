@@ -7,7 +7,6 @@
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
 #include "score_opt_partition.hpp"
-#include "scorer/bm25.hpp"
 #include "util/util.hpp"
 
 #include "global_parameters.hpp"
@@ -85,7 +84,6 @@ class uniform_score_compressor {
     }
 };
 
-template <typename Scorer = bm25, typename score_compressor = uniform_score_compressor>
 class wand_data_compressed {
    public:
     class builder {
@@ -146,7 +144,7 @@ class wand_data_compressed {
         std::vector<float> score_references;
         std::vector<float> max_term_weight;
         global_parameters const &params;
-        typename score_compressor::builder compressor_builder;
+        typename uniform_score_compressor::builder compressor_builder;
     };
 
     class enumerator {
@@ -174,7 +172,7 @@ class wand_data_compressed {
             }
         }
 
-        float PISA_FLATTEN_FUNC score() { return score_compressor::score(m_cur_score_index); }
+        float PISA_FLATTEN_FUNC score() { return uniform_score_compressor::score(m_cur_score_index); }
 
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
 

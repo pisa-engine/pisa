@@ -59,15 +59,15 @@ int main(int argc, const char **argv)
     }();
 
     if (compress) {
-        wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>> wdata(
+        wand_data<wand_data_compressed> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
-        wand_data<bm25, wand_data_range<128, 1024, bm25>> wdata(
+        wand_data<wand_data_range<128, 1024, bm25>> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
-        wand_data<bm25, wand_data_raw<bm25>> wdata(
+        wand_data<wand_data_raw> wdata(
             sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     }

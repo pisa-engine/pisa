@@ -7,7 +7,6 @@
 
 #include "binary_freq_collection.hpp"
 #include "mappable/mappable_vector.hpp"
-#include "scorer/bm25.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
 #include "wand_data_raw.hpp"
@@ -15,7 +14,7 @@
 class enumerator;
 namespace pisa {
 
-template <typename Scorer = bm25, typename block_wand_type = wand_data_raw<bm25>>
+template <typename block_wand_type = wand_data_raw>
 class wand_data {
    public:
     using wand_data_enumerator = typename block_wand_type::enumerator;

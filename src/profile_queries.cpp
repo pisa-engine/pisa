@@ -68,7 +68,7 @@ void profile(const std::string index_filename,
     using namespace pisa;
 
     typename add_profiling<IndexType>::type index;
-    typedef wand_data<bm25, wand_data_raw<bm25>> WandType;
+    typedef wand_data<wand_data_raw> WandType;
     spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename);
     mapper::map(index, m);

@@ -136,8 +136,8 @@ void evaluate_queries(const std::string &index_filename,
         raw_results[query_idx] = query_fun(queries[query_idx]);
     });
     auto end_batch = std::chrono::steady_clock::now();
-   
-    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) { 
+
+    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id;
         for (auto && [ rank, result ] : enumerate(results)) {
@@ -157,8 +157,8 @@ void evaluate_queries(const std::string &index_filename,
     spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
 }
 
-using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
-using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
+using wand_raw_index = wand_data<wand_data_raw>;
+using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, const char **argv)
 {

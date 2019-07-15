@@ -18,7 +18,7 @@ using namespace pisa;
 TEST_CASE("wand_data_range")
 {
     using WandTypeRange = wand_data_range<64, 1024, bm25>;
-    using WandType = wand_data<bm25, WandTypeRange>;
+    using WandType = wand_data<WandTypeRange>;
     using Scorer = bm25;
 
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
