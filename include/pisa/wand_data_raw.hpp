@@ -7,13 +7,11 @@
 
 #include "binary_freq_collection.hpp"
 #include "global_parameters.hpp"
-#include "scorer/bm25.hpp"
 #include "util/compiler_attribute.hpp"
 #include "wand_utils.hpp"
 
 namespace pisa {
 
-template <typename Scorer = bm25>
 class wand_data_raw {
    public:
     wand_data_raw() {}

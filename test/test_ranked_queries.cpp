@@ -68,7 +68,7 @@ struct IndexData {
     Index index;
     std::vector<Query> queries;
     std::vector<float> thresholds;
-    wand_data<bm25, wand_data_raw<bm25>> wdata;
+    wand_data<wand_data_raw> wdata;
 };
 
 template <typename Index>

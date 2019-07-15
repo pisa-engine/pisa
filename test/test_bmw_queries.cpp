@@ -11,8 +11,8 @@
 
 using namespace pisa;
 
-using WandTypeUniform = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
-using WandTypePlain = wand_data<bm25, wand_data_raw<bm25>>;
+using WandTypeUniform = wand_data<wand_data_compressed<uniform_score_compressor>>;
+using WandTypePlain = wand_data<wand_data_raw>;
 
 template <typename Index>
 struct IndexData {

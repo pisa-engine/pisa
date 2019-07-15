@@ -15,7 +15,7 @@
 class enumerator;
 namespace pisa {
 
-template <typename Scorer = bm25, typename block_wand_type = wand_data_raw<bm25>>
+template <typename block_wand_type = wand_data_raw>
 class wand_data {
    public:
     using wand_data_enumerator = typename block_wand_type::enumerator;

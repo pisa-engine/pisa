@@ -43,8 +43,8 @@ void intersect(const std::string &index_filename,
     }
 }
 
-using wand_raw_index = wand_data<bm25, wand_data_raw<bm25>>;
-using wand_uniform_index = wand_data<bm25, wand_data_compressed<bm25, uniform_score_compressor>>;
+using wand_raw_index = wand_data<wand_data_raw>;
+using wand_uniform_index = wand_data<wand_data_compressed<uniform_score_compressor>>;
 
 int main(int argc, const char **argv)
 {

@@ -7,7 +7,6 @@
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
 #include "score_opt_partition.hpp"
-#include "scorer/bm25.hpp"
 #include "util/util.hpp"
 
 #include "global_parameters.hpp"
@@ -85,7 +84,7 @@ class uniform_score_compressor {
     }
 };
 
-template <typename Scorer = bm25, typename score_compressor = uniform_score_compressor>
+template <typename score_compressor = uniform_score_compressor>
 class wand_data_compressed {
    public:
     class builder {
