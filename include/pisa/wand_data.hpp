@@ -1,6 +1,7 @@
 #pragma once
 
 #include <numeric>
+#include <algorithm>
 
 #include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
