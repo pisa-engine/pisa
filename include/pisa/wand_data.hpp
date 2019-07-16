@@ -38,7 +38,7 @@ class wand_data {
         spdlog::info("Reading sizes...");
 
         for (size_t i = 0; i < num_docs; ++i) {
-            float len = *len_it++;
+            uint32_t len = *len_it++;
             max_len = std::max(max_len, len);
             doc_lens[i] = len;
             collection_len += len;
