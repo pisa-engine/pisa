@@ -42,6 +42,7 @@ Reference to cite when you use PISA in a research paper:
   title={{PISA}: {P}erformant {I}ndexes and {S}earch for {A}cademia},
   author={Mallia, Antonio and Siedlaczek, Michal and Mackenzie, Joel and Suel, Torsten},
   booktitle={Proceedings of the Open-Source IR Replicability Challenge (OSIRRC 2019)},
+  pages = {50--56},
   year={2019}
 }
 ```
