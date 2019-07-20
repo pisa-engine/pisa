@@ -26,7 +26,7 @@ template <typename Index, typename WandType, typename Scorer>
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
 
-    std::vector<block_max_scored_cursor<Index, WandType, Scorer>> cursors;
+    std::vector<block_max_scored_cursor<Index, WandType>> cursors;
     cursors.reserve(query_term_freqs.size());
     std::transform(query_term_freqs.begin(),
                    query_term_freqs.end(),

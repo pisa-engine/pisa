@@ -32,7 +32,7 @@ template <typename Index, typename WandType, typename Scorer>
                        auto list = index[term.first];
                        float q_weight = term.second;
                        auto max_weight = q_weight * wdata.max_term_weight(term.first);
-                       return max_scored_cursor<Index, Scorer>{
+                       return max_scored_cursor<Index>{
                            std::move(list), q_weight, scorer(term.first), max_weight};
                    });
     return cursors;
