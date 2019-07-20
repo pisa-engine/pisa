@@ -10,7 +10,7 @@ struct scored_cursor {
     using enum_type = typename Index::document_enumerator;
     enum_type docs_enum;
     float q_weight;
-    std::function<float(uint32_t, uint32_t)> scorer;
+    term_scorer_t scorer;
 };
 
 template <typename Index, typename Scorer>

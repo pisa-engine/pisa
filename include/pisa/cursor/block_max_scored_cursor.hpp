@@ -13,7 +13,7 @@ struct block_max_scored_cursor {
     enum_type docs_enum;
     wdata_enum w;
     float q_weight;
-    std::function<float(uint32_t, uint32_t)> scorer;
+    term_scorer_t scorer;
     float max_weight;
 };
 
@@ -36,7 +36,7 @@ template <typename Index, typename WandType, typename Scorer>
                        auto w_enum = wdata.getenum(term.first);
                        float q_weight = term.second;
                        auto max_weight = q_weight * wdata.max_term_weight(term.first);
-                       return block_max_scored_cursor<Index, WandType, Scorer>{
+                       return block_max_scored_cursor<Index, WandType>{
                            std::move(list), w_enum, q_weight, scorer(term.first), max_weight};
                    });
     return cursors;

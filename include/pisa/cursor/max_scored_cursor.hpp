@@ -10,7 +10,7 @@ struct max_scored_cursor {
     using enum_type = typename Index::document_enumerator;
     enum_type docs_enum;
     float q_weight;
-    std::function<float(uint32_t, uint32_t)> scorer;
+    term_scorer_t scorer;
     float max_weight;
 };
 
@@ -23,7 +23,7 @@ template <typename Index, typename WandType, typename Scorer>
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
 
-    std::vector<max_scored_cursor<Index, Scorer>> cursors;
+    std::vector<max_scored_cursor<Index>> cursors;
     cursors.reserve(query_term_freqs.size());
     std::transform(query_term_freqs.begin(),
                    query_term_freqs.end(),
