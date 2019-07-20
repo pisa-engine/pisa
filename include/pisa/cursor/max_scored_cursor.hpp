@@ -5,7 +5,7 @@
 
 namespace pisa {
 
-template <typename Index, typename Scorer>
+template <typename Index>
 struct max_scored_cursor {
     using enum_type = typename Index::document_enumerator;
     enum_type docs_enum;

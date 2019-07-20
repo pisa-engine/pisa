@@ -5,7 +5,7 @@
 
 namespace pisa {
 
-template <typename Index, typename WandType, typename Scorer>
+template <typename Index, typename WandType>
 struct block_max_scored_cursor {
     using enum_type = typename Index::document_enumerator;
     using wdata_enum = typename WandType::wand_data_enumerator;
