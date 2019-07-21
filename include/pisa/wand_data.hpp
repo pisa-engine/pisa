@@ -34,7 +34,7 @@ class wand_data {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
         std::vector<uint32_t> term_occurrence_counts;
-        std::vector<uint32_t> term_lens;
+        std::vector<uint32_t> term_posting_counts;
         global_parameters params;
         spdlog::info("Reading sizes...");
 
@@ -51,11 +51,11 @@ class wand_data {
         for (auto const &seq : coll) {
             size_t term_occurrence_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
             term_occurrence_counts.push_back(term_occurrence_count);
-            term_lens.push_back(seq.docs.size());
+            term_posting_counts.push_back(seq.docs.size());
         }
         m_doc_lens.steal(doc_lens);
         m_term_occurrence_counts.steal(term_occurrence_counts);
-        m_term_lens.steal(term_lens);
+        m_term_posting_counts.steal(term_posting_counts);
 
         auto scorer = scorer::from_name(scorer_name, *this);
         {
@@ -79,7 +79,7 @@ class wand_data {
 
     size_t term_occurrence_count(uint64_t term_id) const { return m_term_occurrence_counts[term_id]; }
 
-    size_t term_len(uint64_t term_id) const { return m_term_lens[term_id]; }
+    size_t term_posting_count(uint64_t term_id) const { return m_term_posting_counts[term_id]; }
 
     size_t num_docs() const { return m_num_docs; }
 
@@ -100,7 +100,7 @@ class wand_data {
     void map(Visitor &visit)
     {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
-            m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_lens, "m_term_lens")(m_avg_len, "m_avg_len")(
+            m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_posting_counts, "m_term_posting_counts")(m_avg_len, "m_avg_len")(
             m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(m_max_term_weight,
                                                                             "m_max_term_weight");
     }
@@ -112,7 +112,7 @@ class wand_data {
     block_wand_type m_block_wand;
     mapper::mappable_vector<uint32_t> m_doc_lens;
     mapper::mappable_vector<uint32_t> m_term_occurrence_counts;
-    mapper::mappable_vector<uint32_t> m_term_lens;
+    mapper::mappable_vector<uint32_t> m_term_posting_counts;
     mapper::mappable_vector<float> m_max_term_weight;
 };
 } // namespace pisa
