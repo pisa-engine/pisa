@@ -26,7 +26,8 @@ template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     binary_freq_collection::sequence const &seq,
     std::vector<uint32_t> const &doc_lens,
-    float avg_len, Scorer scorer,
+    float avg_len,
+    Scorer scorer,
     const uint64_t block_size)
 {
     std::vector<uint32_t> block_docid;
@@ -63,7 +64,8 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
     binary_freq_collection const &coll,
     binary_freq_collection::sequence const &seq,
     std::vector<uint32_t> const &doc_lens,
-    float avg_len, Scorer scorer,
+    float avg_len,
+    Scorer scorer,
     const float lambda)
 {
 
@@ -82,8 +84,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
                        return {doc, scorer(doc, freq)};
                    });
 
-    auto p = score_opt_partition(
-        doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda);
+    auto p = score_opt_partition(doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda);
 
     return std::make_pair(p.docids, p.max_values);
 }

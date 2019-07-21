@@ -21,14 +21,15 @@ template <typename Index, typename Scorer>
 
     std::vector<scored_cursor<Index>> cursors;
     cursors.reserve(query_term_freqs.size());
-    std::transform(query_term_freqs.begin(),
-                   query_term_freqs.end(),
-                   std::back_inserter(cursors),
-                   [&](auto &&term) {
-                       auto list = index[term.first];
-                       float q_weight = term.second;
-                       return scored_cursor<Index>{std::move(list), q_weight, scorer(term.first)};
-                   });
+    std::transform(
+        query_term_freqs.begin(),
+        query_term_freqs.end(),
+        std::back_inserter(cursors),
+        [&](auto &&term) {
+            auto list = index[term.first];
+            float q_weight = term.second;
+            return scored_cursor<Index>{std::move(list), q_weight, scorer.term_scorer(term.first)};
+        });
     return cursors;
 }
 

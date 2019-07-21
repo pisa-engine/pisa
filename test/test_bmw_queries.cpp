@@ -76,7 +76,7 @@ auto test(Wand &wdata, std::string const &s_name)
     auto data = IndexData<single_index>::get(s_name);
     block_max_wand_query op_q(10);
     wand_query wand_q(10);
-    auto scorer = get_scorer(s_name, data->wdata);
+    auto scorer = scorer::from_name(s_name, data->wdata);
 
     for (auto const &q : data->queries) {
         wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());

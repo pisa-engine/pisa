@@ -13,7 +13,7 @@
 #include "wand_data_range.hpp"
 
 
-#include "scorer/scorer_factory.hpp"
+#include "scorer/scorer.hpp"
 
 using namespace pisa;
 
@@ -33,7 +33,7 @@ TEST_CASE("wand_data_range")
                          scorer_name,
                          BlockSize(FixedBlock()));
 
-    auto scorer = get_scorer(scorer_name, wdata_range);
+    auto scorer = scorer::from_name(scorer_name, wdata_range);
 
     SECTION("Precomputed block-max scores")
     {
@@ -42,7 +42,7 @@ TEST_CASE("wand_data_range")
             if (seq.docs.size() >= 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
-                auto s = scorer->operator()(term_id);
+                auto s = scorer->term_scorer(term_id);
                 for (auto && [ docid, freq ] : ranges::view::zip(seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     w.next_geq(docid);
@@ -76,7 +76,7 @@ TEST_CASE("wand_data_range")
             if (seq.docs.size() < 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto &w = wdata_range.get_block_wand();
-                auto s = scorer->operator()(term_id);
+                auto s = scorer->term_scorer(term_id);
                 const mapper::mappable_vector<float> bm =
                     w.compute_block_max_scores(list, s);
                 WandTypeRange::enumerator we(0, bm);

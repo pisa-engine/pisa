@@ -27,7 +27,6 @@ void intersect(const std::string &index_filename,
     }
 }
 
-
 int main(int argc, const char **argv)
 {
     std::string type;
@@ -59,17 +58,15 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                       \
-    }                                                               \
-    else if (type == BOOST_PP_STRINGIZE(T))                         \
-    {                                                               \
-        if (compressed) {                                           \
-            intersect<BOOST_PP_CAT(T, _index)>( \
-                index_filename, queries, type); \
-        } else {                                                    \
-            intersect<BOOST_PP_CAT(T, _index)>(     \
-                index_filename, queries, type); \
-        }                                                           \
+#define LOOP_BODY(R, DATA, T)                                                  \
+    }                                                                          \
+    else if (type == BOOST_PP_STRINGIZE(T))                                    \
+    {                                                                          \
+        if (compressed) {                                                      \
+            intersect<BOOST_PP_CAT(T, _index)>(index_filename, queries, type); \
+        } else {                                                               \
+            intersect<BOOST_PP_CAT(T, _index)>(index_filename, queries, type); \
+        }                                                                      \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

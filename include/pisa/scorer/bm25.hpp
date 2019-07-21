@@ -4,15 +4,15 @@
 #include <cmath>
 #include <algorithm>
 
-#include "scorer.hpp"
+#include "index_scorer.hpp"
 namespace pisa {
 
 template <typename Wand>
-struct bm25 : public scorer<Wand> {
+struct bm25 : public index_scorer<Wand> {
     static constexpr float b = 0.4;
     static constexpr float k1 = 0.9;
 
-    using scorer<Wand>::scorer;
+    using index_scorer<Wand>::index_scorer;
 
     static float doc_term_weight(uint64_t freq, float norm_len)
     {
@@ -29,7 +29,7 @@ struct bm25 : public scorer<Wand> {
         return std::max(epsilon_score, idf) * (1.0f + k1);
     }
 
-    std::function<float(uint32_t, uint32_t)> operator()(uint64_t term_id) const override
+    std::function<float(uint32_t, uint32_t)> term_scorer(uint64_t term_id) const override
     {
         auto term_len = this->m_wdata.term_len(term_id);
         auto s = [&, term_len](uint32_t doc, uint32_t freq) {

@@ -115,7 +115,7 @@ TEMPLATE_TEST_CASE("Ranked query test",
         TestType op_q(10);
         ranked_or_query or_q(10);
 
-        auto scorer = get_scorer(s_name, data->wdata);
+        auto scorer = scorer::from_name(s_name, data->wdata);
         for (auto const &q : data->queries) {
             or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
@@ -139,7 +139,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
         TestType op_q(10);
         ranked_and_query and_q(10);
 
-        auto scorer = get_scorer(s_name, data->wdata);
+        auto scorer = scorer::from_name(s_name, data->wdata);
 
         for (auto const &q : data->queries) {
             and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
@@ -162,7 +162,7 @@ TEST_CASE("Top k")
         ranked_or_query or_10(10);
         ranked_or_query or_1(1);
 
-        auto scorer = get_scorer(s_name, data->wdata);
+        auto scorer = scorer::from_name(s_name, data->wdata);
 
         for (auto const &q : data->queries) {
             or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());

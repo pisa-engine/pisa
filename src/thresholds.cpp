@@ -17,7 +17,7 @@
 #include "wand_data_raw.hpp"
 #include "cursor/max_scored_cursor.hpp"
 
-#include "scorer/scorer_factory.hpp"
+#include "scorer/scorer.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -38,7 +38,7 @@ void thresholds(const std::string &index_filename,
 
     WandType wdata;
 
-    auto scorer_ptr = get_scorer(scorer_name, wdata);
+    auto scorer = scorer::from_name(scorer_name, wdata);
 
 
     mio::mmap_source md;
@@ -54,7 +54,7 @@ void thresholds(const std::string &index_filename,
 
     wand_query wand_q(k);
     for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, *scorer_ptr, query), index.num_docs());
+        wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
         auto  results   = wand_q.topk();
         float threshold = 0.0;
         if (results.size() == k) {

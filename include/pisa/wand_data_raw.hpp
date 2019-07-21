@@ -40,12 +40,16 @@ class wand_data_raw {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
                 auto t =
                     block_size.type() == typeid(FixedBlock)
-                        ? static_block_partition(
-                              seq, doc_lens, avg_len, scorer, boost::get<FixedBlock>(block_size).size)
+                        ? static_block_partition(seq,
+                                                 doc_lens,
+                                                 avg_len,
+                                                 scorer,
+                                                 boost::get<FixedBlock>(block_size).size)
                         : variable_block_partition(coll,
                                                    seq,
                                                    doc_lens,
-                                                   avg_len, scorer,
+                                                   avg_len,
+                                                   scorer,
                                                    boost::get<VariableBlock>(block_size).lambda);
 
                 block_max_term_weight.insert(

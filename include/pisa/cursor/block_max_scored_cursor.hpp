@@ -28,17 +28,18 @@ template <typename Index, typename WandType, typename Scorer>
 
     std::vector<block_max_scored_cursor<Index, WandType>> cursors;
     cursors.reserve(query_term_freqs.size());
-    std::transform(query_term_freqs.begin(),
-                   query_term_freqs.end(),
-                   std::back_inserter(cursors),
-                   [&](auto &&term) {
-                       auto list = index[term.first];
-                       auto w_enum = wdata.getenum(term.first);
-                       float q_weight = term.second;
-                       auto max_weight = q_weight * wdata.max_term_weight(term.first);
-                       return block_max_scored_cursor<Index, WandType>{
-                           std::move(list), w_enum, q_weight, scorer(term.first), max_weight};
-                   });
+    std::transform(
+        query_term_freqs.begin(),
+        query_term_freqs.end(),
+        std::back_inserter(cursors),
+        [&](auto &&term) {
+            auto list = index[term.first];
+            auto w_enum = wdata.getenum(term.first);
+            float q_weight = term.second;
+            auto max_weight = q_weight * wdata.max_term_weight(term.first);
+            return block_max_scored_cursor<Index, WandType>{
+                std::move(list), w_enum, q_weight, scorer.term_scorer(term.first), max_weight};
+        });
     return cursors;
 }
 

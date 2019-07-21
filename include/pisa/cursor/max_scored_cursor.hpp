@@ -33,7 +33,7 @@ template <typename Index, typename WandType, typename Scorer>
                        float q_weight = term.second;
                        auto max_weight = q_weight * wdata.max_term_weight(term.first);
                        return max_scored_cursor<Index>{
-                           std::move(list), q_weight, scorer(term.first), max_weight};
+                           std::move(list), q_weight, scorer.term_scorer(term.first), max_weight};
                    });
     return cursors;
 }

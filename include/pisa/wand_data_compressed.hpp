@@ -50,12 +50,18 @@ class uniform_score_compressor {
         void add_posting_list(uint64_t n, DocsIterator docs_begin, DocsIterator score_begin)
         {
             std::vector<uint64_t> temp;
-            for (size_t i = 0; i < n; ++i) {
-                uint64_t elem = *(docs_begin + i);
+            for (size_t pos = 0; pos < n; ++pos) {
+                uint64_t elem = *(docs_begin + pos);
                 elem = elem << score_bits_size;
-                elem += *(score_begin + i);
-
-                assert(i == 0 || temp.back() < elem);
+                elem += *(score_begin + pos);
+                if(pos && elem < temp.back()){
+                    throw std::runtime_error(
+                    fmt::format("Sequence is not sorted: value at index {} "
+                                "({}) lower than its predecessor ({})",
+                                pos,
+                                elem,
+                                temp.back()));
+                }
                 temp.push_back(elem);
             }
 

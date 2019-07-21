@@ -1,19 +1,24 @@
 #pragma once
 
-#include <algorithm>
-#include <cmath>
-#include <cstdint>
+#include <string>
+
+#include "spdlog/spdlog.h"
+#include "scorer.hpp"
+#include "ql.hpp"
+#include "bm25.hpp"
 
 namespace pisa {
+namespace scorer{
+auto from_name = [](std::string const &scorer_name, auto const &wdata) -> std::unique_ptr<index_scorer<decltype(wdata)>> {
+    if (scorer_name == "bm25") {
+        return std::make_unique<bm25<decltype(wdata)>>(wdata);
+    } else if (scorer_name == "qld") {
+        return std::make_unique<ql<decltype(wdata)>>(wdata);
+    } else {
+        spdlog::error("Unknown scorer {}", scorer_name);
+        std::abort();
 
-template <typename Wand>
-struct scorer {
-   protected:
-    const Wand &m_wdata;
-   public:
-    explicit scorer(const Wand &wdata) : m_wdata(wdata) {}
-
-    virtual std::function<float(uint32_t, uint32_t)> operator()(uint64_t term_id) const = 0;
+    }
 };
-
+}
 } // namespace pisa
