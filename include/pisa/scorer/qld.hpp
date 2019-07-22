@@ -9,7 +9,7 @@
 namespace pisa {
 
 template <typename Wand>
-struct ql : public index_scorer<Wand> {
+struct qld : public index_scorer<Wand> {
     static constexpr float mu = 1000;
 
     using index_scorer<Wand>::index_scorer;
