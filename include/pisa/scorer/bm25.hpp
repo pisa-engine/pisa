@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 
 #include "index_scorer.hpp"
 namespace pisa {
@@ -39,4 +39,4 @@ struct bm25 : public index_scorer<Wand> {
         return s;
     }
 };
-}
+} // namespace pisa
