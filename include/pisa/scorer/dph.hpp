@@ -18,7 +18,7 @@ struct dph : public index_scorer<Wand> {
 
     static constexpr float c = 1;
 
-    std::function<float(uint32_t, uint32_t)> term_scorer(uint64_t term_id) const override
+    term_scorer_t term_scorer(uint64_t term_id) const override
     {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float f = (float)freq / this->m_wdata.doc_len(doc);

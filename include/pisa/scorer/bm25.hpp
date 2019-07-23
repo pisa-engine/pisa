@@ -29,13 +29,12 @@ struct bm25 : public index_scorer<Wand> {
         return std::max(epsilon_score, idf) * (1.0f + k1);
     }
 
-    std::function<float(uint32_t, uint32_t)> term_scorer(uint64_t term_id) const override
+    term_scorer_t term_scorer(uint64_t term_id) const override
     {
         auto term_len = this->m_wdata.term_posting_count(term_id);
-	auto term_weight = query_term_weight(term_len, this->m_wdata.num_docs());
+        auto term_weight = query_term_weight(term_len, this->m_wdata.num_docs());
         auto s = [&, term_weight](uint32_t doc, uint32_t freq) {
-            return term_weight
-                   * doc_term_weight(freq, this->m_wdata.norm_len(doc));
+            return term_weight * doc_term_weight(freq, this->m_wdata.norm_len(doc));
         };
         return s;
     }

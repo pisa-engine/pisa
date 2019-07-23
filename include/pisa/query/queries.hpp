@@ -32,8 +32,6 @@ using term_id_type = uint32_t;
 using term_id_vec = std::vector<term_id_type>;
 using TermProcessor = std::function<std::optional<term_id_type>(std::string &&)>;
 
-using term_scorer_t = std::function<float(uint32_t, uint32_t)>;
-
 struct Query {
     std::optional<std::string> id;
     std::vector<term_id_type>  terms;
