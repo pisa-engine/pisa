@@ -103,10 +103,10 @@ namespace pisa {
             uint64_t last = 0;
             uint64_t last_high = 0;
             Iterator it = begin;
-            for (size_t i = 0; i < n; ++i) {
-                uint64_t v = *it++;
+            for (size_t pos = 0; pos < n; ++pos) {
+                uint64_t value = *it++;
 
-                if (i && v < last) {
+                if (pos && value < last) {
                     throw std::runtime_error(
                         fmt::format("Compact Elias-Fano: sequence is not sorted: value at index {} "
                                     "({}) lower than its predecessor ({})",
@@ -115,19 +115,19 @@ namespace pisa {
                                     last));
                 }
 
-                assert(v < universe);
+                assert(value < universe);
 
-                uint64_t high = (v >> of.lower_bits) + i + 1;
-                uint64_t low = v & of.mask;
+                uint64_t high = (value >> of.lower_bits) + pos + 1;
+                uint64_t low = value & of.mask;
 
                 bvb.set(of.higher_bits_offset + high, 1);
 
-                offset = of.lower_bits_offset + i * of.lower_bits;
+                offset = of.lower_bits_offset + pos * of.lower_bits;
                 assert(offset + of.lower_bits <= of.end);
                 bvb.set_bits(offset, low, of.lower_bits);
 
-                if (i && (i & sample1_mask) == 0) {
-                    uint64_t ptr1 = i >> of.log_sampling1;
+                if (pos && (pos & sample1_mask) == 0) {
+                    uint64_t ptr1 = pos >> of.log_sampling1;
                     assert(ptr1 > 0);
                     offset = of.pointers1_offset + (ptr1 - 1) * of.pointer_size;
                     assert(offset + of.pointer_size <= of.higher_bits_offset);
@@ -135,9 +135,9 @@ namespace pisa {
                 }
 
                 // write pointers for the run of zeros in [last_high, high)
-                set_ptr0s(last_high + 1, high, i);
+                set_ptr0s(last_high + 1, high, pos);
                 last_high = high;
-                last = v;
+                last = value;
             }
 
             // pointers to zeros after the last 1
