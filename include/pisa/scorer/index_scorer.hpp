@@ -5,8 +5,6 @@
 #include <cstdint>
 #include <functional>
 
-#include "query/queries.hpp"
-
 namespace pisa {
 
 using term_scorer_t = std::function<float(uint32_t, uint32_t)>;

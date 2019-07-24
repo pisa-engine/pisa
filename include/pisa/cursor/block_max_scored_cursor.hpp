@@ -1,5 +1,6 @@
 #pragma once
 
+#include "scorer/index_scorer.hpp"
 #include "query/queries.hpp"
 #include <vector>
 

@@ -3,7 +3,7 @@
 #include <string>
 
 #include "spdlog/spdlog.h"
-#include "scorer.hpp"
+#include "index_scorer.hpp"
 #include "qld.hpp"
 #include "pl2.hpp"
 #include "bm25.hpp"
