@@ -18,7 +18,7 @@ struct dph : public index_scorer<Wand> {
 
     static constexpr float c = 1;
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
+    auto term_scorer(uint64_t term_id) const
     {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float f = (float)freq / this->m_wdata.doc_len(doc);
@@ -32,6 +32,11 @@ struct dph : public index_scorer<Wand> {
         };
         return s;
     }
+};
+
+template <typename Wand>
+struct scorer_traits<dph<Wand>> {
+    using term_scorer = decltype(std::declval<dph<Wand>>().term_scorer(0));
 };
 
 } // namespace pisa

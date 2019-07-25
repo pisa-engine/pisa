@@ -14,7 +14,7 @@ struct qld : public index_scorer<Wand> {
 
     using index_scorer<Wand>::index_scorer;
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
+    auto term_scorer(uint64_t term_id) const
     {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float numerator = 1
@@ -27,6 +27,11 @@ struct qld : public index_scorer<Wand> {
         };
         return s;
     }
+};
+
+template <typename Wand>
+struct scorer_traits<qld<Wand>> {
+    using term_scorer = decltype(std::declval<qld<Wand>>().term_scorer(0));
 };
 
 } // namespace pisa

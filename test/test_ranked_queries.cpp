@@ -115,17 +115,21 @@ TEMPLATE_TEST_CASE("Ranked query test",
         TestType op_q(10);
         ranked_or_query or_q(10);
 
-        auto scorer = scorer::from_name(s_name, data->wdata);
-        for (auto const &q : data->queries) {
-            or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
-                 data->index.num_docs());
-            REQUIRE(or_q.topk().size() == op_q.topk().size());
-            for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                REQUIRE(or_q.topk()[i].first
-                        == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+        PISA_WITH_SCORER_TYPE(Scorer, s_name, decltype(data->wdata), {
+            Scorer scorer(data->wdata);
+            for (auto const &q
+                 : data->queries) {
+                or_q(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
+                op_q(make_block_max_scored_cursors(data->index, data->wdata, scorer, q),
+                     data->index.num_docs());
+                REQUIRE(or_q.topk().size() == op_q.topk().size());
+                for (size_t i = 0; i < or_q.topk().size(); ++i) {
+                    REQUIRE(or_q.topk()[i].first
+                            == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is %
+                                                                           // relative
+                }
             }
-        }
+        })
     }
 }
 
@@ -139,18 +143,20 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
         TestType op_q(10);
         ranked_and_query and_q(10);
 
-        auto scorer = scorer::from_name(s_name, data->wdata);
-
-        for (auto const &q : data->queries) {
-            and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
-                 data->index.num_docs());
-            REQUIRE(and_q.topk().size() == op_q.topk().size());
-            for (size_t i = 0; i < and_q.topk().size(); ++i) {
-                REQUIRE(and_q.topk()[i].first
-                        == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+        PISA_WITH_SCORER_TYPE(Scorer, s_name, decltype(data->wdata), {
+            Scorer scorer(data->wdata);
+            for (auto const &q : data->queries) {
+                and_q(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
+                op_q(make_block_max_scored_cursors(data->index, data->wdata, scorer, q),
+                     data->index.num_docs());
+                REQUIRE(and_q.topk().size() == op_q.topk().size());
+                for (size_t i = 0; i < and_q.topk().size(); ++i) {
+                    REQUIRE(and_q.topk()[i].first
+                            == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is %
+                                                                           // relative
+                }
             }
-        }
+        })
     }
 }
 
@@ -162,16 +168,17 @@ TEST_CASE("Top k")
         ranked_or_query or_10(10);
         ranked_or_query or_1(1);
 
-        auto scorer = scorer::from_name(s_name, data->wdata);
-
-        for (auto const &q : data->queries) {
-            or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            or_1(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            if (not or_10.topk().empty()) {
-                REQUIRE(not or_1.topk().empty());
-                REQUIRE(or_1.topk().front().first
-                        == Approx(or_10.topk().front().first).epsilon(0.1));
+        PISA_WITH_SCORER_TYPE(Scorer, s_name, decltype(data->wdata), {
+            Scorer scorer(data->wdata);
+            for (auto const &q : data->queries) {
+                or_10(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
+                or_1(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
+                if (not or_10.topk().empty()) {
+                    REQUIRE(not or_1.topk().empty());
+                    REQUIRE(or_1.topk().front().first
+                            == Approx(or_10.topk().front().first).epsilon(0.1));
+                }
             }
-        }
+        })
     }
 }

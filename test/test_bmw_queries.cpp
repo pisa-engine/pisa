@@ -76,19 +76,31 @@ auto test(Wand &wdata, std::string const &s_name)
     auto data = IndexData<single_index>::get(s_name);
     block_max_wand_query op_q(10);
     wand_query wand_q(10);
-    auto scorer = scorer::from_name(s_name, data->wdata);
 
-    for (auto const &q : data->queries) {
-        wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, wdata, *scorer, q), data->index.num_docs());
-        REQUIRE(wand_q.topk().size() == op_q.topk().size());
+    auto test_with_scorers =
+        [&](auto scorer1, auto scorer2) {
+            for (auto const &q : data->queries) {
+                wand_q(make_max_scored_cursors(data->index, data->wdata, scorer1, q),
+                       data->index.num_docs());
+                op_q(make_block_max_scored_cursors(data->index, wdata, scorer2, q),
+                     data->index.num_docs());
+                REQUIRE(wand_q.topk().size() == op_q.topk().size());
 
-        for (size_t i = 0; i < wand_q.topk().size(); ++i) {
-            REQUIRE(wand_q.topk()[i].first
-                    == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
-        }
-        op_q.clear_topk();
-    }
+                for (size_t i = 0; i < wand_q.topk().size(); ++i) {
+                    REQUIRE(wand_q.topk()[i].first
+                            == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is %
+                                                                            // relative
+                }
+                op_q.clear_topk();
+            }
+        };
+
+    PISA_WITH_SCORER_TYPE(Scorer1,
+                          s_name,
+                          decltype(data->wdata),
+                          PISA_WITH_SCORER_TYPE(Scorer2, s_name, decltype(wdata), {
+                              test_with_scorers(Scorer1(data->wdata), Scorer2(wdata));
+                          }))
 }
 
 TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
