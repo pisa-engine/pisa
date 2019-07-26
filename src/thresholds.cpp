@@ -38,30 +38,30 @@ void thresholds(const std::string &index_filename,
 
     WandType wdata;
 
-    auto scorer = scorer::from_name(scorer_name, wdata);
-
-
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
+    PISA_WITH_SCORER_TYPE(Scorer, scorer_name, WandType, {
+        auto scorer = Scorer(wdata);
+        mio::mmap_source md;
+        if (wand_data_filename) {
+            std::error_code error;
+            md.map(*wand_data_filename, error);
+            if (error) {
+                spdlog::error("error mapping file: {}, exiting...", error.message());
+                std::abort();
+            }
+            mapper::map(wdata, md, mapper::map_flags::warmup);
         }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
 
-    wand_query wand_q(k);
-    for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-        auto  results   = wand_q.topk();
-        float threshold = 0.0;
-        if (results.size() == k) {
-            threshold = results.back().first;
+        wand_query wand_q(k);
+        for (auto const &query : queries) {
+            wand_q(make_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+            auto results = wand_q.topk();
+            float threshold = 0.0;
+            if (results.size() == k) {
+                threshold = results.back().first;
+            }
+            std::cout << threshold << '\n';
         }
-        std::cout << threshold << '\n';
-    }
+    })
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;

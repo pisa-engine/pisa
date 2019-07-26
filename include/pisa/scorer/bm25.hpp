@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <utility>
 
 #include "index_scorer.hpp"
 namespace pisa {
@@ -29,7 +30,7 @@ struct bm25 : public index_scorer<Wand> {
         return std::max(epsilon_score, idf) * (1.0f + k1);
     }
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
+    auto term_scorer(uint64_t term_id) const
     {
         auto term_len = this->m_wdata.term_posting_count(term_id);
         auto term_weight = query_term_weight(term_len, this->m_wdata.num_docs());
@@ -39,4 +40,10 @@ struct bm25 : public index_scorer<Wand> {
         return s;
     }
 };
+
+template <typename Wand>
+struct scorer_traits<bm25<Wand>> {
+    using term_scorer = decltype(std::declval<bm25<Wand>>().term_scorer(0));
+};
+
 } // namespace pisa

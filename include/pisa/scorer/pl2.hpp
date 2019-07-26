@@ -18,7 +18,7 @@ struct pl2 : public index_scorer<Wand> {
 
     static constexpr float c = 1;
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
+    auto term_scorer(uint64_t term_id) const
     {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float tfn =
@@ -34,6 +34,11 @@ struct pl2 : public index_scorer<Wand> {
         };
         return s;
     }
+};
+
+template <typename Wand>
+struct scorer_traits<pl2<Wand>> {
+    using term_scorer = decltype(std::declval<pl2<Wand>>().term_scorer(0));
 };
 
 } // namespace pisa

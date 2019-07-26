@@ -22,18 +22,15 @@ TEST_CASE("wand_data_range")
     using WandTypeRange = wand_data_range<64, 1024>;
     using WandType = wand_data<WandTypeRange>;
 
-    auto scorer_name = "bm25";
-
-
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
     WandType wdata_range(document_sizes.begin()->begin(),
                          collection.num_docs(),
                          collection,
-                         scorer_name,
+                         "bm25",
                          BlockSize(FixedBlock()));
 
-    auto scorer = scorer::from_name(scorer_name, wdata_range);
+    bm25<WandType> scorer(wdata_range);
 
     SECTION("Precomputed block-max scores")
     {
@@ -42,7 +39,7 @@ TEST_CASE("wand_data_range")
             if (seq.docs.size() >= 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
-                auto s = scorer->term_scorer(term_id);
+                auto s = scorer.term_scorer(term_id);
                 for (auto && [ docid, freq ] : ranges::view::zip(seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     w.next_geq(docid);
@@ -76,7 +73,7 @@ TEST_CASE("wand_data_range")
             if (seq.docs.size() < 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto &w = wdata_range.get_block_wand();
-                auto s = scorer->term_scorer(term_id);
+                auto s = scorer.term_scorer(term_id);
                 const mapper::mappable_vector<float> bm =
                     w.compute_block_max_scores(list, s);
                 WandTypeRange::enumerator we(0, bm);

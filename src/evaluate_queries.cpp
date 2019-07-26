@@ -52,8 +52,6 @@ void evaluate_queries(const std::string &index_filename,
 
     WandType wdata;
 
-    auto scorer = scorer::from_name(scorer_name, wdata);
-
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
@@ -66,103 +64,105 @@ void evaluate_queries(const std::string &index_filename,
     }
 
     std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
-
-    if (query_type == "wand" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            wand_query wand_q(k);
-            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            return wand_q.topk();
-        };
-    } else if (query_type == "block_max_wand" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            block_max_wand_query block_max_wand_q(k);
-            block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                             index.num_docs());
-            return block_max_wand_q.topk();
-        };
-    } else if (query_type == "block_max_maxscore" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            block_max_maxscore_query block_max_maxscore_q(k);
-            block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+    auto run_evaluation = [&](auto scorer) {
+        if (query_type == "wand" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                wand_query wand_q(k);
+                wand_q(make_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+                return wand_q.topk();
+            };
+        } else if (query_type == "block_max_wand" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                block_max_wand_query block_max_wand_q(k);
+                block_max_wand_q(make_block_max_scored_cursors(index, wdata, scorer, query),
                                  index.num_docs());
-            return block_max_maxscore_q.topk();
-        };
-    } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            block_max_ranked_and_query block_max_ranked_and_q(k);
-            block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                   index.num_docs());
-            return block_max_ranked_and_q.topk();
-        };
-    } else if (query_type == "ranked_and" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            ranked_and_query ranked_and_q(k);
-            ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            return ranked_and_q.topk();
-        };
-    } else if (query_type == "ranked_or" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            ranked_or_query ranked_or_q(k);
-            ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            return ranked_or_q.topk();
-        };
-    } else if (query_type == "maxscore" && wand_data_filename) {
-        query_fun = [&](Query query) {
-            maxscore_query maxscore_q(k);
-            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            return maxscore_q.topk();
-        };
-    } else if (query_type == "ranked_or_taat" && wand_data_filename) {
-        Simple_Accumulator accumulator(index.num_docs());
-        ranked_or_taat_query ranked_or_taat_q(k);
-        query_fun = [&, ranked_or_taat_q](Query query) mutable {
-            ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            return ranked_or_taat_q.topk();
-        };
-    } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
-        Lazy_Accumulator<4> accumulator(index.num_docs());
-        ranked_or_taat_query ranked_or_taat_q(k);
-        query_fun = [&, ranked_or_taat_q](Query query) mutable {
-            ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            return ranked_or_taat_q.topk();
-        };
-    } else {
-        spdlog::error("Unsupported query type: {}", query_type);
-    }
-
-    auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
-    auto docmap = Payload_Vector<>::from(*source);
-
-    std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
-    auto start_batch = std::chrono::steady_clock::now();
-    tbb::parallel_for(size_t(0), queries.size(), [&](size_t query_idx) {
-        auto qid = queries[query_idx].id;
-        raw_results[query_idx] = query_fun(queries[query_idx]);
-    });
-    auto end_batch = std::chrono::steady_clock::now();
-
-    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
-        auto results = raw_results[query_idx];
-        auto qid = queries[query_idx].id;
-        for (auto && [ rank, result ] : enumerate(results)) {
-            std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     qid.value_or(std::to_string(query_idx)),
-                                     iteration,
-                                     docmap[result.second],
-                                     rank,
-                                     result.first,
-                                     run_id);
+                return block_max_wand_q.topk();
+            };
+        } else if (query_type == "block_max_maxscore" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                block_max_maxscore_query block_max_maxscore_q(k);
+                block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, scorer, query),
+                                     index.num_docs());
+                return block_max_maxscore_q.topk();
+            };
+        } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                block_max_ranked_and_query block_max_ranked_and_q(k);
+                block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, scorer, query),
+                                       index.num_docs());
+                return block_max_ranked_and_q.topk();
+            };
+        } else if (query_type == "ranked_and" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                ranked_and_query ranked_and_q(k);
+                ranked_and_q(make_scored_cursors(index, scorer, query), index.num_docs());
+                return ranked_and_q.topk();
+            };
+        } else if (query_type == "ranked_or" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                ranked_or_query ranked_or_q(k);
+                ranked_or_q(make_scored_cursors(index, scorer, query), index.num_docs());
+                return ranked_or_q.topk();
+            };
+        } else if (query_type == "maxscore" && wand_data_filename) {
+            query_fun = [&](Query query) {
+                maxscore_query maxscore_q(k);
+                maxscore_q(make_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+                return maxscore_q.topk();
+            };
+        } else if (query_type == "ranked_or_taat" && wand_data_filename) {
+            Simple_Accumulator accumulator(index.num_docs());
+            ranked_or_taat_query ranked_or_taat_q(k);
+            query_fun = [&, ranked_or_taat_q](Query query) mutable {
+                ranked_or_taat_q(
+                    make_scored_cursors(index, scorer, query), index.num_docs(), accumulator);
+                return ranked_or_taat_q.topk();
+            };
+        } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
+            Lazy_Accumulator<4> accumulator(index.num_docs());
+            ranked_or_taat_query ranked_or_taat_q(k);
+            query_fun = [&, ranked_or_taat_q](Query query) mutable {
+                ranked_or_taat_q(
+                    make_scored_cursors(index, scorer, query), index.num_docs(), accumulator);
+                return ranked_or_taat_q.topk();
+            };
+        } else {
+            spdlog::error("Unsupported query type: {}", query_type);
         }
-    }
-    auto end_print = std::chrono::steady_clock::now();
-    double batch_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
-    double batch_with_print_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
-    spdlog::info("Time taken to process queries: {}ms", batch_ms);
-    spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
+
+        auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
+        auto docmap = Payload_Vector<>::from(*source);
+
+        std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
+        auto start_batch = std::chrono::steady_clock::now();
+        tbb::parallel_for(size_t(0), queries.size(), [&](size_t query_idx) {
+            auto qid = queries[query_idx].id;
+            raw_results[query_idx] = query_fun(queries[query_idx]);
+        });
+        auto end_batch = std::chrono::steady_clock::now();
+
+        for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
+            auto results = raw_results[query_idx];
+            auto qid = queries[query_idx].id;
+            for (auto &&[rank, result] : enumerate(results)) {
+                std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
+                                         qid.value_or(std::to_string(query_idx)),
+                                         iteration,
+                                         docmap[result.second],
+                                         rank,
+                                         result.first,
+                                         run_id);
+            }
+        }
+        auto end_print = std::chrono::steady_clock::now();
+        double batch_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
+        double batch_with_print_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
+        spdlog::info("Time taken to process queries: {}ms", batch_ms);
+        spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
+    };
+    PISA_WITH_SCORER_TYPE(Scorer, scorer_name, WandType, run_evaluation(Scorer(wdata));)
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
