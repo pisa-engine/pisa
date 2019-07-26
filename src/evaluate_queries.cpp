@@ -144,7 +144,7 @@ void evaluate_queries(const std::string &index_filename,
         for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
             auto results = raw_results[query_idx];
             auto qid = queries[query_idx].id;
-            for (auto &&[rank, result] : enumerate(results)) {
+            for (auto && [ rank, result ] : enumerate(results)) {
                 std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                          qid.value_or(std::to_string(query_idx)),
                                          iteration,
