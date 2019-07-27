@@ -13,18 +13,10 @@
 #include "wand_data_raw.hpp"
 
 #include "scorer/scorer.hpp"
+#include "quantizer.hpp"
 
 class enumerator;
 namespace pisa {
-
-uint64_t quantize(float value)
-{
-    float quant = 1.f / configuration::get().reference_size;
-    uint64_t pos = 1;
-    while (value > quant * pos)
-        pos++;
-    return pos;
-}
 
 template <typename block_wand_type = wand_data_raw>
 class wand_data {
@@ -85,6 +77,7 @@ class wand_data {
                     for(auto&& w : max_term_weight) {
                         w = quantize(w/m_index_max_term_weight);
                     }
+                    builder.quantize_block_max_term_weitghts(m_index_max_term_weight);
                 }
             }
             builder.build(m_block_wand);

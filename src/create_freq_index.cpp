@@ -23,6 +23,8 @@
 
 #include "CLI/CLI.hpp"
 
+#include "quantizer.hpp"
+
 using namespace pisa;
 
 

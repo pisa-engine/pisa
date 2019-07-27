@@ -8,6 +8,7 @@
 #include "util/compiler_attribute.hpp"
 #include "util/util.hpp"
 #include "wand_utils.hpp"
+#include "quantizer.hpp"
 
 namespace pisa {
 
@@ -83,6 +84,12 @@ class wand_data_range {
                 blocks_start.push_back(blocks_start.back());
             }
             return max_score;
+        }
+
+        void quantize_block_max_term_weitghts(float index_max_term_weight){
+          for(auto&& w : block_max_term_weight) {
+            w = quantize(w/index_max_term_weight);
+          }
         }
 
         void build(wand_data_range &wdata)
