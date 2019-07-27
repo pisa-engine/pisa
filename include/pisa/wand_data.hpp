@@ -57,8 +57,7 @@ class wand_data {
         m_term_occurrence_counts.steal(term_occurrence_counts);
         m_term_posting_counts.steal(term_posting_counts);
 
-        PISA_WITH_SCORER_TYPE(Scorer, scorer_name, wand_data<block_wand_type>, {
-            auto scorer = Scorer(*this);
+        with_scorer(scorer_name, *this, [&](auto scorer) {
             {
                 pisa::progress progress("Processing posting lists", coll.size());
                 size_t term_id = 0;
@@ -72,7 +71,7 @@ class wand_data {
             }
             builder.build(m_block_wand);
             m_max_term_weight.steal(max_term_weight);
-        })
+        });
     }
 
     float norm_len(uint64_t doc_id) const { return m_doc_lens[doc_id] / m_avg_len; }

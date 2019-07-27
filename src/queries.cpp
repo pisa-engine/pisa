@@ -241,7 +241,7 @@ void perftest(const std::string &index_filename,
             }
         }
     };
-    PISA_WITH_SCORER_TYPE(Scorer, scorer_name, WandType, run_with_scorer(Scorer(wdata));)
+    with_scorer(scorer_name, wdata, run_with_scorer);
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;

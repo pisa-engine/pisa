@@ -162,7 +162,7 @@ void evaluate_queries(const std::string &index_filename,
         spdlog::info("Time taken to process queries: {}ms", batch_ms);
         spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
     };
-    PISA_WITH_SCORER_TYPE(Scorer, scorer_name, WandType, run_evaluation(Scorer(wdata));)
+    with_scorer(scorer_name, wdata, run_evaluation);
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
