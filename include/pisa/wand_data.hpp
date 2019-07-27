@@ -17,6 +17,15 @@
 class enumerator;
 namespace pisa {
 
+uint64_t quantize(float value)
+{
+    float quant = 1.f / configuration::get().reference_size;
+    uint64_t pos = 1;
+    while (value > quant * pos)
+        pos++;
+    return pos;
+}
+
 template <typename block_wand_type = wand_data_raw>
 class wand_data {
    public:
@@ -29,7 +38,8 @@ class wand_data {
               uint64_t num_docs,
               binary_freq_collection const &coll,
               std::string const &scorer_name,
-              BlockSize block_size)
+              BlockSize block_size,
+              bool is_quantized)
         : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
@@ -70,6 +80,11 @@ class wand_data {
                     m_index_max_term_weight = std::max(m_index_max_term_weight, v);
                     term_id += 1;
                     progress.update(1);
+                }
+                if (is_quantized) {
+                    for(auto&& w : max_term_weight) {
+                        w = quantize(w/m_index_max_term_weight);
+                    }
                 }
             }
             builder.build(m_block_wand);

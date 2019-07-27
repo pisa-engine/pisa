@@ -27,6 +27,7 @@ int main(int argc, const char **argv)
     bool variable_block = false;
     bool compress = false;
     bool range = false;
+    bool quantize = false;
 
     CLI::App app{"create_wand_data - a tool for creating additional data for query processing."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
@@ -39,6 +40,7 @@ int main(int argc, const char **argv)
         ->excludes(var_block_param_opt)
         ->needs(var_block_opt);
     app.add_flag("--compress", compress, "Compress additional data");
+    app.add_flag("-q, --quantize", quantize, "Quantize scores");
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
 
@@ -62,15 +64,15 @@ int main(int argc, const char **argv)
 
     if (compress) {
         wand_data<wand_data_compressed> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size, quantize);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
         wand_data<wand_data_range<128, 1024>> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size, quantize);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
         wand_data<wand_data_raw> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size, quantize);
         mapper::freeze(wdata, output_filename.c_str());
     }
 }
