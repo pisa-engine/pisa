@@ -21,7 +21,6 @@ struct IndexData {
 
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
-
     explicit IndexData(std::string const &scorer_name)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
@@ -77,8 +76,8 @@ auto test(Wand &wdata, std::string const &s_name)
     block_max_wand_query op_q(10);
     wand_query wand_q(10);
 
-    auto test_with_scorers =
-        [&](auto scorer1, auto scorer2) {
+    with_scorer(s_name, data->wdata, [&](auto scorer1) {
+        with_scorer(s_name, wdata, [&](auto scorer2) {
             for (auto const &q : data->queries) {
                 wand_q(make_max_scored_cursors(data->index, data->wdata, scorer1, q),
                        data->index.num_docs());
@@ -93,14 +92,8 @@ auto test(Wand &wdata, std::string const &s_name)
                 }
                 op_q.clear_topk();
             }
-        };
-
-    PISA_WITH_SCORER_TYPE(Scorer1,
-                          s_name,
-                          decltype(data->wdata),
-                          PISA_WITH_SCORER_TYPE(Scorer2, s_name, decltype(wdata), {
-                              test_with_scorers(Scorer1(data->wdata), Scorer2(wdata));
-                          }))
+        });
+    });
 }
 
 TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
