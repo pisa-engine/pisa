@@ -2,8 +2,8 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
-#include <thread>
 #include <optional>
+#include <thread>
 
 #include "boost/algorithm/string/predicate.hpp"
 #include "spdlog/spdlog.h"
@@ -11,21 +11,40 @@
 #include "mappable/mapper.hpp"
 
 #include "configuration.hpp"
-#include "util/index_build_utils.hpp"
 #include "index_types.hpp"
+#include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 #include "util/verify_collection.hpp" // XXX move to index_build_utils
 
+#include "scorer/scorer.hpp"
+
+#include "wand_data.hpp"
+#include "wand_data_raw.hpp"
+
 #include "CLI/CLI.hpp"
 
-template <typename Collection>
-void dump_index_specific_stats(Collection const &, std::string const &) {}
+using namespace pisa;
 
-void dump_index_specific_stats(pisa::uniform_index const &coll, std::string const &type) {
+uint64_t quantize(float value){
+    float quant = 1.f / configuration::get().reference_size;
+    uint64_t pos = 1;
+    while (value > quant * pos)
+        pos++;
+    return pos;
+}
+
+template <typename Collection>
+void dump_index_specific_stats(Collection const &, std::string const &)
+{
+}
+
+void dump_index_specific_stats(pisa::uniform_index const &coll, std::string const &type)
+{
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
-void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &type) {
+void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &type)
+{
     auto const &conf = pisa::configuration::get();
 
     uint64_t length_threshold = 4096;
@@ -47,29 +66,61 @@ void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &t
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
-template <typename InputCollection, typename CollectionType>
+template <typename InputCollection, typename CollectionType, typename WandType>
 void create_collection(InputCollection const &input,
                        pisa::global_parameters const &params,
                        const std::optional<std::string> &output_filename,
                        bool check,
-                       std::string const &seq_type) {
+                       std::string const &seq_type,
+                       std::optional<std::string> const &wand_data_filename,
+                       std::optional<std::string> const &scorer_name)
+{
     using namespace pisa;
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 
     typename CollectionType::builder builder(input.num_docs(), params);
-    uint64_t size = 0;
     size_t postings = 0;
     {
         pisa::progress progress("Create index", input.size());
+        WandType wdata;
+        mio::mmap_source md;
+        if (wand_data_filename) {
+            std::error_code error;
+            md.map(*wand_data_filename, error);
+            if (error) {
+                spdlog::error("error mapping file: {}, exiting...", error.message());
+                std::abort();
+            }
+            mapper::map(wdata, md, mapper::map_flags::warmup);
+        }
+        auto scorer = bm25<WandType>(wdata);
+
+        size_t term_id = 0;
         for (auto const &plist : input) {
-            uint64_t freqs_sum;
-            size = plist.docs.size();
-            freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
-            builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            auto term_scorer = scorer.term_scorer(term_id);
+            uint64_t size = plist.docs.size();
+            if (scorer_name) {
+                std::vector<uint64_t> quants;
+                for (size_t pos = 0; pos < size; ++pos) {
+                    uint64_t doc = *(plist.docs.begin() + pos);
+                    uint64_t freq = *(plist.freqs.begin() + pos);
+                    float score = term_scorer(doc, freq);
+                    uint64_t quant_score = quantize(score/wdata.index_max_term_weight());
+                    quants.push_back(quant_score);
+                }
+                assert(quants.size() == size);
+                uint64_t quants_sum = std::accumulate(quants.begin(), quants.begin() + quants.size(), uint64_t(0));
+                builder.add_posting_list(size, plist.docs.begin(), quants.begin(), quants_sum);
+            } else {
+                uint64_t freqs_sum =
+                    std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
+                builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            }
 
             progress.update(1);
             postings += size;
+            term_id += 1;
         }
     }
 
@@ -87,24 +138,29 @@ void create_collection(InputCollection const &input,
     if (output_filename) {
         mapper::freeze(coll, (*output_filename).c_str());
         if (check) {
-            verify_collection<InputCollection, CollectionType>(input,
-                                                               (*output_filename).c_str());
+            verify_collection<InputCollection, CollectionType>(input, (*output_filename).c_str());
         }
     }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
-    using namespace pisa;
     std::string type;
     std::string input_basename;
     std::optional<std::string> output_filename;
+    std::optional<std::string> wand_data_filename;
+    std::optional<std::string> scorer_name;
+
     bool check = false;
 
     CLI::App app{"create_freq_index - a tool for creating an index."};
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
+    auto *wand_opt = app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
+    app.add_option("-p,--precompute", scorer_name, "Precompute scores")->needs(wand_opt);;
+
     app.add_flag("--check", check, "Check the correctness of the index");
     CLI11_PARSE(app, argc, argv);
 
@@ -114,11 +170,14 @@ int main(int argc, char **argv) {
     params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                               \
-    }                                                                       \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                               \
-        create_collection<binary_freq_collection, BOOST_PP_CAT(T, _index)>( \
-            input, params, output_filename, check, type);                   \
+#define LOOP_BODY(R, DATA, T)                                                              \
+    }                                                                                      \
+    else if (type == BOOST_PP_STRINGIZE(T))                                                \
+    {                                                                                      \
+        create_collection<binary_freq_collection,                                          \
+                          BOOST_PP_CAT(T, _index),                                         \
+                          wand_data<wand_data_raw>>(                                       \
+            input, params, output_filename, check, type, wand_data_filename, scorer_name); \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

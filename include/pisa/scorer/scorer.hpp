@@ -7,6 +7,7 @@
 #include "index_scorer.hpp"
 #include "pl2.hpp"
 #include "qld.hpp"
+#include "quantized.hpp"
 #include "spdlog/spdlog.h"
 
 #define PISA_WITH_SCORER_TYPE(Scorer, scorer_name, WandData, body) \
@@ -22,6 +23,9 @@
             body                                                   \
         } else if (scorer_name == "dph") {                         \
             using Scorer = dph<WandData>;                          \
+            body                                                   \
+        } else if (scorer_name == "quantized") {                   \
+            using Scorer = quantized<WandData>;                    \
             body                                                   \
         } else {                                                   \
             spdlog::error("Unknown scorer {}", scorer_name);       \
