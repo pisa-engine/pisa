@@ -22,7 +22,7 @@ struct IndexData {
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
 
-    IndexData(std::string const &scorer_name)
+    explicit IndexData(std::string const &scorer_name)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),

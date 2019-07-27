@@ -165,7 +165,7 @@ class wand_data_compressed {
         friend class wand_data_compressed;
 
        public:
-        enumerator(compact_elias_fano::enumerator docs_enum, float max_term_weight)
+        enumerator(compact_elias_fano::enumerator const &docs_enum, float max_term_weight)
             : m_docs_enum(docs_enum), m_max_term_weight(max_term_weight)
         {
             reset();
