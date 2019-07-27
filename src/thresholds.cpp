@@ -38,8 +38,7 @@ void thresholds(const std::string &index_filename,
 
     WandType wdata;
 
-    PISA_WITH_SCORER_TYPE(Scorer, scorer_name, WandType, {
-        auto scorer = Scorer(wdata);
+    with_scorer(scorer_name, wdata, [&](auto scorer) {
         mio::mmap_source md;
         if (wand_data_filename) {
             std::error_code error;
@@ -61,7 +60,7 @@ void thresholds(const std::string &index_filename,
             }
             std::cout << threshold << '\n';
         }
-    })
+    });
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
