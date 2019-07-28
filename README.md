@@ -39,13 +39,17 @@ Reference to cite when you use PISA in a research paper:
 
 ```
 @inproceedings{MSMS2019,
-  title={{PISA}: {P}erformant {I}ndexes and {S}earch for {A}cademia},
-  author={Mallia, Antonio and Siedlaczek, Michal and Mackenzie, Joel and Suel, Torsten},
-  booktitle={Proceedings of the Open-Source IR Replicability Challenge (OSIRRC 2019)},
-  year={2019}
+  author    = {Antonio Mallia and Michal Siedlaczek and Joel Mackenzie and Torsten Suel},
+  title     = {{PISA:} Performant Indexes and Search for Academia},
+  booktitle = {Proceedings of the Open-Source {IR} Replicability Challenge co-located
+               with 42nd International {ACM} {SIGIR} Conference on Research and Development
+               in Information Retrieval, OSIRRC@SIGIR 2019, Paris, France, July 25,
+               2019.},
+  pages     = {50--56},
+  year      = {2019},
+  url       = {http://ceur-ws.org/Vol-2409/docker08.pdf}
 }
 ```
-
 
 #### Credits
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).

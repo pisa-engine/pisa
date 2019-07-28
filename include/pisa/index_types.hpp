@@ -27,10 +27,10 @@ using ef_index = freq_index<compact_elias_fano, positive_sequence<strict_elias_f
 
 using single_index = freq_index<indexed_sequence, positive_sequence<>>;
 
-using uniform_index = freq_index<uniform_partitioned_sequence<>,
+using pefuniform_index = freq_index<uniform_partitioned_sequence<>,
                                  positive_sequence<uniform_partitioned_sequence<strict_sequence>>>;
 
-using opt_index =
+using pefopt_index =
     freq_index<partitioned_sequence<>, positive_sequence<partitioned_sequence<strict_sequence>>>;
 
 using block_optpfor_index       = block_freq_index<pisa::optpfor_block>;
@@ -48,7 +48,7 @@ using block_mixed_index         = block_freq_index<pisa::mixed_block>;
 } // namespace pisa
 
 #define PISA_INDEX_TYPES                                                                    \
-    (ef)(single)(uniform)(opt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(         \
+    (ef)(single)(pefuniform)(pefopt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(         \
         block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
         block_simple16)(block_simdbp)(block_mixed)
 #define PISA_BLOCK_INDEX_TYPES                                                                    \
