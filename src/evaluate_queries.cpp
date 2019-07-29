@@ -108,16 +108,16 @@ void evaluate_queries(const std::string &index_filename,
         };
     } else if (query_type == "ranked_or_taat" && wand_data_filename) {
         Simple_Accumulator   accumulator(index.num_docs());
-        ranked_or_taat_query ranked_or_taat_q(k);
-        query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
+        query_fun = [&, accumulator](Query query) mutable {
+            ranked_or_taat_query ranked_or_taat_q(k);
             ranked_or_taat_q(make_scored_cursors(index, wdata, query), index.num_docs(),
                              accumulator);
             return ranked_or_taat_q.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
         Lazy_Accumulator<4>  accumulator(index.num_docs());
-        ranked_or_taat_query ranked_or_taat_q(k);
-        query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
+        query_fun = [&, accumulator](Query query) mutable {
+            ranked_or_taat_query ranked_or_taat_q(k);
             ranked_or_taat_q(make_scored_cursors(index, wdata, query), index.num_docs(),
                              accumulator);
             return ranked_or_taat_q.topk();
@@ -131,8 +131,7 @@ void evaluate_queries(const std::string &index_filename,
 
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
-    tbb::parallel_for (size_t(0), queries.size(), [&] (size_t query_idx) {
-        auto qid = queries[query_idx].id;
+    tbb::parallel_for (size_t(0), queries.size(), [&, query_fun] (size_t query_idx) {
         raw_results[query_idx] = query_fun(queries[query_idx]);
     });
     auto end_batch = std::chrono::steady_clock::now();
