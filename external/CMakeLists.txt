@@ -85,7 +85,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
 # Add Boost
 add_subdirectory(boost-cmake)
 
-# Add Catch
+# Add Catch2
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
 # Add Porter2
@@ -115,3 +115,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 
 # Add range-v3
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
+
+# Add tokenizer
+set(TOKENIZER_ENABLE_TESTING OFF CACHE BOOL "skip tokenizer testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tokenizer)

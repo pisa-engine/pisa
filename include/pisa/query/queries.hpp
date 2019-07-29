@@ -19,7 +19,7 @@
 #include "io.hpp"
 #include "payload_vector.hpp"
 #include "query/queries.hpp"
-#include "tokenizer.hpp"
+#include "tokenizer/term_tokenizer.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
@@ -51,7 +51,7 @@ struct Query {
     }
     auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
     auto raw_query = std::string_view(&*pos, std::distance(pos, query_string.end()));
-    TermTokenizer tokenizer(raw_query);
+    tok::TermTokenizer tokenizer(raw_query);
     for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
         auto raw_term = *term_iter;
         try {

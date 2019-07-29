@@ -28,7 +28,7 @@
 #include "parsing/html.hpp"
 #include "payload_vector.hpp"
 #include "type_safe.hpp"
-#include "tokenizer.hpp"
+#include "tokenizer/term_tokenizer.hpp"
 #include "warcpp/warcpp.hpp"
 
 namespace pisa {
@@ -95,7 +95,7 @@ void parse_html_content(std::string &&content, std::function<void(std::string &&
     if (content.empty()) {
         return;
     }
-    TermTokenizer tokenizer(content);
+    tok::TermTokenizer tokenizer(content);
     std::for_each(tokenizer.begin(), tokenizer.end(), process);
 }
 

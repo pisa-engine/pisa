@@ -3,24 +3,15 @@
 #include <catch2/catch.hpp>
 #include <functional>
 
-#include <boost/iterator/filter_iterator.hpp>
-#include <boost/spirit/include/lex_lexertl.hpp>
 #include <gsl/span>
 
 #include "payload_vector.hpp"
 #include "query/queries.hpp"
 #include "temporary_directory.hpp"
-#include "tokenizer.hpp"
+#include "tokenizer/term_tokenizer.hpp"
 
 using namespace pisa;
 
-TEST_CASE("TermTokenizer")
-{
-    std::string str("w0rd, token-izer. pup's, U.S.a., us., hel.lo");
-    TermTokenizer tokenizer(str);
-    REQUIRE(std::vector<std::string>(tokenizer.begin(), tokenizer.end()) ==
-            std::vector<std::string>{"w0rd", "token", "izer", "pup", "USa", "us", "hel", "lo"});
-}
 
 TEST_CASE("Parse query") {
     Temporary_Directory tmpdir;

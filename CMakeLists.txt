@@ -95,6 +95,7 @@ target_link_libraries(pisa INTERFACE
     spdlog
     fmt::fmt
     range-v3
+    tokenizer
 )
 target_include_directories(pisa INTERFACE external)
 
