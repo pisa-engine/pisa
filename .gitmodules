@@ -69,4 +69,4 @@
 	url = https://github.com/pisa-engine/wapopp.git
 [submodule "external/tokenizer"]
 	path = external/tokenizer
-	url = git@github.com:pisa-engine/tokenizer.git
+	url = https://github.com:pisa-engine/tokenizer.git
