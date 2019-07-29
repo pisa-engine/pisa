@@ -219,14 +219,14 @@ void perftest(const std::string &index_filename,
             } else if (t == "ranked_or_taat" && wand_data_filename) {
                 Simple_Accumulator accumulator(index.num_docs());
                 ranked_or_taat_query ranked_or_taat_q(k);
-                query_fun = [&, ranked_or_taat_q](Query query) mutable {
+                query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
                     return ranked_or_taat_q(
                         make_scored_cursors(index, scorer, query), index.num_docs(), accumulator);
                 };
             } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
                 Lazy_Accumulator<4> accumulator(index.num_docs());
                 ranked_or_taat_query ranked_or_taat_q(k);
-                query_fun = [&, ranked_or_taat_q](Query query) mutable {
+                query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
                     return ranked_or_taat_q(
                         make_scored_cursors(index, scorer, query), index.num_docs(), accumulator);
                 };

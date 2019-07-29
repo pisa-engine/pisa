@@ -21,11 +21,11 @@
 template <typename Collection>
 void dump_index_specific_stats(Collection const &, std::string const &) {}
 
-void dump_index_specific_stats(pisa::uniform_index const &coll, std::string const &type) {
+void dump_index_specific_stats(pisa::pefuniform_index const &coll, std::string const &type) {
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
-void dump_index_specific_stats(pisa::opt_index const &coll, std::string const &type) {
+void dump_index_specific_stats(pisa::pefopt_index const &coll, std::string const &type) {
     auto const &conf = pisa::configuration::get();
 
     uint64_t length_threshold = 4096;
