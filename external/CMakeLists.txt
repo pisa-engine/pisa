@@ -115,3 +115,6 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 
 # Add range-v3
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
+set(LIB_ONLY ON)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Tokenizer)
+

@@ -28,8 +28,9 @@
 #include "parsing/html.hpp"
 #include "payload_vector.hpp"
 #include "type_safe.hpp"
-#include "tokenizer.hpp"
 #include "warcpp/warcpp.hpp"
+
+#include <onmt/Tokenizer.h>
 
 namespace pisa {
 
@@ -95,8 +96,11 @@ void parse_html_content(std::string &&content, std::function<void(std::string &&
     if (content.empty()) {
         return;
     }
-    TermTokenizer tokenizer(content);
-    std::for_each(tokenizer.begin(), tokenizer.end(), process);
+    onmt::Tokenizer tokenizer(onmt::Tokenizer::Mode::Conservative, onmt::Tokenizer::Flags::JoinerAnnotate);
+    std::vector<std::string> tokens;
+    tokenizer.tokenize(content, tokens);
+	
+    for(auto &&t: tokens){ process(std::move(t)); }
 }
 
 class Forward_Index_Builder {

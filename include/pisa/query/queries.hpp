@@ -21,12 +21,12 @@
 #include "payload_vector.hpp"
 #include "query/queries.hpp"
 #include "scorer/score_function.hpp"
-#include "tokenizer.hpp"
 #include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include <onmt/Tokenizer.h>
 
 namespace pisa {
 
@@ -53,8 +53,11 @@ struct Query {
     }
     auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
     auto raw_query = std::string_view(&*pos, std::distance(pos, query_string.end()));
-    TermTokenizer tokenizer(raw_query);
-    for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
+
+    onmt::Tokenizer tokenizer(onmt::Tokenizer::Mode::Conservative, onmt::Tokenizer::Flags::JoinerAnnotate);
+    std::vector<std::string> tokens;
+    tokenizer.tokenize(std::string(raw_query), tokens);
+    for (auto term_iter = tokens.begin(); term_iter != tokens.end(); ++term_iter) {
         auto raw_term = *term_iter;
         try {
             auto processed = process_term(std::string(raw_term));
