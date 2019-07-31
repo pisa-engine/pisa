@@ -82,7 +82,7 @@ script:
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
-        make;
+        travis_wait 180 make;
         ctest -j2;
       fi
 
