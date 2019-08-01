@@ -79,10 +79,10 @@ before_install:
   - eval "${MATRIX_EVAL}"
 
 script:
+    - travis_wait 30 sleep 1800 &
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
-        travis_wait 30 sleep 1800 &;
         make;
         ctest -j2;
       fi
@@ -102,5 +102,4 @@ after_success:
       -d '{"request":{"branch":"master"}}' \
       'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests'
     fi
-
 
