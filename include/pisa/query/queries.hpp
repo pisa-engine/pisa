@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2/Porter2.hpp>
+#include <Porter2.hpp>
 #include <boost/algorithm/string.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
@@ -72,10 +72,11 @@ struct Query {
     return {id, parsed_query, {}};
 }
 
-bool read_query(term_id_vec &ret, std::istream &is = std::cin,
-                std::function<term_id_type(std::string)> process_term = [](auto str) {
-                    return std::stoi(str);
-                }) {
+inline bool read_query(
+    term_id_vec &ret,
+    std::istream &is = std::cin,
+    std::function<term_id_type(std::string)> process_term = [](auto str) { return std::stoi(str); })
+{
     ret.clear();
     std::string line;
     if (!std::getline(is, line)) {
@@ -85,7 +86,8 @@ bool read_query(term_id_vec &ret, std::istream &is = std::cin,
     return true;
 }
 
-void remove_duplicate_terms(term_id_vec &terms) {
+inline void remove_duplicate_terms(term_id_vec &terms)
+{
     std::sort(terms.begin(), terms.end());
     terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
 }
@@ -93,7 +95,8 @@ void remove_duplicate_terms(term_id_vec &terms) {
 typedef std::pair<uint64_t, uint64_t> term_freq_pair;
 typedef std::vector<term_freq_pair>   term_freq_vec;
 
-term_freq_vec query_freqs(term_id_vec terms) {
+inline term_freq_vec query_freqs(term_id_vec terms)
+{
     term_freq_vec query_term_freqs;
     std::sort(terms.begin(), terms.end());
     // count query term frequencies
@@ -110,8 +113,8 @@ term_freq_vec query_freqs(term_id_vec terms) {
 
 namespace query {
 
-    TermProcessor term_processor(std::optional<std::string> terms_file,
-                                 std::optional<std::string> stemmer_type)
+    inline TermProcessor term_processor(std::optional<std::string> terms_file,
+                                        std::optional<std::string> stemmer_type)
     {
         if (terms_file) {
             auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
@@ -134,7 +137,7 @@ namespace query {
             if (*stemmer_type == "porter2") {
                 return [=](auto str) {
                     boost::algorithm::to_lower(str);
-                    stem::Porter2 stemmer{};
+                    porter2::Stemmer stemmer{};
                     return to_id(stemmer.stem(str));
                 };
             }

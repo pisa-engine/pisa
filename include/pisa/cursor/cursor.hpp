@@ -1,6 +1,11 @@
 #pragma once
 
 #include <vector>
+
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
+#include "codec/list.hpp"
 #include "query/queries.hpp"
 
 namespace pisa {
@@ -18,5 +23,15 @@ template <typename Index>
 
     return cursors;
 }
+
+#define LOOP_BODY(R, DATA, T)                                      \
+    struct T;                                                      \
+    template <typename Index, bool Profile>                        \
+    struct block_freq_index;                                       \
+    extern template auto make_cursors<block_freq_index<T, false>>( \
+        block_freq_index<T, false> const &, Query);
+/**/
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+#undef LOOP_BODY
 
 }  // namespace pisa

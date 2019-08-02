@@ -21,7 +21,7 @@ namespace pisa { namespace time_prediction {
         BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end
     };
 
-    feature_type parse_feature_type(std::string const& name)
+    inline feature_type parse_feature_type(std::string const &name)
     {
         if (false) {
 #define LOOP_BODY(R, DATA, T)                           \
@@ -36,7 +36,7 @@ namespace pisa { namespace time_prediction {
 
     }
 
-    std::string feature_name(feature_type f)
+    inline std::string feature_name(feature_type f)
     {
         switch (f) {
 #define LOOP_BODY(R, DATA, T)                       \
@@ -106,7 +106,7 @@ namespace pisa { namespace time_prediction {
         float m_bias;
     };
 
-    void values_statistics(std::vector<uint32_t> values, feature_vector& f)
+    inline void values_statistics(std::vector<uint32_t> values, feature_vector &f)
     {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
@@ -143,7 +143,9 @@ namespace pisa { namespace time_prediction {
         f[feature_type::max_b] = max_b;
     }
 
-    bool read_block_stats(std::istream& is, uint32_t& list_id, std::vector<uint32_t>& block_counts)
+    inline bool read_block_stats(std::istream &is,
+                                 uint32_t &list_id,
+                                 std::vector<uint32_t> &block_counts)
     {
         thread_local std::string line;
         uint32_t count;

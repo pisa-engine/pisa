@@ -1,10 +1,62 @@
 #pragma once
 
 #include <algorithm>
-#include "util/util.hpp"
+#include <vector>
+
 #include "util/likely.hpp"
 
 namespace pisa {
+
+/* struct TopKQueue { */
+/*     using DocID = std::uint64_t; */
+/*     using Score = float; */
+/*     using Entry = std::pair<Score, DocID>; */
+
+/*     explicit TopKQueue(std::size_t capacity); */
+/*     TopKQueue(TopKQueue const &) = default; */
+/*     TopKQueue(TopKQueue &&) = default; */
+/*     TopKQueue& operator=(TopKQueue const &) = default; */
+/*     TopKQueue& operator=(TopKQueue &&) = default; */
+
+/*     auto insert(Score score, DocID docid = 0) -> bool */
+/*     { */
+/*         if (PISA_UNLIKELY(score <= m_threshold)) { */
+/*             return false; */
+/*         } */
+/*         m_entries.emplace_back(score, docid); */
+/*         if (PISA_UNLIKELY(m_entries.size() <= m_k)) { */
+/*             std::push_heap(m_entries.begin(), m_entries.end(), min_heap_order); */
+/*             if(PISA_UNLIKELY(m_entries.size() == m_k)) { */
+/*                 m_threshold = m_entries.front().first; */
+/*             } */
+/*         } else { */
+/*             std::pop_heap(m_entries.begin(), m_entries.end(), min_heap_order); */
+/*             m_entries.pop_back(); */
+/*             m_threshold = m_entries.front().first; */
+/*         } */
+/*         return true; */
+/*     } */
+
+/*     [[nodiscard]] auto topk() const noexcept -> std::vector<Entry> const &; */
+/*     [[nodiscard]] auto would_enter(Score score) const -> bool; */
+
+/*     void finalize(); */
+/*     void clear() noexcept; */
+
+/*     [[nodiscard]] uint64_t size() const noexcept { return m_k; } */
+
+/*    private: */
+/*     [[nodiscard]] constexpr static auto min_heap_order(entry_type const &lhs, */
+/*                                                        entry_type const &rhs) noexcept -> bool */
+/*     { */
+/*         return lhs.first > rhs.first; */
+/*     } */
+
+/*    private: */
+/*     Score m_threshold; */
+/*     std::size_t m_capacity; */
+/*     std::vector<Entry> m_entries; */
+/* }; */
 
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;

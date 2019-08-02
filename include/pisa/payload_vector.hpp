@@ -208,7 +208,9 @@ struct Payload_Vector_Buffer {
 };
 
 template <typename InputIterator, typename PayloadEncodingFn>
-auto encode_payload_vector(InputIterator first, InputIterator last, PayloadEncodingFn encoding_fn)
+auto encode_payload_vector(InputIterator first,
+                                  InputIterator last,
+                                  PayloadEncodingFn encoding_fn)
 {
     return Payload_Vector_Buffer::make(first, last, encoding_fn);
 }
@@ -228,13 +230,14 @@ auto encode_payload_vector(InputIterator first, InputIterator last)
     });
 }
 
-auto encode_payload_vector(gsl::span<std::string const> values)
+inline auto encode_payload_vector(gsl::span<std::string const> values)
 {
     return encode_payload_vector(values.begin(), values.end());
 }
 
 template <typename... T>
-constexpr auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<std::byte const>>
+constexpr auto unpack_head(gsl::span<std::byte const> mem)
+    -> std::tuple<T..., gsl::span<std::byte const>>
 {
     static_assert(detail::all_pod<T...>::value);
     auto offset = detail::sizeofs<T...>::value;
@@ -247,7 +250,7 @@ constexpr auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., g
     return std::tuple_cat(head, std::tuple<gsl::span<std::byte const>>(tail));
 }
 
-[[nodiscard]] auto split(gsl::span<std::byte const> mem, std::size_t offset)
+[[nodiscard]] inline auto split(gsl::span<std::byte const> mem, std::size_t offset)
 {
     if (offset > mem.size()) {
         throw std::runtime_error(

@@ -129,16 +129,17 @@ void evaluate_queries(const std::string &index_filename,
         } else {
             spdlog::error("Unsupported query type: {}", query_type);
         }
-      
+
         auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
         auto docmap = Payload_Vector<>::from(*source);
 
         std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
         auto start_batch = std::chrono::steady_clock::now();
-        tbb::parallel_for(size_t(0), queries.size(), [&](size_t query_idx) {
+        std::function<void(size_t)> fn = [&](size_t query_idx) {
             auto qid = queries[query_idx].id;
             raw_results[query_idx] = query_fun(queries[query_idx]);
-        });
+        };
+        tbb::parallel_for(size_t(0), queries.size(), fn);
         auto end_batch = std::chrono::steady_clock::now();
 
         for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {

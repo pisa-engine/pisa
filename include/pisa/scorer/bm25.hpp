@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "index_scorer.hpp"
+
 namespace pisa {
 
 template <typename Wand>
@@ -45,5 +46,14 @@ template <typename Wand>
 struct scorer_traits<bm25<Wand>> {
     using term_scorer = decltype(std::declval<bm25<Wand>>().term_scorer(0));
 };
+
+template <typename T>
+class wand_data;
+
+class wand_data_raw;
+class wand_data_compressed;
+
+extern template struct bm25<wand_data<wand_data_raw>>;
+extern template struct bm25<wand_data<wand_data_compressed>>;
 
 } // namespace pisa

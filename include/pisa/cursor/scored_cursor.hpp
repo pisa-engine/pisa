@@ -1,8 +1,13 @@
 #pragma once
 
+#include <vector>
+
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+
+#include "codec/list.hpp"
 #include "query/queries.hpp"
 #include "scorer/index_scorer.hpp"
-#include <vector>
 
 namespace pisa {
 
@@ -35,5 +40,40 @@ template <typename Index, typename Scorer>
         });
     return cursors;
 }
+
+template <typename Index, bool Profile>
+struct block_freq_index;
+
+#define LOOP_BODY(R, DATA, T)                                                                      \
+    struct T;                                                                                      \
+                                                                                                   \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, bm25<wand_data<wand_data_raw>>>(               \
+        block_freq_index<T, false> const &, bm25<wand_data<wand_data_raw>> const &, Query);        \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, dph<wand_data<wand_data_raw>>>(                \
+        block_freq_index<T, false> const &, dph<wand_data<wand_data_raw>> const &, Query);         \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, pl2<wand_data<wand_data_raw>>>(                \
+        block_freq_index<T, false> const &, pl2<wand_data<wand_data_raw>> const &, Query);         \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, qld<wand_data<wand_data_raw>>>(                \
+        block_freq_index<T, false> const &, qld<wand_data<wand_data_raw>> const &, Query);         \
+                                                                                                   \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, bm25<wand_data<wand_data_compressed>>>(        \
+        block_freq_index<T, false> const &, bm25<wand_data<wand_data_compressed>> const &, Query); \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, dph<wand_data<wand_data_compressed>>>(         \
+        block_freq_index<T, false> const &, dph<wand_data<wand_data_compressed>> const &, Query);  \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, pl2<wand_data<wand_data_compressed>>>(         \
+        block_freq_index<T, false> const &, pl2<wand_data<wand_data_compressed>> const &, Query);  \
+    extern template auto                                                                           \
+    make_scored_cursors<block_freq_index<T, false>, qld<wand_data<wand_data_compressed>>>(         \
+        block_freq_index<T, false> const &, qld<wand_data<wand_data_compressed>> const &, Query);  \
+/**/
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+#undef LOOP_BODY
 
 } // namespace pisa

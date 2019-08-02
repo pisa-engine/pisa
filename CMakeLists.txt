@@ -1,5 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
-
+cmake_minimum_required(VERSION 3.0) 
 project(PISA CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -69,12 +68,15 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
+list(SORT PISA_SRC_FILES)
+
 include_directories(include)
-add_library(pisa INTERFACE)
-target_include_directories(pisa INTERFACE
+add_library(pisa ${PISA_SRC_FILES})
+target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa INTERFACE
+target_link_libraries(pisa PUBLIC
     Threads::Threads
     Boost::boost
     QMX
@@ -97,9 +99,9 @@ target_link_libraries(pisa INTERFACE
     range-v3
     tokenizer
 )
-target_include_directories(pisa INTERFACE external)
+target_include_directories(pisa PUBLIC external)
 
-add_subdirectory(src)
+add_subdirectory(tools)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()

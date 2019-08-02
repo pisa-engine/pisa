@@ -3,16 +3,16 @@
 #include <algorithm>
 #include <numeric>
 
-#include "boost/variant.hpp"
-#include "spdlog/spdlog.h"
+#include <boost/variant.hpp>
+#include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"
 #include "mappable/mappable_vector.hpp"
+#include "scorer/scorer.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
+#include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-
-#include "scorer/scorer.hpp"
 
 class enumerator;
 namespace pisa {
@@ -29,7 +29,8 @@ class wand_data {
               uint64_t num_docs,
               binary_freq_collection const &coll,
               std::string const &scorer_name,
-              BlockSize block_size) : m_num_docs(num_docs)
+              BlockSize block_size)
+        : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
@@ -78,7 +79,10 @@ class wand_data {
 
     size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
 
-    size_t term_occurrence_count(uint64_t term_id) const { return m_term_occurrence_counts[term_id]; }
+    size_t term_occurrence_count(uint64_t term_id) const
+    {
+        return m_term_occurrence_counts[term_id];
+    }
 
     size_t term_posting_count(uint64_t term_id) const { return m_term_posting_counts[term_id]; }
 
@@ -100,8 +104,9 @@ class wand_data {
     template <typename Visitor>
     void map(Visitor &visit)
     {
-        visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
-            m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_posting_counts, "m_term_posting_counts")(m_avg_len, "m_avg_len")(
+        visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(m_term_occurrence_counts,
+                                                                      "m_term_occurrence_counts")(
+            m_term_posting_counts, "m_term_posting_counts")(m_avg_len, "m_avg_len")(
             m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(m_max_term_weight,
                                                                             "m_max_term_weight");
     }
@@ -116,4 +121,9 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_term_posting_counts;
     mapper::mappable_vector<float> m_max_term_weight;
 };
+
+
+extern template class wand_data<wand_data_raw>;
+extern template class wand_data<wand_data_compressed>;
+
 } // namespace pisa

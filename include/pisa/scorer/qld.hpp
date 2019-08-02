@@ -34,4 +34,13 @@ struct scorer_traits<qld<Wand>> {
     using term_scorer = decltype(std::declval<qld<Wand>>().term_scorer(0));
 };
 
+template <typename T>
+class wand_data;
+
+class wand_data_raw;
+class wand_data_compressed;
+
+extern template struct qld<wand_data<wand_data_raw>>;
+extern template struct qld<wand_data<wand_data_compressed>>;
+
 } // namespace pisa
