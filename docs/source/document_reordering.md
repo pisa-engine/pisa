@@ -3,7 +3,7 @@
 ## Document name & URL based ordering
 To reorder an inverted index based on document names or their URLs, use the `generate_sorted_docids_mapping.py` script and the `shuffle_docids` command.
 
-The first one allows to generate a file in which each line maps a \<current ID\> with a \<new ID\>. These identifiers are generated based on the lexicographical order of  document names (or their URLs). Furthermore, this file serves as input to the `shuffle_docids` command, which materializes the reordering operation.
+The first one allows to generate a file in which each line maps a `<current ID>` with a `<new ID>`. These identifiers are generated based on the lexicographical order of  document names (or their URLs). Furthermore, this file serves as input to the `shuffle_docids` command, which materializes the reordering operation.
 
 ### 1. Mapping file creation
 To generate the mapping file, it is necessary to take into account that each line number of the `.documents` and `.urls` files (which are part of the forward index) correspond to its docid. So, the first document of `.documents` (line 0, and therefore docid = 0) is equivalent to the first URL in the `.urls` file, and so on. In this way, if you want to generate the mapping file to perform a reordering using either files, you should use the following script:
