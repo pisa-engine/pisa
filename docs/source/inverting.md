@@ -24,7 +24,7 @@ Note that the script requires as parameter the number of terms to be indexed, wh
 
 ## Inverted index format
 
-A _binary sequence_ is a sequence of integers prefixed by its length, where both the sequence integers and the length are written as 32-bit little-endian unsigned integers. A _collection_ consists of 3 files, `<basename>.docs`, `<basename>.freqs`, `<basename>.sizes`:
+A _binary sequence_ is a sequence of integers prefixed by its length, where both the sequence integers and the length are written as 32-bit little-endian unsigned integers. An _inverted index_ consists of 3 files, `<basename>.docs`, `<basename>.freqs`, `<basename>.sizes`:
 
 * `<basename>.docs` starts with a singleton binary sequence where its only
   integer is the number of documents in the collection. It is then followed by
@@ -41,18 +41,18 @@ A _binary sequence_ is a sequence of integers prefixed by its length, where both
   sequence is the size (number of terms) of the i-th document.
 
 
-### Reading the index using Python
+### Reading the inverted index using Python
 
 ```python
 import os
 import numpy as np
 
-class Collection:
-    def __init__(self, collection_name):
-        collection_dir = os.path.join(collection_name)
-        self.docs = np.memmap(collection_name + ".docs", dtype=np.uint32,
+class InvertedIndex:
+    def __init__(self, index_name):
+        index_dir = os.path.join(index_name)
+        self.docs = np.memmap(index_name + ".docs", dtype=np.uint32,
               mode='r')
-        self.freqs = np.memmap(collection_name + ".freqs", dtype=np.uint32,
+        self.freqs = np.memmap(index_name + ".freqs", dtype=np.uint32,
               mode='r')
 
     def __iter__(self):
@@ -65,6 +65,6 @@ class Collection:
     def __next__(self):
         return self
 
-for idx, (docs, freqs) in enumerate(Collection('test_collection')):
-    print(idx, docs, freqs)
+for i, (docs, freqs) in enumerate(InvertedIndex("cw09b")):
+    print(i, docs, freqs)
 ```
