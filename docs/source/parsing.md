@@ -60,3 +60,9 @@ The parsing process will write the following files:
 - `trecweb`: TREC web collections.
 - `warc`: Web ARChive format as defined in [the format specification](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.0/).
 - `wapo`: TREC Washington Post Corpus.
+
+In case you want to parse a set of files where each one is a document (for example, the collection
+[wiki-large](http://dg3rtljvitrle.cloudfront.net/wiki-large.tar.gz)), use the `files2trec.py` script
+to format it to TREC (take into account that each relative file path is used as the document ID).
+Once the file is generated, parse it with the `parse_collection` command specifying the `trectext`
+value for the `--format` option.
