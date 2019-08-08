@@ -26,7 +26,7 @@ def main():
     # Sorts and then dumps the docs.
     print("Sorting documents...")
     sorted_docids = sorted(documents, key=documents.get)
-    print("Writting mapping file...")
+    print("Writing mapping file...")
     dump(args.output, sorted_docids)
 
 if __name__ == "__main__":
