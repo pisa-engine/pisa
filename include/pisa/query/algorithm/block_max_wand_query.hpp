@@ -1,18 +1,21 @@
 #pragma once
 
 #include <vector>
+
+#include "cursor/block_max_scored_cursor.hpp"
+#include "macro.hpp"
 #include "query/queries.hpp"
+#include "topk_queue.hpp"
 
 namespace pisa {
 
 struct block_max_wand_query {
 
-    block_max_wand_query(uint64_t k)
-        : m_topk(k) {}
+    block_max_wand_query(uint64_t k) : m_topk(k) {}
 
-    template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
-        using Cursor = typename std::decay_t<CursorRange>::value_type;
+    template <typename Cursor>
+    uint64_t operator()(std::vector<Cursor> &&cursors, uint64_t max_docid)
+    {
         m_topk.clear();
 
         if (cursors.empty())
@@ -26,10 +29,9 @@ struct block_max_wand_query {
 
         auto sort_cursors = [&]() {
             // sort enumerators by increasing docid
-            std::sort(
-                ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
-                    return lhs->docs_enum.docid() < rhs->docs_enum.docid();
-                });
+            std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
+                return lhs->docs_enum.docid() < rhs->docs_enum.docid();
+            });
         };
 
         sort_cursors();
@@ -37,10 +39,10 @@ struct block_max_wand_query {
         while (true) {
 
             // find pivot
-            float    upper_bound = 0.f;
-            size_t   pivot;
-            bool     found_pivot = false;
-            uint64_t pivot_id    = max_docid;
+            float upper_bound = 0.f;
+            size_t pivot;
+            bool found_pivot = false;
+            uint64_t pivot_id = max_docid;
 
             for (pivot = 0; pivot < ordered_cursors.size(); ++pivot) {
                 if (ordered_cursors[pivot]->docs_enum.docid() >= max_docid) {
@@ -50,9 +52,9 @@ struct block_max_wand_query {
                 upper_bound += ordered_cursors[pivot]->max_weight;
                 if (m_topk.would_enter(upper_bound)) {
                     found_pivot = true;
-                    pivot_id    = ordered_cursors[pivot]->docs_enum.docid();
-                    for (; pivot + 1 < ordered_cursors.size() &&
-                           ordered_cursors[pivot + 1]->docs_enum.docid() == pivot_id;
+                    pivot_id = ordered_cursors[pivot]->docs_enum.docid();
+                    for (; pivot + 1 < ordered_cursors.size()
+                           && ordered_cursors[pivot + 1]->docs_enum.docid() == pivot_id;
                          ++pivot)
                         ;
                     break;
@@ -78,7 +80,7 @@ struct block_max_wand_query {
 
                 // check if pivot is a possible match
                 if (pivot_id == ordered_cursors[0]->docs_enum.docid()) {
-                    float score    = 0;
+                    float score = 0;
                     for (Cursor *en : ordered_cursors) {
                         if (en->docs_enum.docid() != pivot_id) {
                             break;
@@ -110,8 +112,8 @@ struct block_max_wand_query {
 
                     // bubble down the advanced list
                     for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
-                        if (ordered_cursors[i]->docs_enum.docid() <=
-                            ordered_cursors[i - 1]->docs_enum.docid()) {
+                        if (ordered_cursors[i]->docs_enum.docid()
+                            <= ordered_cursors[i - 1]->docs_enum.docid()) {
                             std::swap(ordered_cursors[i], ordered_cursors[i - 1]);
                         } else {
                             break;
@@ -129,7 +131,7 @@ struct block_max_wand_query {
                 for (uint64_t i = 0; i < pivot; i++) {
                     if (ordered_cursors[i]->q_weight > q_weight) {
                         next_list = i;
-                        q_weight  = ordered_cursors[i]->q_weight;
+                        q_weight = ordered_cursors[i]->q_weight;
                     }
                 }
 
@@ -159,8 +161,8 @@ struct block_max_wand_query {
 
                 // bubble down the advanced list
                 for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
-                    if (ordered_cursors[i]->docs_enum.docid() <
-                        ordered_cursors[i - 1]->docs_enum.docid()) {
+                    if (ordered_cursors[i]->docs_enum.docid()
+                        < ordered_cursors[i - 1]->docs_enum.docid()) {
                         std::swap(ordered_cursors[i], ordered_cursors[i - 1]);
                     } else {
                         break;
@@ -180,7 +182,23 @@ struct block_max_wand_query {
     topk_queue const &get_topk() const { return m_topk; }
 
    private:
-    topk_queue      m_topk;
+    topk_queue m_topk;
 };
+
+template <typename Index, typename Wand, typename TermScorer>
+struct block_max_scored_cursor;
+
+#define LOOP_BODY(R, DATA, T)                                                                 \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, bm25, T, wand_data_raw)        \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, dph, T, wand_data_raw)         \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, pl2, T, wand_data_raw)         \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, qld, T, wand_data_raw)         \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, bm25, T, wand_data_compressed) \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, dph, T, wand_data_compressed)  \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, pl2, T, wand_data_compressed)  \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, qld, T, wand_data_compressed)
+/**/
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+#undef LOOP_BODY
 
 } // namespace pisa

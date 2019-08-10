@@ -59,15 +59,6 @@ uint64_t ranked_or_query::operator()(std::vector<Cursor> &&cursors, uint64_t max
 template <typename Index, typename TermScorer>
 struct scored_cursor;
 
-#define PISA_RANKED_OR_QUERY_EXTERN(SCORER, CODEC, WAND)                                            \
-    extern template uint64_t ranked_or_query::                                               \
-    operator()<scored_cursor<block_freq_index<CODEC>,                                        \
-                             typename scorer_traits<SCORER<wand_data<WAND>>>::term_scorer>>( \
-        std::vector<scored_cursor<                                                           \
-                block_freq_index<CODEC>,                                                     \
-                typename scorer_traits<SCORER<wand_data<WAND>>>::term_scorer>> && cursors,   \
-        uint64_t max_docid);
-
 #define LOOP_BODY(R, DATA, T)                                                  \
     PISA_DAAT_ALGORITHM_EXTERN(ranked_or_query, bm25, T, wand_data_raw)        \
     PISA_DAAT_ALGORITHM_EXTERN(ranked_or_query, dph, T, wand_data_raw)         \

@@ -9,12 +9,6 @@
 #include <string_view>
 #include <unordered_map>
 
-#include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2.hpp>
-#include <boost/algorithm/string.hpp>
-#include <mio/mmap.hpp>
-#include <range/v3/view/enumerate.hpp>
-#include <spdlog/spdlog.h>
 #include "index_types.hpp"
 #include "io.hpp"
 #include "payload_vector.hpp"
@@ -25,6 +19,12 @@
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include <KrovetzStemmer/KrovetzStemmer.hpp>
+#include <Porter2.hpp>
+#include <boost/algorithm/string.hpp>
+#include <mio/mmap.hpp>
+#include <range/v3/view/enumerate.hpp>
+#include <spdlog/spdlog.h>
 
 namespace pisa {
 
@@ -34,8 +34,8 @@ using TermProcessor = std::function<std::optional<term_id_type>(std::string &&)>
 
 struct Query {
     std::optional<std::string> id;
-    std::vector<term_id_type>  terms;
-    std::vector<float>  term_weights;
+    std::vector<term_id_type> terms;
+    std::vector<float> term_weights;
 };
 
 [[nodiscard]] inline auto parse_query(
@@ -65,7 +65,7 @@ struct Query {
             } else {
                 spdlog::warn("Term `{}` not found and will be ignored", raw_term);
             }
-        } catch (std::invalid_argument& err) {
+        } catch (std::invalid_argument &err) {
             spdlog::warn("Could not parse `{}` to a number", raw_term);
         }
     }
@@ -93,7 +93,7 @@ inline void remove_duplicate_terms(term_id_vec &terms)
 }
 
 typedef std::pair<uint64_t, uint64_t> term_freq_pair;
-typedef std::vector<term_freq_pair>   term_freq_vec;
+typedef std::vector<term_freq_pair> term_freq_vec;
 
 inline term_freq_vec query_freqs(term_id_vec terms)
 {
@@ -120,8 +120,7 @@ namespace query {
             auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
             auto terms = Payload_Vector<>::from(*source);
             auto to_id = [source = std::move(source),
-                          terms = std::move(terms)](auto str) -> std::optional<term_id_type>
-            {
+                          terms = std::move(terms)](auto str) -> std::optional<term_id_type> {
                 auto pos = std::lower_bound(terms.begin(), terms.end(), std::string_view(str));
                 if (*pos == std::string_view(str)) {
                     return std::distance(terms.begin(), pos);
@@ -154,17 +153,5 @@ namespace query {
         }
     }
 
-}  // namespace query
-}  // namespace pisa
-
-#include "algorithm/and_query.hpp"
-#include "algorithm/block_max_maxscore_query.hpp"
-#include "algorithm/block_max_ranked_and_query.hpp"
-#include "algorithm/block_max_wand_query.hpp"
-#include "algorithm/maxscore_query.hpp"
-#include "algorithm/or_query.hpp"
-#include "algorithm/range_query.hpp"
-#include "algorithm/ranked_and_query.hpp"
-#include "algorithm/ranked_or_query.hpp"
-#include "algorithm/ranked_or_taat_query.hpp"
-#include "algorithm/wand_query.hpp"
+} // namespace query
+} // namespace pisa
