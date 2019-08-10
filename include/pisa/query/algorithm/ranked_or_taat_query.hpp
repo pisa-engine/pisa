@@ -1,21 +1,23 @@
 #pragma once
 
+#include <gsl/span>
+
+#include "accumulator/lazy_accumulator.hpp"
+#include "accumulator/simple_accumulator.hpp"
+#include "macro.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 #include "util/intrinsics.hpp"
-
-#include "accumulator/simple_accumulator.hpp"
 
 namespace pisa {
 
 class ranked_or_taat_query {
    public:
-    ranked_or_taat_query(uint64_t k)
-        : m_topk(k) {}
+    ranked_or_taat_query(uint64_t k) : m_topk(k) {}
 
-    template <typename CursorRange, typename Acc>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, Acc accumulator) {
-        using Cursor = typename std::decay_t<CursorRange>::value_type;
+    template <typename Cursor, typename Acc>
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid, Acc accumulator)
+    {
         m_topk.clear();
         if (cursors.empty()) {
             return 0;
@@ -41,4 +43,37 @@ class ranked_or_taat_query {
     topk_queue m_topk;
 };
 
-};  // namespace pisa
+template <typename Index, typename TermScorer>
+struct scored_cursor;
+
+#define LOOP_BODY(R, DATA, T)                                                                     \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, bm25, T, wand_data_raw, Simple_Accumulator)  \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, dph, T, wand_data_raw, Simple_Accumulator)   \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, pl2, T, wand_data_raw, Simple_Accumulator)   \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, qld, T, wand_data_raw, Simple_Accumulator)   \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, bm25, T, wand_data_compressed, Simple_Accumulator)                  \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, dph, T, wand_data_compressed, Simple_Accumulator)                   \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, pl2, T, wand_data_compressed, Simple_Accumulator)                   \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, qld, T, wand_data_compressed, Simple_Accumulator)                   \
+                                                                                                  \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, bm25, T, wand_data_raw, Lazy_Accumulator<4>) \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, dph, T, wand_data_raw, Lazy_Accumulator<4>)  \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, pl2, T, wand_data_raw, Lazy_Accumulator<4>)  \
+    PISA_TAAT_ALGORITHM_EXTERN(ranked_or_taat_query, qld, T, wand_data_raw, Lazy_Accumulator<4>)  \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, bm25, T, wand_data_compressed, Lazy_Accumulator<4>)                 \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, dph, T, wand_data_compressed, Lazy_Accumulator<4>)                  \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, pl2, T, wand_data_compressed, Lazy_Accumulator<4>)                  \
+    PISA_TAAT_ALGORITHM_EXTERN(                                                                   \
+        ranked_or_taat_query, qld, T, wand_data_compressed, Lazy_Accumulator<4>)
+/**/
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
+#undef LOOP_BODY
+
+}; // namespace pisa

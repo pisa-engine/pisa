@@ -14,17 +14,19 @@
 
 #include "mappable/mapper.hpp"
 
-#include "index_types.hpp"
 #include "accumulator/lazy_accumulator.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "index_types.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
+#include "util/do_not_optimize_away.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/cursor.hpp"
-#include "cursor/scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
-#include "cursor/block_max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 #include "scorer/scorer.hpp"
@@ -159,76 +161,76 @@ void perftest(const std::string &index_filename,
             if (t == "and") {
                 query_fun = [&](Query query) {
                     and_query and_q;
-                    return and_q(make_cursors(index, query), index.num_docs()).size();
+                    auto cursors = make_cursors(index, query);
+                    return and_q(gsl::make_span(cursors), index.num_docs()).size();
                 };
             } else if (t == "or") {
                 query_fun = [&](Query query) {
                     or_query<false> or_q;
-                    return or_q(make_cursors(index, query), index.num_docs());
+                    auto cursors = make_cursors(index, query);
+                    return or_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "or_freq") {
                 query_fun = [&](Query query) {
                     or_query<true> or_q;
-                    return or_q(make_cursors(index, query), index.num_docs());
+                    auto cursors = make_cursors(index, query);
+                    return or_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "wand" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     wand_query wand_q(k);
-                    return wand_q(make_max_scored_cursors(index, wdata, scorer, query),
-                                  index.num_docs());
+                    auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
+                    return wand_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "block_max_wand" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     block_max_wand_query block_max_wand_q(k);
-                    return block_max_wand_q(
-                        make_block_max_scored_cursors(index, wdata, scorer, query),
-                        index.num_docs());
+                    auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                    return block_max_wand_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "block_max_maxscore" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     block_max_maxscore_query block_max_maxscore_q(k);
-                    return block_max_maxscore_q(
-                        make_block_max_scored_cursors(index, wdata, scorer, query),
-                        index.num_docs());
+                    auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                    return block_max_maxscore_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "ranked_and" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     ranked_and_query ranked_and_q(k);
-                    return ranked_and_q(make_scored_cursors(index, scorer, query),
-                                        index.num_docs());
+                    auto cursors = make_scored_cursors(index, scorer, query);
+                    return ranked_and_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "block_max_ranked_and" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     block_max_ranked_and_query block_max_ranked_and_q(k);
-                    return block_max_ranked_and_q(
-                        make_block_max_scored_cursors(index, wdata, scorer, query),
-                        index.num_docs());
+                    auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                    return block_max_ranked_and_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "ranked_or" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     ranked_or_query ranked_or_q(k);
-                    return ranked_or_q(make_scored_cursors(index, scorer, query),
-                                       index.num_docs());
+                    auto cursors = make_scored_cursors(index, scorer, query);
+                    return ranked_or_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "maxscore" && wand_data_filename) {
                 query_fun = [&](Query query) {
                     maxscore_query maxscore_q(k);
-                    return maxscore_q(make_max_scored_cursors(index, wdata, scorer, query),
-                                      index.num_docs());
+                    auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
+                    return maxscore_q(gsl::make_span(cursors), index.num_docs());
                 };
             } else if (t == "ranked_or_taat" && wand_data_filename) {
                 Simple_Accumulator accumulator(index.num_docs());
                 ranked_or_taat_query ranked_or_taat_q(k);
                 query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
-                    return ranked_or_taat_q(
-                        make_scored_cursors(index, scorer, query), index.num_docs(), accumulator);
+                    auto cursors = make_scored_cursors(index, scorer, query);
+                    return ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
                 };
             } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
                 Lazy_Accumulator<4> accumulator(index.num_docs());
                 ranked_or_taat_query ranked_or_taat_q(k);
                 query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
-                    return ranked_or_taat_q(
-                        make_scored_cursors(index, scorer, query), index.num_docs(), accumulator);
+                    auto cursors = make_scored_cursors(index, scorer, query);
+                    return ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
                 };
             } else {
                 spdlog::error("Unsupported query type: {}", t);

@@ -11,6 +11,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 
 using namespace pisa;
@@ -75,11 +76,11 @@ class ranked_or_taat_query_acc : public ranked_or_taat_query {
    public:
     using ranked_or_taat_query::ranked_or_taat_query;
 
-    template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid)
+    template <typename Cursor>
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid)
     {
         Acc accumulator(max_docid);
-        return ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
+        return ranked_or_taat_query::operator()(cursors, max_docid, std::move(accumulator));
     }
 };
 
@@ -88,8 +89,8 @@ class range_query_128 : public range_query<T> {
    public:
     using range_query<T>::range_query;
 
-    template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid)
+    template <typename Cursor>
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid)
     {
         return range_query<T>::operator()(cursors, max_docid, 128);
     }
@@ -118,9 +119,11 @@ TEMPLATE_TEST_CASE("Ranked query test",
         with_scorer(s_name, data->wdata, [&](auto scorer){
             for (auto const &q
                  : data->queries) {
-                or_q(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
-                op_q(make_block_max_scored_cursors(data->index, data->wdata, scorer, q),
-                     data->index.num_docs());
+                auto or_cursors = make_scored_cursors(data->index, scorer, q);
+                or_q(gsl::make_span(or_cursors), data->index.num_docs());
+                auto op_cursors =
+                    make_block_max_scored_cursors(data->index, data->wdata, scorer, q);
+                op_q(gsl::make_span(op_cursors), data->index.num_docs());
                 REQUIRE(or_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     REQUIRE(or_q.topk()[i].first
@@ -144,9 +147,11 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
 
         with_scorer(s_name, data->wdata, [&](auto scorer) {
             for (auto const &q : data->queries) {
-                and_q(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
-                op_q(make_block_max_scored_cursors(data->index, data->wdata, scorer, q),
-                     data->index.num_docs());
+                auto and_cursors = make_scored_cursors(data->index, scorer, q);
+                and_q(gsl::make_span(and_cursors), data->index.num_docs());
+                auto op_cursors =
+                    make_block_max_scored_cursors(data->index, data->wdata, scorer, q);
+                op_q(gsl::make_span(op_cursors), data->index.num_docs());
                 REQUIRE(and_q.topk().size() == op_q.topk().size());
                 for (size_t i = 0; i < and_q.topk().size(); ++i) {
                     REQUIRE(and_q.topk()[i].first
@@ -168,8 +173,10 @@ TEST_CASE("Top k")
 
         with_scorer(s_name, data->wdata, [&](auto scorer) {
             for (auto const &q : data->queries) {
-                or_10(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
-                or_1(make_scored_cursors(data->index, scorer, q), data->index.num_docs());
+                auto cursors = make_scored_cursors(data->index, scorer, q);
+                or_10(gsl::make_span(cursors), data->index.num_docs());
+                cursors = make_scored_cursors(data->index, scorer, q);
+                or_1(gsl::make_span(cursors), data->index.num_docs());
                 if (not or_10.topk().empty()) {
                     REQUIRE(not or_1.topk().empty());
                     REQUIRE(or_1.topk().front().first

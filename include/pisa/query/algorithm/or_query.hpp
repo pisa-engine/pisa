@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <gsl/span>
+
 #include "macro.hpp"
 #include "query/queries.hpp"
 #include "util/do_not_optimize_away.hpp"
@@ -12,7 +14,7 @@ template <bool with_freqs>
 struct or_query {
 
     template <typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors, uint64_t max_docid) const
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid) const
     {
         if (cursors.empty()) {
             return 0;
@@ -48,17 +50,17 @@ struct or_query {
     }
 };
 
-#define LOOP_BODY(R, DATA, T)                                                      \
-    extern template uint64_t or_query<false>::                                     \
-    operator()<typename block_freq_index<T>::document_enumerator>(                 \
-        std::vector<typename block_freq_index<T>::document_enumerator> && cursors, \
-        uint64_t max_docid) const;                                                 \
-    extern template uint64_t or_query<true>::                                      \
-    operator()<typename block_freq_index<T>::document_enumerator>(                 \
-        std::vector<typename block_freq_index<T>::document_enumerator> && cursors, \
+#define LOOP_BODY(R, DATA, INDEX)                                                     \
+    extern template uint64_t or_query<false>::                                        \
+    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
+        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
+        uint64_t max_docid) const;                                                    \
+    extern template uint64_t or_query<true>::                                         \
+    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
+        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
         uint64_t max_docid) const;
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 } // namespace pisa

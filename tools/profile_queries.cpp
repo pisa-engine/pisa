@@ -9,11 +9,12 @@
 
 #include "mio/mmap.hpp"
 
-#include "mappable/mapper.hpp"
 #include "index_types.hpp"
-#include "wand_data_compressed.hpp"
+#include "mappable/mapper.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
+#include "wand_data_compressed.hpp"
 
 #include "cursor/cursor.hpp"
 #include "cursor/scored_cursor.hpp"
@@ -100,26 +101,26 @@ void profile(const std::string index_filename,
         if (t == "and") {
             query_fun = [&](Query query){
                 and_query and_q;
-                return and_q(make_cursors<Prof>(index, query), index.num_docs()).size();
+                auto cursors = make_cursors<Prof>(index, query);
+                return and_q(gsl::make_span(cursors), index.num_docs()).size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query){
                 ranked_and_query ranked_and_q(10);
-                return ranked_and_q(make_scored_cursors<Prof>(index, scorer, query),
-                                    index.num_docs());
+                auto cursors = make_scored_cursors<Prof>(index, scorer, query);
+                return ranked_and_q(gsl::make_span(cursors), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](Query query){
                 wand_query wand_q(10);
-                return wand_q(make_max_scored_cursors<Prof, WandType>(index, wdata, scorer, query),
-                              index.num_docs());
+                auto cursors = make_max_scored_cursors<Prof, WandType>(index, wdata, scorer, query);
+                return wand_q(gsl::make_span(cursors), index.num_docs());
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](Query query){
                 maxscore_query maxscore_q(10);
-                return maxscore_q(
-                    make_max_scored_cursors<Prof, WandType>(index, wdata, scorer, query),
-                    index.num_docs());
+                auto cursors = make_max_scored_cursors<Prof, WandType>(index, wdata, scorer, query);
+                return maxscore_q(gsl::make_span(cursors), index.num_docs());
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);

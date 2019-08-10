@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+#include <gsl/span>
+
 #include "macro.hpp"
 #include "query/queries.hpp"
 
@@ -14,7 +16,7 @@ struct ranked_or_query {
         : m_topk(k){}
 
     template <typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors, uint64_t max_docid);
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid);
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
@@ -23,7 +25,7 @@ struct ranked_or_query {
 };
 
 template <typename Cursor>
-uint64_t ranked_or_query::operator()(std::vector<Cursor> &&cursors, uint64_t max_docid)
+uint64_t ranked_or_query::operator()(gsl::span<Cursor> cursors, uint64_t max_docid)
 {
     m_topk.clear();
     if (cursors.empty()) {
@@ -69,7 +71,7 @@ struct scored_cursor;
     PISA_DAAT_ALGORITHM_EXTERN(ranked_or_query, pl2, T, wand_data_compressed)  \
     PISA_DAAT_ALGORITHM_EXTERN(ranked_or_query, qld, T, wand_data_compressed)
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 }  // namespace pisa

@@ -24,14 +24,12 @@ template <typename Index>
     return cursors;
 }
 
-#define LOOP_BODY(R, DATA, T)                                      \
-    struct T;                                                      \
-    template <typename Index, bool Profile>                        \
-    struct block_freq_index;                                       \
-    extern template auto make_cursors<block_freq_index<T, false>>( \
-        block_freq_index<T, false> const &, Query);
+#define LOOP_BODY(R, DATA, INDEX)                                   \
+    struct INDEX;                                                   \
+    extern template auto make_cursors<BOOST_PP_CAT(INDEX, _index)>( \
+        BOOST_PP_CAT(INDEX, _index) const &, Query);
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 }  // namespace pisa

@@ -18,6 +18,8 @@ struct max_scored_cursor {
     float q_weight;
     TermScorer scorer;
     float max_weight;
+
+    ~max_scored_cursor() {}
 };
 
 template <typename Index, typename WandType, typename Scorer>
@@ -48,68 +50,30 @@ template <typename Index, typename WandType, typename Scorer>
 template <typename Index, bool Profile>
 struct block_freq_index;
 
-#define LOOP_BODY(R, DATA, T)                                                            \
-    struct T;                                                                            \
-                                                                                         \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_raw>,               \
-                                                 bm25<wand_data<wand_data_raw>>>(        \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_raw> const &,                                                \
-        bm25<wand_data<wand_data_raw>> const &,                                          \
-        Query);                                                                          \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_raw>,               \
-                                                 dph<wand_data<wand_data_raw>>>(         \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_raw> const &,                                                \
-        dph<wand_data<wand_data_raw>> const &,                                           \
-        Query);                                                                          \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_raw>,               \
-                                                 pl2<wand_data<wand_data_raw>>>(         \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_raw> const &,                                                \
-        pl2<wand_data<wand_data_raw>> const &,                                           \
-        Query);                                                                          \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_raw>,               \
-                                                 qld<wand_data<wand_data_raw>>>(         \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_raw> const &,                                                \
-        qld<wand_data<wand_data_raw>> const &,                                           \
-        Query);                                                                          \
-                                                                                         \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_compressed>,        \
-                                                 bm25<wand_data<wand_data_compressed>>>( \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_compressed> const &,                                         \
-        bm25<wand_data<wand_data_compressed>> const &,                                   \
-        Query);                                                                          \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_compressed>,        \
-                                                 dph<wand_data<wand_data_compressed>>>(  \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_compressed> const &,                                         \
-        dph<wand_data<wand_data_compressed>> const &,                                    \
-        Query);                                                                          \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_compressed>,        \
-                                                 pl2<wand_data<wand_data_compressed>>>(  \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_compressed> const &,                                         \
-        pl2<wand_data<wand_data_compressed>> const &,                                    \
-        Query);                                                                          \
-    extern template auto make_max_scored_cursors<block_freq_index<T, false>,             \
-                                                 wand_data<wand_data_compressed>,        \
-                                                 qld<wand_data<wand_data_compressed>>>(  \
-        block_freq_index<T, false> const &,                                              \
-        wand_data<wand_data_compressed> const &,                                         \
-        qld<wand_data<wand_data_compressed>> const &,                                    \
-        Query);                                                                          \
+#define PISA_MAX_SCORED_CURSOR_EXTERN(SCORER, INDEX, WAND)                                   \
+    extern template max_scored_cursor<                                                       \
+        BOOST_PP_CAT(INDEX, _index),                                                         \
+        typename scorer_traits<SCORER<wand_data<WAND>>>::term_scorer>::~max_scored_cursor(); \
+    extern template auto make_max_scored_cursors<BOOST_PP_CAT(INDEX, _index),                \
+                                                 wand_data<WAND>,                            \
+                                                 SCORER<wand_data<WAND>>>(                   \
+        BOOST_PP_CAT(INDEX, _index) const &,                                                 \
+        wand_data<WAND> const &,                                                             \
+        SCORER<wand_data<WAND>> const &,                                                     \
+        Query);
+
+#define LOOP_BODY(R, DATA, T)                                    \
+    struct T;                                                    \
+    PISA_MAX_SCORED_CURSOR_EXTERN(bm25, T, wand_data_raw)        \
+    PISA_MAX_SCORED_CURSOR_EXTERN(dph, T, wand_data_raw)         \
+    PISA_MAX_SCORED_CURSOR_EXTERN(pl2, T, wand_data_raw)         \
+    PISA_MAX_SCORED_CURSOR_EXTERN(qld, T, wand_data_raw)         \
+    PISA_MAX_SCORED_CURSOR_EXTERN(bm25, T, wand_data_compressed) \
+    PISA_MAX_SCORED_CURSOR_EXTERN(dph, T, wand_data_compressed)  \
+    PISA_MAX_SCORED_CURSOR_EXTERN(pl2, T, wand_data_compressed)  \
+    PISA_MAX_SCORED_CURSOR_EXTERN(qld, T, wand_data_compressed)  \
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 } // namespace pisa

@@ -9,6 +9,7 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
 
 using namespace pisa;
@@ -79,10 +80,10 @@ auto test(Wand &wdata, std::string const &s_name)
     with_scorer(s_name, data->wdata, [&](auto scorer1) {
         with_scorer(s_name, wdata, [&](auto scorer2) {
             for (auto const &q : data->queries) {
-                wand_q(make_max_scored_cursors(data->index, data->wdata, scorer1, q),
-                       data->index.num_docs());
-                op_q(make_block_max_scored_cursors(data->index, wdata, scorer2, q),
-                     data->index.num_docs());
+                auto mscursors = make_max_scored_cursors(data->index, data->wdata, scorer1, q);
+                wand_q(gsl::make_span(mscursors), data->index.num_docs());
+                auto bmscursors = make_block_max_scored_cursors(data->index, wdata, scorer2, q);
+                op_q(gsl::make_span(bmscursors), data->index.num_docs());
                 REQUIRE(wand_q.topk().size() == op_q.topk().size());
 
                 for (size_t i = 0; i < wand_q.topk().size(); ++i) {

@@ -79,6 +79,7 @@ target_include_directories(pisa PUBLIC
 target_link_libraries(pisa PUBLIC
     Threads::Threads
     Boost::boost
+    Boost::system
     QMX
     mio
     mio_base

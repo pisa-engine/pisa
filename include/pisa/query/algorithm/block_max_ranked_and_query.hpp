@@ -1,7 +1,13 @@
 #pragma once
 
-#include "query/queries.hpp"
 #include <vector>
+
+#include <gsl/span>
+
+#include "cursor/block_max_scored_cursor.hpp"
+#include "macro.hpp"
+#include "query/queries.hpp"
+#include "topk_queue.hpp"
 
 namespace pisa {
 
@@ -9,14 +15,13 @@ struct block_max_ranked_and_query {
 
     block_max_ranked_and_query(uint64_t k) : m_topk(k) {}
 
-    template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid)
+    template <typename Cursor>
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid)
     {
-        using Cursor = typename std::decay_t<CursorRange>::value_type;
-
         m_topk.clear();
-        if (cursors.empty())
+        if (cursors.empty()) {
             return 0;
+        }
 
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -91,5 +96,22 @@ struct block_max_ranked_and_query {
    private:
     topk_queue m_topk;
 };
+
+template <typename Index, typename Wand, typename TermScorer>
+struct block_max_scored_cursor;
+
+#define LOOP_BODY(R, DATA, T)                                                                      \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, bm25, T, wand_data_raw)       \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, dph, T, wand_data_raw)        \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, pl2, T, wand_data_raw)        \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, qld, T, wand_data_raw)        \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(                                                          \
+        block_max_ranked_and_query, bm25, T, wand_data_compressed)                                 \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, dph, T, wand_data_compressed) \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, pl2, T, wand_data_compressed) \
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_ranked_and_query, qld, T, wand_data_compressed)
+/**/
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
+#undef LOOP_BODY
 
 } // namespace pisa

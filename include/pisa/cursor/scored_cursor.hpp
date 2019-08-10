@@ -17,6 +17,8 @@ struct scored_cursor {
     enum_type docs_enum;
     float q_weight;
     TermScorer scorer;
+
+    ~scored_cursor() {}
 };
 
 template <typename Index, typename Scorer>
@@ -44,36 +46,26 @@ template <typename Index, typename Scorer>
 template <typename Index, bool Profile>
 struct block_freq_index;
 
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    struct T;                                                                                      \
-                                                                                                   \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, bm25<wand_data<wand_data_raw>>>(               \
-        block_freq_index<T, false> const &, bm25<wand_data<wand_data_raw>> const &, Query);        \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, dph<wand_data<wand_data_raw>>>(                \
-        block_freq_index<T, false> const &, dph<wand_data<wand_data_raw>> const &, Query);         \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, pl2<wand_data<wand_data_raw>>>(                \
-        block_freq_index<T, false> const &, pl2<wand_data<wand_data_raw>> const &, Query);         \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, qld<wand_data<wand_data_raw>>>(                \
-        block_freq_index<T, false> const &, qld<wand_data<wand_data_raw>> const &, Query);         \
-                                                                                                   \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, bm25<wand_data<wand_data_compressed>>>(        \
-        block_freq_index<T, false> const &, bm25<wand_data<wand_data_compressed>> const &, Query); \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, dph<wand_data<wand_data_compressed>>>(         \
-        block_freq_index<T, false> const &, dph<wand_data<wand_data_compressed>> const &, Query);  \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, pl2<wand_data<wand_data_compressed>>>(         \
-        block_freq_index<T, false> const &, pl2<wand_data<wand_data_compressed>> const &, Query);  \
-    extern template auto                                                                           \
-    make_scored_cursors<block_freq_index<T, false>, qld<wand_data<wand_data_compressed>>>(         \
-        block_freq_index<T, false> const &, qld<wand_data<wand_data_compressed>> const &, Query);  \
+#define PISA_SCORED_CURSOR_EXTERN(SCORER, INDEX, WAND)                                   \
+    extern template scored_cursor<                                                       \
+        BOOST_PP_CAT(INDEX, _index),                                                     \
+        typename scorer_traits<SCORER<wand_data<WAND>>>::term_scorer>::~scored_cursor(); \
+    extern template auto                                                                 \
+    make_scored_cursors<BOOST_PP_CAT(INDEX, _index), SCORER<wand_data<WAND>>>(           \
+        BOOST_PP_CAT(INDEX, _index) const &, SCORER<wand_data<WAND>> const &, Query);
+
+#define LOOP_BODY(R, DATA, T)                                \
+    struct T;                                                \
+    PISA_SCORED_CURSOR_EXTERN(bm25, T, wand_data_raw)        \
+    PISA_SCORED_CURSOR_EXTERN(dph, T, wand_data_raw)         \
+    PISA_SCORED_CURSOR_EXTERN(pl2, T, wand_data_raw)         \
+    PISA_SCORED_CURSOR_EXTERN(qld, T, wand_data_raw)         \
+    PISA_SCORED_CURSOR_EXTERN(bm25, T, wand_data_compressed) \
+    PISA_SCORED_CURSOR_EXTERN(dph, T, wand_data_compressed)  \
+    PISA_SCORED_CURSOR_EXTERN(pl2, T, wand_data_compressed)  \
+    PISA_SCORED_CURSOR_EXTERN(qld, T, wand_data_compressed)  \
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 } // namespace pisa

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gsl/span>
+
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 
@@ -11,8 +13,8 @@ struct range_query {
     range_query(uint64_t k)
         : m_k(k), m_topk(k) {}
 
-    template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, size_t range_size)
+    template <typename Cursor>
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid, size_t range_size)
     {
         m_topk.clear();
         if (cursors.empty()) {
@@ -31,8 +33,8 @@ struct range_query {
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
-    template <typename CursorRange>
-    void process_range(CursorRange &&cursors, size_t end)
+    template <typename Cursor>
+    void process_range(gsl::span<Cursor> cursors, size_t end)
     {
         QueryAlg query_alg(m_k);
         query_alg(cursors, end);

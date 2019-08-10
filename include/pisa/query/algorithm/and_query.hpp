@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <gsl/span>
+
 #include "macro.hpp"
 #include "query/queries.hpp"
 #include "util/do_not_optimize_away.hpp"
@@ -11,14 +13,14 @@ namespace pisa {
 struct and_query {
 
     template <typename Cursor>
-    auto operator()(std::vector<Cursor> &&cursors, uint64_t max_docid) const
-        -> std::vector<uint64_t>
+    auto operator()(gsl::span<Cursor> cursors, uint64_t max_docid) const -> std::vector<uint64_t>
     {
         using Result_t = uint64_t;
 
         std::vector<Result_t> results;
-        if (cursors.empty())
+        if (cursors.empty()) {
             return results;
+        }
 
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -57,13 +59,13 @@ struct and_query {
     }
 };
 
-#define LOOP_BODY(R, DATA, T)                                                      \
-    extern template std::vector<uint64_t> and_query::                              \
-    operator()<typename block_freq_index<T>::document_enumerator>(                 \
-        std::vector<typename block_freq_index<T>::document_enumerator> && cursors, \
+#define LOOP_BODY(R, DATA, INDEX)                                                     \
+    extern template std::vector<uint64_t> and_query::                                 \
+    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
+        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
         uint64_t max_docid) const;
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 } // namespace pisa

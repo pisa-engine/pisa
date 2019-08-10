@@ -4,6 +4,7 @@
 #include "CLI/CLI.hpp"
 #include "index_types.hpp"
 #include "pisa/cursor/cursor.hpp"
+#include "pisa/query/algorithm.hpp"
 #include "pisa/query/queries.hpp"
 
 using namespace pisa;
@@ -19,7 +20,8 @@ void intersect(const std::string &index_filename,
 
     and_query and_q;
     for (auto const &query : queries) {
-        auto results = and_q(make_cursors(index, query), index.num_docs());
+        auto cursors = make_cursors(index, query);
+        auto results = and_q(gsl::make_span(cursors), index.num_docs());
         for (auto &&t : query.terms) {
             std::cout << t << " ";
         }

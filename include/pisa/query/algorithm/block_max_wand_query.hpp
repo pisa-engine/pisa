@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <gsl/span>
+
 #include "cursor/block_max_scored_cursor.hpp"
 #include "macro.hpp"
 #include "query/queries.hpp"
@@ -14,7 +16,7 @@ struct block_max_wand_query {
     block_max_wand_query(uint64_t k) : m_topk(k) {}
 
     template <typename Cursor>
-    uint64_t operator()(std::vector<Cursor> &&cursors, uint64_t max_docid)
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid)
     {
         m_topk.clear();
 
@@ -198,7 +200,7 @@ struct block_max_scored_cursor;
     PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, pl2, T, wand_data_compressed)  \
     PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_wand_query, qld, T, wand_data_compressed)
 /**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_BLOCK_CODEC_TYPES);
+BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
 } // namespace pisa

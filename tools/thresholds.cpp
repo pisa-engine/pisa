@@ -1,25 +1,23 @@
 #include <iostream>
 #include <optional>
 
-#include "boost/algorithm/string/classification.hpp"
-#include "boost/algorithm/string/split.hpp"
+#include <CLI/CLI.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <gsl/span>
+#include <mio/mmap.hpp>
+#include <spdlog/spdlog.h>
 
-#include "mio/mmap.hpp"
-#include "spdlog/spdlog.h"
-
-#include "mappable/mapper.hpp"
-
+#include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "mappable/mapper.hpp"
+#include "query/algorithm.hpp"
 #include "query/queries.hpp"
+#include "scorer/scorer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/max_scored_cursor.hpp"
-
-#include "scorer/scorer.hpp"
-
-#include "CLI/CLI.hpp"
 
 using namespace pisa;
 
@@ -52,7 +50,8 @@ void thresholds(const std::string &index_filename,
 
         wand_query wand_q(k);
         for (auto const &query : queries) {
-            wand_q(make_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+            auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
+            wand_q(gsl::make_span(cursors), index.num_docs());
             auto results = wand_q.topk();
             float threshold = 0.0;
             if (results.size() == k) {
