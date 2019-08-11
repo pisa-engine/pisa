@@ -25,7 +25,7 @@ int main(int argc, const char** argv)
     }
 
     const std::string input_basename = argv[1];
-    binary_freq_collection input(input_basename.c_str());
+    BinaryFreqCollection input(input_basename.c_str());
 
     spdlog::info("Computing statistics about document ID space");
 
@@ -37,10 +37,10 @@ int main(int argc, const char** argv)
     double all_log_gaps = 0.0f;
     size_t no_gaps = 0;
     for (const auto& seq: input) {
-        no_gaps += seq.docs.size();
-        all_log_gaps += log2f(seq.docs.begin()[0] + 1);
-        for (size_t i = 1; i < seq.docs.size(); ++i) {
-            auto gap = seq.docs.begin()[i] - seq.docs.begin()[i - 1];
+        no_gaps += seq.documents.size();
+        all_log_gaps += log2f(seq.documents.begin()[0] + 1);
+        for (size_t i = 1; i < seq.documents.size(); ++i) {
+            auto gap = seq.documents.begin()[i] - seq.documents.begin()[i - 1];
             if (gap < 256)
                 all_log_gaps += log2_data[gap];
             else

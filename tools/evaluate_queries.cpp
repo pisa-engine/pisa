@@ -126,7 +126,7 @@ void evaluate_queries(const std::string &index_filename,
                 return maxscore_q.topk();
             };
         } else if (query_type == "ranked_or_taat" && wand_data_filename) {
-            Simple_Accumulator accumulator(index.num_docs());
+            SimpleAccumulator accumulator(index.num_docs());
             ranked_or_taat_query ranked_or_taat_q(k);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
                 auto cursors = make_scored_cursors(index, scorer, query);
@@ -134,7 +134,7 @@ void evaluate_queries(const std::string &index_filename,
                 return ranked_or_taat_q.topk();
             };
         } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
-            Lazy_Accumulator<4> accumulator(index.num_docs());
+            LazyAccumulator<4> accumulator(index.num_docs());
             ranked_or_taat_query ranked_or_taat_q(k);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
                 auto cursors = make_scored_cursors(index, scorer, query);

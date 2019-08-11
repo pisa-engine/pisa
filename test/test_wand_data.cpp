@@ -22,8 +22,8 @@ TEST_CASE("wand_data_range")
     using WandTypeRange = wand_data_range<64, 1024>;
     using WandType = wand_data<WandTypeRange>;
 
-    binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
+    BinaryFreqCollection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
+    BinaryCollection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
     WandType wdata_range(document_sizes.begin()->begin(),
                          collection.num_docs(),
                          collection,
@@ -36,11 +36,11 @@ TEST_CASE("wand_data_range")
     {
         size_t term_id = 0;
         for (auto const &seq : collection) {
-            if (seq.docs.size() >= 1024) {
+            if (seq.documents.size() >= 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
                 auto s = scorer.term_scorer(term_id);
-                for (auto && [ docid, freq ] : ranges::view::zip(seq.docs, seq.freqs)) {
+                for (auto &&[docid, freq] : ranges::view::zip(seq.documents, seq.frequencies)) {
                     float score = s(docid, freq);
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
@@ -59,9 +59,10 @@ TEST_CASE("wand_data_range")
     global_parameters params;
     index_type::builder builder(collection.num_docs(), params);
     for (auto const &plist : collection) {
-        uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
+        uint64_t freqs_sum =
+            std::accumulate(plist.frequencies.begin(), plist.frequencies.end(), uint64_t(0));
         builder.add_posting_list(
-            plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            plist.documents.size(), plist.documents.begin(), plist.frequencies.begin(), freqs_sum);
     }
     builder.build(index);
 
@@ -70,15 +71,15 @@ TEST_CASE("wand_data_range")
         size_t term_id = 0;
         for (auto const &seq : collection) {
             auto list = index[term_id];
-            if (seq.docs.size() < 1024) {
+            if (seq.documents.size() < 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto &w = wdata_range.get_block_wand();
                 auto s = scorer.term_scorer(term_id);
                 const mapper::mappable_vector<float> bm =
                     w.compute_block_max_scores(list, s);
                 WandTypeRange::enumerator we(0, bm);
-                for (auto && [ pos, docid, freq ] :
-                     ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs)) {
+                for (auto &&[pos, docid, freq] :
+                     ranges::view::zip(ranges::view::iota(0), seq.documents, seq.frequencies)) {
                     float score = s(docid, freq);
                     we.next_geq(docid);
                     CHECKED_ELSE(we.score() >= score)
@@ -98,7 +99,7 @@ TEST_CASE("wand_data_range")
         size_t i = 0;
         std::vector<WandTypeRange::enumerator> enums;
         for (auto const &seq : collection) {
-            if (seq.docs.size() >= 1024) {
+            if (seq.documents.size() >= 1024) {
                 enums.push_back(wdata_range.getenum(i));
             }
         }

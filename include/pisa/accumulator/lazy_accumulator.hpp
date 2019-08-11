@@ -10,18 +10,20 @@
 namespace pisa {
 
 template <int counter_bit_size, typename Descriptor = std::uint64_t>
-struct Lazy_Accumulator {
+struct LazyAccumulator {
+
     using reference = float &;
 
     static_assert(std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>,
                   "must be unsigned number");
+
     constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
     constexpr static auto counters_in_descriptor = descriptor_size_in_bits / counter_bit_size;
     constexpr static auto cycle = (1u << counter_bit_size);
     constexpr static Descriptor mask = (1u << counter_bit_size) - 1;
 
     struct Block {
-        Descriptor                                descriptor{};
+        Descriptor descriptor{};
         std::array<float, counters_in_descriptor> accumulators{};
 
         [[nodiscard]] auto counter(int pos) const noexcept -> int {
@@ -45,7 +47,7 @@ struct Lazy_Accumulator {
         }
     };
 
-    Lazy_Accumulator(std::size_t size)
+    LazyAccumulator(std::size_t size)
         : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor)
     {}
 
@@ -88,9 +90,16 @@ struct Lazy_Accumulator {
     [[nodiscard]] auto counter() const noexcept -> int { return m_counter; }
 
    private:
-    std::size_t        m_size;
+    std::size_t m_size;
     std::vector<Block> m_accumulators;
-    int                m_counter{};
+    int m_counter{};
 };
 
-}
+extern template LazyAccumulator<4, std::uint64_t>::LazyAccumulator(std::size_t);
+extern template void LazyAccumulator<4, std::uint64_t>::init();
+extern template void LazyAccumulator<4, std::uint64_t>::accumulate(std::ptrdiff_t const, float);
+extern template auto LazyAccumulator<4, std::uint64_t>::size() const noexcept -> std::size_t;
+extern template auto LazyAccumulator<4, std::uint64_t>::blocks() noexcept -> std::vector<Block> &;
+extern template auto LazyAccumulator<4, std::uint64_t>::counter() const noexcept -> int;
+
+} // namespace pisa

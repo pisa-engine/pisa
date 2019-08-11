@@ -32,7 +32,7 @@ int main(int argc, const char** argv)
 
     const std::string input_basename = argv[1];
     const std::string output_basename = argv[2];
-    binary_freq_collection input(input_basename.c_str());
+    BinaryFreqCollection input(input_basename.c_str());
     size_t num_docs = input.num_docs();
     std::vector<uint32_t> new_doc_id(num_docs);
 
@@ -57,7 +57,7 @@ int main(int argc, const char** argv)
     }
     {
         spdlog::info("Shuffling document sizes");
-        binary_collection input_sizes((input_basename + ".sizes").c_str());
+        BinaryCollection input_sizes((input_basename + ".sizes").c_str());
         auto sizes = *input_sizes.begin();
         if (sizes.size() != num_docs) {
             throw std::invalid_argument("Invalid sizes file");
@@ -83,9 +83,8 @@ int main(int argc, const char** argv)
     std::vector<std::pair<uint32_t, uint32_t>> pl;
     for (const auto& seq: input) {
 
-        for (size_t i = 0; i < seq.docs.size(); ++i) {
-            pl.emplace_back(new_doc_id[seq.docs.begin()[i]],
-                            seq.freqs.begin()[i]);
+        for (size_t i = 0; i < seq.documents.size(); ++i) {
+            pl.emplace_back(new_doc_id[seq.documents.begin()[i]], seq.frequencies.begin()[i]);
         }
 
         std::sort(pl.begin(), pl.end());

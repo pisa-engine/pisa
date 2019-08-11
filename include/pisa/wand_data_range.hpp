@@ -36,8 +36,7 @@ class wand_data_range {
 
     class builder {
        public:
-        builder(binary_freq_collection const &coll,
-                [[maybe_unused]] global_parameters const &params)
+        builder(BinaryFreqCollection const &coll, [[maybe_unused]] global_parameters const &params)
             : blocks_num(ceil_div(coll.num_docs(), range_size)),
               total_elements(0),
               blocks_start{0},
@@ -55,8 +54,8 @@ class wand_data_range {
         }
 
         template <typename Scorer>
-        float add_sequence(binary_freq_collection::sequence const &term_seq,
-                           binary_freq_collection const &coll,
+        float add_sequence(BinaryFreqCollection::sequence const &term_seq,
+                           BinaryFreqCollection const &coll,
                            std::vector<uint32_t> const &doc_lens,
                            float avg_len,
                            Scorer scorer,
@@ -65,20 +64,20 @@ class wand_data_range {
             float max_score = 0.0f;
 
             std::vector<float> b_max(blocks_num, 0.0f);
-            for (auto i = 0; i < term_seq.docs.size(); ++i) {
-                uint64_t docid = *(term_seq.docs.begin() + i);
-                uint64_t freq = *(term_seq.freqs.begin() + i);
+            for (auto i = 0; i < term_seq.documents.size(); ++i) {
+                uint64_t docid = *(term_seq.documents.begin() + i);
+                uint64_t freq = *(term_seq.frequencies.begin() + i);
                 float score = scorer(docid, freq);
                 max_score = std::max(max_score, score);
                 size_t pos = docid / range_size;
                 float &bm = b_max[pos];
                 bm = std::max(bm, score);
             }
-            if (term_seq.docs.size() >= min_list_lenght) {
+            if (term_seq.documents.size() >= min_list_lenght) {
                 block_max_term_weight.insert(
                     block_max_term_weight.end(), b_max.begin(), b_max.end());
                 blocks_start.push_back(b_max.size() + blocks_start.back());
-                total_elements += term_seq.docs.size();
+                total_elements += term_seq.documents.size();
             } else {
                 blocks_start.push_back(blocks_start.back());
             }

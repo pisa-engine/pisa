@@ -34,9 +34,11 @@ struct IndexData {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
-                std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
-            builder.add_posting_list(
-                plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+                std::accumulate(plist.frequencies.begin(), plist.frequencies.end(), uint64_t(0));
+            builder.add_posting_list(plist.documents.size(),
+                                     plist.documents.begin(),
+                                     plist.frequencies.begin(),
+                                     freqs_sum);
         }
         builder.build(index);
 
@@ -61,8 +63,8 @@ struct IndexData {
     }
 
     global_parameters params;
-    binary_freq_collection collection;
-    binary_collection document_sizes;
+    BinaryFreqCollection collection;
+    BinaryCollection document_sizes;
     Index index;
     std::vector<Query> queries;
     wand_data<wand_data_raw> wdata;
@@ -98,14 +100,14 @@ class range_query_128 : public range_query<T> {
 
 TEMPLATE_TEST_CASE("Ranked query test",
                    "[query][ranked][integration]",
-                   ranked_or_taat_query_acc<Simple_Accumulator>,
-                   ranked_or_taat_query_acc<Lazy_Accumulator<4>>,
+                   ranked_or_taat_query_acc<SimpleAccumulator>,
+                   ranked_or_taat_query_acc<LazyAccumulator<4>>,
                    wand_query,
                    maxscore_query,
                    block_max_wand_query,
                    block_max_maxscore_query,
-                   range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-                   range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+                   range_query_128<ranked_or_taat_query_acc<SimpleAccumulator>>,
+                   range_query_128<ranked_or_taat_query_acc<LazyAccumulator<4>>>,
                    range_query_128<wand_query>,
                    range_query_128<maxscore_query>,
                    range_query_128<block_max_wand_query>,

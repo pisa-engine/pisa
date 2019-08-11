@@ -158,7 +158,6 @@ struct Payload_Vector_Buffer {
 
     [[nodiscard]] static auto from_file(std::string const &filename) -> Payload_Vector_Buffer
     {
-        boost::system::error_code ec;
         auto file_size = boost::filesystem::file_size(boost::filesystem::path(filename));
         std::ifstream is(filename);
 

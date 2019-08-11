@@ -47,8 +47,8 @@ int main(int argc, const char **argv)
     std::string partition_type_name = (lambda) ? "variable partition" : "static partition";
     spdlog::info("Block based wand creation with {}", partition_type_name);
 
-    binary_collection sizes_coll((input_basename + ".sizes").c_str());
-    binary_freq_collection coll(input_basename.c_str());
+    BinaryCollection sizes_coll((input_basename + ".sizes").c_str());
+    BinaryFreqCollection coll(input_basename.c_str());
 
     auto const block_size = [&]() -> BlockSize {
         if (variable_block) {

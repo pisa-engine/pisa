@@ -27,7 +27,7 @@ class wand_data {
     template <typename LengthsIterator>
     wand_data(LengthsIterator len_it,
               uint64_t num_docs,
-              binary_freq_collection const &coll,
+              BinaryFreqCollection const &coll,
               std::string const &scorer_name,
               BlockSize block_size)
         : m_num_docs(num_docs)
@@ -50,9 +50,10 @@ class wand_data {
         typename block_wand_type::builder builder(coll, params);
 
         for (auto const &seq : coll) {
-            size_t term_occurrence_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
+            size_t term_occurrence_count =
+                std::accumulate(seq.frequencies.begin(), seq.frequencies.end(), 0);
             term_occurrence_counts.push_back(term_occurrence_count);
-            term_posting_counts.push_back(seq.docs.size());
+            term_posting_counts.push_back(seq.documents.size());
         }
         m_doc_lens.steal(doc_lens);
         m_term_occurrence_counts.steal(term_occurrence_counts);

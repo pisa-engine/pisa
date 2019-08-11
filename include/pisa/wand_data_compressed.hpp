@@ -95,7 +95,7 @@ class wand_data_compressed {
    public:
     class builder {
        public:
-        builder(binary_freq_collection const &coll, global_parameters const &params)
+        builder(BinaryFreqCollection const &coll, global_parameters const &params)
             : total_elements(0),
               total_blocks(0),
               params(params),
@@ -105,14 +105,14 @@ class wand_data_compressed {
         }
 
         template <typename Scorer>
-        float add_sequence(binary_freq_collection::sequence const &seq,
-                           binary_freq_collection const &coll,
+        float add_sequence(BinaryFreqCollection::sequence const &seq,
+                           BinaryFreqCollection const &coll,
                            std::vector<uint32_t> const &doc_lens,
                            float avg_len,
                            Scorer scorer,
                            BlockSize block_size)
         {
-            if (seq.docs.size() > configuration::get().threshold_wand_list) {
+            if (seq.documents.size() > configuration::get().threshold_wand_list) {
                 auto t =
                     block_size.type() == typeid(FixedBlock)
                         ? static_block_partition(seq,
@@ -132,7 +132,7 @@ class wand_data_compressed {
                 compressor_builder.add_posting_list(t.first.size(), t.first.begin(), ind.begin());
 
                 max_term_weight.push_back(max_score);
-                total_elements += seq.docs.size();
+                total_elements += seq.documents.size();
                 total_blocks += t.first.size();
             } else {
                 max_term_weight.push_back(0.0f);

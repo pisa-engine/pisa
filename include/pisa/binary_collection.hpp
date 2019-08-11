@@ -1,139 +1,264 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <iterator>
-#include <stdexcept>
-#include <type_traits>
+#include <string>
 
-#include "fmt/format.h"
-#include "mio/mmap.hpp"
-#include "spdlog/spdlog.h"
-
-#include "util/util.hpp"
-
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <sys/mman.h>
-#endif
+#include <mio/mmap.hpp>
 
 namespace pisa {
 
-template <typename Source = mio::mmap_source>
-class base_binary_collection {
+namespace detail {
+    template <typename Sequence, typename Iterator>
+    void read_next_sequence(Iterator &iter);
+}
+
+struct BinaryCollection {
    public:
+    using size_type = std::size_t;
     using posting_type = uint32_t;
-    using pointer      = typename std::conditional<std::is_same<Source, mio::mmap_source>::value,
-                                              posting_type const, posting_type>::type *;
+    using pointer = posting_type *;
+    using const_pointer = posting_type const *;
 
-    base_binary_collection(const char *filename) {
-        std::error_code error;
-        m_file.map(filename, error);
-        if (error) {
-            spdlog::error("Error mapping file {}: {}", filename, error.message());
-            throw std::runtime_error("Error opening file");
-        }
-        m_data      = reinterpret_cast<pointer>(m_file.data());
-        m_data_size = m_file.size() / sizeof(m_data[0]);
+    BinaryCollection(char const *filename);
+    BinaryCollection(std::string const &filename);
 
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-        // Indicates that the application expects to access this address range in a sequential
-        // manner
-        auto ret = posix_madvise((void *)m_data, m_data_size, POSIX_MADV_SEQUENTIAL);
-        if (ret) spdlog::error("Error calling madvice: {}", errno);
-#endif
-    }
-
-    class sequence {
+    struct sequence {
        public:
-        sequence(pointer begin, pointer end) : m_begin(begin), m_end(end) {}
-        sequence() : m_begin(nullptr), m_end(nullptr) {}
+        sequence() = default;
+        sequence(pointer begin, pointer end) noexcept;
 
-        pointer begin() const { return m_begin; }
-        pointer end() const { return m_end; }
-        size_t  size() const { return m_end - m_begin; }
-
-        posting_type back() const {
-            assert(size());
-            return *(m_end - 1);
-        }
+        [[nodiscard]] auto begin() const noexcept -> pointer;
+        [[nodiscard]] auto end() const noexcept -> pointer;
+        [[nodiscard]] auto cbegin() const noexcept -> const_pointer;
+        [[nodiscard]] auto cend() const noexcept -> const_pointer;
+        [[nodiscard]] auto size() const noexcept -> size_type;
+        [[nodiscard]] auto back() const -> posting_type;
 
        private:
         pointer m_begin;
         pointer m_end;
     };
 
-    using const_sequence = sequence;
-
-    template <typename S>
-    class base_iterator;
-
-    using const_iterator = base_iterator<const_sequence>;
-    using iterator       = typename std::conditional<std::is_same<Source, mio::mmap_source>::value,
-                                               const_iterator, base_iterator<sequence>>::type;
-
-    iterator       begin() { return iterator(this, 0); }
-    iterator       end() { return iterator(this, m_data_size); }
-    const_iterator begin() const { return const_iterator(this, 0); }
-    const_iterator end() const { return const_iterator(this, m_data_size); }
-    const_iterator cbegin() const { return const_iterator(this, 0); }
-    const_iterator cend() const { return const_iterator(this, m_data_size); }
-
-    template <typename S>
-    class base_iterator : public std::iterator<std::forward_iterator_tag, S> {
+    struct const_sequence {
        public:
-        base_iterator() : m_data(nullptr) {}
+        const_sequence() = default;
+        const_sequence(const_pointer begin, const_pointer end) noexcept;
 
-        auto const &operator*() const { return m_cur_seq; }
-
-        auto const *operator-> () const { return &m_cur_seq; }
-
-        base_iterator &operator++() {
-            m_pos = m_next_pos;
-            read();
-            return *this;
-        }
-
-        bool operator==(base_iterator const &other) const {
-            assert(m_data == other.m_data);
-            assert(m_data_size == other.m_data_size);
-            return m_pos == other.m_pos;
-        }
-
-        bool operator!=(base_iterator const &other) const { return !(*this == other); }
+        [[nodiscard]] auto begin() const noexcept -> const_pointer;
+        [[nodiscard]] auto end() const noexcept -> const_pointer;
+        [[nodiscard]] auto cbegin() const noexcept -> const_pointer;
+        [[nodiscard]] auto cend() const noexcept -> const_pointer;
+        [[nodiscard]] auto size() const noexcept -> size_type;
+        [[nodiscard]] auto back() const -> posting_type;
 
        private:
-        friend class base_binary_collection;
-
-        base_iterator(base_binary_collection const *coll, size_t pos)
-            : m_data(coll->m_data), m_data_size(coll->m_data_size), m_pos(pos) {
-            read();
-        }
-
-        void read() {
-            assert(m_pos <= m_data_size);
-            if (m_pos == m_data_size) return;
-
-            size_t n   = 0;
-            size_t pos = m_pos;
-            n          = m_data[pos++];
-            // file might be truncated
-            n          = std::min(n, size_t(m_data_size - pos));
-            auto begin = &m_data[pos];
-
-            m_next_pos = pos + n;
-            m_cur_seq  = S(begin, begin + n);
-        }
-
-        const pointer m_data;
-        size_t        m_data_size = 0, m_pos = 0, m_next_pos = 0;
-        S             m_cur_seq;
+        const_pointer m_begin;
+        const_pointer m_end;
     };
 
+    struct iterator {
+        using difference_type = std::ptrdiff_t;
+
+        iterator() = default;
+        [[nodiscard]] auto operator*() const -> sequence const &;
+        [[nodiscard]] auto operator*() -> sequence &;
+        [[nodiscard]] auto operator-> () const -> sequence const *;
+        [[nodiscard]] auto operator-> () -> sequence *;
+        iterator &operator++();
+        [[nodiscard]] auto operator==(iterator const &other) const -> bool;
+        [[nodiscard]] auto operator!=(iterator const &other) const -> bool;
+
+       private:
+        friend struct BinaryCollection;
+        friend void detail::read_next_sequence<sequence, iterator>(iterator &a);
+
+        iterator(BinaryCollection const *coll, size_type pos);
+
+        pointer m_data = nullptr;
+        size_type m_data_size = 0;
+        size_type m_pos = 0;
+        size_type m_next_pos = 0;
+        sequence m_current_seqence;
+    };
+
+    struct const_iterator {
+        using difference_type = std::ptrdiff_t;
+
+        const_iterator() = default;
+        [[nodiscard]] auto operator*() const -> const_sequence const &;
+        [[nodiscard]] auto operator-> () const -> const_sequence const *;
+        const_iterator &operator++();
+        [[nodiscard]] auto operator==(const_iterator const &other) const -> bool;
+        [[nodiscard]] auto operator!=(const_iterator const &other) const -> bool;
+
+       private:
+        friend struct BinaryCollection;
+        friend void detail::read_next_sequence<const_sequence, const_iterator>(const_iterator &a);
+
+        const_iterator(BinaryCollection const *coll, size_type pos);
+
+        const_pointer m_data = nullptr;
+        size_type m_data_size = 0;
+        size_type m_pos = 0;
+        size_type m_next_pos = 0;
+        const_sequence m_current_seqence;
+    };
+
+    [[nodiscard]] auto begin() -> iterator;
+    [[nodiscard]] auto end() -> iterator;
+    [[nodiscard]] auto begin() const -> const_iterator;
+    [[nodiscard]] auto end() const -> const_iterator;
+    [[nodiscard]] auto cbegin() const -> const_iterator;
+    [[nodiscard]] auto cend() const -> const_iterator;
+
    private:
-    Source  m_file;
+    mio::mmap_sink m_file;
     pointer m_data;
-    size_t  m_data_size;
+    size_t m_data_size;
 };
 
-using binary_collection          = base_binary_collection<>;
-using writable_binary_collection = base_binary_collection<mio::mmap_sink>;
-}  // namespace pisa
+[[nodiscard]] inline BinaryCollection::sequence const &BinaryCollection::iterator::operator*() const
+{
+    return m_current_seqence;
+}
+
+[[nodiscard]] inline BinaryCollection::sequence &BinaryCollection::iterator::operator*()
+{
+    return m_current_seqence;
+}
+
+[[nodiscard]] inline BinaryCollection::sequence const *BinaryCollection::iterator::operator->()
+    const
+{
+    return &m_current_seqence;
+}
+
+[[nodiscard]] inline BinaryCollection::sequence *BinaryCollection::iterator::operator->()
+{
+    return &m_current_seqence;
+}
+
+[[nodiscard]] inline bool BinaryCollection::iterator::operator==(iterator const &other) const
+{
+    assert(m_data == other.m_data);
+    assert(m_data_size == other.m_data_size);
+    return m_pos == other.m_pos;
+}
+
+[[nodiscard]] inline bool BinaryCollection::iterator::operator!=(iterator const &other) const
+{
+    return !(*this == other);
+}
+
+[[nodiscard]] inline BinaryCollection::const_sequence const
+    &BinaryCollection::const_iterator::operator*() const
+{
+    return m_current_seqence;
+}
+
+[[nodiscard]] inline BinaryCollection::const_sequence const
+    *BinaryCollection::const_iterator::operator->() const
+{
+    return &m_current_seqence;
+}
+
+[[nodiscard]] inline bool BinaryCollection::const_iterator::operator==(
+    const_iterator const &other) const
+{
+    assert(m_data == other.m_data);
+    assert(m_data_size == other.m_data_size);
+    return m_pos == other.m_pos;
+}
+
+[[nodiscard]] inline bool BinaryCollection::const_iterator::operator!=(
+    const_iterator const &other) const
+{
+    return !(*this == other);
+}
+
+inline BinaryCollection::sequence::sequence(pointer begin, pointer end) noexcept
+    : m_begin(begin), m_end(end)
+{
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::begin() const noexcept -> pointer
+{
+    return m_begin;
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::end() const noexcept -> pointer
+{
+    return m_end;
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::cbegin() const noexcept -> const_pointer
+{
+    return m_begin;
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::cend() const noexcept -> const_pointer
+{
+    return m_end;
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::size() const noexcept -> size_type
+{
+    return std::distance(m_begin, m_end);
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::back() const -> posting_type
+{
+    assert(size());
+    return *std::prev(m_end);
+}
+
+inline BinaryCollection::const_sequence::const_sequence(const_pointer begin,
+                                                        const_pointer end) noexcept
+    : m_begin(begin), m_end(end)
+{
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::begin() const noexcept -> const_pointer
+{
+    return m_begin;
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::end() const noexcept -> const_pointer
+{
+    return m_end;
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::cbegin() const noexcept -> const_pointer
+{
+    return m_begin;
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::cend() const noexcept -> const_pointer
+{
+    return m_end;
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::size() const noexcept -> size_type
+{
+    return std::distance(m_begin, m_end);
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::back() const -> posting_type
+{
+    assert(size());
+    return *std::prev(m_end);
+}
+
+} // namespace pisa
+
+namespace std {
+
+template <>
+struct iterator_traits<::pisa::BinaryCollection::iterator> {
+    using difference_type = std::ptrdiff_t;
+    using value_type = ::pisa::BinaryCollection::sequence;
+    using pointer = value_type *;
+    using reference = value_type &;
+    using iterator_category = std::input_iterator_tag;
+};
+
+template <>
+struct iterator_traits<::pisa::BinaryCollection::const_iterator> {
+    using difference_type = std::ptrdiff_t;
+    using value_type = ::pisa::BinaryCollection::const_sequence;
+    using pointer = value_type *;
+    using reference = value_type &;
+    using iterator_category = std::input_iterator_tag;
+};
+
+} // namespace std

@@ -504,8 +504,8 @@ int main(int argc, const char** argv) {
                 (params, predictors_filename, block_stats_filename,     \
                  input_filename, output_filename, lambdas_filename, budget); \
             if (check) {                                                \
-                binary_freq_collection input(collection_basename);      \
-                verify_collection<binary_freq_collection, block_mixed_index> \
+                BinaryFreqCollection input(collection_basename);      \
+                verify_collection<BinaryFreqCollection, block_mixed_index> \
                                   (input, output_filename);             \
             }                                                           \
             /**/

@@ -73,7 +73,7 @@ inline void reorder_inverted_index(const std::string &input_basename,
     std::ofstream output_mapping(output_basename + ".mapping");
     emit(output_mapping, mapping.data(), mapping.size());
 
-    binary_collection input_sizes((input_basename + ".sizes").c_str());
+    BinaryCollection input_sizes((input_basename + ".sizes").c_str());
     auto              sizes = *input_sizes.begin();
 
     auto                  num_docs = sizes.size();
@@ -91,16 +91,16 @@ inline void reorder_inverted_index(const std::string &input_basename,
     emit(output_docs, 1);
     emit(output_docs, mapping.size());
 
-    binary_freq_collection input(input_basename.c_str());
+    BinaryFreqCollection input(input_basename.c_str());
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
-    pisa::progress                             reorder_progress("Reorder inverted index",
+    pisa::progress reorder_progress("Reorder inverted index",
                                     std::distance(input.begin(), input.end()));
 
     for (const auto &seq : input) {
 
-        for (size_t i = 0; i < seq.docs.size(); ++i) {
-            pl.emplace_back(mapping[seq.docs.begin()[i]], seq.freqs.begin()[i]);
+        for (size_t i = 0; i < seq.documents.size(); ++i) {
+            pl.emplace_back(mapping[seq.documents.begin()[i]], seq.frequencies.begin()[i]);
         }
 
         std::sort(pl.begin(), pl.end());
@@ -122,7 +122,7 @@ inline void sample_inverted_index(const std::string &input_basename,
                                   const uint32_t max_doc)
 {
 
-    binary_collection input_sizes((input_basename + ".sizes").c_str());
+    BinaryCollection input_sizes((input_basename + ".sizes").c_str());
     auto              sizes = *input_sizes.begin();
 
     std::vector<uint32_t> new_sizes(sizes.begin(), std::next(sizes.begin(), max_doc));
@@ -135,14 +135,14 @@ inline void sample_inverted_index(const std::string &input_basename,
     emit(output_docs, 1);
     emit(output_docs, max_doc);
 
-    binary_freq_collection input(input_basename.c_str());
+    BinaryFreqCollection input(input_basename.c_str());
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
     for (const auto &seq : input) {
 
-        auto dociter  = seq.docs.begin();
-        auto freqiter = seq.freqs.begin();
-        for (; dociter != seq.docs.end(); ++dociter, ++freqiter) {
+        auto dociter  = seq.documents.begin();
+        auto freqiter = seq.frequencies.begin();
+        for (; dociter != seq.documents.end(); ++dociter, ++freqiter) {
             auto doc = *dociter;
             if (doc >= max_doc) {
                 break;

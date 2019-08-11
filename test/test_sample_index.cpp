@@ -31,25 +31,25 @@
 TEST_CASE( "sample_index_full")
 {
     // given
-    using pisa::binary_freq_collection;
+    using pisa::BinaryFreqCollection;
     std::string input("test_data/test_collection");
     Temporary_Directory tmpdir;
     std::string output = tmpdir.path().string();
-    auto original = binary_freq_collection(input.c_str());
+    auto original = BinaryFreqCollection(input.c_str());
 
     // when
     pisa::sample_inverted_index(input, output, 10000);
-    auto sampled = binary_freq_collection(output.c_str());
+    auto sampled = BinaryFreqCollection(output.c_str());
 
     // then
     REQUIRE(sampled.num_docs() == original.num_docs());
     auto oit = original.begin();
     auto sit = sampled.begin();
     for (; oit != original.end(); ++oit, ++sit) {
-        std::vector<uint32_t> odocs(oit->docs.begin(), oit->docs.end());
-        std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
-        std::vector<uint32_t> ofreqs(oit->freqs.begin(), oit->freqs.end());
-        std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
+        std::vector<uint32_t> odocs(oit->documents.begin(), oit->documents.end());
+        std::vector<uint32_t> sdocs(sit->documents.begin(), sit->documents.end());
+        std::vector<uint32_t> ofreqs(oit->frequencies.begin(), oit->frequencies.end());
+        std::vector<uint32_t> sfreqs(sit->frequencies.begin(), sit->frequencies.end());
         REQUIRE(std::equal(odocs.begin(), odocs.end(), sdocs.begin()));
         REQUIRE(std::equal(ofreqs.begin(), ofreqs.end(), sfreqs.begin()));
     }
@@ -59,24 +59,24 @@ TEST_CASE( "sample_index_full")
 TEST_CASE( "sample_index")
 {
     // given
-    using pisa::binary_freq_collection;
+    using pisa::BinaryFreqCollection;
     std::string input("test_data/test_collection");
     Temporary_Directory tmpdir;
     std::string output = tmpdir.path().string();
-    auto original = binary_freq_collection(input.c_str());
+    auto original = BinaryFreqCollection(input.c_str());
     size_t doc_limit = 2000;
 
     // when
     pisa::sample_inverted_index(input, output, doc_limit);
-    auto sampled = binary_freq_collection(output.c_str());
+    auto sampled = BinaryFreqCollection(output.c_str());
 
     // then
     REQUIRE(sampled.num_docs() == doc_limit);
     auto oit = original.begin();
     auto sit = sampled.begin();
     for (; oit != original.end(); ++oit, ++sit) {
-        std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
-        std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
+        std::vector<uint32_t> sdocs(sit->documents.begin(), sit->documents.end());
+        std::vector<uint32_t> sfreqs(sit->frequencies.begin(), sit->frequencies.end());
 
         REQUIRE(sdocs.size() > 0);
         REQUIRE(sfreqs.size() > 0);

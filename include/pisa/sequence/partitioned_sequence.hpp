@@ -1,15 +1,17 @@
 #pragma once
 
+#include <deque>
 #include <stdexcept>
-#include "tbb/task_group.h"
 
+#include <tbb/task_group.h>
+
+#include "codec/compact_elias_fano.hpp"
+#include "codec/integer_codes.hpp"
 #include "configuration.hpp"
 #include "global_parameters.hpp"
-#include "codec/compact_elias_fano.hpp"
-#include "sequence/indexed_sequence.hpp"
-#include "codec/integer_codes.hpp"
-#include "util/util.hpp"
 #include "optimal_partition.hpp"
+#include "sequence/indexed_sequence.hpp"
+#include "util/util.hpp"
 
 namespace pisa {
 

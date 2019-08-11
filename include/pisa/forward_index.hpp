@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -75,7 +76,7 @@ class forward_index : public std::vector<std::vector<std::uint8_t>> {
     static forward_index from_inverted_index(const std::string &input_basename,
                                              size_t             min_len,
                                              bool               use_compression) {
-        binary_collection coll((input_basename + ".docs").c_str());
+        BinaryCollection coll((input_basename + ".docs").c_str());
 
         auto firstseq = *coll.begin();
         if (firstseq.size() != 1) {

@@ -289,7 +289,7 @@ class Forward_Index_Builder {
                            batch_terms.end(),
                            mapping.begin(),
                            [&](auto const &bterm) { return term_mapping[bterm]; });
-            writable_binary_collection coll(batch_file(basename, batch).c_str());
+            BinaryCollection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
                 for (auto &term_id : *doc_iter) {
                     term_id = mapping[term_id].as_int();

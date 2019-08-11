@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
         print = [&](std::uint32_t const &term) { std::cout << map[term] << " "; };
     }
 
-    binary_collection coll(collection_file.c_str());
+    BinaryCollection coll(collection_file.c_str());
     auto iter = coll.begin();
     for ([[maybe_unused]] auto idx : ranges::view::iota(0, first)) {
         ++iter;

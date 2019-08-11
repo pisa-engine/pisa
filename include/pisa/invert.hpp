@@ -232,7 +232,7 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
                                  size_t             threads) -> uint32_t
 {
     uint32_t          batch = 0;
-    binary_collection coll(input_basename.c_str());
+    BinaryCollection coll(input_basename.c_str());
     auto              doc_iter            = ++coll.begin();
     uint32_t          documents_processed = 0;
     while (doc_iter != coll.end()) {
@@ -254,8 +254,8 @@ auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
 
 void merge_batches(std::string const &output_basename, uint32_t batch_count, uint32_t term_count)
 {
-    std::vector<binary_collection> doc_collections;
-    std::vector<binary_collection> freq_collections;
+    std::vector<BinaryCollection> doc_collections;
+    std::vector<BinaryCollection> freq_collections;
     std::vector<uint32_t> document_sizes;
     for (auto batch : ranges::view::iota(0, batch_count)) {
         std::ostringstream batch_name_stream;
@@ -269,8 +269,8 @@ void merge_batches(std::string const &output_basename, uint32_t batch_count, uin
     std::ofstream sos(output_basename + ".sizes");
     write_sequence(sos, gsl::span<uint32_t const>(document_sizes));
 
-    std::vector<binary_collection::const_iterator> doc_iterators;
-    std::vector<binary_collection::const_iterator> freq_iterators;
+    std::vector<BinaryCollection::const_iterator> doc_iterators;
+    std::vector<BinaryCollection::const_iterator> freq_iterators;
     std::transform(doc_collections.begin(),
                    doc_collections.end(),
                    std::back_inserter(doc_iterators),

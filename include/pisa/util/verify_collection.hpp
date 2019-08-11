@@ -15,20 +15,20 @@ void verify_collection(InputCollection const &input, const char *filename) {
     spdlog::info("Checking the written data, just to be extra safe...");
     size_t s = 0;
     for (auto seq: input) {
-        size = seq.docs.size();
+        size = seq.documents.size();
         auto e = coll[s];
         if (e.size() != size) {
             spdlog::error("sequence {} has wrong length! ({} != {})", s, e.size(), size);
             exit(1);
         }
         for (size_t i = 0; i < e.size(); ++i, e.next()) {
-            uint64_t docid = *(seq.docs.begin() + i);
-            uint64_t freq = *(seq.freqs.begin() + i);
+            uint64_t docid = *(seq.documents.begin() + i);
+            uint64_t freq = *(seq.frequencies.begin() + i);
 
             if (docid != e.docid()) {
                 spdlog::error("docid in sequence {} differs at position {}!", s, i);
                 spdlog::error("{} != {}", e.docid(), docid);
-                spdlog::error("sequence length: {}", seq.docs.size());
+                spdlog::error("sequence length: {}", seq.documents.size());
 
                 exit(1);
             }
@@ -36,7 +36,7 @@ void verify_collection(InputCollection const &input, const char *filename) {
             if (freq != e.freq()) {
                 spdlog::error("freq in sequence {} differs at position {}!", s, i);
                 spdlog::error("{} != {}", e.freq(), freq);
-                spdlog::error("sequence length: {}", seq.docs.size());
+                spdlog::error("sequence length: {}", seq.documents.size());
 
                 exit(1);
             }

@@ -161,7 +161,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
 
             THEN("Sequences are properly rearranged")
             {
-                auto full = binary_collection(fwd_basename.c_str());
+                auto full = BinaryCollection(fwd_basename.c_str());
                 auto full_iter = ++full.begin();
                 std::vector<std::vector<std::uint32_t>> expected;
                 std::transform(
@@ -183,7 +183,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     //std::vector<std::vector<std::uint32_t>> actual;
                     spdlog::info("Testing shard {}", shard.as_int());
                     spdlog::default_logger()->flush();
-                    auto shard_coll = binary_collection(
+                    auto shard_coll = BinaryCollection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str());
                     size_t doc = 0u;
                     CAPTURE(shard);
@@ -232,17 +232,17 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
             }
             AND_THEN("Documents are identical wrt terms")
             {
-                auto full = binary_collection(fwd_basename.c_str());
+                auto full = BinaryCollection(fwd_basename.c_str());
                 auto full_iter = ++full.begin();
                 auto full_terms = io::read_string_vector(fmt::format("{}.terms", fwd_basename));
-                std::vector<binary_collection> shards;
-                std::vector<typename binary_collection::const_iterator> shard_iterators;
+                std::vector<BinaryCollection> shards;
+                std::vector<typename BinaryCollection::iterator> shard_iterators;
                 std::vector<std::vector<std::string>> shard_terms;
                 shards.reserve(13);
                 shard_iterators.reserve(13);
                 shard_terms.reserve(13);
                 for (auto shard : shard_ids) {
-                    shards.push_back(binary_collection(
+                    shards.push_back(BinaryCollection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str()));
                     shard_terms.push_back(io::read_string_vector(
                         fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str()));

@@ -64,9 +64,11 @@ void create_collection(InputCollection const &input,
         pisa::progress progress("Create index", input.size());
         for (auto const &plist : input) {
             uint64_t freqs_sum;
-            size = plist.docs.size();
-            freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
-            builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            size = plist.documents.size();
+            freqs_sum = std::accumulate(
+                plist.frequencies.begin(), plist.frequencies.begin() + size, uint64_t(0));
+            builder.add_posting_list(
+                size, plist.documents.begin(), plist.frequencies.begin(), freqs_sum);
 
             progress.update(1);
             postings += size;
@@ -108,17 +110,18 @@ int main(int argc, char **argv) {
     app.add_flag("--check", check, "Check the correctness of the index");
     CLI11_PARSE(app, argc, argv);
 
-    binary_freq_collection input(input_basename.c_str());
+    BinaryFreqCollection input(input_basename.c_str());
 
     pisa::global_parameters params;
     params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                               \
-    }                                                                       \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                               \
-        create_collection<binary_freq_collection, BOOST_PP_CAT(T, _index)>( \
-            input, params, output_filename, check, type);                   \
+#define LOOP_BODY(R, DATA, T)                                             \
+    }                                                                     \
+    else if (type == BOOST_PP_STRINGIZE(T))                               \
+    {                                                                     \
+        create_collection<BinaryFreqCollection, BOOST_PP_CAT(T, _index)>( \
+            input, params, output_filename, check, type);                 \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

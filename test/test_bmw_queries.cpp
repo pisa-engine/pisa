@@ -35,9 +35,11 @@ struct IndexData {
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
-                std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
-            builder.add_posting_list(
-                plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+                std::accumulate(plist.frequencies.begin(), plist.frequencies.end(), uint64_t(0));
+            builder.add_posting_list(plist.documents.size(),
+                                     plist.documents.begin(),
+                                     plist.frequencies.begin(),
+                                     freqs_sum);
         }
         builder.build(index);
 
@@ -52,8 +54,8 @@ struct IndexData {
     }
 
     global_parameters params;
-    binary_freq_collection collection;
-    binary_collection document_sizes;
+    BinaryFreqCollection collection;
+    BinaryCollection document_sizes;
     Index index;
     std::vector<Query> queries;
     WandTypePlain wdata;

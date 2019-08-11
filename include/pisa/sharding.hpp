@@ -109,7 +109,7 @@ auto create_random_mapping(std::string const &input_basename,
                            std::optional<std::uint64_t> seed = std::nullopt)
     -> VecMap<Document_Id, Shard_Id>
 {
-    auto document_count = *(*binary_collection(input_basename.c_str()).begin()).begin();
+    auto document_count = *(*BinaryCollection(input_basename.c_str()).begin()).begin();
     return create_random_mapping(document_count, shard_count, seed);
 }
 
@@ -171,7 +171,7 @@ auto process_shard(std::string const &input_basename,
                    VecMap<Term_Id, std::string> const &terms)
 {
     auto basename = fmt::format("{}.{:03d}", output_basename, shard_id.as_int());
-    auto shard = writable_binary_collection(basename.c_str());
+    auto shard = BinaryCollection(basename.c_str());
 
     spdlog::debug("[Shard {}] Calculating term occurrences", shard_id.as_int());
     std::vector<uint32_t> has_term(terms.size(), 0u);

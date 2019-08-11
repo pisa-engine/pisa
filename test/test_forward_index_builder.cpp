@@ -120,7 +120,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
                 REQUIRE(terms == expected_terms);
             }
             THEN("term IDs") {
-                binary_collection coll((output_file.string() + ".batch.7").c_str());
+                BinaryCollection coll((output_file.string() + ".batch.7").c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
                     auto seq = *seq_iter;
@@ -234,7 +234,7 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
                 REQUIRE(terms == expected_terms);
             }
             THEN("term IDs") {
-                binary_collection coll((output_file).c_str());
+                BinaryCollection coll((output_file).c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
                     auto seq = *seq_iter;
@@ -333,7 +333,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 auto term_lexicon = Payload_Vector<std::string>(term_lexicon_buffer);
                 REQUIRE(std::vector<std::string>(term_lexicon.begin(), term_lexicon.end()) ==
                         term_map);
-                binary_collection coll((output).c_str());
+                BinaryCollection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 REQUIRE(*seq_iter->begin() == 1000);
                 ++seq_iter;
