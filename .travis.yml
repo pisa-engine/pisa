@@ -19,7 +19,7 @@ cache:
   - apt: true
   - directories:
     - ${TRAVIS_BUILD_DIR}/build/external
-  
+
 matrix:
   fast_finish: true
   include:
@@ -72,7 +72,7 @@ matrix:
 
 # Install dependencies
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then 
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew install ccache;
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
     fi
@@ -81,14 +81,14 @@ before_install:
 script:
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
-    - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then 
-        travis_wait 50 make;
+    - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then
+        make -j2;
         ctest -j2;
       fi
 
 after_success:
   - |-
-    if [[ "${COVERAGE}" == "On" ]]; then 
+    if [[ "${COVERAGE}" == "On" ]]; then
       bash <(curl -s https://codecov.io/bash);
     fi
   - |-

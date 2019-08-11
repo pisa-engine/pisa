@@ -59,9 +59,9 @@ namespace pisa {
 /* }; */
 
 struct topk_queue {
-    using entry_type = std::pair<float, uint64_t>;
+    using entry_type = std::pair<float, std::uint64_t>;
 
-    explicit topk_queue(uint64_t k) : m_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
+    explicit topk_queue(std::uint64_t k) : m_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
     topk_queue(topk_queue const &q) = default;
     topk_queue &operator=(topk_queue const &q) = default;
 
@@ -72,7 +72,8 @@ struct topk_queue {
 
     bool insert(float score) { return insert(score, 0); }
 
-    bool insert(float score, uint64_t docid) {
+    bool insert(float score, std::uint64_t docid)
+    {
         if (PISA_UNLIKELY(score <= m_threshold)) {
             return false;
         }
@@ -94,12 +95,12 @@ struct topk_queue {
 
     void finalize() {
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
-        size_t size =
+        std::size_t size =
             std::lower_bound(m_q.begin(),
                              m_q.end(),
                              0,
-                             [](std::pair<float, uint64_t> l, float r) { return l.first > r; }) -
-            m_q.begin();
+                             [](std::pair<float, std::uint64_t> l, float r) { return l.first > r; })
+            - m_q.begin();
         m_q.resize(size);
     }
 
@@ -110,11 +111,11 @@ struct topk_queue {
         m_threshold = 0;
     }
 
-    [[nodiscard]] uint64_t size() const noexcept { return m_k; }
+    [[nodiscard]] std::uint64_t size() const noexcept { return m_k; }
 
    private:
     float                   m_threshold;
-    uint64_t                m_k;
+    std::uint64_t m_k;
     std::vector<entry_type> m_q;
 };
 
