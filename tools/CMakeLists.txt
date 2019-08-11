@@ -38,11 +38,6 @@ target_link_libraries(thresholds
   CLI11
 )
 
-add_executable(profile_queries profile_queries.cpp)
-target_link_libraries(profile_queries
-  pisa
-)
-
 add_executable(profile_decoding profile_decoding.cpp)
 target_link_libraries(profile_decoding
   pisa

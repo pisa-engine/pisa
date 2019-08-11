@@ -32,18 +32,20 @@ struct block_freq_index {
                               FreqsIterator freqs_begin,
                               uint64_t /* occurrences */)
         {
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("List must be nonempty");
-            block_posting_list<BlockCodec, Profile>::write(m_lists, n, docs_begin, freqs_begin);
+            }
+            write_block_posting_list<BlockCodec>(m_lists, n, docs_begin, freqs_begin);
             m_endpoints.push_back(m_lists.size());
         }
 
         template <typename BlockDataRange>
         void add_posting_list(uint64_t n, BlockDataRange const &blocks)
         {
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("List must be nonempty");
-            block_posting_list<BlockCodec>::write_blocks(m_lists, n, blocks);
+            }
+            write_blocks<BlockCodec>(m_lists, n, blocks);
             m_endpoints.push_back(m_lists.size());
         }
 
@@ -81,8 +83,7 @@ struct block_freq_index {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    typedef
-        typename block_posting_list<BlockCodec, Profile>::document_enumerator document_enumerator;
+    using document_enumerator = BlockPostingCursor<BlockCodec>;
 
     document_enumerator operator[](size_t i) const
     {
@@ -90,7 +91,7 @@ struct block_freq_index {
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
 
         auto endpoint = endpoints.move(i).second;
-        return document_enumerator(m_lists.data() + endpoint, num_docs(), i);
+        return document_enumerator::from(m_lists.data() + endpoint, num_docs());
     }
 
     void warmup(size_t i) const

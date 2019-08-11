@@ -254,7 +254,7 @@ struct list_transformer : pisa::semiasync_queue::job {
     {
         using namespace pisa;
 
-        typedef typename InputCollectionType::document_enumerator::block_data input_block_type;
+        typedef typename InputCollectionType::document_enumerator::BlockData input_block_type;
         typedef mixed_block::block_transformer<input_block_type> output_block_type;
 
         auto blocks = m_e.get_blocks();
@@ -270,7 +270,7 @@ struct list_transformer : pisa::semiasync_queue::job {
                                        docs_param, freqs_param);
         }
 
-        block_posting_list<mixed_block>::write_blocks(m_buf, m_e.size(), output_blocks);
+        write_blocks(m_buf, m_e.size(), output_blocks);
     }
 
     virtual void commit()
