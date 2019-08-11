@@ -4,15 +4,14 @@
 #include <optional>
 #include <string>
 
+#include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/null_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-
-#include "mappable/mapper.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
@@ -20,16 +19,15 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
+#include "mappable/mapper.hpp"
 #include "query/algorithm.hpp"
 #include "query/queries.hpp"
+#include "scorer/scorer.hpp"
 #include "timer.hpp"
 #include "util/do_not_optimize_away.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-
-#include "CLI/CLI.hpp"
-#include "scorer/scorer.hpp"
 
 using namespace pisa;
 using ranges::view::enumerate;
