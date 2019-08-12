@@ -32,7 +32,7 @@ matrix:
           packages:
             - g++-7
             - lcov
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=Off && BUILD_TOOLS=On"
     - os: linux
       dist: xenial
       compiler: gcc
@@ -40,7 +40,7 @@ matrix:
         apt:
           sources: *all_sources
           packages: ['g++-7']
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On"
+      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On && BUILD_TOOLS=On"
     - os: linux
       dist: xenial
       compiler: gcc
@@ -48,7 +48,7 @@ matrix:
         apt:
           sources: *all_sources
           packages: ['g++-8']
-      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && DOCKER=On"
+      env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && DOCKER=On && BUILD_TOOLS=On"
     - os: linux
       dist: xenial
       compiler: clang
@@ -56,7 +56,7 @@ matrix:
           apt:
               sources: *all_sources
               packages: ['clang-5.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off && BUILD_TOOLS=On"
     - os: linux
       dist: xenial
       compiler: clang
@@ -64,11 +64,19 @@ matrix:
           apt:
               sources: *all_sources
               packages: ['clang-6.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && BUILD_TOOLS=On"
+    - os: linux
+      dist: xenial
+      compiler: clang
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-6.0', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=On && BUILD_TOOLS=Off"
     - os: osx
       osx_image: xcode10.1
       compiler: clang
-      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off && BUILD_TOOLS=On"
 
 # Install dependencies
 before_install:
@@ -80,7 +88,7 @@ before_install:
 
 script:
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} -DPISA_BUILD_TOOLS=${BUILD_TOOLS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then
         make;
         ctest -j2;
