@@ -8,7 +8,8 @@ namespace pisa {
     template std::vector<uint64_t> and_query::                                        \
     operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
         gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
-        uint64_t max_docid) const;
+        uint64_t max_docid) const;                                                    \
+    template QueryExecutor and_executor(BOOST_PP_CAT(INDEX, _index) const &);
 /**/
 BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

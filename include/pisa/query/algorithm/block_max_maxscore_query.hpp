@@ -113,8 +113,27 @@ struct block_max_maxscore_query {
     topk_queue m_topk;
 };
 
+template <typename Index, typename Wand, typename Scorer>
+[[nodiscard]] auto block_max_maxscore_executor(Index const &index,
+                                               Wand const &wdata,
+                                               Scorer const &scorer,
+                                               int k) -> QueryExecutor
+{
+    return [&](Query query) {
+        block_max_maxscore_query block_max_maxscore_q(k);
+        auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+        return block_max_maxscore_q(gsl::make_span(cursors), index.num_docs());
+    };
+}
+
 template <typename Index, typename Wand, typename TermScorer>
 struct block_max_scored_cursor;
+
+#define PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(SCORER, INDEX, WAND)                                      \
+    extern template QueryExecutor block_max_maxscore_executor(BOOST_PP_CAT(INDEX, _index) const &, \
+                                                              wand_data<WAND> const &,             \
+                                                              SCORER<wand_data<WAND>> const &,     \
+                                                              int);
 
 #define LOOP_BODY(R, DATA, T)                                                                     \
     PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_maxscore_query, bm25, T, wand_data_raw)        \
@@ -124,9 +143,18 @@ struct block_max_scored_cursor;
     PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_maxscore_query, bm25, T, wand_data_compressed) \
     PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_maxscore_query, dph, T, wand_data_compressed)  \
     PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_maxscore_query, pl2, T, wand_data_compressed)  \
-    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_maxscore_query, qld, T, wand_data_compressed)
+    PISA_DAAT_BLOCK_MAX_ALGORITHM_EXTERN(block_max_maxscore_query, qld, T, wand_data_compressed)  \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(bm25, T, wand_data_raw)                                      \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(dph, T, wand_data_raw)                                       \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(pl2, T, wand_data_raw)                                       \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(qld, T, wand_data_raw)                                       \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(bm25, T, wand_data_compressed)                               \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(dph, T, wand_data_compressed)                                \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(pl2, T, wand_data_compressed)                                \
+    PISA_BLOCK_MAX_MAXSCORE_EXECUTOR(qld, T, wand_data_compressed)
 /**/
 BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
+#undef PISA_BLOCK_MAX_MAXSCORE_EXECUTOR
 
 } // namespace pisa

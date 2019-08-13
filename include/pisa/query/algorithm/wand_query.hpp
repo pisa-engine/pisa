@@ -100,8 +100,25 @@ struct wand_query {
     topk_queue m_topk;
 };
 
+template <typename Index, typename Wand, typename Scorer>
+[[nodiscard]] auto wand_executor(Index const &index, Wand const &wdata, Scorer const &scorer, int k)
+    -> QueryExecutor
+{
+    return [&](Query query) {
+        wand_query wand_q(k);
+        auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
+        return wand_q(gsl::make_span(cursors), index.num_docs());
+    };
+}
+
 template <typename Index, typename TermScorer>
 struct scored_cursor;
+
+#define PISA_WAND_EXECUTOR(SCORER, INDEX, WAND)                                      \
+    extern template QueryExecutor wand_executor(BOOST_PP_CAT(INDEX, _index) const &, \
+                                                wand_data<WAND> const &,             \
+                                                SCORER<wand_data<WAND>> const &,     \
+                                                int);
 
 #define LOOP_BODY(R, DATA, T)                                                 \
     PISA_DAAT_MAX_ALGORITHM_EXTERN(wand_query, bm25, T, wand_data_raw)        \
@@ -111,9 +128,18 @@ struct scored_cursor;
     PISA_DAAT_MAX_ALGORITHM_EXTERN(wand_query, bm25, T, wand_data_compressed) \
     PISA_DAAT_MAX_ALGORITHM_EXTERN(wand_query, dph, T, wand_data_compressed)  \
     PISA_DAAT_MAX_ALGORITHM_EXTERN(wand_query, pl2, T, wand_data_compressed)  \
-    PISA_DAAT_MAX_ALGORITHM_EXTERN(wand_query, qld, T, wand_data_compressed)
+    PISA_DAAT_MAX_ALGORITHM_EXTERN(wand_query, qld, T, wand_data_compressed)  \
+    PISA_WAND_EXECUTOR(bm25, T, wand_data_raw)                                \
+    PISA_WAND_EXECUTOR(dph, T, wand_data_raw)                                 \
+    PISA_WAND_EXECUTOR(pl2, T, wand_data_raw)                                 \
+    PISA_WAND_EXECUTOR(qld, T, wand_data_raw)                                 \
+    PISA_WAND_EXECUTOR(bm25, T, wand_data_compressed)                         \
+    PISA_WAND_EXECUTOR(dph, T, wand_data_compressed)                          \
+    PISA_WAND_EXECUTOR(pl2, T, wand_data_compressed)                          \
+    PISA_WAND_EXECUTOR(qld, T, wand_data_compressed)
 /**/
 BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
+#undef PISA_WAND_EXECUTOR
 
 } // namespace pisa

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0) 
+cmake_minimum_required(VERSION 3.0)
 project(PISA CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -103,7 +103,9 @@ target_link_libraries(pisa PUBLIC
 )
 target_include_directories(pisa PUBLIC external)
 
-add_subdirectory(tools)
+if (PISA_BUILD_TOOLS)
+    add_subdirectory(tools)
+endif()
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()
