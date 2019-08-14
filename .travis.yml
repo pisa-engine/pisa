@@ -88,7 +88,7 @@ before_install:
 
 script:
     - cd build
-    - travis_wait 50 sleep 3000
+    - travis_wait 50 sleep 3000 &
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} -DPISA_BUILD_TOOLS=${BUILD_TOOLS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then
         make;
