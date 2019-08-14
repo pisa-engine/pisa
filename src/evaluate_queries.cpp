@@ -107,16 +107,14 @@ void evaluate_queries(const std::string &index_filename,
             return maxscore_q.topk();
         };
     } else if (query_type == "ranked_or_taat" && wand_data_filename) {
-        Simple_Accumulator   accumulator(index.num_docs());
-        query_fun = [&, accumulator](Query query) mutable {
+        query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
             ranked_or_taat_query ranked_or_taat_q(k);
             ranked_or_taat_q(make_scored_cursors(index, wdata, query), index.num_docs(),
                              accumulator);
             return ranked_or_taat_q.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
-        Lazy_Accumulator<4>  accumulator(index.num_docs());
-        query_fun = [&, accumulator](Query query) mutable {
+        query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
             ranked_or_taat_query ranked_or_taat_q(k);
             ranked_or_taat_q(make_scored_cursors(index, wdata, query), index.num_docs(),
                              accumulator);
