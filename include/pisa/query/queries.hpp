@@ -38,7 +38,8 @@ struct Query {
     std::vector<float> term_weights;
 };
 
-using QueryExecutor = std::function<std::uint64_t(Query)>;
+using ResultVector = std::vector<std::pair<float, std::uint64_t>>;
+using QueryExecutor = std::function<ResultVector const &(Query)>;
 
 [[nodiscard]] inline auto parse_query(
     std::string const &query_string,

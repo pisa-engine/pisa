@@ -51,35 +51,35 @@ struct or_query {
     }
 };
 
-template <typename Index>
-[[nodiscard]] auto or_executor(Index const &index, bool freqs) -> QueryExecutor
-{
-    if (freqs) {
-        return [&](Query query) {
-            or_query<true> or_q;
-            auto cursors = make_cursors(index, query);
-            return or_q(gsl::make_span(cursors), index.num_docs());
-        };
-    }
-    return [&](Query query) {
-        or_query<false> or_q;
-        auto cursors = make_cursors(index, query);
-        return or_q(gsl::make_span(cursors), index.num_docs());
-    };
-}
-
-#define LOOP_BODY(R, DATA, INDEX)                                                     \
-    extern template uint64_t or_query<false>::                                        \
-    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
-        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
-        uint64_t max_docid) const;                                                    \
-    extern template uint64_t or_query<true>::                                         \
-    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
-        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
-        uint64_t max_docid) const;                                                    \
-    extern template QueryExecutor or_executor(BOOST_PP_CAT(INDEX, _index) const &, bool);
-/**/
-BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
+//template <typename Index>
+//[[nodiscard]] auto or_executor(Index const &index, bool freqs) -> QueryExecutor
+//{
+//    if (freqs) {
+//        return [&](Query query) {
+//            or_query<true> or_q;
+//            auto cursors = make_cursors(index, query);
+//            return or_q(gsl::make_span(cursors), index.num_docs());
+//        };
+//    }
+//    return [&](Query query) {
+//        or_query<false> or_q;
+//        auto cursors = make_cursors(index, query);
+//        return or_q(gsl::make_span(cursors), index.num_docs());
+//    };
+//}
+//
+//#define LOOP_BODY(R, DATA, INDEX)                                                     \
+//    extern template uint64_t or_query<false>::                                        \
+//    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
+//        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
+//        uint64_t max_docid) const;                                                    \
+//    extern template uint64_t or_query<true>::                                         \
+//    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
+//        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
+//        uint64_t max_docid) const;                                                    \
+//    extern template QueryExecutor or_executor(BOOST_PP_CAT(INDEX, _index) const &, bool);
+///**/
+//BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
+//#undef LOOP_BODY
 
 } // namespace pisa

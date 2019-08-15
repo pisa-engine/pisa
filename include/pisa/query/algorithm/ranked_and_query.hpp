@@ -73,10 +73,10 @@ template <typename Index, typename Scorer>
 [[nodiscard]] auto ranked_and_executor(Index const &index, Scorer const &scorer, int k)
     -> QueryExecutor
 {
-    return [&](Query query) {
-        ranked_and_query ranked_and_q(k);
+    return [&, run = ranked_and_query(k)](Query query) mutable {
         auto cursors = make_scored_cursors(index, scorer, query);
-        return ranked_and_q(gsl::make_span(cursors), index.num_docs());
+        run(gsl::make_span(cursors), index.num_docs());
+        return run.topk();
     };
 }
 

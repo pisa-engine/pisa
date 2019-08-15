@@ -33,7 +33,7 @@ using ranges::view::enumerate;
 
 namespace pisa {
 
-void extract_times(std::function<std::uint64_t(Query)> fn,
+void extract_times(QueryExecutor fn,
                    std::vector<Query> const &queries,
                    std::string const &index_type,
                    std::string const &query_type,
@@ -53,7 +53,7 @@ void extract_times(std::function<std::uint64_t(Query)> fn,
     }
 }
 
-void op_perftest(std::function<std::uint64_t(Query)> query_func,
+void op_perftest(QueryExecutor query_func,
                  std::vector<Query> const &queries,
                  std::string const &index_type,
                  std::string const &query_type,
@@ -65,7 +65,7 @@ void op_perftest(std::function<std::uint64_t(Query)> query_func,
     for (size_t run = 0; run <= runs; ++run) {
         for (auto const &query : queries) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query);
+                auto result = query_func(query);
                 do_not_optimize_away(result);
             });
             if (run != 0) { // first run is not timed

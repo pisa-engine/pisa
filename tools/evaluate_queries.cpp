@@ -77,54 +77,19 @@ void evaluate_queries(const std::string &index_filename,
     std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
     auto run_evaluation = [&](auto scorer) {
         if (query_type == "wand" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                wand_query wand_q(k);
-                auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
-                wand_q(gsl::make_span(cursors), index.num_docs());
-                return wand_q.topk();
-            };
+            query_fun = wand_executor(index, wdata, scorer, k);
         } else if (query_type == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                block_max_wand_query block_max_wand_q(k);
-                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
-                block_max_wand_q(gsl::make_span(cursors), index.num_docs());
-                return block_max_wand_q.topk();
-            };
+            query_fun = block_max_wand_executor(index, wdata, scorer, k);
         } else if (query_type == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                block_max_maxscore_query block_max_maxscore_q(k);
-                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
-                block_max_maxscore_q(gsl::make_span(cursors), index.num_docs());
-                return block_max_maxscore_q.topk();
-            };
-        } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                block_max_ranked_and_query block_max_ranked_and_q(k);
-                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
-                block_max_ranked_and_q(gsl::make_span(cursors), index.num_docs());
-                return block_max_ranked_and_q.topk();
-            };
+            query_fun = block_max_maxscore_executor(index, wdata, scorer, k);
         } else if (query_type == "ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                ranked_and_query ranked_and_q(k);
-                auto cursors = make_scored_cursors(index, scorer, query);
-                ranked_and_q(gsl::make_span(cursors), index.num_docs());
-                return ranked_and_q.topk();
-            };
+            query_fun = ranked_or_executor(index, scorer, k);
+        } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
+            query_fun = block_max_ranked_and_executor(index, wdata, scorer, k);
         } else if (query_type == "ranked_or" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                ranked_or_query ranked_or_q(k);
-                auto cursors = make_scored_cursors(index, scorer, query);
-                ranked_or_q(gsl::make_span(cursors), index.num_docs());
-                return ranked_or_q.topk();
-            };
+            query_fun = ranked_or_executor(index, scorer, k);
         } else if (query_type == "maxscore" && wand_data_filename) {
-            query_fun = [&](Query query) {
-                maxscore_query maxscore_q(k);
-                auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
-                maxscore_q(gsl::make_span(cursors), index.num_docs());
-                return maxscore_q.topk();
-            };
+            query_fun = maxscore_executor(index, wdata, scorer, k);
         } else if (query_type == "ranked_or_taat" && wand_data_filename) {
             SimpleAccumulator accumulator(index.num_docs());
             ranked_or_taat_query ranked_or_taat_q(k);
@@ -177,7 +142,7 @@ void evaluate_queries(const std::string &index_filename,
             std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
         spdlog::info("Time taken to process queries: {}ms", batch_ms);
         spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
-    };
+            };
     with_scorer(scorer_name, wdata, run_evaluation);
 }
 

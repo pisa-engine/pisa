@@ -23,14 +23,14 @@ namespace pisa {
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed>;
 
-void extract_times(std::function<std::uint64_t(Query)> fn,
+void extract_times(QueryExecutor fn,
                    std::vector<Query> const &queries,
                    std::string const &index_type,
                    std::string const &query_type,
                    size_t runs,
                    std::ostream &os);
 
-void op_perftest(std::function<std::uint64_t(Query)> query_func,
+void op_perftest(QueryExecutor query_func,
                  std::vector<Query> const &queries,
                  std::string const &index_type,
                  std::string const &query_type,
@@ -87,19 +87,34 @@ void perftest(std::string const &index_filename,
         }
     }
 
-    auto run_with_scorer = [&](auto scorer) {
+    auto run_with_scorer = [&](auto scorer) -> void {
         spdlog::info("Performing {} queries", type);
         spdlog::info("K: {}", k);
 
         for (auto &&t : query_types) {
             spdlog::info("Query type: {}", t);
-            std::function<std::uint64_t(Query)> query_fun;
+            QueryExecutor query_fun;
             if (t == "and") {
-                query_fun = and_executor(index);
+                query_fun = [&, v = ResultVector()](Query query) {
+                    and_query and_q;
+                    auto cursors = make_cursors(index, query);
+                    do_not_optimize_away(and_q(gsl::make_span(cursors), index.num_docs()).size());
+                    return v;
+                };
             } else if (t == "or") {
-                query_fun = or_executor(index, false);
+                query_fun = [&, v = ResultVector()](Query query) {
+                    or_query<false> or_q;
+                    auto cursors = make_cursors(index, query);
+                    do_not_optimize_away(or_q(gsl::make_span(cursors), index.num_docs()));
+                    return v;
+                };
             } else if (t == "or_freq") {
-                query_fun = or_executor(index, true);
+                query_fun = [&, v = ResultVector()](Query query) {
+                    or_query<true> or_q;
+                    auto cursors = make_cursors(index, query);
+                    do_not_optimize_away(or_q(gsl::make_span(cursors), index.num_docs()));
+                    return v;
+                };
             } else if (t == "wand" && wand_data_filename) {
                 query_fun = wand_executor(index, wdata, scorer, k);
             } else if (t == "block_max_wand" && wand_data_filename) {
@@ -119,14 +134,16 @@ void perftest(std::string const &index_filename,
                 ranked_or_taat_query ranked_or_taat_q(k);
                 query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
                     auto cursors = make_scored_cursors(index, scorer, query);
-                    return ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
+                    ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
+                    return ranked_or_taat_q.topk();
                 };
             } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
                 LazyAccumulator<4> accumulator(index.num_docs());
                 ranked_or_taat_query ranked_or_taat_q(k);
                 query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
                     auto cursors = make_scored_cursors(index, scorer, query);
-                    return ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
+                    ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
+                    return ranked_or_taat_q.topk();
                 };
             } else {
                 spdlog::error("Unsupported query type: {}", t);

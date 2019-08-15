@@ -101,10 +101,10 @@ template <typename Index, typename Wand, typename Scorer>
                                      Scorer const &scorer,
                                      int k) -> QueryExecutor
 {
-    return [&](Query query) {
-        maxscore_query maxscore_q(k);
+    return [&, run = maxscore_query(k)](Query query) mutable {
         auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
-        return maxscore_q(gsl::make_span(cursors), index.num_docs());
+        run(gsl::make_span(cursors), index.num_docs());
+        return run.topk();
     };
 }
 
