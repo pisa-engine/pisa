@@ -54,6 +54,6 @@
                                 typename scorer_traits<SCORER<wand_data<WAND>>>::term_scorer>> \
             cursors,                                                                           \
         uint64_t max_docid,                                                                    \
-        ACC);
+        ACC &&);
 #define PISA_TAAT_ALGORITHM_EXTERN(ALGORITHM, SCORER, INDEX, WAND, ACC) \
     extern PISA_TAAT_ALGORITHM(ALGORITHM, SCORER, INDEX, WAND, ACC)
