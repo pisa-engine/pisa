@@ -111,7 +111,6 @@ void evaluate_queries(const std::string &index_filename,
         std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
         auto start_batch = std::chrono::steady_clock::now();
         std::function<void(size_t)> fn = [&](size_t query_idx) {
-            auto qid = queries[query_idx].id;
             raw_results[query_idx] = query_fun(queries[query_idx]);
         };
         tbb::parallel_for(size_t(0), queries.size(), fn);
@@ -137,7 +136,7 @@ void evaluate_queries(const std::string &index_filename,
             std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
         spdlog::info("Time taken to process queries: {}ms", batch_ms);
         spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
-            };
+    };
     with_scorer(scorer_name, wdata, run_evaluation);
 }
 

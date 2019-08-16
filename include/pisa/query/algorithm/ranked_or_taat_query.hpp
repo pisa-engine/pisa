@@ -16,7 +16,7 @@ class ranked_or_taat_query {
     ranked_or_taat_query(uint64_t k) : m_topk(k) {}
 
     template <typename Cursor, typename Acc>
-    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid, Acc accumulator)
+    uint64_t operator()(gsl::span<Cursor> cursors, uint64_t max_docid, Acc &&accumulator)
     {
         m_topk.clear();
         if (cursors.empty()) {
