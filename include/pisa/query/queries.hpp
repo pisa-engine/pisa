@@ -39,7 +39,7 @@ struct Query {
 };
 
 using ResultVector = std::vector<std::pair<float, std::uint64_t>>;
-using QueryExecutor = std::function<ResultVector const &(Query)>;
+using QueryExecutor = std::function<ResultVector(Query)>;
 
 [[nodiscard]] inline auto parse_query(
     std::string const &query_string,

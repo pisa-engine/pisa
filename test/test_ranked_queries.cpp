@@ -1,8 +1,10 @@
 #define CATCH_CONFIG_MAIN
 
-#include <catch2/catch.hpp>
 #include <functional>
+#include <utility>
+#include <vector>
 
+#include <catch2/catch.hpp>
 #include "test_common.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
@@ -18,7 +20,6 @@ using namespace pisa;
 
 template <typename Index>
 struct IndexData {
-
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
     explicit IndexData(std::string const &scorer_name)
@@ -116,19 +117,18 @@ TEMPLATE_TEST_CASE("Ranked query test",
     for (auto &&s_name : {"bm25", "qld"}) {
         auto data = IndexData<single_index>::get(s_name);
         TestType op_q(10);
-        ranked_or_query or_q(10);
+        //ranked_or_query or_q(10);
 
-        with_scorer(s_name, data->wdata, [&](auto scorer){
-            for (auto const &q
-                 : data->queries) {
-                auto or_cursors = make_scored_cursors(data->index, scorer, q);
-                or_q(gsl::make_span(or_cursors), data->index.num_docs());
+        with_scorer(s_name, data->wdata, [&](auto scorer) {
+            auto or_executor = ranked_or_executor(data->index, scorer, 10);
+            for (auto const &q : data->queries) {
+                auto or_top = or_executor(q);
                 auto op_cursors =
                     make_block_max_scored_cursors(data->index, data->wdata, scorer, q);
                 op_q(gsl::make_span(op_cursors), data->index.num_docs());
-                REQUIRE(or_q.topk().size() == op_q.topk().size());
-                for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                    REQUIRE(or_q.topk()[i].first
+                REQUIRE(or_top.size() == op_q.topk().size());
+                for (size_t i = 0; i < or_top.size(); ++i) {
+                    REQUIRE(or_top[i].first
                             == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is %
                                                                            // relative
                 }

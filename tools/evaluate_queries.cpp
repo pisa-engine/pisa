@@ -69,7 +69,7 @@ void evaluate_queries(const std::string &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
+    QueryExecutor query_fun;
     auto run_evaluation = [&](auto scorer) {
         if (query_type == "wand" && wand_data_filename) {
             query_fun = wand_executor(index, wdata, scorer, k);
