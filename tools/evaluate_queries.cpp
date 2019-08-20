@@ -113,7 +113,10 @@ void evaluate_queries(const std::string &index_filename,
         std::function<void(size_t)> fn = [&](size_t query_idx) {
             raw_results[query_idx] = query_fun(queries[query_idx]);
         };
-        tbb::parallel_for(size_t(0), queries.size(), fn);
+        //tbb::parallel_for(size_t(0), queries.size(), fn);
+        for (std::size_t qidx = 0; qidx < queries.size(); ++qidx) {
+	    fn(qidx);
+	}
         auto end_batch = std::chrono::steady_clock::now();
 
         for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {

@@ -59,10 +59,11 @@ uint64_t ranked_or_query::operator()(gsl::span<Cursor> cursors, uint64_t max_doc
 }
 
 template <typename Index, typename Scorer>
-[[nodiscard]] auto ranked_or_executor(Index const &index, Scorer const &scorer, int k)
+[[nodiscard]] inline auto ranked_or_executor(Index const &index, Scorer const &scorer, int k)
     -> QueryExecutor
 {
-    return [&, run = ranked_or_query(k)](Query query) mutable {
+    return [&](Query query) {
+	auto run = ranked_or_query(k);
         auto cursors = make_scored_cursors(index, scorer, query);
         run(gsl::make_span(cursors), index.num_docs());
         return run.topk();

@@ -188,12 +188,13 @@ struct block_max_wand_query {
 };
 
 template <typename Index, typename Wand, typename Scorer>
-[[nodiscard]] auto block_max_wand_executor(Index const &index,
+[[nodiscard]] inline auto block_max_wand_executor(Index const &index,
                                            Wand const &wdata,
                                            Scorer const &scorer,
                                            int k) -> QueryExecutor
 {
-    return [&, run = block_max_wand_query(k)](Query query) mutable {
+    return [&](Query query) {
+	auto run = block_max_wand_query(k);
         auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
         run(gsl::make_span(cursors), index.num_docs());
         return run.topk();

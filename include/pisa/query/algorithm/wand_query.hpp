@@ -6,6 +6,7 @@
 
 #include "cursor/max_scored_cursor.hpp"
 #include "macro.hpp"
+#include "util/do_not_optimize_away.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 
@@ -101,10 +102,11 @@ struct wand_query {
 };
 
 template <typename Index, typename Wand, typename Scorer>
-[[nodiscard]] auto wand_executor(Index const &index, Wand const &wdata, Scorer const &scorer, int k)
+[[nodiscard]] inline auto wand_executor(Index const &index, Wand const &wdata, Scorer const &scorer, int k)
     -> QueryExecutor
 {
-    return [&, run = wand_query(k)](Query query) mutable {
+    return [&](Query query) {
+        auto run = wand_query(k);
         auto cursors = make_max_scored_cursors(index, wdata, scorer, query);
         run(gsl::make_span(cursors), index.num_docs());
         return run.topk();
