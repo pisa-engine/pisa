@@ -2,6 +2,7 @@
 
 build/
 data/
+debug/
 pisa_config.hpp
 
 # Python junk
