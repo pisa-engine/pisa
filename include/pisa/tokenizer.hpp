@@ -26,10 +26,11 @@ template <typename Lexer>
 struct tokens : lex::lexer<Lexer> {
     tokens()
     {
-        this->self = lex::token_def<>(".", AnyToken) |
-                     lex::token_def<>("([a-zA-Z]+\\.){2,}", AbbrToken) |
-                     lex::token_def<>("[a-zA-Z0-9]+", TermToken) |
-                     lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", PossessiveToken);
+        this->self = lex::token_def<>("([a-zA-Z]+\\.){2,}", AbbrToken) |
+                lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", PossessiveToken) |
+                lex::token_def<>("[a-zA-Z0-9]+", TermToken) |
+                lex::token_def<>(".", AnyToken)
+                ;
     }
 };
 
