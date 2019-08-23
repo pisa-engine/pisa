@@ -56,14 +56,25 @@ def file_path(prefix):
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description='Dump document text.',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        description="""Dump original document text.
+With --interactive, docnos are read from stdin.
+Without --interactive, all documents are dumped.""",
+        epilog="""examples:
+  $ corpora_text.py ./robust04 > robust04.text
+  $ echo -e 'FBIS3-10001\\nFBIS3-10006\\nFBIS3-10009' | corpora_text.py --interactive ./robust04""",
+        formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('-i',
                         '--interactive',
                         action='store_true',
-                        help='Read docno from stdin')
+                        help='read docno from stdin')
 
-    parser.add_argument('prefix', type=file_path)
+    parser.add_argument(
+        'prefix',
+        metavar='forward_index_name',
+        type=file_path,
+        help=
+        'forward index filename specified to "parse_collection -o", e.g. ./robust'
+    )
 
     return parser.parse_args()
 
