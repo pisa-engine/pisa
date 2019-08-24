@@ -114,23 +114,22 @@ TEMPLATE_TEST_CASE("Ranked query test",
                    range_query_128<block_max_wand_query>,
                    range_query_128<block_max_maxscore_query>)
 {
-    for (auto &&s_name : {"bm25", "qld"}) {
+    for (auto &&s_name : {"bm25"}) {
         auto data = IndexData<single_index>::get(s_name);
         TestType op_q(10);
-        //ranked_or_query or_q(10);
+        ranked_or_query or_q(10);
 
         with_scorer(s_name, data->wdata, [&](auto scorer) {
-            auto or_executor = ranked_or_executor(data->index, scorer, 10);
             for (auto const &q : data->queries) {
-                auto or_top = or_executor(q);
+                auto or_cursors =
+                    make_block_max_scored_cursors(data->index, data->wdata, scorer, q);
                 auto op_cursors =
                     make_block_max_scored_cursors(data->index, data->wdata, scorer, q);
+                or_q(gsl::make_span(or_cursors), data->index.num_docs());
                 op_q(gsl::make_span(op_cursors), data->index.num_docs());
-                REQUIRE(or_top.size() == op_q.topk().size());
-                for (size_t i = 0; i < or_top.size(); ++i) {
-                    REQUIRE(or_top[i].first
-                            == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is %
-                                                                           // relative
+                REQUIRE(or_q.topk().size() == op_q.topk().size());
+                for (size_t i = 0; i < or_q.topk().size(); ++i) {
+                    REQUIRE(or_q.topk()[i].first == Approx(op_q.topk()[i].first).epsilon(0.1));
                 }
             }
         });
@@ -141,7 +140,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
                    "[query][ranked][integration]",
                    block_max_ranked_and_query)
 {
-    for (auto &&s_name : {"bm25", "qld"}) {
+    for (auto &&s_name : {"bm25"}) {
 
         auto data = IndexData<single_index>::get(s_name);
         TestType op_q(10);
@@ -167,7 +166,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
 
 TEST_CASE("Top k")
 {
-    for (auto &&s_name : {"bm25", "qld"}) {
+    for (auto &&s_name : {"bm25"}) {
 
         auto data = IndexData<single_index>::get(s_name);
         ranked_or_query or_10(10);
