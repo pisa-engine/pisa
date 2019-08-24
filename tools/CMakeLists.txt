@@ -20,13 +20,28 @@ target_link_libraries(create_wand_data
   CLI11
 )
 
-add_executable(queries queries.cpp queries_perftest.cpp queries_extract.cpp)
+add_executable(queries
+    queries/ranked.cpp
+    queries/wands.cpp
+    queries/bm_wands.cpp
+    queries/taat.cpp
+    queries/boolean.cpp
+    queries_perftest.cpp
+    queries_extract.cpp
+    queries.cpp
+)
 target_link_libraries(queries
   pisa
   CLI11
 )
 
-add_executable(evaluate_queries evaluate_queries.cpp)
+add_executable(evaluate_queries
+    evaluate_queries/ranked.cpp
+    evaluate_queries/wands.cpp
+    evaluate_queries/bm_wands.cpp
+    evaluate_queries/taat.cpp
+    evaluate_queries.cpp
+)
 target_link_libraries(evaluate_queries
   pisa
   CLI11

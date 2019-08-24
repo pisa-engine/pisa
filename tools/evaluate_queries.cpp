@@ -36,12 +36,14 @@
 #include "wand_data_raw.hpp"
 #include "scorer/scorer.hpp"
 
+#include "evaluate_queries/def.hpp"
+
 using namespace pisa;
 using ranges::view::enumerate;
 
 template <typename IndexType, typename WandType>
 void evaluate_queries(const std::string &index_filename,
-                      const std::optional<std::string> &wand_data_filename,
+                      std::string &wand_data_filename,
                       const std::vector<Query> &queries,
                       const std::optional<std::string> &thresholds_filename,
                       std::string const &type,
@@ -59,48 +61,35 @@ void evaluate_queries(const std::string &index_filename,
     WandType wdata;
 
     mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
-        }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
+    std::error_code error;
+    md.map(wand_data_filename, error);
+    if (error) {
+        spdlog::error("error mapping file: {}, exiting...", error.message());
+        std::abort();
     }
+    mapper::map(wdata, md, mapper::map_flags::warmup);
 
-    QueryExecutor query_fun;
+    //QueryExecutor query_fun;
     auto run_evaluation = [&](auto scorer) {
-        if (query_type == "wand" && wand_data_filename) {
-            query_fun = wand_executor(index, wdata, scorer, k);
-        } else if (query_type == "block_max_wand" && wand_data_filename) {
-            query_fun = block_max_wand_executor(index, wdata, scorer, k);
-        } else if (query_type == "block_max_maxscore" && wand_data_filename) {
-            query_fun = block_max_maxscore_executor(index, wdata, scorer, k);
-        } else if (query_type == "ranked_and" && wand_data_filename) {
-            query_fun = ranked_or_executor(index, scorer, k);
-        } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
-            query_fun = block_max_ranked_and_executor(index, wdata, scorer, k);
-        } else if (query_type == "ranked_or" && wand_data_filename) {
-            query_fun = ranked_or_executor(index, scorer, k);
-        } else if (query_type == "maxscore" && wand_data_filename) {
-            query_fun = maxscore_executor(index, wdata, scorer, k);
-        } else if (query_type == "ranked_or_taat" && wand_data_filename) {
-            SimpleAccumulator accumulator(index.num_docs());
-            ranked_or_taat_query ranked_or_taat_q(k);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
-                auto cursors = make_scored_cursors(index, scorer, query);
-                ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
-                return ranked_or_taat_q.topk();
-            };
-        } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
-            LazyAccumulator<4> accumulator(index.num_docs());
-            ranked_or_taat_query ranked_or_taat_q(k);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
-                auto cursors = make_scored_cursors(index, scorer, query);
-                ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
-                return ranked_or_taat_q.topk();
-            };
+        QueryLoop<IndexType, WandType, decltype(scorer)> qloop;
+        if (query_type == "ranked_or") {
+            qloop = query_loop<IndexType, ranked_and_query, WandType, decltype(scorer)>;
+        } else if (query_type == "ranked_and") {
+            qloop = query_loop<IndexType, ranked_and_query, WandType, decltype(scorer)>;
+        } else if (query_type == "wand") {
+            qloop = query_loop<IndexType, wand_query, WandType, decltype(scorer)>;
+        } else if (query_type == "maxscore") {
+            qloop = query_loop<IndexType, maxscore_query, WandType, decltype(scorer)>;
+        } else if (query_type == "block_max_wand") {
+            qloop = query_loop<IndexType, block_max_wand_query, WandType, decltype(scorer)>;
+        } else if (query_type == "block_max_maxscore") {
+            qloop = query_loop<IndexType, block_max_maxscore_query, WandType, decltype(scorer)>;
+        } else if (query_type == "block_max_ranked_and_query") {
+            qloop = query_loop<IndexType, block_max_ranked_and_query, WandType, decltype(scorer)>;
+        } else if (query_type == "ranked_or_taat") {
+            qloop = query_loop<IndexType, ranked_or_taat_query, WandType, decltype(scorer)>;
+        } else if (query_type == "ranked_or_taat_lazy") {
+            qloop = query_loop<IndexType, LazyAccumulator<4>, WandType, decltype(scorer)>;
         } else {
             spdlog::error("Unsupported query type: {}", query_type);
         }
@@ -108,15 +97,8 @@ void evaluate_queries(const std::string &index_filename,
         auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
         auto docmap = Payload_Vector<>::from(*source);
 
-        std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
         auto start_batch = std::chrono::steady_clock::now();
-        std::function<void(size_t)> fn = [&](size_t query_idx) {
-            raw_results[query_idx] = query_fun(queries[query_idx]);
-        };
-        //tbb::parallel_for(size_t(0), queries.size(), fn);
-        for (std::size_t qidx = 0; qidx < queries.size(); ++qidx) {
-	    fn(qidx);
-	}
+        std::vector<ResultVector> raw_results = qloop(index, wdata, scorer, queries, k);
         auto end_batch = std::chrono::steady_clock::now();
 
         for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
@@ -156,7 +138,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> terms_file;
     std::string documents_file;
     std::string scorer_name;
-    std::optional<std::string> wand_data_filename;
+    std::string wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
     std::optional<std::string> stopwords_filename;

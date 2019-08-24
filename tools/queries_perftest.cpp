@@ -18,23 +18,12 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
+#include "queries/def.hpp"
+
 namespace pisa {
 
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed>;
-
-void extract_times(QueryExecutor fn,
-                   std::vector<Query> const &queries,
-                   std::string const &index_type,
-                   std::string const &query_type,
-                   size_t runs,
-                   std::ostream &os);
-
-void op_perftest(QueryExecutor query_func,
-                 std::vector<Query> const &queries,
-                 std::string const &index_type,
-                 std::string const &query_type,
-                 size_t runs);
 
 template <typename IndexType, typename WandType>
 void perftest(std::string const &index_filename,
@@ -93,66 +82,80 @@ void perftest(std::string const &index_filename,
 
         for (auto &&t : query_types) {
             spdlog::info("Query type: {}", t);
-            QueryExecutor query_fun;
+            QueryBenchmarkLoop<IndexType, WandType, decltype(scorer)> qloop;
             if (t == "and") {
-                query_fun = [&, v = ResultVector()](Query query) {
-                    and_query and_q;
-                    auto cursors = make_cursors(index, query);
-                    do_not_optimize_away(and_q(gsl::make_span(cursors), index.num_docs()).size());
-                    return v;
-                };
+                qloop = query_benchmark_loop<IndexType, and_query, WandType, decltype(scorer)>;
             } else if (t == "or") {
-                query_fun = [&, v = ResultVector()](Query query) {
-                    or_query<false> or_q;
-                    auto cursors = make_cursors(index, query);
-                    do_not_optimize_away(or_q(gsl::make_span(cursors), index.num_docs()));
-                    return v;
-                };
+                qloop =
+                    query_benchmark_loop<IndexType, or_query<false>, WandType, decltype(scorer)>;
             } else if (t == "or_freq") {
-                query_fun = [&, v = ResultVector()](Query query) {
-                    or_query<true> or_q;
-                    auto cursors = make_cursors(index, query);
-                    do_not_optimize_away(or_q(gsl::make_span(cursors), index.num_docs()));
-                    return v;
-                };
-            } else if (t == "wand" && wand_data_filename) {
-                query_fun = wand_executor(index, wdata, scorer, k);
-            } else if (t == "block_max_wand" && wand_data_filename) {
-                query_fun = block_max_wand_executor(index, wdata, scorer, k);
-            } else if (t == "block_max_maxscore" && wand_data_filename) {
-                query_fun = block_max_maxscore_executor(index, wdata, scorer, k);
-            } else if (t == "ranked_and" && wand_data_filename) {
-                query_fun = ranked_or_executor(index, scorer, k);
-            } else if (t == "block_max_ranked_and" && wand_data_filename) {
-                query_fun = block_max_ranked_and_executor(index, wdata, scorer, k);
-            } else if (t == "ranked_or" && wand_data_filename) {
-                query_fun = ranked_or_executor(index, scorer, k);
-            } else if (t == "maxscore" && wand_data_filename) {
-                query_fun = maxscore_executor(index, wdata, scorer, k);
-            } else if (t == "ranked_or_taat" && wand_data_filename) {
-                SimpleAccumulator accumulator(index.num_docs());
-                ranked_or_taat_query ranked_or_taat_q(k);
-                query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
-                    auto cursors = make_scored_cursors(index, scorer, query);
-                    ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
-                    return ranked_or_taat_q.topk();
-                };
-            } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-                LazyAccumulator<4> accumulator(index.num_docs());
-                ranked_or_taat_query ranked_or_taat_q(k);
-                query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
-                    auto cursors = make_scored_cursors(index, scorer, query);
-                    ranked_or_taat_q(gsl::make_span(cursors), index.num_docs(), accumulator);
-                    return ranked_or_taat_q.topk();
-                };
+                qloop = query_benchmark_loop<IndexType, or_query<true>, WandType, decltype(scorer)>;
+            } else if (t == "ranked_or") {
+                qloop =
+                    query_benchmark_loop<IndexType, ranked_or_query, WandType, decltype(scorer)>;
+            } else if (t == "ranked_and") {
+                qloop =
+                    query_benchmark_loop<IndexType, ranked_and_query, WandType, decltype(scorer)>;
+            } else if (t == "wand") {
+                qloop = query_benchmark_loop<IndexType, wand_query, WandType, decltype(scorer)>;
+            } else if (t == "maxscore") {
+                qloop = query_benchmark_loop<IndexType, maxscore_query, WandType, decltype(scorer)>;
+            } else if (t == "block_max_wand") {
+                qloop = query_benchmark_loop<IndexType,
+                                             block_max_wand_query,
+                                             WandType,
+                                             decltype(scorer)>;
+            } else if (t == "block_max_maxscore") {
+                qloop = query_benchmark_loop<IndexType,
+                                             block_max_maxscore_query,
+                                             WandType,
+                                             decltype(scorer)>;
+            } else if (t == "block_max_ranked_and") {
+                qloop = query_benchmark_loop<IndexType,
+                                             block_max_ranked_and_query,
+                                             WandType,
+                                             decltype(scorer)>;
+            } else if (t == "ranked_or_taat") {
+                qloop = query_benchmark_loop<IndexType,
+                                             ranked_or_taat_query,
+                                             WandType,
+                                             decltype(scorer)>;
+            } else if (t == "ranked_or_taat_lazy") {
+                qloop =
+                    query_benchmark_loop<IndexType, LazyAccumulator<4>, WandType, decltype(scorer)>;
             } else {
                 spdlog::error("Unsupported query type: {}", t);
                 break;
             }
+
+            auto times = qloop(index, wdata, scorer, queries, k, 5);
+
             if (extract) {
-                extract_times(query_fun, queries, type, t, 2, std::cout);
+                for (std::size_t qidx = 0; qidx < times.size(); ++qidx) {
+                    std::cout << fmt::format("{}\t{}\n",
+                                             queries[qidx].id.value_or(std::to_string(qidx)),
+                                             times[qidx].count());
+                }
             } else {
-                op_perftest(query_fun, queries, type, t, 2);
+                std::vector<double> query_times(times.size());
+                std::transform(times.begin(), times.end(), query_times.begin(), [](auto micros) {
+                    return micros.count();
+                });
+                std::sort(query_times.begin(), query_times.end());
+                double avg = std::accumulate(query_times.begin(), query_times.end(), double())
+                             / query_times.size();
+                double q50 = query_times[query_times.size() / 2];
+                double q90 = query_times[90 * query_times.size() / 100];
+                double q95 = query_times[95 * query_times.size() / 100];
+
+                spdlog::info("---- {} {}", t, query_type);
+                spdlog::info("Mean: {}", avg);
+                spdlog::info("50% quantile: {}", q50);
+                spdlog::info("90% quantile: {}", q90);
+                spdlog::info("95% quantile: {}", q95);
+
+                stats_line()("type", t)("query",
+                                        query_type)("avg", avg)("q50", q50)("q90", q90)("q95", q95);
             }
         }
     };
