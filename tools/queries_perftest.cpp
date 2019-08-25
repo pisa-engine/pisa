@@ -148,14 +148,14 @@ void perftest(std::string const &index_filename,
                 double q90 = query_times[90 * query_times.size() / 100];
                 double q95 = query_times[95 * query_times.size() / 100];
 
-                spdlog::info("---- {} {}", t, query_type);
+                spdlog::info("---- {} {}", type, query_type);
                 spdlog::info("Mean: {}", avg);
                 spdlog::info("50% quantile: {}", q50);
                 spdlog::info("90% quantile: {}", q90);
                 spdlog::info("95% quantile: {}", q95);
 
-                stats_line()("type", t)("query",
-                                        query_type)("avg", avg)("q50", q50)("q90", q90)("q95", q95);
+                stats_line()("type", type)("query", t)("avg", avg)("q50", q50)("q90", q90)(
+                    "q95", q95);
             }
         }
     };
