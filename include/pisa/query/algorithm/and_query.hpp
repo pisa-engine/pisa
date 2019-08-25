@@ -60,24 +60,4 @@ struct and_query {
     }
 };
 
-//template <typename Index>
-//[[nodiscard]] auto and_executor(Index const &index) -> QueryExecutor
-//{
-//    return [&](Query query) {
-//        and_query and_q;
-//        auto cursors = make_cursors(index, query);
-//        return and_q(gsl::make_span(cursors), index.num_docs()).size();
-//    };
-//}
-//
-//#define LOOP_BODY(R, DATA, INDEX)                                                     \
-//    extern template std::vector<uint64_t> and_query::                                 \
-//    operator()<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator>(            \
-//        gsl::span<typename BOOST_PP_CAT(INDEX, _index)::document_enumerator> cursors, \
-//        uint64_t max_docid) const;                                                    \
-//    extern template QueryExecutor and_executor(BOOST_PP_CAT(INDEX, _index) const &);
-///**/
-//BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-//#undef LOOP_BODY
-
 } // namespace pisa
