@@ -17,19 +17,18 @@ namespace pisa {
 
 namespace lex = boost::spirit::lex;
 
-static size_t const TermToken = lex::min_token_id + 1;
-static size_t const AbbrToken = lex::min_token_id + 2;
-static size_t const PossessiveToken = lex::min_token_id + 3;
-static size_t const AnyToken = lex::min_token_id + 4;
+enum TokenType { Abbreviature = 1, Possessive = 2, Term = 3, NotValid = 4 };
 
 template <typename Lexer>
 struct tokens : lex::lexer<Lexer> {
     tokens()
     {
-        this->self = lex::token_def<>(".", AnyToken) |
-                     lex::token_def<>("([a-zA-Z]+\\.){2,}", AbbrToken) |
-                     lex::token_def<>("[a-zA-Z0-9]+", TermToken) |
-                     lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", PossessiveToken);
+        // Note: parsing process takes the first match from left to right.
+        this->self = lex::token_def<>("([a-zA-Z]+\\.){2,}", TokenType::Abbreviature) |
+                     lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", TokenType::Possessive) |
+                     lex::token_def<>("[a-zA-Z0-9]+", TokenType::Term) |
+                     lex::token_def<>(".", TokenType::NotValid)
+                     ;
     }
 };
 
@@ -48,29 +47,29 @@ class TermTokenizer {
         first_ = text_.begin();
         last_ = text_.end();
         return boost::make_transform_iterator(
-            boost::make_filter_iterator(pred, lexer_.begin(first_, last_)), transform);
+            boost::make_filter_iterator(is_valid, lexer_.begin(first_, last_)), transform);
     }
 
     [[nodiscard]] auto end()
     {
-        return boost::make_transform_iterator(boost::make_filter_iterator(pred, lexer_.end()),
+        return boost::make_transform_iterator(boost::make_filter_iterator(is_valid, lexer_.end()),
                                               transform);
     }
 
    private:
-    static bool pred(token_type const &tok) { return tok.id() != AnyToken; }
+    static bool is_valid(token_type const &tok) { return tok.id() != TokenType::NotValid; }
     static std::string transform(token_type const &tok)
     {
         auto &val = tok.value();
         switch (tok.id()) {
-        case AbbrToken: {
+        case TokenType::Abbreviature: {
             std::string term;
             std::copy_if(val.begin(), val.end(), std::back_inserter(term), [](char ch) {
                 return ch != '.';
             });
             return term;
         }
-        case PossessiveToken:
+        case TokenType::Possessive:
             return std::string(val.begin(), std::find(val.begin(), val.end(), '\''));
         default:
             return std::string(val.begin(), val.end());
