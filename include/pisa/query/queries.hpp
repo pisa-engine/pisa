@@ -94,7 +94,7 @@ class TermProcessor {
             if (stopwords_filename) {
                 std::ifstream is(*stopwords_filename);
                 io::for_each_line(is, [&](auto &&word) {
-                    if (auto processed_term = process(std::move(word)); process) {
+                    if (auto processed_term = process(std::move(word)); processed_term.has_value()) {
                         stopwords.insert(*processed_term);
                     }
                 });
@@ -104,6 +104,14 @@ class TermProcessor {
         bool is_stopword(term_id_type term)
         {
             return stopwords.find(term) != stopwords.end();
+        }
+
+        std::vector<term_id_type> get_stopwords()
+        {
+            std::vector<term_id_type> v;
+            v.insert(v.end(), stopwords.begin(), stopwords.end());
+            sort(v.begin(), v.end());
+            return v;
         }
 };
 
