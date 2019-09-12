@@ -24,9 +24,9 @@ class TermProcessor {
     // Method implemented in constructor according to the specified stemmer.
     std::function<std::optional<term_id_type>(std::string)> process;
 
-    TermProcessor(std::optional<std::string> terms_file,
-                  std::optional<std::string> stopwords_filename,
-                  std::optional<std::string> stemmer_type)
+    TermProcessor(const std::optional<std::string> terms_file,
+                  const std::optional<std::string> stopwords_filename,
+                  const std::optional<std::string> stemmer_type)
     {
         auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
         auto terms = Payload_Vector<>::from(*source);
@@ -74,7 +74,7 @@ class TermProcessor {
         }
     }
 
-    bool is_stopword(term_id_type term) { return stopwords.find(term) != stopwords.end(); }
+    bool is_stopword(const term_id_type term) { return stopwords.find(term) != stopwords.end(); }
 
     std::vector<term_id_type> get_stopwords()
     {
