@@ -33,7 +33,7 @@ struct Query {
     std::vector<float> term_weights;
 };
 
-[[nodiscard]] auto query_to_raw(std::string query_string, std::optional<std::string> &id)
+[[nodiscard]] auto query_to_raw(std::string const &query_string, std::optional<std::string> &id)
 {
     // query id : terms (or ids)
     auto colon = std::find(query_string.begin(), query_string.end(), ':');
@@ -91,11 +91,11 @@ struct Query {
     return {id, parsed_query, {}};
 }
 
-[[nodiscard]] std::function<void(std::string)> compute_parse_query_function(
+[[nodiscard]] std::function<void(const std::string)> compute_parse_query_function(
     std::vector<Query> &queries,
-    std::optional<std::string> terms_file,
-    std::optional<std::string> stopwords_filename,
-    std::optional<std::string> stemmer_type) {
+    const std::optional<std::string> terms_file,
+    const std::optional<std::string> stopwords_filename,
+    const std::optional<std::string> stemmer_type) {
     if (terms_file) {
         auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
         return [&](std::string const &query_line) {
