@@ -33,25 +33,26 @@ struct Query {
     std::vector<float> term_weights;
 };
 
-[[nodiscard]] auto query_to_raw(std::string const &query_string, std::optional<std::string> &id)
+[[nodiscard]] auto split_query_at_colon(std::string const &query_string)
+    -> std::pair<std::optional<std::string>, std::string_view>
 {
     // query id : terms (or ids)
     auto colon = std::find(query_string.begin(), query_string.end(), ':');
+    std::optional<std::string> id;
     if (colon != query_string.end()) {
         id = std::string(query_string.begin(), colon);
     }
     auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
-    auto raw_query = std::string(&*pos, std::distance(pos, query_string.end()));
-    return raw_query;
+    auto raw_query = std::string_view(&*pos, std::distance(pos, query_string.end()));
+    return {std::move(id), std::move(raw_query)};
 }
 
 [[nodiscard]] auto parse_query_terms(std::string const &query_string, TermProcessor term_processor)
     -> Query
 {
-    std::optional<std::string> id = std::nullopt;
-    std::vector<term_id_type> parsed_query;
-    auto raw_query = query_to_raw(query_string, id);
+    auto [id, raw_query] = split_query_at_colon(query_string);
     TermTokenizer tokenizer(raw_query);
+    std::vector<term_id_type> parsed_query;
     for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
         auto raw_term = *term_iter;
         try {
@@ -74,9 +75,8 @@ struct Query {
 
 [[nodiscard]] auto parse_query_ids(std::string const &query_string) -> Query
 {
-    std::optional<std::string> id = std::nullopt;
+    auto [id, raw_query] = split_query_at_colon(query_string);
     std::vector<term_id_type> parsed_query;
-    auto raw_query = query_to_raw(query_string, id);
     std::vector<std::string> splitted_query;
     boost::split(splitted_query, raw_query, boost::is_any_of("\t"));
     try {
