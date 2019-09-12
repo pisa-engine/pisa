@@ -44,20 +44,20 @@ class TermProcessor {
         if (not stemmer_type) {
             _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
-                return to_id(str);
+                return to_id(std::move(str));
             };
         } else if (*stemmer_type == "porter2") {
             _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
                 stem::Porter2 stemmer{};
-                return to_id(stemmer.stem(str));
+                return to_id(std::move(stemmer.stem(str)));
             };
         } else if (*stemmer_type == "krovetz") {
             _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
                 stem::KrovetzStemmer stemmer{};
                 stemmer.kstem_stemmer(str);
-                return to_id(stemmer.kstem_stemmer(str));
+                return to_id(stemmer.kstem_stemmer(std::move(str)));
             };
         } else {
             throw std::invalid_argument("Unknown stemmer");
