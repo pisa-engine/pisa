@@ -70,25 +70,23 @@ struct Query {
             spdlog::warn("Could not parse `{}` to a number", raw_term);
         }
     }
-    return {id, parsed_query, {}};
+    return {std::move(id), std::move(parsed_query), {}};
 }
 
 [[nodiscard]] auto parse_query_ids(std::string const &query_string) -> Query
 {
     auto [id, raw_query] = split_query_at_colon(query_string);
     std::vector<term_id_type> parsed_query;
-    std::vector<std::string> splitted_query;
-    boost::split(splitted_query, raw_query, boost::is_any_of("\t"));
+    std::vector<std::string> term_ids;
+    boost::split(term_ids, raw_query, boost::is_any_of("\t"));
     try {
-        std::transform(splitted_query.begin(),
-                       splitted_query.end(),
-                       std::back_inserter(parsed_query),
-                       [](const std::string &val) { return std::stoi(val); });
+        auto to_int = [](const std::string &val) { return std::stoi(val); };
+        std::transform(term_ids.begin(), term_ids.end(), std::back_inserter(parsed_query), to_int);
     } catch (std::invalid_argument &err) {
         spdlog::error("Could not parse term identifiers of query `{}`", raw_query);
         exit(1);
     }
-    return {id, parsed_query, {}};
+    return {std::move(id), std::move(parsed_query), {}};
 }
 
 [[nodiscard]] std::function<void(const std::string)> compute_parse_query_function(
