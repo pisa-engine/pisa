@@ -20,10 +20,10 @@ class TermProcessor {
    private:
     std::unordered_set<term_id_type> stopwords;
 
-   public:
     // Method implemented in constructor according to the specified stemmer.
-    std::function<std::optional<term_id_type>(std::string)> process;
+    std::function<std::optional<term_id_type>(std::string)> _to_id;
 
+   public:
     TermProcessor(const std::optional<std::string> terms_file,
                   const std::optional<std::string> stopwords_filename,
                   const std::optional<std::string> stemmer_type)
@@ -40,20 +40,20 @@ class TermProcessor {
             return std::nullopt;
         };
 
-        // Implements 'process' method.
+        // Implements '_to_id' method.
         if (not stemmer_type) {
-            process = [=](auto str) {
+            _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
                 return to_id(str);
             };
         } else if (*stemmer_type == "porter2") {
-            process = [=](auto str) {
+            _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
                 stem::Porter2 stemmer{};
                 return to_id(stemmer.stem(str));
             };
         } else if (*stemmer_type == "krovetz") {
-            process = [=](auto str) {
+            _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
                 stem::KrovetzStemmer stemmer{};
                 stemmer.kstem_stemmer(str);
@@ -67,12 +67,14 @@ class TermProcessor {
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);
             io::for_each_line(is, [&](auto &&word) {
-                if (auto processed_term = process(std::move(word)); processed_term.has_value()) {
+                if (auto processed_term = _to_id(std::move(word)); processed_term.has_value()) {
                     stopwords.insert(*processed_term);
                 }
             });
         }
     }
+
+    std::optional<term_id_type> operator()(std::string token) { return _to_id(token); }
 
     bool is_stopword(const term_id_type term) { return stopwords.find(term) != stopwords.end(); }
 

@@ -56,7 +56,7 @@ struct Query {
     for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
         auto raw_term = *term_iter;
         try {
-            auto term = term_processor.process(std::string(raw_term));
+            auto term = term_processor(raw_term);
             if (term) {
                 if (!term_processor.is_stopword(*term)) {
                     parsed_query.push_back(std::move(*term));
