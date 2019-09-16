@@ -1,5 +1,6 @@
 #include <optional>
 #include <vector>
+#include <string>
 
 #include "CLI/CLI.hpp"
 #include "index_types.hpp"
@@ -34,12 +35,12 @@ void intersect(const std::string &index_filename,
     }
 
     and_query<false> and_q;
+    std::size_t qid = 0;
     for (auto const &query : queries) {
         auto results = and_q(make_scored_cursors(index, wdata, query), index.num_docs());
-        for (auto &&t : query.terms) {
-            std::cout << t << " ";
-        }
-        std::cout << results.size() << std::endl;
+        auto query_id = query.id.has_value() ? query.id.value() : std::to_string(qid);
+        std::cout << query_id << '\t' << results.size() << std::endl;
+        qid += 1;
     }
 }
 
@@ -53,6 +54,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> terms_file;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
+    std::optional<std::string> stemmer;
     bool compressed = false;
 
     CLI::App app{"compute_intersection - a tool for pre-computing intersections of terms."};
@@ -62,9 +64,11 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
+    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, std::nullopt);
+    auto process_term = query::term_processor(terms_file, stemmer);
 
     std::vector<Query> queries;
     auto push_query = [&](std::string const &query_line) {
