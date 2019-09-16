@@ -2,6 +2,8 @@
 #include <vector>
 #include <string>
 
+#include <fmt/format.h>
+
 #include "CLI/CLI.hpp"
 #include "index_types.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
@@ -34,12 +36,23 @@ void intersect(const std::string &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    and_query<false> and_q;
+    and_query<true> and_q;
     std::size_t qid = 0;
     for (auto const &query : queries) {
-        auto results = and_q(make_scored_cursors(index, wdata, query), index.num_docs());
         auto query_id = query.id.has_value() ? query.id.value() : std::to_string(qid);
-        std::cout << query_id << '\t' << results.size() << std::endl;
+        if (query.terms.size() == 1) {
+            std::cout << fmt::format("{}\t{}\t{}\n",
+                                     query_id,
+                                     index[query.terms[0]].size(),
+                                     wdata.max_term_weight(query.terms[0]));
+        } else {
+            auto results = and_q(make_scored_cursors(index, wdata, query), index.num_docs());
+            std::sort(results.begin(), results.end(), [](auto const &lhs, auto const &rhs) {
+                return lhs.second > rhs.second;
+            });
+            auto max_score = results.empty() ? 0.0 : results[0].second;
+            std::cout << fmt::format("{}\t{}\t{}\n", query_id, results.size(), max_score);
+        }
         qid += 1;
     }
 }
