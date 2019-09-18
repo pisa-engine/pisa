@@ -6,7 +6,7 @@
 
 namespace pisa {
 
-struct topk_queue;
+struct TopKQueue;
 
 struct SimpleAccumulator : public std::vector<float> {
     SimpleAccumulator(std::ptrdiff_t size);
@@ -15,7 +15,7 @@ struct SimpleAccumulator : public std::vector<float> {
     /// Accumulates a posting's partial score.
     void accumulate(std::uint32_t doc, float score);
     /// Modifies a given heap (typically empty at first) to include top results.
-    void aggregate(topk_queue &topk);
+    void aggregate(TopKQueue &topk);
 };
 
 inline void SimpleAccumulator::accumulate(std::uint32_t doc, float score)

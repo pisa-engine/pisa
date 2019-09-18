@@ -98,7 +98,7 @@ struct wand_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue m_topk;
+    TopKQueue m_topk;
 };
 
 template <typename Index, typename TermScorer>

@@ -63,10 +63,10 @@ struct ranked_and_query {
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
-    topk_queue &get_topk() { return m_topk; }
+    TopKQueue &get_topk() { return m_topk; }
 
    private:
-    topk_queue m_topk;
+    TopKQueue m_topk;
 };
 
 template <typename Index, typename TermScorer>

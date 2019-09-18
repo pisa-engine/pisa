@@ -1,8 +1,8 @@
 #pragma once
 
-#include "scorer/index_scorer.hpp"
-#include "query/queries.hpp"
 #include <vector>
+
+#include "query/queries.hpp"
 
 namespace pisa {
 

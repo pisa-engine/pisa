@@ -71,7 +71,7 @@ struct LazyAccumulator {
         m_accumulators[block].accumulators[pos_in_block] += score;
     }
 
-    void aggregate(topk_queue &topk) {
+    void aggregate(TopKQueue &topk) {
         uint64_t docid = 0u;
         for (auto const &block : m_accumulators) {
             int pos = 0;

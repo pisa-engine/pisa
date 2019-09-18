@@ -4,7 +4,6 @@
 
 #include "bm25.hpp"
 #include "dph.hpp"
-#include "index_scorer.hpp"
 #include "pl2.hpp"
 #include "qld.hpp"
 #include "spdlog/spdlog.h"

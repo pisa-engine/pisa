@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <vector>
 
 #include "accumulator/simple_accumulator.hpp"
 #include "topk_queue.hpp"
@@ -9,7 +10,7 @@ SimpleAccumulator::SimpleAccumulator(std::ptrdiff_t size) : std::vector<float>(s
 
 void SimpleAccumulator::init() { std::fill(begin(), end(), 0.0); }
 
-void SimpleAccumulator::aggregate(topk_queue &topk)
+void SimpleAccumulator::aggregate(TopKQueue &topk)
 {
     std::uint64_t docid = 0u;
     std::for_each(begin(), end(), [&](auto score) {

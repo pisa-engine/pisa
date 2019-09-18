@@ -22,13 +22,13 @@
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task_group.h>
+#include <tokenizer/term_tokenizer.hpp>
 
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "parsing/html.hpp"
 #include "payload_vector.hpp"
 #include "type_safe.hpp"
-#include "tokenizer/term_tokenizer.hpp"
 #include "warcpp/warcpp.hpp"
 
 namespace pisa {

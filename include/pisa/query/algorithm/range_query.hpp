@@ -46,7 +46,7 @@ struct range_query {
 
    private:
     uint64_t m_k;
-    topk_queue m_topk;
+    TopKQueue m_topk;
 };
 
 } // namespace pisa

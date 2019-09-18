@@ -15,7 +15,7 @@
 
 namespace pisa {
 
-using TopDocHeap = topk_queue;
+using TopDocHeap = TopKQueue;
 
 template <class A>
 struct algorithm_traits {

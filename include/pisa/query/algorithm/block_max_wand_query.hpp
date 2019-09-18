@@ -181,10 +181,10 @@ struct block_max_wand_query {
 
     void clear_topk() { m_topk.clear(); }
 
-    topk_queue const &get_topk() const { return m_topk; }
+    TopKQueue const &get_topk() const { return m_topk; }
 
    private:
-    topk_queue m_topk;
+    TopKQueue m_topk;
 };
 
 template <typename Index, typename Wand, typename TermScorer>

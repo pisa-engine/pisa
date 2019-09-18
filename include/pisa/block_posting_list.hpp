@@ -368,15 +368,6 @@ static void write_blocks(std::vector<uint8_t> &out, uint32_t n, BlockDataRange c
     }
 }
 
-//struct simdbp_block;
-//extern template BlockPostingCursor<simdbp_block> BlockPostingCursor<simdbp_block>::from(
-//    std::uint8_t const *, std::uint64_t);
-//extern template void BlockPostingCursor<simdbp_block>::decode_docs_block(std::uint64_t);
-//extern template void BlockPostingCursor<simdbp_block>::decode_freqs_block();
-//extern template std::uint64_t BlockPostingCursor<simdbp_block>::stats_freqs_size() const;
-//extern template std::vector<typename BlockPostingCursor<simdbp_block>::BlockData>
-//BlockPostingCursor<simdbp_block>::get_blocks();
-
 #define LOOP_BODY(R, DATA, T)                                                               \
     struct T;                                                                               \
     extern template BlockPostingCursor<T> BlockPostingCursor<T>::from(std::uint8_t const *, \
