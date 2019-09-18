@@ -7,7 +7,7 @@
 using namespace pisa;
 
 TEST_CASE("Parse query term ids without query id") {
-    auto raw_query = "1\t2\t3\t4";
+    auto raw_query = "1 2\t3    4";
     std::optional<std::string> id = std::nullopt;
     auto q = parse_query_ids(raw_query);
     REQUIRE(q.id.has_value() == false);
@@ -15,7 +15,7 @@ TEST_CASE("Parse query term ids without query id") {
 }
 
 TEST_CASE("Parse query term ids with query id") {
-    auto raw_query = "1: 1\t2\t3\t4";
+    auto raw_query = "1: 1\t2 3\t4";
     std::optional<std::string> id = std::nullopt;
     auto q = parse_query_ids(raw_query);
     REQUIRE(q.id == "1");

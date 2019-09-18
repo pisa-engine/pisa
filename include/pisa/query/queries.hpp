@@ -78,7 +78,12 @@ struct Query {
     auto [id, raw_query] = split_query_at_colon(query_string);
     std::vector<term_id_type> parsed_query;
     std::vector<std::string> term_ids;
-    boost::split(term_ids, raw_query, boost::is_any_of("\t"));
+    boost::split(term_ids, raw_query, boost::is_any_of("\t, ,\v,\f,\r,\n"));
+
+    auto is_empty = [](const std::string &val) { return val.empty(); };
+    // remove_if move matching elements to the end, preparing them for erase.
+    term_ids.erase(std::remove_if(term_ids.begin(), term_ids.end(), is_empty), term_ids.end());
+
     try {
         auto to_int = [](const std::string &val) { return std::stoi(val); };
         std::transform(term_ids.begin(), term_ids.end(), std::back_inserter(parsed_query), to_int);
