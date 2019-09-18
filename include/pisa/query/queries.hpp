@@ -55,19 +55,15 @@ struct Query {
     std::vector<term_id_type> parsed_query;
     for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
         auto raw_term = *term_iter;
-        try {
-            auto term = term_processor(raw_term);
-            if (term) {
-                if (!term_processor.is_stopword(*term)) {
-                    parsed_query.push_back(std::move(*term));
-                } else {
-                    spdlog::warn("Term `{}` is a stopword and will be ignored", *term);
-                }
+        auto term = term_processor(raw_term);
+        if (term) {
+            if (!term_processor.is_stopword(*term)) {
+                parsed_query.push_back(std::move(*term));
             } else {
-                spdlog::warn("Term `{}` not found and will be ignored", raw_term);
+                spdlog::warn("Term `{}` is a stopword and will be ignored", *term);
             }
-        } catch (std::invalid_argument &err) {
-            spdlog::warn("Could not parse `{}` to a number", raw_term);
+        } else {
+            spdlog::warn("Term `{}` not found and will be ignored", raw_term);
         }
     }
     return {std::move(id), std::move(parsed_query), {}};
