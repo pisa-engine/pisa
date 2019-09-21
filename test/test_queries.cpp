@@ -29,7 +29,7 @@ TEST_CASE("Compute parsing function") {
         .to_file(lexfile.string());
     auto stopwords_filename = tmpdir.path() / "stop";
     {
-        std::ofstream os(stopwords_filename);
+        std::ofstream os(stopwords_filename.string());
         os << "a\nthe\n";
     }
 
