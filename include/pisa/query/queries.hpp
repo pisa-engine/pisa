@@ -60,7 +60,7 @@ struct Query {
             if (!term_processor.is_stopword(*term)) {
                 parsed_query.push_back(std::move(*term));
             } else {
-                spdlog::warn("Term `{}` is a stopword and will be ignored", *term);
+                spdlog::warn("Term `{}` is a stopword and will be ignored", raw_term);
             }
         } else {
             spdlog::warn("Term `{}` not found and will be ignored", raw_term);
@@ -92,12 +92,13 @@ struct Query {
 
 [[nodiscard]] std::function<void(const std::string)> compute_parse_query_function(
     std::vector<Query> &queries,
-    const std::optional<std::string> terms_file,
-    const std::optional<std::string> stopwords_filename,
-    const std::optional<std::string> stemmer_type) {
+    std::optional<std::string> const &terms_file,
+    std::optional<std::string> const &stopwords_filename,
+    std::optional<std::string> const &stemmer_type)
+{
     if (terms_file) {
-        auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
-        return [&](std::string const &query_line) {
+        return [&, term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type)](
+                   std::string const &query_line) {
             queries.push_back(parse_query_terms(query_line, term_processor));
         };
     } else {
