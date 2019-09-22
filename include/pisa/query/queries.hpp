@@ -90,20 +90,22 @@ struct Query {
     return {std::move(id), std::move(parsed_query), {}};
 }
 
-[[nodiscard]] std::function<void(const std::string)> compute_parse_query_function(
+[[nodiscard]] std::function<void(const std::string)> resolve_query_parser(
     std::vector<Query> &queries,
     std::optional<std::string> const &terms_file,
     std::optional<std::string> const &stopwords_filename,
     std::optional<std::string> const &stemmer_type)
 {
     if (terms_file) {
-        return [&, term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type)](
+        auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
+        return [&queries, term_processor = std::move(term_processor)](
                    std::string const &query_line) {
             queries.push_back(parse_query_terms(query_line, term_processor));
         };
     } else {
-        return
-            [&](std::string const &query_line) { queries.push_back(parse_query_ids(query_line)); };
+        return [&queries](std::string const &query_line) {
+            queries.push_back(parse_query_ids(query_line));
+        };
     }
 }
 

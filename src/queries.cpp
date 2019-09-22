@@ -278,9 +278,7 @@ int main(int argc, const char **argv)
     }
 
     std::vector<Query> queries;
-    auto parse_query = compute_parse_query_function(queries, terms_file,
-                                                    stopwords_filename,
-                                                    stemmer);
+    auto parse_query = resolve_query_parser(queries, terms_file, stopwords_filename, stemmer);
     if (query_filename) {
         std::ifstream is(*query_filename);
         io::for_each_line(is, parse_query);
