@@ -196,13 +196,12 @@ int main(int argc, const char **argv)
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
 
-    if (run_id.empty())
+    if (run_id.empty()) {
         run_id = "R0";
+    }
 
     std::vector<Query> queries;
-    auto push_query = compute_parse_query_function(queries, terms_file,
-                                                   stopwords_filename,
-                                                   stemmer);
+    auto push_query = resolve_query_parser(queries, terms_file, stopwords_filename, stemmer);
 
     if (query_filename) {
         std::ifstream is(*query_filename);

@@ -88,9 +88,7 @@ int main(int argc, const char **argv)
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;
-    auto parse_query = compute_parse_query_function(queries, terms_file,
-                                                    std::nullopt,
-                                                    stemmer);
+    auto parse_query = resolve_query_parser(queries, terms_file, std::nullopt, stemmer);
     if (query_filename) {
         std::ifstream is(*query_filename);
         io::for_each_line(is, parse_query);
