@@ -159,9 +159,9 @@ int main(int argc, const char **argv)
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_option("--threads", threads, "Thread Count");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-k", k, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
@@ -169,25 +169,12 @@ int main(int argc, const char **argv)
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
 
-    std::vector<Query> queries;
-    auto process_term = query::term_processor(terms_file, stemmer);
-
-    std::unordered_set<term_id_type> stopwords;
-    if (stopwords_filename) {
-        std::ifstream is(*stopwords_filename);
-        io::for_each_line(is, [&](auto &&word) {
-            if (auto processed_term = process_term(std::move(word)); process_term) {
-                stopwords.insert(*processed_term);
-            }
-        });
+    if (run_id.empty()) {
+        run_id = "R0";
     }
 
-    if (run_id.empty())
-        run_id = "R0";
-
-    auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term, stopwords));
-    };
+    std::vector<Query> queries;
+    auto push_query = resolve_query_parser(queries, terms_file, stopwords_filename, stemmer);
 
     if (query_filename) {
         std::ifstream is(*query_filename);

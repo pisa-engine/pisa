@@ -2,7 +2,12 @@
 
 #include <vector>
 
+#include <boost/algorithm/string.hpp>
+
+#include "codec/list.hpp"
+#include "index_types.hpp"
 #include "query/queries.hpp"
+#include "scorer/index_scorer.hpp"
 
 namespace pisa {
 
@@ -64,7 +69,7 @@ struct block_freq_index;
         Query);
 
 #define LOOP_BODY(R, DATA, T)                                          \
-    struct T;                                                          \
+    struct BOOST_PP_CAT(INDEX, _index);                                \
     PISA_BLOCK_MAX_SCORED_CURSOR_EXTERN(bm25, T, wand_data_raw)        \
     PISA_BLOCK_MAX_SCORED_CURSOR_EXTERN(dph, T, wand_data_raw)         \
     PISA_BLOCK_MAX_SCORED_CURSOR_EXTERN(pl2, T, wand_data_raw)         \

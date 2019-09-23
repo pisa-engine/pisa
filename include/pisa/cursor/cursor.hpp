@@ -25,7 +25,6 @@ template <typename Index>
 }
 
 #define LOOP_BODY(R, DATA, INDEX)                                   \
-    struct INDEX;                                                   \
     extern template auto make_cursors<BOOST_PP_CAT(INDEX, _index)>( \
         BOOST_PP_CAT(INDEX, _index) const &, Query);
 /**/

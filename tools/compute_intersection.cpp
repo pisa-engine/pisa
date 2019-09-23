@@ -44,11 +44,9 @@ int main(int argc, const char **argv)
     app.add_option("-q,--query", query_filename, "Queries filename");
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, std::nullopt);
-
     std::vector<Query> queries;
     auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term));
+        queries.push_back(parse_query_ids(query_line));
     };
 
     if (query_filename) {

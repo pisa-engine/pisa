@@ -42,13 +42,10 @@ struct IndexData {
                                      freqs_sum);
         }
         builder.build(index);
-
-        auto process_term = [](auto str) { return std::stoi(str); };
-
         term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         auto push_query = [&](std::string const &query_line) {
-            queries.push_back(parse_query(query_line, process_term, {}));
+            queries.push_back(parse_query_ids(query_line));
         };
         io::for_each_line(qfile, push_query);
     }
