@@ -38,9 +38,8 @@ TEST_CASE("Parse query terms to ids") {
              {"lol's", std::nullopt, {0}},
              {"U.S.A.!?", std::nullopt, {4}}}));
     CAPTURE(query);
-    TermProcessor process_term =
-        query::term_processor(std::make_optional(lexfile.string()), "krovetz");
-    auto q = parse_query(query, process_term);
+    TermProcessor term_processor(std::make_optional(lexfile.string()), std::nullopt, "krovetz");
+    auto q = parse_query_terms(query, term_processor);
     REQUIRE(q.id == id);
     REQUIRE(q.terms == parsed);
 }

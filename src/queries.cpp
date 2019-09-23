@@ -260,9 +260,9 @@ int main(int argc, const char **argv)
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
@@ -273,33 +273,19 @@ int main(int argc, const char **argv)
     } else {
         spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     }
-
-    auto process_term = query::term_processor(terms_file, stemmer);
-
-    std::unordered_set<term_id_type> stopwords;
-    if (stopwords_filename) {
-        std::ifstream is(*stopwords_filename);
-        io::for_each_line(is, [&](auto &&word) {
-            if (auto processed_term = process_term(std::move(word)); process_term) {
-                stopwords.insert(*processed_term);
-            }
-        });
-    }
-
-    std::vector<Query> queries;
-    auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term, stopwords));
-    };
-
     if (extract) {
         std::cout << "qid\tusec\n";
     }
 
+    std::vector<Query> queries;
+    auto parse_query = compute_parse_query_function(queries, terms_file,
+                                                    stopwords_filename,
+                                                    stemmer);
     if (query_filename) {
         std::ifstream is(*query_filename);
-        io::for_each_line(is, push_query);
+        io::for_each_line(is, parse_query);
     } else {
-        io::for_each_line(std::cin, push_query);
+        io::for_each_line(std::cin, parse_query);
     }
 
     /**/

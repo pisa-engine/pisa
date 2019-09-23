@@ -87,17 +87,15 @@ int main(int argc, const char **argv)
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
 
-    auto process_term = query::term_processor(terms_file, stemmer);
-
     std::vector<Query> queries;
-    auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term));
-    };
+    auto parse_query = compute_parse_query_function(queries, terms_file,
+                                                    std::nullopt,
+                                                    stemmer);
     if (query_filename) {
         std::ifstream is(*query_filename);
-        io::for_each_line(is, push_query);
+        io::for_each_line(is, parse_query);
     } else {
-        io::for_each_line(std::cin, push_query);
+        io::for_each_line(std::cin, parse_query);
     }
 
     /**/
