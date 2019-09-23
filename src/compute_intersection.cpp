@@ -14,9 +14,9 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void intersect(const std::string &index_filename,
-               const std::optional<std::string> &wand_data_filename,
-               const std::vector<Query> &queries,
+void intersect(std::string const &index_filename,
+               std::optional<std::string> const &wand_data_filename,
+               std::vector<Query> const &queries,
                std::string const &type)
 {
     IndexType index;
@@ -39,7 +39,7 @@ void intersect(const std::string &index_filename,
     and_query<true> and_q;
     std::size_t qid = 0;
     for (auto const &query : queries) {
-        auto query_id = query.id.has_value() ? query.id.value() : std::to_string(qid);
+        auto query_id = query.id ? *query.id : std::to_string(qid);
         if (query.terms.size() == 1) {
             std::cout << fmt::format("{}\t{}\t{}\n",
                                      query_id,
