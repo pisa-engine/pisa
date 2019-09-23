@@ -38,7 +38,7 @@ TEST_CASE("Compute parsing function") {
     WHEN("No stopwords, terms, or stemmer")
     {
         auto parse =
-            compute_parse_query_function(queries, std::nullopt, std::nullopt, std::nullopt);
+            resolve_query_parser(queries, std::nullopt, std::nullopt, std::nullopt);
         THEN("Parse query IDs")
         {
             parse("1:0 2 4");
@@ -49,7 +49,7 @@ TEST_CASE("Compute parsing function") {
     }
     WHEN("With terms and stopwords. No stemmer")
     {
-        auto parse = compute_parse_query_function(
+        auto parse = resolve_query_parser(
             queries, lexfile.string(), stopwords_filename.string(), std::nullopt);
         THEN("Parse query IDs")
         {
@@ -61,7 +61,7 @@ TEST_CASE("Compute parsing function") {
     }
     WHEN("With terms, stopwords, and stemmer")
     {
-        auto parse = compute_parse_query_function(
+        auto parse = resolve_query_parser(
             queries, lexfile.string(), stopwords_filename.string(), "porter2");
         THEN("Parse query IDs")
         {
