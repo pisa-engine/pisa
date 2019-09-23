@@ -24,9 +24,9 @@ class TermProcessor {
     std::function<std::optional<term_id_type>(std::string)> _to_id;
 
    public:
-    TermProcessor(const std::optional<std::string> terms_file,
-                  const std::optional<std::string> stopwords_filename,
-                  const std::optional<std::string> stemmer_type)
+    TermProcessor(std::optional<std::string> const &terms_file,
+                  std::optional<std::string> const &stopwords_filename,
+                  std::optional<std::string> const &stemmer_type)
     {
         auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
         auto terms = Payload_Vector<>::from(*source);
