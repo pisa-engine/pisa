@@ -1,6 +1,7 @@
 #include <bitset>
 #include <cstddef>
 #include <optional>
+#include <variant>
 #include <vector>
 
 #include "query/algorithm/and_query.hpp"
@@ -9,6 +10,8 @@
 namespace pisa {
 
 namespace intersection {
+
+    enum class IntersectionType { Query, Combinations };
 
     /// Mask is set to a static-sized bitset for performance.
     /// Using dynamic bitset slows down a lot, and these operations will be performed on
@@ -83,12 +86,12 @@ inline auto Intersection::compute(Index const &index,
 /// Do `func` for all intersections in a query that have a given maximum number of terms.
 /// `Fn` takes `Query` and `Mask`.
 template <typename Fn>
-auto for_all_subsets(Query const &query, std::uint8_t max_term_count, Fn func)
+auto for_all_subsets(Query const &query, std::optional<std::uint8_t> max_term_count, Fn func)
 {
     auto subset_count = 1u << query.terms.size();
     for (auto subset = 1u; subset < subset_count; ++subset) {
         auto mask = intersection::Mask(subset);
-        if (mask.count() <= max_term_count) {
+        if (max_term_count && mask.count() <= *max_term_count) {
             func(query, mask);
         }
     }

@@ -13,6 +13,7 @@
 #include "wand_data_raw.hpp"
 
 using namespace pisa;
+using pisa::intersection::IntersectionType;
 using pisa::intersection::Mask;
 
 template <typename IndexType, typename WandType>
@@ -20,7 +21,8 @@ void intersect(std::string const &index_filename,
                std::optional<std::string> const &wand_data_filename,
                std::vector<Query> const &queries,
                std::string const &type,
-               std::optional<std::uint8_t> combinations = std::nullopt)
+               IntersectionType intersection_type,
+               std::optional<std::uint8_t> max_term_count = std::nullopt)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -51,8 +53,8 @@ void intersect(std::string const &index_filename,
     };
 
     for (auto const &query : queries) {
-        if (combinations) {
-            for_all_subsets(query, *combinations, print_intersection);
+        if (intersection_type == IntersectionType::Combinations) {
+            for_all_subsets(query, *max_term_count, print_intersection);
         } else {
             auto intersection = Intersection::compute(index, wdata, query);
             std::cout << fmt::format("{}\t{}\t{}\n",
@@ -75,7 +77,8 @@ int main(int argc, const char **argv)
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> stemmer;
-    std::optional<std::uint8_t> combinations;
+    std::optional<std::uint8_t> max_term_count;
+    bool combinations = false;
     bool compressed = false;
     bool header = false;
 
@@ -88,10 +91,12 @@ int main(int argc, const char **argv)
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
-    app.add_option("--combinations",
-                   combinations,
-                   "Compute intersections for all combinations of terms in query, limited by this "
-                   "number of terms");
+    auto *combinations_flag = app.add_flag(
+        "--combinations", combinations, "Compute intersections for combinations of terms in query");
+    app.add_option("--max-term-count,--mtc",
+                   max_term_count,
+                   "Max number of terms when computing combinations")
+        ->needs(combinations_flag);
     app.add_flag("--header", header, "Write TSV header");
     CLI11_PARSE(app, argc, argv);
 
@@ -112,19 +117,30 @@ int main(int argc, const char **argv)
         }
     }
 
+    IntersectionType intersection_type =
+        combinations ? IntersectionType::Combinations : IntersectionType::Query;
+
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                     \
-    }                                                                             \
-    else if (type == BOOST_PP_STRINGIZE(T))                                       \
-    {                                                                             \
-        if (compressed) {                                                         \
-            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(               \
-                index_filename, wand_data_filename, queries, type, combinations); \
-        } else {                                                                  \
-            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(                   \
-                index_filename, wand_data_filename, queries, type, combinations); \
-        }                                                                         \
+#define LOOP_BODY(R, DATA, T)                                                          \
+    }                                                                                  \
+    else if (type == BOOST_PP_STRINGIZE(T))                                            \
+    {                                                                                  \
+        if (compressed) {                                                              \
+            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,     \
+                                                                   wand_data_filename, \
+                                                                   queries,            \
+                                                                   type,               \
+                                                                   intersection_type,  \
+                                                                   max_term_count);    \
+        } else {                                                                       \
+            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,         \
+                                                               wand_data_filename,     \
+                                                               queries,                \
+                                                               type,                   \
+                                                               intersection_type,      \
+                                                               max_term_count);        \
+        }                                                                              \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
