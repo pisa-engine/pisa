@@ -102,6 +102,8 @@ target_link_libraries(pisa PUBLIC
     tokenizer
 )
 target_include_directories(pisa PUBLIC external)
+target_compile_definitions(pisa
+    PUBLIC "$<IF:$<CONFIG:DEBUG>,GSL_THROW_ON_CONTRACT_VIOLATION,GSL_UNENFORCED_ON_CONTRACT_VIOLATION>")
 
 if (PISA_BUILD_TOOLS)
     add_subdirectory(tools)
