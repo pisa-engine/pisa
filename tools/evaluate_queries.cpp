@@ -31,10 +31,10 @@
 #include "query/algorithm/ranked_or_taat_query.hpp"
 #include "query/algorithm/wand_query.hpp"
 #include "query/queries.hpp"
+#include "scorer/scorer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "scorer/scorer.hpp"
 
 #include "evaluate_queries/def.hpp"
 
@@ -69,11 +69,11 @@ void evaluate_queries(const std::string &index_filename,
     }
     mapper::map(wdata, md, mapper::map_flags::warmup);
 
-    //QueryExecutor query_fun;
+    // QueryExecutor query_fun;
     auto run_evaluation = [&](auto scorer) {
         QueryLoop<IndexType, WandType, decltype(scorer)> qloop;
         if (query_type == "ranked_or") {
-            qloop = query_loop<IndexType, ranked_and_query, WandType, decltype(scorer)>;
+            qloop = query_loop<IndexType, ranked_or_query, WandType, decltype(scorer)>;
         } else if (query_type == "ranked_and") {
             qloop = query_loop<IndexType, ranked_and_query, WandType, decltype(scorer)>;
         } else if (query_type == "wand") {
@@ -104,7 +104,7 @@ void evaluate_queries(const std::string &index_filename,
         for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
             auto results = raw_results[query_idx];
             auto qid = queries[query_idx].id;
-            for (auto && [ rank, result ] : enumerate(results)) {
+            for (auto &&[rank, result] : enumerate(results)) {
                 std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                          qid.value_or(std::to_string(query_idx)),
                                          iteration,
@@ -161,7 +161,8 @@ int main(int argc, const char **argv)
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")->needs(terms_opt);
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
+        ->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
