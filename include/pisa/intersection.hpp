@@ -17,7 +17,7 @@ namespace intersection {
     /// Using dynamic bitset slows down a lot, and these operations will be performed on
     /// much shorter queries than the limit allows for. It makes very little sense to do
     /// that on anything longer.
-    constexpr std::size_t MAX_QUERY_LEN_EXP = 8;
+    constexpr std::size_t MAX_QUERY_LEN_EXP = 31;
     constexpr std::size_t MAX_QUERY_LEN = 1 << MAX_QUERY_LEN_EXP;
     using Mask = std::bitset<MAX_QUERY_LEN_EXP>;
 
@@ -25,7 +25,7 @@ namespace intersection {
     [[nodiscard]] inline auto filter(Query const &query, Mask mask) -> Query
     {
         if (query.terms.size() > MAX_QUERY_LEN) {
-            throw std::invalid_argument("Queries can be at most 64 terms long");
+            throw std::invalid_argument("Queries can be at most 2^32 terms long");
         }
         std::vector<std::uint32_t> terms;
         std::vector<float> weights;
@@ -63,24 +63,19 @@ inline auto Intersection::compute(Index const &index,
                                   std::optional<intersection::Mask> term_mask) -> Intersection
 {
     auto filtered_query = term_mask ? intersection::filter(query, *term_mask) : query;
-    if (filtered_query.terms.size() == 1) {
-        return Intersection{index[filtered_query.terms[0]].size(),
-                            wand.max_term_weight(filtered_query.terms[0])};
-    } else {
-        and_query<true> retrieve{};
-        auto results = retrieve(make_scored_cursors(index, wand, filtered_query), index.num_docs());
-        auto max_element = [&](auto const &vec) -> float {
-            auto order = [](auto const &lhs, auto const &rhs) { return lhs.second < rhs.second; };
-            if (auto pos = std::max_element(results.begin(), results.end(), order);
-                pos != results.end()) {
-                return pos->second;
-            } else {
-                return 0.0;
-            }
-        };
-        float max_score = max_element(results);
-        return Intersection{results.size(), max_score};
-    }
+    and_query<true> retrieve{};
+    auto results = retrieve(make_scored_cursors(index, wand, filtered_query), index.num_docs());
+    auto max_element = [&](auto const &vec) -> float {
+        auto order = [](auto const &lhs, auto const &rhs) { return lhs.second < rhs.second; };
+        if (auto pos = std::max_element(results.begin(), results.end(), order);
+            pos != results.end()) {
+            return pos->second;
+        } else {
+            return 0.0;
+        }
+    };
+    float max_score = max_element(results);
+    return Intersection{results.size(), max_score};
 }
 
 /// Do `func` for all intersections in a query that have a given maximum number of terms.
