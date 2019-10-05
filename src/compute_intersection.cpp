@@ -1,3 +1,4 @@
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
@@ -78,6 +79,8 @@ int main(int argc, const char **argv)
     std::optional<std::string> query_filename;
     std::optional<std::string> stemmer;
     std::optional<std::uint8_t> max_term_count;
+    std::size_t min_query_len = 0;
+    std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
     bool combinations = false;
     bool compressed = false;
     bool header = false;
@@ -97,16 +100,25 @@ int main(int argc, const char **argv)
                    max_term_count,
                    "Max number of terms when computing combinations")
         ->needs(combinations_flag);
+    app.add_option("--min-query-len", min_query_len, "Minimum query length");
+    app.add_option("--max-query-len", max_query_len, "Maximum query length");
     app.add_flag("--header", header, "Write TSV header");
     CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;
     auto parse_query = resolve_query_parser(queries, terms_file, std::nullopt, stemmer);
+    auto parse_with_filter = [&](auto line) {
+        parse_query(line);
+        auto size = queries.back().terms.size();
+        if (size < min_query_len || size > max_query_len) {
+            queries.pop_back();
+        }
+    };
     if (query_filename) {
         std::ifstream is(*query_filename);
-        io::for_each_line(is, parse_query);
+        io::for_each_line(is, parse_with_filter);
     } else {
-        io::for_each_line(std::cin, parse_query);
+        io::for_each_line(std::cin, parse_with_filter);
     }
 
     if (header) {
