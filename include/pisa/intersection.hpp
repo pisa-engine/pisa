@@ -86,7 +86,7 @@ auto for_all_subsets(Query const &query, std::optional<std::uint8_t> max_term_co
     auto subset_count = 1u << query.terms.size();
     for (auto subset = 1u; subset < subset_count; ++subset) {
         auto mask = intersection::Mask(subset);
-        if (max_term_count && mask.count() <= *max_term_count) {
+        if (!max_term_count || mask.count() <= *max_term_count) {
             func(query, mask);
         }
     }
