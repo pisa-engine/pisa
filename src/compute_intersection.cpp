@@ -55,7 +55,7 @@ void intersect(std::string const &index_filename,
 
     for (auto const &query : queries) {
         if (intersection_type == IntersectionType::Combinations) {
-            for_all_subsets(query, *max_term_count, print_intersection);
+            for_all_subsets(query, max_term_count, print_intersection);
         } else {
             auto intersection = Intersection::compute(index, wdata, query);
             std::cout << fmt::format("{}\t{}\t{}\n",
