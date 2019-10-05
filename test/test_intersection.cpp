@@ -196,17 +196,17 @@ TEST_CASE("compute intersection", "[intersection][unit]")
             {0.1, 0.4, 1.0} // weights
         };
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
-            {0b001, 3, 6.0},
-            {0b010, 3, 1.0},
-            {0b100, 3, 5.0},
+            {0b001, 3, 0.76214f},
+            {0b010, 3, 0.76214f},
+            {0b100, 3, 0.76214f},
             {0b011, 1, 1.52428f},
             {0b101, 2, 1.52428f},
             {0b110, 2, 1.52428f},
             {0b111, 1, 2.28642f},
         }));
-        auto intersection = Intersection::compute(index, wand, query, mask);
         WHEN("Computed intersection with mask " << mask)
         {
+            auto intersection = Intersection::compute(index, wand, query, mask);
             CHECK(intersection.length == len);
             CHECK(intersection.max_score == Approx(max));
         }
