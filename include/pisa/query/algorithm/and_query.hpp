@@ -11,17 +11,18 @@
 
 namespace pisa {
 
+template <bool with_freqs = false>
 struct and_query {
+    using Result = std::conditional<with_freqs, std::pair<float, std::uint32_t>, std::uint32_t>;
+    std::vector<Result> results;
 
     template <typename Cursor>
-    auto operator()(gsl::span<Cursor> cursors, uint64_t max_docid) const -> std::vector<uint64_t>
+    auto operator()(gsl::span<Cursor> cursors, uint64_t max_docid) const -> uint64_t
     {
-        using Result_t = uint64_t;
-
-        std::vector<Result_t> results;
         if (cursors.empty()) {
-            return results;
+            return 0;
         }
+        results.clear();
 
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -37,26 +38,47 @@ struct and_query {
         uint32_t candidate = ordered_cursors[0]->docid();
         size_t i = 1;
 
-        while (candidate < max_docid) {
-            for (; i < ordered_cursors.size(); ++i) {
-                ordered_cursors[i]->next_geq(candidate);
-                if (ordered_cursors[i]->docid() != candidate) {
-                    candidate = ordered_cursors[i]->docid();
-                    i = 0;
-                    break;
+        if constexpr (with_freqs) {
+            while (candidate < max_docid) {
+                float score(0);
+                for (; i < ordered_cursors.size(); ++i) {
+                    ordered_cursors[i]->next_geq(candidate);
+                    if (ordered_cursors[i]->docid() != candidate) {
+                        candidate = ordered_cursors[i]->docid();
+                        i = 0;
+                        break;
+                    }
+                    score += ordered_cursors[i]->freq();
+                }
+                if (i == ordered_cursors.size()) {
+                    results.push_back({score, candidate});
+                    ordered_cursors[0]->next();
+                    candidate = ordered_cursors[0]->docid();
+                    i = 1;
                 }
             }
+        } else {
+            while (candidate < max_docid) {
+                for (; i < ordered_cursors.size(); ++i) {
+                    ordered_cursors[i]->next_geq(candidate);
+                    if (ordered_cursors[i]->docid() != candidate) {
+                        candidate = ordered_cursors[i]->docid();
+                        i = 0;
+                        break;
+                    }
+                }
 
-            if (i == ordered_cursors.size()) {
+                if (i == ordered_cursors.size()) {
 
-                results.push_back(candidate);
+                    results.push_back(candidate);
 
-                ordered_cursors[0]->next();
-                candidate = ordered_cursors[0]->docid();
-                i = 1;
+                    ordered_cursors[0]->next();
+                    candidate = ordered_cursors[0]->docid();
+                    i = 1;
+                }
             }
         }
-        return results;
+        return results.size();
     }
 };
 

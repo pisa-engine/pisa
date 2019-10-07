@@ -18,6 +18,12 @@ struct scored_cursor {
     TermScorer scorer;
 
     ~scored_cursor() {}
+    [[nodiscard]] constexpr auto docid() const noexcept -> std::uint32_t
+    {
+        return docs_enum.docid();
+    }
+    [[nodiscard]] constexpr auto freq() const noexcept -> float { return docs_enum.freq(); }
+    void next() { docs_enum.next(); }
 };
 
 template <typename Index, typename Scorer>
@@ -29,16 +35,15 @@ template <typename Index, typename Scorer>
 
     std::vector<scored_cursor<Index, term_scorer_type>> cursors;
     cursors.reserve(query_term_freqs.size());
-    std::transform(
-        query_term_freqs.begin(),
-        query_term_freqs.end(),
-        std::back_inserter(cursors),
-        [&](auto &&term) {
-            auto list = index[term.first];
-            float q_weight = term.second;
-            return scored_cursor<Index, term_scorer_type>{
-                std::move(list), q_weight, scorer.term_scorer(term.first)};
-        });
+    std::transform(query_term_freqs.begin(),
+                   query_term_freqs.end(),
+                   std::back_inserter(cursors),
+                   [&](auto &&term) {
+                       auto list = index[term.first];
+                       float q_weight = term.second;
+                       return scored_cursor<Index, term_scorer_type>{
+                           std::move(list), q_weight, scorer.term_scorer(term.first)};
+                   });
     return cursors;
 }
 
