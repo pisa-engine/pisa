@@ -6,8 +6,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "vec_map.hpp"
-
 namespace pisa::io {
 
 class Line : public std::string {
@@ -32,19 +30,6 @@ template <typename Integral>
     -> std::vector<std::string>
 {
     std::vector<std::string> vec;
-    std::ifstream is(filename);
-    std::string line;
-    while (std::getline(is, line)) {
-        vec.push_back(std::move(line));
-    }
-    return vec;
-}
-
-template <typename Key>
-[[nodiscard]] inline auto read_string_vec_map(std::string const &filename)
-    -> VecMap<Key, std::string>
-{
-    VecMap<Key, std::string> vec;
     std::ifstream is(filename);
     std::string line;
     while (std::getline(is, line)) {

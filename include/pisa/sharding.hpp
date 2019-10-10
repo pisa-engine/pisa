@@ -89,9 +89,12 @@ auto create_random_mapping(int document_count,
     std::mt19937 g(seed.value_or(rd()));
     VecMap<Document_Id, Shard_Id> mapping(document_count);
     auto shard_size = ceil_div(document_count, shard_count);
-    auto documents = ranges::view::iota(0_d, Document_Id{document_count})
-                     | ranges::to_vector
-                     | ranges::action::shuffle(g);
+    auto documents = [&]() {
+        std::vector<Document_Id> documents(document_count);
+        std::iota(documents.begin(), documents.end(), 0_d);
+        std::shuffle(documents.begin(), documents.end(), g);
+        return documents;
+    }();
 
     ranges::for_each(ranges::view::zip(ranges::view::iota(0_s, Shard_Id(shard_count)),
                                        ranges::view::chunk(documents, shard_size)),
@@ -116,7 +119,7 @@ auto create_random_mapping(std::string const &input_basename,
 void copy_sequence(std::istream &is, std::ostream &os)
 {
     uint32_t len;
-    is.read(reinterpret_cast<char*>(&len), sizeof(len));
+    is.read(reinterpret_cast<char *>(&len), sizeof(len));
     os.write(reinterpret_cast<char const *>(&len), sizeof(len));
     std::vector<char> buf(len * sizeof(uint32_t));
     is.read(buf.data(), buf.size());
@@ -140,7 +143,7 @@ auto rearrange_sequences(std::string const &input_basename,
         spdlog::debug("Initializing file for shard {}", shard.as_int());
         auto filename = fmt::format("{}.{:03d}", output_basename, shard.as_int());
         os.emplace_back(filename);
-        constexpr std::array<char, 8> zero {0, 0, 0, 0, 0, 0, 0, 0};
+        constexpr std::array<char, 8> zero{0, 0, 0, 0, 0, 0, 0, 0};
         os.back().write(zero.data(), zero.size());
         dos.emplace_back(fmt::format("{}.documents", filename));
     }
@@ -208,7 +211,7 @@ auto partition_fwd_index(std::string const &input_basename,
                          std::string const &output_basename,
                          VecMap<Document_Id, Shard_Id> &mapping)
 {
-    auto terms = io::read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
+    auto terms = read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
     auto shard_ids = ranges::view::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);

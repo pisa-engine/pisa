@@ -1,7 +1,5 @@
 #include <algorithm>
 #include <string>
-/* #include <optional> */
-/* #include <thread> */
 
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string.hpp>
@@ -10,18 +8,10 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-/* #include "accumulator/lazy_accumulator.hpp" */
-/* #include "cursor/block_max_scored_cursor.hpp" */
-/* #include "cursor/max_scored_cursor.hpp" */
 #include "cursor/scored_cursor.hpp"
-/* #include "index_types.hpp" */
-/* #include "io.hpp" */
-/* #include "mappable/mapper.hpp" */
 #include "query/algorithm/and_query.hpp"
 #include "query/algorithm/inter_query.hpp"
 #include "query/queries.hpp"
-/* #include "scorer/scorer.hpp" */
-/* #include "util/util.hpp" */
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
@@ -33,7 +23,7 @@ template <typename Index, typename Wand, typename Scorer>
 using QueryLoop = std::function<std::vector<ResultVector>(
     Index const &, Wand const &, Scorer, std::vector<Query> const &, int)>;
 
-template <typename Index, typename Algorithm, typename Wand, typename Scorer>
+template <typename Index, typename Wand, typename Scorer>
 auto query_loop(Index const &,
                 Wand const &,
                 Scorer,
@@ -42,31 +32,23 @@ auto query_loop(Index const &,
                 std::vector<std::vector<std::bitset<64>>> const &intersections)
     -> std::vector<ResultVector>;
 
-#define PISA_RANKED_OR_QUERY_LOOP(SCORER, INDEX, WAND)                  \
-    template <>                                                         \
-    auto query_loop<BOOST_PP_CAT(INDEX, _index),                        \
-                    pisa::IntersectionQuery,                            \
-                    wand_data<WAND>,                                    \
-                    SCORER<wand_data<WAND>>>(                           \
-        BOOST_PP_CAT(INDEX, _index) const &index,                       \
-        wand_data<WAND> const &,                                        \
-        SCORER<wand_data<WAND>> scorer,                                 \
-        std::vector<Query> const &queries,                              \
-        int k,                                                          \
-        std::vector<std::vector<std::bitset<64>>> const &intersections) \
-        ->std::vector<ResultVector>                                     \
-    {                                                                   \
-        std::vector<ResultVector> results(queries.size());              \
-        auto run = IntersectionQuery(k);                                \
-        for (std::size_t qidx = 0; qidx < queries.size(); ++qidx) {     \
-            auto query = queries[qidx];                                 \
-            for (auto instersection : intersections[qidx]) {            \
-            }                                                           \
-            auto cursors = make_scored_cursors(index, scorer, query);   \
-            /*run(gsl::make_span(cursors), index.num_docs());*/         \
-            results[qidx] = run.topk();                                 \
-        }                                                               \
-        return results;                                                 \
+#define PISA_RANKED_OR_QUERY_LOOP(SCORER, INDEX, WAND)                                      \
+    template <>                                                                             \
+    auto query_loop<BOOST_PP_CAT(INDEX, _index), wand_data<WAND>, SCORER<wand_data<WAND>>>( \
+        BOOST_PP_CAT(INDEX, _index) const &index,                                           \
+        wand_data<WAND> const &,                                                            \
+        SCORER<wand_data<WAND>> scorer,                                                     \
+        std::vector<Query> const &queries,                                                  \
+        int k,                                                                              \
+        std::vector<std::vector<std::bitset<64>>> const &intersections)                     \
+        ->std::vector<ResultVector>                                                         \
+    {                                                                                       \
+        std::vector<ResultVector> results(queries.size());                                  \
+        for (std::size_t qidx = 0; qidx < queries.size(); ++qidx) {                         \
+            results[qidx] =                                                                 \
+                intersection_query(index, queries[qidx], intersections[qidx], scorer, k);   \
+        }                                                                                   \
+        return results;                                                                     \
     }
 
 #define LOOP_BODY(R, DATA, T)                                \
@@ -90,7 +72,6 @@ void evaluate_queries(const std::string &index_filename,
                       std::vector<std::vector<std::bitset<64>>> const &intersections,
                       const std::optional<std::string> &thresholds_filename,
                       std::string const &type,
-                      std::string const &query_type,
                       uint64_t k,
                       std::string const &documents_filename,
                       std::string const &scorer_name,
@@ -151,7 +132,6 @@ int main(int argc, const char **argv)
     spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
 
     std::string type;
-    std::string query_type;
     std::string index_filename;
     std::optional<std::string> terms_file;
     std::string documents_file;
@@ -169,7 +149,6 @@ int main(int argc, const char **argv)
     CLI::App app{"Retrieves query results in TREC format."};
     app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
-    app.add_option("-a,--algorithm", query_type, "Query algorithm")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
@@ -226,7 +205,6 @@ int main(int argc, const char **argv)
                                                                           intersections,       \
                                                                           thresholds_filename, \
                                                                           type,                \
-                                                                          query_type,          \
                                                                           k,                   \
                                                                           documents_file,      \
                                                                           scorer_name,         \
@@ -238,7 +216,6 @@ int main(int argc, const char **argv)
                                                                       intersections,           \
                                                                       thresholds_filename,     \
                                                                       type,                    \
-                                                                      query_type,              \
                                                                       k,                       \
                                                                       documents_file,          \
                                                                       scorer_name,             \

@@ -1,3 +1,7 @@
+#pragma once
+
+#include <iostream>
+#include <iterator>
 #include <numeric>
 
 #include <gsl/span>
@@ -7,22 +11,27 @@
 namespace pisa {
 
 /// Transforms a list of cursors into one cursor by lazily merging them together.
-template <typename Cursor, typename Payload, typename AccumulateFn>
+template <typename CursorContainer, typename Payload, typename AccumulateFn>
 struct CursorUnion {
-    constexpr CursorUnion(gsl::span<Cursor> cursors,
+    using Cursor = typename CursorContainer::value_type;
+    using iterator_category =
+        typename std::iterator_traits<typename CursorContainer::iterator>::iterator_category;
+    static_assert(std::is_base_of<std::random_access_iterator_tag, iterator_category>(),
+                  "cursors must be stored in a random access container");
+    constexpr CursorUnion(CursorContainer cursors,
                           std::size_t max_docid,
                           Payload init,
                           AccumulateFn accumulate)
-        : m_accumulate(std::move(accumulate)),
+        : m_cursors(std::move(cursors)),
           m_init(init),
-          m_cursors(std::move(cursors)),
+          m_accumulate(std::move(accumulate)),
           m_size(std::nullopt),
           m_max_docid(max_docid)
     {
-        Expects(not cursors.empty());
+        Expects(not m_cursors.empty());
         auto order = [](auto const &lhs, auto const &rhs) { return lhs.docid() < rhs.docid(); };
         m_next_docid = [&]() {
-            auto pos = std::min_element(cursors.begin(), cursors.end(), order);
+            auto pos = std::min_element(m_cursors.begin(), m_cursors.end(), order);
             return pos->docid();
         }();
         next();
@@ -39,7 +48,11 @@ struct CursorUnion {
         return *m_size;
     }
     [[nodiscard]] constexpr auto docid() const noexcept -> std::uint32_t { return m_current_docid; }
-    [[nodiscard]] constexpr auto payload() const noexcept -> Payload { return m_current_payload; }
+    [[nodiscard]] constexpr auto payload() const noexcept -> Payload const &
+    {
+        return m_current_payload;
+    }
+    [[nodiscard]] constexpr auto sentinel() const noexcept -> std::uint32_t { return m_max_docid; }
     constexpr void next()
     {
         if (PISA_UNLIKELY(m_next_docid == m_max_docid)) {
@@ -50,22 +63,24 @@ struct CursorUnion {
             m_current_payload = m_init;
             m_current_docid = m_next_docid;
             m_next_docid = m_max_docid;
+            std::size_t cursor_idx = 0;
             for (auto &cursor : m_cursors) {
                 if (cursor.docid() == m_current_docid) {
-                    m_current_payload = m_accumulate(m_current_payload, cursor);
+                    m_current_payload = m_accumulate(m_current_payload, cursor, cursor_idx);
                     cursor.next();
                 }
                 if (cursor.docid() < m_next_docid) {
                     m_next_docid = cursor.docid();
                 }
+                ++cursor_idx;
             }
         }
     }
 
    private:
-    AccumulateFn m_accumulate;
+    CursorContainer m_cursors;
     Payload m_init;
-    gsl::span<Cursor> m_cursors;
+    AccumulateFn m_accumulate;
     std::optional<std::size_t> m_size;
     std::uint32_t m_max_docid;
 

@@ -19,8 +19,8 @@ struct TopKQueue {
     }
     TopKQueue(TopKQueue const &) = default;
     TopKQueue(TopKQueue &&) = default;
-    TopKQueue& operator=(TopKQueue const &) = default;
-    TopKQueue& operator=(TopKQueue &&) = default;
+    TopKQueue &operator=(TopKQueue const &) = default;
+    TopKQueue &operator=(TopKQueue &&) = default;
 
     auto insert(Score score, DocID docid = 0) -> bool
     {
@@ -30,7 +30,7 @@ struct TopKQueue {
         m_entries.emplace_back(score, docid);
         if (PISA_UNLIKELY(m_entries.size() <= m_capacity)) {
             std::push_heap(m_entries.begin(), m_entries.end(), min_heap_order);
-            if(PISA_UNLIKELY(m_entries.size() == m_capacity)) {
+            if (PISA_UNLIKELY(m_entries.size() == m_capacity)) {
                 m_threshold = m_entries.front().first;
             }
         } else {
@@ -42,12 +42,14 @@ struct TopKQueue {
     }
 
     [[nodiscard]] auto topk() const noexcept -> std::vector<Entry> const & { return m_entries; }
+    [[nodiscard]] auto topk() noexcept -> std::vector<Entry> && { return std::move(m_entries); }
     [[nodiscard]] auto would_enter(Score score) const noexcept -> bool
     {
         return m_entries.size() < m_capacity || score > m_threshold;
     }
 
-    void finalize() {
+    void finalize()
+    {
         std::sort_heap(m_entries.begin(), m_entries.end(), min_heap_order);
         std::size_t size =
             std::lower_bound(m_entries.begin(),
@@ -58,7 +60,8 @@ struct TopKQueue {
         m_entries.resize(size);
     }
 
-    void clear() noexcept {
+    void clear() noexcept
+    {
         m_entries.clear();
         m_threshold = 0;
     }
@@ -66,8 +69,8 @@ struct TopKQueue {
     //[[nodiscard]] uint64_t size() const noexcept { return m_capacity; }
 
    private:
-    [[nodiscard]] constexpr static auto min_heap_order(Entry const &lhs,
-                                                       Entry const &rhs) noexcept -> bool
+    [[nodiscard]] constexpr static auto min_heap_order(Entry const &lhs, Entry const &rhs) noexcept
+        -> bool
     {
         return lhs.first > rhs.first;
     }
@@ -86,7 +89,8 @@ struct TopKQueue {
 /*     topk_queue &operator=(topk_queue const &q) = default; */
 
 /*     [[nodiscard]] constexpr static auto min_heap_order(entry_type const &lhs, */
-/*                                                        entry_type const &rhs) noexcept -> bool { */
+/*                                                        entry_type const &rhs) noexcept -> bool {
+ */
 /*         return lhs.first > rhs.first; */
 /*     } */
 
@@ -119,7 +123,8 @@ struct TopKQueue {
 /*             std::lower_bound(m_q.begin(), */
 /*                              m_q.end(), */
 /*                              0, */
-/*                              [](std::pair<float, std::uint64_t> l, float r) { return l.first > r; }) */
+/*                              [](std::pair<float, std::uint64_t> l, float r) { return l.first > r;
+ * }) */
 /*             - m_q.begin(); */
 /*         m_q.resize(size); */
 /*     } */

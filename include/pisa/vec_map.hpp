@@ -1,9 +1,125 @@
 #pragma once
 
+#include <fstream>
+#include <iterator>
 #include <vector>
 
-#include <range/v3/view/iota.hpp>
-#include <range/v3/view/zip.hpp>
+namespace pisa {
+
+template <typename Index, typename Iterator>
+struct EnumerateIterator {
+   private:
+    using Value = typename std::iterator_traits<Iterator>::value_type;
+
+   public:
+    using difference_type = std::ptrdiff_t;
+    using value_type = std::pair<Index, typename std::iterator_traits<Iterator>::value_type>;
+    using pointer = std::pair<Index *, typename std::iterator_traits<Iterator>::pointer>;
+    using reference = std::pair<Index const &, typename std::iterator_traits<Iterator>::reference>;
+    using iterator_category = std::forward_iterator_tag;
+
+    constexpr EnumerateIterator(Iterator iter, Index init)
+        : m_current_index(std::move(init)), m_value_iterator(std::move(iter))
+    {
+    }
+    constexpr EnumerateIterator(EnumerateIterator const &) = default;
+    constexpr EnumerateIterator(EnumerateIterator &&) = default;
+    constexpr EnumerateIterator &operator=(EnumerateIterator const &) = default;
+    constexpr EnumerateIterator &operator=(EnumerateIterator &&) = default;
+    constexpr EnumerateIterator &operator++()
+    {
+        ++m_value_iterator;
+        ++m_current_index;
+        return *this;
+    }
+    constexpr EnumerateIterator operator++(int)
+    {
+        EnumerateIterator retval = *this;
+        ++(*this);
+        return retval;
+    }
+    [[nodiscard]] constexpr auto operator==(EnumerateIterator other) const -> bool
+    {
+        return m_value_iterator == other.m_value_iterator;
+    }
+    [[nodiscard]] constexpr auto operator!=(EnumerateIterator other) const -> bool
+    {
+        return !(m_value_iterator == other.m_value_iterator);
+    }
+    [[nodiscard]] constexpr auto operator*() const -> reference
+    {
+        return reference(m_current_index, *m_value_iterator);
+    }
+
+   private:
+    Index m_current_index;
+    Iterator m_value_iterator;
+};
+
+template <typename Index, typename Iterator>
+struct Enumerate {
+    template <typename Container>
+    constexpr Enumerate(Container &&container, Index init = Index{})
+        : m_init(std::move(init)), m_value_begin(container.begin()), m_value_end(container.end())
+    {
+    }
+
+    [[nodiscard]] constexpr auto begin() -> EnumerateIterator<Index, Iterator>
+    {
+        return EnumerateIterator<Index, Iterator>(m_value_begin, m_init);
+    }
+
+    [[nodiscard]] constexpr auto end() -> EnumerateIterator<Index, Iterator>
+    {
+        return EnumerateIterator<Index, Iterator>(m_value_end, m_init);
+    }
+
+    [[nodiscard]] constexpr auto begin() const -> EnumerateIterator<Index, Iterator>
+    {
+        return EnumerateIterator<Index, Iterator>(m_value_begin, m_init);
+    }
+
+    [[nodiscard]] constexpr auto end() const -> EnumerateIterator<Index, Iterator>
+    {
+        return EnumerateIterator<Index, Iterator>(m_value_end, m_init);
+    }
+
+    [[nodiscard]] constexpr auto cbegin() const -> EnumerateIterator<Index, Iterator>
+    {
+        return begin();
+    }
+
+    [[nodiscard]] constexpr auto cend() const -> EnumerateIterator<Index, Iterator>
+    {
+        return end();
+    }
+
+    [[nodiscard]] constexpr auto size() const -> std::size_t
+    {
+        return std::distance(m_value_begin, m_value_end);
+    }
+
+   private:
+    Index m_init;
+    Iterator m_value_begin;
+    Iterator m_value_end;
+};
+
+} // namespace pisa
+
+namespace std {
+
+template <typename Index, typename Iterator>
+struct iterator_traits<::pisa::EnumerateIterator<Index, Iterator>> {
+    using difference_type = typename ::pisa::EnumerateIterator<Index, Iterator>::difference_type;
+    using value_type = typename ::pisa::EnumerateIterator<Index, Iterator>::value_type;
+    using pointer = typename ::pisa::EnumerateIterator<Index, Iterator>::pointer;
+    using reference = typename ::pisa::EnumerateIterator<Index, Iterator>::reference;
+    using iterator_category =
+        typename ::pisa::EnumerateIterator<Index, Iterator>::iterator_category;
+};
+
+} // namespace std
 
 namespace pisa {
 
@@ -62,21 +178,25 @@ class VecMap : protected std::vector<V> {
     explicit VecMap(Allocator const &alloc) noexcept : std::vector<V, Allocator>(alloc) {}
     VecMap(size_type count, V const &value, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(count, value, alloc)
-    {}
+    {
+    }
     explicit VecMap(size_type count, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(count, alloc)
-    {}
+    {
+    }
     template <class InputIt>
     VecMap(InputIt first, InputIt last, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(first, last, alloc)
-    {}
+    {
+    }
     VecMap(VecMap const &other) : std::vector<V, Allocator>(other) {}
     VecMap(VecMap const &other, const Allocator &alloc) : std::vector<V, Allocator>(other, alloc) {}
     VecMap(VecMap &&other) noexcept : std::vector<V, Allocator>(other) {}
     VecMap(VecMap &&other, Allocator const &alloc) : std::vector<V, Allocator>(other, alloc) {}
     VecMap(std::initializer_list<V> init, Allocator const &alloc = Allocator())
         : std::vector<V, Allocator>(init, alloc)
-    {}
+    {
+    }
     ~VecMap() = default;
 
     VecMap &operator=(VecMap const &other)
@@ -111,10 +231,9 @@ class VecMap : protected std::vector<V> {
 
     std::vector<V> const &as_vector() const { return *this; }
 
-    [[nodiscard]] auto entries() const
+    [[nodiscard]] auto entries() const -> Enumerate<K, typename std::vector<V>::const_iterator>
     {
-        return ranges::view::zip(ranges::view::iota(static_cast<K>(0u), static_cast<K>(size())),
-                                 as_vector());
+        return Enumerate<K, typename std::vector<V>::const_iterator>(*this, static_cast<K>(0u));
     }
 };
 
@@ -153,6 +272,19 @@ template <class K, class V, class Alloc>
 bool operator>=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs)
 {
     return lhs.as_vector() >= rhs.as_vector();
+}
+
+template <typename Key>
+[[nodiscard]] inline auto read_string_vec_map(std::string const &filename)
+    -> VecMap<Key, std::string>
+{
+    VecMap<Key, std::string> vec;
+    std::ifstream is(filename);
+    std::string line;
+    while (std::getline(is, line)) {
+        vec.push_back(std::move(line));
+    }
+    return vec;
 }
 
 } // namespace pisa

@@ -18,12 +18,15 @@ struct scored_cursor {
     TermScorer scorer;
 
     ~scored_cursor() {}
+
     [[nodiscard]] constexpr auto docid() const noexcept -> std::uint32_t
     {
         return docs_enum.docid();
     }
     [[nodiscard]] constexpr auto freq() const noexcept -> float { return docs_enum.freq(); }
     void next() { docs_enum.next(); }
+    void next_geq(std::uint32_t docid) { docs_enum.next_geq(docid); }
+    [[nodiscard]] constexpr auto size() const noexcept -> std::size_t { return docs_enum.size(); }
 };
 
 template <typename Index, typename Scorer>
