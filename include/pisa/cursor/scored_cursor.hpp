@@ -23,7 +23,7 @@ struct scored_cursor {
     {
         return docs_enum.docid();
     }
-    [[nodiscard]] constexpr auto freq() const noexcept -> float { return docs_enum.freq(); }
+    [[nodiscard]] constexpr auto freq() -> float { return docs_enum.freq(); }
     void next() { docs_enum.next(); }
     void next_geq(std::uint32_t docid) { docs_enum.next_geq(docid); }
     [[nodiscard]] constexpr auto size() const noexcept -> std::size_t { return docs_enum.size(); }

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <bitset>
 #include <string>
 
 #include <CLI/CLI.hpp>
@@ -180,7 +181,7 @@ int main(int argc, const char **argv)
 
     auto intersections = [&]() {
         std::vector<std::vector<std::bitset<64>>> intersections;
-        std::ifstream is(*query_filename);
+        std::ifstream is(inter_filename);
         io::for_each_line(is, [&](auto const &query_line) {
             intersections.emplace_back();
             std::istringstream iss(query_line);
@@ -191,6 +192,11 @@ int main(int argc, const char **argv)
         });
         return intersections;
     }();
+
+    if (intersections.size() != queries.size()) {
+        spdlog::error("Number of intersections is not equal to number of queries");
+        std::exit(1);
+    }
 
     /**/
     if (false) { // NOLINT

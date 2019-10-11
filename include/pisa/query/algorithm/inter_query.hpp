@@ -16,24 +16,23 @@
 
 namespace pisa {
 
-[[nodiscard]] [[gnu::always_inline]] inline auto extract_ids(std::bitset<64> const &intersection,
-                                                             std::size_t query_length)
-    -> std::vector<std::uint32_t>
+[[nodiscard]] [[gnu::always_inline]] inline auto extract_indices(
+    std::bitset<64> const &intersection, std::size_t query_length) -> std::vector<std::uint32_t>
 {
     Expects(query_length <= std::numeric_limits<std::uint32_t>::max());
-    std::vector<std::uint32_t> term_ids;
-    term_ids.reserve(query_length);
+    std::vector<std::uint32_t> term_indices;
+    term_indices.reserve(query_length);
     for (std::uint32_t term_id = 0; term_id < query_length; ++term_id) {
         if (intersection.test(term_id)) {
-            term_ids.push_back(term_id);
+            term_indices.push_back(term_id);
         }
     }
-    return term_ids;
+    return term_indices;
 }
 
 template <typename Index, typename Scorer>
 inline auto intersection_query(Index const &index,
-                               Query const &query,
+                               Query query,
                                std::vector<std::bitset<64>> const &intersections,
                                Scorer scorer,
                                int k)
@@ -59,14 +58,18 @@ inline auto intersection_query(Index const &index,
     std::vector<intersect_type> essential_intersections;
     essential_intersections.reserve(intersections.size());
     for (auto intersection : intersections) {
-        auto term_ids = extract_ids(intersection, query.terms.size());
+        auto term_indices = extract_indices(intersection, query.terms.size());
         payload_type init;
-        init.reserve(term_ids.size());
+        init.reserve(term_indices.size());
+        std::vector<std::uint32_t> term_ids(term_indices.size());
+        std::transform(term_indices.begin(), term_indices.end(), term_ids.begin(), [&](auto idx) {
+            return query.terms[idx];
+        });
         auto cursors = make_cursors(index, Query{{}, term_ids, {}});
         essential_intersections.emplace_back(std::move(cursors),
                                              index.num_docs(),
                                              std::move(init),
-                                             accumulate_freq(std::move(term_ids)));
+                                             accumulate_freq(std::move(term_indices)));
     }
     auto lookup_cursors = make_cursors(index, query);
     auto acc_union = [](payload_type &acc, auto &cursor, auto idx) {

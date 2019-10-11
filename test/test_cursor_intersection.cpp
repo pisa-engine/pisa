@@ -1,14 +1,71 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <tbb/task_scheduler_init.h>
+
 #include "cursor/intersection.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "cursor/span_cursor.hpp"
 #include "in_memory_index.hpp"
+#include "pisa_config.hpp"
 #include "query/algorithm/ranked_and_query.hpp"
 #include "scorer/bm25.hpp"
 
 using namespace pisa;
+
+template <typename Index>
+struct IndexData {
+    static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
+
+    explicit IndexData(std::string const &scorer_name)
+        : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
+          document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
+          wdata(document_sizes.begin()->begin(),
+                collection.num_docs(),
+                collection,
+                scorer_name,
+                BlockSize(FixedBlock()))
+
+    {
+        typename Index::builder builder(collection.num_docs(), params);
+        for (auto const &plist : collection) {
+            uint64_t freqs_sum =
+                std::accumulate(plist.frequencies.begin(), plist.frequencies.end(), uint64_t(0));
+            builder.add_posting_list(plist.documents.size(),
+                                     plist.documents.begin(),
+                                     plist.frequencies.begin(),
+                                     freqs_sum);
+        }
+        builder.build(index);
+
+        term_id_vec q;
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
+        auto push_query = [&](std::string const &query_line) {
+            queries.push_back(parse_query_ids(query_line));
+        };
+        io::for_each_line(qfile, push_query);
+
+        std::string t;
+    }
+
+    [[nodiscard]] static auto get(std::string const &s_name)
+    {
+        if (IndexData::data.find(s_name) == IndexData::data.end()) {
+            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name);
+        }
+        return IndexData::data[s_name].get();
+    }
+
+    global_parameters params;
+    BinaryFreqCollection collection;
+    BinaryCollection document_sizes;
+    Index index;
+    std::vector<Query> queries;
+    wand_data<wand_data_raw> wdata;
+};
+
+template <typename Index>
+std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
 
 TEST_CASE("Single list", "[cursor_intersection][unit]")
 {
@@ -119,4 +176,43 @@ TEST_CASE("Ranked AND query", "[cursor_intersection][unit]")
     std::vector<std::pair<float, std::uint64_t>> expected(q.topk().begin(), q.topk().end());
     std::sort(expected.begin(), expected.end());
     REQUIRE(results == expected);
+}
+
+TEST_CASE("Execute on test index", "[cursor_intersection][integration]")
+{
+    tbb::task_scheduler_init init(1);
+    for (auto &&scorer_name : {"bm25"}) {
+        auto data = IndexData<single_index>::get(scorer_name);
+        ranked_and_query and_q(10);
+
+        with_scorer(scorer_name, data->wdata, [&](auto scorer) {
+            for (auto const &q : data->queries) {
+                auto and_cursors = make_scored_cursors(data->index, scorer, q);
+                and_q(gsl::make_span(and_cursors), data->index.num_docs());
+
+                auto cursors = make_scored_cursors(data->index, scorer, q);
+                CursorIntersection i(std::move(cursors),
+                                     data->index.num_docs(),
+                                     float(0),
+                                     [](float acc, auto &cursor, auto idx) {
+                                         return acc + cursor.scorer(cursor.docid(), cursor.freq());
+                                     });
+                std::vector<std::pair<float, std::uint64_t>> results;
+                while (i.docid() < data->index.num_docs()) {
+                    results.push_back({i.payload(), i.docid()});
+                    i.next();
+                }
+                std::sort(results.begin(), results.end(), std::greater{});
+
+                for (size_t i = 0; i < and_q.topk().size(); ++i) {
+                    CAPTURE(i);
+                    CAPTURE(and_q.topk()[i].first);
+                    CAPTURE(results[i].first);
+                    CAPTURE(and_q.topk()[i].second);
+                    CAPTURE(results[i].second);
+                    REQUIRE(and_q.topk()[i].first == Approx(results[i].first).epsilon(0.1));
+                }
+            }
+        });
+    }
 }
