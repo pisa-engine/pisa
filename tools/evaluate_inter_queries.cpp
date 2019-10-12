@@ -20,36 +20,34 @@
 using namespace pisa;
 using ranges::view::enumerate;
 
-template <typename Index, typename Wand, typename Scorer>
+template <typename Index, typename Scorer>
 using QueryLoop = std::function<std::vector<ResultVector>(
-    Index const &, Wand const &, Scorer, std::vector<Query> const &, int)>;
+    Index const &, Scorer, std::vector<Query> const &, int)>;
 
-template <typename Index, typename Wand, typename Scorer>
+template <typename Index, typename Scorer>
 auto query_loop(Index const &,
-                Wand const &,
                 Scorer,
                 std::vector<Query> const &,
                 int k,
                 std::vector<std::vector<std::bitset<64>>> const &intersections)
     -> std::vector<ResultVector>;
 
-#define PISA_RANKED_OR_QUERY_LOOP(SCORER, INDEX, WAND)                                      \
-    template <>                                                                             \
-    auto query_loop<BOOST_PP_CAT(INDEX, _index), wand_data<WAND>, SCORER<wand_data<WAND>>>( \
-        BOOST_PP_CAT(INDEX, _index) const &index,                                           \
-        wand_data<WAND> const &,                                                            \
-        SCORER<wand_data<WAND>> scorer,                                                     \
-        std::vector<Query> const &queries,                                                  \
-        int k,                                                                              \
-        std::vector<std::vector<std::bitset<64>>> const &intersections)                     \
-        ->std::vector<ResultVector>                                                         \
-    {                                                                                       \
-        std::vector<ResultVector> results(queries.size());                                  \
-        for (std::size_t qidx = 0; qidx < queries.size(); ++qidx) {                         \
-            results[qidx] =                                                                 \
-                intersection_query(index, queries[qidx], intersections[qidx], scorer, k);   \
-        }                                                                                   \
-        return results;                                                                     \
+#define PISA_RANKED_OR_QUERY_LOOP(SCORER, INDEX, WAND)                                    \
+    template <>                                                                           \
+    auto query_loop<BOOST_PP_CAT(INDEX, _index), SCORER<wand_data<WAND>>>(                \
+        BOOST_PP_CAT(INDEX, _index) const &index,                                         \
+        SCORER<wand_data<WAND>> scorer,                                                   \
+        std::vector<Query> const &queries,                                                \
+        int k,                                                                            \
+        std::vector<std::vector<std::bitset<64>>> const &intersections)                   \
+        ->std::vector<ResultVector>                                                       \
+    {                                                                                     \
+        std::vector<ResultVector> results(queries.size());                                \
+        for (std::size_t qidx = 0; qidx < queries.size(); ++qidx) {                       \
+            results[qidx] =                                                               \
+                intersection_query(index, queries[qidx], intersections[qidx], scorer, k); \
+        }                                                                                 \
+        return results;                                                                   \
     }
 
 #define LOOP_BODY(R, DATA, T)                                \
@@ -99,7 +97,7 @@ void evaluate_queries(const std::string &index_filename,
         auto docmap = Payload_Vector<>::from(*source);
         auto start_batch = std::chrono::steady_clock::now();
         std::vector<ResultVector> raw_results =
-            query_loop(index, wdata, scorer, queries, k, intersections);
+            query_loop(index, scorer, queries, k, intersections);
         auto end_batch = std::chrono::steady_clock::now();
         for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
             auto results = raw_results[query_idx];
