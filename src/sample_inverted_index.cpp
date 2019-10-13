@@ -1,18 +1,15 @@
-#include <string>
-#include <random>
-#include <fstream>
 #include <cmath>
+#include <fstream>
+#include <random>
+#include <string>
 
 #include "invert.hpp"
-
 #include "binary_freq_collection.hpp"
-
 #include "util/progress.hpp"
-
 #include "CLI/CLI.hpp"
 
-
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     using namespace pisa;
     std::string input_basename;
@@ -27,16 +24,15 @@ int main(int argc, char **argv) {
     app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
 
-    if(rate < 0 or rate > 1)
-    {
+    if (rate < 0 or rate > 1) {
         spdlog::error("Sampling rate should be between 0 and 1.");
         std::abort();
     }
     binary_freq_collection input(input_basename.c_str());
 
     // Copy '.sizes' file
-    std::ifstream  sis(input_basename + ".sizes");
-    std::ofstream  sos(output_basename + ".sizes");
+    std::ifstream sis(input_basename + ".sizes");
+    std::ofstream sos(output_basename + ".sizes");
     sos << sis.rdbuf();
     sis.close();
     sos.close();
