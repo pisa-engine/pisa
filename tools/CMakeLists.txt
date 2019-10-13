@@ -116,3 +116,9 @@ target_link_libraries(extract_topics
   pisa
   CLI11
 )
+
+add_executable(evaluate_inter_queries evaluate_inter_queries.cpp)
+target_link_libraries(evaluate_inter_queries
+  pisa
+  CLI11
+)
