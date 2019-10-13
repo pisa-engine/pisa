@@ -3,10 +3,10 @@
 #include <random>
 #include <string>
 
-#include "invert.hpp"
-#include "binary_freq_collection.hpp"
-#include "util/progress.hpp"
 #include "CLI/CLI.hpp"
+#include "binary_freq_collection.hpp"
+#include "invert.hpp"
+#include "util/progress.hpp"
 
 int main(int argc, char **argv)
 {
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     CLI::App app{"A tool for sampling an inverted index."};
     app.add_option("-c,--collection", input_basename, "Input collection basename")->required();
     app.add_option("-o,--output", output_basename, "Output collection basename")->required();
-    app.add_option("-r,--rate", rate, "Sampling rate")->required();
+    app.add_option("-r,--rate", rate, "Sampling rate (proportional size of the output index)")->required();
     app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
 
@@ -30,12 +30,9 @@ int main(int argc, char **argv)
     }
     binary_freq_collection input(input_basename.c_str());
 
-    // Copy '.sizes' file
-    std::ifstream sis(input_basename + ".sizes");
-    std::ofstream sos(output_basename + ".sizes");
-    sos << sis.rdbuf();
-    sis.close();
-    sos.close();
+    boost::filesystem::copy_file(fmt::format("{}.sizes", input_basename),
+                                 fmt::format("{}.sizes", output_basename),
+                                 boost::filesystem::copy_option::overwrite_if_exists);
 
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");
@@ -53,7 +50,7 @@ int main(int argc, char **argv)
             auto eng2 = eng1;
             std::shuffle(docs.begin(), docs.end(), eng1);
             std::shuffle(freqs.begin(), freqs.end(), eng2);
-            auto new_size = std::ceil(plist.docs.size() * rate);
+            size_t new_size = std::ceil(plist.docs.size() * rate);
             docs.resize(new_size);
             freqs.resize(new_size);
             sort(docs.begin(), docs.end());
