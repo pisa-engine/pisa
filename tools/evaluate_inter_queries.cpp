@@ -69,8 +69,6 @@ void evaluate_queries(const std::string &index_filename,
                       std::string &wand_data_filename,
                       std::vector<Query> const &queries,
                       std::vector<std::vector<std::bitset<64>>> const &intersections,
-                      const std::optional<std::string> &thresholds_filename,
-                      std::string const &type,
                       uint64_t k,
                       std::string const &documents_filename,
                       std::string const &scorer_name,
@@ -137,7 +135,6 @@ int main(int argc, const char **argv)
     std::string scorer_name;
     std::string wand_data_filename;
     std::optional<std::string> query_filename;
-    std::optional<std::string> thresholds_filename;
     std::optional<std::string> stopwords_filename;
     std::optional<std::string> stemmer = std::nullopt;
     std::string run_id = "R0";
@@ -198,33 +195,29 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) { // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                  \
-    }                                                                                          \
-    else if (type == BOOST_PP_STRINGIZE(T))                                                    \
-    {                                                                                          \
-        if (compressed) {                                                                      \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                          wand_data_filename,  \
-                                                                          queries,             \
-                                                                          intersections,       \
-                                                                          thresholds_filename, \
-                                                                          type,                \
-                                                                          k,                   \
-                                                                          documents_file,      \
-                                                                          scorer_name,         \
-                                                                          run_id);             \
-        } else {                                                                               \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                                      wand_data_filename,      \
-                                                                      queries,                 \
-                                                                      intersections,           \
-                                                                      thresholds_filename,     \
-                                                                      type,                    \
-                                                                      k,                       \
-                                                                      documents_file,          \
-                                                                      scorer_name,             \
-                                                                      run_id);                 \
-        }                                                                                      \
+#define LOOP_BODY(R, DATA, T)                                                                 \
+    }                                                                                         \
+    else if (type == BOOST_PP_STRINGIZE(T))                                                   \
+    {                                                                                         \
+        if (compressed) {                                                                     \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,     \
+                                                                          wand_data_filename, \
+                                                                          queries,            \
+                                                                          intersections,      \
+                                                                          k,                  \
+                                                                          documents_file,     \
+                                                                          scorer_name,        \
+                                                                          run_id);            \
+        } else {                                                                              \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,         \
+                                                                      wand_data_filename,     \
+                                                                      queries,                \
+                                                                      intersections,          \
+                                                                      k,                      \
+                                                                      documents_file,         \
+                                                                      scorer_name,            \
+                                                                      run_id);                \
+        }                                                                                     \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

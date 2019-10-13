@@ -174,18 +174,10 @@ TEST_CASE("Execute on test index", "[inter_query][integration]")
 
         with_scorer(scorer_name, data->wdata, [&](auto scorer) {
             for (auto const &q : data->queries) {
-                auto query = [&]() {
-                    Query distinct;
-                    for (auto [term, freq] : query_freqs(q.terms)) {
-                        distinct.terms.push_back(term);
-                        distinct.term_weights.push_back(freq);
-                    }
-                    return distinct;
-                }();
                 auto cursors = make_scored_cursors(data->index, scorer, q);
                 or_q(gsl::make_span(cursors), data->index.num_docs());
                 auto results =
-                    intersection_query(data->index, query, make_intersections(query), scorer, 10);
+                    intersection_query(data->index, q, make_intersections(q), scorer, 10);
                 REQUIRE(or_q.topk().size() == results.size());
                 for (size_t i = 0; i < or_q.topk().size(); ++i) {
                     CAPTURE(i);
@@ -194,4 +186,38 @@ TEST_CASE("Execute on test index", "[inter_query][integration]")
             }
         });
     }
+}
+
+TEST_CASE("Resolving terms with intersections", "[inter_query][unit]")
+{
+    auto [input_query, input_inters, expected_query, expected_inters] =
+        GENERATE(table<Query, std::vector<std::bitset<64>>, Query, std::vector<std::bitset<64>>>(
+            {{Query{{}, {0, 1, 2}, {}},
+              {{0b001}, {0b010}, {0b100}},
+              Query{{}, {0, 1, 2}, {}},
+              {{0b001}, {0b010}, {0b100}}},
+             {Query{{}, {0, 1, 0}, {}},
+              {{0b001}, {0b010}, {0b100}},
+              Query{{}, {0, 1}, {}},
+              {{0b001}, {0b010}}}}));
+    CAPTURE(input_query.terms);
+    CAPTURE(input_inters);
+    resolve(input_query, input_inters);
+    CHECK(input_query.terms == expected_query.terms);
+    CHECK(input_inters == expected_inters);
+}
+
+TEST_CASE("Remap intersections", "[inter_query][unit]")
+{
+    auto [mapping, input_inters, expected_inters] =
+        GENERATE(table<std::vector<std::optional<std::size_t>>,
+                       std::vector<std::bitset<64>>,
+                       std::vector<std::bitset<64>>>(
+            {{{0, 1, 2}, {{0b001}, {0b010}, {0b100}}, {{0b001}, {0b010}, {0b100}}},
+             {{2, 0, 1}, {{0b001}, {0b010}, {0b100}}, {{0b100}, {0b001}, {0b010}}},
+             {{2, 0, std::nullopt}, {{0b001}, {0b010}, {0b100}}, {{0b100}, {0b001}}}}));
+    CAPTURE(mapping);
+    CAPTURE(input_inters);
+    remap_intersections(input_inters, mapping);
+    REQUIRE(input_inters == expected_inters);
 }
