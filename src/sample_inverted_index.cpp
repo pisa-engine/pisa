@@ -18,11 +18,13 @@ int main(int argc, char **argv) {
     std::string input_basename;
     std::string output_basename;
     float rate;
+    unsigned seed = std::time(0);
 
-    CLI::App app{"sample_inverted_index - a tool for sampling an inverted index."};
+    CLI::App app{"A tool for sampling an inverted index."};
     app.add_option("-c,--collection", input_basename, "Input collection basename")->required();
     app.add_option("-o,--output", output_basename, "Output collection basename")->required();
     app.add_option("-r,--rate", rate, "Sampling rate")->required();
+    app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
 
     if(rate < 0 or rate > 1)
@@ -51,7 +53,6 @@ int main(int argc, char **argv) {
             std::vector<uint32_t> docs(plist.docs.begin(), plist.docs.end());
             std::vector<uint32_t> freqs(plist.freqs.begin(), plist.freqs.end());
 
-            auto seed = unsigned ( std::time(0) );
             std::mt19937 eng1(seed);
             auto eng2 = eng1;
             std::shuffle(docs.begin(), docs.end(), eng1);
