@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     std::string input_basename;
     std::string output_basename;
     float rate;
-    unsigned seed = std::time(0);
+    unsigned seed = std::random_device{}();
 
     CLI::App app{"A tool for sampling an inverted index."};
     app.add_option("-c,--collection", input_basename, "Input collection basename")->required();
