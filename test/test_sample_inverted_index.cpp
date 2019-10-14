@@ -9,7 +9,7 @@
 #include "binary_freq_collection.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
-#include "util/index_build_utils.hpp"
+#include "util/inverted_index_utils.hpp"
 
 TEST_CASE("sample_inverted_index")
 {
