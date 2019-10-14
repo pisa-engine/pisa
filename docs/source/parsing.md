@@ -49,6 +49,34 @@ The parsing process will write the following files:
   line N, with N starting from 0. Also, keep in mind that each ID corresponds with
   an ID of the `cw09b.documents` file.
 
+### Generating lexicon and document map
+Once the index has been parsed, you can generate the document map and lexicon which will be used at query time.
+These structures can be generated using the `lexicon` command:
+
+    Build, print, or query lexicon
+    Usage: ./bin/lexicon [OPTIONS] SUBCOMMAND
+
+    Options:
+        -h,--help                   Print this help message and exit
+
+    Subcommands:
+        build                       Build a lexicon
+        lookup                      Retrieve the payload at index
+        rlookup                     Retrieve the index of payload
+        print                       Print elements line by line
+
+For example, assume we have the following (example) file, `example.terms`:
+
+        foo
+        bar
+        baz
+
+We will generate the lexicon as follows: `./bin/lexicon build example.terms example.lexicon`
+
+You can validate this command by checking the lexicon data: `./bin/lexicon print example.lexicon`
+
+Repeat this process for the `.documents` file to generate the document map.
+
 ### Supported stemmers
 - Porter2
 - Krovetz
