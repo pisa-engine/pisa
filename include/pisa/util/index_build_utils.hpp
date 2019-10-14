@@ -6,6 +6,9 @@
 #include "mappable/mapper.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
+#include "boost/filesystem.hpp"
+#include "gsl/span"
+#include "invert.hpp"
 
 namespace pisa {
 
@@ -159,6 +162,46 @@ void sample_inverted_index(const std::string &input_basename,
         }
         pl.clear();
     }
+}
+
+
+template <typename SampleFn>
+void sample_inverted_index(std::string const &input_basename,
+                  std::string const &output_basename,
+                  SampleFn &&sample_fn)
+{
+
+    binary_freq_collection input(input_basename.c_str());
+
+    boost::filesystem::copy_file(fmt::format("{}.sizes", input_basename),
+                                 fmt::format("{}.sizes", output_basename),
+                                 boost::filesystem::copy_option::overwrite_if_exists);
+
+    std::ofstream dos(output_basename + ".docs");
+    std::ofstream fos(output_basename + ".freqs");
+
+    auto document_count = static_cast<uint32_t>(input.num_docs());
+    write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
+
+    {
+        pisa::progress progress("Sampling inverted index", input.size());
+        for (auto const &plist : input) {
+            auto sample = sample_fn(plist.docs.size());
+
+            std::vector<std::uint32_t> sampled_docs;
+            std::vector<std::uint32_t> sampled_freqs;
+            for (auto index : sample) {
+                sampled_docs.push_back(plist.docs[index]);
+                sampled_freqs.push_back(plist.freqs[index]);
+            }
+
+            write_sequence(dos, gsl::span<uint32_t const>(sampled_docs));
+            write_sequence(fos, gsl::span<uint32_t const>(sampled_freqs));
+            progress.update(1);
+        }
+    }
+    dos.close();
+    fos.close();
 }
 
 } // namespace pisa

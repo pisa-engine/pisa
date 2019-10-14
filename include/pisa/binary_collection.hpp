@@ -47,6 +47,10 @@ class base_binary_collection {
         sequence(pointer begin, pointer end) : m_begin(begin), m_end(end) {}
         sequence() : m_begin(nullptr), m_end(nullptr) {}
 
+        posting_type const& operator[](size_t p) const {
+            return *(m_begin + p);
+        }
+
         pointer begin() const { return m_begin; }
         pointer end() const { return m_end; }
         size_t  size() const { return m_end - m_begin; }
