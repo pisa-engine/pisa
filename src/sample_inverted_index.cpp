@@ -6,6 +6,7 @@
 #include "CLI/CLI.hpp"
 #include "binary_freq_collection.hpp"
 #include "invert.hpp"
+#include "util/index_build_utils.hpp"
 #include "util/progress.hpp"
 
 using namespace pisa;

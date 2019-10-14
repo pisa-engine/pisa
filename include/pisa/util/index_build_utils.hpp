@@ -2,20 +2,21 @@
 
 #include "spdlog/spdlog.h"
 
+#include "boost/filesystem.hpp"
+#include "gsl/span"
 #include "index_types.hpp"
+#include "invert.hpp"
 #include "mappable/mapper.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
-#include "boost/filesystem.hpp"
-#include "gsl/span"
-#include "invert.hpp"
 
 namespace pisa {
 
 template <typename DocsSequence, typename FreqsSequence>
 void get_size_stats(freq_index<DocsSequence, FreqsSequence> &coll,
-                    uint64_t &                               docs_size,
-                    uint64_t &                               freqs_size) {
+                    uint64_t &docs_size,
+                    uint64_t &freqs_size)
+{
     auto size_tree = mapper::size_tree_of(coll);
     size_tree->dump();
     for (auto const &node : size_tree->children) {
@@ -29,8 +30,9 @@ void get_size_stats(freq_index<DocsSequence, FreqsSequence> &coll,
 
 template <typename BlockCodec, bool Profile>
 void get_size_stats(block_freq_index<BlockCodec, Profile> &coll,
-                    uint64_t &                             docs_size,
-                    uint64_t &                             freqs_size) {
+                    uint64_t &docs_size,
+                    uint64_t &freqs_size)
+{
     auto size_tree = mapper::size_tree_of(coll);
     size_tree->dump();
     uint64_t total_size = 0;
@@ -48,12 +50,13 @@ void get_size_stats(block_freq_index<BlockCodec, Profile> &coll,
 }
 
 template <typename Collection>
-void dump_stats(Collection &coll, std::string const &type, uint64_t postings) {
+void dump_stats(Collection &coll, std::string const &type, uint64_t postings)
+{
 
     uint64_t docs_size = 0, freqs_size = 0;
     get_size_stats(coll, docs_size, freqs_size);
 
-    double bits_per_doc  = docs_size * 8.0 / postings;
+    double bits_per_doc = docs_size * 8.0 / postings;
     double bits_per_freq = freqs_size * 8.0 / postings;
     spdlog::info("Documents: {} bytes, {} bits per element", docs_size, bits_per_doc);
     spdlog::info("Frequencies: {} bytes, {} bits per element", freqs_size, bits_per_freq);
@@ -62,22 +65,24 @@ void dump_stats(Collection &coll, std::string const &type, uint64_t postings) {
         "freqs_size", freqs_size)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
 }
 
-void emit(std::ostream &os, const uint32_t *vals, size_t n) {
+void emit(std::ostream &os, const uint32_t *vals, size_t n)
+{
     os.write(reinterpret_cast<const char *>(vals), sizeof(*vals) * n);
 }
 
 void emit(std::ostream &os, uint32_t val) { emit(os, &val, 1); }
 
-void reorder_inverted_index(const std::string &          input_basename,
-                            const std::string &          output_basename,
-                            const std::vector<uint32_t> &mapping) {
+void reorder_inverted_index(const std::string &input_basename,
+                            const std::string &output_basename,
+                            const std::vector<uint32_t> &mapping)
+{
     std::ofstream output_mapping(output_basename + ".mapping");
     emit(output_mapping, mapping.data(), mapping.size());
 
     binary_collection input_sizes((input_basename + ".sizes").c_str());
-    auto              sizes = *input_sizes.begin();
+    auto sizes = *input_sizes.begin();
 
-    auto                  num_docs = sizes.size();
+    auto num_docs = sizes.size();
     std::vector<uint32_t> new_sizes(num_docs);
     for (size_t i = 0; i < num_docs; ++i) {
         new_sizes[mapping[i]] = sizes.begin()[i];
@@ -95,7 +100,7 @@ void reorder_inverted_index(const std::string &          input_basename,
     binary_freq_collection input(input_basename.c_str());
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
-    pisa::progress                             reorder_progress("Reorder inverted index",
+    pisa::progress reorder_progress("Reorder inverted index",
                                     std::distance(input.begin(), input.end()));
 
     for (const auto &seq : input) {
@@ -120,13 +125,14 @@ void reorder_inverted_index(const std::string &          input_basename,
 
 void sample_inverted_index(const std::string &input_basename,
                            const std::string &output_basename,
-                           const uint32_t     max_doc) {
+                           const uint32_t max_doc)
+{
 
     binary_collection input_sizes((input_basename + ".sizes").c_str());
-    auto              sizes = *input_sizes.begin();
+    auto sizes = *input_sizes.begin();
 
     std::vector<uint32_t> new_sizes(sizes.begin(), std::next(sizes.begin(), max_doc));
-    std::ofstream         output_sizes(output_basename + ".sizes");
+    std::ofstream output_sizes(output_basename + ".sizes");
     emit(output_sizes, sizes.size());
     emit(output_sizes, new_sizes.data(), max_doc);
 
@@ -140,7 +146,7 @@ void sample_inverted_index(const std::string &input_basename,
     std::vector<std::pair<uint32_t, uint32_t>> pl;
     for (const auto &seq : input) {
 
-        auto dociter  = seq.docs.begin();
+        auto dociter = seq.docs.begin();
         auto freqiter = seq.freqs.begin();
         for (; dociter != seq.docs.end(); ++dociter, ++freqiter) {
             auto doc = *dociter;
@@ -164,11 +170,11 @@ void sample_inverted_index(const std::string &input_basename,
     }
 }
 
-
+// sample_fn must be stable, it must return a sorted vector
 template <typename SampleFn>
 void sample_inverted_index(std::string const &input_basename,
-                  std::string const &output_basename,
-                  SampleFn &&sample_fn)
+                           std::string const &output_basename,
+                           SampleFn &&sample_fn)
 {
 
     binary_freq_collection input(input_basename.c_str());
@@ -182,26 +188,22 @@ void sample_inverted_index(std::string const &input_basename,
 
     auto document_count = static_cast<uint32_t>(input.num_docs());
     write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
+    pisa::progress progress("Sampling inverted index", input.size());
+    for (auto const &plist : input) {
+        auto sample = sample_fn(plist.docs.size());
+        assert(std::is_sorted(std::begin(sample),std::end(sample)));
 
-    {
-        pisa::progress progress("Sampling inverted index", input.size());
-        for (auto const &plist : input) {
-            auto sample = sample_fn(plist.docs.size());
-
-            std::vector<std::uint32_t> sampled_docs;
-            std::vector<std::uint32_t> sampled_freqs;
-            for (auto index : sample) {
-                sampled_docs.push_back(plist.docs[index]);
-                sampled_freqs.push_back(plist.freqs[index]);
-            }
-
-            write_sequence(dos, gsl::span<uint32_t const>(sampled_docs));
-            write_sequence(fos, gsl::span<uint32_t const>(sampled_freqs));
-            progress.update(1);
+        std::vector<std::uint32_t> sampled_docs;
+        std::vector<std::uint32_t> sampled_freqs;
+        for (auto index : sample) {
+            sampled_docs.push_back(plist.docs[index]);
+            sampled_freqs.push_back(plist.freqs[index]);
         }
+
+        write_sequence(dos, gsl::span<uint32_t const>(sampled_docs));
+        write_sequence(fos, gsl::span<uint32_t const>(sampled_freqs));
+        progress.update(1);
     }
-    dos.close();
-    fos.close();
 }
 
 } // namespace pisa
