@@ -110,6 +110,7 @@ TEST_CASE("sample_inverted_index_reverse")
         std::vector<std::uint32_t> sample(size);
         std::iota(sample.begin(), sample.end(), 0);
         std::reverse(sample.begin(), sample.end());
+        std::sort(sample.begin(), sample.end());
         return sample;
     });
     auto sampled = binary_freq_collection(output.c_str());
