@@ -126,12 +126,12 @@ TEST_CASE("sample_inverted_index_reverse")
         std::reverse(odocs.begin(), odocs.end());
         size_t new_size = std::ceil(odocs.size() * rate);
         odocs.resize(new_size);
-        std::sort(odocs.begin(), odocs.end());
+        std::reverse(odocs.begin(), odocs.end());
         std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
         std::vector<uint32_t> ofreqs(oit->freqs.begin(), oit->freqs.end());
         std::reverse(ofreqs.begin(), ofreqs.end());
         ofreqs.resize(new_size);
-        std::sort(ofreqs.begin(), ofreqs.end());
+        std::reverse(ofreqs.begin(), ofreqs.end());
         std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
         REQUIRE(std::equal(odocs.begin(), odocs.end(), sdocs.begin()));
         REQUIRE(std::equal(ofreqs.begin(), ofreqs.end(), sfreqs.begin()));
