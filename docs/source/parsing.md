@@ -43,15 +43,20 @@ The parsing process will write the following files:
 - `cw09b`: forward index in binary format.
 - `cw09b.terms`: a new-line-delimited list of sorted terms,
   where term having ID N is on line N, with N starting from 0.
+- `cw09b.termlex`: a binary representation of the `.terms` file that is used to look up term identifiers at query time.
 - `cw09b.documents`: a new-line-delimited list of document titles (e.g., TREC-IDs),
   where document having ID N is on line N, with N starting from 0.
+- `cw09b.doclex`: a binary representation of the `.documents` file that is used to look up document identifiers at query time.
 - `cw09b.urls`: a new-line-delimited list of URLs, where URL having ID N is on
   line N, with N starting from 0. Also, keep in mind that each ID corresponds with
   an ID of the `cw09b.documents` file.
 
-### Generating lexicon and document map
-Once the index has been parsed, you can generate the document map and lexicon which will be used at query time.
-These structures can be generated using the `lexicon` command:
+### Generating mapping files
+Once the forward index has been generated, a binary document map and lexicon file will be automatically built.
+However, they can also be built using the `lexicon` utility by providing the new-line delimited file as input.
+The `lexicon` utility also allows efficient look-ups and dumping of these binary mapping files. 
+
+Examples of the `lexicon` command are shown below:
 
     Build, print, or query lexicon
     Usage: ./bin/lexicon [OPTIONS] SUBCOMMAND
@@ -65,17 +70,25 @@ These structures can be generated using the `lexicon` command:
         rlookup                     Retrieve the index of payload
         print                       Print elements line by line
 
-For example, assume we have the following (example) file, `example.terms`:
+For example, assume we have the following plaintext, new-line delimited file, `example.terms`:
+   
+        aaa
+        bbb
+        def
+        zzz
+        
+We can generate a lexicon as follows: `./bin/lexicon build example.terms example.lex`
 
-        foo
-        bar
-        baz
+You can dump the binary lexicon back to a plaintext representation: `./bin/lexicon print example.lex` which should output:
 
-We will generate the lexicon as follows: `./bin/lexicon build example.terms example.lexicon`
+        aaa
+        bbb
+        def
+        zzz
 
-You can validate this command by checking the lexicon data: `./bin/lexicon print example.lexicon`
+You can retrieve the term with a given identifier: `./bin/lexicon lookup example.lex 2` which outputs `def`
 
-Repeat this process for the `.documents` file to generate the document map.
+Finally, you can retrieve the id of a given term: `./bin/lexicon rlookup example.lex def` which outputs `2`. NOTE: This requires the initial file to be lexicographically sorted, as `rlookup` depends on binary search.
 
 ### Supported stemmers
 - Porter2
