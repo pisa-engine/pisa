@@ -9,6 +9,7 @@
 
 #include "recursive_graph_bisection.hpp"
 #include "util/progress.hpp"
+#include "util/inverted_index_utils.hpp"
 #include "payload_vector.hpp"
 
 using namespace pisa;
