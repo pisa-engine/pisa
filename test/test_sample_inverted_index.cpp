@@ -104,12 +104,14 @@ TEST_CASE("sample_inverted_index_reverse")
     Temporary_Directory tmpdir;
     std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
-
+    float rate = 0.1;
     // when
-    pisa::sample_inverted_index(input, output, [](size_t size) {
+    pisa::sample_inverted_index(input, output, [&](size_t size) {
         std::vector<std::uint32_t> sample(size);
         std::iota(sample.begin(), sample.end(), 0);
         std::reverse(sample.begin(), sample.end());
+        size_t new_size = std::ceil(size * rate);
+        sample.resize(new_size);
         std::sort(sample.begin(), sample.end());
         return sample;
     });
@@ -122,9 +124,14 @@ TEST_CASE("sample_inverted_index_reverse")
     for (auto i = 0; oit != original.end(); ++oit, ++sit) {
         std::vector<uint32_t> odocs(oit->docs.begin(), oit->docs.end());
         std::reverse(odocs.begin(), odocs.end());
+        size_t new_size = std::ceil(odocs.size() * rate);
+        odocs.resize(new_size);
+        std::sort(odocs.begin(), odocs.end());
         std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
         std::vector<uint32_t> ofreqs(oit->freqs.begin(), oit->freqs.end());
         std::reverse(ofreqs.begin(), ofreqs.end());
+        ofreqs.resize(new_size);
+        std::sort(ofreqs.begin(), ofreqs.end());
         std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
         REQUIRE(std::equal(odocs.begin(), odocs.end(), sdocs.begin()));
         REQUIRE(std::equal(ofreqs.begin(), ofreqs.end(), sfreqs.begin()));

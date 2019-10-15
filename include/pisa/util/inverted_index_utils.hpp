@@ -35,6 +35,7 @@ void sample_inverted_index(std::string const &input_basename,
     for (auto const &plist : input) {
         auto sample = sample_fn(plist.docs.size());
         assert(std::is_sorted(std::begin(sample),std::end(sample)));
+        assert(sample.size() > 0);
 
         std::vector<std::uint32_t> sampled_docs;
         std::vector<std::uint32_t> sampled_freqs;
