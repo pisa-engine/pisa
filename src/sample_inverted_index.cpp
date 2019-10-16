@@ -41,7 +41,7 @@ int main(int argc, char **argv)
                     indices.end(),
                     std::back_inserter(sample),
                     sample_size,
-                    std::mt19937{std::random_device{}()});
+                    std::mt19937{seed});
 
         return sample;
     };
