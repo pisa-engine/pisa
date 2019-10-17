@@ -67,3 +67,6 @@
 [submodule "external/wapopp"]
 	path = external/wapopp
 	url = https://github.com/pisa-engine/wapopp.git
+[submodule "external/picojson"]
+	path = external/picojson
+	url = https://github.com/kazuho/picojson.git

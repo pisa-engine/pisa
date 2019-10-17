@@ -112,3 +112,9 @@ target_link_libraries(sample_inverted_index
   pisa
   CLI11
 )
+
+add_executable(index_stats_json index_stats_json.cpp)
+target_link_libraries(index_stats_json
+  pisa
+  CLI11
+)
