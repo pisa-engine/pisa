@@ -10,6 +10,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
+#include "util/inverted_index_utils.hpp"
 #include "util/util.hpp"
 #include "util/progress.hpp"
 

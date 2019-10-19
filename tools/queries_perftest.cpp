@@ -60,7 +60,7 @@ void perftest(std::string const &index_filename,
     if (wand_data_filename) {
         std::error_code error;
         md.map(*wand_data_filename, error);
-        if(error){
+        if (error) {
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
         }
@@ -84,7 +84,8 @@ void perftest(std::string const &index_filename,
             spdlog::info("Query type: {}", t);
             QueryBenchmarkLoop<IndexType, WandType, decltype(scorer)> qloop;
             if (t == "and") {
-                qloop = query_benchmark_loop<IndexType, and_query, WandType, decltype(scorer)>;
+                qloop =
+                    query_benchmark_loop<IndexType, and_query<false>, WandType, decltype(scorer)>;
             } else if (t == "or") {
                 qloop =
                     query_benchmark_loop<IndexType, or_query<false>, WandType, decltype(scorer)>;
@@ -154,8 +155,8 @@ void perftest(std::string const &index_filename,
                 spdlog::info("90% quantile: {}", q90);
                 spdlog::info("95% quantile: {}", q95);
 
-                stats_line()("type", type)("query", t)("avg", avg)("q50", q50)("q90", q90)(
-                    "q95", q95);
+                stats_line()("type", type)("query", t)("avg", avg)("q50", q50)("q90", q90)("q95",
+                                                                                           q95);
             }
         }
     };

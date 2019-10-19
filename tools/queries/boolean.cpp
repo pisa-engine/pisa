@@ -40,7 +40,7 @@ namespace pisa {
         return query_times;                                                                      \
     }
 
-#define LOOP_BODY(R, DATA, T)                                \
+#define LOOP_BODY(R, DATA, T)                         \
     PISA_OR_QUERY_LOOP(bm25, T, wand_data_raw)        \
     PISA_OR_QUERY_LOOP(dph, T, wand_data_raw)         \
     PISA_OR_QUERY_LOOP(pl2, T, wand_data_raw)         \
@@ -88,7 +88,7 @@ BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
         return query_times;                                                                      \
     }
 
-#define LOOP_BODY(R, DATA, T)                                \
+#define LOOP_BODY(R, DATA, T)                         \
     PISA_OR_QUERY_LOOP(bm25, T, wand_data_raw)        \
     PISA_OR_QUERY_LOOP(dph, T, wand_data_raw)         \
     PISA_OR_QUERY_LOOP(pl2, T, wand_data_raw)         \
@@ -105,7 +105,7 @@ BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #define PISA_AND_QUERY_LOOP(SCORER, INDEX, WAND)                                                 \
     template <>                                                                                  \
     auto query_benchmark_loop<BOOST_PP_CAT(INDEX, _index),                                       \
-                              pisa::and_query,                                                   \
+                              pisa::and_query<false>,                                            \
                               wand_data<WAND>,                                                   \
                               SCORER<wand_data<WAND>>>(BOOST_PP_CAT(INDEX, _index) const &index, \
                                                        wand_data<WAND> const &,                  \
@@ -136,7 +136,7 @@ BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
         return query_times;                                                                      \
     }
 
-#define LOOP_BODY(R, DATA, T)                                \
+#define LOOP_BODY(R, DATA, T)                          \
     PISA_AND_QUERY_LOOP(bm25, T, wand_data_raw)        \
     PISA_AND_QUERY_LOOP(dph, T, wand_data_raw)         \
     PISA_AND_QUERY_LOOP(pl2, T, wand_data_raw)         \

@@ -11,13 +11,17 @@
 
 namespace pisa {
 
+template <bool with_freqs = false>
 struct and_query {
 
-    template <typename Cursor>
-    auto operator()(gsl::span<Cursor> cursors, uint64_t max_docid) const -> std::vector<uint64_t>
-    {
-        using Result_t = uint64_t;
+    using Doc_t = uint32_t;
+    using Score_t = float;
+    using DocScore_t = std::pair<Doc_t, Score_t>;
+    using Result_t = typename std::conditional<with_freqs, DocScore_t, Doc_t>::type;
 
+    template <typename Cursor>
+    auto operator()(gsl::span<Cursor> cursors, uint64_t max_docid) -> std::vector<Result_t>
+    {
         std::vector<Result_t> results;
         if (cursors.empty()) {
             return results;
@@ -49,7 +53,16 @@ struct and_query {
 
             if (i == ordered_cursors.size()) {
 
-                results.push_back(candidate);
+                if constexpr (with_freqs) {
+                    auto score = 0.0f;
+                    for (i = 0; i < ordered_cursors.size(); ++i) {
+                        score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(),
+                                                            ordered_cursors[i]->docs_enum.freq());
+                    }
+                    results.emplace_back(candidate, score);
+                } else {
+                    results.push_back(candidate);
+                }
 
                 ordered_cursors[0]->next();
                 candidate = ordered_cursors[0]->docid();

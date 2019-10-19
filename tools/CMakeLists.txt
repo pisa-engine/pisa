@@ -116,3 +116,9 @@ target_link_libraries(extract_topics
   pisa
   CLI11
 )
+
+add_executable(sample_inverted_index sample_inverted_index.cpp)
+target_link_libraries(sample_inverted_index
+  pisa
+  CLI11
+)

@@ -7,6 +7,7 @@
 
 #include "codec/list.hpp"
 #include "query/queries.hpp"
+#include "scorer/index_scorer.hpp"
 
 namespace pisa {
 

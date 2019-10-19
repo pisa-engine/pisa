@@ -88,10 +88,10 @@ before_install:
 
 script:
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} -DPISA_BUILD_TOOLS=${BUILD_TOOLS} ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then
         make;
-        ctest -j2;
+        CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
       fi
 
 after_success:

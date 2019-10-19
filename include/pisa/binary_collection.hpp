@@ -35,6 +35,8 @@ struct BinaryCollection {
         [[nodiscard]] auto cend() const noexcept -> const_pointer;
         [[nodiscard]] auto size() const noexcept -> size_type;
         [[nodiscard]] auto back() const -> posting_type;
+        [[nodiscard]] auto operator[](size_type n) noexcept -> posting_type &;
+        [[nodiscard]] auto operator[](size_type n) const noexcept -> posting_type const &;
 
        private:
         pointer m_begin;
@@ -52,6 +54,7 @@ struct BinaryCollection {
         [[nodiscard]] auto cend() const noexcept -> const_pointer;
         [[nodiscard]] auto size() const noexcept -> size_type;
         [[nodiscard]] auto back() const -> posting_type;
+        [[nodiscard]] auto operator[](size_type n) const noexcept -> posting_type const &;
 
        private:
         const_pointer m_begin;
@@ -207,6 +210,16 @@ inline BinaryCollection::sequence::sequence(pointer begin, pointer end) noexcept
     assert(size());
     return *std::prev(m_end);
 }
+[[nodiscard]] inline auto BinaryCollection::sequence::operator[](size_type n) noexcept
+    -> posting_type &
+{
+    return *std::next(begin(), n);
+}
+[[nodiscard]] inline auto BinaryCollection::sequence::operator[](size_type n) const noexcept
+    -> posting_type const &
+{
+    return *std::next(begin(), n);
+}
 
 inline BinaryCollection::const_sequence::const_sequence(const_pointer begin,
                                                         const_pointer end) noexcept
@@ -237,6 +250,11 @@ inline BinaryCollection::const_sequence::const_sequence(const_pointer begin,
 {
     assert(size());
     return *std::prev(m_end);
+}
+[[nodiscard]] inline auto BinaryCollection::const_sequence::operator[](size_type n) const noexcept
+    -> posting_type const &
+{
+    return *std::next(begin(), n);
 }
 
 } // namespace pisa
