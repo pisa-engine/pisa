@@ -115,7 +115,7 @@ BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
                                                        int runs)                                 \
         ->std::vector<std::chrono::microseconds>                                                 \
     {                                                                                            \
-        auto execute = and_query();                                                              \
+        auto execute = and_query<false>();                                                       \
         std::vector<std::chrono::microseconds> query_times;                                      \
         for (auto const &query : queries) {                                                      \
             std::chrono::microseconds min_time;                                                  \
