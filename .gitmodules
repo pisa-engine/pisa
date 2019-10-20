@@ -67,3 +67,6 @@
 [submodule "external/wapopp"]
 	path = external/wapopp
 	url = https://github.com/pisa-engine/wapopp.git
+[submodule "external/rapidcheck"]
+	path = external/rapidcheck
+	url = https://github.com/emil-e/rapidcheck.git
