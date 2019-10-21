@@ -231,6 +231,7 @@ class bit_vector {
 
     inline uint64_t get_bits(uint64_t pos, uint64_t len) const {
         assert(pos + len <= size());
+        assert(len < 64);
         if (!len) {
             return 0;
         }
