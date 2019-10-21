@@ -15,8 +15,8 @@ TEST_CASE("bit_vector")
     rc::check([](std::vector<bool> v) {
         {
             pisa::bit_vector_builder bvb;
-            for (size_t i = 0; i < v.size(); ++i) {
-                bvb.push_back(v[i]);
+            for (auto elem : v) {
+                bvb.push_back(elem);
             }
 
             pisa::bit_vector bitmap(&bvb);
@@ -28,30 +28,30 @@ TEST_CASE("bit_vector")
             for (size_t i = 0; i < v.size(); ++i) {
                 bvb.set(i, v[i]);
             }
-            bvb.push_back(0);
-            v.push_back(0);
-            bvb.push_back(1);
-            v.push_back(1);
+            bvb.push_back(false);
+            v.push_back(false);
+            bvb.push_back(true);
+            v.push_back(true);
 
             pisa::bit_vector bitmap(&bvb);
             test_equal_bits(v, bitmap, "Random bits (set)");
         }
 
-        uint64_t ints[] = {uint64_t(-1),
-                           uint64_t(1) << 63,
-                           1,
-                           1,
-                           1,
-                           3,
-                           5,
-                           7,
-                           0xFFF,
-                           0xF0F,
-                           1,
-                           0xFFFFFF,
-                           0x123456,
-                           uint64_t(1) << 63,
-                           uint64_t(-1)};
+        auto ints = std::array<uint64_t, 15>{uint64_t(-1),
+                                             uint64_t(1) << 63u,
+                                             1,
+                                             1,
+                                             1,
+                                             3,
+                                             5,
+                                             7,
+                                             0xFFF,
+                                             0xF0F,
+                                             1,
+                                             0xFFFFFF,
+                                             0x123456,
+                                             uint64_t(1) << 63u,
+                                             uint64_t(-1)};
         {
             pisa::bit_vector_builder bvb;
             for (uint64_t i : ints) {
@@ -115,109 +115,113 @@ TEST_CASE("bit_vector_enumerator")
 
 TEST_CASE("bit_vector_unary_enumerator")
 {
-    rc::check([]() {
-        auto v = *rc::gen::resize(20'000, rc::gen::arbitrary<std::vector<bool>>()).as("bits");
-        // punch some long gaps in v
-        for (size_t g = 0; g < v.size() / 1000; ++g) {
-            ssize_t l = std::min(ssize_t(rand() % 256), ssize_t(v.size() - g));
-            std::fill(v.begin(), v.begin() + l, 0);
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::bernoulli_distribution d(0.5);
+    std::vector<bool> v(20'000);
+    std::generate(v.begin(), v.end(), [&]() { return d(gen); });
+
+    [&]() {
+        std::vector<std::size_t> posv(v.size());
+        std::vector<std::size_t> intervals;
+        std::iota(posv.begin(), posv.end(), 0);
+        std::sample(posv.begin(),
+                    posv.end(),
+                    std::back_inserter(intervals),
+                    40,
+                    std::mt19937{std::random_device{}()});
+        REQUIRE(intervals.size() % 2 == 0);
+        for (auto left = intervals.begin(); left != intervals.end(); std::advance(left, 2)) {
+            auto right = std::next(left);
+            std::fill(std::next(v.begin(), *left), std::next(v.begin(), *right), false);
         }
+    }();
 
-        pisa::bit_vector bitmap(v);
+    pisa::bit_vector bitmap(v);
 
-        std::vector<size_t> ones;
-        for (size_t i = 0; i < v.size(); ++i) {
-            if (bitmap[i]) {
-                ones.push_back(i);
-            }
-        }
-
-        {
-            pisa::bit_vector::unary_enumerator e(bitmap, 0);
-
-            for (size_t r = 0; r < ones.size(); ++r) {
-                uint64_t pos = e.next();
-                MY_REQUIRE_EQUAL(ones[r], pos, "r = " << r);
-            }
-        }
-
-        {
-            pisa::bit_vector::unary_enumerator e(bitmap, 0);
-
-            for (size_t r = 0; r < ones.size(); ++r) {
-                for (size_t k = 0; k < std::min(size_t(256), size_t(ones.size() - r)); ++k) {
-                    pisa::bit_vector::unary_enumerator ee(e);
-                    ee.skip(k);
-                    uint64_t pos = ee.next();
-                    MY_REQUIRE_EQUAL(ones[r + k], pos, "r = " << r << " k = " << k);
-                }
-                e.next();
-            }
-        }
-
-        {
-            pisa::bit_vector::unary_enumerator e(bitmap, 0);
-
-            for (size_t r = 0; r < ones.size(); ++r) {
-                for (size_t k = 0; k < std::min(size_t(256), size_t(ones.size() - r)); ++k) {
-                    pisa::bit_vector::unary_enumerator ee(e);
-                    uint64_t pos_skip = ee.skip_no_move(k);
-                    uint64_t pos = ee.next();
-                    MY_REQUIRE_EQUAL(ones[r], pos, "r = " << r << " k = " << k);
-                    MY_REQUIRE_EQUAL(ones[r + k], pos_skip, "r = " << r << " k = " << k);
-                }
-                e.next();
-            }
-        }
-
-        {
-            pisa::bit_vector::unary_enumerator e(bitmap, 0);
-
-            for (size_t pos = 0; pos < v.size(); ++pos) {
-                uint64_t skip = 0;
-                for (size_t d = 0; d < std::min(size_t(256), size_t(v.size() - pos)); ++d) {
-                    if (v[pos + d] == 0) {
-                        pisa::bit_vector::unary_enumerator ee(bitmap, pos);
-                        ee.skip0(skip);
-
-                        uint64_t expected_pos = pos + d;
-                        for (; !v[expected_pos] && expected_pos < v.size(); ++expected_pos)
-                            ;
-                        if (!v[expected_pos])
-                            break;
-                        uint64_t pos = ee.next();
-                        MY_REQUIRE_EQUAL(expected_pos, pos, "pos = " << pos << " skip = " << skip);
-
-                        skip += 1;
-                    }
-                }
-            }
-        }
-    });
-}
-
-void test_bvb_reverse(size_t n)
-{
-    std::vector<bool> v = random_bit_vector(n);
-    pisa::bit_vector_builder bvb;
+    std::vector<size_t> ones;
     for (size_t i = 0; i < v.size(); ++i) {
-        bvb.push_back(v[i]);
+        if (bitmap[i]) {
+            ones.push_back(i);
+        }
     }
 
-    std::reverse(v.begin(), v.end());
-    bvb.reverse();
+    {
+        pisa::bit_vector::unary_enumerator e(bitmap, 0);
 
-    pisa::bit_vector bitmap(&bvb);
-    test_equal_bits(v, bitmap, "In-place reverse");
+        for (size_t r = 0; r < ones.size(); ++r) {
+            uint64_t pos = e.next();
+            MY_REQUIRE_EQUAL(ones[r], pos, "r = " << r);
+        }
+    }
+
+    {
+        pisa::bit_vector::unary_enumerator e(bitmap, 0);
+
+        for (size_t r = 0; r < ones.size(); ++r) {
+            for (size_t k = 0; k < std::min(size_t(256), size_t(ones.size() - r)); ++k) {
+                pisa::bit_vector::unary_enumerator ee(e);
+                ee.skip(k);
+                uint64_t pos = ee.next();
+                MY_REQUIRE_EQUAL(ones[r + k], pos, "r = " << r << " k = " << k);
+            }
+            e.next();
+        }
+    }
+
+    {
+        pisa::bit_vector::unary_enumerator e(bitmap, 0);
+
+        for (size_t r = 0; r < ones.size(); ++r) {
+            for (size_t k = 0; k < std::min(size_t(256), size_t(ones.size() - r)); ++k) {
+                pisa::bit_vector::unary_enumerator ee(e);
+                uint64_t pos_skip = ee.skip_no_move(k);
+                uint64_t pos = ee.next();
+                MY_REQUIRE_EQUAL(ones[r], pos, "r = " << r << " k = " << k);
+                MY_REQUIRE_EQUAL(ones[r + k], pos_skip, "r = " << r << " k = " << k);
+            }
+            e.next();
+        }
+    }
+
+    {
+        pisa::bit_vector::unary_enumerator e(bitmap, 0);
+
+        for (size_t pos = 0; pos < v.size(); ++pos) {
+            uint64_t skip = 0;
+            for (size_t d = 0; d < std::min(size_t(256), size_t(v.size() - pos)); ++d) {
+                if (not v[pos + d]) {
+                    pisa::bit_vector::unary_enumerator ee(bitmap, pos);
+                    ee.skip0(skip);
+
+                    uint64_t expected_pos = pos + d;
+                    for (; expected_pos < v.size() && !v[expected_pos]; ++expected_pos) {
+                    }
+                    if (expected_pos == v.size()) {
+                        break;
+                    }
+                    uint64_t pos = ee.next();
+                    MY_REQUIRE_EQUAL(expected_pos, pos, "pos = " << pos << " skip = " << skip);
+
+                    skip += 1;
+                }
+            }
+        }
+    }
 }
 
 TEST_CASE("bvb_reverse")
 {
-    srand(42);
+    rc::check([](std::vector<bool> v) {
+        pisa::bit_vector_builder bvb;
+        for (auto elem : v) {
+            bvb.push_back(elem);
+        }
 
-    test_bvb_reverse(0);
-    test_bvb_reverse(63);
-    test_bvb_reverse(64);
-    test_bvb_reverse(1000);
-    test_bvb_reverse(1024);
+        std::reverse(v.begin(), v.end());
+        bvb.reverse();
+
+        pisa::bit_vector bitmap(&bvb);
+        test_equal_bits(v, bitmap, "In-place reverse");
+    });
 }
