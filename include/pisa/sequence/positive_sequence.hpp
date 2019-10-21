@@ -20,11 +20,11 @@ namespace pisa {
         {
             assert(n > 0);
             auto cumulative_begin =
-                make_function_iterator(std::make_pair(uint64_t(*begin), begin),
+                make_function_iterator(std::make_pair(uint64_t(0), begin),
                                        [](std::pair<uint64_t, Iterator>& state) {
-                                           state.first += *++state.second;
+                                           state.first += *state.second++;
                                        }, [](std::pair<uint64_t, Iterator> const& state) {
-                                           return state.first;
+                                           return state.first + *state.second;
                                        });
             base_sequence_type::write(bvb, cumulative_begin, universe, n, params);
 
@@ -35,8 +35,7 @@ namespace pisa {
 
             typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
 
-            enumerator()
-            {}
+            enumerator() = delete;
 
             enumerator(bit_vector const& bv, uint64_t offset,
                        uint64_t universe, uint64_t n,
@@ -74,7 +73,7 @@ namespace pisa {
 
             base_sequence_enumerator m_base_enum;
             uint64_t m_position;
-            uint64_t m_cur;
+            uint64_t m_cur{};
         };
     };
 }
