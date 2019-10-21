@@ -13,7 +13,7 @@ namespace pisa {
 
 [[nodiscard]] constexpr auto positive(std::uint64_t n) -> std::uint64_t
 {
-    if (n > 0) {
+    if (n == 0) {
         throw std::logic_error("argument must be positive");
     }
     return n;
