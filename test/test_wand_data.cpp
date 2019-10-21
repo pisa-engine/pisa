@@ -18,7 +18,7 @@ using namespace pisa;
 
 TEST_CASE("wand_data_range")
 {
-    tbb::task_scheduler_init init(2);
+    tbb::task_scheduler_init init;
     using WandTypeRange = wand_data_range<64, 1024, bm25>;
     using WandType = wand_data<WandTypeRange>;
     using Scorer = bm25;

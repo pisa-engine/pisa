@@ -126,7 +126,7 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
 {
-    tbb::task_scheduler_init init(2);
+    tbb::task_scheduler_init init;
     auto [lhs, rhs, expected_joined, message] =
         GENERATE(table<index_type, index_type, index_type, std::string>(
             {{index_type({{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
@@ -196,7 +196,7 @@ TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
 
 TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
 {
-    tbb::task_scheduler_init init(2);
+    tbb::task_scheduler_init init;
     std::vector<std::vector<Term_Id>> collection = {
         /* Doc 0 */ {2_t, 0_t, 3_t, 9_t, 0_t},
         /* Doc 1 */ {5_t, 0_t, 3_t, 4_t, 2_t, 6_t, 7_t, 4_t, 5_t},
@@ -241,7 +241,7 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
 
 TEST_CASE("Invert collection", "[invert][unit]")
 {
-    tbb::task_scheduler_init init(2);
+    tbb::task_scheduler_init init;
     GIVEN("A binary collection")
     {
         Temporary_Directory tmpdir;

@@ -31,7 +31,7 @@ struct IndexData {
                 BlockSize(FixedBlock()))
 
     {
-        tbb::task_scheduler_init init(1);
+        tbb::task_scheduler_init init;
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =

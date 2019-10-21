@@ -167,7 +167,7 @@ void write_batch(std::string const &basename,
 
 TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
 {
-    tbb::task_scheduler_init init(2);
+    tbb::task_scheduler_init init;
     Temporary_Directory tmpdir;
     auto dir = tmpdir.path();
     GIVEN("Three batches on disk")
@@ -314,7 +314,7 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
 
 TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
 {
-    tbb::task_scheduler_init init(2);
+    tbb::task_scheduler_init init;
     auto next_record = [](std::istream &in) -> std::optional<Document_Record> {
         Plaintext_Record record;
         if (in >> record) {
