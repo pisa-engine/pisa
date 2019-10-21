@@ -3,6 +3,8 @@
 #include <catch2/catch.hpp>
 #include <functional>
 
+#include <tbb/task_scheduler_init.h>
+
 #include "test_common.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
@@ -29,6 +31,7 @@ struct IndexData {
                 BlockSize(FixedBlock()))
 
     {
+        tbb::task_scheduler_init init;
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
@@ -121,8 +124,8 @@ TEMPLATE_TEST_CASE("Ranked query test",
         op_q(make_block_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
         REQUIRE(or_q.topk().size() == op_q.topk().size());
         for (size_t i = 0; i < or_q.topk().size(); ++i) {
-            REQUIRE(or_q.topk()[i].first ==
-                    Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            REQUIRE(or_q.topk()[i].first
+                    == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
         }
     }
 }
@@ -140,8 +143,8 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
         op_q(make_block_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
         REQUIRE(and_q.topk().size() == op_q.topk().size());
         for (size_t i = 0; i < and_q.topk().size(); ++i) {
-            REQUIRE(and_q.topk()[i].first ==
-                    Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            REQUIRE(and_q.topk()[i].first
+                    == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
         }
     }
 }
