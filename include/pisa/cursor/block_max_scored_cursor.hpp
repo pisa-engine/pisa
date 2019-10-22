@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "wand_data.hpp"
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
 
@@ -32,7 +33,7 @@ template <typename Index, typename WandType>
                    [&](auto &&term) {
                        auto list       = index[term.first];
                        auto w_enum     = wdata.getenum(term.first);
-                       auto q_weight   = scorer_type::query_term_weight(term.second, list.size(),
+                       auto q_weight   = scorer_type::query_term_weight(term.second, wdata.term_len(term.first),
                                                                       index.num_docs());
                        auto max_weight = q_weight * wdata.max_term_weight(term.first);
                        return block_max_scored_cursor<Index, WandType, Scorer>{
