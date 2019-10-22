@@ -51,6 +51,14 @@ matrix:
       env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && DOCKER=On"
     - os: linux
       dist: xenial
+      compiler: gcc
+      addons: &gcc9
+        apt:
+          sources: *all_sources
+          packages: ['g++-9']
+      env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && COVERAGE=Off && DOCKER=Off"
+    - os: linux
+      dist: xenial
       compiler: clang
       addons:
           apt:
