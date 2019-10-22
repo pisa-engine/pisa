@@ -28,7 +28,7 @@ template <typename Index, typename WandType>
     std::transform(query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors),
                    [&](auto &&term) {
                        auto list       = index[term.first];
-                       auto q_weight   = scorer_type::query_term_weight(term.second, list.size(),
+                       auto q_weight   = scorer_type::query_term_weight(term.second, wdata.term_len(term.first),
                                                                       index.num_docs());
                        auto max_weight = q_weight * wdata.max_term_weight(term.first);
                        return max_scored_cursor<Index, Scorer>{

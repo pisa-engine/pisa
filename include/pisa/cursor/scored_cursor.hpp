@@ -30,7 +30,7 @@ template <typename Index, typename WandType>
         [&](auto &&term) {
             auto list = index[term.first];
             auto q_weight =
-                scorer_type::query_term_weight(term.second, list.size(), index.num_docs());
+                scorer_type::query_term_weight(term.second, wdata.term_len(term.first), index.num_docs());
             return scored_cursor<Index, Scorer>{std::move(list), q_weight, {q_weight, wdata}};
         });
     return cursors;
