@@ -116,3 +116,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 
 # Add range-v3
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
+
+# Add tl::optional
+set(OPTIONAL_ENABLE_TESTS OFF CACHE BOOL "skip optional testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/optional)

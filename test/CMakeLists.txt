@@ -18,4 +18,10 @@ foreach(TEST_SRC ${TEST_SOURCES})
   add_coverage(${TEST_SRC_NAME})
 endforeach(TEST_SRC)
 
+target_link_libraries(test_v1
+    pisa
+    Catch2
+    optional
+)
+
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
