@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <range/v3/view/enumerate.hpp>
+#include <tbb/task_scheduler_init.h>
 
 #include "test_common.hpp"
 
@@ -12,18 +13,17 @@
 #include "query/queries.hpp"
 #include "wand_data_range.hpp"
 
-
 #include "scorer/scorer.hpp"
 
 using namespace pisa;
 
 TEST_CASE("wand_data_range")
 {
+    tbb::task_scheduler_init init;
     using WandTypeRange = wand_data_range<64, 1024>;
     using WandType = wand_data<WandTypeRange>;
 
     auto scorer_name = "bm25";
-
 
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
@@ -43,7 +43,7 @@ TEST_CASE("wand_data_range")
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
                 auto s = scorer->term_scorer(term_id);
-                for (auto && [ docid, freq ] : ranges::view::zip(seq.docs, seq.freqs)) {
+                for (auto &&[docid, freq] : ranges::view::zip(seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
@@ -57,7 +57,7 @@ TEST_CASE("wand_data_range")
             term_id += 1;
         }
     }
-    using index_type = opt_index;
+    using index_type = pefopt_index;
     index_type index;
     global_parameters params;
     index_type::builder builder(collection.num_docs(), params);
@@ -77,10 +77,9 @@ TEST_CASE("wand_data_range")
                 auto max = wdata_range.max_term_weight(term_id);
                 auto &w = wdata_range.get_block_wand();
                 auto s = scorer->term_scorer(term_id);
-                const mapper::mappable_vector<float> bm =
-                    w.compute_block_max_scores(list, s);
+                const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, s);
                 WandTypeRange::enumerator we(0, bm);
-                for (auto && [ pos, docid, freq ] :
+                for (auto &&[pos, docid, freq] :
                      ranges::view::zip(ranges::view::iota(0), seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     we.next_geq(docid);

@@ -8,23 +8,23 @@
 #include <boost/algorithm/string/split.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
-#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/null_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
 #include "mappable/mapper.hpp"
 
-#include "index_types.hpp"
 #include "accumulator/lazy_accumulator.hpp"
+#include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
+#include "cursor/scored_cursor.hpp"
+#include "index_types.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/cursor.hpp"
-#include "cursor/scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
-#include "cursor/block_max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 #include "scorer/scorer.hpp"
@@ -44,11 +44,11 @@ void extract_times(Fn fn,
     for (auto &&[qid, query] : enumerate(queries)) {
         do_not_optimize_away(fn(query));
         std::generate(times.begin(), times.end(), [&fn, &q = query]() {
-            return run_with_timer<std::chrono::microseconds>(
-                       [&]() { do_not_optimize_away(fn(q)); })
+            return run_with_timer<std::chrono::microseconds>([&]() { do_not_optimize_away(fn(q)); })
                 .count();
         });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
+        auto mean =
+            std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
         os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
     }
 }
@@ -133,7 +133,7 @@ void perftest(const std::string &index_filename,
     if (wand_data_filename) {
         std::error_code error;
         md.map(*wand_data_filename, error);
-        if(error){
+        if (error) {
             std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
             throw std::runtime_error("Error opening file");
         }
@@ -158,66 +158,73 @@ void perftest(const std::string &index_filename,
         spdlog::info("Query type: {}", t);
         std::function<uint64_t(Query)> query_fun;
         if (t == "and") {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 and_query and_q;
                 return and_q(make_cursors(index, query), index.num_docs()).size();
             };
         } else if (t == "or") {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 or_query<false> or_q;
                 return or_q(make_cursors(index, query), index.num_docs());
             };
         } else if (t == "or_freq") {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 or_query<true> or_q;
                 return or_q(make_cursors(index, query), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 wand_query wand_q(k);
-                return wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                return wand_q(make_max_scored_cursors(index, wdata, *scorer, query),
+                              index.num_docs());
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 block_max_wand_query block_max_wand_q(k);
-                return block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                return block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                                        index.num_docs());
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 block_max_maxscore_query block_max_maxscore_q(k);
-                return block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                return block_max_maxscore_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             };
-        }  else if (t == "ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query){
+        } else if (t == "ranked_and" && wand_data_filename) {
+            query_fun = [&](Query query) {
                 ranked_and_query ranked_and_q(k);
                 return ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
             };
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 block_max_ranked_and_query block_max_ranked_and_q(k);
-                return block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                return block_max_ranked_and_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             };
-        }  else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](Query query){
+        } else if (t == "ranked_or" && wand_data_filename) {
+            query_fun = [&](Query query) {
                 ranked_or_query ranked_or_q(k);
                 return ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](Query query){
+            query_fun = [&](Query query) {
                 maxscore_query maxscore_q(k);
-                return maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                return maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query),
+                                  index.num_docs());
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             Simple_Accumulator accumulator(index.num_docs());
             ranked_or_taat_query ranked_or_taat_q(k);
-            query_fun = [&, ranked_or_taat_q](Query query) mutable {
-                return ranked_or_taat_q(make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+            query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
+                return ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
             Lazy_Accumulator<4> accumulator(index.num_docs());
             ranked_or_taat_query ranked_or_taat_q(k);
-            query_fun = [&, ranked_or_taat_q](Query query) mutable {
-                return ranked_or_taat_q(make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+            query_fun = [&, ranked_or_taat_q, accumulator](Query query) mutable {
+                return ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);
@@ -261,9 +268,10 @@ int main(int argc, const char **argv)
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-T,--thresholds", thresholds_filename, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
+        ->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
@@ -274,33 +282,17 @@ int main(int argc, const char **argv)
     } else {
         spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     }
-
-    auto process_term = query::term_processor(terms_file, stemmer);
-
-    std::unordered_set<term_id_type> stopwords;
-    if (stopwords_filename) {
-        std::ifstream is(*stopwords_filename);
-        io::for_each_line(is, [&](auto &&word) {
-            if (auto processed_term = process_term(std::move(word)); process_term) {
-                stopwords.insert(*processed_term);
-            }
-        });
-    }
-
-    std::vector<Query> queries;
-    auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term, stopwords));
-    };
-
     if (extract) {
         std::cout << "qid\tusec\n";
     }
 
+    std::vector<Query> queries;
+    auto parse_query = resolve_query_parser(queries, terms_file, stopwords_filename, stemmer);
     if (query_filename) {
         std::ifstream is(*query_filename);
-        io::for_each_line(is, push_query);
+        io::for_each_line(is, parse_query);
     } else {
-        io::for_each_line(std::cin, push_query);
+        io::for_each_line(std::cin, parse_query);
     }
 
     /**/

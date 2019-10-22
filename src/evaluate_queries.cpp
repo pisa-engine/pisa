@@ -113,17 +113,15 @@ void evaluate_queries(const std::string &index_filename,
             return maxscore_q.topk();
         };
     } else if (query_type == "ranked_or_taat" && wand_data_filename) {
-        Simple_Accumulator accumulator(index.num_docs());
-        ranked_or_taat_query ranked_or_taat_q(k);
-        query_fun = [&, ranked_or_taat_q](Query query) mutable {
+        query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
+            ranked_or_taat_query ranked_or_taat_q(k);
             ranked_or_taat_q(
                 make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
             return ranked_or_taat_q.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
-        Lazy_Accumulator<4> accumulator(index.num_docs());
-        ranked_or_taat_query ranked_or_taat_q(k);
-        query_fun = [&, ranked_or_taat_q](Query query) mutable {
+        query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
+            ranked_or_taat_query ranked_or_taat_q(k);
             ranked_or_taat_q(
                 make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
             return ranked_or_taat_q.topk();
@@ -137,8 +135,7 @@ void evaluate_queries(const std::string &index_filename,
 
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
-    tbb::parallel_for(size_t(0), queries.size(), [&](size_t query_idx) {
-        auto qid = queries[query_idx].id;
+    tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
         raw_results[query_idx] = query_fun(queries[query_idx]);
     });
     auto end_batch = std::chrono::steady_clock::now();
@@ -146,7 +143,7 @@ void evaluate_queries(const std::string &index_filename,
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id;
-        for (auto && [ rank, result ] : enumerate(results)) {
+        for (auto &&[rank, result] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      qid.value_or(std::to_string(query_idx)),
                                      iteration,
@@ -199,9 +196,10 @@ int main(int argc, const char **argv)
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_option("--threads", threads, "Thread Count");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("-k", k, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
+        ->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
@@ -209,25 +207,12 @@ int main(int argc, const char **argv)
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
 
-    std::vector<Query> queries;
-    auto process_term = query::term_processor(terms_file, stemmer);
-
-    std::unordered_set<term_id_type> stopwords;
-    if (stopwords_filename) {
-        std::ifstream is(*stopwords_filename);
-        io::for_each_line(is, [&](auto &&word) {
-            if (auto processed_term = process_term(std::move(word)); process_term) {
-                stopwords.insert(*processed_term);
-            }
-        });
+    if (run_id.empty()) {
+        run_id = "R0";
     }
 
-    if (run_id.empty())
-        run_id = "R0";
-
-    auto push_query = [&](std::string const &query_line) {
-        queries.push_back(parse_query(query_line, process_term, stopwords));
-    };
+    std::vector<Query> queries;
+    auto push_query = resolve_query_parser(queries, terms_file, stopwords_filename, stemmer);
 
     if (query_filename) {
         std::ifstream is(*query_filename);

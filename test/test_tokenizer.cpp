@@ -16,13 +16,13 @@ using namespace pisa;
 
 TEST_CASE("TermTokenizer")
 {
-    std::string str("w0rd, token-izer. pup's, U.S.a., us., hel.lo");
+    std::string str("a 1 12 w0rd, token-izer. pup's, U.S.a., us., hel.lo");
     TermTokenizer tokenizer(str);
     REQUIRE(std::vector<std::string>(tokenizer.begin(), tokenizer.end()) ==
-            std::vector<std::string>{"w0rd", "token", "izer", "pup", "USa", "us", "hel", "lo"});
+            std::vector<std::string>{"a", "1", "12", "w0rd", "token", "izer", "pup", "USa", "us", "hel", "lo"});
 }
 
-TEST_CASE("Parse query") {
+TEST_CASE("Parse query terms to ids") {
     Temporary_Directory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
@@ -38,9 +38,8 @@ TEST_CASE("Parse query") {
              {"lol's", std::nullopt, {0}},
              {"U.S.A.!?", std::nullopt, {4}}}));
     CAPTURE(query);
-    TermProcessor process_term =
-        query::term_processor(std::make_optional(lexfile.string()), "krovetz");
-    auto q = parse_query(query, process_term);
+    TermProcessor term_processor(std::make_optional(lexfile.string()), std::nullopt, "krovetz");
+    auto q = parse_query_terms(query, term_processor);
     REQUIRE(q.id == id);
     REQUIRE(q.terms == parsed);
 }

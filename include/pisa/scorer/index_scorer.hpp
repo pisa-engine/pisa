@@ -15,6 +15,7 @@ struct index_scorer {
     const Wand &m_wdata;
    public:
     explicit index_scorer(const Wand &wdata) : m_wdata(wdata) {}
+    virtual ~index_scorer() = default;
 
     virtual term_scorer_t term_scorer(uint64_t term_id) const = 0;
 };

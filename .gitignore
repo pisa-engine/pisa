@@ -1,7 +1,8 @@
 **/.DS_Store
 
-build/
+build*/
 data/
+debug/
 pisa_config.hpp
 
 # Python junk
@@ -22,3 +23,5 @@ Testing/
 docs/_build/
 
 node_modules
+
+.clangd/

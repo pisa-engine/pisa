@@ -6,7 +6,6 @@
 #include "binary_freq_collection.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
-#include "score_opt_partition.hpp"
 #include "util/util.hpp"
 
 #include "global_parameters.hpp"

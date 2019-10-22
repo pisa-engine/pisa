@@ -3,6 +3,8 @@
 #include <catch2/catch.hpp>
 #include <functional>
 
+#include <tbb/task_scheduler_init.h>
+
 #include "test_common.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
@@ -30,6 +32,7 @@ struct IndexData {
                 BlockSize(FixedBlock()))
 
     {
+        tbb::task_scheduler_init init;
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const &plist : collection) {
             uint64_t freqs_sum =
@@ -39,12 +42,10 @@ struct IndexData {
         }
         builder.build(index);
 
-        auto process_term = [](auto str) { return std::stoi(str); };
-
         term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         auto push_query = [&](std::string const &query_line) {
-            queries.push_back(parse_query(query_line, process_term, {}));
+            queries.push_back(parse_query_ids(query_line));
         };
         io::for_each_line(qfile, push_query);
 

@@ -29,9 +29,9 @@ Some features of PISA are listed below:
    :maxdepth: 4	
    :caption: Contents:	
 
-   getting_started	
-   index_format	
+   getting_started
    parsing
+   inverting
    sharding
    compress_index	
    query_index	
