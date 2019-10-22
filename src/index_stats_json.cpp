@@ -188,6 +188,8 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
         picojson::value v(json_qry);
         std::cout << v.serialize() << std::endl;
     }
+
+
 }
 
 typedef wand_data<wand_data_raw> wand_raw_index;
