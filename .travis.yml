@@ -66,7 +66,7 @@ matrix:
               packages: ['clang-6.0', 'libstdc++-7-dev']
       env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.2
       compiler: clang
       env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
 
