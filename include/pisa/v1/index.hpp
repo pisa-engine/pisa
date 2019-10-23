@@ -97,25 +97,48 @@ struct Index {
     Reader m_reader;
 };
 
-template <typename DocumentReader, typename FrequencyReader>
-struct ZipCursor;
+template <typename KeyCursor, typename PayloadCursor>
+struct ZipCursor {
+    using Key = decltype(*std::declval<KeyCursor>());
+    using Payload = decltype(*std::declval<PayloadCursor>());
 
-template <typename DocumentReader, typename FrequencyReader>
-struct Index2 {
+    constexpr auto operator*() -> Key { return *m_key_cursor; }
+    constexpr auto next() -> tl::optional<std::pair<Key, Payload>>
+    {
+        return m_key_cursor.next().and_then([&](Key key) {
+            return m_payload_cursor.next().map(
+                [key](Payload payload) { return std::make_pair(key, payload); });
+        });
+    }
+    constexpr void step()
+    {
+        m_key_cursor.step();
+        m_payload_cursor.step();
+    }
+    constexpr auto empty() -> bool { return m_key_cursor.empty(); }
+    [[nodiscard]] constexpr auto size() const -> std::size_t { return m_key_cursor.size(); }
+
+   private:
+    KeyCursor m_key_cursor;
+    PayloadCursor m_payload_cursor;
+};
+
+template <typename DocumentReader, typename PayloadReader>
+struct ZippedIndex {
     using DocumentCursor =
         decltype(std::declval<DocumentReader>().read(std::declval<gsl::span<std::byte>>()));
-    using FrequencyCursor =
-        decltype(std::declval<FrequencyReader>().read(std::declval<gsl::span<std::byte>>()));
+    using PayloadCursor =
+        decltype(std::declval<PayloadReader>().read(std::declval<gsl::span<std::byte>>()));
     static_assert(std::is_same_v<decltype(*std::declval<DocumentCursor>()), DocId>);
-    static_assert(std::is_same_v<decltype(*std::declval<FrequencyCursor>()), Frequency>);
+    // static_assert(std::is_same_v<decltype(*std::declval<PayloadCursor>()), Frequency>);
 
-    [[nodiscard]] auto cursor(TermId term) -> ZipCursor<DocumentCursor, FrequencyCursor>;
+    [[nodiscard]] auto cursor(TermId term) -> ZipCursor<DocumentCursor, PayloadCursor>;
 
    private:
     [[nodiscard]] auto fetch(TermId term) -> gsl::span<std::byte>;
 
     DocumentReader m_document_reader;
-    FrequencyReader m_frequency_reader;
+    PayloadReader m_payload_reader;
 };
 
 } // namespace pisa::v1
