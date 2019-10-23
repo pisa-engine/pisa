@@ -9,13 +9,13 @@
 
 #include "mappable/mapper.hpp"
 
+#include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/max_scored_cursor.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -48,8 +48,9 @@ void thresholds(const std::string &index_filename,
 
     wand_query wand_q(k);
     for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
-        auto  results   = wand_q.topk();
+        wand_q(make_max_scored_cursors(index, wdata, bm25<WandType>{wdata}, query),
+               index.num_docs());
+        auto results = wand_q.topk();
         float threshold = 0.0;
         if (results.size() == k) {
             threshold = results.back().first;
@@ -98,24 +99,17 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                            \
-    }                                                                                    \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                            \
-        if (compressed) {                                                                \
-            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                    wand_data_filename,  \
-                                                                    queries,             \
-                                                                    thresholds_filename, \
-                                                                    type,                \
-                                                                    k);                  \
-        } else {                                                                         \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                                wand_data_filename,      \
-                                                                queries,                 \
-                                                                thresholds_filename,     \
-                                                                type,                    \
-                                                                k);                      \
-        }                                                                                \
+#define LOOP_BODY(R, DATA, T)                                                               \
+    }                                                                                       \
+    else if (type == BOOST_PP_STRINGIZE(T))                                                 \
+    {                                                                                       \
+        if (compressed) {                                                                   \
+            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(                        \
+                index_filename, wand_data_filename, queries, thresholds_filename, type, k); \
+        } else {                                                                            \
+            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(                            \
+                index_filename, wand_data_filename, queries, thresholds_filename, type, k); \
+        }                                                                                   \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

@@ -22,11 +22,12 @@ struct VariableBlock {
 
 using BlockSize = boost::variant<FixedBlock, VariableBlock>;
 
-template <typename Scorer = bm25>
+template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     binary_freq_collection::sequence const &seq,
     std::vector<uint32_t> const &doc_lens,
     float avg_len,
+    Scorer scorer,
     const uint64_t block_size)
 {
     std::vector<uint32_t> block_docid;
@@ -41,7 +42,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     for (i = 0; i < seq.docs.size(); ++i) {
         uint64_t docid = *(seq.docs.begin() + i);
         uint64_t freq = *(seq.freqs.begin() + i);
-        float score = Scorer::doc_term_weight(freq, doc_lens[docid] / avg_len);
+        float score = scorer(docid, freq);
         max_score = std::max(max_score, score);
         if (i == 0 || (i / block_size) == current_block) {
             block_max_score = std::max(block_max_score, score);
@@ -58,12 +59,13 @@ std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     return std::make_pair(block_docid, block_max_term_weight);
 }
 
-template <typename Scorer = bm25>
+template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
     binary_freq_collection const &coll,
     binary_freq_collection::sequence const &seq,
     std::vector<uint32_t> const &doc_lens,
     float avg_len,
+    Scorer scorer,
     const float lambda)
 {
 
@@ -79,12 +81,10 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
                    seq.freqs.begin(),
                    std::back_inserter(doc_score),
                    [&](const uint64_t &doc, const uint64_t &freq) -> doc_score_t {
-                       return {doc, Scorer::doc_term_weight(freq, doc_lens[doc] / avg_len)};
+                       return {doc, scorer(doc, freq)};
                    });
 
-    float estimated_idf = Scorer::query_term_weight(1, seq.docs.size(), coll.num_docs());
-    auto p = score_opt_partition(
-        doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda, estimated_idf);
+    auto p = score_opt_partition(doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda);
 
     return std::make_pair(p.docids, p.max_values);
 }

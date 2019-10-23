@@ -64,11 +64,11 @@ inline auto Intersection::compute(Index const &index,
 {
     auto filtered_query = term_mask ? intersection::filter(query, *term_mask) : query;
     and_query<true> retrieve{};
-    auto results = retrieve(make_scored_cursors(index, wand, filtered_query), index.num_docs());
-    auto max_element = [&](auto const &vec) -> float {
+    auto results = retrieve(make_scored_cursors(index, wand, bm25<Wand>(wand), filtered_query),
+                            index.num_docs());
+    auto max_element = [](auto const &vec) -> float {
         auto order = [](auto const &lhs, auto const &rhs) { return lhs.second < rhs.second; };
-        if (auto pos = std::max_element(results.begin(), results.end(), order);
-            pos != results.end()) {
+        if (auto pos = std::max_element(vec.begin(), vec.end(), order); pos != vec.end()) {
             return pos->second;
         } else {
             return 0.0;

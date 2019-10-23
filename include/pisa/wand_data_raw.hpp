@@ -29,21 +29,24 @@ class wand_data_raw {
             blocks_start.push_back(0);
         }
 
+        template <typename Scorer>
         float add_sequence(binary_freq_collection::sequence const &seq,
                            binary_freq_collection const &coll,
                            std::vector<uint32_t> const &doc_lens,
                            float avg_len,
+                           Scorer scorer,
                            BlockSize block_size)
         {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
                 auto t =
                     block_size.type() == typeid(FixedBlock)
                         ? static_block_partition(
-                              seq, doc_lens, avg_len, boost::get<FixedBlock>(block_size).size)
+                            seq, doc_lens, avg_len, scorer, boost::get<FixedBlock>(block_size).size)
                         : variable_block_partition(coll,
                                                    seq,
                                                    doc_lens,
                                                    avg_len,
+                                                   scorer,
                                                    boost::get<VariableBlock>(block_size).lambda);
 
                 block_max_term_weight.insert(
@@ -121,7 +124,7 @@ class wand_data_raw {
         mapper::mappable_vector<uint32_t> const &m_block_docid;
     };
 
-    enumerator get_enum(uint32_t i) const
+    enumerator get_enum(uint32_t i, float) const
     {
         return enumerator(m_blocks_start[i],
                           m_blocks_start[i + 1] - m_blocks_start[i],

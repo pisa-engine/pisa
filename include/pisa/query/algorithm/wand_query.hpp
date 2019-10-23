@@ -10,8 +10,6 @@ namespace pisa {
 
 struct wand_query {
 
-    typedef bm25 scorer_type;
-
     wand_query(uint64_t k)
         : m_topk(k) {}
 
