@@ -3,7 +3,7 @@
 
 #include <functional>
 
-#include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/iota.hpp>
 #include <tbb/task_scheduler_init.h>
 
 #include "test_common.hpp"

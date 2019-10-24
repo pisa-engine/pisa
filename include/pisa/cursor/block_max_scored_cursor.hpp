@@ -1,8 +1,10 @@
 #pragma once
 
+#include <vector>
+
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
-#include <vector>
+#include "wand_data.hpp"
 
 namespace pisa {
 
