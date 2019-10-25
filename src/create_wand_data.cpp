@@ -52,10 +52,10 @@ int main(int argc, const char **argv)
         if (variable_block) {
             spdlog::info("Lambda {}", *lambda);
             return lambda ? VariableBlock(*lambda) : VariableBlock();
-        } else {
-            spdlog::info("Fixed block size: {}", *fixed_block_size);
-            return fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
         }
+        auto const block_size = fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
+        spdlog::info("Fixed block size: {}", block_size);
+        return block_size;
     }();
 
     if (compress) {
