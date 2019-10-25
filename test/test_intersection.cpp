@@ -107,11 +107,10 @@ struct InMemoryWand {
     {
         return max_weights[term_id];
     }
-
     [[nodiscard]] auto norm_len(std::uint32_t docid) const noexcept { return 1.0; }
-
     [[nodiscard]] auto term_len(std::uint32_t termid) const noexcept { return terms_len[termid]; }
-
+    [[nodiscard]] auto term_posting_count(std::uint32_t termid) const noexcept { return 1.0; }
+    [[nodiscard]] auto num_docs() const noexcept { return 1; }
 };
 
 TEST_CASE("Vector cursor", "[intersection][unit]")
@@ -193,8 +192,7 @@ TEST_CASE("compute intersection", "[intersection][unit]")
                                 {1, 1, 1}, // 6
                             },
                             10};
-        InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0},
-                          {1, 3, 1, 1, 1, 3, 3}};
+        InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, {1, 3, 1, 1, 1, 3, 3}};
         Query query{
             "Q1", // query ID
             {6, 1, 5}, // terms

@@ -70,14 +70,16 @@ auto test(Wand &wdata)
     block_max_wand_query op_q(10);
     wand_query wand_q(10);
 
+    bm25<Wand> scorer(wdata);
     for (auto const &q : data->queries) {
-        wand_q(make_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, wdata, q), data->index.num_docs());
+        wand_q(make_max_scored_cursors(data->index, data->wdata, scorer, q),
+               data->index.num_docs());
+        op_q(make_block_max_scored_cursors(data->index, wdata, scorer, q), data->index.num_docs());
         REQUIRE(wand_q.topk().size() == op_q.topk().size());
 
         for (size_t i = 0; i < wand_q.topk().size(); ++i) {
-            REQUIRE(wand_q.topk()[i].first ==
-                    Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
+            REQUIRE(wand_q.topk()[i].first
+                    == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
         }
         op_q.clear_topk();
     }

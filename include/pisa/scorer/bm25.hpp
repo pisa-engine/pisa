@@ -10,7 +10,7 @@ struct bm25 {
     static constexpr float b = 0.4;
     static constexpr float k1 = 0.9;
 
-    bm25(WData const &wdata) : m_wdata(wdata) {}
+    explicit bm25(WData const &wdata) : m_wdata(wdata) {}
 
     static float doc_term_weight(uint64_t freq, float norm_len)
     {
@@ -31,8 +31,8 @@ struct bm25 {
     {
         auto term_weight =
             query_term_weight(m_wdata.term_posting_count(term_id), m_wdata.num_docs());
-        return [&, term_weight](uint32_t doc, uint32_t freq) {
-            return term_weight * doc_term_weight(freq, m_wdata.norm_len(doc));
+        return [this, term_weight](uint32_t doc, uint32_t freq) {
+            return term_weight * doc_term_weight(freq, this->m_wdata.norm_len(doc));
         };
     }
 

@@ -21,7 +21,7 @@ TEST_CASE("wand_data_range")
     tbb::task_scheduler_init init;
     using WandTypeRange = wand_data_range<64, 1024>;
     using WandType = wand_data<WandTypeRange>;
-    using Scorer = bm25;
+    using Scorer = bm25<WandTypeRange>;
 
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
