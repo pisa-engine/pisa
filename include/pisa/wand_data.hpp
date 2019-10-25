@@ -26,6 +26,7 @@ class wand_data {
               uint64_t num_docs,
               binary_freq_collection const &coll,
               BlockSize block_size)
+        : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
@@ -33,7 +34,6 @@ class wand_data {
         std::vector<uint32_t> term_posting_counts;
         std::vector<uint32_t> terms_len;
         global_parameters params;
-        double collection_len = 0;
         spdlog::info("Reading sizes...");
 
         for (size_t i = 0; i < num_docs; ++i) {
@@ -42,7 +42,7 @@ class wand_data {
             m_collection_len += len;
         }
 
-        m_avg_len = float(collection_len / double(num_docs));
+        m_avg_len = float(m_collection_len / double(num_docs));
 
         typename block_wand_type::builder builder(coll, params);
 
