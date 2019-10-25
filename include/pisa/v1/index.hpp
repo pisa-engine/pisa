@@ -23,6 +23,22 @@ using TermId = std::uint32_t;
 using DocId = std::uint32_t;
 using Frequency = std::uint32_t;
 
+namespace concepts {
+
+    // template <typename T>
+    // concept bool CursorLike = requires(T cursor, DocId docid, Position pos)
+    //{
+    //    { cursor.reset() } -> void;
+    //    { cursor.next() } -> void;
+    //    { cursor.next_geq(docid) } -> void;
+    //    { cursor.move(pos) } -> void;
+    //    { cursor.docid() } -> DocId;
+    //    { cursor.position() } -> Position;
+    //    { cursor.size() } -> std::size_t;
+    //};
+
+}
+
 template <std::size_t I, typename Cursor>
 auto payload(Cursor &cursor) -> typename std::tuple_element<I, typename Cursor::Payload>::type &;
 
@@ -52,7 +68,7 @@ struct RawCursor {
         Expects(bytes.size() % sizeof(T) == 0);
     }
 
-    constexpr auto operator*() -> T
+    [[nodiscard]] constexpr auto operator*() const -> T
     {
         return bit_cast<T>(gsl::as_bytes(m_bytes.subspan(m_current, sizeof(T))));
     }
@@ -62,7 +78,8 @@ struct RawCursor {
         return empty() ? tl::nullopt : tl::make_optional(operator*()());
     }
     constexpr void step() { m_current += sizeof(T); }
-    constexpr auto empty() -> bool { return m_current == m_bytes.size(); }
+    [[nodiscard]] constexpr auto empty() const noexcept -> bool { return m_current == m_bytes.size(); }
+    [[nodiscard]] constexpr auto position() const noexcept -> std::size_t { return m_current; }
     [[nodiscard]] constexpr auto size() const -> std::size_t { return m_bytes.size() / sizeof(T); }
 
    private:
