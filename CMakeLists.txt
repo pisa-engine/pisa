@@ -48,7 +48,7 @@ list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
 
 if (UNIX)
    # For hardware popcount and other special instructions
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts -march=native")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
    # Extensive warnings
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-missing-braces")
