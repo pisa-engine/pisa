@@ -73,15 +73,9 @@ struct CursorIntersection {
             if (m_next_cursor == m_cursors.size()) {
                 m_current_payload = m_init;
                 for (auto idx = 0; idx < m_cursors.size(); ++idx) {
-                    //if (m_candidate == 116) {
-                    //    std::cout << *m_cursors[idx].get().payload() << ' ';
-                    //}
                     m_current_payload = m_accumulate(
                         m_current_payload, m_cursors[idx].get(), m_cursor_mapping[idx]);
                 }
-                //if (m_candidate == 116) {
-                //    std::cout << '\n';
-                //}
                 m_cursors[0].get().step();
                 m_current_value = std::exchange(m_candidate, *m_cursors[0].get());
                 m_next_cursor = 1;
@@ -127,5 +121,14 @@ struct CursorIntersection {
     Payload m_current_payload{};
     std::uint32_t m_next_cursor = 1;
 };
+
+template <typename CursorContainer, typename Payload, typename AccumulateFn>
+[[nodiscard]] constexpr inline auto intersect(CursorContainer cursors,
+                                              Payload init,
+                                              AccumulateFn accumulate)
+{
+    return CursorIntersection<CursorContainer, Payload, AccumulateFn>(
+        std::move(cursors), std::move(init), std::move(accumulate));
+}
 
 } // namespace pisa

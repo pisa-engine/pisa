@@ -128,6 +128,28 @@ constexpr void RawCursor<T>::step_to_geq(T value)
     }
 }
 
+template <typename Cursor>
+struct Reader {
+    using Value = std::decay_t<decltype(*std::declval<Cursor>())>;
+    static_assert(std::is_trivially_copyable<Value>::value);
+
+    template <typename ReaderImpl>
+    explicit constexpr Reader(ReaderImpl &&reader)
+    {
+        m_read = [reader = std::forward<ReaderImpl>(reader)](gsl::span<std::byte const> bytes) {
+            return reader.read(bytes);
+        };
+    }
+
+    [[nodiscard]] auto read(gsl::span<std::byte const> bytes) const -> Cursor
+    {
+        return m_read(bytes);
+    }
+
+   private:
+    std::function<Cursor(gsl::span<std::byte const>)> m_read;
+};
+
 template <typename T>
 struct RawReader {
     static_assert(std::is_trivially_copyable<T>::value);

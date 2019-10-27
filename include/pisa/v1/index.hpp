@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -26,19 +27,17 @@ namespace pisa::v1 {
 /// \tparam PayloadReader   Type of an object that reads payload posting lists from bytes.
 ///                         It can read lists of arbitrary types, such as `Frequency`,
 ///                         `Score`, or `std::pair<Score, Score>` for a bigram scored index.
-/// \tparam Source          Can be used to store any owning data, like open `mmap`, since
-///                         index internally uses spans to manage encoded parts of memory.
-template <typename DocumentReader, typename PayloadReader, typename Source>
+template <typename DocumentCursor, typename PayloadCursor>
 struct Index {
 
-    /// The type of cursor constructed by the document reader. Must read `DocId` values.
-    using DocumentCursor =
-        decltype(std::declval<DocumentReader>().read(std::declval<gsl::span<std::byte const>>()));
-    static_assert(std::is_same_v<decltype(*std::declval<DocumentCursor>()), DocId>);
+    ///// The type of cursor constructed by the document reader. Must read `DocId` values.
+    // using DocumentCursor =
+    //    decltype(std::declval<DocumentReader>().read(std::declval<gsl::span<std::byte const>>()));
+    // static_assert(std::is_same_v<decltype(*std::declval<DocumentCursor>()), DocId>);
 
-    /// The type of cursor constructed by the payload reader.
-    using PayloadCursor =
-        decltype(std::declval<PayloadReader>().read(std::declval<gsl::span<std::byte const>>()));
+    ///// The type of cursor constructed by the payload reader.
+    // using PayloadCursor =
+    //    decltype(std::declval<PayloadReader>().read(std::declval<gsl::span<std::byte const>>()));
 
     /// Constructs the index.
     ///
@@ -53,6 +52,10 @@ struct Index {
     /// \param source           This object (optionally) owns the raw data pointed at by
     ///                         `documents` and `payloads` to ensure it is valid throughout
     ///                         the lifetime of the index.
+    ///
+    /// \tparam Source          Can be used to store any owning data, like open `mmap`, since
+    ///                         index internally uses spans to manage encoded parts of memory.
+    template <typename DocumentReader, typename PayloadReader, typename Source>
     Index(DocumentReader document_reader,
           PayloadReader payload_reader,
           std::vector<std::size_t> document_offsets,
@@ -106,13 +109,13 @@ struct Index {
                                   m_payload_offsets[term + 1] - m_payload_offsets[term]);
     }
 
-    DocumentReader m_document_reader;
-    PayloadReader m_payload_reader;
+    Reader<DocumentCursor> m_document_reader;
+    Reader<PayloadCursor> m_payload_reader;
     std::vector<std::size_t> m_document_offsets;
     std::vector<std::size_t> m_payload_offsets;
     gsl::span<std::byte const> m_documents;
     gsl::span<std::byte const> m_payloads;
-    Source m_source;
+    std::any m_source;
 };
 
 /// Initializes a memory mapped source with a given file.
@@ -138,23 +141,20 @@ inline void open_source(mio::mmap_source &source, std::string const &filename)
         document_offsets.push_back(document_offsets.back() + offset);
         frequency_offsets.push_back(frequency_offsets.back() + offset);
     }
-    auto source = std::make_unique<std::pair<mio::mmap_source, mio::mmap_source>>();
+    auto source = std::make_shared<std::pair<mio::mmap_source, mio::mmap_source>>();
     open_source(source->first, basename + ".docs");
     open_source(source->second, basename + ".freqs");
     auto documents = gsl::make_span<std::byte const>(
         reinterpret_cast<std::byte const *>(source->first.data()), source->first.size());
     auto frequencies = gsl::make_span<std::byte const>(
         reinterpret_cast<std::byte const *>(source->second.data()), source->second.size());
-    return Index<RawReader<DocId>,
-                 RawReader<Frequency>,
-                 std::unique_ptr<std::pair<mio::mmap_source, mio::mmap_source>>>(
-        {},
-        {},
-        std::move(document_offsets),
-        std::move(frequency_offsets),
-        documents,
-        frequencies,
-        std::move(source));
+    return Index<RawCursor<DocId>, RawCursor<Frequency>>(RawReader<DocId>{},
+                                                         RawReader<Frequency>{},
+                                                         std::move(document_offsets),
+                                                         std::move(frequency_offsets),
+                                                         documents,
+                                                         frequencies,
+                                                         std::move(source));
 }
 
 template <typename Index>
@@ -244,15 +244,13 @@ struct BigramIndex : public Index {
     auto source = std::array<std::vector<std::byte>, 2>{std::move(documents), std::move(payloads)};
     auto document_span = gsl::make_span(source[0]);
     auto payload_span = gsl::make_span(source[1]);
-    auto index =
-        Index<RawReader<DocId>, RawReader<payload_type>, std::array<std::vector<std::byte>, 2>>(
-            {},
-            {},
-            std::move(document_offsets),
-            std::move(payload_offsets),
-            document_span,
-            payload_span,
-            std::move(source));
+    auto index = Index<RawCursor<DocId>, RawCursor<payload_type>>(RawReader<DocId>{},
+                                                                  RawReader<payload_type>{},
+                                                                  std::move(document_offsets),
+                                                                  std::move(payload_offsets),
+                                                                  document_span,
+                                                                  payload_span,
+                                                                  std::move(source));
     return BigramIndex(std::move(index), std::move(pair_mapping));
 }
 
