@@ -118,5 +118,11 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 
 # Add tl::optional
-set(OPTIONAL_ENABLE_TESTS OFF CACHE BOOL "skip optional testing")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/optional)
+set(OPTIONAL_ENABLE_TESTS OFF CACHE BOOL "skip tl::optional testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/optional EXCLUDE_FROM_ALL)
+
+# Add tl::expected
+set(EXPECTED_BUILD_TESTS OFF CACHE BOOL "skip tl::expected testing")
+set(EXPECTED_BUILD_PACKAGE OFF CACHE BOOL "skip tl::expected package")
+set(EXPECTED_BUILD_PACKAGE_DEB OFF CACHE BOOL "skip tl::expected package deb")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/expected EXCLUDE_FROM_ALL)
