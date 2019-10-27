@@ -24,6 +24,11 @@ and find out what works and what doesn't and still needs to be thought through.
 Each _posting file_ contains a list of blocks of data, each related to a single term,
 preceded by a header encoding information about the type of payload.
 
+> Do we need the header? I would say "yes" because even if we store the information
+> somewhere else, then we might want to (1) verify that we are reading what we think
+> we are reading, and (2) verify format version compatibility.
+> The latter should be further discussed.
+
 ```
 Posting File := Header, [Posting Block]
 ```
@@ -31,13 +36,18 @@ Posting File := Header, [Posting Block]
 Each posting block encodes a list of homogeneous values, called _postings_.
 Encoding is not fixed.
 
+> Note that _block_ here means the entire posting list area.
+> We can work on the terminology.
+
 ## Header
 
 We should store the type of the postings in the file, as well as encoding used.
 **This might be tricky because we'd like it to be an open set of values/encodings.**
 
 ```
-Header := Type, Encoding
+Header := Version, Type, Encoding
+Version := Major, Minor, Path
+Type := ValueId, Count
 ```
 
 ## Posting Types
@@ -47,7 +57,8 @@ would want to, including single-value lists, document-frequency (or score) lists
 positional indexes, etc.
 
 ```
-Type := int32 | float32 | List[Type] | Tuple[Type]
+Type := Primitive | List[Type] | Tuple[Type]
+Primitive := int32 | float32
 ```
 
 ## Encodings
