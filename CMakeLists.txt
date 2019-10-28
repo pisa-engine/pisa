@@ -96,7 +96,6 @@ target_link_libraries(pisa INTERFACE
     fmt::fmt
     range-v3
     optional
-    expected
 )
 target_include_directories(pisa INTERFACE external)
 

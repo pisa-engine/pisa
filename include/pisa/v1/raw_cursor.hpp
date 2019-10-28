@@ -11,6 +11,7 @@
 
 #include "util/likely.hpp"
 #include "v1/bit_cast.hpp"
+#include "v1/types.hpp"
 
 namespace pisa::v1 {
 
@@ -59,9 +60,9 @@ struct RawCursor {
 };
 
 template <typename T>
-constexpr RawCursor<T>::RawCursor(gsl::span<const std::byte> bytes) : m_bytes(bytes)
+constexpr RawCursor<T>::RawCursor(gsl::span<const std::byte> bytes) : m_bytes(bytes.subspan(4))
 {
-    Expects(bytes.size() % sizeof(T) == 0);
+    Expects(m_bytes.size() % sizeof(T) == 0);
 }
 
 template <typename T>
@@ -128,28 +129,6 @@ constexpr void RawCursor<T>::step_to_geq(T value)
     }
 }
 
-template <typename Cursor>
-struct Reader {
-    using Value = std::decay_t<decltype(*std::declval<Cursor>())>;
-    static_assert(std::is_trivially_copyable<Value>::value);
-
-    template <typename ReaderImpl>
-    explicit constexpr Reader(ReaderImpl &&reader)
-    {
-        m_read = [reader = std::forward<ReaderImpl>(reader)](gsl::span<std::byte const> bytes) {
-            return reader.read(bytes);
-        };
-    }
-
-    [[nodiscard]] auto read(gsl::span<std::byte const> bytes) const -> Cursor
-    {
-        return m_read(bytes);
-    }
-
-   private:
-    std::function<Cursor(gsl::span<std::byte const>)> m_read;
-};
-
 template <typename T>
 struct RawReader {
     static_assert(std::is_trivially_copyable<T>::value);
@@ -158,6 +137,8 @@ struct RawReader {
     {
         return RawCursor<T>(bytes);
     }
+
+    constexpr static auto encoding() -> std::uint64_t { return EncodingId::Raw; }
 };
 
 template <typename T>
@@ -167,11 +148,14 @@ struct RawWriter {
     void push(T const &posting) { m_postings.push_back(posting); }
     void push(T &&posting) { m_postings.push_back(posting); }
 
-    void write(std::ostream &os) const
+    [[nodiscard]] auto write(std::ostream &os) const -> std::size_t
     {
         assert(!m_postings.empty());
-        auto memory = gsl::as_bytes(gsl::make_span(m_postings.data()));
-        os.write(memory, memory.size());
+        std::uint32_t length = m_postings.size();
+        os.write(reinterpret_cast<char const *>(&length), sizeof(length));
+        auto memory = gsl::as_bytes(gsl::make_span(m_postings.data(), m_postings.size()));
+        os.write(reinterpret_cast<char const *>(memory.data()), memory.size());
+        return sizeof(length) + memory.size();
     }
 
     template <typename OutputByteIterator>
@@ -185,6 +169,8 @@ struct RawWriter {
         std::copy(memory.begin(), memory.end(), out);
         return out;
     }
+    constexpr static auto encoding() -> std::uint64_t { return EncodingId::Raw; }
+    void reset() { m_postings.clear(); }
 
    private:
     std::vector<T> m_postings;

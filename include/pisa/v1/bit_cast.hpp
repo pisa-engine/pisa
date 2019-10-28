@@ -9,7 +9,7 @@ namespace pisa::v1 {
 template <class T>
 constexpr auto bit_cast(gsl::span<const std::byte> mem) -> T
 {
-    T dst;
+    T dst{};
     std::memcpy(&dst, mem.data(), sizeof(T));
     return dst;
 }

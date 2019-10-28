@@ -29,16 +29,6 @@ namespace pisa::v1 {
 ///                         `Score`, or `std::pair<Score, Score>` for a bigram scored index.
 template <typename DocumentCursor, typename PayloadCursor>
 struct Index {
-
-    ///// The type of cursor constructed by the document reader. Must read `DocId` values.
-    // using DocumentCursor =
-    //    decltype(std::declval<DocumentReader>().read(std::declval<gsl::span<std::byte const>>()));
-    // static_assert(std::is_same_v<decltype(*std::declval<DocumentCursor>()), DocId>);
-
-    ///// The type of cursor constructed by the payload reader.
-    // using PayloadCursor =
-    //    decltype(std::declval<PayloadReader>().read(std::declval<gsl::span<std::byte const>>()));
-
     /// Constructs the index.
     ///
     /// \param document_reader  Reads document posting lists from bytes.
@@ -51,10 +41,8 @@ struct Index {
     /// \param payloads         Encoded bytes for payload postings.
     /// \param source           This object (optionally) owns the raw data pointed at by
     ///                         `documents` and `payloads` to ensure it is valid throughout
-    ///                         the lifetime of the index.
-    ///
-    /// \tparam Source          Can be used to store any owning data, like open `mmap`, since
-    ///                         index internally uses spans to manage encoded parts of memory.
+    ///                         the lifetime of the index. It should release any resources
+    ///                         in its destructor.
     template <typename DocumentReader, typename PayloadReader, typename Source>
     Index(DocumentReader document_reader,
           PayloadReader payload_reader,
@@ -83,14 +71,11 @@ struct Index {
     /// Constructs a new document cursor.
     [[nodiscard]] auto documents(TermId term)
     {
-        return m_document_reader.read(fetch_documents(term).subspan(4));
+        return m_document_reader.read(fetch_documents(term));
     }
 
     /// Constructs a new payload cursor.
-    [[nodiscard]] auto payloads(TermId term)
-    {
-        return m_payload_reader.read(fetch_payloads(term).subspan(4));
-    }
+    [[nodiscard]] auto payloads(TermId term) { return m_payload_reader.read(fetch_payloads(term)); }
 
     /// Constructs a new payload cursor.
     [[nodiscard]] auto num_terms() -> std::uint32_t { return m_document_offsets.size() - 1; }
