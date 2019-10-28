@@ -6,6 +6,10 @@
 #include <type_traits>
 #include <utility>
 
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iterator/counting_iterator.hpp>
+#include <fmt/format.h>
 #include <gsl/gsl_assert>
 #include <gsl/span>
 #include <mio/mmap.hpp>
@@ -13,8 +17,10 @@
 
 #include "binary_freq_collection.hpp"
 #include "v1/bit_cast.hpp"
+#include "v1/cursor/for_each.hpp"
 #include "v1/cursor_intersection.hpp"
 #include "v1/document_payload_cursor.hpp"
+#include "v1/posting_builder.hpp"
 #include "v1/raw_cursor.hpp"
 #include "v1/types.hpp"
 
@@ -103,6 +109,27 @@ struct Index {
     std::any m_source;
 };
 
+template <typename DocumentReader, typename PayloadReader, typename Source>
+auto make_index(DocumentReader document_reader,
+                PayloadReader payload_reader,
+                std::vector<std::size_t> document_offsets,
+                std::vector<std::size_t> payload_offsets,
+                gsl::span<std::byte const> documents,
+                gsl::span<std::byte const> payloads,
+                Source source)
+{
+    using DocumentCursor =
+        decltype(document_reader.read(std::declval<gsl::span<std::byte const>>()));
+    using PayloadCursor = decltype(payload_reader.read(std::declval<gsl::span<std::byte const>>()));
+    return Index<DocumentCursor, PayloadCursor>(std::move(document_reader),
+                                                std::move(payload_reader),
+                                                std::move(document_offsets),
+                                                std::move(payload_offsets),
+                                                documents,
+                                                payloads,
+                                                std::move(source));
+}
+
 /// Initializes a memory mapped source with a given file.
 inline void open_source(mio::mmap_source &source, std::string const &filename)
 {
@@ -116,31 +143,109 @@ inline void open_source(mio::mmap_source &source, std::string const &filename)
 
 [[nodiscard]] inline auto binary_collection_index(std::string const &basename)
 {
+    using sink_type = boost::iostreams::back_insert_device<std::vector<char>>;
+    using vector_stream_type = boost::iostreams::stream<sink_type>;
+
     binary_freq_collection collection(basename.c_str());
-    std::vector<std::size_t> document_offsets;
-    std::vector<std::size_t> frequency_offsets;
-    document_offsets.push_back(8);
-    frequency_offsets.push_back(0);
-    for (auto const &postings : collection) {
-        auto offset = (1 + postings.docs.size()) * sizeof(std::uint32_t);
-        document_offsets.push_back(document_offsets.back() + offset);
-        frequency_offsets.push_back(frequency_offsets.back() + offset);
+    std::vector<char> docbuf;
+    std::vector<char> freqbuf;
+
+    PostingBuilder<DocId> document_builder(Writer<DocId>(RawWriter<DocId>{}));
+    PostingBuilder<Frequency> frequency_builder(Writer<Frequency>(RawWriter<Frequency>{}));
+    {
+        vector_stream_type docstream{sink_type{docbuf}};
+        vector_stream_type freqstream{sink_type{freqbuf}};
+
+        document_builder.write_header(docstream);
+        frequency_builder.write_header(freqstream);
+
+        for (auto sequence : collection) {
+            document_builder.write_segment(docstream, sequence.docs.begin(), sequence.docs.end());
+            frequency_builder.write_segment(
+                freqstream, sequence.freqs.begin(), sequence.freqs.end());
+        }
     }
-    auto source = std::make_shared<std::pair<mio::mmap_source, mio::mmap_source>>();
-    open_source(source->first, basename + ".docs");
-    open_source(source->second, basename + ".freqs");
-    auto documents = gsl::make_span<std::byte const>(
+
+    auto document_offsets = document_builder.offsets();
+    auto frequency_offsets = frequency_builder.offsets();
+    auto source = std::make_shared<std::pair<std::vector<char>, std::vector<char>>>(
+        std::move(docbuf), std::move(freqbuf));
+    auto documents = gsl::span<std::byte const>(
         reinterpret_cast<std::byte const *>(source->first.data()), source->first.size());
-    auto frequencies = gsl::make_span<std::byte const>(
+    auto frequencies = gsl::span<std::byte const>(
         reinterpret_cast<std::byte const *>(source->second.data()), source->second.size());
+
     return Index<RawCursor<DocId>, RawCursor<Frequency>>(RawReader<DocId>{},
                                                          RawReader<Frequency>{},
-                                                         std::move(document_offsets),
-                                                         std::move(frequency_offsets),
-                                                         documents,
-                                                         frequencies,
+                                                         document_offsets,
+                                                         frequency_offsets,
+                                                         documents.subspan(8),
+                                                         frequencies.subspan(8),
                                                          std::move(source));
 }
+
+template <typename... Readers>
+struct IndexRunner {
+    template <typename Source>
+    IndexRunner(std::vector<std::size_t> document_offsets,
+                std::vector<std::size_t> payload_offsets,
+                gsl::span<std::byte const> documents,
+                gsl::span<std::byte const> payloads,
+                Source source,
+                Readers... readers)
+        : m_document_offsets(std::move(document_offsets)),
+          m_payload_offsets(std::move(payload_offsets)),
+          m_documents(documents),
+          m_payloads(payloads),
+          m_source(std::move(source)),
+          m_readers(readers...)
+    {
+    }
+
+    template <typename Fn>
+    void operator()(Fn fn)
+    {
+        auto dheader = PostingFormatHeader::parse(m_documents.first(8));
+        auto pheader = PostingFormatHeader::parse(m_payloads.first(8));
+        auto run = [&](auto &&dreader, auto &&preader) -> bool {
+            if (std::decay_t<decltype(dreader)>::encoding() == dheader.encoding
+                && std::decay_t<decltype(preader)>::encoding() == pheader.encoding
+                && is_type<typename std::decay_t<decltype(dreader)>::value_type>(dheader.type)
+                && is_type<typename std::decay_t<decltype(preader)>::value_type>(pheader.type)) {
+                fn(make_index(std::forward<decltype(dreader)>(dreader),
+                              std::forward<decltype(preader)>(preader),
+                              m_document_offsets,
+                              m_payload_offsets,
+                              m_documents.subspan(8),
+                              m_payloads.subspan(8),
+                              false));
+                return true;
+            }
+            return false;
+        };
+        bool success = std::apply(
+            [&](Readers... dreaders) {
+                auto with_document_reader = [&](auto dreader) {
+                    return std::apply(
+                        [&](Readers... preaders) { return (run(dreader, preaders) || ...); },
+                        m_readers);
+                };
+                return (with_document_reader(dreaders) || ...);
+            },
+            m_readers);
+        if (not success) {
+            throw std::domain_error("Unknown posting encoding");
+        }
+    }
+
+   private:
+    std::vector<std::size_t> m_document_offsets;
+    std::vector<std::size_t> m_payload_offsets;
+    gsl::span<std::byte const> m_documents;
+    gsl::span<std::byte const> m_payloads;
+    std::any m_source;
+    std::tuple<Readers...> m_readers;
+};
 
 template <typename Index>
 struct BigramIndex : public Index {
@@ -170,71 +275,60 @@ struct BigramIndex : public Index {
 [[nodiscard]] inline auto binary_collection_bigram_index(std::string const &basename)
 {
     using payload_type = std::array<Frequency, 2>;
+    using sink_type = boost::iostreams::back_insert_device<std::vector<char>>;
+    using vector_stream_type = boost::iostreams::stream<sink_type>;
 
     auto unigram_index = binary_collection_index(basename);
 
     std::vector<std::pair<TermId, TermId>> pair_mapping;
-    std::vector<std::byte> documents;
-    std::vector<std::byte> payloads;
+    std::vector<char> docbuf;
+    std::vector<char> freqbuf;
 
-    std::vector<std::size_t> document_offsets;
-    std::vector<std::size_t> payload_offsets;
-
+    PostingBuilder<DocId> document_builder(RawWriter<DocId>{});
+    PostingBuilder<payload_type> frequency_builder(RawWriter<payload_type>{});
     {
-        // Hack to be backwards-compatible with binary_freq_collection (for now).
-        documents.insert(documents.begin(), 8, std::byte{0});
+        vector_stream_type docstream{sink_type{docbuf}};
+        vector_stream_type freqstream{sink_type{freqbuf}};
+
+        document_builder.write_header(docstream);
+        frequency_builder.write_header(freqstream);
+
+        std::for_each(boost::counting_iterator<TermId>(0),
+                      boost::counting_iterator<TermId>(unigram_index.num_terms() - 1),
+                      [&](auto left) {
+                          auto right = left + 1;
+                          auto intersection = CursorIntersection(
+                              std::vector{unigram_index.cursor(left), unigram_index.cursor(right)},
+                              payload_type{0, 0},
+                              [](payload_type &payload, auto &cursor, auto list_idx) {
+                                  payload[list_idx] = *cursor.payload();
+                                  return payload;
+                              });
+                          if (intersection.empty()) {
+                              // Include only non-empty intersections.
+                              return;
+                          }
+                          pair_mapping.emplace_back(left, right);
+                          for_each(intersection, [&](auto &cursor) {
+                              document_builder.accumulate(*cursor);
+                              frequency_builder.accumulate(cursor.payload());
+                          });
+                          document_builder.flush_segment(docstream);
+                          frequency_builder.flush_segment(freqstream);
+                      });
     }
 
-    document_offsets.push_back(documents.size());
-    payload_offsets.push_back(payloads.size());
-    for (TermId left = 0; left < unigram_index.num_terms() - 1; left += 1) {
-        auto right = left + 1;
-        RawWriter<DocId> document_writer;
-        RawWriter<payload_type> payload_writer;
-        auto inter =
-            CursorIntersection(std::vector{unigram_index.cursor(left), unigram_index.cursor(right)},
-                               payload_type{0, 0},
-                               [](payload_type &payload, auto &cursor, auto list_idx) {
-                                   payload[list_idx] = *cursor.payload();
-                                   return payload;
-                               });
-        if (inter.empty()) {
-            // Include only non-empty intersections.
-            continue;
-        }
-        pair_mapping.emplace_back(left, right);
-        while (not inter.empty()) {
-            document_writer.push(*inter);
-            payload_writer.push(inter.payload());
-            inter.step();
-        }
-        document_writer.append(std::back_inserter(documents));
-        payload_writer.append(std::back_inserter(payloads));
-        document_offsets.push_back(documents.size());
-        payload_offsets.push_back(payloads.size());
-    }
-
-    {
-        // Hack to be backwards-compatible with binary_freq_collection (for now).
-        auto one_bytes = std::array<std::byte, 4>{};
-        auto size_bytes = std::array<std::byte, 4>{};
-        auto num_bigrams = static_cast<std::uint32_t>(document_offsets.size());
-        std::uint32_t one = 1;
-        std::memcpy(&size_bytes, &num_bigrams, 4);
-        std::memcpy(&one_bytes, &one, 4);
-        std::copy(one_bytes.begin(), one_bytes.end(), documents.begin());
-        std::copy(size_bytes.begin(), size_bytes.end(), std::next(documents.begin(), 4));
-    }
-
-    auto source = std::array<std::vector<std::byte>, 2>{std::move(documents), std::move(payloads)};
-    auto document_span = gsl::make_span(source[0]);
-    auto payload_span = gsl::make_span(source[1]);
+    auto source = std::array<std::vector<char>, 2>{std::move(docbuf), std::move(freqbuf)};
+    auto document_span = gsl::span<std::byte const>(
+        reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+    auto payload_span = gsl::span<std::byte const>(
+        reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
     auto index = Index<RawCursor<DocId>, RawCursor<payload_type>>(RawReader<DocId>{},
                                                                   RawReader<payload_type>{},
-                                                                  std::move(document_offsets),
-                                                                  std::move(payload_offsets),
-                                                                  document_span,
-                                                                  payload_span,
+                                                                  document_builder.offsets(),
+                                                                  frequency_builder.offsets(),
+                                                                  document_span.subspan(8),
+                                                                  payload_span.subspan(8),
                                                                   std::move(source));
     return BigramIndex(std::move(index), std::move(pair_mapping));
 }

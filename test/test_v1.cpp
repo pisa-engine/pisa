@@ -7,89 +7,27 @@
 #include <boost/iostreams/stream.hpp>
 #include <tbb/task_scheduler_init.h>
 
-//#include "cursor/scored_cursor.hpp"
 #include "io.hpp"
 #include "pisa_config.hpp"
-//#include "query/queries.hpp"
-//#include "test_common.hpp"
+#include "v1/cursor/collect.hpp"
 #include "v1/index.hpp"
 #include "v1/posting_builder.hpp"
 #include "v1/posting_format_header.hpp"
 #include "v1/types.hpp"
-//#include "wand_utils.hpp"
 
 using pisa::v1::Array;
 using pisa::v1::DocId;
 using pisa::v1::Frequency;
-using pisa::v1::Index;
+using pisa::v1::IndexRunner;
 using pisa::v1::parse_type;
 using pisa::v1::PostingBuilder;
 using pisa::v1::PostingFormatHeader;
 using pisa::v1::Primitive;
-using pisa::v1::RawCursor;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
 using pisa::v1::TermId;
 using pisa::v1::Tuple;
 using pisa::v1::Writer;
-
-// template <typename Index>
-// struct IndexData {
-//
-//    static std::unique_ptr<IndexData> data;
-//
-//    IndexData()
-//        : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
-//          document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
-//          wdata(document_sizes.begin()->begin(),
-//                collection.num_docs(),
-//                collection,
-//                BlockSize(FixedBlock()))
-//
-//    {
-//        tbb::task_scheduler_init init;
-//        typename Index::builder builder(collection.num_docs(), params);
-//        for (auto const &plist : collection) {
-//            uint64_t freqs_sum =
-//                std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
-//            builder.add_posting_list(
-//                plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
-//        }
-//        builder.build(index);
-//
-//        term_id_vec q;
-//        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
-//        auto push_query = [&](std::string const &query_line) {
-//            queries.push_back(parse_query_ids(query_line));
-//        };
-//        io::for_each_line(qfile, push_query);
-//
-//        std::string t;
-//        std::ifstream tin(PISA_SOURCE_DIR "/test/test_data/top5_thresholds");
-//        while (std::getline(tin, t)) {
-//            thresholds.push_back(std::stof(t));
-//        }
-//    }
-//
-//    [[nodiscard]] static auto get()
-//    {
-//        if (IndexData::data == nullptr) {
-//            IndexData::data = std::make_unique<IndexData<Index>>();
-//        }
-//        return IndexData::data.get();
-//    }
-//
-//    global_parameters params;
-//    binary_freq_collection collection;
-//    binary_collection document_sizes;
-//    Index index;
-//    std::vector<Query> queries;
-//    std::vector<float> thresholds;
-//    wand_data<wand_data_raw> wdata;
-//};
-//
-// template <typename Index>
-// std::unique_ptr<IndexData<Index>> IndexData<Index>::data = nullptr;
 
 template <typename T>
 std::ostream &operator<<(std::ostream &os, tl::optional<T> const &val)
@@ -115,33 +53,8 @@ TEST_CASE("RawReader", "[v1][unit]")
     REQUIRE(cursor.next() == tl::nullopt);
 }
 
-template <typename Cursor, typename Transform>
-auto collect(Cursor &&cursor, Transform transform)
-{
-    std::vector<std::decay_t<decltype(transform(cursor))>> vec;
-    while (not cursor.empty()) {
-        vec.push_back(transform(cursor));
-        cursor.step();
-    }
-    return vec;
-}
-
-template <typename Cursor>
-auto collect(Cursor &&cursor)
-{
-    return collect(std::forward<Cursor>(cursor), [](auto &&cursor) { return *cursor; });
-}
-
 TEST_CASE("Binary collection index", "[v1][unit]")
 {
-    /* auto data = IndexData<single_index>::get(); */
-    /* ranked_or_query or_q(10); */
-
-    /* for (auto const &q : data->queries) { */
-    /*     or_q(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs()); */
-    /*     auto results = or_q.topk(); */
-    /* } */
-
     pisa::binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     auto index =
         pisa::v1::binary_collection_index(PISA_SOURCE_DIR "/test/test_data/test_collection");
@@ -342,16 +255,55 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                       == gsl::make_span(frequency_bytes.data(), frequency_bytes.size()));
             }
 
-            // Index<RawCursor<DocId>, RawCursor<Frequency>>(
-            //    RawReader<DocId>{},
-            //    RawReader<Frequency>{},
-            //    document_offsets,
-            //    frequency_offsets,
-            //    gsl::span<std::byte const>(reinterpret_cast<std::byte const *>(docbuf.data()),
-            //                               docbuf.size()),
-            //    gsl::span<std::byte const>(reinterpret_cast<std::byte const *>(freqbuf.data()),
-            //                               freqbuf.size()),
-            //    true);
+            THEN("Index runner is correctly constructed")
+            {
+                auto source = std::array<std::vector<char>, 2>{docbuf, freqbuf};
+                auto document_span = gsl::span<std::byte const>(
+                    reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+                auto payload_span = gsl::span<std::byte const>(
+                    reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+                IndexRunner runner(document_offsets,
+                                   frequency_offsets,
+                                   document_span,
+                                   payload_span,
+                                   std::move(source),
+                                   RawReader<std::uint32_t>{},
+                                   RawReader<std::uint32_t>{}); // Repeat to test that it only
+                                                                // executes once
+                int counter = 0;
+                runner([&](auto index) {
+                    counter += 1;
+                    TermId term_id = 0;
+                    for (auto sequence : collection) {
+                        CAPTURE(term_id);
+                        REQUIRE(
+                            std::vector<std::uint32_t>(sequence.docs.begin(), sequence.docs.end())
+                            == collect(index.cursor(term_id)));
+                        REQUIRE(
+                            std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
+                            == collect(index.cursor(term_id),
+                                       [](auto &&cursor) { return *cursor.payload(); }));
+                        term_id += 1;
+                    }
+                });
+                REQUIRE(counter == 1);
+            }
+
+            THEN("Index runner fails when wrong type")
+            {
+                auto source = std::array<std::vector<char>, 2>{docbuf, freqbuf};
+                auto document_span = gsl::span<std::byte const>(
+                    reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+                auto payload_span = gsl::span<std::byte const>(
+                    reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+                IndexRunner runner(document_offsets,
+                                   frequency_offsets,
+                                   document_span,
+                                   payload_span,
+                                   std::move(source),
+                                   RawReader<float>{}); // Correct encoding but not type!
+                REQUIRE_THROWS_AS(runner([&](auto index) {}), std::domain_error);
+            }
         }
     }
 }

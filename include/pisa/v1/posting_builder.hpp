@@ -24,8 +24,9 @@ struct PostingBuilder {
     void write_header(std::ostream &os) const
     {
         std::array<std::byte, 8> header{};
-        PostingFormatHeader{
-            .version = FormatVersion::current(), .type = value_type<Value>(), .encoding = 0}
+        PostingFormatHeader{.version = FormatVersion::current(),
+                            .type = value_type<Value>(),
+                            .encoding = m_writer.encoding()}
             .write(gsl::make_span(header));
         os.write(reinterpret_cast<char const *>(header.data()), header.size());
     }
@@ -34,6 +35,13 @@ struct PostingBuilder {
     auto write_segment(std::ostream &os, ValueIterator first, ValueIterator last) -> std::ostream &
     {
         std::for_each(first, last, [&](auto &&value) { m_writer.push(value); });
+        return flush_segment(os);
+    }
+
+    void accumulate(Value value) { m_writer.push(value); }
+
+    auto flush_segment(std::ostream &os) -> std::ostream &
+    {
         m_offsets.push_back(m_offsets.back() + m_writer.write(os));
         m_writer.reset();
         return os;

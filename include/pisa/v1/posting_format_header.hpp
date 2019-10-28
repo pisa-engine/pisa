@@ -22,6 +22,7 @@ auto write_little_endian(Int number, gsl::span<std::byte> bytes)
     Int mask{0xFF};
     for (unsigned int byte_num = 0; byte_num < sizeof(Int); byte_num += 1) {
         auto byte_value = static_cast<std::byte>((number & mask) >> (8U * byte_num));
+        bytes[byte_num] = byte_value;
         mask <<= 8U;
     }
 }
@@ -62,7 +63,28 @@ struct Tuple {
     std::uint8_t size;
 };
 
+[[nodiscard]] inline auto operator==(Tuple const &lhs, Tuple const &rhs)
+{
+    return lhs.type == rhs.type && lhs.size == rhs.size;
+}
+
 using ValueType = std::variant<Primitive, Array, Tuple>;
+
+template <class T>
+struct is_array : std::false_type {
+};
+
+template <class T, std::size_t N>
+struct is_array<std::array<T, N>> : std::true_type {
+};
+
+template <class T>
+struct array_length : public std::integral_constant<std::uint8_t, 0> {
+};
+
+template <class T, std::size_t N>
+struct array_length<std::array<T, N>> : public std::integral_constant<std::uint8_t, N> {
+};
 
 template <typename T>
 constexpr static auto value_type() -> ValueType
@@ -71,9 +93,44 @@ constexpr static auto value_type() -> ValueType
         return Primitive::Int;
     } else if constexpr (std::is_floating_point_v<T>) {
         return Primitive::Float;
+    } else if constexpr (is_array<T>::value) {
+        auto len = array_length<T>::value;
+        if constexpr (std::is_integral_v<typename T::value_type>) {
+            return Tuple{Primitive::Int, len};
+        } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
+            return Tuple{Primitive::Float, len};
+        } else {
+            throw std::domain_error("Unsupported type");
+        }
     } else {
-        // TODO(michal): array and tuple
-        throw std::runtime_error("");
+        // TODO(michal): array
+        throw std::domain_error("Unsupported type");
+    }
+}
+
+template <typename T>
+constexpr static auto is_type(ValueType type)
+{
+    if constexpr (std::is_integral_v<T>) {
+        return std::holds_alternative<Primitive>(type)
+               && std::get<Primitive>(type) == Primitive::Int;
+    } else if constexpr (std::is_floating_point_v<T>) {
+        return std::holds_alternative<Primitive>(type)
+               && std::get<Primitive>(type) == Primitive::Float;
+    } else if constexpr (is_array<T>::value) {
+        auto len = array_length<T>::value;
+        if constexpr (std::is_integral_v<typename T::value_type>) {
+            return std::holds_alternative<Tuple>(type)
+                   && std::get<Tuple>(type) == Tuple{Primitive::Int, len};
+        } else if constexpr (std::is_floating_point_v<typename T::value_type>) {
+            return std::holds_alternative<Tuple>(type)
+                   && std::get<Tuple>(type) == Tuple{Primitive::Float, len};
+        } else {
+            throw std::domain_error("Unsupported type");
+        }
+    } else {
+        // TODO(michal): array
+        throw std::domain_error("Unsupported type");
     }
 }
 

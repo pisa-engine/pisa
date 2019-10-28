@@ -19,6 +19,7 @@ namespace pisa::v1 {
 template <typename T>
 struct RawCursor {
     static_assert(std::is_trivially_copyable_v<T>);
+    using value_type = T;
 
     /// Creates a cursor from the encoded bytes.
     explicit constexpr RawCursor(gsl::span<const std::byte> bytes);
@@ -132,18 +133,22 @@ constexpr void RawCursor<T>::step_to_geq(T value)
 template <typename T>
 struct RawReader {
     static_assert(std::is_trivially_copyable<T>::value);
+    using value_type = T;
 
     [[nodiscard]] auto read(gsl::span<const std::byte> bytes) const -> RawCursor<T>
     {
         return RawCursor<T>(bytes);
     }
 
-    constexpr static auto encoding() -> std::uint64_t { return EncodingId::Raw; }
+    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw; }
 };
 
 template <typename T>
 struct RawWriter {
     static_assert(std::is_trivially_copyable<T>::value);
+    using value_type = T;
+
+    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw; }
 
     void push(T const &posting) { m_postings.push_back(posting); }
     void push(T &&posting) { m_postings.push_back(posting); }
@@ -169,7 +174,6 @@ struct RawWriter {
         std::copy(memory.begin(), memory.end(), out);
         return out;
     }
-    constexpr static auto encoding() -> std::uint64_t { return EncodingId::Raw; }
     void reset() { m_postings.clear(); }
 
    private:
