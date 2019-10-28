@@ -54,7 +54,7 @@ int main(int argc, const char **argv)
             return lambda ? VariableBlock(*lambda) : VariableBlock();
         }
         auto const block_size = fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
-        spdlog::info("Fixed block size: {}", block_size);
+        spdlog::info("Fixed block size: {}", block_size.size);
         return block_size;
     }();
 
