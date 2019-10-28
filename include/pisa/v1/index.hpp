@@ -301,7 +301,7 @@ struct BigramIndex : public Index {
                               std::vector{unigram_index.cursor(left), unigram_index.cursor(right)},
                               payload_type{0, 0},
                               [](payload_type &payload, auto &cursor, auto list_idx) {
-                                  payload[list_idx] = *cursor.payload();
+                                  payload[list_idx] = cursor.payload();
                                   return payload;
                               });
                           if (intersection.empty()) {

@@ -9,7 +9,7 @@ void for_each(Cursor &&cursor, UnaryOp op)
 {
     while (not cursor.empty()) {
         op(cursor);
-        cursor.step();
+        cursor.advance();
     }
 }
 

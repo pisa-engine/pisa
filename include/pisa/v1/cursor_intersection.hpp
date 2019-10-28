@@ -46,7 +46,7 @@ struct CursorIntersection {
                                       })
                          ->sentinel();
         m_candidate = *m_cursors[0].get();
-        next();
+        advance();
     }
 
     [[nodiscard]] constexpr auto operator*() const -> Value { return m_current_value; }
@@ -58,12 +58,12 @@ struct CursorIntersection {
         return tl::nullopt;
     }
 
-    constexpr void step()
+    constexpr void advance()
     {
         while (PISA_LIKELY(m_candidate < sentinel())) {
             for (; m_next_cursor < m_cursors.size(); ++m_next_cursor) {
                 Cursor &cursor = m_cursors[m_next_cursor];
-                cursor.step_to_geq(m_candidate);
+                cursor.advance_to_geq(m_candidate);
                 if (*cursor != m_candidate) {
                     m_candidate = *cursor;
                     m_next_cursor = 0;
@@ -76,7 +76,7 @@ struct CursorIntersection {
                     m_current_payload = m_accumulate(
                         m_current_payload, m_cursors[idx].get(), m_cursor_mapping[idx]);
                 }
-                m_cursors[0].get().step();
+                m_cursors[0].get().advance();
                 m_current_value = std::exchange(m_candidate, *m_cursors[0].get());
                 m_next_cursor = 1;
                 return;
@@ -91,13 +91,8 @@ struct CursorIntersection {
         return m_current_payload;
     }
 
-    constexpr void step_to_position(std::size_t pos); // TODO(michal)
-    constexpr void step_to_geq(Value value); // TODO(michal)
-    constexpr auto next() -> tl::optional<Value>
-    {
-        step();
-        return value();
-    }
+    constexpr void advance_to_position(std::size_t pos); // TODO(michal)
+    constexpr void advance_to_geq(Value value); // TODO(michal)
 
     [[nodiscard]] constexpr auto empty() const noexcept -> bool
     {

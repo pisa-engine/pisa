@@ -19,6 +19,7 @@ using pisa::v1::Array;
 using pisa::v1::DocId;
 using pisa::v1::Frequency;
 using pisa::v1::IndexRunner;
+using pisa::v1::next;
 using pisa::v1::parse_type;
 using pisa::v1::PostingBuilder;
 using pisa::v1::PostingFormatHeader;
@@ -45,12 +46,12 @@ TEST_CASE("RawReader", "[v1][unit]")
     std::vector<std::uint32_t> const mem{5, 0, 1, 2, 3, 4};
     RawReader<uint32_t> reader;
     auto cursor = reader.read(gsl::as_bytes(gsl::make_span(mem)));
-    REQUIRE(cursor.value().value() == tl::make_optional(mem[1]).value());
-    REQUIRE(cursor.next() == tl::make_optional(mem[2]));
-    REQUIRE(cursor.next() == tl::make_optional(mem[3]));
-    REQUIRE(cursor.next() == tl::make_optional(mem[4]));
-    REQUIRE(cursor.next() == tl::make_optional(mem[5]));
-    REQUIRE(cursor.next() == tl::nullopt);
+    REQUIRE(cursor.value() == mem[1]);
+    REQUIRE(next(cursor) == tl::make_optional(mem[2]));
+    REQUIRE(next(cursor) == tl::make_optional(mem[3]));
+    REQUIRE(next(cursor) == tl::make_optional(mem[4]));
+    REQUIRE(next(cursor) == tl::make_optional(mem[5]));
+    REQUIRE(next(cursor) == tl::nullopt);
 }
 
 TEST_CASE("Binary collection index", "[v1][unit]")
@@ -73,7 +74,7 @@ TEST_CASE("Binary collection index", "[v1][unit]")
         REQUIRE(std::vector<std::uint32_t>(sequence.docs.begin(), sequence.docs.end())
                 == collect(index.cursor(term_id)));
         REQUIRE(std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
-                == collect(index.cursor(term_id), [](auto &&cursor) { return *cursor.payload(); }));
+                == collect(index.cursor(term_id), [](auto &&cursor) { return cursor.payload(); }));
         term_id += 1;
     }
 }
@@ -123,7 +124,7 @@ TEST_CASE("Bigram collection index", "[v1][unit]")
             auto id = index.bigram_id(term_id - 1, term_id);
             REQUIRE(id.has_value());
             auto postings = collect(index.cursor(*id), [](auto &cursor) {
-                auto freqs = *cursor.payload();
+                auto freqs = cursor.payload();
                 return std::make_tuple(*cursor, freqs[0], freqs[1]);
             });
             REQUIRE(postings == intersection);
@@ -282,7 +283,7 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                         REQUIRE(
                             std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
                             == collect(index.cursor(term_id),
-                                       [](auto &&cursor) { return *cursor.payload(); }));
+                                       [](auto &&cursor) { return cursor.payload(); }));
                         term_id += 1;
                     }
                 });

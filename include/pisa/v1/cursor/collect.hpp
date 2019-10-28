@@ -10,7 +10,7 @@ auto collect(Cursor &&cursor, Transform transform)
     std::vector<std::decay_t<decltype(transform(cursor))>> vec;
     while (not cursor.empty()) {
         vec.push_back(transform(cursor));
-        cursor.step();
+        cursor.advance();
     }
     return vec;
 }

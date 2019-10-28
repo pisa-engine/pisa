@@ -19,7 +19,11 @@ reference implementation of the discussed structures and some algorithms working
 The goal of this is to show how things work on certain examples,
 and find out what works and what doesn't and still needs to be thought through.
 
+> Look in `test/test_v1.cpp` for code examples.
+
 # Posting Files
+
+> Example: `v1/raw_cursor.hpp`.
 
 Each _posting file_ contains a list of blocks of data, each related to a single term,
 preceded by a header encoding information about the type of payload.
@@ -40,6 +44,8 @@ Encoding is not fixed.
 > We can work on the terminology.
 
 ## Header
+
+> Example: `v1/posting_format_header.hpp`.
 
 We should store the type of the postings in the file, as well as encoding used.
 **This might be tricky because we'd like it to be an open set of values/encodings.**
@@ -70,6 +76,4 @@ We should then also verify that this encoding implement a `Encoding<Type>` "conc
 This is not the same as our "codecs".
 This would be more like posting list reader.
 
-```
-Encoding := ??
-```
+> Example: `IndexRunner` in `v1/index.hpp`.
