@@ -5,12 +5,13 @@
 #include <iostream>
 #include <numeric>
 
+#include <fmt/format.h>
 #include <gsl/span>
 #include <tl/optional.hpp>
 
 #include "util/likely.hpp"
 
-namespace pisa {
+namespace pisa::v1 {
 
 /// Transforms a list of cursors into one cursor by lazily merging them together
 /// into an intersection.
@@ -50,13 +51,7 @@ struct CursorIntersection {
     }
 
     [[nodiscard]] constexpr auto operator*() const -> Value { return m_current_value; }
-    [[nodiscard]] constexpr auto value() const noexcept -> tl::optional<Value>
-    {
-        if (PISA_LIKELY(m_candidate < sentinel())) {
-            return m_current_value;
-        }
-        return tl::nullopt;
-    }
+    [[nodiscard]] constexpr auto value() const noexcept -> Value { return m_current_value; }
 
     constexpr void advance()
     {
@@ -96,7 +91,7 @@ struct CursorIntersection {
 
     [[nodiscard]] constexpr auto empty() const noexcept -> bool
     {
-        return m_candidate >= sentinel();
+        return m_current_value >= sentinel();
     }
 
     [[nodiscard]] constexpr auto position() const noexcept -> std::size_t; // TODO(michal)
@@ -126,4 +121,4 @@ template <typename CursorContainer, typename Payload, typename AccumulateFn>
         std::move(cursors), std::move(init), std::move(accumulate));
 }
 
-} // namespace pisa
+} // namespace pisa::v1

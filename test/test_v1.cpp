@@ -13,6 +13,7 @@
 #include "v1/index.hpp"
 #include "v1/posting_builder.hpp"
 #include "v1/posting_format_header.hpp"
+#include "v1/scorer/bm25.hpp"
 #include "v1/types.hpp"
 
 using pisa::v1::Array;
@@ -26,6 +27,7 @@ using pisa::v1::PostingFormatHeader;
 using pisa::v1::Primitive;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
+using pisa::v1::read_sizes;
 using pisa::v1::TermId;
 using pisa::v1::Tuple;
 using pisa::v1::Writer;
@@ -236,6 +238,8 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
             auto document_offsets = document_builder.offsets();
             auto frequency_offsets = frequency_builder.offsets();
 
+            auto document_sizes = read_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection");
+
             THEN("Bytes match with those of the collection")
             {
                 auto document_bytes =
@@ -263,10 +267,13 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                     reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+
                 IndexRunner runner(document_offsets,
                                    frequency_offsets,
                                    document_span,
                                    payload_span,
+                                   document_sizes,
+                                   tl::nullopt,
                                    std::move(source),
                                    RawReader<std::uint32_t>{},
                                    RawReader<std::uint32_t>{}); // Repeat to test that it only
@@ -301,6 +308,8 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                                    frequency_offsets,
                                    document_span,
                                    payload_span,
+                                   document_sizes,
+                                   tl::nullopt,
                                    std::move(source),
                                    RawReader<float>{}); // Correct encoding but not type!
                 REQUIRE_THROWS_AS(runner([&](auto index) {}), std::domain_error);

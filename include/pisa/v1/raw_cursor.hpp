@@ -35,6 +35,7 @@ struct RawCursor {
     explicit constexpr RawCursor(gsl::span<const std::byte> bytes) : m_bytes(bytes.subspan(4))
     {
         Expects(m_bytes.size() % sizeof(T) == 0);
+        Expects(not m_bytes.empty());
     }
 
     /// Dereferences the current value.
@@ -58,7 +59,7 @@ struct RawCursor {
     /// Moves the cursor to the next value equal or greater than `value`.
     constexpr void advance_to_geq(T value)
     {
-        while (not empty() && *(*this) < value) {
+        while (this->value() < value) {
             advance();
         }
     }

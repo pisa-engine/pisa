@@ -4,6 +4,8 @@
 
 #include <gsl/span>
 
+namespace pisa::v1 {
+
 template <typename DocumentCursor, typename PayloadCursor>
 struct DocumentPayloadCursor {
     using Document = decltype(*std::declval<DocumentCursor>());
@@ -48,3 +50,5 @@ struct DocumentPayloadCursor {
     DocumentCursor m_key_cursor;
     PayloadCursor m_payload_cursor;
 };
+
+} // namespace pisa::v1

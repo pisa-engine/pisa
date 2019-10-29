@@ -18,10 +18,12 @@
 #include "binary_freq_collection.hpp"
 #include "v1/bit_cast.hpp"
 #include "v1/cursor/for_each.hpp"
+#include "v1/cursor/scoring_cursor.hpp"
 #include "v1/cursor_intersection.hpp"
 #include "v1/document_payload_cursor.hpp"
 #include "v1/posting_builder.hpp"
 #include "v1/raw_cursor.hpp"
+#include "v1/scorer/bm25.hpp"
 #include "v1/types.hpp"
 
 namespace pisa::v1 {
@@ -56,6 +58,8 @@ struct Index {
           std::vector<std::size_t> payload_offsets,
           gsl::span<std::byte const> documents,
           gsl::span<std::byte const> payloads,
+          std::vector<std::uint32_t> document_lengths,
+          tl::optional<std::uint32_t> avg_document_length,
           Source source)
         : m_document_reader(std::move(document_reader)),
           m_payload_reader(std::move(payload_reader)),
@@ -63,41 +67,81 @@ struct Index {
           m_payload_offsets(std::move(payload_offsets)),
           m_documents(documents),
           m_payloads(payloads),
+          m_document_lengths(std::move(document_lengths)),
+          m_avg_document_length(avg_document_length.map_or_else(
+              [](auto &&self) { return self; },
+              [&]() { return calc_avg_length(m_document_lengths); })),
           m_source(std::move(source))
     {
     }
 
     /// Constructs a new document-payload cursor (see document_payload_cursor.hpp).
-    [[nodiscard]] auto cursor(TermId term)
+    [[nodiscard]] auto cursor(TermId term) const
     {
         return DocumentPayloadCursor<DocumentCursor, PayloadCursor>(documents(term),
                                                                     payloads(term));
     }
 
+    /// Constructs a new document-score cursor.
+    template <typename Scorer>
+    [[nodiscard]] auto scoring_cursor(TermId term, Scorer &&scorer) const
+    {
+        return ScoringCursor(cursor(term), std::forward<Scorer>(scorer).term_scorer(term));
+    }
+
     /// Constructs a new document cursor.
-    [[nodiscard]] auto documents(TermId term)
+    [[nodiscard]] auto documents(TermId term) const
     {
         return m_document_reader.read(fetch_documents(term));
     }
 
     /// Constructs a new payload cursor.
-    [[nodiscard]] auto payloads(TermId term) { return m_payload_reader.read(fetch_payloads(term)); }
+    [[nodiscard]] auto payloads(TermId term) const
+    {
+        return m_payload_reader.read(fetch_payloads(term));
+    }
 
     /// Constructs a new payload cursor.
-    [[nodiscard]] auto num_terms() -> std::uint32_t { return m_document_offsets.size() - 1; }
+    [[nodiscard]] auto num_terms() const -> std::uint32_t { return m_document_offsets.size() - 1; }
+
+    [[nodiscard]] auto num_documents() const -> std::uint32_t { return m_document_lengths.size(); }
+
+    [[nodiscard]] auto term_posting_count(TermId term) const -> std::uint32_t
+    {
+        // TODO(michal): Should be done more efficiently.
+        return documents(term).size();
+    }
+
+    [[nodiscard]] auto document_length(DocId docid) const -> std::uint32_t
+    {
+        return m_document_lengths[docid];
+    }
+
+    [[nodiscard]] auto avg_document_length() const -> float { return m_avg_document_length; }
+
+    [[nodiscard]] auto normalized_document_length(DocId docid) const -> float
+    {
+        return document_length(docid) / avg_document_length();
+    }
 
    private:
-    [[nodiscard]] auto fetch_documents(TermId term) -> gsl::span<std::byte const>
+    [[nodiscard]] auto fetch_documents(TermId term) const -> gsl::span<std::byte const>
     {
         Expects(term + 1 < m_document_offsets.size());
         return m_documents.subspan(m_document_offsets[term],
                                    m_document_offsets[term + 1] - m_document_offsets[term]);
     }
-    [[nodiscard]] auto fetch_payloads(TermId term) -> gsl::span<std::byte const>
+    [[nodiscard]] auto fetch_payloads(TermId term) const -> gsl::span<std::byte const>
     {
         Expects(term + 1 < m_payload_offsets.size());
         return m_payloads.subspan(m_payload_offsets[term],
                                   m_payload_offsets[term + 1] - m_payload_offsets[term]);
+    }
+    [[nodiscard]] static auto calc_avg_length(std::vector<std::uint32_t> const &lengths)
+        -> std::uint32_t
+    {
+        auto sum = std::accumulate(lengths.begin(), lengths.end(), std::uint64_t(0), std::plus{});
+        return static_cast<float>(sum) / lengths.size();
     }
 
     Reader<DocumentCursor> m_document_reader;
@@ -106,6 +150,8 @@ struct Index {
     std::vector<std::size_t> m_payload_offsets;
     gsl::span<std::byte const> m_documents;
     gsl::span<std::byte const> m_payloads;
+    std::vector<std::uint32_t> m_document_lengths;
+    std::uint32_t m_avg_document_length;
     std::any m_source;
 };
 
@@ -116,6 +162,8 @@ auto make_index(DocumentReader document_reader,
                 std::vector<std::size_t> payload_offsets,
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
+                std::vector<std::uint32_t> document_lengths,
+                tl::optional<std::uint32_t> avg_document_length,
                 Source source)
 {
     using DocumentCursor =
@@ -127,6 +175,8 @@ auto make_index(DocumentReader document_reader,
                                                 std::move(payload_offsets),
                                                 documents,
                                                 payloads,
+                                                std::move(document_lengths),
+                                                avg_document_length,
                                                 std::move(source));
 }
 
@@ -139,6 +189,13 @@ inline void open_source(mio::mmap_source &source, std::string const &filename)
         spdlog::error("Error mapping file {}: {}", filename, error.message());
         throw std::runtime_error("Error mapping file");
     }
+}
+
+inline auto read_sizes(std::string_view basename)
+{
+    binary_collection sizes(fmt::format("{}.sizes", basename).c_str());
+    auto sequence = *sizes.begin();
+    return std::vector<std::uint32_t>(sequence.begin(), sequence.end());
 }
 
 [[nodiscard]] inline auto binary_collection_index(std::string const &basename)
@@ -181,6 +238,8 @@ inline void open_source(mio::mmap_source &source, std::string const &filename)
                                                          frequency_offsets,
                                                          documents.subspan(8),
                                                          frequencies.subspan(8),
+                                                         read_sizes(basename),
+                                                         tl::nullopt,
                                                          std::move(source));
 }
 
@@ -191,12 +250,16 @@ struct IndexRunner {
                 std::vector<std::size_t> payload_offsets,
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
+                std::vector<std::uint32_t> document_lengths,
+                tl::optional<std::uint32_t> avg_document_length,
                 Source source,
                 Readers... readers)
         : m_document_offsets(std::move(document_offsets)),
           m_payload_offsets(std::move(payload_offsets)),
           m_documents(documents),
           m_payloads(payloads),
+          m_document_lengths(std::move(document_lengths)),
+          m_avg_document_length(avg_document_length),
           m_source(std::move(source)),
           m_readers(readers...)
     {
@@ -218,6 +281,8 @@ struct IndexRunner {
                               m_payload_offsets,
                               m_documents.subspan(8),
                               m_payloads.subspan(8),
+                              m_document_lengths,
+                              m_avg_document_length,
                               false));
                 return true;
             }
@@ -243,6 +308,8 @@ struct IndexRunner {
     std::vector<std::size_t> m_payload_offsets;
     gsl::span<std::byte const> m_documents;
     gsl::span<std::byte const> m_payloads;
+    std::vector<std::uint32_t> m_document_lengths;
+    tl::optional<std::uint32_t> m_avg_document_length;
     std::any m_source;
     std::tuple<Readers...> m_readers;
 };
@@ -323,12 +390,15 @@ struct BigramIndex : public Index {
         reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
     auto payload_span = gsl::span<std::byte const>(
         reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+
     auto index = Index<RawCursor<DocId>, RawCursor<payload_type>>(RawReader<DocId>{},
                                                                   RawReader<payload_type>{},
                                                                   document_builder.offsets(),
                                                                   frequency_builder.offsets(),
                                                                   document_span.subspan(8),
                                                                   payload_span.subspan(8),
+                                                                  read_sizes(basename),
+                                                                  tl::nullopt,
                                                                   std::move(source));
     return BigramIndex(std::move(index), std::move(pair_mapping));
 }
