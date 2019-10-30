@@ -14,6 +14,7 @@ using DocId = std::uint32_t;
 using Frequency = std::uint32_t;
 using Score = float;
 using Result = std::pair<DocId, Score>;
+using ByteOStream = std::basic_ostream<std::byte>;
 
 enum EncodingId { Raw = 0xda43 };
 
@@ -56,7 +57,7 @@ struct Writer {
 
     void push(T const &posting) { m_internal_writer->push(posting); }
     void push(T &&posting) { m_internal_writer->push(posting); }
-    auto write(std::ostream &os) const -> std::size_t { return m_internal_writer->write(os); }
+    auto write(ByteOStream &os) const -> std::size_t { return m_internal_writer->write(os); }
     [[nodiscard]] auto encoding() const -> std::uint32_t { return m_internal_writer->encoding(); }
     void reset() { return m_internal_writer->reset(); }
 
@@ -69,7 +70,7 @@ struct Writer {
         virtual ~WriterInterface() = default;
         virtual void push(T const &posting) = 0;
         virtual void push(T &&posting) = 0;
-        virtual auto write(std::ostream &os) const -> std::size_t = 0;
+        virtual auto write(ByteOStream &os) const -> std::size_t = 0;
         [[nodiscard]] virtual auto encoding() const -> std::uint32_t = 0;
         virtual void reset() = 0;
     };
@@ -85,7 +86,7 @@ struct Writer {
         ~WriterImpl() = default;
         void push(T const &posting) override { m_writer.push(posting); }
         void push(T &&posting) override { m_writer.push(posting); }
-        auto write(std::ostream &os) const -> std::size_t override { return m_writer.write(os); }
+        auto write(ByteOStream &os) const -> std::size_t override { return m_writer.write(os); }
         [[nodiscard]] auto encoding() const -> std::uint32_t override { return W::encoding(); }
         void reset() override { return m_writer.reset(); }
 
@@ -95,6 +96,11 @@ struct Writer {
 
    private:
     std::unique_ptr<WriterInterface> m_internal_writer;
+};
+
+/// Indicates that payloads should be treated as scores.
+/// To be used with pre-computed scores, be it floats or quantized ints.
+struct VoidScorer {
 };
 
 } // namespace pisa::v1

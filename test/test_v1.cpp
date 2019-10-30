@@ -14,6 +14,7 @@
 #include "v1/posting_builder.hpp"
 #include "v1/posting_format_header.hpp"
 #include "v1/scorer/bm25.hpp"
+#include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
 
 using pisa::v1::Array;
@@ -28,6 +29,7 @@ using pisa::v1::Primitive;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
 using pisa::v1::read_sizes;
+using pisa::v1::ScorerRunner;
 using pisa::v1::TermId;
 using pisa::v1::Tuple;
 using pisa::v1::Writer;
@@ -206,17 +208,31 @@ TEST_CASE("Value type", "[v1][unit]")
     REQUIRE(std::get<Tuple>(parse_type(std::byte{0b01000111})).size == 8U);
 }
 
+[[nodiscard]] inline auto load_bytes(std::string const &data_file)
+{
+    std::vector<std::byte> data;
+    std::basic_ifstream<char> in(data_file.c_str(), std::ios::binary);
+    in.seekg(0, std::ios::end);
+    std::streamsize size = in.tellg();
+    in.seekg(0, std::ios::beg);
+    data.resize(size);
+    if (not in.read(reinterpret_cast<char *>(data.data()), size)) {
+        throw std::runtime_error("Failed reading " + data_file);
+    }
+    return data;
+}
+
 TEST_CASE("Build raw document-frequency index", "[v1][unit]")
 {
-    using sink_type = boost::iostreams::back_insert_device<std::vector<char>>;
+    using sink_type = boost::iostreams::back_insert_device<std::vector<std::byte>>;
     using vector_stream_type = boost::iostreams::stream<sink_type>;
     GIVEN("A test binary collection")
     {
         pisa::binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
         WHEN("Built posting files for documents and frequencies")
         {
-            std::vector<char> docbuf;
-            std::vector<char> freqbuf;
+            std::vector<std::byte> docbuf;
+            std::vector<std::byte> freqbuf;
 
             PostingBuilder<DocId> document_builder(Writer<DocId>(RawWriter<DocId>{}));
             PostingBuilder<Frequency> frequency_builder(Writer<DocId>(RawWriter<Frequency>{}));
@@ -243,9 +259,9 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
             THEN("Bytes match with those of the collection")
             {
                 auto document_bytes =
-                    pisa::io::load_data(PISA_SOURCE_DIR "/test/test_data/test_collection.docs");
+                    load_bytes(PISA_SOURCE_DIR "/test/test_data/test_collection.docs");
                 auto frequency_bytes =
-                    pisa::io::load_data(PISA_SOURCE_DIR "/test/test_data/test_collection.freqs");
+                    load_bytes(PISA_SOURCE_DIR "/test/test_data/test_collection.freqs");
 
                 // NOTE: the first 8 bytes of the document collection are different than those
                 // of the built document file. Also, the original frequency collection starts
@@ -262,7 +278,7 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
 
             THEN("Index runner is correctly constructed")
             {
-                auto source = std::array<std::vector<char>, 2>{docbuf, freqbuf};
+                auto source = std::array<std::vector<std::byte>, 2>{docbuf, freqbuf};
                 auto document_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
@@ -299,7 +315,7 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
 
             THEN("Index runner fails when wrong type")
             {
-                auto source = std::array<std::vector<char>, 2>{docbuf, freqbuf};
+                auto source = std::array<std::vector<std::byte>, 2>{docbuf, freqbuf};
                 auto document_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(

@@ -21,18 +21,20 @@ struct PostingBuilder {
         m_offsets.push_back(0);
     }
 
-    void write_header(std::ostream &os) const
+    template <typename CharT>
+    void write_header(std::basic_ostream<CharT> &os) const
     {
         std::array<std::byte, 8> header{};
         PostingFormatHeader{.version = FormatVersion::current(),
                             .type = value_type<Value>(),
                             .encoding = m_writer.encoding()}
             .write(gsl::make_span(header));
-        os.write(reinterpret_cast<char const *>(header.data()), header.size());
+        os.write(reinterpret_cast<CharT const *>(header.data()), header.size());
     }
 
-    template <typename ValueIterator>
-    auto write_segment(std::ostream &os, ValueIterator first, ValueIterator last) -> std::ostream &
+    template <typename ValueIterator, typename CharT>
+    auto write_segment(std::basic_ostream<CharT> &os, ValueIterator first, ValueIterator last)
+        -> std::basic_ostream<CharT> &
     {
         std::for_each(first, last, [&](auto &&value) { m_writer.push(value); });
         return flush_segment(os);
@@ -40,7 +42,8 @@ struct PostingBuilder {
 
     void accumulate(Value value) { m_writer.push(value); }
 
-    auto flush_segment(std::ostream &os) -> std::ostream &
+    template <typename CharT>
+    auto flush_segment(std::basic_ostream<CharT> &os) -> std::basic_ostream<CharT> &
     {
         m_offsets.push_back(m_offsets.back() + m_writer.write(os));
         m_writer.reset();

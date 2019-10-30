@@ -107,13 +107,14 @@ struct RawWriter {
     void push(T const &posting) { m_postings.push_back(posting); }
     void push(T &&posting) { m_postings.push_back(posting); }
 
-    [[nodiscard]] auto write(std::ostream &os) const -> std::size_t
+    template <typename CharT>
+    [[nodiscard]] auto write(std::basic_ostream<CharT> &os) const -> std::size_t
     {
         assert(!m_postings.empty());
         std::uint32_t length = m_postings.size();
-        os.write(reinterpret_cast<char const *>(&length), sizeof(length));
+        os.write(reinterpret_cast<CharT const *>(&length), sizeof(length));
         auto memory = gsl::as_bytes(gsl::make_span(m_postings.data(), m_postings.size()));
-        os.write(reinterpret_cast<char const *>(memory.data()), memory.size());
+        os.write(reinterpret_cast<CharT const *>(memory.data()), memory.size());
         return sizeof(length) + memory.size();
     }
 

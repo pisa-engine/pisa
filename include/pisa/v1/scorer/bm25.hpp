@@ -18,13 +18,13 @@ struct BM25 {
 
     explicit BM25(Index const &index) : m_index(index) {}
 
-    static float doc_term_weight(uint64_t freq, float norm_len)
+    [[nodiscard]] static float doc_term_weight(uint64_t freq, float norm_len)
     {
         auto f = static_cast<float>(freq);
         return f / (f + k1 * (1.0F - b + b * norm_len));
     }
 
-    static float query_term_weight(uint64_t df, uint64_t num_docs)
+    [[nodiscard]] static float query_term_weight(uint64_t df, uint64_t num_docs)
     {
         auto fdf = static_cast<float>(df);
         float idf = std::log((float(num_docs) - fdf + 0.5F) / (fdf + 0.5F));
@@ -32,7 +32,7 @@ struct BM25 {
         return std::max(epsilon_score, idf) * (1.0F + k1);
     }
 
-    auto term_scorer(TermId term_id) const
+    [[nodiscard]] auto term_scorer(TermId term_id) const
     {
         auto term_weight =
             query_term_weight(m_index.term_posting_count(term_id), m_index.num_documents());
@@ -46,4 +46,20 @@ struct BM25 {
     Index const &m_index;
 };
 
+template <typename Index>
+auto make_bm25(Index const &index)
+{
+    return BM25<Index>(index);
+}
+
 } // namespace pisa::v1
+
+namespace std {
+template <typename Index>
+struct hash<::pisa::v1::BM25<Index>> {
+    std::size_t operator()(::pisa::v1::BM25<Index> const & /* bm25 */) const noexcept
+    {
+        return std::hash<std::string>{}("bm25");
+    }
+};
+} // namespace std
