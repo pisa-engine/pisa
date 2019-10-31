@@ -99,7 +99,7 @@ target_link_libraries(pisa INTERFACE
 )
 target_include_directories(pisa INTERFACE external)
 
-add_subdirectory(src)
+add_subdirectory(v1)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()

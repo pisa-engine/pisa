@@ -31,7 +31,7 @@ struct ScorerRunner {
         bool success =
             std::apply([&](Scorers... scorers) { return (run(scorers) || ...); }, m_scorers);
         if (not success) {
-            throw std::domain_error(fmt::format("Unknown scorer: ", scorer_name));
+            throw std::domain_error(fmt::format("Unknown scorer: {}", scorer_name));
         }
     }
 

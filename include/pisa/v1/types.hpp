@@ -49,15 +49,23 @@ struct Reader {
 
 template <typename T>
 struct Writer {
+    using Value = T;
 
     template <typename W>
     explicit constexpr Writer(W writer) : m_internal_writer(std::make_unique<WriterImpl<W>>(writer))
     {
     }
+    Writer() = default;
+    Writer(Writer const &other) : m_internal_writer(other.m_internal_writer->clone()) {}
+    Writer(Writer &&other) noexcept = default;
+    Writer &operator=(Writer const &other) = delete;
+    Writer &operator=(Writer &&other) noexcept = default;
+    ~Writer() = default;
 
     void push(T const &posting) { m_internal_writer->push(posting); }
     void push(T &&posting) { m_internal_writer->push(posting); }
     auto write(ByteOStream &os) const -> std::size_t { return m_internal_writer->write(os); }
+    auto write(std::ostream &os) const -> std::size_t { return m_internal_writer->write(os); }
     [[nodiscard]] auto encoding() const -> std::uint32_t { return m_internal_writer->encoding(); }
     void reset() { return m_internal_writer->reset(); }
 
@@ -71,8 +79,10 @@ struct Writer {
         virtual void push(T const &posting) = 0;
         virtual void push(T &&posting) = 0;
         virtual auto write(ByteOStream &os) const -> std::size_t = 0;
-        [[nodiscard]] virtual auto encoding() const -> std::uint32_t = 0;
+        virtual auto write(std::ostream &os) const -> std::size_t = 0;
         virtual void reset() = 0;
+        [[nodiscard]] virtual auto encoding() const -> std::uint32_t = 0;
+        [[nodiscard]] virtual auto clone() const -> std::unique_ptr<WriterInterface> = 0;
     };
 
     template <typename W>
@@ -87,8 +97,14 @@ struct Writer {
         void push(T const &posting) override { m_writer.push(posting); }
         void push(T &&posting) override { m_writer.push(posting); }
         auto write(ByteOStream &os) const -> std::size_t override { return m_writer.write(os); }
-        [[nodiscard]] auto encoding() const -> std::uint32_t override { return W::encoding(); }
+        auto write(std::ostream &os) const -> std::size_t override { return m_writer.write(os); }
         void reset() override { return m_writer.reset(); }
+        [[nodiscard]] auto encoding() const -> std::uint32_t override { return W::encoding(); }
+        [[nodiscard]] virtual auto clone() const -> std::unique_ptr<WriterInterface>
+        {
+            auto copy = *this;
+            return std::make_unique<WriterImpl<W>>(std::move(copy));
+        }
 
        private:
         W m_writer;
@@ -97,6 +113,12 @@ struct Writer {
    private:
     std::unique_ptr<WriterInterface> m_internal_writer;
 };
+
+template <typename W>
+[[nodiscard]] inline auto make_writer(W writer)
+{
+    return Writer<typename W::value_type>(writer);
+}
 
 /// Indicates that payloads should be treated as scores.
 /// To be used with pre-computed scores, be it floats or quantized ints.

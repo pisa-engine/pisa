@@ -30,6 +30,13 @@
 
 namespace pisa::v1 {
 
+[[nodiscard]] inline auto calc_avg_length(gsl::span<std::uint32_t const> const &lengths)
+    -> std::uint32_t
+{
+    auto sum = std::accumulate(lengths.begin(), lengths.end(), std::uint64_t(0), std::plus{});
+    return static_cast<float>(sum) / lengths.size();
+}
+
 /// A generic type for an inverted index.
 ///
 /// \tparam DocumentReader  Type of an object that reads document posting lists from bytes
@@ -150,12 +157,6 @@ struct Index {
         Expects(term + 1 < m_payload_offsets.size());
         return m_payloads.subspan(m_payload_offsets[term],
                                   m_payload_offsets[term + 1] - m_payload_offsets[term]);
-    }
-    [[nodiscard]] static auto calc_avg_length(gsl::span<std::uint32_t const> const &lengths)
-        -> std::uint32_t
-    {
-        auto sum = std::accumulate(lengths.begin(), lengths.end(), std::uint64_t(0), std::plus{});
-        return static_cast<float>(sum) / lengths.size();
     }
 
     Reader<DocumentCursor> m_document_reader;

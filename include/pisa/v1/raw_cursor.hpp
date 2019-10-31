@@ -121,7 +121,7 @@ struct RawWriter {
     void reset() { m_postings.clear(); }
 
    private:
-    std::vector<T> m_postings;
+    std::vector<T> m_postings{};
 };
 
 } // namespace pisa::v1
