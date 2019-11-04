@@ -433,6 +433,25 @@ struct IndexRunner {
           m_readers(readers...)
     {
     }
+    template <typename Source>
+    IndexRunner(gsl::span<std::size_t const> document_offsets,
+                gsl::span<std::size_t const> payload_offsets,
+                gsl::span<std::byte const> documents,
+                gsl::span<std::byte const> payloads,
+                gsl::span<std::uint32_t const> document_lengths,
+                tl::optional<std::uint32_t> avg_document_length,
+                Source source,
+                std::tuple<Readers...> readers)
+        : m_document_offsets(document_offsets),
+          m_payload_offsets(payload_offsets),
+          m_documents(documents),
+          m_payloads(payloads),
+          m_document_lengths(document_lengths),
+          m_avg_document_length(avg_document_length),
+          m_source(std::move(source)),
+          m_readers(std::move(readers))
+    {
+    }
 
     template <typename Fn>
     void operator()(Fn fn)

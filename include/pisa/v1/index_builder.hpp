@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <fmt/format.h>
@@ -7,8 +9,9 @@
 #include <tbb/task_scheduler_init.h>
 #include <tl/optional.hpp>
 
-#include "util/progress.hpp"
 #include "v1/index.hpp"
+#include "v1/index_metadata.hpp"
+#include "v1/progress_status.hpp"
 
 namespace pisa::v1 {
 
@@ -52,7 +55,7 @@ auto compress_batch(CollectionIterator first,
                     std::ofstream &fout,
                     Writer<DocId> document_writer,
                     Writer<Frequency> frequency_writer,
-                    tl::optional<progress &> bar)
+                    tl::optional<ProgressStatus &> bar)
     -> std::tuple<std::vector<std::size_t>, std::vector<std::size_t>>
 {
     PostingBuilder<DocId> document_builder(std::move(document_writer));
@@ -68,7 +71,7 @@ auto compress_batch(CollectionIterator first,
         }
         document_builder.flush_segment(dout);
         frequency_builder.flush_segment(fout);
-        bar->update(1);
+        *bar += 1;
     }
     return std::make_tuple(std::move(document_builder.offsets()),
                            std::move(frequency_builder.offsets()));
@@ -110,7 +113,9 @@ inline void compress_binary_collection(std::string const &input,
         document_streams.emplace_back(document_batch);
         frequency_streams.emplace_back(frequency_batch);
     });
-    progress bar("Compressing in parallel", collection.size());
+    ProgressStatus status(collection.size(),
+                          DefaultProgress("Compressing in parallel"),
+                          std::chrono::milliseconds(500));
     auto batch_size = num_terms / threads;
     for_each_batch([&](auto thread_idx) {
         group.run([thread_idx,
@@ -121,7 +126,7 @@ inline void compress_binary_collection(std::string const &input,
                    &frequency_streams,
                    &document_offsets,
                    &frequency_offsets,
-                   &bar,
+                   &status,
                    &document_writer,
                    &frequency_writer]() {
             auto first = std::next(collection.begin(), thread_idx * batch_size);
@@ -140,7 +145,7 @@ inline void compress_binary_collection(std::string const &input,
                                fout,
                                document_writer,
                                frequency_writer,
-                               tl::make_optional<progress &>(bar));
+                               tl::make_optional<ProgressStatus &>(status));
         });
     });
     group.wait();
@@ -161,6 +166,8 @@ inline void compress_binary_collection(std::string const &input,
     PostingBuilder<DocId>(RawWriter<DocId>{}).write_header(document_out);
     PostingBuilder<Frequency>(RawWriter<Frequency>{}).write_header(frequency_out);
 
+    ProgressStatus merge_status(
+        threads, DefaultProgress("Merging files"), std::chrono::milliseconds(500));
     for_each_batch([&](auto thread_idx) {
         std::transform(std::next(document_offsets[thread_idx].begin()),
                        document_offsets[thread_idx].end(),
@@ -175,6 +182,7 @@ inline void compress_binary_collection(std::string const &input,
         std::ifstream freqbatch(frequency_paths[thread_idx]);
         document_out << docbatch.rdbuf();
         frequency_out << freqbatch.rdbuf();
+        merge_status += 1;
     });
 
     auto doc_offset_file = fmt::format("{}.document_offsets", output);
@@ -196,5 +204,8 @@ inline void compress_binary_collection(std::string const &input,
     pt.put("stats.document_lengths", document_lengths_file);
     boost::property_tree::write_ini(fmt::format("{}.ini", output), pt);
 }
+
+auto verify_compressed_index(std::string const &input, std::string_view output)
+    -> std::vector<std::string>;
 
 } // namespace pisa::v1

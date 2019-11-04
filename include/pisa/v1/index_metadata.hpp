@@ -3,15 +3,37 @@
 #include <cstdint>
 #include <functional>
 
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <gsl/span>
+#include <tl/optional.hpp>
 
 #include "v1/index.hpp"
 #include "v1/source.hpp"
 #include "v1/types.hpp"
 
 namespace pisa::v1 {
+
+/// Return the passed file path if is not `nullopt`.
+/// Otherwise, look for an `.ini` file in the current directory.
+/// It will throw if no `.ini` file is found or there are multiple `.ini` files.
+[[nodiscard]] auto resolve_ini(std::optional<std::string> const &arg) -> std::string;
+
+template <typename Optional>
+[[nodiscard]] auto convert_optional(Optional opt)
+{
+    if (opt) {
+        return tl::make_optional(*opt);
+    }
+    return tl::optional<std::decay_t<decltype(*opt)>>();
+}
+
+template <typename T>
+[[nodiscard]] auto to_std(tl::optional<T> opt) -> std::optional<T>
+{
+    if (opt) {
+        return std::make_optional(opt.take());
+    }
+    return std::optional<std::decay_t<decltype(*opt)>>();
+}
 
 struct PostingFilePaths {
     std::string postings;
@@ -23,19 +45,11 @@ struct IndexMetadata {
     PostingFilePaths frequencies;
     std::string document_lengths_path;
     float avg_document_length;
+    tl::optional<std::string> term_lexicon{};
+    tl::optional<std::string> document_lexicon{};
+    tl::optional<std::string> stemmer{};
 
-    [[nodiscard]] static auto from_file(std::string const &file)
-    {
-        boost::property_tree::ptree pt;
-        boost::property_tree::ini_parser::read_ini(file, pt);
-        return IndexMetadata{
-            .documents = PostingFilePaths{.postings = pt.get<std::string>("documents.file"),
-                                          .offsets = pt.get<std::string>("documents.offsets")},
-            .frequencies = PostingFilePaths{.postings = pt.get<std::string>("frequencies.file"),
-                                            .offsets = pt.get<std::string>("frequencies.offsets")},
-            .document_lengths_path = pt.get<std::string>("stats.document_lengths"),
-            .avg_document_length = pt.get<float>("stats.avg_document_length")};
-    }
+    [[nodiscard]] static auto from_file(std::string const &file) -> IndexMetadata;
 };
 
 template <typename T>
@@ -55,6 +69,12 @@ template <typename T>
 template <typename... Readers>
 [[nodiscard]] inline auto index_runner(IndexMetadata metadata, Readers... readers)
 {
+    return index_runner(std::move(metadata), std::make_tuple(readers...));
+}
+
+template <typename... Readers>
+[[nodiscard]] inline auto index_runner(IndexMetadata metadata, std::tuple<Readers...> readers)
+{
     MMapSource source;
     auto documents = source_span<std::byte>(source, metadata.documents.postings);
     auto frequencies = source_span<std::byte>(source, metadata.frequencies.postings);
@@ -68,7 +88,7 @@ template <typename... Readers>
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
                                    std::move(source),
-                                   std::move(readers)...);
+                                   std::move(readers));
 }
 
 } // namespace pisa::v1

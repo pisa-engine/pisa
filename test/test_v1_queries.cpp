@@ -21,6 +21,7 @@
 #include "v1/index.hpp"
 #include "v1/posting_builder.hpp"
 #include "v1/posting_format_header.hpp"
+#include "v1/query.hpp"
 #include "v1/scorer/bm25.hpp"
 #include "v1/types.hpp"
 
@@ -92,40 +93,6 @@ template <typename v0_Index, typename v1_Index, typename ScoredIndex>
 std::unique_ptr<IndexData<v0_Index, v1_Index, ScoredIndex>>
     IndexData<v0_Index, v1_Index, ScoredIndex>::data = nullptr;
 
-template <typename Index, typename Scorer>
-auto daat_and(Query const &query, Index const &index, topk_queue topk, Scorer &&scorer)
-{
-    std::vector<decltype(index.scored_cursor(0, scorer))> cursors;
-    std::transform(query.terms.begin(),
-                   query.terms.end(),
-                   std::back_inserter(cursors),
-                   [&](auto term) { return index.scored_cursor(term, scorer); });
-    auto intersection =
-        v1::intersect(std::move(cursors), 0.0F, [](auto &score, auto &cursor, auto /* term_idx */) {
-            score += cursor.payload();
-            return score;
-        });
-    v1::for_each(intersection, [&](auto &cursor) { topk.insert(cursor.payload(), *cursor); });
-    return topk;
-}
-
-template <typename Index, typename Scorer>
-auto daat_or(Query const &query, Index const &index, topk_queue topk, Scorer &&scorer)
-{
-    std::vector<decltype(index.scored_cursor(0, scorer))> cursors;
-    std::transform(query.terms.begin(),
-                   query.terms.end(),
-                   std::back_inserter(cursors),
-                   [&](auto term) { return index.scored_cursor(term, scorer); });
-    auto cunion = v1::union_merge(
-        std::move(cursors), 0.0F, [](auto &score, auto &cursor, auto /* term_idx */) {
-            score += cursor.payload();
-            return score;
-        });
-    v1::for_each(cunion, [&](auto &cursor) { topk.insert(cursor.payload(), *cursor); });
-    return topk;
-}
-
 TEST_CASE("DAAT AND", "[v1][integration]")
 {
     auto data = IndexData<single_index,
@@ -143,7 +110,8 @@ TEST_CASE("DAAT AND", "[v1][integration]")
         std::sort(expected.begin(), expected.end(), std::greater{});
 
         auto on_the_fly = [&]() {
-            auto que = daat_and(q, data->v1_index, topk_queue(10), make_bm25(data->v1_index));
+            auto que = daat_and(
+                v1::Query{q.terms}, data->v1_index, topk_queue(10), make_bm25(data->v1_index));
             que.finalize();
             auto results = que.topk();
             std::sort(results.begin(), results.end(), std::greater{});
@@ -151,7 +119,8 @@ TEST_CASE("DAAT AND", "[v1][integration]")
         }();
 
         auto precomputed = [&]() {
-            auto que = daat_and(q, data->scored_index, topk_queue(10), v1::VoidScorer{});
+            auto que =
+                daat_and(v1::Query{q.terms}, data->scored_index, topk_queue(10), v1::VoidScorer{});
             que.finalize();
             auto results = que.topk();
             std::sort(results.begin(), results.end(), std::greater{});
@@ -185,7 +154,8 @@ TEST_CASE("DAAT OR", "[v1][integration]")
         std::sort(expected.begin(), expected.end(), std::greater{});
 
         auto on_the_fly = [&]() {
-            auto que = daat_or(q, data->v1_index, topk_queue(10), make_bm25(data->v1_index));
+            auto que = daat_or(
+                v1::Query{q.terms}, data->v1_index, topk_queue(10), make_bm25(data->v1_index));
             que.finalize();
             auto results = que.topk();
             std::sort(results.begin(), results.end(), std::greater{});
@@ -193,7 +163,8 @@ TEST_CASE("DAAT OR", "[v1][integration]")
         }();
 
         auto precomputed = [&]() {
-            auto que = daat_or(q, data->scored_index, topk_queue(10), v1::VoidScorer{});
+            auto que =
+                daat_or(v1::Query{q.terms}, data->scored_index, topk_queue(10), v1::VoidScorer{});
             que.finalize();
             auto results = que.topk();
             std::sort(results.begin(), results.end(), std::greater{});

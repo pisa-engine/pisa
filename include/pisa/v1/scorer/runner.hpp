@@ -40,4 +40,10 @@ struct ScorerRunner {
     std::tuple<Scorers...> m_scorers;
 };
 
+template <typename Index, typename... Scorers>
+auto scorer_runner(Index const &index, Scorers... scorers)
+{
+    return ScorerRunner(index, std::move(scorers...));
+}
+
 } // namespace pisa::v1

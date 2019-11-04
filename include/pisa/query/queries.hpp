@@ -12,7 +12,7 @@
 #include <spdlog/spdlog.h>
 
 #include "index_types.hpp"
-#include "query/queries.hpp"
+#include "query/query.hpp"
 #include "scorer/score_function.hpp"
 #include "term_processor.hpp"
 #include "tokenizer.hpp"
@@ -23,15 +23,6 @@
 #include "wand_data_raw.hpp"
 
 namespace pisa {
-
-using term_id_type = uint32_t;
-using term_id_vec = std::vector<term_id_type>;
-
-struct Query {
-    std::optional<std::string> id;
-    std::vector<term_id_type> terms;
-    std::vector<float> term_weights;
-};
 
 [[nodiscard]] auto split_query_at_colon(std::string const &query_string)
     -> std::pair<std::optional<std::string>, std::string_view>
@@ -98,10 +89,10 @@ struct Query {
 {
     if (terms_file) {
         auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
-        return [&queries, term_processor = std::move(term_processor)](
-                   std::string const &query_line) {
-            queries.push_back(parse_query_terms(query_line, term_processor));
-        };
+        return
+            [&queries, term_processor = std::move(term_processor)](std::string const &query_line) {
+                queries.push_back(parse_query_terms(query_line, term_processor));
+            };
     } else {
         return [&queries](std::string const &query_line) {
             queries.push_back(parse_query_ids(query_line));

@@ -2,6 +2,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "v1/index_builder.hpp"
+#include "v1/index_metadata.hpp"
 #include "v1/raw_cursor.hpp"
 #include "v1/types.hpp"
 
@@ -9,6 +10,7 @@ using pisa::v1::compress_binary_collection;
 using pisa::v1::EncodingId;
 using pisa::v1::IndexBuilder;
 using pisa::v1::RawWriter;
+using pisa::v1::verify_compressed_index;
 
 int main(int argc, char **argv)
 {
@@ -32,6 +34,18 @@ int main(int argc, char **argv)
                                    make_writer(std::move(writer)),
                                    make_writer(std::move(frequency_writer)));
     });
+    auto errors = verify_compressed_index(input, output);
+    if (not errors.empty()) {
+        if (errors.size() > 10) {
+            std::cerr << "Detected more than 10 errors, printing head:\n";
+            errors.resize(10);
+        }
+        for (auto const &error : errors) {
+            std::cerr << error << '\n';
+        }
+        return 1;
+    }
 
+    std::cout << "Success.";
     return 0;
 }

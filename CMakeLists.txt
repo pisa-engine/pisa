@@ -69,12 +69,15 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/v1/*cpp")
+list(SORT PISA_SRC_FILES)
+
 include_directories(include)
-add_library(pisa INTERFACE)
-target_include_directories(pisa INTERFACE
+add_library(pisa ${PISA_SRC_FILES})
+target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa INTERFACE
+target_link_libraries(pisa PUBLIC
     Threads::Threads
     Boost::boost
     QMX
@@ -100,6 +103,7 @@ target_link_libraries(pisa INTERFACE
 target_include_directories(pisa INTERFACE external)
 
 add_subdirectory(v1)
+add_subdirectory(src)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()
