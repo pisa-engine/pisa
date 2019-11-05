@@ -32,8 +32,8 @@ int main(int argc, char **argv)
         std::abort();
     }
 
-    auto random_sampling = [&](size_t size) {
-        size_t sample_size = std::ceil(size * rate);
+    auto random_sampling = [&](const auto &docs) {
+        size_t sample_size = std::ceil(docs.size() * rate);
         std::vector<std::uint32_t> indices(size);
         std::vector<std::uint32_t> sample;
         std::iota(indices.begin(), indices.end(), 0);

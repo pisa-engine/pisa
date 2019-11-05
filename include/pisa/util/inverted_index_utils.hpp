@@ -33,7 +33,7 @@ void sample_inverted_index(std::string const &input_basename,
     write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
     pisa::progress progress("Sampling inverted index", input.size());
     for (auto const &plist : input) {
-        auto sample = sample_fn(plist.docs.size());
+        auto sample = sample_fn(plist.docs);
         assert(std::is_sorted(std::begin(sample),std::end(sample)));
         assert(sample.size() > 0);
 
