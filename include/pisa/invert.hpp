@@ -175,7 +175,7 @@ namespace invert {
         std::ofstream sstream(basename + ".sizes");
         std::uint32_t count = index.documents.size();
         write_sequence(dstream, gsl::make_span<uint32_t const>(&count, 1));
-        for (auto term : ranges::views::iota(Term_Id(0), Term_Id(term_count))) {
+        for (auto term : ranges::view::iota(Term_Id(0), Term_Id(term_count))) {
             if (auto pos = index.documents.find(term); pos != index.documents.end()) {
                 auto const &documents = pos->second;
                 auto const &frequencies = index.frequencies.at(term);
@@ -209,7 +209,7 @@ namespace invert {
             auto current_batch_size = last_idx_in_batch - first_idx_in_batch;
             batches.push_back(
                 Batch{documents.subspan(first_idx_in_batch, current_batch_size),
-                      ranges::views::iota(first_document_in_batch, last_document_in_batch)});
+                      ranges::view::iota(first_document_in_batch, last_document_in_batch)});
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
         std::transform(std::execution::par_unseq,
@@ -264,7 +264,7 @@ namespace invert {
         std::vector<binary_collection> doc_collections;
         std::vector<binary_collection> freq_collections;
         std::vector<uint32_t> document_sizes;
-        for (auto batch : ranges::views::iota(uint32_t(0), batch_count)) {
+        for (auto batch : ranges::view::iota(uint32_t(0), batch_count)) {
             std::ostringstream batch_name_stream;
             batch_name_stream << output_basename << ".batch." << batch;
             doc_collections.emplace_back((batch_name_stream.str() + ".docs").c_str());
@@ -292,7 +292,7 @@ namespace invert {
         auto document_count = static_cast<uint32_t>(document_sizes.size());
         write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
         size_t postings_count = 0;
-        for (auto term_id : ranges::views::iota(uint32_t(0), term_count)) {
+        for (auto term_id : ranges::view::iota(uint32_t(0), term_count)) {
             std::vector<uint32_t> dlist;
             for (auto &iter : doc_iterators) {
                 auto seq = *iter;
@@ -340,7 +340,7 @@ namespace invert {
             invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
         invert::merge_batches(output_basename, batch_count, term_count);
 
-        for (auto batch : ranges::views::iota(uint32_t(0), batch_count)) {
+        for (auto batch : ranges::view::iota(uint32_t(0), batch_count)) {
             std::ostringstream batch_name_stream;
             batch_name_stream << output_basename << ".batch." << batch;
             auto batch_basename = batch_name_stream.str();
