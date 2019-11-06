@@ -50,6 +50,7 @@ class wand_data {
             size_t term_id = 0;
             for (auto const &seq : coll) {
                 if(dropped_term_ids.find(term_id) != dropped_term_ids.end()){
+                    progress.update(1);
                     continue;
                 }
                 terms_len.push_back(seq.docs.size());
