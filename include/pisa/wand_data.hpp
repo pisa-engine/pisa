@@ -1,6 +1,7 @@
 #pragma once
 
 #include <numeric>
+#include <unordered_set>
 
 #include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
@@ -25,7 +26,7 @@ class wand_data {
     wand_data(LengthsIterator len_it,
               uint64_t num_docs,
               binary_freq_collection const &coll,
-              BlockSize block_size)
+              BlockSize block_size, std::unordered_set<size_t> const &drop_term_ids)
     {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
@@ -46,13 +47,18 @@ class wand_data {
         typename block_wand_type::builder builder(coll, params);
         {
             pisa::progress progress("Processing posting lists", coll.size());
+            size_t term_id = 0;
             for (auto const &seq : coll) {
+                if(drop_term_ids.find(term_id) != drop_term_ids.end()){
+                    continue;
+                }
                 terms_len.push_back(seq.docs.size());
                 size_t term_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
                 terms_count.push_back(term_count);
                 auto v = builder.add_sequence(seq, coll, doc_lens, avg_len, block_size);
                 max_term_weight.push_back(v);
                 progress.update(1);
+                term_id += 1;
             }
         }
         builder.build(m_block_wand);

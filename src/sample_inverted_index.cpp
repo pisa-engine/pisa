@@ -55,13 +55,13 @@ int main(int argc, char **argv)
         size_t sample_size = std::ceil(num_docs * rate);
         std::vector<std::uint32_t> indices(num_docs);
         std::iota(indices.begin(), indices.end(), 0);
-        std::vector<bool> doc_ids(num_docs);
         std::vector<std::uint32_t> sampled_indices;
         std::sample(indices.begin(),
                     indices.end(),
                     std::back_inserter(sampled_indices),
                     sample_size,
                     std::mt19937{seed});
+        std::vector<bool> doc_ids(num_docs);
         for (auto &&p : sampled_indices) {
             doc_ids[p] = true;
         }
