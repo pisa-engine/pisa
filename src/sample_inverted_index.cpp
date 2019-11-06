@@ -17,6 +17,7 @@ int main(int argc, char **argv)
     std::string input_basename;
     std::string output_basename;
     std::string type;
+    std::string dropped_terms_filename;
     float rate;
     unsigned seed = std::random_device{}();
 
@@ -26,6 +27,9 @@ int main(int argc, char **argv)
     app.add_option("-r,--rate", rate, "Sampling rate (proportional size of the output index)")
         ->required();
     app.add_option("-t,--type", type, "Sampling type")->required();
+    app.add_option("--dropped_terms",
+                   dropped_terms_filename,
+                   "A filename containing a list of term IDs that we want to drop");
     app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
 
@@ -33,7 +37,8 @@ int main(int argc, char **argv)
         spdlog::error("Sampling rate should be greater than 0 and lower than or equal to 1.");
         std::abort();
     }
-    std::function<std::vector<std::uint32_t>(const binary_collection::const_sequence &docs)> sampling_fn;
+    std::function<std::vector<std::uint32_t>(const binary_collection::const_sequence &docs)>
+        sampling_fn;
 
     if (type == "random_postings") {
         sampling_fn = [&](const auto &docs) {
@@ -68,9 +73,8 @@ int main(int argc, char **argv)
 
         sampling_fn = [&](const auto &docs) {
             std::vector<std::uint32_t> sample;
-            for (int position = 0; position < docs.size(); ++position)
-            {
-                if (doc_ids[*(docs.begin()+position)]) {
+            for (int position = 0; position < docs.size(); ++position) {
+                if (doc_ids[*(docs.begin() + position)]) {
                     sample.push_back(position);
                 }
             }
@@ -80,6 +84,12 @@ int main(int argc, char **argv)
         spdlog::error("Unknown type {}", type);
         std::abort();
     }
-    sample_inverted_index(input_basename, output_basename, sampling_fn);
+    std::vector<size_t> dropped_term_ids;
+    sample_inverted_index(input_basename, output_basename, sampling_fn, dropped_term_ids);
+    std::ofstream dropped_terms_file(dropped_terms_filename);
+    for (const auto &id : dropped_term_ids){
+        dropped_terms_file << id << std::endl;
+    }
+
     return 0;
 }

@@ -1,7 +1,7 @@
 #pragma once
-#include "util/progress.hpp"
 #include "binary_freq_collection.hpp"
 #include "invert.hpp"
+#include "util/progress.hpp"
 
 namespace pisa {
 
@@ -12,12 +12,12 @@ void emit(std::ostream &os, const uint32_t *vals, size_t n)
 
 void emit(std::ostream &os, uint32_t val) { emit(os, &val, 1); }
 
-
 // sample_fn must be stable, it must return a sorted vector
 template <typename SampleFn>
 void sample_inverted_index(std::string const &input_basename,
                            std::string const &output_basename,
-                           SampleFn &&sample_fn)
+                           SampleFn &&sample_fn,
+                           std::vector<size_t> &dropped_term_ids)
 {
 
     binary_freq_collection input(input_basename.c_str());
@@ -32,9 +32,16 @@ void sample_inverted_index(std::string const &input_basename,
     auto document_count = static_cast<uint32_t>(input.num_docs());
     write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
     pisa::progress progress("Sampling inverted index", input.size());
+    size_t term = 0;
     for (auto const &plist : input) {
         auto sample = sample_fn(plist.docs);
-        assert(std::is_sorted(std::begin(sample),std::end(sample)));
+        if (sample.size() == 0) {
+            dropped_term_ids.push_back(term);
+            term += 1;
+            progress.update(1);
+            continue;
+        }
+        assert(std::is_sorted(std::begin(sample), std::end(sample)));
         assert(sample.size() > 0);
 
         std::vector<std::uint32_t> sampled_docs;
@@ -46,10 +53,10 @@ void sample_inverted_index(std::string const &input_basename,
 
         write_sequence(dos, gsl::span<uint32_t const>(sampled_docs));
         write_sequence(fos, gsl::span<uint32_t const>(sampled_freqs));
+        term += 1;
         progress.update(1);
     }
 }
-
 
 void reorder_inverted_index(const std::string &input_basename,
                             const std::string &output_basename,
@@ -101,4 +108,4 @@ void reorder_inverted_index(const std::string &input_basename,
         reorder_progress.update(1);
     }
 }
-} // pisa
+} // namespace pisa

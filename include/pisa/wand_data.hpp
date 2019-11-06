@@ -26,7 +26,7 @@ class wand_data {
     wand_data(LengthsIterator len_it,
               uint64_t num_docs,
               binary_freq_collection const &coll,
-              BlockSize block_size, std::unordered_set<size_t> const &drop_term_ids)
+              BlockSize block_size, std::unordered_set<size_t> const &dropped_term_ids)
     {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
@@ -49,7 +49,7 @@ class wand_data {
             pisa::progress progress("Processing posting lists", coll.size());
             size_t term_id = 0;
             for (auto const &seq : coll) {
-                if(drop_term_ids.find(term_id) != drop_term_ids.end()){
+                if(dropped_term_ids.find(term_id) != dropped_term_ids.end()){
                     continue;
                 }
                 terms_len.push_back(seq.docs.size());
