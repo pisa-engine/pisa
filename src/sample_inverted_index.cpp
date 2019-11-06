@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             doc_ids[p] = true;
         }
 
-        sampling_fn = [&](const auto &docs) {
+        sampling_fn = [](const auto &docs) {
             std::vector<std::uint32_t> sample;
             for (int position = 0; position < docs.size(); ++position) {
                 if (doc_ids[*(docs.begin() + position)]) {
