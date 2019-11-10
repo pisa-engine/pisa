@@ -26,43 +26,43 @@ using namespace pisa;
 
 struct term_data_t
 {
-    float id;
-    float wand_upper;
-    float Ft;
-    float mean_ft;
-    float med_ft;
-    float min_ft;
-    float max_ft;
-    float num_ft_geq_256;
-    float num_ft_geq_128;
-    float num_ft_geq_64;
-    float num_ft_geq_32;
-    float num_ft_geq_16;
-    float num_ft_geq_8;
-    float num_ft_geq_4;
-    float num_ft_geq_2;
-    float block_score_1;
-    float block_score_2;
-    float block_score_4;
-    float block_score_8;
-    float block_score_16;
-    float block_score_32;
-    float block_score_64;
-    float block_score_128;
-    float block_score_256;
-    float block_score_512;
-    float block_score_1024;
-    float block_score_2048;
-    float block_score_4096;
-    float block_score_small;
+    float id= 0;
+    float wand_upper= 0;
+    float Ft= 0;
+    float mean_ft= 0;
+    float med_ft= 0;
+    float min_ft= 0;
+    float max_ft= 0;
+    float num_ft_geq_256= 0;
+    float num_ft_geq_128= 0;
+    float num_ft_geq_64= 0;
+    float num_ft_geq_32= 0;
+    float num_ft_geq_16= 0;
+    float num_ft_geq_8= 0;
+    float num_ft_geq_4= 0;
+    float num_ft_geq_2= 0;
+    float block_score_1= 0;
+    float block_score_2= 0;
+    float block_score_4= 0;
+    float block_score_8= 0;
+    float block_score_16= 0;
+    float block_score_32= 0;
+    float block_score_64= 0;
+    float block_score_128= 0;
+    float block_score_256= 0;
+    float block_score_512= 0;
+    float block_score_1024= 0;
+    float block_score_2048= 0;
+    float block_score_4096= 0;
+    float block_score_small= 0;
 };
 
 struct query_data
 {
     std::string id;
-    float wand_thres_10;
-    float wand_thres_100;
-    float wand_thres_1000;
+    float wand_thres_10 = 0;
+    float wand_thres_100 = 0;
+    float wand_thres_1000 = 0;
     std::vector<uint32_t> term_ids;
     std::vector<term_data_t> term_data;
 };
@@ -223,6 +223,9 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
         picojson::object json_qry;
         json_qry["id"] = picojson::value(stof(qd.id));
         json_qry["wand_thres_10"] = picojson::value(float(qd.wand_thres_10));
+        json_qry["wand_thres_100"] = picojson::value(float(qd.wand_thres_100));
+        json_qry["wand_thres_1000"] = picojson::value(float(qd.wand_thres_1000));
+
         picojson::array arr;
         for (size_t r = 0; r < qd.term_ids.size(); r++)
         {
@@ -249,6 +252,21 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
             json_term["num_ft_geq_8"] = picojson::value(float(td.num_ft_geq_8));
             json_term["num_ft_geq_4"] = picojson::value(float(td.num_ft_geq_4));
             json_term["num_ft_geq_2"] = picojson::value(float(td.num_ft_geq_2));
+            json_term["block_score_4096"] = picojson::value(float(td.block_score_4096));
+            json_term["block_score_2048"] = picojson::value(float(td.block_score_2048));
+            json_term["block_score_1024"] = picojson::value(float(td.block_score_1024));
+            json_term["block_score_512"] = picojson::value(float(td.block_score_512));
+            json_term["block_score_256"] = picojson::value(float(td.block_score_256));
+            json_term["block_score_128"] = picojson::value(float(td.block_score_128));
+            json_term["block_score_64"] = picojson::value(float(td.block_score_64));
+            json_term["block_score_32"] = picojson::value(float(td.block_score_32));
+            json_term["block_score_16"] = picojson::value(float(td.block_score_16));
+            json_term["block_score_8"] = picojson::value(float(td.block_score_8));
+            json_term["block_score_4"] = picojson::value(float(td.block_score_4));
+            json_term["block_score_2"] = picojson::value(float(td.block_score_2));
+            json_term["block_score_1"] = picojson::value(float(td.block_score_1));
+            json_term["block_score_small"] = picojson::value(float(td.block_score_small));
+
             arr_td.push_back(picojson::value(json_term));
         }
         json_qry["term_data"] = picojson::value(arr_td);
