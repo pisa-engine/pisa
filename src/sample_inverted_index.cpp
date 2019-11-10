@@ -58,6 +58,7 @@ int main(int argc, char **argv)
         binary_freq_collection input(input_basename.c_str());
         auto num_docs = input.num_docs();
         size_t sample_size = std::ceil(num_docs * rate);
+        spdlog::info("Taking {}/{}.", sample_size, num_docs);
         std::vector<std::uint32_t> indices(num_docs);
         std::iota(indices.begin(), indices.end(), 0);
         std::vector<std::uint32_t> sampled_indices;
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
             doc_ids[p] = true;
         }
 
-        sampling_fn = [](const auto &docs) {
+        sampling_fn = [=](const auto &docs) {
             std::vector<std::uint32_t> sample;
             for (int position = 0; position < docs.size(); ++position) {
                 if (doc_ids[*(docs.begin() + position)]) {
