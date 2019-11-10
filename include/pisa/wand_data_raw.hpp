@@ -96,6 +96,10 @@ class wand_data_raw {
         {
         }
 
+        void PISA_NOINLINE next_block() { cur_pos += 1; }
+
+        uint64_t PISA_NOINLINE size() { return block_number; }
+
         void PISA_NOINLINE next_geq(uint64_t lower_bound)
         {
             while (cur_pos + 1 < block_number

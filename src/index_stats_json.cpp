@@ -41,12 +41,28 @@ struct term_data_t
     float num_ft_geq_8;
     float num_ft_geq_4;
     float num_ft_geq_2;
+    float block_score_1;
+    float block_score_2;
+    float block_score_4;
+    float block_score_8;
+    float block_score_16;
+    float block_score_32;
+    float block_score_64;
+    float block_score_128;
+    float block_score_256;
+    float block_score_512;
+    float block_score_1024;
+    float block_score_2048;
+    float block_score_4096;
+    float block_score_small;
 };
 
 struct query_data
 {
     std::string id;
-    float wand_thres;
+    float wand_thres_10;
+    float wand_thres_100;
+    float wand_thres_1000;
     std::vector<uint32_t> term_ids;
     std::vector<term_data_t> term_data;
 };
@@ -97,6 +113,57 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 td.id = term_id;
                 td.Ft = list.size();
                 td.wand_upper = wdata.max_term_weight(term_id);
+                auto w_enum     = wdata.getenum(term_id);
+                std::vector<float> block_scores;
+                for (size_t i = 0; i < w_enum.size(); ++i)
+                {
+                    block_scores.push_back(w_enum.score());
+                    w_enum.next_block();
+                }
+                std::sort(block_scores.begin(), block_scores.end());
+                if(block_scores.size() > 0){
+                    td.block_score_1 = block_scores[0];
+                }
+                if(block_scores.size() > 1){
+                    td.block_score_2 = block_scores[1];
+                }
+                if(block_scores.size() > 3){
+                    td.block_score_4 = block_scores[3];
+                }
+                if(block_scores.size() > 7){
+                    td.block_score_8 = block_scores[7];
+                }
+                if(block_scores.size() > 15){
+                    td.block_score_16 = block_scores[15];
+                }
+                if(block_scores.size() > 31){
+                    td.block_score_32 = block_scores[31];
+                }
+                if(block_scores.size() > 63){
+                    td.block_score_64 = block_scores[63];
+                }
+                if(block_scores.size() > 127){
+                    td.block_score_128 = block_scores[127];
+                }
+                if(block_scores.size() > 255){
+                    td.block_score_256 = block_scores[255];
+                }
+                if(block_scores.size() > 511){
+                    td.block_score_512 = block_scores[511];
+                }
+                if(block_scores.size() > 1023){
+                    td.block_score_1024 = block_scores[1023];
+                }
+                if(block_scores.size() > 2047){
+                    td.block_score_2048 = block_scores[2047];
+                }
+                if(block_scores.size() > 4095){
+                    td.block_score_4096 = block_scores[4095];
+                }
+                if(block_scores.size() > 0){
+                    td.block_score_small = block_scores.back();
+                }
+
                 std::vector<float> freqs(td.Ft);
                 double freqs_sum = 0;
                 for (size_t j = 0; j < td.Ft; j++)
@@ -146,7 +213,7 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
 
         if (topk.size() == 10)
         {
-            qd.wand_thres = topk.back().first;
+            qd.wand_thres_10 = topk.back().first;
             qds.push_back(qd);
         }
     }
@@ -155,7 +222,7 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
     {
         picojson::object json_qry;
         json_qry["id"] = picojson::value(stof(qd.id));
-        json_qry["wand_thres"] = picojson::value(float(qd.wand_thres));
+        json_qry["wand_thres_10"] = picojson::value(float(qd.wand_thres_10));
         picojson::array arr;
         for (size_t r = 0; r < qd.term_ids.size(); r++)
         {
