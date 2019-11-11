@@ -184,7 +184,7 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 for (size_t j = 0; j < td.Ft; j++)
                 {
                     auto docid = list.docid();
-                    doc_lens.push_back(wdata.doc_len(docid));
+                    doc_lens[j] = wdata.doc_len(docid);
                     doc_lens_sum += doc_lens[j];
                     freqs[j] = list.freq();
                     freqs_sum += freqs[j];
