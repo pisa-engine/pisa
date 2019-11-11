@@ -21,6 +21,7 @@
 #include "picojson/picojson.h"
 
 #include <unordered_map>
+#include "scorer/bm25.hpp"
 
 using namespace pisa;
 
@@ -122,7 +123,7 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 td.id = term_id;
                 td.Ft = list.size();
                 td.wand_upper = wdata.max_term_weight(term_id);
-                td.q_weight   = scorer_type::query_term_weight(1, list.size(), index.num_docs());
+                td.q_weight   = bm25::query_term_weight(1, list.size(), index.num_docs());
 
                 auto w_enum     = wdata.getenum(term_id);
                 std::vector<float> block_scores;
