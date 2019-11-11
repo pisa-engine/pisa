@@ -112,3 +112,9 @@ target_link_libraries(sample_inverted_index
   pisa
   CLI11
 )
+
+add_executable(create_intersections create_intersections.cpp)
+target_link_libraries(create_intersections
+  pisa
+  CLI11
+)
