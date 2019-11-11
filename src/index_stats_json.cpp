@@ -120,7 +120,8 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                     block_scores.push_back(w_enum.score());
                     w_enum.next_block();
                 }
-                std::sort(block_scores.begin(), block_scores.end());
+
+                std::sort(block_scores.begin(), block_scores.end(), std::greater<float>());
                 if(block_scores.size() > 0){
                     td.block_score_1 = block_scores[0];
                 }
