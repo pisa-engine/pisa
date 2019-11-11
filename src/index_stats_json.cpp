@@ -60,6 +60,10 @@ struct term_data_t
     float min_doclen = 0;
     float max_doclen = 0;
     float q_weight = 0;
+    float k10_max = 0;
+    float k100_max = 0;
+    float k1000_max = 0;
+
 
 };
 
@@ -302,6 +306,9 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
             json_term["min_doclen"] = picojson::value(float(td.min_doclen));
             json_term["max_doclen"] = picojson::value(float(td.max_doclen));
             json_term["q_weight"] = picojson::value(float(td.q_weight));
+            json_term["k10_max"] = picojson::value(float(td.k10_max));
+            json_term["k100_max"] = picojson::value(float(td.k100_max));
+            json_term["k1000_max"] = picojson::value(float(td.k1000_max));
 
             arr_td.push_back(picojson::value(json_term));
         }
