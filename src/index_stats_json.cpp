@@ -213,38 +213,40 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
             qd.term_data.push_back(td);
         }
 
-        wand_query wq(10);
-        auto results = wq(make_max_scored_cursors(index, wdata, query), index.num_docs());
-        do_not_optimize_away(results);
-        auto &topk = wq.topk();
-
-        if (topk.size() == 10)
         {
-            qd.wand_thres_10 = topk.back().first;
-            qds.push_back(qd);
+            wand_query wq(10);
+            auto results = wq(make_max_scored_cursors(index, wdata, query), index.num_docs());
+            do_not_optimize_away(results);
+            auto &topk = wq.topk();
+
+            if (topk.size() == 10)
+            {
+                qd.wand_thres_10 = topk.back().first;
+            }
         }
-
-        wand_query wq(100);
-        auto results = wq(make_max_scored_cursors(index, wdata, query), index.num_docs());
-        do_not_optimize_away(results);
-        auto &topk = wq.topk();
-
-        if (topk.size() == 100)
         {
-            qd.wand_thres_100 = topk.back().first;
-            qds.push_back(qd);
+            wand_query wq(100);
+            auto results = wq(make_max_scored_cursors(index, wdata, query), index.num_docs());
+            do_not_optimize_away(results);
+            auto &topk = wq.topk();
+
+            if (topk.size() == 100)
+            {
+                qd.wand_thres_100 = topk.back().first;
+            }
         }
-
-        wand_query wq(1000);
-        auto results = wq(make_max_scored_cursors(index, wdata, query), index.num_docs());
-        do_not_optimize_away(results);
-        auto &topk = wq.topk();
-
-        if (topk.size() == 1000)
         {
-            qd.wand_thres_1000 = topk.back().first;
-            qds.push_back(qd);
+            wand_query wq(1000);
+            auto results = wq(make_max_scored_cursors(index, wdata, query), index.num_docs());
+            do_not_optimize_away(results);
+            auto &topk = wq.topk();
+
+            if (topk.size() == 1000)
+            {
+                qd.wand_thres_1000 = topk.back().first;
+            }
         }
+        qds.push_back(qd);
     }
 
     for (const auto &qd : qds)
