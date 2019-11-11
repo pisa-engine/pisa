@@ -64,7 +64,6 @@ struct term_data_t
     float k100m = 0;
     float k1000m = 0;
 
-
 };
 
 struct query_data
@@ -123,6 +122,8 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 td.id = term_id;
                 td.Ft = list.size();
                 td.wand_upper = wdata.max_term_weight(term_id);
+                td.q_weight   = scorer_type::query_term_weight(1, list.size(), index.num_docs());
+
                 auto w_enum     = wdata.getenum(term_id);
                 std::vector<float> block_scores;
                 for (size_t i = 0; i < w_enum.size(); ++i)
