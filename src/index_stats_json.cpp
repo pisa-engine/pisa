@@ -55,6 +55,12 @@ struct term_data_t
     float block_score_2048= 0;
     float block_score_4096= 0;
     float block_score_small= 0;
+    float mean_doclen = 0;
+    float med_doclen = 0;
+    float min_doclen = 0;
+    float max_doclen = 0;
+    float q_weight = 0;
+
 };
 
 struct query_data
@@ -289,6 +295,11 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
             json_term["block_score_2"] = picojson::value(float(td.block_score_2));
             json_term["block_score_1"] = picojson::value(float(td.block_score_1));
             json_term["block_score_small"] = picojson::value(float(td.block_score_small));
+            json_term["mean_doclen"] = picojson::value(float(td.mean_doclen));
+            json_term["med_doclen"] = picojson::value(float(td.med_doclen));
+            json_term["min_doclen"] = picojson::value(float(td.min_doclen));
+            json_term["max_doclen"] = picojson::value(float(td.max_doclen));
+            json_term["q_weight"] = picojson::value(float(td.q_weight));
 
             arr_td.push_back(picojson::value(json_term));
         }
