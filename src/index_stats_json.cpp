@@ -177,15 +177,26 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                     td.block_score_small = block_scores.back();
                 }
 
+                std::vector<float> doc_lens(td.Ft);
+                double doc_lens_sum = 0;
                 std::vector<float> freqs(td.Ft);
                 double freqs_sum = 0;
                 for (size_t j = 0; j < td.Ft; j++)
                 {
+                    auto docid = list.docid();
+                    doc_lens.push_back(wdata.doc_len(docid));
+                    doc_lens_sum += doc_lens[j];
                     freqs[j] = list.freq();
                     freqs_sum += freqs[j];
                     list.next();
                 }
+                std::sort(doc_lens.begin(), doc_lens.end());
                 std::sort(freqs.begin(), freqs.end());
+
+                td.min_doclen = doc_lens.front();
+                td.max_doclen = doc_lens.back();
+                td.med_doclen = doc_lens[doc_lens.size() / 2];
+                td.mean_doclen = doc_lens_sum / td.Ft;
 
                 td.min_ft = freqs.front();
                 td.max_ft = freqs.back();
