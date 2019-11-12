@@ -11,16 +11,19 @@
 #include "pisa_config.hpp"
 #include "v1/cursor/collect.hpp"
 #include "v1/index.hpp"
+#include "v1/io.hpp"
 #include "v1/posting_builder.hpp"
 #include "v1/posting_format_header.hpp"
 #include "v1/scorer/bm25.hpp"
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
+#include "v1/unaligned_span.hpp"
 
 using pisa::v1::Array;
 using pisa::v1::DocId;
 using pisa::v1::Frequency;
 using pisa::v1::IndexRunner;
+using pisa::v1::load_bytes;
 using pisa::v1::next;
 using pisa::v1::parse_type;
 using pisa::v1::PostingBuilder;
@@ -29,9 +32,9 @@ using pisa::v1::Primitive;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
 using pisa::v1::read_sizes;
-using pisa::v1::ScorerRunner;
 using pisa::v1::TermId;
 using pisa::v1::Tuple;
+using pisa::v1::UnalignedSpan;
 using pisa::v1::Writer;
 
 template <typename T>
@@ -58,7 +61,7 @@ TEST_CASE("RawReader", "[v1][unit]")
     REQUIRE(next(cursor) == tl::nullopt);
 }
 
-TEST_CASE("Binary collection index", "[v1][unit]")
+TEST_CASE("Binary collection index", "[.][v1][unit]")
 {
     pisa::binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     auto index =
@@ -83,7 +86,7 @@ TEST_CASE("Binary collection index", "[v1][unit]")
     }
 }
 
-TEST_CASE("Bigram collection index", "[v1][unit]")
+TEST_CASE("Bigram collection index", "[.][v1][unit]")
 {
     auto intersect = [](auto const &lhs,
                         auto const &rhs) -> std::vector<std::tuple<DocId, Frequency, Frequency>> {
@@ -122,6 +125,7 @@ TEST_CASE("Bigram collection index", "[v1][unit]")
     ++pos;
     TermId term_id = 1;
     for (; pos != collection.end(); ++pos, ++term_id) {
+        CAPTURE(term_id);
         auto current = to_vec(*pos);
         auto intersection = intersect(prev, current);
         if (not intersection.empty()) {
@@ -131,6 +135,12 @@ TEST_CASE("Bigram collection index", "[v1][unit]")
                 auto freqs = cursor.payload();
                 return std::make_tuple(*cursor, freqs[0], freqs[1]);
             });
+            for (auto idx = 0; idx < 10; idx++) {
+                std::cout << std::get<1>(postings[idx]) << " " << std::get<1>(intersection[idx])
+                          << '\n';
+                std::cout << std::get<2>(postings[idx]) << " " << std::get<2>(intersection[idx])
+                          << "\n---\n";
+            }
             REQUIRE(postings == intersection);
         }
         std::swap(prev, current);
@@ -206,20 +216,6 @@ TEST_CASE("Value type", "[v1][unit]")
     REQUIRE(std::get<Tuple>(parse_type(std::byte{0b01000111})).type == Primitive::Float);
     REQUIRE(std::get<Tuple>(parse_type(std::byte{0b00101011})).size == 5U);
     REQUIRE(std::get<Tuple>(parse_type(std::byte{0b01000111})).size == 8U);
-}
-
-[[nodiscard]] inline auto load_bytes(std::string const &data_file)
-{
-    std::vector<std::byte> data;
-    std::basic_ifstream<char> in(data_file.c_str(), std::ios::binary);
-    in.seekg(0, std::ios::end);
-    std::streamsize size = in.tellg();
-    in.seekg(0, std::ios::beg);
-    data.resize(size);
-    if (not in.read(reinterpret_cast<char *>(data.data()), size)) {
-        throw std::runtime_error("Failed reading " + data_file);
-    }
-    return data;
 }
 
 TEST_CASE("Build raw document-frequency index", "[v1][unit]")
@@ -331,5 +327,42 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                 REQUIRE_THROWS_AS(runner([&](auto index) {}), std::domain_error);
             }
         }
+    }
+}
+
+TEST_CASE("UnalignedSpan", "[v1][unit]")
+{
+    std::vector<std::byte> bytes{std::byte{0b00000001},
+                                 std::byte{0b00000010},
+                                 std::byte{0b00000011},
+                                 std::byte{0b00000100},
+                                 std::byte{0b00000101},
+                                 std::byte{0b00000110},
+                                 std::byte{0b00000111}};
+    SECTION("Bytes one-to-one")
+    {
+        auto span = UnalignedSpan<std::byte>(gsl::make_span(bytes));
+        REQUIRE(std::vector<std::byte>(span.begin(), span.end()) == bytes);
+    }
+    SECTION("Bytes shifted by offset")
+    {
+        auto span = UnalignedSpan<std::byte>(gsl::make_span(bytes).subspan(2));
+        REQUIRE(std::vector<std::byte>(span.begin(), span.end())
+                == std::vector<std::byte>(bytes.begin() + 2, bytes.end()));
+    }
+    SECTION("u16")
+    {
+        REQUIRE_THROWS_AS(UnalignedSpan<std::uint16_t>(gsl::make_span(bytes)), std::logic_error);
+        auto span = UnalignedSpan<std::uint16_t>(gsl::make_span(bytes).subspan(1));
+        REQUIRE(std::vector<std::uint16_t>(span.begin(), span.end())
+                == std::vector<std::uint16_t>{
+                    0b0000001100000010, 0b0000010100000100, 0b0000011100000110});
+    }
+    SECTION("u32")
+    {
+        REQUIRE_THROWS_AS(UnalignedSpan<std::uint32_t>(gsl::make_span(bytes)), std::logic_error);
+        auto span = UnalignedSpan<std::uint32_t>(gsl::make_span(bytes).subspan(1, 4));
+        REQUIRE(std::vector<std::uint32_t>(span.begin(), span.end())
+                == std::vector<std::uint32_t>{0b00000101000001000000001100000010});
     }
 }

@@ -38,9 +38,12 @@ void DefaultProgress::operator()(std::size_t count,
     m_previous = progress;
     std::chrono::seconds elapsed =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start);
-    std::cerr << m_caption << progress << "% [";
+    std::cerr << '\r' << m_caption << progress << "% [";
     format_interval(std::cerr, elapsed);
-    std::cerr << "]\n";
+    std::cerr << "]";
+    if (progress == 100) {
+        std::cerr << '\n';
+    }
 }
 
 ProgressStatus::~ProgressStatus()

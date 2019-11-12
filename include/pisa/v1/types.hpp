@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 
@@ -16,7 +17,13 @@ using Score = float;
 using Result = std::pair<DocId, Score>;
 using ByteOStream = std::basic_ostream<std::byte>;
 
-enum EncodingId { Raw = 0xda43 };
+enum EncodingId {
+    Raw = 0xda43,
+    BlockDelta = 0xEF00,
+    Block = 0xFF00,
+    SimdBP = 0x0001,
+    Varbyte = 0x0002
+};
 
 template <class... Ts>
 struct overloaded : Ts... {
@@ -100,7 +107,7 @@ struct Writer {
         auto write(std::ostream &os) const -> std::size_t override { return m_writer.write(os); }
         void reset() override { return m_writer.reset(); }
         [[nodiscard]] auto encoding() const -> std::uint32_t override { return W::encoding(); }
-        [[nodiscard]] virtual auto clone() const -> std::unique_ptr<WriterInterface>
+        [[nodiscard]] auto clone() const -> std::unique_ptr<WriterInterface> override
         {
             auto copy = *this;
             return std::make_unique<WriterImpl<W>>(std::move(copy));
@@ -115,14 +122,23 @@ struct Writer {
 };
 
 template <typename W>
-[[nodiscard]] inline auto make_writer(W writer)
+[[nodiscard]] inline auto make_writer(W &&writer)
 {
-    return Writer<typename W::value_type>(writer);
+    return Writer<typename W::value_type>(std::forward<W>(writer));
+}
+
+template <typename W>
+[[nodiscard]] inline auto make_writer()
+{
+    return Writer<typename W::value_type>(W{});
 }
 
 /// Indicates that payloads should be treated as scores.
 /// To be used with pre-computed scores, be it floats or quantized ints.
 struct VoidScorer {
 };
+
+template <typename T>
+struct encoding_traits;
 
 } // namespace pisa::v1

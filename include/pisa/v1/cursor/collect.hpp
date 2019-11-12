@@ -21,4 +21,17 @@ auto collect(Cursor &&cursor)
     return collect(std::forward<Cursor>(cursor), [](auto &&cursor) { return *cursor; });
 }
 
+template <typename Cursor>
+auto collect_with_payload(Cursor &&cursor)
+{
+    return collect(std::forward<Cursor>(cursor),
+                   [](auto &&cursor) { return std::make_pair(*cursor, cursor.payload()); });
+}
+
+template <typename Cursor>
+auto collect_payloads(Cursor &&cursor)
+{
+    return collect(std::forward<Cursor>(cursor), [](auto &&cursor) { return cursor.payload(); });
+}
+
 } // namespace pisa::v1

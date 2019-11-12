@@ -24,7 +24,7 @@ struct ScoringCursor {
     {
         return m_base_cursor.value();
     }
-    [[nodiscard]] constexpr auto payload() const noexcept -> Payload
+    [[nodiscard]] constexpr auto payload() noexcept -> Payload
     {
         return m_scorer(m_base_cursor.value(), m_base_cursor.payload());
     }

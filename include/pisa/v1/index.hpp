@@ -30,8 +30,7 @@
 
 namespace pisa::v1 {
 
-[[nodiscard]] inline auto calc_avg_length(gsl::span<std::uint32_t const> const &lengths)
-    -> std::uint32_t
+[[nodiscard]] inline auto calc_avg_length(gsl::span<std::uint32_t const> const &lengths) -> float
 {
     auto sum = std::accumulate(lengths.begin(), lengths.end(), std::uint64_t(0), std::plus{});
     return static_cast<float>(sum) / lengths.size();
@@ -68,7 +67,7 @@ struct Index {
           gsl::span<std::byte const> documents,
           gsl::span<std::byte const> payloads,
           gsl::span<std::uint32_t const> document_lengths,
-          tl::optional<std::uint32_t> avg_document_length,
+          tl::optional<float> avg_document_length,
           Source source)
         : m_document_reader(std::move(document_reader)),
           m_payload_reader(std::move(payload_reader)),
@@ -166,7 +165,7 @@ struct Index {
     gsl::span<std::byte const> m_documents;
     gsl::span<std::byte const> m_payloads;
     gsl::span<std::uint32_t const> m_document_lengths;
-    std::uint32_t m_avg_document_length;
+    float m_avg_document_length;
     std::any m_source;
 };
 
@@ -178,7 +177,7 @@ auto make_index(DocumentReader document_reader,
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
                 gsl::span<std::uint32_t const> document_lengths,
-                tl::optional<std::uint32_t> avg_document_length,
+                tl::optional<float> avg_document_length,
                 Source source)
 {
     using DocumentCursor =
@@ -195,8 +194,8 @@ auto make_index(DocumentReader document_reader,
                                                 std::move(source));
 }
 
-template <typename Index, typename Writer, typename Scorer>
-auto score_index(Index const &index, ByteOStream &os, Writer writer, Scorer scorer)
+template <typename CharT, typename Index, typename Writer, typename Scorer>
+auto score_index(Index const &index, std::basic_ostream<CharT> &os, Writer writer, Scorer scorer)
     -> std::vector<std::size_t>
 {
     PostingBuilder<float> score_builder(writer);
@@ -420,7 +419,7 @@ struct IndexRunner {
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
                 gsl::span<std::uint32_t const> document_lengths,
-                tl::optional<std::uint32_t> avg_document_length,
+                tl::optional<float> avg_document_length,
                 Source source,
                 Readers... readers)
         : m_document_offsets(document_offsets),
@@ -439,7 +438,7 @@ struct IndexRunner {
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
                 gsl::span<std::uint32_t const> document_lengths,
-                tl::optional<std::uint32_t> avg_document_length,
+                tl::optional<float> avg_document_length,
                 Source source,
                 std::tuple<Readers...> readers)
         : m_document_offsets(document_offsets),
@@ -454,29 +453,30 @@ struct IndexRunner {
     }
 
     template <typename Fn>
-    void operator()(Fn fn)
+    auto operator()(Fn fn)
     {
         auto dheader = PostingFormatHeader::parse(m_documents.first(8));
         auto pheader = PostingFormatHeader::parse(m_payloads.first(8));
-        auto run = [&](auto &&dreader, auto &&preader) -> bool {
+        auto run = [&](auto &&dreader, auto &&preader) {
             if (std::decay_t<decltype(dreader)>::encoding() == dheader.encoding
                 && std::decay_t<decltype(preader)>::encoding() == pheader.encoding
                 && is_type<typename std::decay_t<decltype(dreader)>::value_type>(dheader.type)
                 && is_type<typename std::decay_t<decltype(preader)>::value_type>(pheader.type)) {
-                fn(make_index(std::forward<decltype(dreader)>(dreader),
-                              std::forward<decltype(preader)>(preader),
-                              m_document_offsets,
-                              m_payload_offsets,
-                              m_documents.subspan(8),
-                              m_payloads.subspan(8),
-                              m_document_lengths,
-                              m_avg_document_length,
-                              false));
+                auto index = make_index(std::forward<decltype(dreader)>(dreader),
+                                        std::forward<decltype(preader)>(preader),
+                                        m_document_offsets,
+                                        m_payload_offsets,
+                                        m_documents.subspan(8),
+                                        m_payloads.subspan(8),
+                                        m_document_lengths,
+                                        m_avg_document_length,
+                                        false);
+                fn(index);
                 return true;
             }
             return false;
         };
-        bool success = std::apply(
+        auto result = std::apply(
             [&](Readers... dreaders) {
                 auto with_document_reader = [&](auto dreader) {
                     return std::apply(
@@ -486,7 +486,7 @@ struct IndexRunner {
                 return (with_document_reader(dreaders) || ...);
             },
             m_readers);
-        if (not success) {
+        if (not result) {
             throw std::domain_error("Unknown posting encoding");
         }
     }
@@ -497,7 +497,7 @@ struct IndexRunner {
     gsl::span<std::byte const> m_documents;
     gsl::span<std::byte const> m_payloads;
     gsl::span<std::uint32_t const> m_document_lengths;
-    tl::optional<std::uint32_t> m_avg_document_length;
+    tl::optional<float> m_avg_document_length;
     std::any m_source;
     std::tuple<Readers...> m_readers;
 };

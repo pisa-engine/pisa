@@ -7,9 +7,9 @@
 namespace pisa::v1 {
 
 template <class T>
-constexpr auto bit_cast(gsl::span<const std::byte> mem) -> T
+constexpr auto bit_cast(gsl::span<const std::byte> mem) -> std::remove_const_t<T>
 {
-    T dst{};
+    std::remove_const_t<T> dst{};
     std::memcpy(&dst, mem.data(), sizeof(T));
     return dst;
 }

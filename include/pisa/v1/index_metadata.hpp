@@ -43,12 +43,14 @@ struct PostingFilePaths {
 struct IndexMetadata {
     PostingFilePaths documents;
     PostingFilePaths frequencies;
+    std::vector<PostingFilePaths> scores{};
     std::string document_lengths_path;
     float avg_document_length;
     tl::optional<std::string> term_lexicon{};
     tl::optional<std::string> document_lexicon{};
     tl::optional<std::string> stemmer{};
 
+    void write(std::string const &file);
     [[nodiscard]] static auto from_file(std::string const &file) -> IndexMetadata;
 };
 
@@ -85,6 +87,32 @@ template <typename... Readers>
                                    frequency_offsets,
                                    documents,
                                    frequencies,
+                                   document_lengths,
+                                   tl::make_optional(metadata.avg_document_length),
+                                   std::move(source),
+                                   std::move(readers));
+}
+
+template <typename... Readers>
+[[nodiscard]] inline auto scored_index_runner(IndexMetadata metadata, Readers... readers)
+{
+    return scored_index_runner(std::move(metadata), std::make_tuple(readers...));
+}
+
+template <typename... Readers>
+[[nodiscard]] inline auto scored_index_runner(IndexMetadata metadata,
+                                              std::tuple<Readers...> readers)
+{
+    MMapSource source;
+    auto documents = source_span<std::byte>(source, metadata.documents.postings);
+    auto scores = source_span<std::byte>(source, metadata.scores.front().postings);
+    auto document_offsets = source_span<std::size_t>(source, metadata.documents.offsets);
+    auto score_offsets = source_span<std::size_t>(source, metadata.scores.front().offsets);
+    auto document_lengths = source_span<std::uint32_t>(source, metadata.document_lengths_path);
+    return IndexRunner<Readers...>(document_offsets,
+                                   score_offsets,
+                                   documents,
+                                   scores,
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
                                    std::move(source),

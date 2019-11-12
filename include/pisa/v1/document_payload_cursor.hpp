@@ -19,25 +19,16 @@ struct DocumentPayloadCursor {
 
     [[nodiscard]] constexpr auto operator*() const -> Document { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Document { return m_key_cursor.value(); }
-    [[nodiscard]] constexpr auto payload() const noexcept -> Payload
+    [[nodiscard]] constexpr auto payload() noexcept -> Payload
     {
+        if (auto pos = m_key_cursor.position(); pos != m_payload_cursor.position()) {
+            m_payload_cursor.advance_to_position(m_key_cursor.position());
+        }
         return m_payload_cursor.value();
     }
-    constexpr void advance()
-    {
-        m_key_cursor.advance();
-        m_payload_cursor.advance();
-    }
-    constexpr void advance_to_position(std::size_t pos)
-    {
-        m_key_cursor.advance_to_position(pos);
-        m_payload_cursor.advance_to_position(pos);
-    }
-    constexpr void advance_to_geq(Document value)
-    {
-        m_key_cursor.advance_to_geq(value);
-        m_payload_cursor.advance_to_position(m_key_cursor.position());
-    }
+    constexpr void advance() { m_key_cursor.advance(); }
+    constexpr void advance_to_position(std::size_t pos) { m_key_cursor.advance_to_position(pos); }
+    constexpr void advance_to_geq(Document value) { m_key_cursor.advance_to_geq(value); }
     [[nodiscard]] constexpr auto empty() const noexcept -> bool { return m_key_cursor.empty(); }
     [[nodiscard]] constexpr auto position() const noexcept -> std::size_t
     {

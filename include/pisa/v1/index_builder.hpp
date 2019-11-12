@@ -17,22 +17,31 @@ namespace pisa::v1 {
 
 template <typename... Writers>
 struct IndexBuilder {
-    explicit IndexBuilder(Writers... writers) : m_writers(std::move(writers...)) {}
+    explicit IndexBuilder(Writers... writers) : m_writers(std::move(writers)...) {}
 
     template <typename Fn>
-    void operator()(Encoding encoding, Fn fn)
+    void operator()(Encoding document_encoding, Encoding payload_encoding, Fn fn)
     {
-        auto run = [&](auto &&writer) -> bool {
-            if (std::decay_t<decltype(writer)>::encoding() == encoding) {
-                fn(writer);
+        auto run = [&](auto &&dwriter, auto &&pwriter) -> bool {
+            if (std::decay_t<decltype(dwriter)>::encoding() == document_encoding
+                && std::decay_t<decltype(pwriter)>::encoding() == payload_encoding) {
+                fn(dwriter, pwriter);
                 return true;
             }
             return false;
         };
-        bool success =
-            std::apply([&](Writers... writers) { return (run(writers) || ...); }, m_writers);
+        bool success = std::apply(
+            [&](Writers... dwriters) {
+                auto with_document_writer = [&](auto dwriter) {
+                    return std::apply(
+                        [&](Writers... pwriters) { return (run(dwriter, pwriters) || ...); },
+                        m_writers);
+                };
+                return (with_document_writer(dwriters) || ...);
+            },
+            m_writers);
         if (not success) {
-            throw std::domain_error(fmt::format("Unknown writer"));
+            throw std::domain_error("Unknown posting encoding");
         }
     }
 
@@ -40,13 +49,11 @@ struct IndexBuilder {
     std::tuple<Writers...> m_writers;
 };
 
-using pisa::v1::ByteOStream;
-using pisa::v1::calc_avg_length;
-using pisa::v1::DocId;
-using pisa::v1::Frequency;
-using pisa::v1::PostingBuilder;
-using pisa::v1::RawWriter;
-using pisa::v1::read_sizes;
+template <typename... Writers>
+auto make_index_builder(Writers... writers)
+{
+    return IndexBuilder<Writers...>(std::move(writers)...);
+}
 
 template <typename CollectionIterator>
 auto compress_batch(CollectionIterator first,
@@ -86,12 +93,16 @@ void write_span(gsl::span<T> offsets, std::string const &file)
 }
 
 inline void compress_binary_collection(std::string const &input,
+                                       std::string_view fwd,
                                        std::string_view output,
                                        std::size_t const threads,
                                        Writer<DocId> document_writer,
                                        Writer<Frequency> frequency_writer)
 {
     pisa::binary_freq_collection const collection(input.c_str());
+    ProgressStatus status(collection.size(),
+                          DefaultProgress("Compressing in parallel"),
+                          std::chrono::milliseconds(100));
     tbb::task_group group;
     auto const num_terms = collection.size();
     std::vector<std::vector<std::size_t>> document_offsets(threads);
@@ -113,9 +124,6 @@ inline void compress_binary_collection(std::string const &input,
         document_streams.emplace_back(document_batch);
         frequency_streams.emplace_back(frequency_batch);
     });
-    ProgressStatus status(collection.size(),
-                          DefaultProgress("Compressing in parallel"),
-                          std::chrono::milliseconds(500));
     auto batch_size = num_terms / threads;
     for_each_batch([&](auto thread_idx) {
         group.run([thread_idx,
@@ -163,37 +171,44 @@ inline void compress_binary_collection(std::string const &input,
     std::ofstream document_out(documents_file);
     std::ofstream frequency_out(frequencies_file);
 
-    PostingBuilder<DocId>(RawWriter<DocId>{}).write_header(document_out);
-    PostingBuilder<Frequency>(RawWriter<Frequency>{}).write_header(frequency_out);
+    PostingBuilder<DocId>(document_writer).write_header(document_out);
+    PostingBuilder<Frequency>(frequency_writer).write_header(frequency_out);
 
-    ProgressStatus merge_status(
-        threads, DefaultProgress("Merging files"), std::chrono::milliseconds(500));
-    for_each_batch([&](auto thread_idx) {
-        std::transform(std::next(document_offsets[thread_idx].begin()),
-                       document_offsets[thread_idx].end(),
-                       std::back_inserter(all_document_offsets),
-                       [base = all_document_offsets.back()](auto offset) { return base + offset; });
-        std::transform(
-            std::next(frequency_offsets[thread_idx].begin()),
-            frequency_offsets[thread_idx].end(),
-            std::back_inserter(all_frequency_offsets),
-            [base = all_frequency_offsets.back()](auto offset) { return base + offset; });
-        std::ifstream docbatch(document_paths[thread_idx]);
-        std::ifstream freqbatch(frequency_paths[thread_idx]);
-        document_out << docbatch.rdbuf();
-        frequency_out << freqbatch.rdbuf();
-        merge_status += 1;
-    });
+    {
+        ProgressStatus merge_status(
+            threads, DefaultProgress("Merging files"), std::chrono::milliseconds(500));
+        for_each_batch([&](auto thread_idx) {
+            std::transform(
+                std::next(document_offsets[thread_idx].begin()),
+                document_offsets[thread_idx].end(),
+                std::back_inserter(all_document_offsets),
+                [base = all_document_offsets.back()](auto offset) { return base + offset; });
+            std::transform(
+                std::next(frequency_offsets[thread_idx].begin()),
+                frequency_offsets[thread_idx].end(),
+                std::back_inserter(all_frequency_offsets),
+                [base = all_frequency_offsets.back()](auto offset) { return base + offset; });
+            std::ifstream docbatch(document_paths[thread_idx]);
+            std::ifstream freqbatch(frequency_paths[thread_idx]);
+            document_out << docbatch.rdbuf();
+            frequency_out << freqbatch.rdbuf();
+            merge_status += 1;
+        });
+    }
 
+    std::cerr << "Writing offsets...";
     auto doc_offset_file = fmt::format("{}.document_offsets", output);
     auto freq_offset_file = fmt::format("{}.frequency_offsets", output);
     write_span(gsl::span<std::size_t const>(all_document_offsets), doc_offset_file);
     write_span(gsl::span<std::size_t const>(all_frequency_offsets), freq_offset_file);
+    std::cerr << " Done.\n";
 
+    std::cerr << "Writing sizes...";
     auto lengths = read_sizes(input);
     auto document_lengths_file = fmt::format("{}.document_lengths", output);
     write_span(gsl::span<std::uint32_t const>(lengths), document_lengths_file);
-    auto avg_len = calc_avg_length(gsl::span<std::uint32_t const>(lengths));
+    float avg_len = calc_avg_length(gsl::span<std::uint32_t const>(lengths));
+    std::cerr << " Done.\n";
 
     boost::property_tree::ptree pt;
     pt.put("documents.file", documents_file);
@@ -202,6 +217,9 @@ inline void compress_binary_collection(std::string const &input,
     pt.put("frequencies.offsets", freq_offset_file);
     pt.put("stats.avg_document_length", avg_len);
     pt.put("stats.document_lengths", document_lengths_file);
+    pt.put("lexicon.stemmer", "porter2"); // TODO(michal): Parametrize
+    pt.put("lexicon.terms", fmt::format("{}.termlex", fwd));
+    pt.put("lexicon.documents", fmt::format("{}.doclex", fwd));
     boost::property_tree::write_ini(fmt::format("{}.ini", output), pt);
 }
 

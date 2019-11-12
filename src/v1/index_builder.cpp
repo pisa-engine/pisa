@@ -1,4 +1,7 @@
 #include "v1/index_builder.hpp"
+#include "codec/simdbp.hpp"
+#include "v1/blocked_cursor.hpp"
+#include "v1/raw_cursor.hpp"
 
 namespace pisa::v1 {
 
@@ -8,7 +11,12 @@ auto verify_compressed_index(std::string const &input, std::string_view output)
     std::vector<std::string> errors;
     pisa::binary_freq_collection const collection(input.c_str());
     auto meta = IndexMetadata::from_file(fmt::format("{}.ini", output));
-    auto run = index_runner(meta, RawReader<std::uint32_t>{});
+    auto run = index_runner(meta,
+                            RawReader<std::uint32_t>{},
+                            BlockedReader<::pisa::simdbp_block, true>{},
+                            BlockedReader<::pisa::simdbp_block, false>{});
+    ProgressStatus status(
+        collection.size(), DefaultProgress("Verifying"), std::chrono::milliseconds(100));
     run([&](auto &&index) {
         auto sequence_iter = collection.begin();
         for (auto term = 0; term < index.num_terms(); term += 1, ++sequence_iter) {
@@ -40,6 +48,7 @@ auto verify_compressed_index(std::string const &input, std::string_view output)
                 ++fit;
                 ++pos;
             }
+            status += 1;
         }
     });
     return errors;

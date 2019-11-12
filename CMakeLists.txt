@@ -100,10 +100,10 @@ target_link_libraries(pisa PUBLIC
     range-v3
     optional
 )
-target_include_directories(pisa INTERFACE external)
+target_include_directories(pisa PUBLIC external)
 
 add_subdirectory(v1)
-add_subdirectory(src)
+#add_subdirectory(src)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()

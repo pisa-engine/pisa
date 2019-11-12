@@ -204,7 +204,7 @@ struct PostingFormatHeader {
     ValueType type;
     Encoding encoding;
 
-    constexpr static auto parse(gsl::span<std::byte const> bytes) -> PostingFormatHeader
+    static auto parse(gsl::span<std::byte const> bytes) -> PostingFormatHeader
     {
         Expects(bytes.size() == 8);
         auto version = FormatVersion::parse(bytes.first(3));

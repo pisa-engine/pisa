@@ -11,6 +11,7 @@
 
 #include "util/likely.hpp"
 #include "v1/bit_cast.hpp"
+#include "v1/cursor_traits.hpp"
 #include "v1/types.hpp"
 
 namespace pisa::v1 {
@@ -54,7 +55,7 @@ struct RawCursor {
     constexpr void advance() { m_current += sizeof(T); }
 
     /// Moves the cursor to the position `pos`.
-    constexpr void advance_to_position(std::size_t pos) { m_current = pos; }
+    constexpr void advance_to_position(std::size_t pos) { m_current = pos * sizeof(T); }
 
     /// Moves the cursor to the next value equal or greater than `value`.
     constexpr void advance_to_geq(T value)
@@ -71,7 +72,10 @@ struct RawCursor {
     }
 
     /// Returns the current position.
-    [[nodiscard]] constexpr auto position() const noexcept -> std::size_t { return m_current; }
+    [[nodiscard]] constexpr auto position() const noexcept -> std::size_t
+    {
+        return m_current / sizeof(T);
+    }
 
     /// Returns the number of elements in the list.
     [[nodiscard]] constexpr auto size() const -> std::size_t { return m_bytes.size() / sizeof(T); }
@@ -122,6 +126,12 @@ struct RawWriter {
 
    private:
     std::vector<T> m_postings{};
+};
+
+template <typename T>
+struct CursorTraits<RawCursor<T>> {
+    using Writer = RawWriter<T>;
+    using Reader = RawReader<T>;
 };
 
 } // namespace pisa::v1
