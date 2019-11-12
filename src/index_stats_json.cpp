@@ -195,7 +195,7 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 }
                 std::sort(doc_lens.begin(), doc_lens.end());
                 std::sort(freqs.begin(), freqs.end());
-                std::sort(scores.begin(), scores.end());
+                std::sort(scores.begin(), scores.end(), std::greater<float>());
 
 
                 td.min_doclen = doc_lens.front();
