@@ -5,6 +5,7 @@
 #include <type_traits>
 #include <utility>
 
+#include <fmt/format.h>
 #include <gsl/gsl_assert>
 #include <gsl/span>
 #include <tl/optional.hpp>
@@ -26,6 +27,14 @@ template <typename Cursor>
     return tl::make_optional(cursor.value());
 }
 
+template <typename... Args>
+inline void contract(bool condition, std::string const &message, Args &&... args)
+{
+    if (not condition) {
+        throw std::logic_error(fmt::format(message, std::forward<Args>(args)...));
+    }
+}
+
 /// Uncompressed example of implementation of a single value cursor.
 template <typename T>
 struct RawCursor {
@@ -35,8 +44,11 @@ struct RawCursor {
     /// Creates a cursor from the encoded bytes.
     explicit constexpr RawCursor(gsl::span<const std::byte> bytes) : m_bytes(bytes.subspan(4))
     {
-        Expects(m_bytes.size() % sizeof(T) == 0);
-        Expects(not m_bytes.empty());
+        contract(m_bytes.size() % sizeof(T) == 0,
+                 "Raw cursor memory size must be multiplier of element size ({}) but is {}",
+                 sizeof(T),
+                 m_bytes.size());
+        contract(not m_bytes.empty(), "Raw cursor memory must not be empty");
     }
 
     /// Dereferences the current value.
@@ -98,7 +110,7 @@ struct RawReader {
         return RawCursor<T>(bytes);
     }
 
-    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw; }
+    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 };
 
 template <typename T>
@@ -106,7 +118,7 @@ struct RawWriter {
     static_assert(std::is_trivially_copyable<T>::value);
     using value_type = T;
 
-    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw; }
+    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 
     void push(T const &posting) { m_postings.push_back(posting); }
     void push(T &&posting) { m_postings.push_back(posting); }
@@ -132,6 +144,7 @@ template <typename T>
 struct CursorTraits<RawCursor<T>> {
     using Writer = RawWriter<T>;
     using Reader = RawReader<T>;
+    constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 };
 
 } // namespace pisa::v1

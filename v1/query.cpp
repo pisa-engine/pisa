@@ -134,7 +134,7 @@ int main(int argc, char **argv)
     if (precomputed) {
         auto run = scored_index_runner(meta,
                                        RawReader<std::uint32_t>{},
-                                       RawReader<float>{},
+                                       RawReader<std::uint8_t>{},
                                        BlockedReader<::pisa::simdbp_block, true>{},
                                        BlockedReader<::pisa::simdbp_block, false>{});
         run([&](auto &&index) {

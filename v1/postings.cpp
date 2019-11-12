@@ -9,6 +9,7 @@
 #include "io.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
+#include "v1/blocked_cursor.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/query.hpp"
 #include "v1/raw_cursor.hpp"
@@ -18,12 +19,20 @@
 
 using pisa::Query;
 using pisa::resolve_query_parser;
+using pisa::v1::BlockedReader;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_ini;
 
-auto default_readers() { return std::make_tuple(RawReader<std::uint32_t>{}, RawReader<float>{}); }
+auto default_readers()
+{
+    return std::make_tuple(RawReader<std::uint32_t>{},
+                           RawReader<std::uint8_t>{},
+                           RawReader<float>{},
+                           BlockedReader<::pisa::simdbp_block, true>{},
+                           BlockedReader<::pisa::simdbp_block, false>{});
+}
 
 [[nodiscard]] auto load_source(std::optional<std::string> const &file)
     -> std::shared_ptr<mio::mmap_source>
@@ -69,6 +78,7 @@ int main(int argc, char **argv)
     bool did = false;
     bool print_frequencies = false;
     bool print_scores = false;
+    bool precomputed = false;
 
     CLI::App app{"Queries a v1 index."};
     app.add_option("-i,--index",
@@ -83,7 +93,8 @@ int main(int argc, char **argv)
     app.add_flag("--tid", tid, "Use term IDs instead of terms");
     app.add_flag("--did", did, "Print document IDs instead of titles");
     app.add_flag("-f,--frequencies", print_frequencies, "Print frequencies");
-    app.add_flag("-s,--scores", print_scores, "Print BM25 scores");
+    auto *scores_option = app.add_flag("-s,--scores", print_scores, "Print BM25 scores");
+    app.add_flag("--precomputed", precomputed, "Use BM25 precomputed scores")->needs(scores_option);
     app.add_option("query", query_input, "List of terms", false)->required();
     CLI11_PARSE(app, argc, argv);
 
@@ -117,26 +128,45 @@ int main(int argc, char **argv)
     }();
 
     if (query.terms.size() == 1) {
-        auto run = index_runner(meta, default_readers());
-        run([&](auto &&index) {
-            auto bm25 = make_bm25(index);
-            auto scorer = bm25.term_scorer(query.terms.front());
-            auto print = [&](auto &&cursor) {
-                if (did) {
-                    std::cout << *cursor;
-                } else {
-                    std::cout << docmap.value()[*cursor];
-                }
-                if (print_frequencies) {
-                    std::cout << " " << cursor.payload();
-                }
-                if (print_scores) {
-                    std::cout << " " << scorer(cursor.value(), cursor.payload());
-                }
-                std::cout << '\n';
-            };
-            for_each(index.cursor(query.terms.front()), print);
-        });
+        if (precomputed) {
+            auto run = scored_index_runner(meta, default_readers());
+            run([&](auto &&index) {
+                auto print = [&](auto &&cursor) {
+                    if (did) {
+                        std::cout << *cursor;
+                    } else {
+                        std::cout << docmap.value()[*cursor];
+                    }
+                    if constexpr (std::is_same_v<decltype(cursor.payload()), std::uint8_t>) {
+                        std::cout << " " << static_cast<int>(cursor.payload()) << '\n';
+                    } else {
+                        std::cout << " " << cursor.payload() << '\n';
+                    }
+                };
+                for_each(index.cursor(query.terms.front()), print);
+            });
+        } else {
+            auto run = index_runner(meta, default_readers());
+            run([&](auto &&index) {
+                auto bm25 = make_bm25(index);
+                auto scorer = bm25.term_scorer(query.terms.front());
+                auto print = [&](auto &&cursor) {
+                    if (did) {
+                        std::cout << *cursor;
+                    } else {
+                        std::cout << docmap.value()[*cursor];
+                    }
+                    if (print_frequencies) {
+                        std::cout << " " << cursor.payload();
+                    }
+                    if (print_scores) {
+                        std::cout << " " << scorer(cursor.value(), cursor.payload());
+                    }
+                    std::cout << '\n';
+                };
+                for_each(index.cursor(query.terms.front()), print);
+            });
+        }
     } else {
         std::cerr << "Multiple terms unimplemented";
         std::exit(1);

@@ -194,20 +194,27 @@ auto make_index(DocumentReader document_reader,
                                                 std::move(source));
 }
 
-template <typename CharT, typename Index, typename Writer, typename Scorer, typename Callback>
+template <typename CharT,
+          typename Index,
+          typename Writer,
+          typename Scorer,
+          typename Quantizer,
+          typename Callback>
 auto score_index(Index const &index,
                  std::basic_ostream<CharT> &os,
                  Writer writer,
                  Scorer scorer,
+                 Quantizer &&quantizer,
                  Callback &&callback) -> std::vector<std::size_t>
 {
-    PostingBuilder<float> score_builder(writer);
+    PostingBuilder<typename Writer::value_type> score_builder(writer);
     score_builder.write_header(os);
     std::for_each(boost::counting_iterator<TermId>(0),
                   boost::counting_iterator<TermId>(index.num_terms()),
                   [&](auto term) {
-                      for_each(index.scoring_cursor(term, scorer),
-                               [&](auto &cursor) { score_builder.accumulate(cursor.payload()); });
+                      for_each(index.scoring_cursor(term, scorer), [&](auto &cursor) {
+                          score_builder.accumulate(quantizer(cursor.payload()));
+                      });
                       score_builder.flush_segment(os);
                       callback();
                   });
@@ -218,7 +225,7 @@ template <typename CharT, typename Index, typename Writer, typename Scorer>
 auto score_index(Index const &index, std::basic_ostream<CharT> &os, Writer writer, Scorer scorer)
     -> std::vector<std::size_t>
 {
-    PostingBuilder<float> score_builder(writer);
+    PostingBuilder<typename Writer::value_type> score_builder(writer);
     score_builder.write_header(os);
     std::for_each(boost::counting_iterator<TermId>(0),
                   boost::counting_iterator<TermId>(index.num_terms()),

@@ -19,11 +19,14 @@ using pisa::v1::ProgressStatus;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
 using pisa::v1::resolve_ini;
+using pisa::v1::TermId;
 using pisa::v1::write_span;
 
 int main(int argc, char **argv)
 {
     std::optional<std::string> ini{};
+    int bytes_per_score = 1;
+    std::size_t threads = std::thread::hardware_concurrency();
 
     CLI::App app{"Scores v1 index."};
     app.add_option("-i,--index",
@@ -31,6 +34,10 @@ int main(int argc, char **argv)
                    "Path of .ini file of an index "
                    "(if not provided, it will be looked for in the current directory)",
                    false);
+    app.add_option("-j,--threads", threads, "Number of threads");
+    // TODO(michal): enable
+    // app.add_option(
+    //    "-b,--bytes-per-score", ini, "Quantize computed scores to this many bytes", true);
     CLI11_PARSE(app, argc, argv);
 
     auto resolved_ini = resolve_ini(ini);
@@ -45,11 +52,45 @@ int main(int argc, char **argv)
     auto postings_path = fmt::format("{}.bm25", index_basename);
     auto offsets_path = fmt::format("{}.bm25_offsets", index_basename);
     run([&](auto &&index) {
+        ProgressStatus calc_max_status(index.num_terms(),
+                                       DefaultProgress("Calculating max partial score"),
+                                       std::chrono::milliseconds(100));
+        std::vector<float> max_scores(threads, 0.0F);
+        tbb::task_group group;
+        auto batch_size = index.num_terms() / threads;
+        for (auto thread_id = 0; thread_id < threads; thread_id += 1) {
+            auto first_term = thread_id * batch_size;
+            auto end_term =
+                thread_id < threads - 1 ? (thread_id + 1) * batch_size : index.num_terms();
+            std::for_each(
+                boost::counting_iterator<TermId>(first_term),
+                boost::counting_iterator<TermId>(end_term),
+                [&](auto term) {
+                    for_each(index.scoring_cursor(term, make_bm25(index)), [&](auto &cursor) {
+                        max_scores[thread_id] = std::max(max_scores[thread_id], cursor.payload());
+                    });
+                    calc_max_status += 1;
+                });
+        }
+        group.wait();
+        auto max_score = *std::max_element(max_scores.begin(), max_scores.end());
+        std::cerr << fmt::format("Max partial score is: {}. It will be scaled to {}.",
+                                 max_score,
+                                 std::numeric_limits<std::uint8_t>::max());
+
         ProgressStatus status(
             index.num_terms(), DefaultProgress("Scoring"), std::chrono::milliseconds(100));
         std::ofstream score_file_stream(postings_path);
         auto offsets = score_index(
-            index, score_file_stream, RawWriter<float>{}, make_bm25(index), [&]() { status += 1; });
+            index,
+            score_file_stream,
+            RawWriter<std::uint8_t>{},
+            make_bm25(index),
+            [&](float score) {
+                return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
+                                                 / max_score);
+            },
+            [&]() { status += 1; });
         write_span(gsl::span<std::size_t const>(offsets), offsets_path);
     });
     meta.scores.push_back(PostingFilePaths{.postings = postings_path, .offsets = offsets_path});
