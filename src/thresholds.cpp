@@ -64,6 +64,7 @@ using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, const char **argv)
 {
+    spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     std::string type;
