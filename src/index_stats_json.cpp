@@ -181,6 +181,8 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 double doc_lens_sum = 0;
                 std::vector<float> freqs(td.Ft);
                 double freqs_sum = 0;
+                std::vector<float> scores(td.Ft);
+
                 for (size_t j = 0; j < td.Ft; j++)
                 {
                     auto docid = list.docid();
@@ -188,10 +190,13 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                     doc_lens_sum += doc_lens[j];
                     freqs[j] = list.freq();
                     freqs_sum += freqs[j];
+                    scores[j] = td.q_weight * bm25::doc_term_weight(list.freq(), wdata.norm_len(list.docid()));
                     list.next();
                 }
                 std::sort(doc_lens.begin(), doc_lens.end());
                 std::sort(freqs.begin(), freqs.end());
+                std::sort(scores.begin(), scores.end());
+
 
                 td.min_doclen = doc_lens.front();
                 td.max_doclen = doc_lens.back();
@@ -202,6 +207,16 @@ void output_stats(const std::string &index_filename, const std::string &wand_dat
                 td.max_ft = freqs.back();
                 td.med_ft = freqs[freqs.size() / 2];
                 td.mean_ft = freqs_sum / td.Ft;
+
+                if(scores.size() > 9){
+                    td.k10m = scores[9];
+                }
+                if(scores.size() > 99){
+                    td.k100m = scores[99];
+                }
+                if(scores.size() > 999){
+                    td.k1000m = scores[999];
+                }
 
                 for (size_t j = 1; j < freqs.size(); j++)
                 {
