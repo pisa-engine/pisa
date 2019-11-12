@@ -6,3 +6,6 @@ target_link_libraries(query pisa CLI11)
 
 add_executable(postings postings.cpp)
 target_link_libraries(postings pisa CLI11)
+
+add_executable(score score.cpp)
+target_link_libraries(score pisa CLI11)

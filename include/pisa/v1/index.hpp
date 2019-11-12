@@ -194,6 +194,26 @@ auto make_index(DocumentReader document_reader,
                                                 std::move(source));
 }
 
+template <typename CharT, typename Index, typename Writer, typename Scorer, typename Callback>
+auto score_index(Index const &index,
+                 std::basic_ostream<CharT> &os,
+                 Writer writer,
+                 Scorer scorer,
+                 Callback &&callback) -> std::vector<std::size_t>
+{
+    PostingBuilder<float> score_builder(writer);
+    score_builder.write_header(os);
+    std::for_each(boost::counting_iterator<TermId>(0),
+                  boost::counting_iterator<TermId>(index.num_terms()),
+                  [&](auto term) {
+                      for_each(index.scoring_cursor(term, scorer),
+                               [&](auto &cursor) { score_builder.accumulate(cursor.payload()); });
+                      score_builder.flush_segment(os);
+                      callback();
+                  });
+    return std::move(score_builder.offsets());
+}
+
 template <typename CharT, typename Index, typename Writer, typename Scorer>
 auto score_index(Index const &index, std::basic_ostream<CharT> &os, Writer writer, Scorer scorer)
     -> std::vector<std::size_t>

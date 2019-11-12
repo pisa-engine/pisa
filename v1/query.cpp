@@ -25,7 +25,7 @@ using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_ini;
-using pisa::v1::taat_or;
+using pisa::v1::VoidScorer;
 
 template <typename Index, typename Scorer>
 void evaluate(std::vector<pisa::Query> const &queries,
@@ -88,6 +88,7 @@ int main(int argc, char **argv)
     std::optional<std::string> documents_file{};
     int k = 1'000;
     bool is_benchmark = false;
+    bool precomputed = false;
 
     CLI::App app{"Queries a v1 index."};
     app.add_option("-i,--index",
@@ -102,6 +103,7 @@ int main(int argc, char **argv)
                    documents_file,
                    "Overrides document lexicon from .ini (if defined). Required otherwise.");
     app.add_flag("--benchmark", is_benchmark, "Run benchmark");
+    app.add_flag("--precomputed", precomputed, "Use precomputed scores");
     CLI11_PARSE(app, argc, argv);
 
     auto meta = IndexMetadata::from_file(resolve_ini(ini));
@@ -129,20 +131,34 @@ int main(int argc, char **argv)
     auto source = std::make_shared<mio::mmap_source>(documents_file.value().c_str());
     auto docmap = pisa::Payload_Vector<>::from(*source);
 
-    auto run = index_runner(meta,
-                            RawReader<std::uint32_t>{},
-                            BlockedReader<::pisa::simdbp_block, true>{},
-                            BlockedReader<::pisa::simdbp_block, false>{});
-    run([&](auto &&index) {
-        auto with_scorer = scorer_runner(index, make_bm25(index));
-        with_scorer("bm25", [&](auto scorer) {
+    if (precomputed) {
+        auto run = scored_index_runner(meta,
+                                       RawReader<std::uint32_t>{},
+                                       RawReader<float>{},
+                                       BlockedReader<::pisa::simdbp_block, true>{},
+                                       BlockedReader<::pisa::simdbp_block, false>{});
+        run([&](auto &&index) {
             if (is_benchmark) {
-                benchmark(queries, index, scorer, k);
+                benchmark(queries, index, VoidScorer{}, k);
             } else {
-                evaluate(queries, index, scorer, k, docmap);
+                evaluate(queries, index, VoidScorer{}, k, docmap);
             }
         });
-    });
-
+    } else {
+        auto run = index_runner(meta,
+                                RawReader<std::uint32_t>{},
+                                BlockedReader<::pisa::simdbp_block, true>{},
+                                BlockedReader<::pisa::simdbp_block, false>{});
+        run([&](auto &&index) {
+            auto with_scorer = scorer_runner(index, make_bm25(index));
+            with_scorer("bm25", [&](auto scorer) {
+                if (is_benchmark) {
+                    benchmark(queries, index, scorer, k);
+                } else {
+                    evaluate(queries, index, scorer, k, docmap);
+                }
+            });
+        });
+    }
     return 0;
 }
