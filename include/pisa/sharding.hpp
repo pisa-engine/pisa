@@ -157,7 +157,7 @@ auto rearrange_sequences(std::string const &input_basename,
         shard_sizes[shard]++;
     }
     spdlog::info("Writing sizes");
-    for (auto &&[o, size] : ranges::view::zip(os, shard_sizes)) {
+    for (auto &&[o, size] : ranges::view::zip(os.as_vector(), shard_sizes.as_vector())) {
         o.seekp(0);
         uint32_t one = 1;
         o.write(reinterpret_cast<char const *>(&one), sizeof(uint32_t));
@@ -183,7 +183,7 @@ auto process_shard(std::string const &input_basename,
 
     spdlog::debug("[Shard {}] Writing terms", shard_id.as_int());
     std::ofstream tos(fmt::format("{}.terms", basename));
-    for (auto &&[term, occurs] : ranges::view::zip(terms, has_term)) {
+    for (auto &&[term, occurs] : ranges::view::zip(terms.as_vector(), has_term)) {
         if (occurs) {
             tos << term << '\n';
         }
@@ -208,7 +208,7 @@ auto partition_fwd_index(std::string const &input_basename,
                          std::string const &output_basename,
                          VecMap<Document_Id, Shard_Id> &mapping)
 {
-    auto terms = io::read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
+    auto terms = read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
     auto shard_ids = ranges::view::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);

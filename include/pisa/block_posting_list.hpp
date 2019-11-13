@@ -25,7 +25,7 @@ namespace pisa {
             FreqsIterator freqs_it(freqs_begin);
             std::vector<uint32_t> docs_buf(block_size);
             std::vector<uint32_t> freqs_buf(block_size);
-            uint32_t last_doc(-1);
+            int32_t last_doc(-1);
             uint32_t block_base = 0;
             for (size_t b = 0; b < blocks; ++b) {
                 uint32_t cur_block_size =

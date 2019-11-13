@@ -35,6 +35,8 @@ class wand_data {
         std::vector<float> max_term_weight;
         std::vector<uint32_t> term_occurrence_counts;
         std::vector<uint32_t> term_posting_counts;
+        std::vector<uint32_t> terms_count;
+        std::vector<uint32_t> terms_len;
         global_parameters params;
         spdlog::info("Reading sizes...");
 
@@ -62,8 +64,10 @@ class wand_data {
             pisa::progress progress("Processing posting lists", coll.size());
             size_t term_id = 0;
             for (auto const &seq : coll) {
-                auto v = builder.add_sequence(
-                    seq, coll, doc_lens, m_avg_len, scorer->term_scorer(term_id), block_size);
+                terms_len.push_back(seq.docs.size());
+                size_t term_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
+                terms_count.push_back(term_count);
+                auto v = builder.add_sequence(seq, coll, doc_lens, avg_len, scorer->term_scorer(term_id), block_size);
                 max_term_weight.push_back(v);
                 term_id += 1;
                 progress.update(1);
@@ -71,6 +75,10 @@ class wand_data {
         }
         builder.build(m_block_wand);
         m_max_term_weight.steal(max_term_weight);
+        m_terms_count.steal(terms_count);
+        m_terms_len.steal(terms_len);
+        m_avg_len = avg_len;
+        m_collection_len = collection_len;
     }
 
     float norm_len(uint64_t doc_id) const { return m_doc_lens[doc_id] / m_avg_len; }
@@ -82,6 +90,8 @@ class wand_data {
     size_t term_posting_count(uint64_t term_id) const { return m_term_posting_counts[term_id]; }
 
     size_t num_docs() const { return m_num_docs; }
+
+    size_t term_len(uint64_t term_id) const { return m_terms_len[term_id]; }
 
     float avg_len() const { return m_avg_len; }
 
@@ -100,9 +110,10 @@ class wand_data {
     void map(Visitor &visit)
     {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
+
             m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_posting_counts, "m_term_posting_counts")(m_avg_len, "m_avg_len")(
-            m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(m_max_term_weight,
-                                                                            "m_max_term_weight");
+            m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(m_max_term_weight,"m_max_term_weight")(m_terms_count, "m_terms_count")
+            (m_terms_len, "m_terms_len");
     }
 
    private:
@@ -113,6 +124,8 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_doc_lens;
     mapper::mappable_vector<uint32_t> m_term_occurrence_counts;
     mapper::mappable_vector<uint32_t> m_term_posting_counts;
+    mapper::mappable_vector<uint32_t> m_terms_count;
+    mapper::mappable_vector<uint32_t> m_terms_len;
     mapper::mappable_vector<float> m_max_term_weight;
 };
 } // namespace pisa

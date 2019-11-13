@@ -28,8 +28,8 @@ using namespace pisa;
 using namespace pisa::literals;
 
 using posting_vector_type = std::vector<std::pair<Term_Id, Document_Id>>;
-using iterator_type       = decltype(std::declval<posting_vector_type>().begin());
-using index_type          = invert::Inverted_Index<iterator_type>;
+using iterator_type = decltype(std::declval<posting_vector_type>().begin());
+using index_type = invert::Inverted_Index<iterator_type>;
 
 [[nodiscard]] auto next_plaintext_record(std::istream &in) -> std::optional<Document_Record>
 {
@@ -48,8 +48,8 @@ TEST_CASE("mapping_from_files", "[invert][unit]")
     shards.push_back(std::make_unique<std::istringstream>("D00\nD01\nD02"));
     shards.push_back(std::make_unique<std::istringstream>("D02\nD03\nD04"));
     shards.push_back(std::make_unique<std::istringstream>("D06\nD07\nD08\nD09\nD010\nD11"));
-    auto stream_pointers = ranges::view::transform(shards, [](auto const &s) { return s.get(); })
-                           | ranges::to_vector;
+    auto stream_pointers =
+        ranges::view::transform(shards, [](auto const &s) { return s.get(); }) | ranges::to_vector;
     REQUIRE(mapping_from_files(&full, gsl::span<std::istream *>(stream_pointers)).as_vector()
             == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s});
 }
@@ -66,10 +66,10 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
     }
     std::sort(documents.begin(), documents.end());
 
-    REQUIRE(documents.as_vector() ==
-            ranges::to_vector(ranges::view::iota(Document_Id{}, Document_Id{1000u})));
-    REQUIRE(counts.as_vector() ==
-            std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
+    REQUIRE(documents.as_vector()
+            == ranges::to_vector(ranges::view::iota(Document_Id{}, Document_Id{1000u})));
+    REQUIRE(counts.as_vector()
+            == std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
 }
 
 auto round_robin_mapping(int document_count, int shard_count)
@@ -90,13 +90,14 @@ void build_fwd_index(std::string const &output)
     std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
     std::ifstream is(input);
     pisa::Forward_Index_Builder builder;
-    builder.build(is,
-                  output,
-                  next_plaintext_record,
-                  [](std::string &&term) -> std::string { return std::forward<std::string>(term); },
-                  pisa::parse_plaintext_content,
-                  20'000,
-                  2);
+    builder.build(
+        is,
+        output,
+        next_plaintext_record,
+        [](std::string &&term) -> std::string { return std::forward<std::string>(term); },
+        pisa::parse_plaintext_content,
+        20'000,
+        2);
 }
 
 template <typename Container>
@@ -104,8 +105,7 @@ auto shard_elements(Container const &container, Shard_Id shard_id, int shard_cou
 {
     Container elems;
     for (auto const &val :
-         ranges::view::drop(container, shard_id.as_int()) | ranges::view::stride(shard_count))
-    {
+         ranges::view::drop(container, shard_id.as_int()) | ranges::view::stride(shard_count)) {
         elems.push_back(val);
     }
     return elems;
@@ -168,7 +168,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     full_iter, full.end(), std::back_inserter(expected), [](auto const &seq) {
                         return std::vector<std::uint32_t>(seq.begin(), seq.end());
                     });
-                auto sorted_mapping = mapping.entries() | ranges::to_vector;
+                auto sorted_mapping = mapping.entries().collect();
                 ranges::stable_sort(sorted_mapping, [](auto const &lhs, auto const &rhs) {
                     return std::make_pair(lhs.second, lhs.first)
                            < std::make_pair(rhs.second, rhs.first);
@@ -180,7 +180,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
 
                 auto pos = expected.begin();
                 for (auto shard : shard_ids) {
-                    //std::vector<std::vector<std::uint32_t>> actual;
+                    // std::vector<std::vector<std::uint32_t>> actual;
                     spdlog::info("Testing shard {}", shard.as_int());
                     spdlog::default_logger()->flush();
                     auto shard_coll = binary_collection(
@@ -189,14 +189,12 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     CAPTURE(shard);
                     CAPTURE(doc);
                     for (auto iter = ++shard_coll.begin(); iter != shard_coll.end();
-                         ++iter, ++pos)
-                    {
+                         ++iter, ++pos) {
                         auto seq = *iter;
                         REQUIRE(*pos == std::vector<std::uint32_t>(seq.begin(), seq.end()));
                     }
                 }
             }
-
         }
     }
 }

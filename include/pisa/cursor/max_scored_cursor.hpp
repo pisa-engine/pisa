@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scorer/index_scorer.hpp"
+#include "wand_data.hpp"
 #include "query/queries.hpp"
 #include <vector>
 
