@@ -11,6 +11,7 @@ foreach(TEST_SRC ${TEST_SOURCES})
   target_link_libraries(${TEST_SRC_NAME}
     pisa
     Catch2
+    rapidcheck
     )
   catch_discover_tests(${TEST_SRC_NAME} TEST_PREFIX "${TEST_SRC_NAME}:")
 
