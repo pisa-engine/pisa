@@ -1,15 +1,18 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <algorithm>
+#include <cstdlib>
+#include <numeric>
+#include <vector>
+
+#include <tbb/task_scheduler_init.h>
+
 #include "test_generic_sequence.hpp"
 
-#include "sequence/positive_sequence.hpp"
 #include "sequence/partitioned_sequence.hpp"
+#include "sequence/positive_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
-#include <vector>
-#include <cstdlib>
-#include <algorithm>
-#include <numeric>
 
 template <typename BaseSequence>
 void test_positive_sequence()
@@ -29,15 +32,14 @@ void test_positive_sequence()
 
     for (size_t i = 0; i < n; ++i) {
         auto val = r.move(i);
-        MY_REQUIRE_EQUAL(i, val.first,
-                         "i = " << i);
-        MY_REQUIRE_EQUAL(values[i], val.second,
-                         "i = " << i);
+        MY_REQUIRE_EQUAL(i, val.first, "i = " << i);
+        MY_REQUIRE_EQUAL(values[i], val.second, "i = " << i);
     }
 }
 
 TEST_CASE("positive_sequence")
 {
+    tbb::task_scheduler_init init;
     test_positive_sequence<pisa::strict_sequence>();
     test_positive_sequence<pisa::partitioned_sequence<pisa::strict_sequence>>();
     test_positive_sequence<pisa::uniform_partitioned_sequence<pisa::strict_sequence>>();
