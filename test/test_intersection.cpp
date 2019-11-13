@@ -101,8 +101,8 @@ struct InMemoryIndex {
 
 struct InMemoryWand {
     std::vector<float> max_weights;
-    std::uint32_t num_documents;
     std::vector<uint32_t> terms_len;
+    std::uint32_t num_documents;
 
     [[nodiscard]] auto max_term_weight(std::uint32_t term_id) const noexcept -> float
     {
@@ -200,7 +200,7 @@ TEST_CASE("compute intersection", "[intersection][unit]")
                             },
                             10};
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0},
-                          {1, 3, 1, 1, 1, 3, 3}};
+                          {1, 3, 1, 1, 1, 3, 3}, 10};
       
         Query query{
             "Q1", // query ID
