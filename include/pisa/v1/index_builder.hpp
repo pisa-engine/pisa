@@ -1,13 +1,13 @@
 #pragma once
 
 #include <chrono>
+#include <fstream>
 
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <fmt/format.h>
 #include <tbb/task_group.h>
 #include <tbb/task_scheduler_init.h>
 #include <tl/optional.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include "v1/index.hpp"
 #include "v1/index_metadata.hpp"
@@ -22,7 +22,7 @@ struct IndexBuilder {
     template <typename Fn>
     void operator()(Encoding document_encoding, Encoding payload_encoding, Fn fn)
     {
-        auto run = [&](auto &&dwriter, auto &&pwriter) -> bool {
+        auto run = [&](auto&& dwriter, auto&& pwriter) -> bool {
             if (std::decay_t<decltype(dwriter)>::encoding() == document_encoding
                 && std::decay_t<decltype(pwriter)>::encoding() == payload_encoding) {
                 fn(dwriter, pwriter);
@@ -58,11 +58,11 @@ auto make_index_builder(Writers... writers)
 template <typename CollectionIterator>
 auto compress_batch(CollectionIterator first,
                     CollectionIterator last,
-                    std::ofstream &dout,
-                    std::ofstream &fout,
+                    std::ofstream& dout,
+                    std::ofstream& fout,
                     Writer<DocId> document_writer,
                     Writer<Frequency> frequency_writer,
-                    tl::optional<ProgressStatus &> bar)
+                    tl::optional<ProgressStatus&> bar)
     -> std::tuple<std::vector<std::size_t>, std::vector<std::size_t>>
 {
     PostingBuilder<DocId> document_builder(std::move(document_writer));
@@ -85,14 +85,14 @@ auto compress_batch(CollectionIterator first,
 }
 
 template <typename T>
-void write_span(gsl::span<T> offsets, std::string const &file)
+void write_span(gsl::span<T> offsets, std::string const& file)
 {
     std::ofstream os(file);
     auto bytes = gsl::as_bytes(offsets);
-    os.write(reinterpret_cast<char const *>(bytes.data()), bytes.size());
+    os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
 }
 
-inline void compress_binary_collection(std::string const &input,
+inline void compress_binary_collection(std::string const& input,
                                        std::string_view fwd,
                                        std::string_view output,
                                        std::size_t const threads,
@@ -144,8 +144,8 @@ inline void compress_binary_collection(std::string const &input,
                 }
                 return std::next(collection.begin(), (thread_idx + 1) * batch_size);
             }();
-            auto &dout = document_streams[thread_idx];
-            auto &fout = frequency_streams[thread_idx];
+            auto& dout = document_streams[thread_idx];
+            auto& fout = frequency_streams[thread_idx];
             std::tie(document_offsets[thread_idx], frequency_offsets[thread_idx]) =
                 compress_batch(first,
                                last,
@@ -153,7 +153,7 @@ inline void compress_binary_collection(std::string const &input,
                                fout,
                                document_writer,
                                frequency_writer,
-                               tl::make_optional<ProgressStatus &>(status));
+                               tl::make_optional<ProgressStatus&>(status));
         });
     });
     group.wait();
@@ -210,20 +210,19 @@ inline void compress_binary_collection(std::string const &input,
     float avg_len = calc_avg_length(gsl::span<std::uint32_t const>(lengths));
     std::cerr << " Done.\n";
 
-    boost::property_tree::ptree pt;
-    pt.put("documents.file", documents_file);
-    pt.put("documents.offsets", doc_offset_file);
-    pt.put("frequencies.file", frequencies_file);
-    pt.put("frequencies.offsets", freq_offset_file);
-    pt.put("stats.avg_document_length", avg_len);
-    pt.put("stats.document_lengths", document_lengths_file);
-    pt.put("lexicon.stemmer", "porter2"); // TODO(michal): Parametrize
-    pt.put("lexicon.terms", fmt::format("{}.termlex", fwd));
-    pt.put("lexicon.documents", fmt::format("{}.doclex", fwd));
-    boost::property_tree::write_ini(fmt::format("{}.ini", output), pt);
+    IndexMetadata{
+        .documents = PostingFilePaths{.postings = documents_file, .offsets = doc_offset_file},
+        .frequencies = PostingFilePaths{.postings = frequencies_file, .offsets = freq_offset_file},
+        .scores = {},
+        .document_lengths_path = document_lengths_file,
+        .avg_document_length = avg_len,
+        .term_lexicon = tl::make_optional(fmt::format("{}.termlex", fwd)),
+        .document_lexicon = tl::make_optional(fmt::format("{}.doclex", fwd)),
+        .stemmer = tl::make_optional("porter2")}
+        .write(fmt::format("{}.yml", output));
 }
 
-auto verify_compressed_index(std::string const &input, std::string_view output)
+auto verify_compressed_index(std::string const& input, std::string_view output)
     -> std::vector<std::string>;
 
 } // namespace pisa::v1

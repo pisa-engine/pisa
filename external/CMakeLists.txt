@@ -121,6 +121,11 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 set(OPTIONAL_ENABLE_TESTS OFF CACHE BOOL "skip tl::optional testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/optional EXCLUDE_FROM_ALL)
 
+# Add yaml-cpp
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "skip building YAML tools")
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "skip building YAML tests")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp EXCLUDE_FROM_ALL)
+
 # Add tl::expected
 #set(EXPECTED_BUILD_TESTS OFF CACHE BOOL "skip tl::expected testing")
 #set(EXPECTED_BUILD_PACKAGE OFF CACHE BOOL "skip tl::expected package")

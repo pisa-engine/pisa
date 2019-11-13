@@ -24,18 +24,18 @@ using pisa::v1::daat_or;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::RawReader;
-using pisa::v1::resolve_ini;
+using pisa::v1::resolve_yml;
 using pisa::v1::VoidScorer;
 
 template <typename Index, typename Scorer>
-void evaluate(std::vector<pisa::Query> const &queries,
-              Index &&index,
-              Scorer &&scorer,
+void evaluate(std::vector<pisa::Query> const& queries,
+              Index&& index,
+              Scorer&& scorer,
               int k,
-              pisa::Payload_Vector<> const &docmap)
+              pisa::Payload_Vector<> const& docmap)
 {
     auto query_idx = 0;
-    for (auto const &query : queries) {
+    for (auto const& query : queries) {
         auto que = daat_or(pisa::v1::Query{query.terms}, index, pisa::topk_queue(k), scorer);
         que.finalize();
         auto rank = 0;
@@ -54,7 +54,7 @@ void evaluate(std::vector<pisa::Query> const &queries,
 }
 
 template <typename Index, typename Scorer>
-void benchmark(std::vector<pisa::Query> const &queries, Index &&index, Scorer &&scorer, int k)
+void benchmark(std::vector<pisa::Query> const& queries, Index&& index, Scorer&& scorer, int k)
 
 {
     std::vector<double> times(queries.size(), std::numeric_limits<double>::max());
@@ -80,9 +80,9 @@ void benchmark(std::vector<pisa::Query> const &queries, Index &&index, Scorer &&
     spdlog::info("95% quantile: {}", q95);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    std::optional<std::string> ini{};
+    std::optional<std::string> yml{};
     std::optional<std::string> query_file{};
     std::optional<std::string> terms_file{};
     std::optional<std::string> documents_file{};
@@ -92,21 +92,21 @@ int main(int argc, char **argv)
 
     CLI::App app{"Queries a v1 index."};
     app.add_option("-i,--index",
-                   ini,
-                   "Path of .ini file of an index "
+                   yml,
+                   "Path of .yml file of an index "
                    "(if not provided, it will be looked for in the current directory)",
                    false);
     app.add_option("-q,--query", query_file, "Path to file with queries", false);
     app.add_option("-k", k, "The number of top results to return", true);
-    app.add_option("--terms", terms_file, "Overrides document lexicon from .ini (if defined).");
+    app.add_option("--terms", terms_file, "Overrides document lexicon from .yml (if defined).");
     app.add_option("--documents",
                    documents_file,
-                   "Overrides document lexicon from .ini (if defined). Required otherwise.");
+                   "Overrides document lexicon from .yml (if defined). Required otherwise.");
     app.add_flag("--benchmark", is_benchmark, "Run benchmark");
     app.add_flag("--precomputed", precomputed, "Use precomputed scores");
     CLI11_PARSE(app, argc, argv);
 
-    auto meta = IndexMetadata::from_file(resolve_ini(ini));
+    auto meta = IndexMetadata::from_file(resolve_yml(yml));
     auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
     if (meta.term_lexicon) {
         terms_file = meta.term_lexicon.value();
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
                                        RawReader<std::uint8_t>{},
                                        BlockedReader<::pisa::simdbp_block, true>{},
                                        BlockedReader<::pisa::simdbp_block, false>{});
-        run([&](auto &&index) {
+        run([&](auto&& index) {
             if (is_benchmark) {
                 benchmark(queries, index, VoidScorer{}, k);
             } else {
@@ -149,7 +149,7 @@ int main(int argc, char **argv)
                                 RawReader<std::uint32_t>{},
                                 BlockedReader<::pisa::simdbp_block, true>{},
                                 BlockedReader<::pisa::simdbp_block, false>{});
-        run([&](auto &&index) {
+        run([&](auto&& index) {
             auto with_scorer = scorer_runner(index, make_bm25(index));
             with_scorer("bm25", [&](auto scorer) {
                 if (is_benchmark) {

@@ -116,7 +116,11 @@ struct BlockedCursor {
     /// Moves the cursor to the next value equal or greater than `value`.
     constexpr void advance_to_geq(value_type value)
     {
-        static_assert(DeltaEncoded, "Cannot call advance_to_geq on a not delta-encoded list");
+        //static_assert(DeltaEncoded, "Cannot call advance_to_geq on a not delta-encoded list");
+        // TODO(michal): This should be `static_assert` like above. But currently,
+        //               it would not compile. What needs to be done is separating document
+        //               and payload readers for the index runner.
+        assert(DeltaEncoded);
         Expects(value >= m_current_value || position() == 0);
         if (PISA_UNLIKELY(value > m_current_block.last_value)) {
             if (value > m_block_last_values.back()) {

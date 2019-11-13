@@ -13,9 +13,9 @@
 namespace pisa::v1 {
 
 /// Return the passed file path if is not `nullopt`.
-/// Otherwise, look for an `.ini` file in the current directory.
-/// It will throw if no `.ini` file is found or there are multiple `.ini` files.
-[[nodiscard]] auto resolve_ini(std::optional<std::string> const &arg) -> std::string;
+/// Otherwise, look for an `.yml` file in the current directory.
+/// It will throw if no `.yml` file is found or there are multiple `.yml` files.
+[[nodiscard]] auto resolve_yml(std::optional<std::string> const& arg) -> std::string;
 
 template <typename Optional>
 [[nodiscard]] auto convert_optional(Optional opt)
@@ -40,6 +40,13 @@ struct PostingFilePaths {
     std::string offsets;
 };
 
+struct BigramMetadata {
+    PostingFilePaths documents;
+    std::pair<PostingFilePaths, PostingFilePaths> frequencies;
+    std::string mapping;
+    std::size_t count;
+};
+
 struct IndexMetadata {
     PostingFilePaths documents;
     PostingFilePaths frequencies;
@@ -49,20 +56,21 @@ struct IndexMetadata {
     tl::optional<std::string> term_lexicon{};
     tl::optional<std::string> document_lexicon{};
     tl::optional<std::string> stemmer{};
+    tl::optional<BigramMetadata> bigrams{};
 
-    void write(std::string const &file);
-    [[nodiscard]] static auto from_file(std::string const &file) -> IndexMetadata;
+    void write(std::string const& file);
+    [[nodiscard]] static auto from_file(std::string const& file) -> IndexMetadata;
 };
 
 template <typename T>
-[[nodiscard]] auto to_span(mio::mmap_source const *mmap)
+[[nodiscard]] auto to_span(mio::mmap_source const* mmap)
 {
     static_assert(std::is_trivially_constructible_v<T>);
-    return gsl::span<T const>(reinterpret_cast<T const *>(mmap->data()), mmap->size() / sizeof(T));
+    return gsl::span<T const>(reinterpret_cast<T const*>(mmap->data()), mmap->size() / sizeof(T));
 };
 
 template <typename T>
-[[nodiscard]] auto source_span(MMapSource &source, std::string const &file)
+[[nodiscard]] auto source_span(MMapSource& source, std::string const& file)
 {
     return to_span<T>(
         source.file_sources.emplace_back(std::make_shared<mio::mmap_source>(file)).get());

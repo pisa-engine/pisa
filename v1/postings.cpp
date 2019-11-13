@@ -23,7 +23,7 @@ using pisa::v1::BlockedReader;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::RawReader;
-using pisa::v1::resolve_ini;
+using pisa::v1::resolve_yml;
 
 auto default_readers()
 {
@@ -34,7 +34,7 @@ auto default_readers()
                            BlockedReader<::pisa::simdbp_block, false>{});
 }
 
-[[nodiscard]] auto load_source(std::optional<std::string> const &file)
+[[nodiscard]] auto load_source(std::optional<std::string> const& file)
     -> std::shared_ptr<mio::mmap_source>
 {
     if (file) {
@@ -43,7 +43,7 @@ auto default_readers()
     return nullptr;
 }
 
-[[nodiscard]] auto load_payload_vector(std::shared_ptr<mio::mmap_source> const &source)
+[[nodiscard]] auto load_payload_vector(std::shared_ptr<mio::mmap_source> const& source)
     -> std::optional<pisa::Payload_Vector<>>
 {
     if (source) {
@@ -54,10 +54,10 @@ auto default_readers()
 
 /// Returns the first value (not nullopt), or nullopt if no optional contains a value.
 template <typename First, typename... Optional>
-[[nodiscard]] auto value(First &&first, Optional &&... candidtes)
+[[nodiscard]] auto value(First&& first, Optional&&... candidtes)
 {
     std::optional<std::decay_t<decltype(first.value())>> val = std::nullopt;
-    auto has_value = [&](auto &&opt) -> bool {
+    auto has_value = [&](auto&& opt) -> bool {
         if (not val.has_value() && opt) {
             val = *opt;
             return true;
@@ -68,9 +68,9 @@ template <typename First, typename... Optional>
     return val;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    std::optional<std::string> ini{};
+    std::optional<std::string> yml{};
     std::optional<std::string> terms_file{};
     std::optional<std::string> documents_file{};
     std::string query_input{};
@@ -82,23 +82,23 @@ int main(int argc, char **argv)
 
     CLI::App app{"Queries a v1 index."};
     app.add_option("-i,--index",
-                   ini,
-                   "Path of .ini file of an index "
+                   yml,
+                   "Path of .yml file of an index "
                    "(if not provided, it will be looked for in the current directory)",
                    false);
-    app.add_option("--terms", terms_file, "Overrides document lexicon from .ini (if defined).");
+    app.add_option("--terms", terms_file, "Overrides document lexicon from .yml (if defined).");
     app.add_option("--documents",
                    documents_file,
-                   "Overrides document lexicon from .ini (if defined). Required otherwise.");
+                   "Overrides document lexicon from .yml (if defined). Required otherwise.");
     app.add_flag("--tid", tid, "Use term IDs instead of terms");
     app.add_flag("--did", did, "Print document IDs instead of titles");
     app.add_flag("-f,--frequencies", print_frequencies, "Print frequencies");
-    auto *scores_option = app.add_flag("-s,--scores", print_scores, "Print BM25 scores");
+    auto* scores_option = app.add_flag("-s,--scores", print_scores, "Print BM25 scores");
     app.add_flag("--precomputed", precomputed, "Use BM25 precomputed scores")->needs(scores_option);
     app.add_option("query", query_input, "List of terms", false)->required();
     CLI11_PARSE(app, argc, argv);
 
-    auto meta = IndexMetadata::from_file(resolve_ini(ini));
+    auto meta = IndexMetadata::from_file(resolve_yml(yml));
     auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
     if (tid) {
         terms_file = std::nullopt;
@@ -130,8 +130,8 @@ int main(int argc, char **argv)
     if (query.terms.size() == 1) {
         if (precomputed) {
             auto run = scored_index_runner(meta, default_readers());
-            run([&](auto &&index) {
-                auto print = [&](auto &&cursor) {
+            run([&](auto&& index) {
+                auto print = [&](auto&& cursor) {
                     if (did) {
                         std::cout << *cursor;
                     } else {
@@ -147,10 +147,10 @@ int main(int argc, char **argv)
             });
         } else {
             auto run = index_runner(meta, default_readers());
-            run([&](auto &&index) {
+            run([&](auto&& index) {
                 auto bm25 = make_bm25(index);
                 auto scorer = bm25.term_scorer(query.terms.front());
-                auto print = [&](auto &&cursor) {
+                auto print = [&](auto&& cursor) {
                     if (did) {
                         std::cout << *cursor;
                     } else {

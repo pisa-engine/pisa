@@ -32,9 +32,9 @@ void DefaultProgress::operator()(std::size_t count,
                                  std::chrono::time_point<std::chrono::steady_clock> start)
 {
     size_t progress = (100 * count) / goal;
-    if (progress == m_previous) {
-        return;
-    }
+    // if (progress == m_previous) {
+    //    return;
+    //}
     m_previous = progress;
     std::chrono::seconds elapsed =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - start);

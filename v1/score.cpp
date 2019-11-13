@@ -18,40 +18,40 @@ using pisa::v1::PostingFilePaths;
 using pisa::v1::ProgressStatus;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
-using pisa::v1::resolve_ini;
+using pisa::v1::resolve_yml;
 using pisa::v1::TermId;
 using pisa::v1::write_span;
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-    std::optional<std::string> ini{};
+    std::optional<std::string> yml{};
     int bytes_per_score = 1;
     std::size_t threads = std::thread::hardware_concurrency();
 
     CLI::App app{"Scores v1 index."};
     app.add_option("-i,--index",
-                   ini,
-                   "Path of .ini file of an index "
+                   yml,
+                   "Path of .yml file of an index "
                    "(if not provided, it will be looked for in the current directory)",
                    false);
     app.add_option("-j,--threads", threads, "Number of threads");
     // TODO(michal): enable
     // app.add_option(
-    //    "-b,--bytes-per-score", ini, "Quantize computed scores to this many bytes", true);
+    //    "-b,--bytes-per-score", yml, "Quantize computed scores to this many bytes", true);
     CLI11_PARSE(app, argc, argv);
 
-    auto resolved_ini = resolve_ini(ini);
-    auto meta = IndexMetadata::from_file(resolved_ini);
+    auto resolved_yml = resolve_yml(yml);
+    auto meta = IndexMetadata::from_file(resolved_yml);
     auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
 
     auto run = index_runner(meta,
                             RawReader<std::uint32_t>{},
                             BlockedReader<::pisa::simdbp_block, true>{},
                             BlockedReader<::pisa::simdbp_block, false>{});
-    auto index_basename = resolved_ini.substr(0, resolved_ini.size() - 4);
+    auto index_basename = resolved_yml.substr(0, resolved_yml.size() - 4);
     auto postings_path = fmt::format("{}.bm25", index_basename);
     auto offsets_path = fmt::format("{}.bm25_offsets", index_basename);
-    run([&](auto &&index) {
+    run([&](auto&& index) {
         ProgressStatus calc_max_status(index.num_terms(),
                                        DefaultProgress("Calculating max partial score"),
                                        std::chrono::milliseconds(100));
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
                 boost::counting_iterator<TermId>(first_term),
                 boost::counting_iterator<TermId>(end_term),
                 [&](auto term) {
-                    for_each(index.scoring_cursor(term, make_bm25(index)), [&](auto &cursor) {
+                    for_each(index.scoring_cursor(term, make_bm25(index)), [&](auto& cursor) {
                         max_scores[thread_id] = std::max(max_scores[thread_id], cursor.payload());
                     });
                     calc_max_status += 1;
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
         write_span(gsl::span<std::size_t const>(offsets), offsets_path);
     });
     meta.scores.push_back(PostingFilePaths{.postings = postings_path, .offsets = offsets_path});
-    meta.write(resolved_ini);
+    meta.write(resolved_yml);
 
     return 0;
 }

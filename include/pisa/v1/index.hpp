@@ -45,6 +45,10 @@ namespace pisa::v1 {
 ///                         `Score`, or `std::pair<Score, Score>` for a bigram scored index.
 template <typename DocumentCursor, typename PayloadCursor>
 struct Index {
+
+    using document_cursor_type = DocumentCursor;
+    using payload_cursor_type = PayloadCursor;
+
     /// Constructs the index.
     ///
     /// \param document_reader  Reads document posting lists from bytes.
@@ -122,9 +126,9 @@ struct Index {
     }
 
     /// Constructs a new payload cursor.
-    [[nodiscard]] auto num_terms() const -> std::uint32_t { return m_document_offsets.size() - 1; }
+    [[nodiscard]] auto num_terms() const -> std::size_t { return m_document_offsets.size() - 1; }
 
-    [[nodiscard]] auto num_documents() const -> std::uint32_t { return m_document_lengths.size(); }
+    [[nodiscard]] auto num_documents() const -> std::size_t { return m_document_lengths.size(); }
 
     [[nodiscard]] auto term_posting_count(TermId term) const -> std::uint32_t
     {

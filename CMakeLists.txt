@@ -99,6 +99,7 @@ target_link_libraries(pisa PUBLIC
     fmt::fmt
     range-v3
     optional
+    yaml-cpp
 )
 target_include_directories(pisa PUBLIC external)
 

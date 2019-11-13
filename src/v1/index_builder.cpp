@@ -5,19 +5,19 @@
 
 namespace pisa::v1 {
 
-auto verify_compressed_index(std::string const &input, std::string_view output)
+auto verify_compressed_index(std::string const& input, std::string_view output)
     -> std::vector<std::string>
 {
     std::vector<std::string> errors;
     pisa::binary_freq_collection const collection(input.c_str());
-    auto meta = IndexMetadata::from_file(fmt::format("{}.ini", output));
+    auto meta = IndexMetadata::from_file(fmt::format("{}.yml", output));
     auto run = index_runner(meta,
                             RawReader<std::uint32_t>{},
                             BlockedReader<::pisa::simdbp_block, true>{},
                             BlockedReader<::pisa::simdbp_block, false>{});
     ProgressStatus status(
         collection.size(), DefaultProgress("Verifying"), std::chrono::milliseconds(100));
-    run([&](auto &&index) {
+    run([&](auto&& index) {
         auto sequence_iter = collection.begin();
         for (auto term = 0; term < index.num_terms(); term += 1, ++sequence_iter) {
             auto document_sequence = sequence_iter->docs;

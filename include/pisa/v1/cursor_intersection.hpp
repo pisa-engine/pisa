@@ -121,4 +121,14 @@ template <typename CursorContainer, typename Payload, typename AccumulateFn>
         std::move(cursors), std::move(init), std::move(accumulate));
 }
 
+template <typename Cursor, typename Payload, typename AccumulateFn>
+[[nodiscard]] constexpr inline auto intersect(std::initializer_list<Cursor> cursors,
+                                              Payload init,
+                                              AccumulateFn accumulate)
+{
+    std::vector<Cursor> cursor_container(cursors);
+    return CursorIntersection<std::vector<Cursor>, Payload, AccumulateFn>(
+        std::move(cursor_container), std::move(init), std::move(accumulate));
+}
+
 } // namespace pisa::v1
