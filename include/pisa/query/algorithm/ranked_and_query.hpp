@@ -9,7 +9,7 @@ struct ranked_and_query {
 
     typedef bm25 scorer_type;
 
-    ranked_and_query(uint64_t k) : m_topk(k) {}
+    ranked_and_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
@@ -64,7 +64,7 @@ struct ranked_and_query {
     topk_queue &get_topk() { return m_topk; }
 
    private:
-    topk_queue      m_topk;
+    topk_queue &     m_topk;
 };
 
 } // namespace pisa

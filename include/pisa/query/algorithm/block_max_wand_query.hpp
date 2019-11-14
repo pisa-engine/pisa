@@ -8,8 +8,8 @@ namespace pisa {
 struct block_max_wand_query {
     typedef bm25 scorer_type;
 
-    block_max_wand_query(uint64_t k)
-        : m_topk(k) {}
+    block_max_wand_query(topk_queue& topk)
+        : m_topk(topk) {}
 
     template<typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
@@ -175,7 +175,7 @@ struct block_max_wand_query {
     topk_queue const &get_topk() const { return m_topk; }
 
    private:
-    topk_queue      m_topk;
+    topk_queue&      m_topk;
 };
 
 } // namespace pisa

@@ -11,8 +11,8 @@ namespace pisa {
 
 class ranked_or_taat_query {
    public:
-    ranked_or_taat_query(uint64_t k)
-        : m_topk(k) {}
+    ranked_or_taat_query(topk_queue& topk)
+        : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, Acc &&accumulator) {
@@ -39,7 +39,7 @@ class ranked_or_taat_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue m_topk;
+    topk_queue& m_topk;
 };
 
 };  // namespace pisa

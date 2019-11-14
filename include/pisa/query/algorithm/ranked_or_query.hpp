@@ -9,8 +9,8 @@ namespace pisa {
 struct ranked_or_query {
     typedef bm25 scorer_type;
 
-    ranked_or_query(uint64_t k)
-        : m_topk(k){}
+    ranked_or_query(topk_queue& topk)
+        : m_topk(topk){}
 
     template <typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
@@ -48,7 +48,7 @@ struct ranked_or_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue      m_topk;
+    topk_queue &     m_topk;
 };
 
 }  // namespace pisa

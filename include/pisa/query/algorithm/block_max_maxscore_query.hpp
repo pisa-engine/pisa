@@ -9,8 +9,8 @@ struct block_max_maxscore_query {
 
     typedef bm25 scorer_type;
 
-    block_max_maxscore_query(uint64_t k)
-        : m_topk(k) {}
+    block_max_maxscore_query(topk_queue& topk)
+        : m_topk(topk) {}
 
     template<typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
@@ -105,6 +105,6 @@ struct block_max_maxscore_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue      m_topk;
+    topk_queue&      m_topk;
 };
 } // namespace pisa
