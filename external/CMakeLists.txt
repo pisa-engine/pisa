@@ -119,3 +119,4 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
+target_compile_options(rapidcheck PRIVATE -Wno-error=all)
