@@ -101,7 +101,6 @@ struct InMemoryIndex {
 
 struct InMemoryWand {
     std::vector<float> max_weights;
-    std::vector<uint32_t> terms_len;
     std::uint32_t num_documents;
 
     [[nodiscard]] auto max_term_weight(std::uint32_t term_id) const noexcept -> float
@@ -116,7 +115,6 @@ struct InMemoryWand {
     [[nodiscard]] auto avg_len() const noexcept { return 1.0; }
     [[nodiscard]] auto num_docs() const noexcept -> std::size_t { return num_documents; }
     [[nodiscard]] auto collection_len() const noexcept -> std::size_t { return 1; }
-    [[nodiscard]] auto term_len(std::uint32_t termid) const noexcept { return terms_len[termid]; }
 
 };
 
@@ -199,8 +197,7 @@ TEST_CASE("compute intersection", "[intersection][unit]")
                                 {1, 1, 1}, // 6
                             },
                             10};
-        InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0},
-                          {1, 3, 1, 1, 1, 3, 3}, 10};
+        InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
 
         Query query{
             "Q1", // query ID
