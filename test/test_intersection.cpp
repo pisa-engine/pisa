@@ -201,20 +201,20 @@ TEST_CASE("compute intersection", "[intersection][unit]")
                             10};
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0},
                           {1, 3, 1, 1, 1, 3, 3}, 10};
-      
+
         Query query{
             "Q1", // query ID
             {6, 1, 5}, // terms
             {0.1, 0.4, 1.0} // weights
         };
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
-            {0b001, 3, 0.76214f},
-            {0b010, 3, 0.76214f},
-            {0b100, 3, 0.76214f},
-            {0b011, 1, 1.52428f},
-            {0b101, 2, 1.52428f},
-            {0b110, 2, 1.52428f},
-            {0b111, 1, 2.28642f},
+            {0b001, 3, 1.84583f},
+            {0b010, 3, 1.84583f},
+            {0b100, 3, 1.84583f},
+            {0b011, 1, 3.69165f},
+            {0b101, 2, 3.69165f},
+            {0b110, 2, 3.69165f},
+            {0b111, 1, 5.53748f},
         }));
         WHEN("Computed intersection with mask " << mask)
         {
