@@ -16,7 +16,6 @@ struct block_max_ranked_and_query {
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
-        m_topk.clear();
         if (cursors.empty())
             return 0;
 
