@@ -57,24 +57,11 @@ TEST_CASE("Build single-block blocked document file", "[v1][unit]")
 
 TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
 {
-    // Temporary_Directory tmpdir;
-
-    //{
-    //    std::vector<std::uint32_t> document_data{1, 1, 4, 1, 3, 6, 11};
-    //    std::vector<std::uint32_t> frequency_data{4, 5, 4, 3, 2};
-    //    std::ofstream dos((tmpdir.path() / "x.docs").string());
-    //    std::ofstream fos((tmpdir.path() / "x.freqs").string());
-    //    dos.write(reinterpret_cast<char const *>(document_data.data()), document_data.size() * 4);
-    //    fos.write(reinterpret_cast<char const *>(frequency_data.data()), frequency_data.size() *
-    //    4);
-    //}
-
     using sink_type = boost::iostreams::back_insert_device<std::vector<std::byte>>;
     using vector_stream_type = boost::iostreams::stream<sink_type>;
     GIVEN("A test binary collection")
     {
         pisa::binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
-        // pisa::binary_freq_collection collection((tmpdir.path() / "x").string().c_str());
         WHEN("Built posting files for documents and frequencies")
         {
             std::vector<std::byte> docbuf;
@@ -104,20 +91,13 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
             auto documents = gsl::span<std::byte const>(docbuf).subspan(8);
             auto frequencies = gsl::span<std::byte const>(freqbuf).subspan(8);
 
-            //{
-            //    std::ofstream dos("/home/elshize/test.documents");
-            //    std::ofstream fos("/home/elshize/test.frequencies");
-            //    dos.write(reinterpret_cast<char const *>(docbuf.data()), docbuf.size());
-            //    fos.write(reinterpret_cast<char const *>(freqbuf.data()), freqbuf.size());
-            //}
-
             THEN("The values read back are euqual to the binary collection's")
             {
                 CHECK(docbuf.size() == document_offsets.back() + 8);
                 BlockedReader<pisa::simdbp_block, true> document_reader;
                 BlockedReader<pisa::simdbp_block, false> frequency_reader;
                 auto term = 0;
-                std::for_each(collection.begin(), collection.end(), [&](auto &&seq) {
+                std::for_each(collection.begin(), collection.end(), [&](auto&& seq) {
                     std::vector<DocId> expected_documents(seq.docs.begin(), seq.docs.end());
                     auto actual_documents = collect(document_reader.read(
                         documents.subspan(document_offsets[term],
@@ -139,15 +119,20 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
             {
                 auto source = std::array<std::vector<std::byte>, 2>{docbuf, freqbuf};
                 auto document_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+                    reinterpret_cast<std::byte const*>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+                    reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
 
                 IndexRunner runner(document_offsets,
                                    frequency_offsets,
+                                   {},
+                                   {},
                                    document_span,
                                    payload_span,
+                                   {},
+                                   {},
                                    document_sizes,
+                                   tl::nullopt,
                                    tl::nullopt,
                                    std::move(source),
                                    BlockedReader<pisa::simdbp_block, true>{},
@@ -164,9 +149,22 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
                             == collect(index.cursor(term_id)));
                         REQUIRE(
                             std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
-                            //== collect(index.payloads(term_id)));
                             == collect(index.cursor(term_id),
-                                       [](auto &&cursor) { return cursor.payload(); }));
+                                       [](auto&& cursor) { return cursor.payload(); }));
+                        {
+                            auto cursor = index.cursor(term_id);
+                            for (auto doc : sequence.docs) {
+                                cursor.advance_to_geq(doc);
+                                REQUIRE(cursor.value() == doc);
+                            }
+                        }
+                        {
+                            auto cursor = index.cursor(term_id);
+                            for (auto doc : sequence.docs) {
+                                REQUIRE(cursor.value() == doc);
+                                cursor.advance_to_geq(doc + 1);
+                            }
+                        }
                         term_id += 1;
                     }
                 });
@@ -177,14 +175,19 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
             {
                 auto source = std::array<std::vector<std::byte>, 2>{docbuf, freqbuf};
                 auto document_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+                    reinterpret_cast<std::byte const*>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+                    reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
                 IndexRunner runner(document_offsets,
                                    frequency_offsets,
+                                   {},
+                                   {},
                                    document_span,
                                    payload_span,
+                                   {},
+                                   {},
                                    document_sizes,
+                                   tl::nullopt,
                                    tl::nullopt,
                                    std::move(source),
                                    RawReader<std::uint32_t>{}); // Correct encoding but not type!

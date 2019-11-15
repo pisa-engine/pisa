@@ -56,21 +56,21 @@ struct IndexFixture {
         auto errors = v1::verify_compressed_index(PISA_SOURCE_DIR "/test/test_data/test_collection",
                                                   index_basename);
         REQUIRE(errors.empty());
-        auto meta = v1::IndexMetadata::from_file(fmt::format("{}.ini", index_basename));
+        auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
         auto run = v1::index_runner(meta, document_reader(), frequency_reader());
         auto postings_path = fmt::format("{}.bm25", index_basename);
         auto offsets_path = fmt::format("{}.bm25_offsets", index_basename);
-        run([&](auto &&index) {
+        run([&](auto&& index) {
             std::ofstream score_file_stream(postings_path);
             auto offsets = score_index(index, score_file_stream, ScoreWriter{}, make_bm25(index));
             v1::write_span(gsl::span<std::size_t const>(offsets), offsets_path);
         });
         meta.scores.push_back(
             v1::PostingFilePaths{.postings = postings_path, .offsets = offsets_path});
-        meta.write(fmt::format("{}.ini", index_basename));
+        meta.write(fmt::format("{}.yml", index_basename));
     }
 
-    [[nodiscard]] auto const &tmpdir() const { return *m_tmpdir; }
+    [[nodiscard]] auto const& tmpdir() const { return *m_tmpdir; }
     [[nodiscard]] auto document_reader() const { return m_document_reader; }
     [[nodiscard]] auto frequency_reader() const { return m_frequency_reader; }
     [[nodiscard]] auto score_reader() const { return m_score_reader; }
@@ -86,7 +86,7 @@ struct IndexFixture {
 {
     std::vector<Query> queries;
     std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
-    auto push_query = [&](std::string const &query_line) {
+    auto push_query = [&](std::string const& query_line) {
         queries.push_back(parse_query_ids(query_line));
     };
     io::for_each_line(qfile, push_query);
@@ -112,7 +112,7 @@ struct IndexData {
 
     {
         typename v0_Index::builder builder(collection.num_docs(), params);
-        for (auto const &plist : collection) {
+        for (auto const& plist : collection) {
             uint64_t freqs_sum =
                 std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
             builder.add_posting_list(
@@ -122,7 +122,7 @@ struct IndexData {
 
         term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
-        auto push_query = [&](std::string const &query_line) {
+        auto push_query = [&](std::string const& query_line) {
             queries.push_back(parse_query_ids(query_line));
         };
         io::for_each_line(qfile, push_query);
@@ -158,7 +158,7 @@ std::unique_ptr<IndexData<v0_Index, v1_Index, ScoredIndex>>
     IndexData<v0_Index, v1_Index, ScoredIndex>::data = nullptr;
 
 TEMPLATE_TEST_CASE(
-    "DAAT OR2",
+    "DAAT OR",
     "[v1][integration]",
     (IndexFixture<v1::RawCursor<v1::DocId>, v1::RawCursor<v1::Frequency>, v1::RawCursor<float>>),
     (IndexFixture<v1::BlockedCursor<::pisa::simdbp_block, true>,
@@ -171,10 +171,10 @@ TEMPLATE_TEST_CASE(
                           v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<float>>>::get();
     TestType fixture;
     auto index_basename = (fixture.tmpdir().path() / "inv").string();
-    auto meta = v1::IndexMetadata::from_file(fmt::format("{}.ini", index_basename));
+    auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
     ranked_or_query or_q(10);
     int idx = 0;
-    for (auto const &q : test_queries()) {
+    for (auto const& q : test_queries()) {
         CAPTURE(q.terms);
         CAPTURE(idx++);
 
@@ -186,7 +186,7 @@ TEMPLATE_TEST_CASE(
             auto run =
                 v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
             std::vector<typename topk_queue::entry_type> results;
-            run([&](auto &&index) {
+            run([&](auto&& index) {
                 auto que = daat_or(v1::Query{q.terms}, index, topk_queue(10), make_bm25(index));
                 que.finalize();
                 results = que.topk();
@@ -199,7 +199,7 @@ TEMPLATE_TEST_CASE(
             auto run =
                 v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
             std::vector<typename topk_queue::entry_type> results;
-            run([&](auto &&index) {
+            run([&](auto&& index) {
                 auto que = daat_or(v1::Query{q.terms}, index, topk_queue(10), v1::VoidScorer{});
                 que.finalize();
                 results = que.topk();
@@ -215,6 +215,75 @@ TEMPLATE_TEST_CASE(
             REQUIRE(on_the_fly[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
             REQUIRE(precomputed[i].second == expected[i].second);
             REQUIRE(precomputed[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
+        }
+    }
+}
+
+TEMPLATE_TEST_CASE(
+    "UnionLookup",
+    "[v1][integration]",
+    (IndexFixture<v1::RawCursor<v1::DocId>, v1::RawCursor<v1::Frequency>, v1::RawCursor<float>>),
+    (IndexFixture<v1::BlockedCursor<::pisa::simdbp_block, true>,
+                  v1::BlockedCursor<::pisa::simdbp_block, false>,
+                  v1::RawCursor<float>>))
+{
+    tbb::task_scheduler_init init(1);
+    auto data = IndexData<single_index,
+                          v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<v1::Frequency>>,
+                          v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<float>>>::get();
+    TestType fixture;
+    auto index_basename = (fixture.tmpdir().path() / "inv").string();
+    auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
+    ranked_or_query or_q(10);
+    int idx = 0;
+    for (auto& q : test_queries()) {
+        CAPTURE(q.terms);
+        CAPTURE(idx++);
+
+        or_q(make_scored_cursors(data->v0_index, data->wdata, q), data->v0_index.num_docs());
+        auto expected = or_q.topk();
+        std::sort(expected.begin(), expected.end(), std::greater{});
+
+        auto on_the_fly = [&]() {
+            auto run =
+                v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
+            std::vector<typename topk_queue::entry_type> results;
+            run([&](auto&& index) {
+                std::vector<std::size_t> unigrams(q.terms.size());
+                std::iota(unigrams.begin(), unigrams.end(), 0);
+                auto que = union_lookup(v1::Query{q.terms},
+                                        index,
+                                        topk_queue(10),
+                                        make_bm25(index),
+                                        std::move(unigrams),
+                                        {});
+                que.finalize();
+                results = que.topk();
+                std::sort(results.begin(), results.end(), std::greater{});
+            });
+            return results;
+        }();
+
+        // auto precomputed = [&]() {
+        //    auto run =
+        //        v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
+        //    std::vector<typename topk_queue::entry_type> results;
+        //    run([&](auto&& index) {
+        //        auto que = daat_or(v1::Query{q.terms}, index, topk_queue(10), v1::VoidScorer{});
+        //        que.finalize();
+        //        results = que.topk();
+        //        std::sort(results.begin(), results.end(), std::greater{});
+        //    });
+        //    return results;
+        //}();
+
+        REQUIRE(expected.size() == on_the_fly.size());
+        // REQUIRE(expected.size() == precomputed.size());
+        for (size_t i = 0; i < on_the_fly.size(); ++i) {
+            REQUIRE(on_the_fly[i].second == expected[i].second);
+            REQUIRE(on_the_fly[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
+            // REQUIRE(precomputed[i].second == expected[i].second);
+            // REQUIRE(precomputed[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
         }
     }
 }

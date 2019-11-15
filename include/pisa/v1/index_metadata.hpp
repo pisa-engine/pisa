@@ -91,12 +91,41 @@ template <typename... Readers>
     auto document_offsets = source_span<std::size_t>(source, metadata.documents.offsets);
     auto frequency_offsets = source_span<std::size_t>(source, metadata.frequencies.offsets);
     auto document_lengths = source_span<std::uint32_t>(source, metadata.document_lengths_path);
+    tl::optional<gsl::span<std::size_t const>> bigram_document_offsets{};
+    tl::optional<std::array<gsl::span<std::size_t const>, 2>> bigram_frequency_offsets{};
+    tl::optional<gsl::span<std::byte const>> bigram_documents{};
+    tl::optional<std::array<gsl::span<std::byte const>, 2>> bigram_frequencies{};
+    tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> bigram_mapping{};
+    if (metadata.bigrams) {
+        bigram_document_offsets =
+            source_span<std::size_t>(source, metadata.bigrams->documents.offsets);
+        bigram_frequency_offsets = {
+            source_span<std::size_t>(source, metadata.bigrams->frequencies.first.offsets),
+            source_span<std::size_t>(source, metadata.bigrams->frequencies.second.offsets)};
+        bigram_documents = source_span<std::byte>(source, metadata.bigrams->documents.postings);
+        bigram_frequencies = {
+            source_span<std::byte>(source, metadata.bigrams->frequencies.first.postings),
+            source_span<std::byte>(source, metadata.bigrams->frequencies.second.postings)};
+        auto mapping_span = source_span<std::byte>(source, metadata.bigrams->mapping).subspan(8);
+        auto num_offset_bytes = (metadata.bigrams->count + 1U) * 8U;
+        auto mapping_offsets = mapping_span.first(num_offset_bytes);
+        bigram_mapping = Payload_Vector<std::array<std::size_t, 2>>(
+            gsl::span<std::size_t const>(
+                reinterpret_cast<std::size_t const*>(mapping_offsets.data()),
+                mapping_offsets.size() * sizeof(std::size_t)),
+            mapping_span.subspan(num_offset_bytes));
+    }
     return IndexRunner<Readers...>(document_offsets,
                                    frequency_offsets,
+                                   bigram_document_offsets,
+                                   bigram_frequency_offsets,
                                    documents,
                                    frequencies,
+                                   bigram_documents,
+                                   bigram_frequencies,
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
+                                   bigram_mapping,
                                    std::move(source),
                                    std::move(readers));
 }
@@ -119,10 +148,15 @@ template <typename... Readers>
     auto document_lengths = source_span<std::uint32_t>(source, metadata.document_lengths_path);
     return IndexRunner<Readers...>(document_offsets,
                                    score_offsets,
+                                   {},
+                                   {},
                                    documents,
                                    scores,
+                                   {}, // TODO(michal): support scored bigrams
+                                   {},
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
+                                   {}, // TODO
                                    std::move(source),
                                    std::move(readers));
 }

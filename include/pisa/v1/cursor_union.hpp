@@ -26,19 +26,22 @@ struct CursorUnion {
           m_accumulate(std::move(accumulate)),
           m_size(std::nullopt)
     {
-        Expects(not m_cursors.empty());
-        auto order = [](auto const &lhs, auto const &rhs) { return lhs.value() < rhs.value(); };
-        m_next_docid = [&]() {
-            auto pos = std::min_element(m_cursors.begin(), m_cursors.end(), order);
-            return pos->value();
-        }();
-        m_sentinel = std::min_element(m_cursors.begin(),
-                                      m_cursors.end(),
-                                      [](auto const &lhs, auto const &rhs) {
-                                          return lhs.sentinel() < rhs.sentinel();
-                                      })
-                         ->sentinel();
-        advance();
+        if (m_cursors.empty()) {
+            m_current_value = std::numeric_limits<Value>::max();
+        } else {
+            auto order = [](auto const& lhs, auto const& rhs) { return lhs.value() < rhs.value(); };
+            m_next_docid = [&]() {
+                auto pos = std::min_element(m_cursors.begin(), m_cursors.end(), order);
+                return pos->value();
+            }();
+            m_sentinel = std::min_element(m_cursors.begin(),
+                                          m_cursors.end(),
+                                          [](auto const& lhs, auto const& rhs) {
+                                              return lhs.sentinel() < rhs.sentinel();
+                                          })
+                             ->sentinel();
+            advance();
+        }
     }
 
     [[nodiscard]] constexpr auto size() const noexcept -> std::size_t
@@ -47,13 +50,13 @@ struct CursorUnion {
             m_size = std::accumulate(m_cursors.begin(),
                                      m_cursors.end(),
                                      std::size_t(0),
-                                     [](auto acc, auto const &elem) { return acc + elem.size(); });
+                                     [](auto acc, auto const& elem) { return acc + elem.size(); });
         }
         return *m_size;
     }
     [[nodiscard]] constexpr auto operator*() const noexcept -> Value { return m_current_value; }
     [[nodiscard]] constexpr auto value() const noexcept -> Value { return m_current_value; }
-    [[nodiscard]] constexpr auto payload() const noexcept -> Payload const &
+    [[nodiscard]] constexpr auto payload() const noexcept -> Payload const&
     {
         return m_current_payload;
     }
@@ -69,7 +72,7 @@ struct CursorUnion {
             m_current_value = m_next_docid;
             m_next_docid = m_sentinel;
             std::size_t cursor_idx = 0;
-            for (auto &cursor : m_cursors) {
+            for (auto& cursor : m_cursors) {
                 if (cursor.value() == m_current_value) {
                     m_current_payload = m_accumulate(m_current_payload, cursor, cursor_idx);
                     cursor.advance();
@@ -103,6 +106,93 @@ struct CursorUnion {
     std::uint32_t m_next_docid{};
 };
 
+/// Transforms a list of cursors into one cursor by lazily merging them together.
+template <typename Payload, typename CursorsTuple, typename... AccumulateFn>
+struct VariadicCursorUnion {
+    using Value = std::decay_t<decltype(*std::get<0>(std::declval<CursorsTuple>()))>;
+
+    constexpr VariadicCursorUnion(Payload init,
+                                  CursorsTuple cursors,
+                                  std::tuple<AccumulateFn...> accumulate)
+        : m_cursors(std::move(cursors)),
+          m_init(std::move(init)),
+          m_accumulate(std::move(accumulate)),
+          m_size(std::nullopt)
+    {
+        m_next_docid = std::numeric_limits<Value>::max();
+        m_sentinel = std::numeric_limits<Value>::max();
+        for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
+            if (cursor.value() < m_next_docid) {
+                m_next_docid = cursor.value();
+            }
+        });
+        for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
+            if (cursor.sentinel() < m_next_docid) {
+                m_next_docid = cursor.sentinel();
+            }
+        });
+        advance();
+    }
+
+    template <typename Fn>
+    void for_each_cursor(Fn&& fn)
+    {
+        std::apply(
+            [&](auto&&... cursor) {
+                std::apply([&](auto&&... accumulate) { (fn(cursor, accumulate), ...); },
+                           m_accumulate);
+            },
+            m_cursors);
+    }
+
+    [[nodiscard]] constexpr auto operator*() const noexcept -> Value { return m_current_value; }
+    [[nodiscard]] constexpr auto value() const noexcept -> Value { return m_current_value; }
+    [[nodiscard]] constexpr auto payload() const noexcept -> Payload const&
+    {
+        return m_current_payload;
+    }
+    [[nodiscard]] constexpr auto sentinel() const noexcept -> std::uint32_t { return m_sentinel; }
+
+    constexpr void advance()
+    {
+        if (PISA_UNLIKELY(m_next_docid == m_sentinel)) {
+            m_current_value = m_sentinel;
+            m_current_payload = m_init;
+        } else {
+            m_current_payload = m_init;
+            m_current_value = m_next_docid;
+            m_next_docid = m_sentinel;
+            std::size_t cursor_idx = 0;
+            for_each_cursor([&](auto&& cursor, auto&& accumulate) {
+                if (cursor.value() == m_current_value) {
+                    m_current_payload = accumulate(m_current_payload, cursor, cursor_idx);
+                    cursor.advance();
+                }
+                if (cursor.value() < m_next_docid) {
+                    m_next_docid = cursor.value();
+                }
+                ++cursor_idx;
+            });
+        }
+    }
+
+    [[nodiscard]] constexpr auto empty() const noexcept -> bool
+    {
+        return m_current_value >= sentinel();
+    }
+
+   private:
+    CursorsTuple m_cursors;
+    Payload m_init;
+    std::tuple<AccumulateFn...> m_accumulate;
+    std::optional<std::size_t> m_size;
+
+    Value m_current_value{};
+    Value m_sentinel{};
+    Payload m_current_payload{};
+    std::uint32_t m_next_docid{};
+};
+
 template <typename CursorContainer, typename Payload, typename AccumulateFn>
 [[nodiscard]] constexpr inline auto union_merge(CursorContainer cursors,
                                                 Payload init,
@@ -110,6 +200,15 @@ template <typename CursorContainer, typename Payload, typename AccumulateFn>
 {
     return CursorUnion<CursorContainer, Payload, AccumulateFn>(
         std::move(cursors), std::move(init), std::move(accumulate));
+}
+
+template <typename Payload, typename... Cursors, typename... AccumulateFn>
+[[nodiscard]] constexpr inline auto variadic_union_merge(Payload init,
+                                                         std::tuple<Cursors...> cursors,
+                                                         std::tuple<AccumulateFn...> accumulate)
+{
+    return VariadicCursorUnion<Payload, std::tuple<Cursors...>, AccumulateFn...>(
+        std::move(init), std::move(cursors), std::move(accumulate));
 }
 
 } // namespace pisa::v1

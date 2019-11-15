@@ -116,12 +116,11 @@ struct BlockedCursor {
     /// Moves the cursor to the next value equal or greater than `value`.
     constexpr void advance_to_geq(value_type value)
     {
-        //static_assert(DeltaEncoded, "Cannot call advance_to_geq on a not delta-encoded list");
+        // static_assert(DeltaEncoded, "Cannot call advance_to_geq on a not delta-encoded list");
         // TODO(michal): This should be `static_assert` like above. But currently,
         //               it would not compile. What needs to be done is separating document
         //               and payload readers for the index runner.
         assert(DeltaEncoded);
-        Expects(value >= m_current_value || position() == 0);
         if (PISA_UNLIKELY(value > m_current_block.last_value)) {
             if (value > m_block_last_values.back()) {
                 m_current_value = sentinel();
@@ -135,11 +134,7 @@ struct BlockedCursor {
         }
 
         while (m_current_value < value) {
-            if constexpr (DeltaEncoded) {
-                m_current_value += m_decoded_block[m_current_block.offset] + 1U;
-            } else {
-                m_current_value = m_decoded_block[m_current_block.offset] + 1U;
-            }
+            m_current_value += m_decoded_block[++m_current_block.offset] + 1U;
             Ensures(m_current_block.offset < m_current_block.length);
         }
     }
@@ -174,8 +169,8 @@ struct BlockedCursor {
     {
         constexpr auto block_size = Codec::block_size;
         auto endpoint = block > 0U ? m_block_endpoints[block - 1] : static_cast<value_type>(0U);
-        std::uint8_t const *block_data =
-            std::next(reinterpret_cast<std::uint8_t const *>(m_encoded_blocks.data()), endpoint);
+        std::uint8_t const* block_data =
+            std::next(reinterpret_cast<std::uint8_t const*>(m_encoded_blocks.data()), endpoint);
         m_current_block.length =
             ((block + 1) * block_size <= size()) ? block_size : (size() % block_size);
 
@@ -229,7 +224,7 @@ struct BlockedReader {
         -> BlockedCursor<Codec, DeltaEncoded>
     {
         std::uint32_t length;
-        auto begin = reinterpret_cast<uint8_t const *>(bytes.data());
+        auto begin = reinterpret_cast<uint8_t const*>(bytes.data());
         auto after_length_ptr = pisa::TightVariableByte::decode(begin, &length, 1);
         auto length_byte_size = std::distance(begin, after_length_ptr);
         auto num_blocks = ceil_div(length, Codec::block_size);
@@ -269,7 +264,7 @@ struct BlockedWriter {
                | encoding_traits<Codec>::encoding_tag::encoding();
     }
 
-    void push(value_type const &posting)
+    void push(value_type const& posting)
     {
         if constexpr (DeltaEncoded) {
             if (posting < m_last_value) {
@@ -284,7 +279,7 @@ struct BlockedWriter {
     }
 
     template <typename CharT>
-    [[nodiscard]] auto write(std::basic_ostream<CharT> &os) const -> std::size_t
+    [[nodiscard]] auto write(std::basic_ostream<CharT>& os) const -> std::size_t
     {
         std::vector<std::uint8_t> buffer;
         std::uint32_t length = m_postings.size();
@@ -312,7 +307,7 @@ struct BlockedWriter {
 
             std::for_each(block_buffer.begin(),
                           std::next(block_buffer.begin(), current_block_size),
-                          [&](auto &&elem) {
+                          [&](auto&& elem) {
                               if constexpr (DeltaEncoded) {
                                   auto value = *iter++;
                                   elem = value - (last_value + 1);
@@ -340,7 +335,7 @@ struct BlockedWriter {
             }
             block_base = last_value + 1;
         }
-        os.write(reinterpret_cast<CharT const *>(buffer.data()), buffer.size());
+        os.write(reinterpret_cast<CharT const*>(buffer.data()), buffer.size());
         return buffer.size();
     }
 

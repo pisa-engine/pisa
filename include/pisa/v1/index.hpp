@@ -17,6 +17,7 @@
 #include <tl/optional.hpp>
 
 #include "binary_freq_collection.hpp"
+#include "payload_vector.hpp"
 #include "v1/bit_cast.hpp"
 #include "v1/cursor/for_each.hpp"
 #include "v1/cursor/scoring_cursor.hpp"
@@ -27,10 +28,14 @@
 #include "v1/scorer/bm25.hpp"
 #include "v1/source.hpp"
 #include "v1/types.hpp"
+#include "v1/zip_cursor.hpp"
 
 namespace pisa::v1 {
 
-[[nodiscard]] inline auto calc_avg_length(gsl::span<std::uint32_t const> const &lengths) -> float
+using OffsetSpan = gsl::span<std::size_t const>;
+using BinarySpan = gsl::span<std::byte const>;
+
+[[nodiscard]] inline auto calc_avg_length(gsl::span<std::uint32_t const> const& lengths) -> float
 {
     auto sum = std::accumulate(lengths.begin(), lengths.end(), std::uint64_t(0), std::plus{});
     return static_cast<float>(sum) / lengths.size();
@@ -68,21 +73,31 @@ struct Index {
           PayloadReader payload_reader,
           gsl::span<std::size_t const> document_offsets,
           gsl::span<std::size_t const> payload_offsets,
+          tl::optional<OffsetSpan> bigram_document_offsets,
+          tl::optional<std::array<OffsetSpan, 2>> bigram_frequency_offsets,
           gsl::span<std::byte const> documents,
           gsl::span<std::byte const> payloads,
+          tl::optional<BinarySpan> bigram_documents,
+          tl::optional<std::array<BinarySpan, 2>> bigram_frequencies,
           gsl::span<std::uint32_t const> document_lengths,
           tl::optional<float> avg_document_length,
+          tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> bigram_mapping,
           Source source)
         : m_document_reader(std::move(document_reader)),
           m_payload_reader(std::move(payload_reader)),
           m_document_offsets(document_offsets),
           m_payload_offsets(payload_offsets),
+          m_bigram_document_offsets(bigram_document_offsets),
+          m_bigram_frequency_offsets(bigram_frequency_offsets),
           m_documents(documents),
           m_payloads(payloads),
+          m_bigram_documents(bigram_documents),
+          m_bigram_frequencies(bigram_frequencies),
           m_document_lengths(document_lengths),
           m_avg_document_length(avg_document_length.map_or_else(
-              [](auto &&self) { return self; },
+              [](auto&& self) { return self; },
               [&]() { return calc_avg_length(m_document_lengths); })),
+          m_bigram_mapping(bigram_mapping),
           m_source(std::move(source))
     {
     }
@@ -94,9 +109,28 @@ struct Index {
                                                                     payloads(term));
     }
 
+    [[nodiscard]] auto bigram_cursor(TermId left_term, TermId right_term) const
+    {
+        if (not m_bigram_mapping) {
+            throw std::logic_error("Bigrams are missing");
+        }
+        if (auto pos = std::lower_bound(m_bigram_mapping->begin(),
+                                        m_bigram_mapping->end(),
+                                        std::array<std::size_t, 2>{left_term, right_term});
+            pos != m_bigram_mapping->end()) {
+            auto bigram_id = std::distance(m_bigram_mapping->begin(), pos);
+            return DocumentPayloadCursor<DocumentCursor, ZipCursor<PayloadCursor, PayloadCursor>>(
+                m_document_reader.read(fetch_bigram_documents(bigram_id)),
+                zip(m_payload_reader.read(fetch_bigram_payloads<0>(bigram_id)),
+                    m_payload_reader.read(fetch_bigram_payloads<1>(bigram_id))));
+        }
+        throw std::invalid_argument(
+            fmt::format("Bigram for <{}, {}> not found.", left_term, right_term));
+    }
+
     /// Constructs a new document-score cursor.
     template <typename Scorer>
-    [[nodiscard]] auto scoring_cursor(TermId term, Scorer &&scorer) const
+    [[nodiscard]] auto scoring_cursor(TermId term, Scorer&& scorer) const
     {
         return ScoringCursor(cursor(term), std::forward<Scorer>(scorer).term_scorer(term));
     }
@@ -104,12 +138,40 @@ struct Index {
     /// This is equivalent to the `scoring_cursor` unless the scorer is of type `VoidScorer`,
     /// in which case index payloads are treated as scores.
     template <typename Scorer>
-    [[nodiscard]] auto scored_cursor(TermId term, Scorer &&scorer) const
+    [[nodiscard]] auto scored_cursor(TermId term, Scorer&& scorer) const
     {
         if constexpr (std::is_convertible_v<Scorer, VoidScorer>) {
             return cursor(term);
         } else {
             return scoring_cursor(term, std::forward<Scorer>(scorer));
+        }
+    }
+
+    /// Constructs a new document-score cursor.
+    template <typename Scorer>
+    [[nodiscard]] auto scoring_bigram_cursor(TermId left_term,
+                                             TermId right_term,
+                                             Scorer&& scorer) const
+    {
+        return ScoringCursor(
+            bigram_cursor(left_term, right_term),
+            [scorers =
+                 std::make_tuple(scorer.term_scorer(left_term), scorer.term_scorer(right_term))](
+                auto&& docid, auto&& payload) {
+                return std::array<float, 2>{std::get<0>(scorers)(docid, std::get<0>(payload)),
+                                            std::get<1>(scorers)(docid, std::get<1>(payload))};
+            });
+    }
+
+    template <typename Scorer>
+    [[nodiscard]] auto scored_bigram_cursor(TermId left_term,
+                                            TermId right_term,
+                                            Scorer&& scorer) const
+    {
+        if constexpr (std::is_convertible_v<Scorer, VoidScorer>) {
+            return bigram_cursor(left_term, right_term);
+        } else {
+            return scoring_bigram_cursor(left_term, right_term, std::forward<Scorer>(scorer));
         }
     }
 
@@ -161,27 +223,62 @@ struct Index {
         return m_payloads.subspan(m_payload_offsets[term],
                                   m_payload_offsets[term + 1] - m_payload_offsets[term]);
     }
+    [[nodiscard]] auto fetch_bigram_documents(TermId term) const -> gsl::span<std::byte const>
+    {
+        if (not m_bigram_documents) {
+            throw std::logic_error("Bigrams are missing");
+        }
+        Expects(term + 1 < m_bigram_document_offsets->size());
+        return m_bigram_documents->subspan(
+            (*m_bigram_document_offsets)[term],
+            (*m_bigram_document_offsets)[term + 1] - (*m_bigram_document_offsets)[term]);
+    }
+    template <int Idx>
+    [[nodiscard]] auto fetch_bigram_payloads(TermId term) const -> gsl::span<std::byte const>
+    {
+        if (not m_bigram_frequencies) {
+            throw std::logic_error("Bigrams are missing");
+        }
+        Expects(term + 1 < std::get<Idx>(*m_bigram_frequency_offsets).size());
+        return std::get<Idx>(*m_bigram_frequencies)
+            .subspan(std::get<Idx>(*m_bigram_frequency_offsets)[term],
+                     std::get<Idx>(*m_bigram_frequency_offsets)[term + 1]
+                         - std::get<Idx>(*m_bigram_frequency_offsets)[term]);
+    }
 
     Reader<DocumentCursor> m_document_reader;
     Reader<PayloadCursor> m_payload_reader;
-    gsl::span<std::size_t const> m_document_offsets;
-    gsl::span<std::size_t const> m_payload_offsets;
-    gsl::span<std::byte const> m_documents;
-    gsl::span<std::byte const> m_payloads;
+
+    OffsetSpan m_document_offsets;
+    OffsetSpan m_payload_offsets;
+    tl::optional<OffsetSpan> m_bigram_document_offsets{};
+    tl::optional<std::array<OffsetSpan, 2>> m_bigram_frequency_offsets{};
+
+    BinarySpan m_documents;
+    BinarySpan m_payloads;
+    tl::optional<BinarySpan> m_bigram_documents{};
+    tl::optional<std::array<BinarySpan, 2>> m_bigram_frequencies{};
+
     gsl::span<std::uint32_t const> m_document_lengths;
     float m_avg_document_length;
+    tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> m_bigram_mapping;
     std::any m_source;
 };
 
 template <typename DocumentReader, typename PayloadReader, typename Source>
 auto make_index(DocumentReader document_reader,
                 PayloadReader payload_reader,
-                gsl::span<std::size_t const> document_offsets,
-                gsl::span<std::size_t const> payload_offsets,
-                gsl::span<std::byte const> documents,
-                gsl::span<std::byte const> payloads,
+                OffsetSpan document_offsets,
+                OffsetSpan payload_offsets,
+                tl::optional<OffsetSpan> bigram_document_offsets,
+                tl::optional<std::array<OffsetSpan, 2>> bigram_frequency_offsets,
+                BinarySpan documents,
+                BinarySpan payloads,
+                tl::optional<BinarySpan> bigram_documents,
+                tl::optional<std::array<BinarySpan, 2>> bigram_frequencies,
                 gsl::span<std::uint32_t const> document_lengths,
                 tl::optional<float> avg_document_length,
+                tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> bigram_mapping,
                 Source source)
 {
     using DocumentCursor =
@@ -191,10 +288,15 @@ auto make_index(DocumentReader document_reader,
                                                 std::move(payload_reader),
                                                 document_offsets,
                                                 payload_offsets,
+                                                bigram_document_offsets,
+                                                bigram_frequency_offsets,
                                                 documents,
                                                 payloads,
+                                                bigram_documents,
+                                                bigram_frequencies,
                                                 document_lengths,
                                                 avg_document_length,
+                                                bigram_mapping,
                                                 std::move(source));
 }
 
@@ -204,19 +306,19 @@ template <typename CharT,
           typename Scorer,
           typename Quantizer,
           typename Callback>
-auto score_index(Index const &index,
-                 std::basic_ostream<CharT> &os,
+auto score_index(Index const& index,
+                 std::basic_ostream<CharT>& os,
                  Writer writer,
                  Scorer scorer,
-                 Quantizer &&quantizer,
-                 Callback &&callback) -> std::vector<std::size_t>
+                 Quantizer&& quantizer,
+                 Callback&& callback) -> std::vector<std::size_t>
 {
     PostingBuilder<typename Writer::value_type> score_builder(writer);
     score_builder.write_header(os);
     std::for_each(boost::counting_iterator<TermId>(0),
                   boost::counting_iterator<TermId>(index.num_terms()),
                   [&](auto term) {
-                      for_each(index.scoring_cursor(term, scorer), [&](auto &cursor) {
+                      for_each(index.scoring_cursor(term, scorer), [&](auto& cursor) {
                           score_builder.accumulate(quantizer(cursor.payload()));
                       });
                       score_builder.flush_segment(os);
@@ -226,7 +328,7 @@ auto score_index(Index const &index,
 }
 
 template <typename CharT, typename Index, typename Writer, typename Scorer>
-auto score_index(Index const &index, std::basic_ostream<CharT> &os, Writer writer, Scorer scorer)
+auto score_index(Index const& index, std::basic_ostream<CharT>& os, Writer writer, Scorer scorer)
     -> std::vector<std::size_t>
 {
     PostingBuilder<typename Writer::value_type> score_builder(writer);
@@ -235,14 +337,14 @@ auto score_index(Index const &index, std::basic_ostream<CharT> &os, Writer write
                   boost::counting_iterator<TermId>(index.num_terms()),
                   [&](auto term) {
                       for_each(index.scoring_cursor(term, scorer),
-                               [&](auto &cursor) { score_builder.accumulate(cursor.payload()); });
+                               [&](auto& cursor) { score_builder.accumulate(cursor.payload()); });
                       score_builder.flush_segment(os);
                   });
     return std::move(score_builder.offsets());
 }
 
 /// Initializes a memory mapped source with a given file.
-inline void open_source(mio::mmap_source &source, std::string const &filename)
+inline void open_source(mio::mmap_source& source, std::string const& filename)
 {
     std::error_code error;
     source.map(filename, error);
@@ -259,15 +361,15 @@ inline auto read_sizes(std::string_view basename)
     return std::vector<std::uint32_t>(sequence.begin(), sequence.end());
 }
 
-[[nodiscard]] inline auto binary_collection_source(std::string const &basename)
+[[nodiscard]] inline auto binary_collection_source(std::string const& basename)
 {
     using sink_type = boost::iostreams::back_insert_device<std::vector<std::byte>>;
     using vector_stream_type = boost::iostreams::stream<sink_type>;
 
     binary_freq_collection collection(basename.c_str());
     VectorSource source{{{}, {}}, {{}, {}}, {read_sizes(basename)}};
-    std::vector<std::byte> &docbuf = source.bytes[0];
-    std::vector<std::byte> &freqbuf = source.bytes[1];
+    std::vector<std::byte>& docbuf = source.bytes[0];
+    std::vector<std::byte>& freqbuf = source.bytes[1];
 
     PostingBuilder<DocId> document_builder(Writer<DocId>(RawWriter<DocId>{}));
     PostingBuilder<Frequency> frequency_builder(Writer<Frequency>(RawWriter<Frequency>{}));
@@ -291,7 +393,7 @@ inline auto read_sizes(std::string_view basename)
     return source;
 }
 
-[[nodiscard]] inline auto binary_collection_index(std::string const &basename)
+[[nodiscard]] inline auto binary_collection_index(std::string const& basename)
 {
     auto source = binary_collection_source(basename);
     auto documents = gsl::span<std::byte const>(source.bytes[0]);
@@ -303,14 +405,19 @@ inline auto read_sizes(std::string_view basename)
                                                          RawReader<Frequency>{},
                                                          document_offsets,
                                                          frequency_offsets,
+                                                         {},
+                                                         {},
                                                          documents.subspan(8),
                                                          frequencies.subspan(8),
+                                                         {},
+                                                         {},
                                                          sizes,
+                                                         tl::nullopt,
                                                          tl::nullopt,
                                                          std::move(source));
 }
 
-[[nodiscard]] inline auto binary_collection_scored_index(std::string const &basename)
+[[nodiscard]] inline auto binary_collection_scored_index(std::string const& basename)
 {
     using sink_type = boost::iostreams::back_insert_device<std::vector<std::byte>>;
     using vector_stream_type = boost::iostreams::stream<sink_type>;
@@ -325,9 +432,14 @@ inline auto read_sizes(std::string_view basename)
                                                                     RawReader<Frequency>{},
                                                                     document_offsets,
                                                                     frequency_offsets,
+                                                                    {},
+                                                                    {},
                                                                     documents.subspan(8),
                                                                     frequencies.subspan(8),
+                                                                    {},
+                                                                    {},
                                                                     sizes,
+                                                                    tl::nullopt,
                                                                     tl::nullopt,
                                                                     false);
 
@@ -343,9 +455,14 @@ inline auto read_sizes(std::string_view basename)
                                                      RawReader<float>{},
                                                      document_offsets,
                                                      score_offsets,
+                                                     {},
+                                                     {},
                                                      documents.subspan(8),
                                                      scores.subspan(8),
+                                                     {},
+                                                     {},
                                                      sizes,
+                                                     tl::nullopt,
                                                      tl::nullopt,
                                                      std::move(source));
 }
@@ -375,7 +492,7 @@ struct BigramIndex : public Index {
 
 /// Creates, on the fly, a bigram index with all pairs of adjecent terms.
 /// Disclaimer: for testing purposes.
-[[nodiscard]] inline auto binary_collection_bigram_index(std::string const &basename)
+[[nodiscard]] inline auto binary_collection_bigram_index(std::string const& basename)
 {
     using payload_type = std::array<Frequency, 2>;
     using sink_type = boost::iostreams::back_insert_device<std::vector<std::byte>>;
@@ -403,7 +520,7 @@ struct BigramIndex : public Index {
                           auto intersection = CursorIntersection(
                               std::vector{unigram_index.cursor(left), unigram_index.cursor(right)},
                               payload_type{0, 0},
-                              [](payload_type &payload, auto &cursor, auto list_idx) {
+                              [](payload_type& payload, auto& cursor, auto list_idx) {
                                   payload[list_idx] = cursor.payload();
                                   return payload;
                               });
@@ -412,7 +529,7 @@ struct BigramIndex : public Index {
                               return;
                           }
                           pair_mapping.emplace_back(left, right);
-                          for_each(intersection, [&](auto &cursor) {
+                          for_each(intersection, [&](auto& cursor) {
                               document_builder.accumulate(*cursor);
                               frequency_builder.accumulate(cursor.payload());
                           });
@@ -434,9 +551,14 @@ struct BigramIndex : public Index {
                                                                   RawReader<payload_type>{},
                                                                   document_offsets,
                                                                   frequency_offsets,
+                                                                  {},
+                                                                  {},
                                                                   document_span.subspan(8),
                                                                   payload_span.subspan(8),
+                                                                  {},
+                                                                  {},
                                                                   sizes,
+                                                                  tl::nullopt,
                                                                   tl::nullopt,
                                                                   std::move(source));
     return BigramIndex(std::move(index), std::move(pair_mapping));
@@ -447,18 +569,28 @@ struct IndexRunner {
     template <typename Source>
     IndexRunner(gsl::span<std::size_t const> document_offsets,
                 gsl::span<std::size_t const> payload_offsets,
+                tl::optional<OffsetSpan> bigram_document_offsets,
+                tl::optional<std::array<OffsetSpan, 2>> bigram_frequency_offsets,
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
+                tl::optional<BinarySpan> bigram_documents,
+                tl::optional<std::array<BinarySpan, 2>> bigram_frequencies,
                 gsl::span<std::uint32_t const> document_lengths,
                 tl::optional<float> avg_document_length,
+                tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> bigram_mapping,
                 Source source,
                 Readers... readers)
         : m_document_offsets(document_offsets),
           m_payload_offsets(payload_offsets),
+          m_bigram_document_offsets(bigram_document_offsets),
+          m_bigram_frequency_offsets(bigram_frequency_offsets),
           m_documents(documents),
           m_payloads(payloads),
+          m_bigram_documents(bigram_documents),
+          m_bigram_frequencies(bigram_frequencies),
           m_document_lengths(document_lengths),
           m_avg_document_length(avg_document_length),
+          m_bigram_mapping(bigram_mapping),
           m_source(std::move(source)),
           m_readers(readers...)
     {
@@ -466,18 +598,28 @@ struct IndexRunner {
     template <typename Source>
     IndexRunner(gsl::span<std::size_t const> document_offsets,
                 gsl::span<std::size_t const> payload_offsets,
+                tl::optional<OffsetSpan> bigram_document_offsets,
+                tl::optional<std::array<OffsetSpan, 2>> bigram_frequency_offsets,
                 gsl::span<std::byte const> documents,
                 gsl::span<std::byte const> payloads,
+                tl::optional<BinarySpan> bigram_documents,
+                tl::optional<std::array<BinarySpan, 2>> bigram_frequencies,
                 gsl::span<std::uint32_t const> document_lengths,
                 tl::optional<float> avg_document_length,
+                tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> bigram_mapping,
                 Source source,
                 std::tuple<Readers...> readers)
         : m_document_offsets(document_offsets),
           m_payload_offsets(payload_offsets),
+          m_bigram_document_offsets(bigram_document_offsets),
+          m_bigram_frequency_offsets(bigram_frequency_offsets),
           m_documents(documents),
           m_payloads(payloads),
+          m_bigram_documents(bigram_documents),
+          m_bigram_frequencies(bigram_frequencies),
           m_document_lengths(document_lengths),
           m_avg_document_length(avg_document_length),
+          m_bigram_mapping(bigram_mapping),
           m_source(std::move(source)),
           m_readers(std::move(readers))
     {
@@ -488,20 +630,29 @@ struct IndexRunner {
     {
         auto dheader = PostingFormatHeader::parse(m_documents.first(8));
         auto pheader = PostingFormatHeader::parse(m_payloads.first(8));
-        auto run = [&](auto &&dreader, auto &&preader) {
+        auto run = [&](auto&& dreader, auto&& preader) {
             if (std::decay_t<decltype(dreader)>::encoding() == dheader.encoding
                 && std::decay_t<decltype(preader)>::encoding() == pheader.encoding
                 && is_type<typename std::decay_t<decltype(dreader)>::value_type>(dheader.type)
                 && is_type<typename std::decay_t<decltype(preader)>::value_type>(pheader.type)) {
-                auto index = make_index(std::forward<decltype(dreader)>(dreader),
-                                        std::forward<decltype(preader)>(preader),
-                                        m_document_offsets,
-                                        m_payload_offsets,
-                                        m_documents.subspan(8),
-                                        m_payloads.subspan(8),
-                                        m_document_lengths,
-                                        m_avg_document_length,
-                                        false);
+                auto index = make_index(
+                    std::forward<decltype(dreader)>(dreader),
+                    std::forward<decltype(preader)>(preader),
+                    m_document_offsets,
+                    m_payload_offsets,
+                    m_bigram_document_offsets,
+                    m_bigram_frequency_offsets,
+                    m_documents.subspan(8),
+                    m_payloads.subspan(8),
+                    m_bigram_documents.map([](auto&& bytes) { return bytes.subspan(8); }),
+                    m_bigram_frequencies.map([](auto&& bytes) {
+                        return std::array<BinarySpan, 2>{std::get<0>(bytes).subspan(8),
+                                                         std::get<1>(bytes).subspan(8)};
+                    }),
+                    m_document_lengths,
+                    m_avg_document_length,
+                    m_bigram_mapping,
+                    false);
                 fn(index);
                 return true;
             }
@@ -525,10 +676,17 @@ struct IndexRunner {
    private:
     gsl::span<std::size_t const> m_document_offsets;
     gsl::span<std::size_t const> m_payload_offsets;
+    tl::optional<OffsetSpan> m_bigram_document_offsets{};
+    tl::optional<std::array<OffsetSpan, 2>> m_bigram_frequency_offsets{};
+
     gsl::span<std::byte const> m_documents;
     gsl::span<std::byte const> m_payloads;
+    tl::optional<BinarySpan> m_bigram_documents{};
+    tl::optional<std::array<BinarySpan, 2>> m_bigram_frequencies{};
+
     gsl::span<std::uint32_t const> m_document_lengths;
     tl::optional<float> m_avg_document_length;
+    tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> m_bigram_mapping;
     std::any m_source;
     std::tuple<Readers...> m_readers;
 };

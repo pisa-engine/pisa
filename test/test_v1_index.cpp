@@ -40,7 +40,7 @@ TEST_CASE("Binary collection index", "[v1][unit]")
                                8,
                                make_writer(RawWriter<std::uint32_t>{}),
                                make_writer(RawWriter<std::uint32_t>{}));
-    auto meta = IndexMetadata::from_file((tmpdir.path() / "index.ini").string());
+    auto meta = IndexMetadata::from_file((tmpdir.path() / "index.yml").string());
     REQUIRE(meta.documents.postings == (tmpdir.path() / "index.documents").string());
     REQUIRE(meta.documents.offsets == (tmpdir.path() / "index.document_offsets").string());
     REQUIRE(meta.frequencies.postings == (tmpdir.path() / "index.frequencies").string());
@@ -75,7 +75,7 @@ TEST_CASE("Binary collection index -- SIMDBP", "[v1][unit]")
                                8,
                                make_writer(BlockedWriter<::pisa::simdbp_block, true>{}),
                                make_writer(BlockedWriter<::pisa::simdbp_block, false>{}));
-    auto meta = IndexMetadata::from_file((tmpdir.path() / "index.ini").string());
+    auto meta = IndexMetadata::from_file((tmpdir.path() / "index.yml").string());
     REQUIRE(meta.documents.postings == (tmpdir.path() / "index.documents").string());
     REQUIRE(meta.documents.offsets == (tmpdir.path() / "index.document_offsets").string());
     REQUIRE(meta.frequencies.postings == (tmpdir.path() / "index.frequencies").string());

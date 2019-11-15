@@ -11,8 +11,8 @@ namespace pisa::v1 {
 template <typename BaseCursor, typename TermScorer>
 struct ScoringCursor {
     using Document = decltype(*std::declval<BaseCursor>());
-    using Payload = float;
-    static_assert(std::is_same_v<typename BaseCursor::Payload, Frequency>);
+    using Payload = decltype((std::declval<TermScorer>())(std::declval<Document>(),
+                                                          std::declval<BaseCursor>().payload()));
 
     explicit constexpr ScoringCursor(BaseCursor base_cursor, TermScorer scorer)
         : m_base_cursor(std::move(base_cursor)), m_scorer(std::move(scorer))
@@ -24,7 +24,7 @@ struct ScoringCursor {
     {
         return m_base_cursor.value();
     }
-    [[nodiscard]] constexpr auto payload() noexcept -> Payload
+    [[nodiscard]] constexpr auto payload() noexcept
     {
         return m_scorer(m_base_cursor.value(), m_base_cursor.payload());
     }

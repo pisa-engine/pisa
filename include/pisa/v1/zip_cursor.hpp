@@ -8,9 +8,9 @@ namespace pisa::v1 {
 
 template <typename... Cursors>
 struct ZipCursor {
-    using Value = std::tuple<decltype(*std::declval<Cursors...>())>;
+    using Value = std::tuple<decltype(*std::declval<Cursors>())...>;
 
-    explicit constexpr ZipCursor(Cursors... cursors) : m_cursors(std::move(cursors...)) {}
+    explicit constexpr ZipCursor(Cursors... cursors) : m_cursors(std::move(cursors)...) {}
 
     [[nodiscard]] constexpr auto operator*() const -> Value { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Value
@@ -39,5 +39,11 @@ struct ZipCursor {
    private:
     std::tuple<Cursors...> m_cursors;
 };
+
+template <typename... Cursors>
+auto zip(Cursors... cursors)
+{
+    return ZipCursor<Cursors...>(cursors...);
+}
 
 } // namespace pisa::v1

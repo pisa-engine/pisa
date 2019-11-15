@@ -38,7 +38,7 @@ using pisa::v1::UnalignedSpan;
 using pisa::v1::Writer;
 
 template <typename T>
-std::ostream &operator<<(std::ostream &os, tl::optional<T> const &val)
+std::ostream& operator<<(std::ostream& os, tl::optional<T> const& val)
 {
     if (val.has_value()) {
         os << val.value();
@@ -81,15 +81,15 @@ TEST_CASE("Binary collection index", "[.][v1][unit]")
         REQUIRE(std::vector<std::uint32_t>(sequence.docs.begin(), sequence.docs.end())
                 == collect(index.cursor(term_id)));
         REQUIRE(std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
-                == collect(index.cursor(term_id), [](auto &&cursor) { return cursor.payload(); }));
+                == collect(index.cursor(term_id), [](auto&& cursor) { return cursor.payload(); }));
         term_id += 1;
     }
 }
 
 TEST_CASE("Bigram collection index", "[.][v1][unit]")
 {
-    auto intersect = [](auto const &lhs,
-                        auto const &rhs) -> std::vector<std::tuple<DocId, Frequency, Frequency>> {
+    auto intersect = [](auto const& lhs,
+                        auto const& rhs) -> std::vector<std::tuple<DocId, Frequency, Frequency>> {
         std::vector<std::tuple<DocId, Frequency, Frequency>> intersection;
         auto left = lhs.begin();
         auto right = rhs.begin();
@@ -106,7 +106,7 @@ TEST_CASE("Bigram collection index", "[.][v1][unit]")
         }
         return intersection;
     };
-    auto to_vec = [](auto const &seq) {
+    auto to_vec = [](auto const& seq) {
         std::vector<std::pair<DocId, Frequency>> vec;
         std::transform(seq.docs.begin(),
                        seq.docs.end(),
@@ -131,7 +131,7 @@ TEST_CASE("Bigram collection index", "[.][v1][unit]")
         if (not intersection.empty()) {
             auto id = index.bigram_id(term_id - 1, term_id);
             REQUIRE(id.has_value());
-            auto postings = collect(index.cursor(*id), [](auto &cursor) {
+            auto postings = collect(index.cursor(*id), [](auto& cursor) {
                 auto freqs = cursor.payload();
                 return std::make_tuple(*cursor, freqs[0], freqs[1]);
             });
@@ -276,15 +276,20 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
             {
                 auto source = std::array<std::vector<std::byte>, 2>{docbuf, freqbuf};
                 auto document_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+                    reinterpret_cast<std::byte const*>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+                    reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
 
                 IndexRunner runner(document_offsets,
                                    frequency_offsets,
+                                   {},
+                                   {},
                                    document_span,
                                    payload_span,
+                                   {},
+                                   {},
                                    document_sizes,
+                                   tl::nullopt,
                                    tl::nullopt,
                                    std::move(source),
                                    RawReader<std::uint32_t>{},
@@ -302,7 +307,7 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                         REQUIRE(
                             std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
                             == collect(index.cursor(term_id),
-                                       [](auto &&cursor) { return cursor.payload(); }));
+                                       [](auto&& cursor) { return cursor.payload(); }));
                         term_id += 1;
                     }
                 });
@@ -313,14 +318,19 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
             {
                 auto source = std::array<std::vector<std::byte>, 2>{docbuf, freqbuf};
                 auto document_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[0].data()), source[0].size());
+                    reinterpret_cast<std::byte const*>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
-                    reinterpret_cast<std::byte const *>(source[1].data()), source[1].size());
+                    reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
                 IndexRunner runner(document_offsets,
                                    frequency_offsets,
+                                   {},
+                                   {},
                                    document_span,
                                    payload_span,
+                                   {},
+                                   {},
                                    document_sizes,
+                                   tl::nullopt,
                                    tl::nullopt,
                                    std::move(source),
                                    RawReader<float>{}); // Correct encoding but not type!
