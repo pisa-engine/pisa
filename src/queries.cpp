@@ -215,6 +215,12 @@ void perftest(const std::string &index_filename,
                 maxscore_query maxscore_q(topk);
                 return maxscore_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
             };
+        } else if (t == "range_wand" && wand_data_filename) {
+            query_fun = [&](Query query){
+                topk_queue topk(k);
+                range_query<wand_query> range_wand_q(topk);
+                return range_wand_q(make_max_scored_cursors(index, wdata, query), index.num_docs(), index.num_docs()/10);
+            };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             Simple_Accumulator accumulator(index.num_docs());
             topk_queue topk(k);
