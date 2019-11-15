@@ -6,7 +6,6 @@
 namespace pisa {
 
 struct block_max_wand_query {
-    typedef bm25 scorer_type;
 
     block_max_wand_query(uint64_t k)
         : m_topk(k) {}

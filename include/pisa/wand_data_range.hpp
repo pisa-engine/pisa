@@ -5,14 +5,13 @@
 #include "binary_freq_collection.hpp"
 #include "global_parameters.hpp"
 #include "mappable/mapper.hpp"
-#include "scorer/bm25.hpp"
 #include "util/compiler_attribute.hpp"
 #include "util/util.hpp"
 #include "wand_utils.hpp"
 
 namespace pisa {
 
-template <size_t range_size = 128, size_t min_list_lenght = 1024, typename Scorer = bm25>
+template <size_t range_size = 128, size_t min_list_lenght = 1024>
 class wand_data_range {
    public:
     template <typename List, typename Fn>
@@ -55,10 +54,12 @@ class wand_data_range {
                 posting_lists);
         }
 
+        template <typename Scorer>
         float add_sequence(binary_freq_collection::sequence const &term_seq,
                            binary_freq_collection const &coll,
                            std::vector<uint32_t> const &doc_lens,
                            float avg_len,
+                           Scorer scorer,
                            [[maybe_unused]] BlockSize block_size)
         {
             float max_score = 0.0f;
@@ -67,7 +68,7 @@ class wand_data_range {
             for (auto i = 0; i < term_seq.docs.size(); ++i) {
                 uint64_t docid = *(term_seq.docs.begin() + i);
                 uint64_t freq = *(term_seq.freqs.begin() + i);
-                float score = Scorer::doc_term_weight(freq, doc_lens[docid] / avg_len);
+                float score = scorer(docid, freq);
                 max_score = std::max(max_score, score);
                 size_t pos = docid / range_size;
                 float &bm = b_max[pos];
@@ -124,7 +125,7 @@ class wand_data_range {
         mapper::mappable_vector<float> const &m_block_max_term_weight;
     };
 
-    enumerator get_enum(uint32_t i) const
+    enumerator get_enum(uint32_t i, float) const
     {
         return enumerator(m_blocks_start[i], m_block_max_term_weight);
     }
