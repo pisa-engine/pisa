@@ -17,6 +17,7 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 #include "cursor/max_scored_cursor.hpp"
+#include "cursor/scored_cursor.hpp"
 
 #include "scorer/scorer.hpp"
 
@@ -30,6 +31,7 @@ void thresholds(const std::string &index_filename,
                 const std::vector<Query> &queries,
                 const std::optional<std::string> &thresholds_filename,
                 std::string const &type,
+                std::string const &mode,
                 std::string const &scorer_name,
                 uint64_t k)
 {
@@ -53,16 +55,33 @@ void thresholds(const std::string &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    wand_query wand_q(k);
-    for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-        auto  results   = wand_q.topk();
-        float threshold = 0.0;
-        if (results.size() == k) {
-            threshold = results.back().first;
+    if(mode == "conjunctive"){
+        ranked_and_query ranked_and_q(k);
+        for (auto const &query : queries) {
+            ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+            auto  results   = ranked_and_q.topk();
+            float threshold = 0.0;
+            if (results.size() == k) {
+                threshold = results.back().first;
+            }
+            std::cout << threshold << '\n';
         }
-        std::cout << threshold << '\n';
+    } else if (mode == "disjunctive"){
+        wand_query wand_q(k);
+        for (auto const &query : queries) {
+            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            auto  results   = wand_q.topk();
+            float threshold = 0.0;
+            if (results.size() == k) {
+                threshold = results.back().first;
+            }
+            std::cout << threshold << '\n';
+        }
+    } else {
+        spdlog::error("Unknown mode:{}", mode);
+        std::abort();
     }
+
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
@@ -79,6 +98,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::string scorer_name;
+    std::string mode = "disjunctive";
     std::optional<std::string> thresholds_filename;
     std::optional<std::string> stemmer = std::nullopt;
 
@@ -89,7 +109,8 @@ int main(int argc, const char **argv)
     app.set_config("--config", "", "Configuration .ini file", false);
     app.add_option("-t,--type", type, "Index type")->required();
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
-    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
+    app.add_option("-w,--wand", wand_data_filename, "Wand data filename")->required();
+    app.add_option("-m,--mode", mode, "Mode: [conjunctive, disjunctive]");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
@@ -119,6 +140,7 @@ int main(int argc, const char **argv)
                                                                     queries,             \
                                                                     thresholds_filename, \
                                                                     type,                \
+                                                                    mode,                \
                                                                     scorer_name,         \
                                                                     k);                  \
         } else {                                                                         \
@@ -127,6 +149,7 @@ int main(int argc, const char **argv)
                                                                 queries,                 \
                                                                 thresholds_filename,     \
                                                                 type,                    \
+                                                                mode,                    \
                                                                 scorer_name,             \
                                                                 k);                      \
         }                                                                                \

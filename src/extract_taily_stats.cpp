@@ -20,26 +20,6 @@
 using namespace pisa;
 using namespace boost::accumulators;
 
-
-template <typename Visitor>
-void map(taily::Feature_Statistics fs, Visitor &visit)
-{
-    visit(fs.expected_value, "expected_value")(fs.variance, "variance")(fs.frequency, "frequency");
-}
-
-struct index_stats{
-
-
-    template <typename Visitor>
-    void map(Visitor &visit)
-    {
-        visit(m_collection_size, "m_collection_size")(m_term_stats, "m_term_stats");
-    }
-
-    std::int64_t m_collection_size;
-    mapper::mappable_vector<taily::Feature_Statistics> m_term_stats;
-};
-
 int main(int argc, const char **argv)
 {
     spdlog::drop("");
@@ -73,8 +53,7 @@ int main(int argc, const char **argv)
 
     binary_freq_collection coll(input_basename.c_str());
 
-    index_stats is;
-    is.m_collection_size = coll.num_docs();
+    size_t collection_size = coll.num_docs();
     std::vector<taily::Feature_Statistics> term_stats;
     {
         pisa::progress progress("Processing posting lists", coll.size());
@@ -90,16 +69,24 @@ int main(int argc, const char **argv)
                 float score = term_scorer(docid, freq);
                 scores.push_back(score);
             }
-            accumulator_set<double, stats<tag::mean, tag::lazy_variance>> acc;
+            accumulator_set<float, stats<tag::mean, tag::variance>> acc;
             for_each(scores.begin(),
                      scores.end(),
                      std::bind<void>(std::ref(acc), std::placeholders::_1));
-            term_stats.push_back(taily::Feature_Statistics{mean(acc), variance(acc), size});
+            double expected_value = mean(acc);
+            constexpr float epsilon_score = 1.0E-6;
+            double var = std::max(variance(acc), epsilon_score);
+            term_stats.push_back(taily::Feature_Statistics{expected_value, var, size});
             term_id += 1;
             progress.update(1);
         }
-        is.m_term_stats.steal(term_stats);
     }
-    mapper::freeze(is, output_filename.c_str());
 
+    std::ofstream ofs(output_filename);
+    ofs.write(reinterpret_cast<const char *>(&collection_size), sizeof(collection_size));
+    size_t num_terms = term_stats.size();
+    ofs.write(reinterpret_cast<const char *>(&num_terms), sizeof(num_terms));
+    for (auto &&ts : term_stats) {
+        ts.to_stream(ofs);
+    }
 }

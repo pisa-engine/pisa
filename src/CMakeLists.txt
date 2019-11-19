@@ -118,3 +118,9 @@ target_link_libraries(extract_taily_stats
   pisa
   CLI11
 )
+
+add_executable(taily_thresholds taily_thresholds.cpp)
+target_link_libraries(taily_thresholds
+  pisa
+  CLI11
+)
