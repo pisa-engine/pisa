@@ -112,3 +112,9 @@ target_link_libraries(sample_inverted_index
   pisa
   CLI11
 )
+
+add_executable(extract_taily_stats extract_taily_stats.cpp)
+target_link_libraries(extract_taily_stats
+  pisa
+  CLI11
+)
