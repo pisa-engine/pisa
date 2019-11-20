@@ -57,6 +57,8 @@ struct IndexMetadata {
     tl::optional<std::string> document_lexicon{};
     tl::optional<std::string> stemmer{};
     tl::optional<BigramMetadata> bigrams{};
+    std::map<std::string, std::string> max_scores{};
+    std::map<std::string, std::string> quantized_max_scores{};
 
     void write(std::string const& file);
     [[nodiscard]] static auto from_file(std::string const& file) -> IndexMetadata;
@@ -95,7 +97,7 @@ template <typename... Readers>
     tl::optional<std::array<gsl::span<std::size_t const>, 2>> bigram_frequency_offsets{};
     tl::optional<gsl::span<std::byte const>> bigram_documents{};
     tl::optional<std::array<gsl::span<std::byte const>, 2>> bigram_frequencies{};
-    tl::optional<::pisa::Payload_Vector<std::array<std::size_t, 2>>> bigram_mapping{};
+    tl::optional<gsl::span<std::array<TermId, 2> const>> bigram_mapping{};
     if (metadata.bigrams) {
         bigram_document_offsets =
             source_span<std::size_t>(source, metadata.bigrams->documents.offsets);
@@ -106,14 +108,18 @@ template <typename... Readers>
         bigram_frequencies = {
             source_span<std::byte>(source, metadata.bigrams->frequencies.first.postings),
             source_span<std::byte>(source, metadata.bigrams->frequencies.second.postings)};
-        auto mapping_span = source_span<std::byte>(source, metadata.bigrams->mapping).subspan(8);
-        auto num_offset_bytes = (metadata.bigrams->count + 1U) * 8U;
-        auto mapping_offsets = mapping_span.first(num_offset_bytes);
-        bigram_mapping = Payload_Vector<std::array<std::size_t, 2>>(
-            gsl::span<std::size_t const>(
-                reinterpret_cast<std::size_t const*>(mapping_offsets.data()),
-                mapping_offsets.size() * sizeof(std::size_t)),
-            mapping_span.subspan(num_offset_bytes));
+        auto mapping_span = source_span<std::byte>(source, metadata.bigrams->mapping);
+        bigram_mapping = gsl::span<std::array<TermId, 2> const>(
+            reinterpret_cast<std::array<TermId, 2> const*>(mapping_span.data()),
+            mapping_span.size() / (sizeof(TermId) * 2));
+    }
+    std::unordered_map<std::size_t, gsl::span<float const>> max_scores;
+    if (not metadata.max_scores.empty()) {
+        for (auto [name, file] : metadata.max_scores) {
+            auto bytes = source_span<std::byte>(source, file);
+            max_scores[std::hash<std::string>{}(name)] = gsl::span<float const>(
+                reinterpret_cast<float const*>(bytes.data()), bytes.size() / (sizeof(float)));
+        }
     }
     return IndexRunner<Readers...>(document_offsets,
                                    frequency_offsets,
@@ -125,6 +131,8 @@ template <typename... Readers>
                                    bigram_frequencies,
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
+                                   std::move(max_scores),
+                                   {},
                                    bigram_mapping,
                                    std::move(source),
                                    std::move(readers));
@@ -142,10 +150,18 @@ template <typename... Readers>
 {
     MMapSource source;
     auto documents = source_span<std::byte>(source, metadata.documents.postings);
+    // TODO(michal): support many precomputed scores
     auto scores = source_span<std::byte>(source, metadata.scores.front().postings);
     auto document_offsets = source_span<std::size_t>(source, metadata.documents.offsets);
     auto score_offsets = source_span<std::size_t>(source, metadata.scores.front().offsets);
     auto document_lengths = source_span<std::uint32_t>(source, metadata.document_lengths_path);
+    gsl::span<std::uint8_t const> quantized_max_scores;
+    if (not metadata.quantized_max_scores.empty()) {
+        // TODO(michal): support many precomputed scores
+        for (auto [name, file] : metadata.quantized_max_scores) {
+            quantized_max_scores = source_span<std::uint8_t>(source, file);
+        }
+    }
     return IndexRunner<Readers...>(document_offsets,
                                    score_offsets,
                                    {},
@@ -156,7 +172,9 @@ template <typename... Readers>
                                    {},
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
-                                   {}, // TODO
+                                   {},
+                                   quantized_max_scores,
+                                   {},
                                    std::move(source),
                                    std::move(readers));
 }

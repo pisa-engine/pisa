@@ -61,93 +61,6 @@ TEST_CASE("RawReader", "[v1][unit]")
     REQUIRE(next(cursor) == tl::nullopt);
 }
 
-TEST_CASE("Binary collection index", "[.][v1][unit]")
-{
-    pisa::binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    auto index =
-        pisa::v1::binary_collection_index(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    auto term_id = 0;
-    for (auto sequence : collection) {
-        CAPTURE(term_id);
-        REQUIRE(std::vector<std::uint32_t>(sequence.docs.begin(), sequence.docs.end())
-                == collect(index.documents(term_id)));
-        REQUIRE(std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
-                == collect(index.payloads(term_id)));
-        term_id += 1;
-    }
-    term_id = 0;
-    for (auto sequence : collection) {
-        CAPTURE(term_id);
-        REQUIRE(std::vector<std::uint32_t>(sequence.docs.begin(), sequence.docs.end())
-                == collect(index.cursor(term_id)));
-        REQUIRE(std::vector<std::uint32_t>(sequence.freqs.begin(), sequence.freqs.end())
-                == collect(index.cursor(term_id), [](auto&& cursor) { return cursor.payload(); }));
-        term_id += 1;
-    }
-}
-
-TEST_CASE("Bigram collection index", "[.][v1][unit]")
-{
-    auto intersect = [](auto const& lhs,
-                        auto const& rhs) -> std::vector<std::tuple<DocId, Frequency, Frequency>> {
-        std::vector<std::tuple<DocId, Frequency, Frequency>> intersection;
-        auto left = lhs.begin();
-        auto right = rhs.begin();
-        while (left != lhs.end() && right != rhs.end()) {
-            if (left->first == right->first) {
-                intersection.emplace_back(left->first, left->second, right->second);
-                ++right;
-                ++left;
-            } else if (left->first < right->first) {
-                ++left;
-            } else {
-                ++right;
-            }
-        }
-        return intersection;
-    };
-    auto to_vec = [](auto const& seq) {
-        std::vector<std::pair<DocId, Frequency>> vec;
-        std::transform(seq.docs.begin(),
-                       seq.docs.end(),
-                       seq.freqs.begin(),
-                       std::back_inserter(vec),
-                       [](auto doc, auto freq) { return std::make_pair(doc, freq); });
-        return vec;
-    };
-
-    pisa::binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    auto index =
-        pisa::v1::binary_collection_bigram_index(PISA_SOURCE_DIR "/test/test_data/test_collection");
-
-    auto pos = collection.begin();
-    auto prev = to_vec(*pos);
-    ++pos;
-    TermId term_id = 1;
-    for (; pos != collection.end(); ++pos, ++term_id) {
-        CAPTURE(term_id);
-        auto current = to_vec(*pos);
-        auto intersection = intersect(prev, current);
-        if (not intersection.empty()) {
-            auto id = index.bigram_id(term_id - 1, term_id);
-            REQUIRE(id.has_value());
-            auto postings = collect(index.cursor(*id), [](auto& cursor) {
-                auto freqs = cursor.payload();
-                return std::make_tuple(*cursor, freqs[0], freqs[1]);
-            });
-            for (auto idx = 0; idx < 10; idx++) {
-                std::cout << std::get<1>(postings[idx]) << " " << std::get<1>(intersection[idx])
-                          << '\n';
-                std::cout << std::get<2>(postings[idx]) << " " << std::get<2>(intersection[idx])
-                          << "\n---\n";
-            }
-            REQUIRE(postings == intersection);
-        }
-        std::swap(prev, current);
-        break;
-    }
-}
-
 TEST_CASE("Test read header", "[v1][unit]")
 {
     {
@@ -290,6 +203,8 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                                    {},
                                    document_sizes,
                                    tl::nullopt,
+                                   {},
+                                   {},
                                    tl::nullopt,
                                    std::move(source),
                                    RawReader<std::uint32_t>{},
@@ -331,6 +246,8 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                                    {},
                                    document_sizes,
                                    tl::nullopt,
+                                   {},
+                                   {},
                                    tl::nullopt,
                                    std::move(source),
                                    RawReader<float>{}); // Correct encoding but not type!

@@ -6,7 +6,6 @@
 #include <spdlog/spdlog.h>
 
 #include "io.hpp"
-#include "payload_vector.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
@@ -20,7 +19,6 @@
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
 
-using pisa::Payload_Vector_Buffer;
 using pisa::v1::BigramMetadata;
 using pisa::v1::BlockedReader;
 using pisa::v1::CursorTraits;
@@ -159,13 +157,7 @@ int main(int argc, char** argv)
         .count = pair_mapping.size()};
     meta.write(resolved_yml);
     std::cerr << " Done.\nWriting bigram mapping...";
-    Payload_Vector_Buffer::make(pair_mapping.begin(),
-                                pair_mapping.end(),
-                                [](auto&& terms, auto out) {
-                                    auto bytes = gsl::as_bytes(gsl::make_span(terms));
-                                    std::copy(bytes.begin(), bytes.end(), out);
-                                })
-        .to_file(meta.bigrams->mapping);
+    write_span(gsl::make_span(pair_mapping), meta.bigrams->mapping);
     std::cerr << " Done.\n";
     return 0;
 }

@@ -7,9 +7,9 @@
 #include <boost/iostreams/stream.hpp>
 #include <tbb/task_scheduler_init.h>
 
+#include "../temporary_directory.hpp"
 #include "codec/simdbp.hpp"
 #include "pisa_config.hpp"
-#include "temporary_directory.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"
 #include "v1/index.hpp"
@@ -49,7 +49,7 @@ TEST_CASE("Document-payload cursor", "[v1][unit]")
         {
             std::vector<std::uint32_t> collected_documents;
             std::vector<std::uint32_t> collected_frequencies;
-            for_each(cursor, [&](auto &&cursor) {
+            for_each(cursor, [&](auto&& cursor) {
                 collected_documents.push_back(cursor.value());
                 collected_frequencies.push_back(cursor.payload());
             });

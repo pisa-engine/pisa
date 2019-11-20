@@ -17,6 +17,8 @@ constexpr char const* STATS = "stats";
 constexpr char const* LEXICON = "lexicon";
 constexpr char const* TERMS = "terms";
 constexpr char const* BIGRAM = "bigram";
+constexpr char const* MAX_SCORES = "max_scores";
+constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
 
 [[nodiscard]] auto resolve_yml(std::optional<std::string> const& arg) -> std::string
 {
@@ -64,18 +66,32 @@ constexpr char const* BIGRAM = "bigram";
         .bigrams = [&]() -> tl::optional<BigramMetadata> {
             if (config[BIGRAM]) {
                 return BigramMetadata{
-                    .documents = {.postings = config[DOCUMENTS][POSTINGS].as<std::string>(),
-                                  .offsets = config[DOCUMENTS][OFFSETS].as<std::string>()},
+                    .documents = {.postings = config[BIGRAM][DOCUMENTS][POSTINGS].as<std::string>(),
+                                  .offsets = config[BIGRAM][DOCUMENTS][OFFSETS].as<std::string>()},
                     .frequencies =
-                        {{.postings = config["frequencies_0"][POSTINGS].as<std::string>(),
-                          .offsets = config["frequencies_0"][OFFSETS].as<std::string>()},
-                         {.postings = config["frequencies_1"][POSTINGS].as<std::string>(),
-                          .offsets = config["frequencies_1"][OFFSETS].as<std::string>()}},
+                        {{.postings = config[BIGRAM]["frequencies_0"][POSTINGS].as<std::string>(),
+                          .offsets = config[BIGRAM]["frequencies_0"][OFFSETS].as<std::string>()},
+                         {.postings = config[BIGRAM]["frequencies_1"][POSTINGS].as<std::string>(),
+                          .offsets = config[BIGRAM]["frequencies_1"][OFFSETS].as<std::string>()}},
                     .mapping = config[BIGRAM]["mapping"].as<std::string>(),
                     .count = config[BIGRAM]["count"].as<std::size_t>()};
             }
             return tl::nullopt;
-        }()};
+        }(),
+        .max_scores =
+            [&]() {
+                if (config[MAX_SCORES]) {
+                    return config[MAX_SCORES].as<std::map<std::string, std::string>>();
+                }
+                return std::map<std::string, std::string>{};
+            }(),
+        .quantized_max_scores =
+            [&]() {
+                if (config[QUANTIZED_MAX_SCORES]) {
+                    return config[QUANTIZED_MAX_SCORES].as<std::map<std::string, std::string>>();
+                }
+                return std::map<std::string, std::string>{};
+            }()};
 }
 
 void IndexMetadata::write(std::string const& file)
@@ -107,6 +123,16 @@ void IndexMetadata::write(std::string const& file)
         root[BIGRAM]["frequencies_1"][OFFSETS] = bigrams->frequencies.second.offsets;
         root[BIGRAM]["mapping"] = bigrams->mapping;
         root[BIGRAM]["count"] = bigrams->count;
+    }
+    if (not max_scores.empty()) {
+        for (auto [key, value] : max_scores) {
+            root[MAX_SCORES][key] = value;
+        }
+    }
+    if (not quantized_max_scores.empty()) {
+        for (auto [key, value] : quantized_max_scores) {
+            root[QUANTIZED_MAX_SCORES][key] = value;
+        }
     }
     std::ofstream fout(file);
     fout << root;

@@ -7,9 +7,9 @@
 #include <boost/iostreams/stream.hpp>
 #include <tbb/task_scheduler_init.h>
 
+#include "../temporary_directory.hpp"
 #include "codec/simdbp.hpp"
 #include "pisa_config.hpp"
-#include "temporary_directory.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"
 #include "v1/index.hpp"
@@ -133,6 +133,8 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
                                    {},
                                    document_sizes,
                                    tl::nullopt,
+                                   {},
+                                   {},
                                    tl::nullopt,
                                    std::move(source),
                                    BlockedReader<pisa::simdbp_block, true>{},
@@ -188,6 +190,8 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
                                    {},
                                    document_sizes,
                                    tl::nullopt,
+                                   {},
+                                   {},
                                    tl::nullopt,
                                    std::move(source),
                                    RawReader<std::uint32_t>{}); // Correct encoding but not type!

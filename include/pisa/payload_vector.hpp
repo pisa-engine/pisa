@@ -81,13 +81,13 @@ namespace detail {
 
         [[nodiscard]] constexpr auto operator*() -> value_type
         {
-            if constexpr (std::is_trivially_copyable_v<value_type>) {
+            if constexpr (std::is_same_v<value_type, std::string_view>) {
+                return value_type(reinterpret_cast<char const*>(&*payload_iter),
+                                  *std::next(offset_iter) - *offset_iter);
+            } else {
                 value_type value;
                 std::memcpy(&value, reinterpret_cast<char const*>(&*payload_iter), sizeof(value));
                 return value;
-            } else {
-                return value_type(reinterpret_cast<char const*>(&*payload_iter),
-                                  *std::next(offset_iter) - *offset_iter);
             }
         }
 

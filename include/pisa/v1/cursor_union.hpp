@@ -7,6 +7,7 @@
 #include <gsl/span>
 
 #include "util/likely.hpp"
+#include "v1/algorithm.hpp"
 
 namespace pisa::v1 {
 
@@ -29,17 +30,8 @@ struct CursorUnion {
         if (m_cursors.empty()) {
             m_current_value = std::numeric_limits<Value>::max();
         } else {
-            auto order = [](auto const& lhs, auto const& rhs) { return lhs.value() < rhs.value(); };
-            m_next_docid = [&]() {
-                auto pos = std::min_element(m_cursors.begin(), m_cursors.end(), order);
-                return pos->value();
-            }();
-            m_sentinel = std::min_element(m_cursors.begin(),
-                                          m_cursors.end(),
-                                          [](auto const& lhs, auto const& rhs) {
-                                              return lhs.sentinel() < rhs.sentinel();
-                                          })
-                             ->sentinel();
+            m_next_docid = min_value(m_cursors);
+            m_sentinel = min_sentinel(m_cursors);
             advance();
         }
     }

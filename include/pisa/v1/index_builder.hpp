@@ -5,7 +5,6 @@
 
 #include <fmt/format.h>
 #include <tbb/task_group.h>
-#include <tbb/task_scheduler_init.h>
 #include <tl/optional.hpp>
 #include <yaml-cpp/yaml.h>
 

@@ -51,7 +51,7 @@ if (UNIX)
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 
    # Extensive warnings
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-missing-braces")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-missing-braces -Wfatal-errors")
 
    if (USE_SANITIZERS)
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
@@ -108,7 +108,8 @@ add_subdirectory(v1)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()
-    add_subdirectory(test)
+    #add_subdirectory(test)
+    add_subdirectory(test/v1)
 endif()
 
 if (PISA_ENABLE_BENCHMARKING)

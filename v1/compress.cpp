@@ -2,6 +2,7 @@
 
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
+#include <tbb/task_scheduler_init.h>
 
 #include "binary_freq_collection.hpp"
 #include "v1/blocked_cursor.hpp"
@@ -43,7 +44,7 @@ auto frequency_encoding(std::string_view name) -> std::uint32_t
     std::exit(1);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     std::string input;
     std::string fwd;
@@ -80,7 +81,7 @@ int main(int argc, char **argv)
             std::cerr << "Detected more than 10 errors, printing head:\n";
             errors.resize(10);
         }
-        for (auto const &error : errors) {
+        for (auto const& error : errors) {
             std::cerr << error << '\n';
         }
         return 1;
