@@ -20,7 +20,6 @@ void thresholds(const std::string &taily_stats_filename,
                 const std::vector<Query> &queries,
                 uint64_t k)
 {
-
     std::ifstream ifs(taily_stats_filename);
     int64_t collection_size;
     ifs.read(reinterpret_cast<char*>(&collection_size), sizeof(collection_size));
