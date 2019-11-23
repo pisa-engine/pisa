@@ -15,25 +15,25 @@ struct UnalignedSpan;
 
 template <typename T>
 struct UnalignedSpanIterator {
-    UnalignedSpanIterator(std::uint32_t index, UnalignedSpan<T> const &span)
+    UnalignedSpanIterator(std::uint32_t index, UnalignedSpan<T> const& span)
         : m_index(index), m_span(span)
     {
     }
-    UnalignedSpanIterator(UnalignedSpanIterator const &) = default;
-    UnalignedSpanIterator(UnalignedSpanIterator &&) noexcept = default;
-    UnalignedSpanIterator &operator=(UnalignedSpanIterator const &) = default;
-    UnalignedSpanIterator &operator=(UnalignedSpanIterator &&) noexcept = default;
+    UnalignedSpanIterator(UnalignedSpanIterator const&) = default;
+    UnalignedSpanIterator(UnalignedSpanIterator&&) noexcept = default;
+    UnalignedSpanIterator& operator=(UnalignedSpanIterator const&) = default;
+    UnalignedSpanIterator& operator=(UnalignedSpanIterator&&) noexcept = default;
     ~UnalignedSpanIterator() = default;
-    [[nodiscard]] auto operator==(UnalignedSpanIterator<T> const &other) const
+    [[nodiscard]] auto operator==(UnalignedSpanIterator<T> const& other) const
     {
         return m_span.bytes().data() == other.m_span.bytes().data() && m_index == other.m_index;
     }
-    [[nodiscard]] auto operator!=(UnalignedSpanIterator<T> const &other) const
+    [[nodiscard]] auto operator!=(UnalignedSpanIterator<T> const& other) const
     {
         return m_index != other.m_index || m_span.bytes().data() != other.m_span.bytes().data();
     }
     [[nodiscard]] auto operator*() const { return m_span[m_index]; }
-    auto operator++() -> UnalignedSpanIterator &
+    auto operator++() -> UnalignedSpanIterator&
     {
         m_index++;
         return *this;
@@ -44,7 +44,7 @@ struct UnalignedSpanIterator {
         m_index++;
         return copy;
     }
-    [[nodiscard]] auto operator+=(std::uint32_t n) -> UnalignedSpanIterator &
+    [[nodiscard]] auto operator+=(std::uint32_t n) -> UnalignedSpanIterator&
     {
         m_index += n;
         return *this;
@@ -53,7 +53,7 @@ struct UnalignedSpanIterator {
     {
         return UnalignedSpanIterator(m_index + n, m_span);
     }
-    auto operator--() -> UnalignedSpanIterator &
+    auto operator--() -> UnalignedSpanIterator&
     {
         m_index--;
         return *this;
@@ -64,7 +64,7 @@ struct UnalignedSpanIterator {
         m_index--;
         return copy;
     }
-    [[nodiscard]] auto operator-=(std::uint32_t n) -> UnalignedSpanIterator &
+    [[nodiscard]] auto operator-=(std::uint32_t n) -> UnalignedSpanIterator&
     {
         m_index -= n;
         return *this;
@@ -73,30 +73,30 @@ struct UnalignedSpanIterator {
     {
         return UnalignedSpanIterator(m_index - n, m_span);
     }
-    [[nodiscard]] auto operator-(UnalignedSpanIterator const &other) const -> std::int32_t
+    [[nodiscard]] auto operator-(UnalignedSpanIterator const& other) const -> std::int32_t
     {
         return static_cast<std::int32_t>(m_index) - static_cast<std::int32_t>(other.m_index);
     }
-    [[nodiscard]] auto operator<(UnalignedSpanIterator const &other) const -> bool
+    [[nodiscard]] auto operator<(UnalignedSpanIterator const& other) const -> bool
     {
         return m_index < other.m_index;
     }
-    [[nodiscard]] auto operator<=(UnalignedSpanIterator const &other) const -> bool
+    [[nodiscard]] auto operator<=(UnalignedSpanIterator const& other) const -> bool
     {
         return m_index <= other.m_index;
     }
-    [[nodiscard]] auto operator>(UnalignedSpanIterator const &other) const -> bool
+    [[nodiscard]] auto operator>(UnalignedSpanIterator const& other) const -> bool
     {
         return m_index > other.m_index;
     }
-    [[nodiscard]] auto operator>=(UnalignedSpanIterator const &other) const -> bool
+    [[nodiscard]] auto operator>=(UnalignedSpanIterator const& other) const -> bool
     {
         return m_index >= other.m_index;
     }
 
    private:
     std::uint32_t m_index;
-    UnalignedSpan<T> const &m_span;
+    UnalignedSpan<T> const& m_span;
 };
 
 template <typename T>
@@ -111,6 +111,12 @@ struct UnalignedSpan {
             throw std::logic_error("Number of bytes must be a multiplier of type size");
         }
     }
+    constexpr UnalignedSpan(UnalignedSpan const&) = default;
+    constexpr UnalignedSpan(UnalignedSpan&&) noexcept = default;
+    constexpr UnalignedSpan& operator=(UnalignedSpan const&) = default;
+    constexpr UnalignedSpan& operator=(UnalignedSpan&&) noexcept = default;
+    ~UnalignedSpan() = default;
+
     using iterator = UnalignedSpanIterator<T>;
 
     [[nodiscard]] auto operator[](std::uint32_t index) const -> value_type
@@ -150,8 +156,8 @@ struct iterator_traits<::pisa::v1::UnalignedSpanIterator<T>> {
     using size_type = std::uint32_t;
     using difference_type = std::make_signed_t<size_type>;
     using value_type = T;
-    using pointer = T const *;
-    using reference = T const &;
+    using pointer = T const*;
+    using reference = T const&;
     using iterator_category = std::random_access_iterator_tag;
 };
 

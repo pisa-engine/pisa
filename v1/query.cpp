@@ -10,6 +10,7 @@
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
+#include "v1/analyze_query.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/maxscore.hpp"
@@ -18,55 +19,76 @@
 #include "v1/scorer/bm25.hpp"
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
+#include "v1/union_lookup.hpp"
 
-using pisa::Query;
 using pisa::resolve_query_parser;
 using pisa::v1::BlockedReader;
 using pisa::v1::daat_or;
+using pisa::v1::DaatOrAnalyzer;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
+using pisa::v1::maxscore_union_lookup;
+using pisa::v1::MaxscoreAnalyzer;
+using pisa::v1::MaxscoreUnionLookupAnalyzer;
+using pisa::v1::Query;
+using pisa::v1::QueryAnalyzer;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
 using pisa::v1::VoidScorer;
 
-using RetrievalAlgorithm =
-    std::function<::pisa::topk_queue(pisa::v1::Query, ::pisa::topk_queue, tl::optional<float>)>;
+using RetrievalAlgorithm = std::function<::pisa::topk_queue(pisa::v1::Query, ::pisa::topk_queue)>;
 
 template <typename Index, typename Scorer>
 auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& scorer)
     -> RetrievalAlgorithm
 {
     if (name == "daat_or") {
-        return RetrievalAlgorithm([&](pisa::v1::Query const& query,
-                                      ::pisa::topk_queue topk,
-                                      [[maybe_unused]] tl::optional<float> threshold) {
+        return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
             return pisa::v1::daat_or(query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
     }
     if (name == "maxscore") {
-        return RetrievalAlgorithm([&](pisa::v1::Query const& query,
-                                      ::pisa::topk_queue topk,
-                                      tl::optional<float> threshold) {
+        return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+            if (query.threshold) {
+                topk.set_threshold(*query.threshold);
+            }
             return pisa::v1::maxscore(query, index, std::move(topk), std::forward<Scorer>(scorer));
+        });
+    }
+    if (name == "maxscore-union-lookup") {
+        return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+            return pisa::v1::maxscore_union_lookup(
+                query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
     }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
 }
 
-template <typename Index, typename Scorer, typename Algorithm>
-void evaluate(std::vector<pisa::Query> const& queries,
-              Index&& index,
-              Scorer&& scorer,
+template <typename Index, typename Scorer>
+auto resolve_analyze(std::string const& name, Index const& index, Scorer&& scorer) -> QueryAnalyzer
+{
+    if (name == "daat_or") {
+        return QueryAnalyzer(DaatOrAnalyzer(index, std::forward<Scorer>(scorer)));
+    }
+    if (name == "maxscore") {
+        return QueryAnalyzer(MaxscoreAnalyzer(index, std::forward<Scorer>(scorer)));
+    }
+    if (name == "maxscore-union-lookup") {
+        return QueryAnalyzer(MaxscoreUnionLookupAnalyzer(index, std::forward<Scorer>(scorer)));
+    }
+    spdlog::error("Unknown algorithm: {}", name);
+    std::exit(1);
+}
+
+void evaluate(std::vector<Query> const& queries,
               int k,
               pisa::Payload_Vector<> const& docmap,
-              Algorithm&& retrieve,
-              tl::optional<std::vector<float>> thresholds)
+              RetrievalAlgorithm const& retrieve)
 {
     auto query_idx = 0;
     for (auto const& query : queries) {
-        auto threshold = thresholds.map([query_idx](auto&& vec) { return vec[query_idx]; });
-        auto que = retrieve(pisa::v1::Query{query.terms}, pisa::topk_queue(k), threshold);
+        auto que = retrieve(query, pisa::topk_queue(k));
         que.finalize();
         auto rank = 0;
         for (auto result : que.topk()) {
@@ -83,23 +105,14 @@ void evaluate(std::vector<pisa::Query> const& queries,
     }
 }
 
-template <typename Index, typename Scorer, typename Algorithm>
-void benchmark(std::vector<pisa::Query> const& queries,
-               Index&& index,
-               Scorer&& scorer,
-               int k,
-               Algorithm&& retrieve,
-               tl::optional<std::vector<float>> thresholds)
+void benchmark(std::vector<Query> const& queries, int k, RetrievalAlgorithm retrieve)
 
 {
     std::vector<double> times(queries.size(), std::numeric_limits<double>::max());
     for (auto run = 0; run < 5; run += 1) {
         for (auto query = 0; query < queries.size(); query += 1) {
-            float threshold =
-                thresholds.map([query](auto&& vec) { return vec[query]; }).value_or(0.0F);
             auto usecs = ::pisa::run_with_timer<std::chrono::microseconds>([&]() {
-                auto que =
-                    retrieve(pisa::v1::Query{queries[query].terms}, pisa::topk_queue(k), threshold);
+                auto que = retrieve(queries[query], pisa::topk_queue(k));
                 que.finalize();
                 do_not_optimize_away(que);
             });
@@ -117,13 +130,27 @@ void benchmark(std::vector<pisa::Query> const& queries,
     spdlog::info("95% quantile: {}", q95);
 }
 
+void analyze_queries(std::vector<Query> const& queries, QueryAnalyzer analyzer)
+{
+    std::vector<double> times(queries.size(), std::numeric_limits<double>::max());
+    for (auto run = 0; run < 5; run += 1) {
+        for (auto query = 0; query < queries.size(); query += 1) {
+            analyzer(queries[query]);
+        }
+    }
+    std::move(analyzer).summarize();
+}
+
 int main(int argc, char** argv)
 {
     std::string algorithm = "daat_or";
     tl::optional<std::string> threshold_file;
+    bool analyze = false;
+
     pisa::QueryApp app("Queries a v1 index.");
     app.add_option("--algorithm", algorithm, "Query retrieval algorithm.", true);
-    app.add_option("--thredsholds", algorithm, "File with (estimated) thresholds.", false);
+    app.add_option("--thresholds", threshold_file, "File with (estimated) thresholds.", false);
+    app.add_flag("--analyze", analyze, "Analyze query execution and stats");
     CLI11_PARSE(app, argc, argv);
 
     auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
@@ -135,14 +162,31 @@ int main(int argc, char** argv)
         app.documents_file = meta.document_lexicon.value();
     }
 
-    std::vector<pisa::Query> queries;
-    auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
-    if (app.query_file) {
-        std::ifstream is(*app.query_file);
-        pisa::io::for_each_line(is, parse_query);
-    } else {
-        pisa::io::for_each_line(std::cin, parse_query);
-    }
+    auto queries = [&]() {
+        std::vector<::pisa::Query> queries;
+        auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
+        if (app.query_file) {
+            std::ifstream is(*app.query_file);
+            pisa::io::for_each_line(is, parse_query);
+        } else {
+            pisa::io::for_each_line(std::cin, parse_query);
+        }
+        std::vector<Query> v1_queries(queries.size());
+        std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& query) {
+            return Query{.terms = query.terms,
+                         .list_selection = {},
+                         .threshold = {},
+                         .id =
+                             [&]() {
+                                 if (query.id) {
+                                     return tl::make_optional(*query.id);
+                                 }
+                                 return tl::optional<std::string>{};
+                             }(),
+                         .k = app.k};
+        });
+        return v1_queries;
+    }();
 
     if (not app.documents_file) {
         spdlog::error("Document lexicon not defined");
@@ -151,20 +195,22 @@ int main(int argc, char** argv)
     auto source = std::make_shared<mio::mmap_source>(app.documents_file.value().c_str());
     auto docmap = pisa::Payload_Vector<>::from(*source);
 
-    auto thresholds = [&threshold_file, &queries]() {
-        if (threshold_file) {
-            std::vector<float> thresholds;
-            std::ifstream is(*threshold_file);
-            pisa::io::for_each_line(
-                is, [&thresholds](auto&& line) { thresholds.push_back(std::stof(line)); });
-            if (thresholds.size() != queries.size()) {
+    if (threshold_file) {
+        std::ifstream is(*threshold_file);
+        auto queries_iter = queries.begin();
+        pisa::io::for_each_line(is, [&](auto&& line) {
+            if (queries_iter == queries.end()) {
                 spdlog::error("Number of thresholds not equal to number of queries");
                 std::exit(1);
             }
-            return tl::make_optional(thresholds);
+            queries_iter->threshold = tl::make_optional(std::stof(line));
+            ++queries_iter;
+        });
+        if (queries_iter != queries.end()) {
+            spdlog::error("Number of thresholds not equal to number of queries");
+            std::exit(1);
         }
-        return tl::optional<std::vector<float>>{};
-    }();
+    }
 
     if (app.precomputed) {
         auto run = scored_index_runner(meta,
@@ -173,11 +219,12 @@ int main(int argc, char** argv)
                                        BlockedReader<::pisa::simdbp_block, true>{},
                                        BlockedReader<::pisa::simdbp_block, false>{});
         run([&](auto&& index) {
-            auto retrieve = resolve_algorithm(algorithm, index, VoidScorer{});
             if (app.is_benchmark) {
-                benchmark(queries, index, VoidScorer{}, app.k, retrieve, thresholds);
+                benchmark(queries, app.k, resolve_algorithm(algorithm, index, VoidScorer{}));
+            } else if (analyze) {
+                analyze_queries(queries, resolve_analyze(algorithm, index, VoidScorer{}));
             } else {
-                evaluate(queries, index, VoidScorer{}, app.k, docmap, retrieve, thresholds);
+                evaluate(queries, app.k, docmap, resolve_algorithm(algorithm, index, VoidScorer{}));
             }
         });
     } else {
@@ -188,11 +235,12 @@ int main(int argc, char** argv)
         run([&](auto&& index) {
             auto with_scorer = scorer_runner(index, make_bm25(index));
             with_scorer("bm25", [&](auto scorer) {
-                auto retrieve = resolve_algorithm(algorithm, index, scorer);
                 if (app.is_benchmark) {
-                    benchmark(queries, index, scorer, app.k, retrieve, thresholds);
+                    benchmark(queries, app.k, resolve_algorithm(algorithm, index, scorer));
+                } else if (analyze) {
+                    analyze_queries(queries, resolve_analyze(algorithm, index, scorer));
                 } else {
-                    evaluate(queries, index, scorer, app.k, docmap, retrieve, thresholds);
+                    evaluate(queries, app.k, docmap, resolve_algorithm(algorithm, index, scorer));
                 }
             });
         });

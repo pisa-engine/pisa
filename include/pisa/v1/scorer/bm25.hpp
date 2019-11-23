@@ -16,7 +16,24 @@ struct BM25 {
     static constexpr float b = 0.4;
     static constexpr float k1 = 0.9;
 
-    explicit BM25(Index const &index) : m_index(index) {}
+    explicit BM25(Index const& index) : m_index(index) {}
+
+    struct TermScorer {
+        TermScorer(Index const& index, float term_weight)
+            : m_index(&index), m_term_weight(term_weight)
+        {
+        }
+
+        auto operator()(std::uint32_t docid, std::uint32_t frequency) const
+        {
+            return m_term_weight
+                   * doc_term_weight(frequency, m_index->normalized_document_length(docid));
+        }
+
+       private:
+        Index const* m_index;
+        float m_term_weight;
+    };
 
     [[nodiscard]] static float doc_term_weight(uint64_t freq, float norm_len)
     {
@@ -36,18 +53,15 @@ struct BM25 {
     {
         auto term_weight =
             query_term_weight(m_index.term_posting_count(term_id), m_index.num_documents());
-        return [this, term_weight](uint32_t doc, uint32_t freq) {
-            return term_weight
-                   * doc_term_weight(freq, this->m_index.normalized_document_length(doc));
-        };
+        return TermScorer(m_index, term_weight);
     }
 
    private:
-    Index const &m_index;
+    Index const& m_index;
 };
 
 template <typename Index>
-auto make_bm25(Index const &index)
+auto make_bm25(Index const& index)
 {
     return BM25<Index>(index);
 }
@@ -57,7 +71,7 @@ auto make_bm25(Index const &index)
 namespace std {
 template <typename Index>
 struct hash<::pisa::v1::BM25<Index>> {
-    std::size_t operator()(::pisa::v1::BM25<Index> const & /* bm25 */) const noexcept
+    std::size_t operator()(::pisa::v1::BM25<Index> const& /* bm25 */) const noexcept
     {
         return std::hash<std::string>{}("bm25");
     }

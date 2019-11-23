@@ -16,6 +16,11 @@ struct DocumentPayloadCursor {
         : m_key_cursor(std::move(key_cursor)), m_payload_cursor(std::move(payload_cursor))
     {
     }
+    constexpr DocumentPayloadCursor(DocumentPayloadCursor const&) = default;
+    constexpr DocumentPayloadCursor(DocumentPayloadCursor&&) noexcept = default;
+    constexpr DocumentPayloadCursor& operator=(DocumentPayloadCursor const&) = default;
+    constexpr DocumentPayloadCursor& operator=(DocumentPayloadCursor&&) noexcept = default;
+    ~DocumentPayloadCursor() = default;
 
     [[nodiscard]] constexpr auto operator*() const -> Document { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Document { return m_key_cursor.value(); }

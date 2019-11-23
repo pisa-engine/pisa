@@ -5,10 +5,12 @@
 
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <gsl/span>
 #include <tbb/task_scheduler_init.h>
 
 #include "io.hpp"
 #include "pisa_config.hpp"
+#include "v1/algorithm.hpp"
 #include "v1/cursor/collect.hpp"
 #include "v1/index.hpp"
 #include "v1/io.hpp"
@@ -46,6 +48,47 @@ std::ostream& operator<<(std::ostream& os, tl::optional<T> const& val)
         os << "nullopt";
     }
     return os;
+}
+
+TEST_CASE("partition_by_index", "[v1][unit]")
+{
+    std::vector<std::uint32_t> values{5, 0, 1, 2, 3, 4};
+    // auto input_data = GENERATE(table<std::vector<std::size_t>, std::vector<std::uint32_t>>(
+    //    {{{}, {5, 0, 1, 2, 3, 4}},
+    //     {{0, 1, 2}, {2, 3, 4, 5, 0, 1}},
+    //     {{3, 4, 5}, {}},
+    //     {{0, 4, 5}, {}}}));
+    // auto input_data = GENERATE(table<std::vector<std::size_t>, std::vector<std::uint32_t>>(
+    //    {{{}, {5, 0, 1, 2, 3, 4}},
+    //     {{0, 1, 2}, {2, 3, 4, 5, 0, 1}},
+    //     {{3, 4, 5}, {}},
+    //     {{0, 4, 5}, {}}}));
+
+    auto expected = [](auto input_vec, auto right_indices) {
+        std::vector<int> essential;
+        std::sort(right_indices.begin(), right_indices.end(), std::greater{});
+        for (auto idx : right_indices) {
+            essential.push_back(input_vec[idx]);
+            input_vec.erase(std::next(input_vec.begin(), idx));
+        }
+        std::sort(essential.begin(), essential.end());
+        std::sort(input_vec.begin(), input_vec.end());
+        input_vec.insert(input_vec.end(), essential.begin(), essential.end());
+        return input_vec;
+    };
+
+    std::vector<int> input{5, 0, 1, 2, 3, 4};
+    std::vector<std::size_t> right_indices{};
+    auto expected_output = expected(input, right_indices);
+    pisa::v1::partition_by_index(gsl::make_span(input), gsl::make_span(right_indices));
+    std::sort(input.begin(), std::next(input.begin(), input.size() - right_indices.size()));
+    std::sort(std::next(input.begin(), right_indices.size()), input.end());
+    REQUIRE(input == expected_output);
+
+    // auto [right_indices, expected] = GENERATE(
+    //    table<std::vector<std::size_t>, std::vector<std::uint32_t>>({{}, {5, 0, 1, 2, 3, 4}}));
+    // pisa::v1::partition_by_index(gsl::make_span(values), gsl::make_span(right_indices));
+    // REQUIRE(values == expected);
 }
 
 TEST_CASE("RawReader", "[v1][unit]")

@@ -18,7 +18,7 @@
 namespace pisa::v1 {
 
 template <typename Cursor>
-[[nodiscard]] auto next(Cursor &&cursor) -> tl::optional<typename std::decay_t<Cursor>::value_type>
+[[nodiscard]] auto next(Cursor&& cursor) -> tl::optional<typename std::decay_t<Cursor>::value_type>
 {
     cursor.advance();
     if (cursor.empty()) {
@@ -28,7 +28,7 @@ template <typename Cursor>
 }
 
 template <typename... Args>
-inline void contract(bool condition, std::string const &message, Args &&... args)
+inline void contract(bool condition, std::string const& message, Args&&... args)
 {
     if (not condition) {
         throw std::logic_error(fmt::format(message, std::forward<Args>(args)...));
@@ -50,6 +50,11 @@ struct RawCursor {
                  m_bytes.size());
         contract(not m_bytes.empty(), "Raw cursor memory must not be empty");
     }
+    constexpr RawCursor(RawCursor const&) = default;
+    constexpr RawCursor(RawCursor&&) noexcept = default;
+    constexpr RawCursor& operator=(RawCursor const&) = default;
+    constexpr RawCursor& operator=(RawCursor&&) noexcept = default;
+    ~RawCursor() = default;
 
     /// Dereferences the current value.
     [[nodiscard]] constexpr auto operator*() const -> T
@@ -120,17 +125,17 @@ struct RawWriter {
 
     constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 
-    void push(T const &posting) { m_postings.push_back(posting); }
-    void push(T &&posting) { m_postings.push_back(posting); }
+    void push(T const& posting) { m_postings.push_back(posting); }
+    void push(T&& posting) { m_postings.push_back(posting); }
 
     template <typename CharT>
-    [[nodiscard]] auto write(std::basic_ostream<CharT> &os) const -> std::size_t
+    [[nodiscard]] auto write(std::basic_ostream<CharT>& os) const -> std::size_t
     {
         assert(!m_postings.empty());
         std::uint32_t length = m_postings.size();
-        os.write(reinterpret_cast<CharT const *>(&length), sizeof(length));
+        os.write(reinterpret_cast<CharT const*>(&length), sizeof(length));
         auto memory = gsl::as_bytes(gsl::make_span(m_postings.data(), m_postings.size()));
-        os.write(reinterpret_cast<CharT const *>(memory.data()), memory.size());
+        os.write(reinterpret_cast<CharT const*>(memory.data()), memory.size());
         return sizeof(length) + memory.size();
     }
 

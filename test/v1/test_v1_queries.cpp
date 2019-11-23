@@ -2,6 +2,7 @@
 #include "catch2/catch.hpp"
 
 #include <string>
+#include <tuple>
 
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -124,8 +125,14 @@ TEMPLATE_TEST_CASE("Query",
                           v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<v1::Frequency>>,
                           v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<float>>>::get();
     TestType fixture;
-    auto algorithm = GENERATE(std::string("daat_or"), std::string("maxscore"));
+    auto input_data = GENERATE(table<char const*, bool>({{"daat_or", false},
+                                                         {"maxscore", false},
+                                                         {"maxscore", true},
+                                                         {"maxscore_union_lookup", true}}));
+    std::string algorithm = std::get<0>(input_data);
+    bool with_threshold = std::get<1>(input_data);
     CAPTURE(algorithm);
+    CAPTURE(with_threshold);
     auto index_basename = (fixture.tmpdir().path() / "inv").string();
     auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
     ranked_or_query or_q(10);
@@ -135,6 +142,9 @@ TEMPLATE_TEST_CASE("Query",
         }
         if (name == "maxscore") {
             return maxscore(query, index, topk_queue(10), scorer);
+        }
+        if (name == "maxscore_union_lookup") {
+            return maxscore_union_lookup(query, index, topk_queue(10), scorer);
         }
         std::abort();
     };
@@ -147,67 +157,87 @@ TEMPLATE_TEST_CASE("Query",
 
         or_q(make_scored_cursors(data->v0_index, data->wdata, q), data->v0_index.num_docs());
         auto expected = or_q.topk();
-        std::sort(expected.begin(), expected.end(), approximate_order);
+        auto threshold = [&]() {
+            if (with_threshold) {
+                return tl::make_optional<float>(expected.back().first - 1.0F);
+            }
+            return tl::optional<float>{};
+        }();
 
         auto on_the_fly = [&]() {
             auto run =
                 v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
             std::vector<typename topk_queue::entry_type> results;
             run([&](auto&& index) {
-                auto que = run_query(algorithm, v1::Query{q.terms}, index, make_bm25(index));
+                auto que = run_query(algorithm,
+                                     v1::Query{.terms = q.terms,
+                                               .list_selection = {},
+                                               .threshold = threshold,
+                                               .id = {},
+                                               .k = 10},
+                                     index,
+                                     make_bm25(index));
                 que.finalize();
                 results = que.topk();
+                results.erase(std::remove_if(results.begin(),
+                                             results.end(),
+                                             [last_score = results.back().first](auto&& entry) {
+                                                 return entry.first <= last_score;
+                                             }),
+                              results.end());
                 std::sort(results.begin(), results.end(), approximate_order);
             });
             return results;
         }();
+        expected.resize(on_the_fly.size());
+        std::sort(expected.begin(), expected.end(), approximate_order);
 
-        REQUIRE(expected.size() == on_the_fly.size());
         for (size_t i = 0; i < on_the_fly.size(); ++i) {
             REQUIRE(on_the_fly[i].second == expected[i].second);
             REQUIRE(on_the_fly[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
         }
 
-        auto precomputed = [&]() {
-            auto run =
-                v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
-            std::vector<typename topk_queue::entry_type> results;
-            run([&](auto&& index) {
-                auto que = run_query(algorithm, v1::Query{q.terms}, index, v1::VoidScorer{});
-                que.finalize();
-                results = que.topk();
-            });
-            // Remove the tail that might be different due to quantization error.
-            // Note that `precomputed` will have summed quantized score, while the
-            // vector we compare to will have quantized sum---that's why whe remove anything
-            // that's withing 2 of the last result.
-            // auto last_score = results.back().first;
-            // results.erase(std::remove_if(
-            //                  results.begin(),
-            //                  results.end(),
-            //                  [last_score](auto&& entry) { return entry.first <= last_score + 3;
-            //                  }),
-            //              results.end());
-            // results.resize(5);
-            // std::sort(results.begin(), results.end(), [](auto&& lhs, auto&& rhs) {
-            //    return lhs.second < rhs.second;
-            //});
-            return results;
-        }();
+        // auto precomputed = [&]() {
+        //    auto run =
+        //        v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
+        //    std::vector<typename topk_queue::entry_type> results;
+        //    run([&](auto&& index) {
+        //        auto que = run_query(algorithm, v1::Query{q.terms}, index, v1::VoidScorer{});
+        //        que.finalize();
+        //        results = que.topk();
+        //    });
+        //    // Remove the tail that might be different due to quantization error.
+        //    // Note that `precomputed` will have summed quantized score, while the
+        //    // vector we compare to will have quantized sum---that's why whe remove anything
+        //    // that's withing 2 of the last result.
+        //    // auto last_score = results.back().first;
+        //    // results.erase(std::remove_if(
+        //    //                  results.begin(),
+        //    //                  results.end(),
+        //    //                  [last_score](auto&& entry) { return entry.first <= last_score + 3;
+        //    //                  }),
+        //    //              results.end());
+        //    // results.resize(5);
+        //    // std::sort(results.begin(), results.end(), [](auto&& lhs, auto&& rhs) {
+        //    //    return lhs.second < rhs.second;
+        //    //});
+        //    return results;
+        //}();
 
-        constexpr float max_partial_score = 16.5724F;
-        auto quantizer = [&](float score) {
-            return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
-                                             / max_partial_score);
-        };
+        // constexpr float max_partial_score = 16.5724F;
+        // auto quantizer = [&](float score) {
+        //    return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
+        //                                     / max_partial_score);
+        //};
 
-        auto expected_quantized = expected;
-        std::sort(expected_quantized.begin(), expected_quantized.end(), [](auto&& lhs, auto&& rhs) {
-            return lhs.first > rhs.first;
-        });
-        for (auto& v : expected_quantized) {
-            v.first = quantizer(v.first);
-        }
+        // auto expected_quantized = expected;
+        // std::sort(expected_quantized.begin(), expected_quantized.end(), [](auto&& lhs, auto&&
+        // rhs) {
+        //    return lhs.first > rhs.first;
+        //});
+        // for (auto& v : expected_quantized) {
+        //    v.first = quantizer(v.first);
+        //}
 
         // TODO(michal): test the quantized results
 

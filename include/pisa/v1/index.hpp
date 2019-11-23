@@ -199,9 +199,15 @@ struct Index {
         using cursor_type =
             std::decay_t<decltype(scored_cursor(term, std::forward<Scorer>(scorer)))>;
         if constexpr (std::is_convertible_v<Scorer, VoidScorer>) {
+            if (m_max_quantized_scores.empty()) {
+                throw std::logic_error("Missing quantized max scores.");
+            }
             return MaxScoreCursor<cursor_type, float>(
                 scored_cursor(term, std::forward<Scorer>(scorer)), m_max_quantized_scores[term]);
         } else {
+            if (m_max_scores.empty()) {
+                throw std::logic_error("Missing max scores.");
+            }
             return MaxScoreCursor<cursor_type, float>(
                 scored_cursor(term, std::forward<Scorer>(scorer)),
                 m_max_scores.at(std::hash<std::decay_t<Scorer>>{}(scorer))[term]);

@@ -12,7 +12,11 @@
 
 namespace pisa::v1 {
 
-template <typename CursorContainer, typename Payload, typename AccumulateFn, typename ThresholdFn>
+template <typename CursorContainer,
+          typename Payload,
+          typename AccumulateFn,
+          typename ThresholdFn,
+          typename Analyzer = void>
 struct MaxScoreJoin {
     using cursor_type = typename CursorContainer::value_type;
     using payload_type = Payload;
@@ -35,6 +39,29 @@ struct MaxScoreJoin {
           m_accumulate(std::move(accumulate)),
           m_above_threshold(std::move(above_threshold)),
           m_size(std::nullopt)
+    {
+        initialize();
+    }
+
+    constexpr MaxScoreJoin(CursorContainer cursors,
+                           Payload init,
+                           AccumulateFn accumulate,
+                           ThresholdFn above_threshold,
+                           Analyzer* analyzer)
+        : m_cursors(std::move(cursors)),
+          m_sorted_cursors(m_cursors.size()),
+          m_cursor_idx(m_cursors.size()),
+          m_upper_bounds(m_cursors.size()),
+          m_init(std::move(init)),
+          m_accumulate(std::move(accumulate)),
+          m_above_threshold(std::move(above_threshold)),
+          m_size(std::nullopt),
+          m_analyzer(analyzer)
+    {
+        initialize();
+    }
+
+    void initialize()
     {
         std::transform(m_cursors.begin(),
                        m_cursors.end(),
@@ -82,12 +109,19 @@ struct MaxScoreJoin {
             m_current_payload = m_init;
             m_current_value = std::exchange(m_next_docid, sentinel());
 
+            if constexpr (not std::is_void_v<Analyzer>) {
+                m_analyzer->document();
+            }
+
             for (auto sorted_position = m_non_essential_count;
                  sorted_position < m_sorted_cursors.size();
                  sorted_position += 1) {
 
                 auto& cursor = m_sorted_cursors[sorted_position];
                 if (cursor->value() == m_current_value) {
+                    if constexpr (not std::is_void_v<Analyzer>) {
+                        m_analyzer->posting();
+                    }
                     m_current_payload =
                         m_accumulate(m_current_payload, *cursor, m_cursor_idx[sorted_position]);
                     cursor->advance();
@@ -106,6 +140,9 @@ struct MaxScoreJoin {
                 }
                 auto& cursor = m_sorted_cursors[sorted_position];
                 cursor->advance_to_geq(m_current_value);
+                if constexpr (not std::is_void_v<Analyzer>) {
+                    m_analyzer->lookup();
+                }
                 if (cursor->value() == m_current_value) {
                     m_current_payload =
                         m_accumulate(m_current_payload, *cursor, m_cursor_idx[sorted_position]);
@@ -141,6 +178,8 @@ struct MaxScoreJoin {
     std::uint32_t m_next_docid{};
     std::size_t m_non_essential_count = 0;
     payload_type m_previous_threshold{};
+
+    Analyzer* m_analyzer;
 };
 
 template <typename CursorContainer, typename Payload, typename AccumulateFn, typename ThresholdFn>
@@ -149,44 +188,29 @@ auto join_maxscore(CursorContainer cursors,
                    AccumulateFn accumulate,
                    ThresholdFn threshold)
 {
-    return MaxScoreJoin<CursorContainer, Payload, AccumulateFn, ThresholdFn>(
+    return MaxScoreJoin<CursorContainer, Payload, AccumulateFn, ThresholdFn, void>(
         std::move(cursors), std::move(init), std::move(accumulate), std::move(threshold));
 }
 
-template <typename Index, typename Scorer>
-auto maxscore(Query const& query,
-              Index const& index,
-              topk_queue topk,
-              Scorer&& scorer,
-              decltype(index.max_scored_cursor(0, scorer).max_score()) initial_threshold)
+template <typename CursorContainer,
+          typename Payload,
+          typename AccumulateFn,
+          typename ThresholdFn,
+          typename Analyzer>
+auto join_maxscore(CursorContainer cursors,
+                   Payload init,
+                   AccumulateFn accumulate,
+                   ThresholdFn threshold,
+                   Analyzer* analyzer)
 {
-    using cursor_type = decltype(index.max_scored_cursor(0, scorer));
-    using score_type = decltype(index.max_scored_cursor(0, scorer).max_score());
-    using value_type = decltype(index.max_scored_cursor(0, scorer).value());
-
-    std::vector<cursor_type> cursors;
-    std::transform(query.terms.begin(),
-                   query.terms.end(),
-                   std::back_inserter(cursors),
-                   [&](auto term) { return index.max_scored_cursor(term, scorer); });
-
-    auto joined = join_maxscore(
-        std::move(cursors),
-        0.0F,
-        [](auto& score, auto& cursor, auto /* term_position */) {
-            score += cursor.payload();
-            return score;
-        },
-        [&](auto score) { return topk.would_enter(score) && score > initial_threshold; });
-    v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
-    return topk;
+    return MaxScoreJoin<CursorContainer, Payload, AccumulateFn, ThresholdFn, Analyzer>(
+        std::move(cursors), std::move(init), std::move(accumulate), std::move(threshold), analyzer);
 }
 
 template <typename Index, typename Scorer>
 auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
 {
     using cursor_type = decltype(index.max_scored_cursor(0, scorer));
-    using score_type = decltype(index.max_scored_cursor(0, scorer).max_score());
     using value_type = decltype(index.max_scored_cursor(0, scorer).value());
 
     std::vector<cursor_type> cursors;
@@ -195,84 +219,99 @@ auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& 
                    std::back_inserter(cursors),
                    [&](auto term) { return index.max_scored_cursor(term, scorer); });
 
+    auto accumulate = [](auto& score, auto& cursor, auto /* term_position */) {
+        score += cursor.payload();
+        return score;
+    };
+    if (query.threshold) {
+        topk.set_threshold(*query.threshold);
+    }
     auto joined = join_maxscore(
-        std::move(cursors),
-        0.0F,
-        [](auto& score, auto& cursor, auto /* term_position */) {
-            score += cursor.payload();
-            return score;
-        },
-        [&](auto score) { return topk.would_enter(score); });
+        std::move(cursors), 0.0F, accumulate, [&](auto score) { return topk.would_enter(score); });
     v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
     return topk;
-    // template <typename CursorContainer, typename Payload, typename AccumulateFn, typename
-    // ThresholdFn> MaxScoreJoin {
-
-    // std::vector<cursor_type*> sorted_cursors;
-    // std::transform(cursors.begin(),
-    //               cursors.end(),
-    //               std::back_inserter(sorted_cursors),
-    //               [](auto&& cursor) { return &cursor; });
-    // std::sort(sorted_cursors.begin(), sorted_cursors.end(), [](auto&& lhs, auto&& rhs) {
-    //    return lhs->max_score() < rhs->max_score();
-    //});
-
-    // std::vector<score_type> upper_bounds(sorted_cursors.size());
-    //// upper_bounds.push_back(cursors);
-    //// for (auto* cursor : sorted_cursors) {
-    ////
-    ////}
-    // upper_bounds[0] = sorted_cursors[0]->max_score();
-    // for (size_t i = 1; i < sorted_cursors.size(); ++i) {
-    //    upper_bounds[i] = upper_bounds[i - 1] + sorted_cursors[i]->max_score();
-    //}
-    //// std::partial_sum(sorted_cursors.begin(),
-    ////                 sorted_cursors.end(),
-    ////                 upper_bounds.begin(),
-    ////                 [](auto sum, auto* cursor) { return sum + cursor->max_score(); });
-    // auto essential = gsl::make_span(sorted_cursors);
-    // auto non_essential = essential.subspan(essential.size()); // Empty
-
-    // DocId current_docid =
-    //    std::min_element(cursors.begin(), cursors.end(), [](auto&& lhs, auto&& rhs) {
-    //        return *lhs < *rhs;
-    //    })->value();
-
-    // while (not essential.empty() && current_docid < std::numeric_limits<value_type>::max()) {
-    //    score_type score{};
-    //    auto next_docid = std::numeric_limits<value_type>::max();
-
-    //    for (auto cursor : essential) {
-    //        if (cursor->value() == current_docid) {
-    //            score += cursor->payload();
-    //            cursor->advance();
-    //        }
-    //        if (auto docid = cursor->value(); docid < next_docid) {
-    //            next_docid = docid;
-    //        }
-    //    }
-
-    //    for (auto idx = non_essential.size() - 1; idx + 1 > 0; idx -= 1) {
-    //        if (not topk.would_enter(score + upper_bounds[idx])) {
-    //            break;
-    //        }
-    //        sorted_cursors[idx]->advance_to_geq(current_docid);
-    //        if (sorted_cursors[idx]->value() == current_docid) {
-    //            score += sorted_cursors[idx]->payload();
-    //        }
-    //    }
-    //    if (topk.insert(score, current_docid)) {
-    //        //// update non-essential lists
-    //        while (not essential.empty()
-    //               && not topk.would_enter(upper_bounds[non_essential.size()])) {
-    //            essential = essential.first(essential.size() - 1);
-    //            non_essential = gsl::make_span(sorted_cursors).subspan(essential.size());
-    //        }
-    //    }
-    //    current_docid = next_docid;
-    //}
-
-    // return topk;
 }
+
+template <typename Index, typename Scorer>
+struct MaxscoreAnalyzer {
+    MaxscoreAnalyzer(Index const& index, Scorer scorer)
+        : m_index(index), m_scorer(std::move(scorer))
+    {
+        std::cout << fmt::format("documents\tpostings\tinserts\tlookups\n");
+    }
+
+    void operator()(Query const& query)
+    {
+        using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
+        using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
+
+        m_current_documents = 0;
+        m_current_postings = 0;
+        m_current_lookups = 0;
+
+        std::vector<cursor_type> cursors;
+        std::transform(query.terms.begin(),
+                       query.terms.end(),
+                       std::back_inserter(cursors),
+                       [&](auto term) { return m_index.max_scored_cursor(term, m_scorer); });
+
+        std::size_t inserts = 0;
+        topk_queue topk(query.k);
+        auto initial_threshold = query.threshold.value_or(-1.0);
+        topk.set_threshold(initial_threshold);
+        auto joined = join_maxscore(
+            std::move(cursors),
+            0.0F,
+            [&](auto& score, auto& cursor, auto /* term_position */) {
+                score += cursor.payload();
+                return score;
+            },
+            [&](auto score) { return topk.would_enter(score); },
+            this);
+        v1::for_each(joined, [&](auto& cursor) {
+            if (topk.insert(cursor.payload(), cursor.value())) {
+                inserts += 1;
+            };
+        });
+        std::cout << fmt::format("{}\t{}\t{}\t{}\n",
+                                 m_current_documents,
+                                 m_current_postings,
+                                 inserts,
+                                 m_current_lookups);
+        m_documents += m_current_documents;
+        m_postings += m_current_postings;
+        m_lookups += m_current_lookups;
+        m_inserts += inserts;
+        m_count += 1;
+    }
+
+    void summarize() &&
+    {
+        std::cerr << fmt::format(
+            "=== SUMMARY ===\nAverage:\n- documents:\t{}\n"
+            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n",
+            static_cast<float>(m_documents) / m_count,
+            static_cast<float>(m_postings) / m_count,
+            static_cast<float>(m_inserts) / m_count,
+            static_cast<float>(m_lookups) / m_count);
+    }
+
+    void document() { m_current_documents += 1; }
+    void posting() { m_current_postings += 1; }
+    void lookup() { m_current_lookups += 1; }
+
+   private:
+    std::size_t m_current_documents = 0;
+    std::size_t m_current_postings = 0;
+    std::size_t m_current_lookups = 0;
+
+    std::size_t m_documents = 0;
+    std::size_t m_postings = 0;
+    std::size_t m_lookups = 0;
+    std::size_t m_inserts = 0;
+    std::size_t m_count = 0;
+    Index const& m_index;
+    Scorer m_scorer;
+};
 
 } // namespace pisa::v1

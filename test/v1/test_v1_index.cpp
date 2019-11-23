@@ -56,9 +56,9 @@ TEST_CASE("Binary collection index", "[v1][unit]")
         REQUIRE(bci.size() == index.num_terms());
         auto bci_iter = bci.begin();
         for (auto term = 0; term < 1'000; term += 1) {
-            REQUIRE(std::vector(bci_iter->docs.begin(), bci_iter->docs.end())
+            REQUIRE(std::vector<std::uint32_t>(bci_iter->docs.begin(), bci_iter->docs.end())
                     == collect(index.documents(term)));
-            REQUIRE(std::vector(bci_iter->freqs.begin(), bci_iter->freqs.end())
+            REQUIRE(std::vector<std::uint32_t>(bci_iter->freqs.begin(), bci_iter->freqs.end())
                     == collect(index.payloads(term)));
             ++bci_iter;
         }
@@ -91,9 +91,9 @@ TEST_CASE("Binary collection index -- SIMDBP", "[v1][unit]")
         REQUIRE(bci.size() == index.num_terms());
         auto bci_iter = bci.begin();
         for (auto term = 0; term < 1'000; term += 1) {
-            REQUIRE(std::vector(bci_iter->docs.begin(), bci_iter->docs.end())
+            REQUIRE(std::vector<std::uint32_t>(bci_iter->docs.begin(), bci_iter->docs.end())
                     == collect(index.documents(term)));
-            REQUIRE(std::vector(bci_iter->freqs.begin(), bci_iter->freqs.end())
+            REQUIRE(std::vector<std::uint32_t>(bci_iter->freqs.begin(), bci_iter->freqs.end())
                     == collect(index.payloads(term)));
             ++bci_iter;
         }

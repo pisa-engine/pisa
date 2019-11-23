@@ -18,6 +18,11 @@ struct ScoringCursor {
         : m_base_cursor(std::move(base_cursor)), m_scorer(std::move(scorer))
     {
     }
+    constexpr ScoringCursor(ScoringCursor const&) = default;
+    constexpr ScoringCursor(ScoringCursor&&) noexcept = default;
+    constexpr ScoringCursor& operator=(ScoringCursor const&) = default;
+    constexpr ScoringCursor& operator=(ScoringCursor&&) noexcept = default;
+    ~ScoringCursor() = default;
 
     [[nodiscard]] constexpr auto operator*() const -> Document { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Document
@@ -53,6 +58,12 @@ struct MaxScoreCursor {
         : m_base_cursor(std::move(base_cursor)), m_max_score(max_score)
     {
     }
+    constexpr MaxScoreCursor(MaxScoreCursor const&) = default;
+    constexpr MaxScoreCursor(MaxScoreCursor&&) noexcept = default;
+    constexpr MaxScoreCursor& operator=(MaxScoreCursor const&) = default;
+    constexpr MaxScoreCursor& operator=(MaxScoreCursor&&) noexcept = default;
+    ~MaxScoreCursor() = default;
+
     [[nodiscard]] constexpr auto operator*() const -> Document { return m_base_cursor.value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Document
     {

@@ -21,18 +21,18 @@
 #include "v1/types.hpp"
 #include "v1/union_lookup.hpp"
 
-using pisa::Query;
 using pisa::resolve_query_parser;
 using pisa::v1::BlockedReader;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
+using pisa::v1::Query;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
 using pisa::v1::union_lookup;
 using pisa::v1::VoidScorer;
 
 template <typename Index, typename Scorer>
-void evaluate(std::vector<pisa::Query> const& queries,
+void evaluate(std::vector<Query> const& queries,
               Index&& index,
               Scorer&& scorer,
               int k,
@@ -44,7 +44,7 @@ void evaluate(std::vector<pisa::Query> const& queries,
     for (auto const& query : queries) {
         std::vector<std::size_t> uni(query.terms.size());
         std::iota(uni.begin(), uni.end(), 0);
-        auto que = union_lookup(pisa::v1::Query{query.terms},
+        auto que = union_lookup(query,
                                 index,
                                 pisa::topk_queue(k),
                                 scorer,
@@ -68,7 +68,7 @@ void evaluate(std::vector<pisa::Query> const& queries,
 }
 
 template <typename Index, typename Scorer>
-void benchmark(std::vector<pisa::Query> const& queries,
+void benchmark(std::vector<Query> const& queries,
                Index&& index,
                Scorer&& scorer,
                int k,
@@ -82,7 +82,7 @@ void benchmark(std::vector<pisa::Query> const& queries,
             std::vector<std::size_t> uni(queries[query].terms.size());
             std::iota(uni.begin(), uni.end(), 0);
             auto usecs = ::pisa::run_with_timer<std::chrono::microseconds>([&]() {
-                auto que = union_lookup(pisa::v1::Query{queries[query].terms},
+                auto que = union_lookup(queries[query],
                                         index,
                                         pisa::topk_queue(k),
                                         scorer,
@@ -110,8 +110,11 @@ void benchmark(std::vector<pisa::Query> const& queries,
 int main(int argc, char** argv)
 {
     std::string inter_filename;
+    std::string threshold_file;
+
     pisa::QueryApp app("Queries a v1 index.");
     app.add_option("--intersections", inter_filename, "Intersections filename")->required();
+    app.add_option("--thresholds", threshold_file, "File with (estimated) thresholds.")->required();
     CLI11_PARSE(app, argc, argv);
 
     auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
@@ -123,13 +126,45 @@ int main(int argc, char** argv)
         app.documents_file = meta.document_lexicon.value();
     }
 
-    std::vector<pisa::Query> queries;
-    auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
-    if (app.query_file) {
-        std::ifstream is(*app.query_file);
-        pisa::io::for_each_line(is, parse_query);
-    } else {
-        pisa::io::for_each_line(std::cin, parse_query);
+    auto queries = [&]() {
+        std::vector<::pisa::Query> queries;
+        auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
+        if (app.query_file) {
+            std::ifstream is(*app.query_file);
+            pisa::io::for_each_line(is, parse_query);
+        } else {
+            pisa::io::for_each_line(std::cin, parse_query);
+        }
+        std::vector<Query> v1_queries(queries.size());
+        std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& query) {
+            return Query{.terms = query.terms,
+                         .list_selection = {},
+                         .threshold = {},
+                         .id =
+                             [&]() {
+                                 if (query.id) {
+                                     return tl::make_optional(*query.id);
+                                 }
+                                 return tl::optional<std::string>{};
+                             }(),
+                         .k = app.k};
+        });
+        return v1_queries;
+    }();
+
+    std::ifstream is(threshold_file);
+    auto queries_iter = queries.begin();
+    pisa::io::for_each_line(is, [&](auto&& line) {
+        if (queries_iter == queries.end()) {
+            spdlog::error("Number of thresholds not equal to number of queries");
+            std::exit(1);
+        }
+        queries_iter->threshold = tl::make_optional(std::stof(line));
+        ++queries_iter;
+    });
+    if (queries_iter != queries.end()) {
+        spdlog::error("Number of thresholds not equal to number of queries");
+        std::exit(1);
     }
 
     auto intersections = [&]() {

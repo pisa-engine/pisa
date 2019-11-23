@@ -69,6 +69,12 @@ struct BlockedCursor {
         reset();
     }
 
+    constexpr BlockedCursor(BlockedCursor const&) = default;
+    constexpr BlockedCursor(BlockedCursor&&) noexcept = default;
+    constexpr BlockedCursor& operator=(BlockedCursor const&) = default;
+    constexpr BlockedCursor& operator=(BlockedCursor&&) noexcept = default;
+    ~BlockedCursor() = default;
+
     void reset() { decode_and_update_block(0); }
 
     /// Dereferences the current value.
