@@ -23,6 +23,7 @@ int main(int argc, const char **argv)
     std::optional<uint64_t> fixed_block_size{};
     std::string input_basename;
     std::string output_filename;
+    std::string scorer_name;
     bool variable_block = false;
     bool compress = false;
     bool range = false;
@@ -38,6 +39,7 @@ int main(int argc, const char **argv)
         ->excludes(var_block_param_opt)
         ->needs(var_block_opt);
     app.add_flag("--compress", compress, "Compress additional data");
+    app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
 
     CLI11_PARSE(app, argc, argv);
@@ -60,15 +62,15 @@ int main(int argc, const char **argv)
 
     if (compress) {
         wand_data<wand_data_compressed> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
-        wand_data<wand_data_range<128, 1024, bm25>> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
+        wand_data<wand_data_range<128, 1024>> wdata(
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
         wand_data<wand_data_raw> wdata(
-            sizes_coll.begin()->begin(), coll.num_docs(), coll, block_size);
+            sizes_coll.begin()->begin(), coll.num_docs(), coll, scorer_name, block_size);
         mapper::freeze(wdata, output_filename.c_str());
     }
 }

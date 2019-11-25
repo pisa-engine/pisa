@@ -18,6 +18,8 @@
 #include "wand_data_raw.hpp"
 #include "cursor/max_scored_cursor.hpp"
 
+#include "scorer/scorer.hpp"
+
 #include "CLI/CLI.hpp"
 
 using namespace pisa;
@@ -28,6 +30,7 @@ void thresholds(const std::string &index_filename,
                 const std::vector<Query> &queries,
                 const std::optional<std::string> &thresholds_filename,
                 std::string const &type,
+                std::string const &scorer_name,
                 uint64_t k)
 {
     IndexType index;
@@ -35,6 +38,9 @@ void thresholds(const std::string &index_filename,
     mapper::map(index, m);
 
     WandType wdata;
+
+    auto scorer = scorer::from_name(scorer_name, wdata);
+
 
     mio::mmap_source md;
     if (wand_data_filename) {
@@ -49,7 +55,7 @@ void thresholds(const std::string &index_filename,
 
     wand_query wand_q(k);
     for (auto const &query : queries) {
-        wand_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
+        wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
         auto  results   = wand_q.topk();
         float threshold = 0.0;
         if (results.size() == k) {
@@ -72,6 +78,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> terms_file;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
+    std::string scorer_name;
     std::optional<std::string> thresholds_filename;
     std::optional<std::string> stemmer = std::nullopt;
 
@@ -84,6 +91,7 @@ int main(int argc, const char **argv)
     app.add_option("-i,--index", index_filename, "Collection basename")->required();
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
+    app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     auto *terms_opt =
@@ -111,6 +119,7 @@ int main(int argc, const char **argv)
                                                                     queries,             \
                                                                     thresholds_filename, \
                                                                     type,                \
+                                                                    scorer_name,         \
                                                                     k);                  \
         } else {                                                                         \
             thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
@@ -118,6 +127,7 @@ int main(int argc, const char **argv)
                                                                 queries,                 \
                                                                 thresholds_filename,     \
                                                                 type,                    \
+                                                                scorer_name,             \
                                                                 k);                      \
         }                                                                                \
         /**/

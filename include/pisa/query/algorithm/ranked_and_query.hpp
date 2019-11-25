@@ -7,8 +7,6 @@ namespace pisa {
 
 struct ranked_and_query {
 
-    typedef bm25 scorer_type;
-
     ranked_and_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>

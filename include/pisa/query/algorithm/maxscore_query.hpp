@@ -7,8 +7,6 @@ namespace pisa {
 
 struct maxscore_query {
 
-    typedef bm25 scorer_type;
-
     maxscore_query(topk_queue& topk)
     : m_topk(topk) {}
 

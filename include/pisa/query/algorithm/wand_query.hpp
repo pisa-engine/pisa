@@ -2,15 +2,12 @@
 
 #include <vector>
 
-#include "scorer/bm25.hpp"
 #include "topk_queue.hpp"
 #include "query/queries.hpp"
 
 namespace pisa {
 
 struct wand_query {
-
-    typedef bm25 scorer_type;
 
     wand_query(topk_queue& topk)
         : m_topk(topk) {}
