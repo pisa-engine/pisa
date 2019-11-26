@@ -111,14 +111,18 @@ void thresholds(const std::string &taily_stats_filename,
     }
 
     for (auto const &query : queries) {
-        std::vector<taily::Feature_Statistics> term_stats;
         auto terms = query.terms;
-        for (auto &&t : terms) {
-            term_stats.push_back(stats[t]);
+        double threshold = 0;
+	if(terms.size())
+	{
+	   std::vector<taily::Feature_Statistics> term_stats;
+           for (auto &&t : terms) {
+               term_stats.push_back(stats[t]);
+           }
+           taily::Query_Statistics query_stats{term_stats, collection_size};
+           threshold = taily::estimate_cutoff(query_stats, k);
         }
-        taily::Query_Statistics query_stats{term_stats, collection_size};
-        auto threshold = taily::estimate_cutoff(query_stats, k);
-        std::cout << threshold << '\n';
+	std::cout << threshold << '\n';
     }
 }
 
