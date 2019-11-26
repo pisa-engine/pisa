@@ -50,12 +50,16 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
     }
 
     for (auto const &query : queries) {
-        int num_nodes = query.terms.size();
+	auto terms = query.terms;
+        double threshold = 0;
+	if(terms.size())
+        {
+        int num_nodes = terms.size();
         std::vector<std::pair<int, int>> edge_array;
         std::vector<float> weights;
-        for (size_t i = 0; i < query.terms.size(); ++i) {
-            for (size_t j = i + 1; j < query.terms.size(); ++j) {
-                auto it = bigrams_stats.find({query.terms[i], query.terms[j]});
+        for (size_t i = 0; i < terms.size(); ++i) {
+            for (size_t j = i + 1; j < terms.size(); ++j) {
+                auto it = bigrams_stats.find({terms[i], terms[j]});
                 if (it != bigrams_stats.end()) {
                     edge_array.emplace_back(i, j);
                     double t1 = stats[i].frequency /collection_size;
@@ -73,7 +77,6 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
         double all = 1;
 
         std::vector<taily::Feature_Statistics> term_stats;
-        auto terms = query.terms;
         for (auto &&t : terms) {
             term_stats.push_back(stats[t]);
         }
@@ -90,8 +93,9 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
         }
         all *= any;
 
-        auto threshold = estimate_pairwise_cutoff(query_stats, k, all);
-        std::cout << threshold << '\n';
+        threshold = estimate_pairwise_cutoff(query_stats, k, all);
+        }
+	std::cout << threshold << '\n';
     }
 }
 
