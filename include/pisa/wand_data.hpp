@@ -52,8 +52,6 @@ class wand_data {
 
         for (auto const &seq : coll) {
             if(dropped_term_ids.find(term_id) != dropped_term_ids.end()){
-              progress.update(1);
-              term_id += 1;
               continue;
             }
 
