@@ -10,10 +10,8 @@
 #include <boost/algorithm/string.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/spdlog.h>
-
 #include "index_types.hpp"
 #include "query/queries.hpp"
-#include "scorer/score_function.hpp"
 #include "term_processor.hpp"
 #include "tokenizer.hpp"
 #include "topk_queue.hpp"

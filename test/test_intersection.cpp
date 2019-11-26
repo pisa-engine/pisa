@@ -101,16 +101,20 @@ struct InMemoryIndex {
 
 struct InMemoryWand {
     std::vector<float> max_weights;
-    std::vector<uint32_t> terms_len;
+    std::uint32_t num_documents;
 
     [[nodiscard]] auto max_term_weight(std::uint32_t term_id) const noexcept -> float
     {
         return max_weights[term_id];
     }
+    [[nodiscard]] auto term_posting_count(std::uint32_t term_id) const noexcept { return 1; }
+    [[nodiscard]] auto term_occurrence_count(std::uint32_t term_id) const noexcept { return 1; }
 
     [[nodiscard]] auto norm_len(std::uint32_t docid) const noexcept { return 1.0; }
-
-    [[nodiscard]] auto term_len(std::uint32_t termid) const noexcept { return terms_len[termid]; }
+    [[nodiscard]] auto doc_len(std::uint32_t docid) const noexcept { return 1; }
+    [[nodiscard]] auto avg_len() const noexcept { return 1.0; }
+    [[nodiscard]] auto num_docs() const noexcept -> std::size_t { return num_documents; }
+    [[nodiscard]] auto collection_len() const noexcept -> std::size_t { return 1; }
 
 };
 
@@ -193,21 +197,21 @@ TEST_CASE("compute intersection", "[intersection][unit]")
                                 {1, 1, 1}, // 6
                             },
                             10};
-        InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0},
-                          {1, 3, 1, 1, 1, 3, 3}};
+        InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
+
         Query query{
             "Q1", // query ID
             {6, 1, 5}, // terms
             {0.1, 0.4, 1.0} // weights
         };
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
-            {0b001, 3, 0.76214f},
-            {0b010, 3, 0.76214f},
-            {0b100, 3, 0.76214f},
-            {0b011, 1, 1.52428f},
-            {0b101, 2, 1.52428f},
-            {0b110, 2, 1.52428f},
-            {0b111, 1, 2.28642f},
+            {0b001, 3, 1.84583f},
+            {0b010, 3, 1.84583f},
+            {0b100, 3, 1.84583f},
+            {0b011, 1, 3.69165f},
+            {0b101, 2, 3.69165f},
+            {0b110, 2, 3.69165f},
+            {0b111, 1, 5.53748f},
         }));
         WHEN("Computed intersection with mask " << mask)
         {

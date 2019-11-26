@@ -1,6 +1,8 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <unordered_map>
+
 #include "test_common.hpp"
 
 #include "cursor/block_max_scored_cursor.hpp"
@@ -17,14 +19,16 @@ using WandTypePlain = wand_data<wand_data_raw>;
 template <typename Index>
 struct IndexData {
 
-    static std::unique_ptr<IndexData> data;
+    static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
-    IndexData()
+
+    IndexData(std::string const &scorer_name)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
+                scorer_name,
                 BlockSize(VariableBlock()))
 
     {
@@ -51,33 +55,34 @@ struct IndexData {
     std::vector<Query> queries;
     WandTypePlain wdata;
 
-    [[nodiscard]] static auto get()
+    [[nodiscard]] static auto get(std::string const &s_name)
     {
-        if (IndexData::data == nullptr) {
-            IndexData::data = std::make_unique<IndexData<Index>>();
+        if (IndexData::data.find(s_name) == IndexData::data.end()) {
+            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name);
         }
-        return IndexData::data.get();
+        return IndexData::data[s_name].get();
     }
 };
 
 template <typename Index>
-std::unique_ptr<IndexData<Index>> IndexData<Index>::data = nullptr;
+std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
 
 template <typename Wand>
-auto test(Wand &wdata)
+auto test(Wand &wdata, std::string const &s_name)
 {
-    auto data = IndexData<single_index>::get();
+    auto data = IndexData<single_index>::get(s_name);
     block_max_wand_query op_q(10);
     wand_query wand_q(10);
+    auto scorer = scorer::from_name(s_name, data->wdata);
 
     for (auto const &q : data->queries) {
-        wand_q(make_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, wdata, q), data->index.num_docs());
+        wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());
+        op_q(make_block_max_scored_cursors(data->index, wdata, *scorer, q), data->index.num_docs());
         REQUIRE(wand_q.topk().size() == op_q.topk().size());
 
         for (size_t i = 0; i < wand_q.topk().size(); ++i) {
-            REQUIRE(wand_q.topk()[i].first ==
-                    Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
+            REQUIRE(wand_q.topk()[i].first
+                    == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
         }
         op_q.clear_topk();
     }
@@ -85,23 +90,28 @@ auto test(Wand &wdata)
 
 TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
 {
-    auto data = IndexData<single_index>::get();
+    for (auto &&s_name : {"bm25", "qld"}) {
 
-    SECTION("Regular") { test(data->wdata); }
-    SECTION("Fixed")
-    {
-        WandTypePlain wdata_fixed(data->document_sizes.begin()->begin(),
-                                  data->collection.num_docs(),
-                                  data->collection,
-                                  BlockSize(FixedBlock()));
-        test(wdata_fixed);
-    }
-    SECTION("Uniform")
-    {
-        WandTypeUniform wdata_uniform(data->document_sizes.begin()->begin(),
+        auto data = IndexData<single_index>::get(s_name);
+
+        SECTION("Regular") { test(data->wdata, s_name); }
+        SECTION("Fixed")
+        {
+            WandTypePlain wdata_fixed(data->document_sizes.begin()->begin(),
                                       data->collection.num_docs(),
                                       data->collection,
-                                      BlockSize(VariableBlock()));
-        test(wdata_uniform);
+                                      s_name,
+                                      BlockSize(FixedBlock()));
+            test(wdata_fixed, s_name);
+        }
+        SECTION("Uniform")
+        {
+            WandTypeUniform wdata_uniform(data->document_sizes.begin()->begin(),
+                                          data->collection.num_docs(),
+                                          data->collection,
+                                          s_name,
+                                          BlockSize(VariableBlock()));
+            test(wdata_uniform, s_name);
+        }
     }
 }

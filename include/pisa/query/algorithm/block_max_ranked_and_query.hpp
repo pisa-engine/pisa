@@ -7,8 +7,6 @@ namespace pisa {
 
 struct block_max_ranked_and_query {
 
-    using scorer_type = bm25;
-
     block_max_ranked_and_query(uint64_t k) : m_topk(k) {}
 
     template <typename CursorRange>

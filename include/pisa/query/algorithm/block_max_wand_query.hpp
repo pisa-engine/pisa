@@ -6,7 +6,6 @@
 namespace pisa {
 
 struct block_max_wand_query {
-    typedef bm25 scorer_type;
 
     block_max_wand_query(uint64_t k)
         : m_topk(k) {}
@@ -134,26 +133,20 @@ struct block_max_wand_query {
                     }
                 }
 
-                uint64_t next_jump = max_docid;
-
-                if (pivot + 1 < ordered_cursors.size()) {
-                    next_jump = ordered_cursors[pivot + 1]->docs_enum.docid();
-                }
+                next = max_docid;
 
                 for (size_t i = 0; i <= pivot; ++i) {
-                    if (ordered_cursors[i]->w.docid() < next_jump)
-                        next_jump = std::min(ordered_cursors[i]->w.docid(), next_jump);
+                    if (ordered_cursors[i]->w.docid() < next)
+                        next = ordered_cursors[i]->w.docid();
                 }
 
-                next = next_jump + 1;
-                if (pivot + 1 < ordered_cursors.size()) {
-                    if (next > ordered_cursors[pivot + 1]->docs_enum.docid()) {
-                        next = ordered_cursors[pivot + 1]->docs_enum.docid();
-                    }
+                next = next + 1;
+                if (pivot + 1 < ordered_cursors.size() && ordered_cursors[pivot + 1]->docs_enum.docid() < next) {
+                    next = ordered_cursors[pivot + 1]->docs_enum.docid();
                 }
 
-                if (next <= ordered_cursors[pivot]->docs_enum.docid()) {
-                    next = ordered_cursors[pivot]->docs_enum.docid() + 1;
+                if (next <= pivot_id) {
+                    next = pivot_id + 1;
                 }
 
                 ordered_cursors[next_list]->docs_enum.next_geq(next);
