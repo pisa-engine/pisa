@@ -58,7 +58,10 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
                 auto it = bigrams_stats.find({query.terms[i], query.terms[j]});
                 if (it != bigrams_stats.end()) {
                     edge_array.emplace_back(i, j);
-                    weights.push_back(-(it->second));
+                    double t1 = stats[i].frequency /collection_size;
+                    double t2 = stats[j].frequency /collection_size;
+                    double t12 = it->second /collection_size;
+                    weights.push_back(-t12/(t1 * t2));
                 }
             }
         }
@@ -68,10 +71,6 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
         boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
 
         double all = 1;
-        for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
-             ++ei) {
-            all *= -(weight[*ei]);
-        }
 
         std::vector<taily::Feature_Statistics> term_stats;
         auto terms = query.terms;
@@ -79,8 +78,13 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
             term_stats.push_back(stats[t]);
         }
         taily::Query_Statistics query_stats{term_stats, collection_size};
-
         double const any = taily::any(query_stats);
+
+        for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
+             ++ei) {
+            all *= -(weight[*ei]/ any);
+        }
+
         for (auto &&t : terms) {
             all *= stats[t].frequency / any;
         }
