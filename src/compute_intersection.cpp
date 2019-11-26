@@ -4,6 +4,8 @@
 #include <vector>
 
 #include <fmt/format.h>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include "CLI/CLI.hpp"
 #include "index_types.hpp"
