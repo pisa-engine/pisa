@@ -1,5 +1,7 @@
+#include <boost/algorithm/string.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
+
 #include <iostream>
 #include <optional>
 
@@ -34,7 +36,7 @@ using Edge = boost::graph_traits<Graph>::edge_descriptor;
 }
 
 void pairwise_thresholds(const std::string &taily_stats_filename,
-                         const std::map<std::set<uint32_t>, float> &bigrams_stats,
+                         const std::map<std::set<uint32_t>, uint32_t> &bigrams_stats,
                          const std::vector<Query> &queries,
                          uint64_t k)
 {
@@ -50,52 +52,52 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
     }
 
     for (auto const &query : queries) {
-	auto terms = query.terms;
+        auto terms = query.terms;
         double threshold = 0;
-	if(terms.size())
-        {
-        int num_nodes = terms.size();
-        std::vector<std::pair<int, int>> edge_array;
-        std::vector<float> weights;
-        for (size_t i = 0; i < terms.size(); ++i) {
-            for (size_t j = i + 1; j < terms.size(); ++j) {
-                auto it = bigrams_stats.find({terms[i], terms[j]});
-                if (it != bigrams_stats.end()) {
-                    edge_array.emplace_back(i, j);
-                    double t1 = stats[i].frequency /collection_size;
-                    double t2 = stats[j].frequency /collection_size;
-                    double t12 = it->second /collection_size;
-                    weights.push_back(-t12/(t1 * t2));
+        if (terms.size()) {
+            int num_nodes = terms.size();
+            std::vector<std::pair<int, int>> edge_array;
+            std::vector<float> weights;
+            for (size_t i = 0; i < terms.size(); ++i) {
+                for (size_t j = i + 1; j < terms.size(); ++j) {
+                    auto it = bigrams_stats.find({terms[i], terms[j]});
+                    if (it != bigrams_stats.end()) {
+                        edge_array.emplace_back(i, j);
+                        double t1 = stats[i].frequency / collection_size;
+                        double t2 = stats[j].frequency / collection_size;
+                        double t12 = it->second / collection_size;
+                        weights.push_back(-t12 / (t1 * t2));
+                    }
                 }
             }
-        }
-        Graph g(edge_array.begin(), edge_array.end(), weights.begin(), num_nodes);
-        boost::property_map<Graph, boost::edge_weight_t>::type weight = get(boost::edge_weight, g);
-        std::vector<Edge> spanning_tree;
-        boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
+            Graph g(edge_array.begin(), edge_array.end(), weights.begin(), num_nodes);
+            boost::property_map<Graph, boost::edge_weight_t>::type weight =
+                get(boost::edge_weight, g);
+            std::vector<Edge> spanning_tree;
+            boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
 
-        double all = 1;
+            double all = 1;
 
-        std::vector<taily::Feature_Statistics> term_stats;
-        for (auto &&t : terms) {
-            term_stats.push_back(stats[t]);
-        }
-        taily::Query_Statistics query_stats{term_stats, collection_size};
-        double const any = taily::any(query_stats);
+            std::vector<taily::Feature_Statistics> term_stats;
+            for (auto &&t : terms) {
+                term_stats.push_back(stats[t]);
+            }
+            taily::Query_Statistics query_stats{term_stats, collection_size};
+            double const any = taily::any(query_stats);
 
-        for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
-             ++ei) {
-            all *= -(weight[*ei]/ any);
-        }
+            for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
+                 ++ei) {
+                all *= -(weight[*ei] / any);
+            }
 
-        for (auto &&t : terms) {
-            all *= stats[t].frequency / any;
-        }
-        all *= any;
+            for (auto &&t : terms) {
+                all *= stats[t].frequency / any;
+            }
+            all *= any;
 
-        threshold = estimate_pairwise_cutoff(query_stats, k, all);
+            threshold = estimate_pairwise_cutoff(query_stats, k, all);
         }
-	std::cout << threshold << '\n';
+        std::cout << threshold << '\n';
     }
 }
 
@@ -117,16 +119,15 @@ void thresholds(const std::string &taily_stats_filename,
     for (auto const &query : queries) {
         auto terms = query.terms;
         double threshold = 0;
-	if(terms.size())
-	{
-	   std::vector<taily::Feature_Statistics> term_stats;
-           for (auto &&t : terms) {
-               term_stats.push_back(stats[t]);
-           }
-           taily::Query_Statistics query_stats{term_stats, collection_size};
-           threshold = taily::estimate_cutoff(query_stats, k);
+        if (terms.size()) {
+            std::vector<taily::Feature_Statistics> term_stats;
+            for (auto &&t : terms) {
+                term_stats.push_back(stats[t]);
+            }
+            taily::Query_Statistics query_stats{term_stats, collection_size};
+            threshold = taily::estimate_cutoff(query_stats, k);
         }
-	std::cout << threshold << '\n';
+        std::cout << threshold << '\n';
     }
 }
 
@@ -164,12 +165,15 @@ int main(int argc, const char **argv)
     }
 
     if (pairwise_filename) {
-        std::map<std::set<uint32_t>, float> bigrams_stats;
+        std::map<std::set<uint32_t>, uint32_t> bigrams_stats;
         std::ifstream bigrams_fs(*pairwise_filename);
         auto term_processor = TermProcessor(terms_file, std::nullopt, stemmer);
         std::string line;
         while (std::getline(bigrams_fs, line)) {
-            bigrams_stats.insert({{0, 0}, 0.0});
+            std::vector<std::string> tokens;
+            boost::split(tokens, line, boost::is_any_of("\t"));
+            bigrams_stats.insert(
+                {{*term_processor(tokens[0]), *term_processor(tokens[1])}, std::stoi(tokens[2])});
         }
 
         pairwise_thresholds(taily_stats_filename, bigrams_stats, queries, k);
