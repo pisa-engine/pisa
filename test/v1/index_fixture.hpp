@@ -1,24 +1,39 @@
 #pragma once
 
+#include <algorithm>
+#include <fstream>
+
 #include "../temporary_directory.hpp"
 #include "pisa_config.hpp"
 #include "query/queries.hpp"
 #include "v1/index.hpp"
 #include "v1/index_builder.hpp"
+#include "v1/intersection.hpp"
 #include "v1/query.hpp"
 #include "v1/score_index.hpp"
 
 namespace v1 = pisa::v1;
 
-[[nodiscard]] inline auto test_queries() -> std::vector<pisa::Query>
+[[nodiscard]] inline auto test_queries() -> std::vector<v1::Query>
 {
-    std::vector<pisa::Query> queries;
+    std::vector<v1::Query> queries;
     std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
     auto push_query = [&](std::string const& query_line) {
-        queries.push_back(pisa::parse_query_ids(query_line));
+        auto q = pisa::parse_query_ids(query_line);
+        queries.push_back(
+            v1::Query{.terms = q.terms, .list_selection = {}, .threshold = {}, .id = {}, .k = 10});
     };
     pisa::io::for_each_line(qfile, push_query);
     return queries;
+}
+
+[[nodiscard]] inline auto test_intersection_selections()
+{
+    auto intersections =
+        pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
+    auto unigrams = pisa::v1::filter_unigrams(intersections);
+    auto bigrams = pisa::v1::filter_bigrams(intersections);
+    return std::make_pair(unigrams, bigrams);
 }
 
 template <typename DocumentCursor, typename FrequencyCursor, typename ScoreCursor>
@@ -43,7 +58,19 @@ struct IndexFixture {
         auto errors = v1::verify_compressed_index(PISA_SOURCE_DIR "/test/test_data/test_collection",
                                                   index_basename);
         REQUIRE(errors.empty());
-        v1::score_index(fmt::format("{}.yml", index_basename), 1);
+        auto yml = fmt::format("{}.yml", index_basename);
+
+        auto queries = [&]() {
+            std::vector<v1::Query> queries;
+            auto qs = test_queries();
+            int idx = 0;
+            std::transform(qs.begin(), qs.end(), std::back_inserter(queries), [&](auto q) {
+                return v1::Query{q.terms};
+            });
+            return queries;
+        }();
+        v1::build_bigram_index(yml, collect_unique_bigrams(queries, []() {}));
+        v1::score_index(yml, 1);
     }
 
     [[nodiscard]] auto const& tmpdir() const { return *m_tmpdir; }

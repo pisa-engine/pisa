@@ -128,7 +128,9 @@ TEMPLATE_TEST_CASE("Query",
     auto input_data = GENERATE(table<char const*, bool>({{"daat_or", false},
                                                          {"maxscore", false},
                                                          {"maxscore", true},
-                                                         {"maxscore_union_lookup", true}}));
+                                                         {"maxscore_union_lookup", true},
+                                                         {"unigram_union_lookup", true},
+                                                         {"union_lookup", true}}));
     std::string algorithm = std::get<0>(input_data);
     bool with_threshold = std::get<1>(input_data);
     CAPTURE(algorithm);
@@ -146,37 +148,45 @@ TEMPLATE_TEST_CASE("Query",
         if (name == "maxscore_union_lookup") {
             return maxscore_union_lookup(query, index, topk_queue(10), scorer);
         }
+        if (name == "unigram_union_lookup") {
+            query.list_selection =
+                tl::make_optional(v1::ListSelection{.unigrams = query.terms, .bigrams = {}});
+            return unigram_union_lookup(query, index, topk_queue(10), scorer);
+        }
+        if (name == "union_lookup") {
+            if (query.terms.size() > 8) {
+                return maxscore_union_lookup(query, index, topk_queue(10), scorer);
+            }
+            return union_lookup(query, index, topk_queue(10), scorer);
+        }
         std::abort();
     };
     int idx = 0;
-    for (auto& q : test_queries()) {
-        std::sort(q.terms.begin(), q.terms.end());
-        q.terms.erase(std::unique(q.terms.begin(), q.terms.end()), q.terms.end());
-        CAPTURE(q.terms);
-        CAPTURE(idx++);
+    auto const intersections =
+        pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
+    for (auto& query : test_queries()) {
+        if (algorithm == "union_lookup") {
+            query.add_selections(gsl::make_span(intersections[idx]));
+        }
+        query.remove_duplicates();
 
-        or_q(make_scored_cursors(data->v0_index, data->wdata, q), data->v0_index.num_docs());
+        CAPTURE(query.terms);
+        CAPTURE(idx);
+        CAPTURE(intersections[idx]);
+
+        or_q(make_scored_cursors(data->v0_index, data->wdata, ::pisa::Query{{}, query.terms, {}}),
+             data->v0_index.num_docs());
         auto expected = or_q.topk();
-        auto threshold = [&]() {
-            if (with_threshold) {
-                return tl::make_optional<float>(expected.back().first - 1.0F);
-            }
-            return tl::optional<float>{};
-        }();
+        if (with_threshold) {
+            query.threshold = expected.back().first - 1.0F;
+        }
 
         auto on_the_fly = [&]() {
             auto run =
                 v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
             std::vector<typename topk_queue::entry_type> results;
             run([&](auto&& index) {
-                auto que = run_query(algorithm,
-                                     v1::Query{.terms = q.terms,
-                                               .list_selection = {},
-                                               .threshold = threshold,
-                                               .id = {},
-                                               .k = 10},
-                                     index,
-                                     make_bm25(index));
+                auto que = run_query(algorithm, query, index, make_bm25(index));
                 que.finalize();
                 results = que.topk();
                 results.erase(std::remove_if(results.begin(),
@@ -192,10 +202,23 @@ TEMPLATE_TEST_CASE("Query",
         expected.resize(on_the_fly.size());
         std::sort(expected.begin(), expected.end(), approximate_order);
 
+        // if (algorithm == "union_lookup") {
+        //    for (size_t i = 0; i < on_the_fly.size(); ++i) {
+        //        std::cerr << fmt::format("{}, {:f} -- {}, {:f}\n",
+        //                                 on_the_fly[i].second,
+        //                                 on_the_fly[i].first,
+        //                                 expected[i].second,
+        //                                 expected[i].first);
+        //    }
+        //}
+        // std::cerr << '\n';
+
         for (size_t i = 0; i < on_the_fly.size(); ++i) {
             REQUIRE(on_the_fly[i].second == expected[i].second);
             REQUIRE(on_the_fly[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
         }
+
+        idx += 1;
 
         // auto precomputed = [&]() {
         //    auto run =
@@ -259,75 +282,5 @@ TEMPLATE_TEST_CASE("Query",
         //    REQUIRE(std::abs(precomputed[i].first - expected_quantized[i].first)
         //            <= static_cast<float>(q.terms.size()));
         //}
-    }
-}
-
-TEMPLATE_TEST_CASE("UnionLookup",
-                   "[v1][integration]",
-                   (IndexFixture<v1::RawCursor<v1::DocId>,
-                                 v1::RawCursor<v1::Frequency>,
-                                 v1::RawCursor<std::uint8_t>>),
-                   (IndexFixture<v1::BlockedCursor<::pisa::simdbp_block, true>,
-                                 v1::BlockedCursor<::pisa::simdbp_block, false>,
-                                 v1::RawCursor<std::uint8_t>>))
-{
-    tbb::task_scheduler_init init(1);
-    auto data = IndexData<single_index,
-                          v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<v1::Frequency>>,
-                          v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<float>>>::get();
-    TestType fixture;
-    auto index_basename = (fixture.tmpdir().path() / "inv").string();
-    auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
-    ranked_or_query or_q(10);
-    int idx = 0;
-    for (auto& q : test_queries()) {
-        CAPTURE(q.terms);
-        CAPTURE(idx++);
-
-        or_q(make_scored_cursors(data->v0_index, data->wdata, q), data->v0_index.num_docs());
-        auto expected = or_q.topk();
-        std::sort(expected.begin(), expected.end(), std::greater{});
-
-        auto on_the_fly = [&]() {
-            auto run =
-                v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
-            std::vector<typename topk_queue::entry_type> results;
-            run([&](auto&& index) {
-                std::vector<std::size_t> unigrams(q.terms.size());
-                std::iota(unigrams.begin(), unigrams.end(), 0);
-                auto que = v1::union_lookup(v1::Query{q.terms},
-                                            index,
-                                            topk_queue(10),
-                                            make_bm25(index),
-                                            std::move(unigrams),
-                                            {});
-                que.finalize();
-                results = que.topk();
-                std::sort(results.begin(), results.end(), std::greater{});
-            });
-            return results;
-        }();
-
-        // auto precomputed = [&]() {
-        //    auto run =
-        //        v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
-        //    std::vector<typename topk_queue::entry_type> results;
-        //    run([&](auto&& index) {
-        //        auto que = daat_or(v1::Query{q.terms}, index, topk_queue(10), v1::VoidScorer{});
-        //        que.finalize();
-        //        results = que.topk();
-        //        std::sort(results.begin(), results.end(), std::greater{});
-        //    });
-        //    return results;
-        //}();
-
-        REQUIRE(expected.size() == on_the_fly.size());
-        // REQUIRE(expected.size() == precomputed.size());
-        for (size_t i = 0; i < on_the_fly.size(); ++i) {
-            REQUIRE(on_the_fly[i].second == expected[i].second);
-            REQUIRE(on_the_fly[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
-            // REQUIRE(precomputed[i].second == expected[i].second);
-            // REQUIRE(precomputed[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
-        }
     }
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <bitset>
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -13,13 +14,14 @@
 #include "v1/cursor/for_each.hpp"
 #include "v1/cursor_intersection.hpp"
 #include "v1/cursor_union.hpp"
+#include "v1/intersection.hpp"
 #include "v1/types.hpp"
 
 namespace pisa::v1 {
 
 struct ListSelection {
-    std::vector<std::size_t> unigrams{};
-    std::vector<std::pair<std::size_t, std::size_t>> bigrams{};
+    std::vector<TermId> unigrams{};
+    std::vector<std::pair<TermId, TermId>> bigrams{};
 };
 
 struct Query {
@@ -28,6 +30,12 @@ struct Query {
     tl::optional<float> threshold{};
     tl::optional<std::string> id{};
     int k{};
+
+    void add_selections(gsl::span<std::bitset<64> const> selections);
+    void remove_duplicates();
+
+   private:
+    auto resolve_term(std::size_t pos) -> TermId;
 };
 
 template <typename Index, typename Scorer>

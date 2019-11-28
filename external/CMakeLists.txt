@@ -126,8 +126,6 @@ set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "skip building YAML tools")
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "skip building YAML tests")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp EXCLUDE_FROM_ALL)
 
-# Add tl::expected
-#set(EXPECTED_BUILD_TESTS OFF CACHE BOOL "skip tl::expected testing")
-#set(EXPECTED_BUILD_PACKAGE OFF CACHE BOOL "skip tl::expected package")
-#set(EXPECTED_BUILD_PACKAGE_DEB OFF CACHE BOOL "skip tl::expected package deb")
-#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/expected EXCLUDE_FROM_ALL)
+# Add RapidCheck
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
+target_compile_options(rapidcheck PRIVATE -Wno-error=all)

@@ -3,6 +3,8 @@
 #include <optional>
 
 #include <CLI/CLI.hpp>
+#include <range/v3/view/filter.hpp>
+#include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
@@ -13,6 +15,7 @@
 #include "v1/analyze_query.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/index_metadata.hpp"
+#include "v1/intersection.hpp"
 #include "v1/maxscore.hpp"
 #include "v1/query.hpp"
 #include "v1/raw_cursor.hpp"
@@ -27,6 +30,7 @@ using pisa::v1::daat_or;
 using pisa::v1::DaatOrAnalyzer;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
+using pisa::v1::ListSelection;
 using pisa::v1::maxscore_union_lookup;
 using pisa::v1::MaxscoreAnalyzer;
 using pisa::v1::MaxscoreUnionLookupAnalyzer;
@@ -34,6 +38,10 @@ using pisa::v1::Query;
 using pisa::v1::QueryAnalyzer;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
+using pisa::v1::unigram_union_lookup;
+using pisa::v1::UnigramUnionLookupAnalyzer;
+using pisa::v1::union_lookup;
+using pisa::v1::UnionLookupAnalyzer;
 using pisa::v1::VoidScorer;
 
 using RetrievalAlgorithm = std::function<::pisa::topk_queue(pisa::v1::Query, ::pisa::topk_queue)>;
@@ -61,6 +69,22 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
                 query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
     }
+    if (name == "unigram-union-lookup") {
+        return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+            return pisa::v1::unigram_union_lookup(
+                query, index, std::move(topk), std::forward<Scorer>(scorer));
+        });
+    }
+    if (name == "union-lookup") {
+        return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+            if (query.list_selection && query.list_selection->bigrams.empty()) {
+                return pisa::v1::unigram_union_lookup(
+                    query, index, std::move(topk), std::forward<Scorer>(scorer));
+            }
+            return pisa::v1::union_lookup(
+                query, index, std::move(topk), std::forward<Scorer>(scorer));
+        });
+    }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
 }
@@ -75,7 +99,15 @@ auto resolve_analyze(std::string const& name, Index const& index, Scorer&& score
         return QueryAnalyzer(MaxscoreAnalyzer(index, std::forward<Scorer>(scorer)));
     }
     if (name == "maxscore-union-lookup") {
-        return QueryAnalyzer(MaxscoreUnionLookupAnalyzer(index, std::forward<Scorer>(scorer)));
+        return QueryAnalyzer(
+            MaxscoreUnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+    }
+    if (name == "unigram-union-lookup") {
+        return QueryAnalyzer(
+            UnigramUnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+    }
+    if (name == "union-lookup") {
+        return QueryAnalyzer(UnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
     }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
@@ -124,10 +156,10 @@ void benchmark(std::vector<Query> const& queries, int k, RetrievalAlgorithm retr
     double q50 = times[times.size() / 2];
     double q90 = times[90 * times.size() / 100];
     double q95 = times[95 * times.size() / 100];
-    spdlog::info("Mean: {}", avg);
-    spdlog::info("50% quantile: {}", q50);
-    spdlog::info("90% quantile: {}", q90);
-    spdlog::info("95% quantile: {}", q95);
+    spdlog::info("Mean: {} microsec.", avg);
+    spdlog::info("50% quantile: {} microsec.", q50);
+    spdlog::info("90% quantile: {} microsec.", q90);
+    spdlog::info("95% quantile: {} microsec.", q95);
 }
 
 void analyze_queries(std::vector<Query> const& queries, QueryAnalyzer analyzer)
@@ -145,11 +177,13 @@ int main(int argc, char** argv)
 {
     std::string algorithm = "daat_or";
     tl::optional<std::string> threshold_file;
+    tl::optional<std::string> inter_filename;
     bool analyze = false;
 
     pisa::QueryApp app("Queries a v1 index.");
     app.add_option("--algorithm", algorithm, "Query retrieval algorithm.", true);
     app.add_option("--thresholds", threshold_file, "File with (estimated) thresholds.", false);
+    app.add_option("--intersections", inter_filename, "Intersections filename");
     app.add_flag("--analyze", analyze, "Analyze query execution and stats");
     CLI11_PARSE(app, argc, argv);
 
@@ -209,6 +243,21 @@ int main(int argc, char** argv)
         if (queries_iter != queries.end()) {
             spdlog::error("Number of thresholds not equal to number of queries");
             std::exit(1);
+        }
+    }
+
+    if (inter_filename) {
+        auto const intersections = pisa::v1::read_intersections(*inter_filename);
+        if (intersections.size() != queries.size()) {
+            spdlog::error("Number of intersections is not equal to number of queries");
+            std::exit(1);
+        }
+        /* auto unigrams = pisa::v1::filter_unigrams(intersections); */
+        /* auto bigrams = pisa::v1::filter_bigrams(intersections); */
+
+        for (auto query_idx = 0; query_idx < queries.size(); query_idx += 1) {
+            queries[query_idx].add_selections(gsl::make_span(intersections[query_idx]));
+            // ListSelection{std::move(unigrams[query_idx]), std::move(bigrams[query_idx])};
         }
     }
 

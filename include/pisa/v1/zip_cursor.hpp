@@ -10,7 +10,11 @@ template <typename... Cursors>
 struct ZipCursor {
     using Value = std::tuple<decltype(*std::declval<Cursors>())...>;
 
-    explicit constexpr ZipCursor(Cursors... cursors) : m_cursors(std::move(cursors)...) {}
+    explicit constexpr ZipCursor(Cursors... cursors) : m_cursors(std::move(cursors)...)
+    {
+        static_assert(std::tuple_size_v<std::tuple<Cursors...>> == 2,
+                      "Zip of more than two lists is currently not supported");
+    }
 
     [[nodiscard]] constexpr auto operator*() const -> Value { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Value
@@ -20,15 +24,24 @@ struct ZipCursor {
     }
     constexpr void advance()
     {
-        auto advance_all = [](auto... cursors) { (cursors.advance(), ...); };
-        std::apply(advance_all, m_cursors);
+        // TODO: Why generic doesn't work?
+        // auto advance_all = [](auto... cursors) { (cursors.advance(), ...); };
+        // std::apply(advance_all, m_cursors);
+        std::get<0>(m_cursors).advance();
+        std::get<1>(m_cursors).advance();
     }
     constexpr void advance_to_position(std::size_t pos)
     {
-        auto advance_all = [pos](auto... cursors) { (cursors.advance_to_position(pos), ...); };
-        std::apply(advance_all, m_cursors);
+        // TODO: Why generic doesn't work?
+        // auto advance_all = [pos](auto... cursors) { (cursors.advance_to_position(pos), ...); };
+        // std::apply(advance_all, m_cursors);
+        std::get<0>(m_cursors).advance();
+        std::get<1>(m_cursors).advance();
     }
-    //[[nodiscard]] constexpr auto empty() const noexcept -> bool { return m_key_cursor.empty(); }
+    [[nodiscard]] constexpr auto empty() const noexcept -> bool
+    {
+        return std::get<0>(m_cursors).empty() || std::get<1>(m_cursors).empty();
+    }
     [[nodiscard]] constexpr auto position() const noexcept -> std::size_t
     {
         return std::get<0>(m_cursors).position();

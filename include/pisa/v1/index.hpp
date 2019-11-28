@@ -133,25 +133,50 @@ struct Index {
         });
         return cursors;
     }
-
-    [[nodiscard]] auto bigram_cursor(TermId left_term, TermId right_term) const
+    [[nodiscard]] auto bigram_id(TermId left_term, TermId right_term) const -> tl::optional<TermId>
     {
         if (not m_bigram_mapping) {
             throw std::logic_error("Bigrams are missing");
         }
-        if (auto pos = std::lower_bound(m_bigram_mapping->begin(),
-                                        m_bigram_mapping->end(),
-                                        std::array<TermId, 2>{left_term, right_term},
-                                        compare_arrays);
-            pos != m_bigram_mapping->end()) {
-            auto bigram_id = std::distance(m_bigram_mapping->begin(), pos);
-            return DocumentPayloadCursor<DocumentCursor, ZipCursor<PayloadCursor, PayloadCursor>>(
-                m_document_reader.read(fetch_bigram_documents(bigram_id)),
-                zip(m_payload_reader.read(fetch_bigram_payloads<0>(bigram_id)),
-                    m_payload_reader.read(fetch_bigram_payloads<1>(bigram_id))));
+        if (right_term == left_term) {
+            throw std::logic_error("Requested bigram of two identical terms");
         }
-        throw std::invalid_argument(
-            fmt::format("Bigram for <{}, {}> not found.", left_term, right_term));
+        auto bigram = std::array<TermId, 2>{left_term, right_term};
+        if (right_term < left_term) {
+            std::swap(bigram[0], bigram[1]);
+        }
+        if (auto pos = std::lower_bound(
+                m_bigram_mapping->begin(), m_bigram_mapping->end(), bigram, compare_arrays);
+            pos != m_bigram_mapping->end()) {
+            if (*pos == bigram) {
+                return tl::make_optional(std::distance(m_bigram_mapping->begin(), pos));
+            }
+        }
+        return tl::nullopt;
+    }
+
+    [[nodiscard]] auto bigram_payloads_0(TermId left_term, TermId right_term) const
+    {
+        return bigram_id(left_term, right_term).map([this](auto bid) {
+            return m_payload_reader.read(fetch_bigram_payloads<0>(bid));
+        });
+    }
+
+    [[nodiscard]] auto bigram_payloads_1(TermId left_term, TermId right_term) const
+    {
+        return bigram_id(left_term, right_term).map([this](auto bid) {
+            return m_payload_reader.read(fetch_bigram_payloads<1>(bid));
+        });
+    }
+
+    [[nodiscard]] auto bigram_cursor(TermId left_term, TermId right_term) const
+    {
+        return bigram_id(left_term, right_term).map([this](auto bid) {
+            return DocumentPayloadCursor<DocumentCursor, ZipCursor<PayloadCursor, PayloadCursor>>(
+                m_document_reader.read(fetch_bigram_documents(bid)),
+                zip(m_payload_reader.read(fetch_bigram_payloads<0>(bid)),
+                    m_payload_reader.read(fetch_bigram_payloads<1>(bid))));
+        });
     }
 
     /// Constructs a new document-score cursor.
@@ -230,13 +255,17 @@ struct Index {
                                              TermId right_term,
                                              Scorer&& scorer) const
     {
-        return ScoringCursor(
-            bigram_cursor(left_term, right_term),
-            [scorers =
-                 std::make_tuple(scorer.term_scorer(left_term), scorer.term_scorer(right_term))](
-                auto&& docid, auto&& payload) {
-                return std::array<float, 2>{std::get<0>(scorers)(docid, std::get<0>(payload)),
-                                            std::get<1>(scorers)(docid, std::get<1>(payload))};
+        return bigram_cursor(left_term, right_term)
+            .take()
+            .map([scorer = std::forward<Scorer>(scorer), left_term, right_term](auto cursor) {
+                return ScoringCursor(cursor,
+                                     [scorers = std::make_tuple(scorer.term_scorer(left_term),
+                                                                scorer.term_scorer(right_term))](
+                                         auto&& docid, auto&& payload) {
+                                         return std::array<float, 2>{
+                                             std::get<0>(scorers)(docid, std::get<0>(payload)),
+                                             std::get<1>(scorers)(docid, std::get<1>(payload))};
+                                     });
             });
     }
 
@@ -255,12 +284,14 @@ struct Index {
     /// Constructs a new document cursor.
     [[nodiscard]] auto documents(TermId term) const
     {
+        assert_term_in_bounds(term);
         return m_document_reader.read(fetch_documents(term));
     }
 
     /// Constructs a new payload cursor.
     [[nodiscard]] auto payloads(TermId term) const
     {
+        assert_term_in_bounds(term);
         return m_payload_reader.read(fetch_payloads(term));
     }
 
@@ -288,6 +319,13 @@ struct Index {
     }
 
    private:
+    void assert_term_in_bounds(TermId term) const
+    {
+        if (term >= num_terms()) {
+            std::invalid_argument(
+                fmt::format("Requested term ID out of bounds [0-{}): {}", num_terms(), term));
+        }
+    }
     [[nodiscard]] auto fetch_documents(TermId term) const -> gsl::span<std::byte const>
     {
         Expects(term + 1 < m_document_offsets.size());

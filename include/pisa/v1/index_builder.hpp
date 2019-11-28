@@ -11,6 +11,7 @@
 #include "v1/index.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/progress_status.hpp"
+#include "v1/query.hpp"
 
 namespace pisa::v1 {
 
@@ -223,5 +224,12 @@ inline void compress_binary_collection(std::string const& input,
 
 auto verify_compressed_index(std::string const& input, std::string_view output)
     -> std::vector<std::string>;
+
+auto collect_unique_bigrams(std::vector<Query> const& queries,
+                            std::function<void()> const& callback)
+    -> std::vector<std::pair<TermId, TermId>>;
+
+void build_bigram_index(std::string const& yml,
+                        std::vector<std::pair<TermId, TermId>> const& bigrams);
 
 } // namespace pisa::v1

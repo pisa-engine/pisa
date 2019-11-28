@@ -63,6 +63,10 @@ struct MaxScoreJoin {
 
     void initialize()
     {
+        if (m_cursors.empty()) {
+            m_current_value = sentinel();
+            m_current_payload = m_init;
+        }
         std::transform(m_cursors.begin(),
                        m_cursors.end(),
                        m_sorted_cursors.begin(),
@@ -210,6 +214,9 @@ auto join_maxscore(CursorContainer cursors,
 template <typename Index, typename Scorer>
 auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
 {
+    if (query.terms.empty()) {
+        return topk;
+    }
     using cursor_type = decltype(index.max_scored_cursor(0, scorer));
     using value_type = decltype(index.max_scored_cursor(0, scorer).value());
 
@@ -242,6 +249,9 @@ struct MaxscoreAnalyzer {
 
     void operator()(Query const& query)
     {
+        if (query.terms.empty()) {
+            return;
+        }
         using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
         using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
 

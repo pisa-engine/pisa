@@ -6,6 +6,7 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <gsl/span>
+#include <rapidcheck.h>
 #include <tbb/task_scheduler_init.h>
 
 #include "io.hpp"
@@ -52,18 +53,6 @@ std::ostream& operator<<(std::ostream& os, tl::optional<T> const& val)
 
 TEST_CASE("partition_by_index", "[v1][unit]")
 {
-    std::vector<std::uint32_t> values{5, 0, 1, 2, 3, 4};
-    // auto input_data = GENERATE(table<std::vector<std::size_t>, std::vector<std::uint32_t>>(
-    //    {{{}, {5, 0, 1, 2, 3, 4}},
-    //     {{0, 1, 2}, {2, 3, 4, 5, 0, 1}},
-    //     {{3, 4, 5}, {}},
-    //     {{0, 4, 5}, {}}}));
-    // auto input_data = GENERATE(table<std::vector<std::size_t>, std::vector<std::uint32_t>>(
-    //    {{{}, {5, 0, 1, 2, 3, 4}},
-    //     {{0, 1, 2}, {2, 3, 4, 5, 0, 1}},
-    //     {{3, 4, 5}, {}},
-    //     {{0, 4, 5}, {}}}));
-
     auto expected = [](auto input_vec, auto right_indices) {
         std::vector<int> essential;
         std::sort(right_indices.begin(), right_indices.end(), std::greater{});
@@ -77,18 +66,21 @@ TEST_CASE("partition_by_index", "[v1][unit]")
         return input_vec;
     };
 
-    std::vector<int> input{5, 0, 1, 2, 3, 4};
-    std::vector<std::size_t> right_indices{};
-    auto expected_output = expected(input, right_indices);
-    pisa::v1::partition_by_index(gsl::make_span(input), gsl::make_span(right_indices));
-    std::sort(input.begin(), std::next(input.begin(), input.size() - right_indices.size()));
-    std::sort(std::next(input.begin(), right_indices.size()), input.end());
-    REQUIRE(input == expected_output);
-
-    // auto [right_indices, expected] = GENERATE(
-    //    table<std::vector<std::size_t>, std::vector<std::uint32_t>>({{}, {5, 0, 1, 2, 3, 4}}));
-    // pisa::v1::partition_by_index(gsl::make_span(values), gsl::make_span(right_indices));
-    // REQUIRE(values == expected);
+    rc::check([&](std::vector<int> input) {
+        CAPTURE(input);
+        std::vector<std::size_t> all_indices(input.size());
+        std::iota(all_indices.begin(), all_indices.end(), 0);
+        auto right_indices =
+            *rc::gen::unique<std::vector<std::size_t>>(rc::gen::elementOf(all_indices));
+        CAPTURE(right_indices);
+        auto expected_output = expected(input, right_indices);
+        auto essential_count = right_indices.size();
+        auto non_essential_count = input.size() - essential_count;
+        pisa::v1::partition_by_index(gsl::make_span(input), gsl::make_span(right_indices));
+        std::sort(input.begin(), std::next(input.begin(), non_essential_count));
+        std::sort(std::next(input.begin(), non_essential_count), input.end());
+        REQUIRE(input == expected_output);
+    });
 }
 
 TEST_CASE("RawReader", "[v1][unit]")
