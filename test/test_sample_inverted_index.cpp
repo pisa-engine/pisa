@@ -21,11 +21,12 @@ TEST_CASE("sample_inverted_index")
     auto original = binary_freq_collection(input.c_str());
 
     // when
+    std::vector<size_t> dropped_term_ids;
     pisa::sample_inverted_index(input, output, [](const auto &docs) {
         std::vector<std::uint32_t> sample(docs.size());
         std::iota(sample.begin(), sample.end(), 0);
         return sample;
-    });
+    }, dropped_term_ids);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -62,11 +63,12 @@ TEST_CASE("sample_inverted_index_one_sample")
     auto original = binary_freq_collection(input.c_str());
 
     // when
+    std::vector<size_t> dropped_term_ids;
     pisa::sample_inverted_index(input, output, [](const auto &docs) {
         std::vector<std::uint32_t> sample(1);
         std::iota(sample.begin(), sample.end(), 0);
         return sample;
-    });
+    }, dropped_term_ids);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -106,15 +108,16 @@ TEST_CASE("sample_inverted_index_reverse")
     auto original = binary_freq_collection(input.c_str());
     float rate = 0.1;
     // when
+    std::vector<size_t> dropped_term_ids;
     pisa::sample_inverted_index(input, output, [&](const auto &docs) {
         std::vector<std::uint32_t> sample(docs.size());
         std::iota(sample.begin(), sample.end(), 0);
         std::reverse(sample.begin(), sample.end());
-        size_t new_size = std::ceil(size * rate);
+        size_t new_size = std::ceil(docs.size() * rate);
         sample.resize(new_size);
         std::sort(sample.begin(), sample.end());
         return sample;
-    });
+    }, dropped_term_ids);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
