@@ -79,3 +79,6 @@
 [submodule "external/rapidcheck"]
 	path = external/rapidcheck
 	url = https://github.com/emil-e/rapidcheck.git
+[submodule "external/json"]
+	path = external/json
+	url = https://github.com/nlohmann/json.git
