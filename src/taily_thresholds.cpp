@@ -172,9 +172,12 @@ int main(int argc, const char **argv)
         while (std::getline(bigrams_fs, line)) {
             std::vector<std::string> tokens;
             boost::split(tokens, line, boost::is_any_of("\t"));
-            bigrams_stats.insert(
-                {{*term_processor(tokens[0]), *term_processor(tokens[1])}, std::stoi(tokens[2])});
-        }
+	    if(tokens.size() == 3){
+            	bigrams_stats.insert(
+                	{{*term_processor(tokens[0]), *term_processor(tokens[1])}, std::stoi(tokens[2])});
+            }
+	}
+        spdlog::info("Number of bigrams: {}", bigrams_stats.size());
 
         pairwise_thresholds(taily_stats_filename, bigrams_stats, queries, k);
     } else {
