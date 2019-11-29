@@ -13,14 +13,14 @@ auto collect_unique_bigrams(std::vector<Query> const& queries,
     std::vector<std::pair<TermId, TermId>> bigrams;
     auto idx = 0;
     for (auto query : queries) {
-        if (query.terms.empty()) {
+        auto const& term_ids = query.get_term_ids();
+        if (term_ids.empty()) {
             continue;
         }
         callback();
-        std::sort(query.terms.begin(), query.terms.end());
-        for (auto left = 0; left < query.terms.size() - 1; left += 1) {
-            for (auto right = left + 1; right < query.terms.size(); right += 1) {
-                bigrams.emplace_back(query.terms[left], query.terms[right]);
+        for (auto left = 0; left < term_ids.size() - 1; left += 1) {
+            for (auto right = left + 1; right < term_ids.size(); right += 1) {
+                bigrams.emplace_back(term_ids[left], term_ids[right]);
             }
         }
     }

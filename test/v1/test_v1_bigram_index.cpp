@@ -54,19 +54,17 @@ TEMPLATE_TEST_CASE("Bigram v intersection",
     auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
     int idx = 0;
     for (auto& q : test_queries()) {
-        std::sort(q.terms.begin(), q.terms.end());
-        q.terms.erase(std::unique(q.terms.begin(), q.terms.end()), q.terms.end());
-        CAPTURE(q.terms);
+        CAPTURE(q.get_term_ids());
         CAPTURE(idx++);
 
         auto run = v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
         std::vector<typename pisa::topk_queue::entry_type> results;
         run([&](auto&& index) {
             auto scorer = make_bm25(index);
-            for (auto left = 0; left < q.terms.size(); left += 1) {
-                for (auto right = left + 1; right < q.terms.size(); right += 1) {
-                    auto left_cursor = index.cursor(q.terms[left]);
-                    auto right_cursor = index.cursor(q.terms[right]);
+            for (auto left = 0; left < q.get_term_ids().size(); left += 1) {
+                for (auto right = left + 1; right < q.get_term_ids().size(); right += 1) {
+                    auto left_cursor = index.cursor(q.get_term_ids()[left]);
+                    auto right_cursor = index.cursor(q.get_term_ids()[right]);
                     auto intersection = v1::intersect({left_cursor, right_cursor},
                                                       std::array<v1::Frequency, 2>{0, 0},
                                                       [](auto& acc, auto&& cursor, auto idx) {
@@ -74,7 +72,8 @@ TEMPLATE_TEST_CASE("Bigram v intersection",
                                                           return acc;
                                                       });
                     if (not intersection.empty()) {
-                        auto bigram_cursor = *index.bigram_cursor(q.terms[left], q.terms[right]);
+                        auto bigram_cursor =
+                            *index.bigram_cursor(q.get_term_ids()[left], q.get_term_ids()[right]);
                         std::vector<v1::DocId> bigram_documents;
                         std::vector<v1::Frequency> bigram_frequencies_0;
                         std::vector<v1::Frequency> bigram_frequencies_1;

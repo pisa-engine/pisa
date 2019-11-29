@@ -62,33 +62,34 @@ namespace detail {
 } // namespace detail
 
 template <typename Index, typename Scorer, typename Analyzer = void>
-auto unigram_union_lookup(
-    Query query, Index const& index, topk_queue topk, Scorer&& scorer, Analyzer* analyzer = nullptr)
+auto unigram_union_lookup(Query const& query,
+                          Index const& index,
+                          topk_queue topk,
+                          Scorer&& scorer,
+                          Analyzer* analyzer = nullptr)
 {
-    if (query.terms.empty()) {
+    auto const& term_ids = query.get_term_ids();
+    if (term_ids.empty()) {
         return topk;
     }
-    if (not query.threshold) {
+    if (not query.threshold()) {
         throw std::invalid_argument("Must provide threshold to the query");
     }
-    if (not query.list_selection) {
+    if (not query.selections()) {
         throw std::invalid_argument("Must provide essential list selection");
     }
-    if (not query.list_selection->bigrams.empty()) {
+    if (not query.selections()->bigrams.empty()) {
         throw std::invalid_argument("This algorithm only supports unigrams");
     }
+    auto const& selections = query.get_selections();
 
-    topk.set_threshold(*query.threshold);
+    topk.set_threshold(*query.threshold());
 
     using cursor_type = decltype(index.max_scored_cursor(0, scorer));
     using payload_type = decltype(std::declval<cursor_type>().payload());
 
-    ranges::sort(query.terms);
-    ranges::sort(query.list_selection->unigrams);
-
     auto non_essential_terms =
-        ranges::views::set_difference(query.terms, query.list_selection->unigrams)
-        | ranges::to_vector;
+        ranges::views::set_difference(term_ids, selections.unigrams) | ranges::to_vector;
 
     std::vector<cursor_type> cursors;
     for (auto non_essential_term : non_essential_terms) {
@@ -98,7 +99,7 @@ auto unigram_union_lookup(
     std::sort(cursors.begin(), cursors.end(), [](auto&& lhs, auto&& rhs) {
         return lhs.max_score() < rhs.max_score();
     });
-    for (auto essential_term : query.list_selection->unigrams) {
+    for (auto essential_term : selections.unigrams) {
         cursors.push_back(index.max_scored_cursor(essential_term, scorer));
     }
 
@@ -121,19 +122,17 @@ auto maxscore_union_lookup(Query const& query,
                            Scorer&& scorer,
                            Analyzer* analyzer = nullptr)
 {
-    if (query.terms.empty()) {
+    auto const& term_ids = query.get_term_ids();
+    if (term_ids.empty()) {
         return topk;
     }
-    if (not query.threshold) {
-        throw std::invalid_argument("Must provide threshold to the query");
-    }
-
-    topk.set_threshold(*query.threshold);
+    auto threshold = query.get_threshold();
+    topk.set_threshold(threshold);
 
     using cursor_type = decltype(index.max_scored_cursor(0, scorer));
     using payload_type = decltype(std::declval<cursor_type>().payload());
 
-    auto cursors = index.max_scored_cursors(gsl::make_span(query.terms), scorer);
+    auto cursors = index.max_scored_cursors(gsl::make_span(term_ids), scorer);
     std::sort(cursors.begin(), cursors.end(), [](auto&& lhs, auto&& rhs) {
         return lhs.max_score() < rhs.max_score();
     });
@@ -144,8 +143,7 @@ auto maxscore_union_lookup(Query const& query,
         upper_bounds[i] = upper_bounds[i - 1] + cursors[i].max_score();
     }
     std::size_t non_essential_count = 0;
-    while (non_essential_count < cursors.size()
-           && upper_bounds[non_essential_count] < *query.threshold) {
+    while (non_essential_count < cursors.size() && upper_bounds[non_essential_count] < threshold) {
         non_essential_count += 1;
     }
     return detail::unigram_union_lookup(std::move(cursors),
@@ -175,14 +173,15 @@ struct BaseUnionLookupAnalyzer {
 
     void operator()(Query const& query)
     {
-        if (query.terms.empty()) {
+        auto const& term_ids = query.get_term_ids();
+        if (term_ids.empty()) {
             return;
         }
         using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
         using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
 
         reset_current();
-        run(query, m_index, m_scorer, topk_queue(query.k));
+        run(query, m_index, m_scorer, topk_queue(query.k()));
         std::cout << fmt::format("{}\t{}\t{}\t{}\n",
                                  m_current_documents,
                                  m_current_postings,
@@ -258,7 +257,11 @@ struct UnionLookupAnalyzer : public BaseUnionLookupAnalyzer<Index, Scorer> {
     }
     void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) override
     {
-        union_lookup(query, index, std::move(topk), scorer, this);
+        if (query.get_term_ids().size() > 8) {
+            maxscore_union_lookup(query, index, std::move(topk), scorer, this);
+        } else {
+            union_lookup(query, index, std::move(topk), scorer, this);
+        }
     }
 };
 
@@ -276,38 +279,33 @@ struct UnionLookupAnalyzer : public BaseUnionLookupAnalyzer<Index, Scorer> {
 ///                             posting lists. These must exist in the index, or else this
 ///                             algorithm will fail.
 template <typename Index, typename Scorer, typename Analyzer = void>
-auto union_lookup(
-    Query query, Index const& index, topk_queue topk, Scorer&& scorer, Analyzer* analyzer = nullptr)
+auto union_lookup(Query const& query,
+                  Index const& index,
+                  topk_queue topk,
+                  Scorer&& scorer,
+                  Analyzer* analyzer = nullptr)
 {
-    if (query.terms.empty()) {
+    auto const& term_ids = query.get_term_ids();
+    if (term_ids.empty()) {
         return topk;
     }
-    if (query.terms.size() > 8) {
+    if (term_ids.size() > 8) {
         throw std::invalid_argument(
             "Generic version of union-Lookup supported only for queries of length <= 8");
     }
-    if (not query.threshold) {
-        throw std::invalid_argument("Must provide threshold to the query");
-    }
-    if (not query.list_selection) {
-        throw std::invalid_argument("Must provide essential list selection");
-    }
+
+    auto threshold = query.get_threshold();
+    auto const& selections = query.get_selections();
 
     using bigram_cursor_type = std::decay_t<decltype(*index.scored_bigram_cursor(0, 0, scorer))>;
 
-    auto& essential_unigrams = query.list_selection->unigrams;
-    auto& essential_bigrams = query.list_selection->bigrams;
-
-    ranges::sort(essential_unigrams);
-    ranges::actions::unique(essential_unigrams);
-    ranges::sort(essential_bigrams);
-    ranges::actions::unique(essential_bigrams);
-    ranges::sort(query.terms);
+    auto& essential_unigrams = selections.unigrams;
+    auto& essential_bigrams = selections.bigrams;
 
     auto non_essential_terms =
-        ranges::views::set_difference(query.terms, essential_unigrams) | ranges::to_vector;
+        ranges::views::set_difference(term_ids, essential_unigrams) | ranges::to_vector;
 
-    topk.set_threshold(*query.threshold);
+    topk.set_threshold(threshold);
 
     std::array<float, 8> initial_payload{
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; //, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
@@ -318,50 +316,22 @@ auto union_lookup(
                    std::back_inserter(essential_unigram_cursors),
                    [&](auto term) { return index.scored_cursor(term, scorer); });
 
-    std::vector<std::size_t> essential_unigram_positions;
-    [&]() {
-        auto pos = query.terms.begin();
-        for (auto term : essential_unigrams) {
-            pos = std::find(pos, query.terms.end(), term);
-            assert(pos != query.terms.end());
-            essential_unigram_positions.push_back(std::distance(query.terms.begin(), pos));
-        }
-    }();
-
     auto merged_unigrams = v1::union_merge(
         essential_unigram_cursors, initial_payload, [&](auto& acc, auto& cursor, auto term_idx) {
             if constexpr (not std::is_void_v<Analyzer>) {
                 analyzer->posting();
             }
-            acc[essential_unigram_positions[term_idx]] = cursor.payload();
+            acc[query.sorted_position(essential_unigrams[term_idx])] = cursor.payload();
             return acc;
         });
 
     std::vector<bigram_cursor_type> essential_bigram_cursors;
-    std::vector<std::pair<std::size_t, std::size_t>> essential_bigram_positions;
     for (auto [left, right] : essential_bigrams) {
-        if (left > right) {
-            std::swap(left, right);
-        }
         auto cursor = index.scored_bigram_cursor(left, right, scorer);
         if (not cursor) {
             throw std::runtime_error(fmt::format("Bigram not found: <{}, {}>", left, right));
         }
         essential_bigram_cursors.push_back(cursor.take().value());
-        std::pair<std::size_t, std::size_t> bigram_positions;
-        if (auto pos = std::lower_bound(query.terms.begin(), query.terms.end(), left);
-            pos != query.terms.end()) {
-            bigram_positions.first = std::distance(query.terms.begin(), pos);
-        } else {
-            throw std::logic_error("Term from selected intersection not part of query");
-        }
-        if (auto pos = std::lower_bound(query.terms.begin(), query.terms.end(), right);
-            pos != query.terms.end()) {
-            bigram_positions.second = std::distance(query.terms.begin(), pos);
-        } else {
-            throw std::logic_error("Term from selected intersection not part of query");
-        }
-        essential_bigram_positions.push_back(bigram_positions);
     }
 
     auto merged_bigrams = v1::union_merge(
@@ -372,8 +342,8 @@ auto union_lookup(
                 analyzer->posting();
             }
             auto payload = cursor.payload();
-            acc[essential_bigram_positions[bigram_idx].first] = std::get<0>(payload);
-            acc[essential_bigram_positions[bigram_idx].second] = std::get<1>(payload);
+            acc[query.sorted_position(essential_bigrams[bigram_idx].first)] = std::get<0>(payload);
+            acc[query.sorted_position(essential_bigrams[bigram_idx].second)] = std::get<1>(payload);
             return acc;
         });
 
@@ -394,11 +364,11 @@ auto union_lookup(
     auto lookup_cursors = [&]() {
         std::vector<std::pair<std::size_t, decltype(index.max_scored_cursor(0, scorer))>>
             lookup_cursors;
-        auto pos = query.terms.begin();
+        auto pos = term_ids.begin();
         for (auto non_essential_term : non_essential_terms) {
-            pos = std::find(pos, query.terms.end(), non_essential_term);
-            assert(pos != query.terms.end());
-            auto idx = std::distance(query.terms.begin(), pos);
+            pos = std::find(pos, term_ids.end(), non_essential_term);
+            assert(pos != term_ids.end());
+            auto idx = std::distance(term_ids.begin(), pos);
             lookup_cursors.emplace_back(idx, index.max_scored_cursor(non_essential_term, scorer));
         }
         return lookup_cursors;
@@ -411,7 +381,7 @@ auto union_lookup(
             return acc + cursor.second.max_score();
         });
 
-    v1::for_each(merged, [&](auto& cursor) {
+    v1::for_each(merged_unigrams, [&](auto& cursor) {
         if constexpr (not std::is_void_v<Analyzer>) {
             analyzer->document();
         }

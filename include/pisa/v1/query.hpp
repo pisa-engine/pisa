@@ -24,129 +24,136 @@ struct ListSelection {
     std::vector<std::pair<TermId, TermId>> bigrams{};
 };
 
+template <typename T1, typename T2>
+std::ostream& operator<<(std::ostream& os, std::pair<T1, T2> const& p)
+{
+    return os << '(' << p.first << ", " << p.second << ')';
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec)
+{
+    auto pos = vec.begin();
+    os << '[';
+    if (pos != vec.end()) {
+        os << *pos++;
+    }
+    for (; pos != vec.end(); ++pos) {
+        os << ' ' << *pos;
+    }
+    os << ']';
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, ListSelection const& selection)
+{
+    return os << "ListSelection { unigrams: " << selection.unigrams
+              << ", bigrams: " << selection.bigrams << " }";
+}
+
+struct TermIdSet {
+    explicit TermIdSet(std::vector<TermId> terms) : m_term_list(std::move(terms))
+    {
+        m_term_set = m_term_list;
+        ranges::sort(m_term_set);
+        ranges::actions::unique(m_term_set);
+        std::size_t pos = 0;
+        for (auto term_id : m_term_set) {
+            m_sorted_positions[term_id] = pos++;
+        }
+    }
+
+    [[nodiscard]] auto sorted_position(TermId term) const -> std::size_t
+    {
+        return m_sorted_positions.at(term);
+    }
+
+    [[nodiscard]] auto term_at_pos(std::size_t pos) const -> TermId
+    {
+        if (pos >= m_term_list.size()) {
+            throw std::out_of_range("Invalid intersections: term position out of bounds");
+        }
+        return m_term_list[pos];
+    }
+
+    [[nodiscard]] auto get() const -> std::vector<TermId> const& { return m_term_set; }
+
+   private:
+    friend std::ostream& operator<<(std::ostream& os, TermIdSet const& term_ids);
+    std::vector<TermId> m_term_list;
+    std::vector<TermId> m_term_set{};
+    std::unordered_map<TermId, std::size_t> m_sorted_positions{};
+};
+
+inline std::ostream& operator<<(std::ostream& os, TermIdSet const& term_ids)
+{
+    return os << "TermIdSet { original: " << term_ids.m_term_list
+              << ", unique: " << term_ids.m_term_set << " }";
+}
+
 struct Query {
-    std::vector<TermId> terms;
-    tl::optional<ListSelection> list_selection{};
-    tl::optional<float> threshold{};
-    tl::optional<std::string> id{};
-    int k{};
+    Query() = default;
+
+    explicit Query(std::string query, tl::optional<std::string> id = tl::nullopt);
+    explicit Query(std::vector<TermId> term_ids, tl::optional<std::string> id = tl::nullopt);
+
+    /// Setters for optional values (or ones with default value).
+    auto term_ids(std::vector<TermId> term_ids) -> Query&;
+    auto id(std::string) -> Query&;
+    auto k(int k) -> Query&;
+    auto selections(gsl::span<std::bitset<64> const> selections) -> Query&;
+    auto selections(ListSelection selections) -> Query&;
+    auto threshold(float threshold) -> Query&;
+
+    /// Non-throwing getters
+    [[nodiscard]] auto term_ids() const -> tl::optional<std::vector<TermId> const&>;
+    [[nodiscard]] auto id() const -> tl::optional<std::string> const&;
+    [[nodiscard]] auto k() const -> int;
+    [[nodiscard]] auto selections() const -> tl::optional<ListSelection const&>;
+    [[nodiscard]] auto threshold() const -> tl::optional<float>;
+
+    /// Throwing getters
+    [[nodiscard]] auto get_term_ids() const -> std::vector<TermId> const&;
+    [[nodiscard]] auto get_id() const -> std::string const&;
+    [[nodiscard]] auto get_selections() const -> ListSelection const&;
+    [[nodiscard]] auto get_threshold() const -> float;
+
+    [[nodiscard]] auto sorted_position(TermId term) const -> std::size_t;
+    [[nodiscard]] auto term_at_pos(std::size_t pos) const -> TermId;
 
     void add_selections(gsl::span<std::bitset<64> const> selections);
-    void remove_duplicates();
+    [[nodiscard]] static auto from_json(std::string_view) -> Query;
 
    private:
+    friend std::ostream& operator<<(std::ostream& os, Query const& query);
     auto resolve_term(std::size_t pos) -> TermId;
+
+    tl::optional<TermIdSet> m_term_ids{};
+    tl::optional<ListSelection> m_selections{};
+    tl::optional<float> m_threshold{};
+    tl::optional<std::string> m_id{};
+    tl::optional<std::string> m_raw_string;
+    int m_k = 1000;
 };
 
-template <typename Index, typename Scorer>
-auto daat_and(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
+template <typename T>
+std::ostream& operator<<(std::ostream& os, tl::optional<T> const& value)
 {
-    std::vector<decltype(index.scored_cursor(0, scorer))> cursors;
-    std::transform(query.terms.begin(),
-                   query.terms.end(),
-                   std::back_inserter(cursors),
-                   [&](auto term) { return index.scored_cursor(term, scorer); });
-    auto intersection =
-        v1::intersect(std::move(cursors), 0.0F, [](auto& score, auto& cursor, auto /* term_idx */) {
-            score += cursor.payload();
-            return score;
-        });
-    v1::for_each(intersection, [&](auto& cursor) { topk.insert(cursor.payload(), *cursor); });
-    return topk;
+    if (not value) {
+        os << "None";
+    } else {
+        os << "Some(" << *value << ")";
+    }
+    return os;
 }
 
-template <typename Index, typename Scorer>
-auto daat_or(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
+inline std::ostream& operator<<(std::ostream& os, Query const& query)
 {
-    std::vector<decltype(index.scored_cursor(0, scorer))> cursors;
-    std::transform(query.terms.begin(),
-                   query.terms.end(),
-                   std::back_inserter(cursors),
-                   [&](auto term) { return index.scored_cursor(term, scorer); });
-    auto cunion = v1::union_merge(
-        std::move(cursors), 0.0F, [](auto& score, auto& cursor, auto /* term_idx */) {
-            score += cursor.payload();
-            return score;
-        });
-    v1::for_each(cunion, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
-    return topk;
-}
-
-template <typename Index, typename Scorer>
-struct DaatOrAnalyzer {
-    DaatOrAnalyzer(Index const& index, Scorer scorer) : m_index(index), m_scorer(std::move(scorer))
-    {
-        std::cout << fmt::format("documents\tpostings\n");
-    }
-
-    void operator()(Query const& query)
-    {
-        std::vector<decltype(m_index.scored_cursor(0, m_scorer))> cursors;
-        std::transform(query.terms.begin(),
-                       query.terms.end(),
-                       std::back_inserter(cursors),
-                       [&](auto term) { return m_index.scored_cursor(term, m_scorer); });
-        std::size_t postings = 0;
-        auto cunion = v1::union_merge(
-            std::move(cursors), 0.0F, [&](auto& score, auto& cursor, auto /* term_idx */) {
-                postings += 1;
-                score += cursor.payload();
-                return score;
-            });
-        std::size_t documents = 0;
-        std::size_t inserts = 0;
-        topk_queue topk(query.k);
-        v1::for_each(cunion, [&](auto& cursor) {
-            if (topk.insert(cursor.payload(), cursor.value())) {
-                inserts += 1;
-            };
-            documents += 1;
-        });
-        std::cout << fmt::format("{}\t{}\t{}\n", documents, postings, inserts);
-        m_documents += documents;
-        m_postings += postings;
-        m_inserts += inserts;
-        m_count += 1;
-    }
-
-    void summarize() &&
-    {
-        std::cerr << fmt::format(
-            "=== SUMMARY ===\nAverage:\n- documents:\t{}\n- postings:\t{}\n- inserts:\t{}\n",
-            static_cast<float>(m_documents) / m_count,
-            static_cast<float>(m_postings) / m_count,
-            static_cast<float>(m_inserts) / m_count);
-    }
-
-   private:
-    std::size_t m_documents = 0;
-    std::size_t m_postings = 0;
-    std::size_t m_inserts = 0;
-    std::size_t m_count = 0;
-    Index const& m_index;
-    Scorer m_scorer;
-};
-
-template <typename Index, typename Scorer>
-auto taat_or(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
-{
-    std::vector<float> accumulator(index.num_documents(), 0.0F);
-    for (auto term : query.terms) {
-        v1::for_each(index.scored_cursor(term, scorer),
-                     [&accumulator](auto&& cursor) { accumulator[*cursor] += cursor.payload(); });
-    }
-    for (auto document = 0; document < accumulator.size(); document += 1) {
-        topk.insert(accumulator[document], document);
-    }
-    return topk;
+    return os << "Query { term_ids: " << query.m_term_ids << ", selections: " << query.m_selections
+              << " }";
 }
 
 /// Returns only unique terms, in sorted order.
 [[nodiscard]] auto filter_unique_terms(Query const& query) -> std::vector<TermId>;
-
-template <typename Container>
-auto transform()
-{
-}
 
 } // namespace pisa::v1

@@ -214,24 +214,24 @@ auto join_maxscore(CursorContainer cursors,
 template <typename Index, typename Scorer>
 auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
 {
-    if (query.terms.empty()) {
+    auto const& term_ids = query.get_term_ids();
+    if (term_ids.empty()) {
         return topk;
     }
     using cursor_type = decltype(index.max_scored_cursor(0, scorer));
     using value_type = decltype(index.max_scored_cursor(0, scorer).value());
 
     std::vector<cursor_type> cursors;
-    std::transform(query.terms.begin(),
-                   query.terms.end(),
-                   std::back_inserter(cursors),
-                   [&](auto term) { return index.max_scored_cursor(term, scorer); });
+    std::transform(term_ids.begin(), term_ids.end(), std::back_inserter(cursors), [&](auto term) {
+        return index.max_scored_cursor(term, scorer);
+    });
 
     auto accumulate = [](auto& score, auto& cursor, auto /* term_position */) {
         score += cursor.payload();
         return score;
     };
-    if (query.threshold) {
-        topk.set_threshold(*query.threshold);
+    if (query.threshold()) {
+        topk.set_threshold(*query.threshold());
     }
     auto joined = join_maxscore(
         std::move(cursors), 0.0F, accumulate, [&](auto score) { return topk.would_enter(score); });
@@ -249,7 +249,8 @@ struct MaxscoreAnalyzer {
 
     void operator()(Query const& query)
     {
-        if (query.terms.empty()) {
+        auto const& term_ids = query.get_term_ids();
+        if (term_ids.empty()) {
             return;
         }
         using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
@@ -260,14 +261,14 @@ struct MaxscoreAnalyzer {
         m_current_lookups = 0;
 
         std::vector<cursor_type> cursors;
-        std::transform(query.terms.begin(),
-                       query.terms.end(),
+        std::transform(term_ids.begin(),
+                       term_ids.end(),
                        std::back_inserter(cursors),
                        [&](auto term) { return m_index.max_scored_cursor(term, m_scorer); });
 
         std::size_t inserts = 0;
-        topk_queue topk(query.k);
-        auto initial_threshold = query.threshold.value_or(-1.0);
+        topk_queue topk(query.k());
+        auto initial_threshold = query.threshold().value_or(-1.0);
         topk.set_threshold(initial_threshold);
         auto joined = join_maxscore(
             std::move(cursors),

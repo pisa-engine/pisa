@@ -20,8 +20,9 @@ namespace v1 = pisa::v1;
     std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
     auto push_query = [&](std::string const& query_line) {
         auto q = pisa::parse_query_ids(query_line);
-        queries.push_back(
-            v1::Query{.terms = q.terms, .list_selection = {}, .threshold = {}, .id = {}, .k = 10});
+        v1::Query query(q.terms);
+        query.k(1000);
+        queries.push_back(std::move(query));
     };
     pisa::io::for_each_line(qfile, push_query);
     return queries;
@@ -59,17 +60,7 @@ struct IndexFixture {
                                                   index_basename);
         REQUIRE(errors.empty());
         auto yml = fmt::format("{}.yml", index_basename);
-
-        auto queries = [&]() {
-            std::vector<v1::Query> queries;
-            auto qs = test_queries();
-            int idx = 0;
-            std::transform(qs.begin(), qs.end(), std::back_inserter(queries), [&](auto q) {
-                return v1::Query{q.terms};
-            });
-            return queries;
-        }();
-        v1::build_bigram_index(yml, collect_unique_bigrams(queries, []() {}));
+        v1::build_bigram_index(yml, collect_unique_bigrams(test_queries(), []() {}));
         v1::score_index(yml, 1);
     }
 

@@ -129,3 +129,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp EXCLUDE_FROM_ALL)
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
 target_compile_options(rapidcheck PRIVATE -Wno-error=all)
+
+# Add json
+# TODO(michal): I had to comment this out because `wapocpp` already adds this target.
+#               How should we deal with it?
+# set(JSON_BuildTests OFF CACHE BOOL "skip building JSON tests")
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/json)

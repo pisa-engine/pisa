@@ -67,19 +67,15 @@ int main(int argc, char** argv)
         }
         std::vector<Query> v1_queries;
         v1_queries.reserve(queries.size());
-        for (auto query : queries) {
-            if (not query.terms.empty()) {
-                v1_queries.push_back(Query{.terms = query.terms,
-                                           .list_selection = {},
-                                           .threshold = {},
-                                           .id =
-                                               [&]() {
-                                                   if (query.id) {
-                                                       return tl::make_optional(*query.id);
-                                                   }
-                                                   return tl::optional<std::string>{};
-                                               }(),
-                                           .k = 10});
+        for (auto q : queries) {
+            if (not q.terms.empty()) {
+                Query query(q.terms, [&]() {
+                    if (q.id) {
+                        return tl::make_optional(*q.id);
+                    }
+                    return tl::optional<std::string>{};
+                }());
+                v1_queries.push_back(query);
             }
         }
         return v1_queries;

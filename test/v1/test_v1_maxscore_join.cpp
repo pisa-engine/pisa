@@ -63,16 +63,18 @@ TEMPLATE_TEST_CASE("",
         //};
         int idx = 0;
         for (auto& q : test_queries()) {
-            CAPTURE(q.terms);
+            CAPTURE(q.get_term_ids());
             CAPTURE(idx++);
 
             auto run =
                 v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
             run([&](auto&& index) {
                 auto union_results = collect(v1::union_merge(
-                    index.scored_cursors(gsl::make_span(q.terms), make_bm25(index)), 0.0F, Add{}));
+                    index.scored_cursors(gsl::make_span(q.get_term_ids()), make_bm25(index)),
+                    0.0F,
+                    Add{}));
                 auto maxscore_results = collect(v1::join_maxscore(
-                    index.max_scored_cursors(gsl::make_span(q.terms), make_bm25(index)),
+                    index.max_scored_cursors(gsl::make_span(q.get_term_ids()), make_bm25(index)),
                     0.0F,
                     Add{},
                     [](auto /* score */) { return true; }));
@@ -81,13 +83,15 @@ TEMPLATE_TEST_CASE("",
 
             run([&](auto&& index) {
                 auto union_results = collect_with_payload(v1::union_merge(
-                    index.scored_cursors(gsl::make_span(q.terms), make_bm25(index)), 0.0F, Add{}));
+                    index.scored_cursors(gsl::make_span(q.get_term_ids()), make_bm25(index)),
+                    0.0F,
+                    Add{}));
                 union_results.erase(std::remove_if(union_results.begin(),
                                                    union_results.end(),
                                                    [](auto score) { return score.second <= 5.0F; }),
                                     union_results.end());
                 auto maxscore_results = collect_with_payload(v1::join_maxscore(
-                    index.max_scored_cursors(gsl::make_span(q.terms), make_bm25(index)),
+                    index.max_scored_cursors(gsl::make_span(q.get_term_ids()), make_bm25(index)),
                     0.0F,
                     Add{},
                     [](auto score) { return score > 5.0F; }));

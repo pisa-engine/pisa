@@ -12,3 +12,6 @@ target_link_libraries(score pisa CLI11)
 
 add_executable(bigram-index bigram_index.cpp)
 target_link_libraries(bigram-index pisa CLI11)
+
+add_executable(filter-queries filter_queries.cpp)
+target_link_libraries(filter-queries pisa CLI11)

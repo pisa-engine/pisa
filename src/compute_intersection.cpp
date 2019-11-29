@@ -42,9 +42,16 @@ void intersect(std::string const& index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    std::size_t qid = 0u;
+    std::size_t qid = 0U;
 
     auto print_intersection = [&](auto const& query, auto const& mask) {
+        // FIXME(michal): Quick workaround to not compute intersection (a, a)
+        auto filtered = intersection::filter(query, mask);
+        std::sort(filtered.terms.begin(), filtered.terms.end());
+        if (std::unique(filtered.terms.begin(), filtered.terms.end()) != filtered.terms.end()) {
+            // Do not compute: contains duplicates
+            return;
+        }
         auto intersection = Intersection::compute(index, wdata, query, mask);
         if (intersection.length > 0) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\n",

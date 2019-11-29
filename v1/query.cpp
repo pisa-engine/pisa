@@ -14,6 +14,7 @@
 #include "topk_queue.hpp"
 #include "v1/analyze_query.hpp"
 #include "v1/blocked_cursor.hpp"
+#include "v1/daat_or.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/intersection.hpp"
 #include "v1/maxscore.hpp"
@@ -57,8 +58,8 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
     }
     if (name == "maxscore") {
         return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
-            if (query.threshold) {
-                topk.set_threshold(*query.threshold);
+            if (query.threshold()) {
+                topk.set_threshold(query.get_threshold());
             }
             return pisa::v1::maxscore(query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
@@ -77,10 +78,14 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
     }
     if (name == "union-lookup") {
         return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
-            if (query.list_selection && query.list_selection->bigrams.empty()) {
-                return pisa::v1::unigram_union_lookup(
+            if (query.get_term_ids().size() > 8) {
+                return pisa::v1::maxscore_union_lookup(
                     query, index, std::move(topk), std::forward<Scorer>(scorer));
             }
+            // if (query.selections() && query.selections()->bigrams.empty()) {
+            //    return pisa::v1::unigram_union_lookup(
+            //        query, index, std::move(topk), std::forward<Scorer>(scorer));
+            //}
             return pisa::v1::union_lookup(
                 query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
@@ -125,7 +130,7 @@ void evaluate(std::vector<Query> const& queries,
         auto rank = 0;
         for (auto result : que.topk()) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     query.id.value_or(std::to_string(query_idx)),
+                                     query.id().value_or(std::to_string(query_idx)),
                                      "Q0",
                                      docmap[result.second],
                                      rank,
@@ -206,18 +211,13 @@ int main(int argc, char** argv)
             pisa::io::for_each_line(std::cin, parse_query);
         }
         std::vector<Query> v1_queries(queries.size());
-        std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& query) {
-            return Query{.terms = query.terms,
-                         .list_selection = {},
-                         .threshold = {},
-                         .id =
-                             [&]() {
-                                 if (query.id) {
-                                     return tl::make_optional(*query.id);
-                                 }
-                                 return tl::optional<std::string>{};
-                             }(),
-                         .k = app.k};
+        std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& parsed) {
+            Query query(parsed.terms);
+            if (parsed.id) {
+                query.id(*parsed.id);
+            }
+            query.k(app.k);
+            return query;
         });
         return v1_queries;
     }();
@@ -237,7 +237,7 @@ int main(int argc, char** argv)
                 spdlog::error("Number of thresholds not equal to number of queries");
                 std::exit(1);
             }
-            queries_iter->threshold = tl::make_optional(std::stof(line));
+            queries_iter->threshold(std::stof(line));
             ++queries_iter;
         });
         if (queries_iter != queries.end()) {

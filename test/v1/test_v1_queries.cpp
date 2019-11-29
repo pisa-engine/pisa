@@ -23,6 +23,8 @@
 #include "v1/cursor_intersection.hpp"
 #include "v1/cursor_traits.hpp"
 #include "v1/cursor_union.hpp"
+#include "v1/daat_and.hpp"
+#include "v1/daat_or.hpp"
 #include "v1/index.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/maxscore.hpp"
@@ -31,6 +33,7 @@
 #include "v1/query.hpp"
 #include "v1/score_index.hpp"
 #include "v1/scorer/bm25.hpp"
+#include "v1/taat_or.hpp"
 #include "v1/types.hpp"
 #include "v1/union_lookup.hpp"
 
@@ -149,12 +152,11 @@ TEMPLATE_TEST_CASE("Query",
             return maxscore_union_lookup(query, index, topk_queue(10), scorer);
         }
         if (name == "unigram_union_lookup") {
-            query.list_selection =
-                tl::make_optional(v1::ListSelection{.unigrams = query.terms, .bigrams = {}});
+            query.selections(v1::ListSelection{.unigrams = query.get_term_ids(), .bigrams = {}});
             return unigram_union_lookup(query, index, topk_queue(10), scorer);
         }
         if (name == "union_lookup") {
-            if (query.terms.size() > 8) {
+            if (query.get_term_ids().size() > 8) {
                 return maxscore_union_lookup(query, index, topk_queue(10), scorer);
             }
             return union_lookup(query, index, topk_queue(10), scorer);
@@ -166,19 +168,19 @@ TEMPLATE_TEST_CASE("Query",
         pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
     for (auto& query : test_queries()) {
         if (algorithm == "union_lookup") {
-            query.add_selections(gsl::make_span(intersections[idx]));
+            query.selections(gsl::make_span(intersections[idx]));
         }
-        query.remove_duplicates();
 
-        CAPTURE(query.terms);
+        CAPTURE(query);
         CAPTURE(idx);
         CAPTURE(intersections[idx]);
 
-        or_q(make_scored_cursors(data->v0_index, data->wdata, ::pisa::Query{{}, query.terms, {}}),
+        or_q(make_scored_cursors(
+                 data->v0_index, data->wdata, ::pisa::Query{{}, query.get_term_ids(), {}}),
              data->v0_index.num_docs());
         auto expected = or_q.topk();
         if (with_threshold) {
-            query.threshold = expected.back().first - 1.0F;
+            query.threshold(expected.back().first - 1.0F);
         }
 
         auto on_the_fly = [&]() {

@@ -59,6 +59,8 @@ if (UNIX)
 
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
 
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+
 endif()
 
 find_package(OpenMP)
@@ -100,11 +102,12 @@ target_link_libraries(pisa PUBLIC
     range-v3
     optional
     yaml-cpp
+    nlohmann_json
 )
 target_include_directories(pisa PUBLIC external)
 
 add_subdirectory(v1)
-#add_subdirectory(src)
+add_subdirectory(src)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()
