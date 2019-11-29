@@ -113,8 +113,8 @@ struct CursorUnion {
 };
 
 /// Transforms a list of cursors into one cursor by lazily merging them together.
-//template <typename CursorContainer, typename Payload>
-//struct CursorFlatUnion {
+// template <typename CursorContainer, typename Payload>
+// struct CursorFlatUnion {
 //    using Cursor = typename CursorContainer::value_type;
 //    using iterator_category =
 //        typename std::iterator_traits<typename CursorContainer::iterator>::iterator_category;
@@ -196,15 +196,15 @@ struct VariadicCursorUnion {
           m_size(std::nullopt)
     {
         m_next_docid = std::numeric_limits<Value>::max();
-        m_sentinel = std::numeric_limits<Value>::max();
+        m_sentinel = std::numeric_limits<Value>::min();
         for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
             if (cursor.value() < m_next_docid) {
                 m_next_docid = cursor.value();
             }
         });
         for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
-            if (cursor.sentinel() < m_next_docid) {
-                m_next_docid = cursor.sentinel();
+            if (cursor.sentinel() > m_sentinel) {
+                m_sentinel = cursor.sentinel();
             }
         });
         advance();
@@ -268,6 +268,101 @@ struct VariadicCursorUnion {
     Payload m_current_payload{};
     std::uint32_t m_next_docid{};
 };
+
+///// Transforms a list of cursors into one cursor by lazily merging them together.
+// template <typename Payload,
+//          typename Cursor1,
+//          typename Cursor2,
+//          typename AccumulateFn1,
+//          typename AccumulateFn2>
+// struct PairCursorUnion {
+//    using Value = std::pair<std::decay_t<decltype(*std::declval<Cursor1>())>,
+//                            std::decay_t<decltype(*std::declval<Cursor2>())>>;
+//
+//    constexpr PairCursorUnion(Payload init,
+//                              Cursor1 cursor1,
+//                              Cursor2 cursor2,
+//                              AccumulateFn1 accumulate1,
+//                              AccumulateFn2 accumulate2)
+//        : m_cursors(std::move(cursors)),
+//          m_init(std::move(init)),
+//          m_accumulate(std::move(accumulate)),
+//          m_size(std::nullopt)
+//    {
+//        m_next_docid = std::numeric_limits<Value>::max();
+//        m_sentinel = std::numeric_limits<Value>::max();
+//        for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
+//            if (cursor.value() < m_next_docid) {
+//                m_next_docid = cursor.value();
+//            }
+//        });
+//        for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
+//            std::cerr << fmt::format("Sentinel: {} v. current {}\n", cursor.sentinel(),
+//            m_sentinel); if (cursor.sentinel() < m_sentinel) {
+//                m_sentinel = cursor.sentinel();
+//            }
+//        });
+//        advance();
+//    }
+//
+//    template <typename Fn>
+//    void for_each_cursor(Fn&& fn)
+//    {
+//        std::apply(
+//            [&](auto&&... cursor) {
+//                std::apply([&](auto&&... accumulate) { (fn(cursor, accumulate), ...); },
+//                           m_accumulate);
+//            },
+//            m_cursors);
+//    }
+//
+//    [[nodiscard]] constexpr auto operator*() const noexcept -> Value { return m_current_value; }
+//    [[nodiscard]] constexpr auto value() const noexcept -> Value { return m_current_value; }
+//    [[nodiscard]] constexpr auto payload() const noexcept -> Payload const&
+//    {
+//        return m_current_payload;
+//    }
+//    [[nodiscard]] constexpr auto sentinel() const noexcept -> std::uint32_t { return m_sentinel; }
+//
+//    constexpr void advance()
+//    {
+//        if (PISA_UNLIKELY(m_next_docid == m_sentinel)) {
+//            m_current_value = m_sentinel;
+//            m_current_payload = m_init;
+//        } else {
+//            m_current_payload = m_init;
+//            m_current_value = m_next_docid;
+//            m_next_docid = m_sentinel;
+//            std::size_t cursor_idx = 0;
+//            for_each_cursor([&](auto&& cursor, auto&& accumulate) {
+//                if (cursor.value() == m_current_value) {
+//                    m_current_payload = accumulate(m_current_payload, cursor, cursor_idx);
+//                    cursor.advance();
+//                }
+//                if (cursor.value() < m_next_docid) {
+//                    m_next_docid = cursor.value();
+//                }
+//                ++cursor_idx;
+//            });
+//        }
+//    }
+//
+//    [[nodiscard]] constexpr auto empty() const noexcept -> bool
+//    {
+//        return m_current_value >= sentinel();
+//    }
+//
+//   private:
+//    CursorsTuple m_cursors;
+//    Payload m_init;
+//    std::tuple<AccumulateFn...> m_accumulate;
+//    std::optional<std::size_t> m_size;
+//
+//    Value m_current_value{};
+//    Value m_sentinel{};
+//    Payload m_current_payload{};
+//    std::uint32_t m_next_docid{};
+//};
 
 template <typename CursorContainer, typename Payload, typename AccumulateFn>
 [[nodiscard]] constexpr inline auto union_merge(CursorContainer cursors,

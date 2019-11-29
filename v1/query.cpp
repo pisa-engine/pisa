@@ -39,6 +39,7 @@ using pisa::v1::Query;
 using pisa::v1::QueryAnalyzer;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
+using pisa::v1::TwoPhaseUnionLookupAnalyzer;
 using pisa::v1::unigram_union_lookup;
 using pisa::v1::UnigramUnionLookupAnalyzer;
 using pisa::v1::union_lookup;
@@ -90,6 +91,16 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
                 query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
     }
+    if (name == "two-phase-union-lookup") {
+        return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+            if (query.get_term_ids().size() > 8) {
+                return pisa::v1::maxscore_union_lookup(
+                    query, index, std::move(topk), std::forward<Scorer>(scorer));
+            }
+            return pisa::v1::two_phase_union_lookup(
+                query, index, std::move(topk), std::forward<Scorer>(scorer));
+        });
+    }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
 }
@@ -113,6 +124,10 @@ auto resolve_analyze(std::string const& name, Index const& index, Scorer&& score
     }
     if (name == "union-lookup") {
         return QueryAnalyzer(UnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+    }
+    if (name == "two-phase-union-lookup") {
+        return QueryAnalyzer(
+            TwoPhaseUnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
     }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
