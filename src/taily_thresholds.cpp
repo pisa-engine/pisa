@@ -87,7 +87,8 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
 
             for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
                  ++ei) {
-                all *= -(weight[*ei] / any);
+		auto bi_it = bigrams_stats.find({terms[source(*ei, g)], terms[target(*ei, g)]});
+		all *= bi_it->second / any ;
             }
 
             for (auto &&t : terms) {
