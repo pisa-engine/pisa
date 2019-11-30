@@ -63,16 +63,14 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
                     auto it = bigrams_stats.find({terms[i], terms[j]});
                     if (it != bigrams_stats.end()) {
                         edge_array.emplace_back(i, j);
-                        double t1 = stats[i].frequency / collection_size;
-                        double t2 = stats[j].frequency / collection_size;
+                        double t1 = stats[terms[i]].frequency / collection_size;
+                        double t2 = stats[terms[j]].frequency / collection_size;
                         double t12 = it->second / collection_size;
                         weights.push_back(-t12 / (t1 * t2));
                     }
                 }
             }
             Graph g(edge_array.begin(), edge_array.end(), weights.begin(), num_nodes);
-            boost::property_map<Graph, boost::edge_weight_t>::type weight =
-                get(boost::edge_weight, g);
             std::vector<Edge> spanning_tree;
             boost::kruskal_minimum_spanning_tree(g, std::back_inserter(spanning_tree));
 
@@ -87,15 +85,16 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
 
             for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
                  ++ei) {
-		auto bi_it = bigrams_stats.find({terms[source(*ei, g)], terms[target(*ei, g)]});
-		all *= bi_it->second / any ;
+		      auto bi_it = bigrams_stats.find({terms[source(*ei, g)], terms[target(*ei, g)]});
+              double t1 = stats[terms[source(*ei, g)]].frequency / any;
+              double t2 = stats[terms[target(*ei, g)]].frequency / any;
+		      all *= (bi_it->second / any) / (t1 * t2);
             }
 
             for (auto &&t : terms) {
                 all *= stats[t].frequency / any;
             }
             all *= any;
-
             threshold = estimate_pairwise_cutoff(query_stats, k, all);
         }
         std::cout << threshold << '\n';
