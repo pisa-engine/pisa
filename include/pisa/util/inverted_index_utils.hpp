@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_set>
 #include "binary_freq_collection.hpp"
 #include "invert.hpp"
 #include "util/progress.hpp"
@@ -17,7 +18,7 @@ template <typename SampleFn>
 void sample_inverted_index(std::string const &input_basename,
                            std::string const &output_basename,
                            SampleFn &&sample_fn,
-                           std::vector<size_t> &dropped_term_ids)
+                           std::unordered_set<size_t> &terms_to_drop)
 {
 
     binary_freq_collection input(input_basename.c_str());
@@ -36,7 +37,7 @@ void sample_inverted_index(std::string const &input_basename,
     for (auto const &plist : input) {
         auto sample = sample_fn(plist.docs);
         if (sample.size() == 0) {
-            dropped_term_ids.push_back(term);
+            terms_to_drop.insert(term);
             term += 1;
             progress.update(1);
             continue;

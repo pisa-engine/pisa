@@ -2,6 +2,7 @@
 #include <fstream>
 #include <random>
 #include <string>
+#include <unordered_set>
 
 #include "CLI/CLI.hpp"
 #include "binary_freq_collection.hpp"
@@ -17,7 +18,7 @@ int main(int argc, char **argv)
     std::string input_basename;
     std::string output_basename;
     std::string type;
-    std::string dropped_terms_filename;
+    std::string terms_to_drop_filename;
     float rate;
     unsigned seed = std::random_device{}();
 
@@ -27,8 +28,8 @@ int main(int argc, char **argv)
     app.add_option("-r,--rate", rate, "Sampling rate (proportional size of the output index)")
         ->required();
     app.add_option("-t,--type", type, "Sampling type")->required();
-    app.add_option("--dropped_terms",
-                   dropped_terms_filename,
+    app.add_option("--terms-to-drop",
+                   terms_to_drop_filename,
                    "A filename containing a list of term IDs that we want to drop");
     app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
@@ -85,10 +86,10 @@ int main(int argc, char **argv)
         spdlog::error("Unknown type {}", type);
         std::abort();
     }
-    std::vector<size_t> dropped_term_ids;
-    sample_inverted_index(input_basename, output_basename, sampling_fn, dropped_term_ids);
-    std::ofstream dropped_terms_file(dropped_terms_filename);
-    for (const auto &id : dropped_term_ids){
+    std::unordered_set<size_t> terms_to_drop;
+    sample_inverted_index(input_basename, output_basename, sampling_fn, terms_to_drop);
+    std::ofstream dropped_terms_file(terms_to_drop_filename);
+    for (const auto &id : terms_to_drop){
         dropped_terms_file << id << std::endl;
     }
 

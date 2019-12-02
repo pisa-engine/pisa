@@ -28,7 +28,7 @@ int main(int argc, const char **argv)
     bool variable_block = false;
     bool compress = false;
     bool range = false;
-    std::string dropped_terms_filename;
+    std::string terms_to_drop_filename;
 
     CLI::App app{"create_wand_data - a tool for creating additional data for query processing."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
@@ -43,7 +43,7 @@ int main(int argc, const char **argv)
     app.add_flag("--compress", compress, "Compress additional data");
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
-    app.add_option("--dropped_terms", dropped_terms_filename, "A filename containing a list of term IDs that we want to drop");
+    app.add_option("--terms-to-drop", terms_to_drop_filename, "A filename containing a list of term IDs that we want to drop");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -54,7 +54,7 @@ int main(int argc, const char **argv)
     binary_freq_collection coll(input_basename.c_str());
 
 
-    std::ifstream dropped_terms_file(dropped_terms_filename);
+    std::ifstream dropped_terms_file(terms_to_drop_filename);
     std::unordered_set<size_t> dropped_term_ids;
     copy(istream_iterator<size_t>(dropped_terms_file),
          istream_iterator<size_t>(),

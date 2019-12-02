@@ -30,8 +30,8 @@ class wand_data {
               uint64_t num_docs,
               binary_freq_collection const &coll,
               std::string const &scorer_name,
-              BlockSize block_size, 
-              std::unordered_set<size_t> const &dropped_term_ids) : m_num_docs(num_docs)
+              BlockSize block_size,
+              std::unordered_set<size_t> const &terms_to_drop) : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
@@ -54,7 +54,7 @@ class wand_data {
            pisa::progress progress("Storing terms statistics", coll.size());
            size_t term_id = 0;
            for (auto const &seq : coll) {
-               if(dropped_term_ids.find(term_id) != dropped_term_ids.end()){
+               if(terms_to_drop.find(term_id) != terms_to_drop.end()){
                  progress.update(1);
                  term_id += 1;
                  continue;
@@ -76,7 +76,7 @@ class wand_data {
             pisa::progress progress("Storing score upper bounds", coll.size());
             size_t term_id = 0;
             for (auto const &seq : coll) {
-                if(dropped_term_ids.find(term_id) != dropped_term_ids.end()){
+                if(terms_to_drop.find(term_id) != terms_to_drop.end()){
                     progress.update(1);
                     term_id += 1;
                     continue;
