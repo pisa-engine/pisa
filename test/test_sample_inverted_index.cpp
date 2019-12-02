@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <vector>
+#include <unordered_set>
 
 #include "binary_freq_collection.hpp"
 #include "pisa_config.hpp"
@@ -21,12 +22,12 @@ TEST_CASE("sample_inverted_index")
     auto original = binary_freq_collection(input.c_str());
 
     // when
-    std::vector<size_t> dropped_term_ids;
+    std::unordered_set<size_t> terms_to_drop;
     pisa::sample_inverted_index(input, output, [](const auto &docs) {
         std::vector<std::uint32_t> sample(docs.size());
         std::iota(sample.begin(), sample.end(), 0);
         return sample;
-    }, dropped_term_ids);
+    }, terms_to_drop);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -63,12 +64,12 @@ TEST_CASE("sample_inverted_index_one_sample")
     auto original = binary_freq_collection(input.c_str());
 
     // when
-    std::vector<size_t> dropped_term_ids;
+    std::unordered_set<size_t> terms_to_drop;
     pisa::sample_inverted_index(input, output, [](const auto &docs) {
         std::vector<std::uint32_t> sample(1);
         std::iota(sample.begin(), sample.end(), 0);
         return sample;
-    }, dropped_term_ids);
+    }, terms_to_drop);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -108,7 +109,7 @@ TEST_CASE("sample_inverted_index_reverse")
     auto original = binary_freq_collection(input.c_str());
     float rate = 0.1;
     // when
-    std::vector<size_t> dropped_term_ids;
+    std::unordered_set<size_t> terms_to_drop;
     pisa::sample_inverted_index(input, output, [&](const auto &docs) {
         std::vector<std::uint32_t> sample(docs.size());
         std::iota(sample.begin(), sample.end(), 0);
@@ -117,7 +118,7 @@ TEST_CASE("sample_inverted_index_reverse")
         sample.resize(new_size);
         std::sort(sample.begin(), sample.end());
         return sample;
-    }, dropped_term_ids);
+    }, terms_to_drop);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
