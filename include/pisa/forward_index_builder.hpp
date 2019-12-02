@@ -15,7 +15,7 @@
 #include <gsl/gsl_assert>
 #include <pstl/algorithm>
 #include <pstl/execution>
-#include <range/v3/to_container.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
 #include <spdlog/fmt/ostr.h>
