@@ -31,7 +31,7 @@
 #include "CLI/CLI.hpp"
 
 using namespace pisa;
-using ranges::view::enumerate;
+using ranges::views::enumerate;
 
 template <typename IndexType, typename WandType>
 void evaluate_queries(const std::string &index_filename,

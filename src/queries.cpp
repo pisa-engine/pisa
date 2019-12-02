@@ -30,7 +30,7 @@
 #include "scorer/scorer.hpp"
 
 using namespace pisa;
-using ranges::view::enumerate;
+using ranges::views::enumerate;
 
 template <typename Fn>
 void extract_times(Fn fn,
