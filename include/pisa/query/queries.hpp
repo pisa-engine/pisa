@@ -51,10 +51,10 @@ namespace pisa {
             if (!term_processor.is_stopword(*term)) {
                 parsed_query.push_back(std::move(*term));
             } else {
-                spdlog::warn("Term `{}` is a stopword and will be ignored", raw_term);
+                //spdlog::warn("Term `{}` is a stopword and will be ignored", raw_term);
             }
         } else {
-            spdlog::warn("Term `{}` not found and will be ignored", raw_term);
+            //spdlog::warn("Term `{}` not found and will be ignored", raw_term);
         }
     }
     return {std::move(id), std::move(parsed_query), {}};

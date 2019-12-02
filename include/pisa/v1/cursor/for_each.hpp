@@ -8,7 +8,7 @@ template <typename Cursor, typename UnaryOp>
 void for_each(Cursor &&cursor, UnaryOp op)
 {
     while (not cursor.empty()) {
-        op(cursor);
+        op(std::forward<Cursor>(cursor));
         cursor.advance();
     }
 }

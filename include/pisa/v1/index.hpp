@@ -114,12 +114,10 @@ struct Index {
           m_max_scores(std::move(max_scores)),
           m_max_quantized_scores(quantized_max_scores),
           m_bigram_mapping(bigram_mapping),
-          m_source(std::move(source))
-    {
-    }
+          m_source(std::move(source)){}
 
-    /// Constructs a new document-payload cursor (see document_payload_cursor.hpp).
-    [[nodiscard]] auto cursor(TermId term) const
+              /// Constructs a new document-payload cursor (see document_payload_cursor.hpp).
+              [[nodiscard]] auto cursor(TermId term) const
     {
         return DocumentPayloadCursor<DocumentCursor, PayloadCursor>(documents(term),
                                                                     payloads(term));
@@ -439,7 +437,7 @@ auto score_index(Index const& index,
     std::for_each(boost::counting_iterator<TermId>(0),
                   boost::counting_iterator<TermId>(index.num_terms()),
                   [&](auto term) {
-                      for_each(index.scoring_cursor(term, scorer), [&](auto& cursor) {
+                      for_each(index.scoring_cursor(term, scorer), [&](auto&& cursor) {
                           score_builder.accumulate(quantizer(cursor.payload()));
                       });
                       score_builder.flush_segment(os);
@@ -593,27 +591,25 @@ struct IndexRunner {
                 && std::decay_t<decltype(preader)>::encoding() == pheader.encoding
                 && is_type<typename std::decay_t<decltype(dreader)>::value_type>(dheader.type)
                 && is_type<typename std::decay_t<decltype(preader)>::value_type>(pheader.type)) {
-                auto index = make_index(
-                    std::forward<decltype(dreader)>(dreader),
-                    std::forward<decltype(preader)>(preader),
-                    m_document_offsets,
-                    m_payload_offsets,
-                    m_bigram_document_offsets,
-                    m_bigram_frequency_offsets,
-                    m_documents.subspan(8),
-                    m_payloads.subspan(8),
-                    m_bigram_documents.map([](auto&& bytes) { return bytes.subspan(8); }),
-                    m_bigram_frequencies.map([](auto&& bytes) {
-                        return std::array<BinarySpan, 2>{std::get<0>(bytes).subspan(8),
-                                                         std::get<1>(bytes).subspan(8)};
-                    }),
-                    m_document_lengths,
-                    m_avg_document_length,
-                    m_max_scores,
-                    m_max_quantized_scores,
-                    m_bigram_mapping,
-                    false);
-                fn(index);
+                fn(make_index(std::forward<decltype(dreader)>(dreader),
+                              std::forward<decltype(preader)>(preader),
+                              m_document_offsets,
+                              m_payload_offsets,
+                              m_bigram_document_offsets,
+                              m_bigram_frequency_offsets,
+                              m_documents.subspan(8),
+                              m_payloads.subspan(8),
+                              m_bigram_documents.map([](auto&& bytes) { return bytes.subspan(8); }),
+                              m_bigram_frequencies.map([](auto&& bytes) {
+                                  return std::array<BinarySpan, 2>{std::get<0>(bytes).subspan(8),
+                                                                   std::get<1>(bytes).subspan(8)};
+                              }),
+                              m_document_lengths,
+                              m_avg_document_length,
+                              m_max_scores,
+                              m_max_quantized_scores,
+                              m_bigram_mapping,
+                              false));
                 return true;
             }
             return false;

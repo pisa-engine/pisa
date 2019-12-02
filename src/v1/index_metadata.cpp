@@ -73,6 +73,11 @@ constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
                           .offsets = config[BIGRAM]["frequencies_0"][OFFSETS].as<std::string>()},
                          {.postings = config[BIGRAM]["frequencies_1"][POSTINGS].as<std::string>(),
                           .offsets = config[BIGRAM]["frequencies_1"][OFFSETS].as<std::string>()}},
+                    .scores = {{{.postings = config[BIGRAM]["scores_0"][POSTINGS].as<std::string>(),
+                                 .offsets = config[BIGRAM]["scores_0"][OFFSETS].as<std::string>()},
+                                {.postings = config[BIGRAM]["scores_1"][POSTINGS].as<std::string>(),
+                                 .offsets =
+                                     config[BIGRAM]["scores_1"][OFFSETS].as<std::string>()}}},
                     .mapping = config[BIGRAM]["mapping"].as<std::string>(),
                     .count = config[BIGRAM]["count"].as<std::size_t>()};
             }
@@ -121,6 +126,12 @@ void IndexMetadata::write(std::string const& file)
         root[BIGRAM]["frequencies_0"][OFFSETS] = bigrams->frequencies.first.offsets;
         root[BIGRAM]["frequencies_1"][POSTINGS] = bigrams->frequencies.second.postings;
         root[BIGRAM]["frequencies_1"][OFFSETS] = bigrams->frequencies.second.offsets;
+        if (not bigrams->scores.empty()) {
+            root[BIGRAM]["scores_0"][POSTINGS] = bigrams->scores.front().first.postings;
+            root[BIGRAM]["scores_0"][OFFSETS] = bigrams->scores.front().first.offsets;
+            root[BIGRAM]["scores_1"][POSTINGS] = bigrams->scores.front().second.postings;
+            root[BIGRAM]["scores_1"][OFFSETS] = bigrams->scores.front().second.offsets;
+        }
         root[BIGRAM]["mapping"] = bigrams->mapping;
         root[BIGRAM]["count"] = bigrams->count;
     }

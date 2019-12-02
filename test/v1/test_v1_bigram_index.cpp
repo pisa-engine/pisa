@@ -60,7 +60,6 @@ TEMPLATE_TEST_CASE("Bigram v intersection",
         auto run = v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
         std::vector<typename pisa::topk_queue::entry_type> results;
         run([&](auto&& index) {
-            auto scorer = make_bm25(index);
             for (auto left = 0; left < q.get_term_ids().size(); left += 1) {
                 for (auto right = left + 1; right < q.get_term_ids().size(); right += 1) {
                     auto left_cursor = index.cursor(q.get_term_ids()[left]);

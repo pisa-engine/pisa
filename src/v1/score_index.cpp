@@ -47,7 +47,7 @@ void score_index(std::string const& yml, std::size_t threads)
                           boost::counting_iterator<TermId>(end_term),
                           [&](auto term) {
                               for_each(
-                                  index.scoring_cursor(term, make_bm25(index)), [&](auto& cursor) {
+                                  index.scoring_cursor(term, make_bm25(index)), [&](auto&& cursor) {
                                       if (auto score = cursor.payload(); max_scores[term] < score) {
                                           max_scores[term] = score;
                                       }

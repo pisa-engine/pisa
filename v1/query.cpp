@@ -5,6 +5,7 @@
 #include <CLI/CLI.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
@@ -79,14 +80,14 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
     }
     if (name == "union-lookup") {
         return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
-            if (query.get_term_ids().size() > 8) {
-                return pisa::v1::maxscore_union_lookup(
+            if (query.selections()->bigrams.empty()) {
+                return pisa::v1::unigram_union_lookup(
                     query, index, std::move(topk), std::forward<Scorer>(scorer));
             }
-            // if (query.selections() && query.selections()->bigrams.empty()) {
-            //    return pisa::v1::unigram_union_lookup(
-            //        query, index, std::move(topk), std::forward<Scorer>(scorer));
-            //}
+            if (query.get_term_ids().size() > 8) {
+                return pisa::v1::maxscore(
+                    query, index, std::move(topk), std::forward<Scorer>(scorer));
+            }
             return pisa::v1::union_lookup(
                 query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
@@ -171,15 +172,18 @@ void benchmark(std::vector<Query> const& queries, int k, RetrievalAlgorithm retr
             times[query] = std::min(times[query], static_cast<double>(usecs.count()));
         }
     }
+    for (auto time : times) {
+        std::cout << time << '\n';
+    }
     std::sort(times.begin(), times.end());
     double avg = std::accumulate(times.begin(), times.end(), double()) / times.size();
     double q50 = times[times.size() / 2];
     double q90 = times[90 * times.size() / 100];
     double q95 = times[95 * times.size() / 100];
-    spdlog::info("Mean: {} microsec.", avg);
-    spdlog::info("50% quantile: {} microsec.", q50);
-    spdlog::info("90% quantile: {} microsec.", q90);
-    spdlog::info("95% quantile: {} microsec.", q95);
+    spdlog::info("Mean: {} us", avg);
+    spdlog::info("50% quantile: {} us", q50);
+    spdlog::info("90% quantile: {} us", q90);
+    spdlog::info("95% quantile: {} us", q95);
 }
 
 void analyze_queries(std::vector<Query> const& queries, QueryAnalyzer analyzer)
@@ -195,6 +199,9 @@ void analyze_queries(std::vector<Query> const& queries, QueryAnalyzer analyzer)
 
 int main(int argc, char** argv)
 {
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     std::string algorithm = "daat_or";
     tl::optional<std::string> threshold_file;
     tl::optional<std::string> inter_filename;
@@ -207,107 +214,110 @@ int main(int argc, char** argv)
     app.add_flag("--analyze", analyze, "Analyze query execution and stats");
     CLI11_PARSE(app, argc, argv);
 
-    auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
-    auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
-    if (meta.term_lexicon) {
-        app.terms_file = meta.term_lexicon.value();
-    }
-    if (meta.document_lexicon) {
-        app.documents_file = meta.document_lexicon.value();
-    }
-
-    auto queries = [&]() {
-        std::vector<::pisa::Query> queries;
-        auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
-        if (app.query_file) {
-            std::ifstream is(*app.query_file);
-            pisa::io::for_each_line(is, parse_query);
-        } else {
-            pisa::io::for_each_line(std::cin, parse_query);
+    try {
+        auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
+        auto stemmer =
+            meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
+        if (meta.term_lexicon) {
+            app.terms_file = meta.term_lexicon.value();
         }
-        std::vector<Query> v1_queries(queries.size());
-        std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& parsed) {
-            Query query(parsed.terms);
-            if (parsed.id) {
-                query.id(*parsed.id);
+        if (meta.document_lexicon) {
+            app.documents_file = meta.document_lexicon.value();
+        }
+
+        auto queries = [&]() {
+            std::vector<::pisa::Query> queries;
+            auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
+            if (app.query_file) {
+                std::ifstream is(*app.query_file);
+                pisa::io::for_each_line(is, parse_query);
+            } else {
+                pisa::io::for_each_line(std::cin, parse_query);
             }
-            query.k(app.k);
-            return query;
-        });
-        return v1_queries;
-    }();
+            std::vector<Query> v1_queries(queries.size());
+            std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& parsed) {
+                Query query(parsed.terms);
+                if (parsed.id) {
+                    query.id(*parsed.id);
+                }
+                query.k(app.k);
+                return query;
+            });
+            return v1_queries;
+        }();
 
-    if (not app.documents_file) {
-        spdlog::error("Document lexicon not defined");
-        std::exit(1);
-    }
-    auto source = std::make_shared<mio::mmap_source>(app.documents_file.value().c_str());
-    auto docmap = pisa::Payload_Vector<>::from(*source);
+        if (not app.documents_file) {
+            spdlog::error("Document lexicon not defined");
+            std::exit(1);
+        }
+        auto source = std::make_shared<mio::mmap_source>(app.documents_file.value().c_str());
+        auto docmap = pisa::Payload_Vector<>::from(*source);
 
-    if (threshold_file) {
-        std::ifstream is(*threshold_file);
-        auto queries_iter = queries.begin();
-        pisa::io::for_each_line(is, [&](auto&& line) {
-            if (queries_iter == queries.end()) {
+        if (threshold_file) {
+            std::ifstream is(*threshold_file);
+            auto queries_iter = queries.begin();
+            pisa::io::for_each_line(is, [&](auto&& line) {
+                if (queries_iter == queries.end()) {
+                    spdlog::error("Number of thresholds not equal to number of queries");
+                    std::exit(1);
+                }
+                queries_iter->threshold(std::stof(line));
+                ++queries_iter;
+            });
+            if (queries_iter != queries.end()) {
                 spdlog::error("Number of thresholds not equal to number of queries");
                 std::exit(1);
             }
-            queries_iter->threshold(std::stof(line));
-            ++queries_iter;
-        });
-        if (queries_iter != queries.end()) {
-            spdlog::error("Number of thresholds not equal to number of queries");
-            std::exit(1);
         }
-    }
 
-    if (inter_filename) {
-        auto const intersections = pisa::v1::read_intersections(*inter_filename);
-        if (intersections.size() != queries.size()) {
-            spdlog::error("Number of intersections is not equal to number of queries");
-            std::exit(1);
-        }
-        /* auto unigrams = pisa::v1::filter_unigrams(intersections); */
-        /* auto bigrams = pisa::v1::filter_bigrams(intersections); */
-
-        for (auto query_idx = 0; query_idx < queries.size(); query_idx += 1) {
-            queries[query_idx].add_selections(gsl::make_span(intersections[query_idx]));
-            // ListSelection{std::move(unigrams[query_idx]), std::move(bigrams[query_idx])};
-        }
-    }
-
-    if (app.precomputed) {
-        auto run = scored_index_runner(meta,
-                                       RawReader<std::uint32_t>{},
-                                       RawReader<std::uint8_t>{},
-                                       BlockedReader<::pisa::simdbp_block, true>{},
-                                       BlockedReader<::pisa::simdbp_block, false>{});
-        run([&](auto&& index) {
-            if (app.is_benchmark) {
-                benchmark(queries, app.k, resolve_algorithm(algorithm, index, VoidScorer{}));
-            } else if (analyze) {
-                analyze_queries(queries, resolve_analyze(algorithm, index, VoidScorer{}));
-            } else {
-                evaluate(queries, app.k, docmap, resolve_algorithm(algorithm, index, VoidScorer{}));
+        if (inter_filename) {
+            auto const intersections = pisa::v1::read_intersections(*inter_filename);
+            if (intersections.size() != queries.size()) {
+                spdlog::error("Number of intersections is not equal to number of queries");
+                std::exit(1);
             }
-        });
-    } else {
-        auto run = index_runner(meta,
-                                RawReader<std::uint32_t>{},
-                                BlockedReader<::pisa::simdbp_block, true>{},
-                                BlockedReader<::pisa::simdbp_block, false>{});
-        run([&](auto&& index) {
-            auto with_scorer = scorer_runner(index, make_bm25(index));
-            with_scorer("bm25", [&](auto scorer) {
+            for (auto query_idx = 0; query_idx < queries.size(); query_idx += 1) {
+                queries[query_idx].add_selections(gsl::make_span(intersections[query_idx]));
+            }
+        }
+
+        if (app.precomputed) {
+            auto run = scored_index_runner(meta,
+                                           RawReader<std::uint32_t>{},
+                                           RawReader<std::uint8_t>{},
+                                           BlockedReader<::pisa::simdbp_block, true>{},
+                                           BlockedReader<::pisa::simdbp_block, false>{});
+            run([&](auto&& index) {
                 if (app.is_benchmark) {
-                    benchmark(queries, app.k, resolve_algorithm(algorithm, index, scorer));
+                    benchmark(queries, app.k, resolve_algorithm(algorithm, index, VoidScorer{}));
                 } else if (analyze) {
-                    analyze_queries(queries, resolve_analyze(algorithm, index, scorer));
+                    analyze_queries(queries, resolve_analyze(algorithm, index, VoidScorer{}));
                 } else {
-                    evaluate(queries, app.k, docmap, resolve_algorithm(algorithm, index, scorer));
+                    evaluate(
+                        queries, app.k, docmap, resolve_algorithm(algorithm, index, VoidScorer{}));
                 }
             });
-        });
+        } else {
+            auto run = index_runner(meta,
+                                    RawReader<std::uint32_t>{},
+                                    BlockedReader<::pisa::simdbp_block, true>{},
+                                    BlockedReader<::pisa::simdbp_block, false>{});
+            run([&](auto&& index) {
+                auto with_scorer = scorer_runner(index, make_bm25(index));
+                with_scorer("bm25", [&](auto scorer) {
+                    if (app.is_benchmark) {
+                        benchmark(queries, app.k, resolve_algorithm(algorithm, index, scorer));
+                    } else if (analyze) {
+                        analyze_queries(queries, resolve_analyze(algorithm, index, scorer));
+                    } else {
+                        evaluate(
+                            queries, app.k, docmap, resolve_algorithm(algorithm, index, scorer));
+                    }
+                });
+            });
+        }
+    } catch (std::exception const& error) {
+        spdlog::error("{}", error.what());
     }
     return 0;
 }

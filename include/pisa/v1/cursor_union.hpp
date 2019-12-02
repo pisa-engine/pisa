@@ -50,16 +50,6 @@ struct CursorUnion {
         }
     }
 
-    [[nodiscard]] constexpr auto size() const noexcept -> std::size_t
-    {
-        if (!m_size) {
-            m_size = std::accumulate(m_cursors.begin(),
-                                     m_cursors.end(),
-                                     std::size_t(0),
-                                     [](auto acc, auto const& elem) { return acc + elem.size(); });
-        }
-        return *m_size;
-    }
     [[nodiscard]] constexpr auto operator*() const noexcept -> Value { return m_current_value; }
     [[nodiscard]] constexpr auto value() const noexcept -> Value { return m_current_value; }
     [[nodiscard]] constexpr auto payload() const noexcept -> Payload const&
@@ -83,8 +73,8 @@ struct CursorUnion {
                     m_current_payload = m_accumulate(m_current_payload, cursor, cursor_idx);
                     cursor.advance();
                 }
-                if (cursor.value() < m_next_docid) {
-                    m_next_docid = cursor.value();
+                if (auto value = cursor.value(); value < m_next_docid) {
+                    m_next_docid = value;
                 }
                 ++cursor_idx;
             }

@@ -12,7 +12,7 @@ namespace pisa::v1 {
 /// that require on-the-fly scoring.
 template <typename Index, typename... Scorers>
 struct ScorerRunner {
-    explicit ScorerRunner(Index const &index, Scorers... scorers)
+    explicit ScorerRunner(Index const& index, Scorers... scorers)
         : m_index(index), m_scorers(std::move(scorers...))
     {
     }
@@ -20,28 +20,28 @@ struct ScorerRunner {
     template <typename Fn>
     void operator()(std::string_view scorer_name, Fn fn)
     {
-        auto run = [&](auto &&scorer) -> bool {
+        auto run = [&](auto scorer) -> bool {
             if (std::hash<std::decay_t<decltype(scorer)>>{}(scorer)
                 == std::hash<std::string_view>{}(scorer_name)) {
-                fn(std::forward<std::decay_t<decltype(scorer)>>(scorer));
+                fn(std::move(scorer));
                 return true;
             }
             return false;
         };
-        bool success =
-            std::apply([&](Scorers... scorers) { return (run(scorers) || ...); }, m_scorers);
+        bool success = std::apply(
+            [&](Scorers... scorers) { return (run(std::move(scorers)) || ...); }, m_scorers);
         if (not success) {
             throw std::domain_error(fmt::format("Unknown scorer: {}", scorer_name));
         }
     }
 
    private:
-    Index const &m_index;
+    Index const& m_index;
     std::tuple<Scorers...> m_scorers;
 };
 
 template <typename Index, typename... Scorers>
-auto scorer_runner(Index const &index, Scorers... scorers)
+auto scorer_runner(Index const& index, Scorers... scorers)
 {
     return ScorerRunner(index, std::move(scorers...));
 }

@@ -32,7 +32,6 @@ struct MaxScoreJoin {
                            AccumulateFn accumulate,
                            ThresholdFn above_threshold)
         : m_cursors(std::move(cursors)),
-          m_sorted_cursors(m_cursors.size()),
           m_cursor_idx(m_cursors.size()),
           m_upper_bounds(m_cursors.size()),
           m_init(std::move(init)),
@@ -49,7 +48,6 @@ struct MaxScoreJoin {
                            ThresholdFn above_threshold,
                            Analyzer* analyzer)
         : m_cursors(std::move(cursors)),
-          m_sorted_cursors(m_cursors.size()),
           m_cursor_idx(m_cursors.size()),
           m_upper_bounds(m_cursors.size()),
           m_init(std::move(init)),
@@ -67,21 +65,17 @@ struct MaxScoreJoin {
             m_current_value = sentinel();
             m_current_payload = m_init;
         }
-        std::transform(m_cursors.begin(),
-                       m_cursors.end(),
-                       m_sorted_cursors.begin(),
-                       [](auto&& cursor) { return &cursor; });
-        std::sort(m_sorted_cursors.begin(), m_sorted_cursors.end(), [](auto&& lhs, auto&& rhs) {
-            return lhs->max_score() < rhs->max_score();
-        });
         std::iota(m_cursor_idx.begin(), m_cursor_idx.end(), 0);
         std::sort(m_cursor_idx.begin(), m_cursor_idx.end(), [this](auto&& lhs, auto&& rhs) {
             return m_cursors[lhs].max_score() < m_cursors[rhs].max_score();
         });
+        std::sort(m_cursors.begin(), m_cursors.end(), [](auto&& lhs, auto&& rhs) {
+            return lhs.max_score() < rhs.max_score();
+        });
 
-        m_upper_bounds[0] = m_sorted_cursors[0]->max_score();
-        for (size_t i = 1; i < m_sorted_cursors.size(); ++i) {
-            m_upper_bounds[i] = m_upper_bounds[i - 1] + m_sorted_cursors[i]->max_score();
+        m_upper_bounds[0] = m_cursors[0].max_score();
+        for (size_t i = 1; i < m_cursors.size(); ++i) {
+            m_upper_bounds[i] = m_upper_bounds[i - 1] + m_cursors[i].max_score();
         }
 
         m_next_docid = min_value(m_cursors);
@@ -117,20 +111,19 @@ struct MaxScoreJoin {
                 m_analyzer->document();
             }
 
-            for (auto sorted_position = m_non_essential_count;
-                 sorted_position < m_sorted_cursors.size();
+            for (auto sorted_position = m_non_essential_count; sorted_position < m_cursors.size();
                  sorted_position += 1) {
 
-                auto& cursor = m_sorted_cursors[sorted_position];
-                if (cursor->value() == m_current_value) {
+                auto& cursor = m_cursors[sorted_position];
+                if (cursor.value() == m_current_value) {
                     if constexpr (not std::is_void_v<Analyzer>) {
                         m_analyzer->posting();
                     }
                     m_current_payload =
-                        m_accumulate(m_current_payload, *cursor, m_cursor_idx[sorted_position]);
-                    cursor->advance();
+                        m_accumulate(m_current_payload, cursor, m_cursor_idx[sorted_position]);
+                    cursor.advance();
                 }
-                if (auto docid = cursor->value(); docid < m_next_docid) {
+                if (auto docid = cursor.value(); docid < m_next_docid) {
                     m_next_docid = docid;
                 }
             }
@@ -142,14 +135,14 @@ struct MaxScoreJoin {
                     exit = false;
                     break;
                 }
-                auto& cursor = m_sorted_cursors[sorted_position];
-                cursor->advance_to_geq(m_current_value);
+                auto& cursor = m_cursors[sorted_position];
+                cursor.advance_to_geq(m_current_value);
                 if constexpr (not std::is_void_v<Analyzer>) {
                     m_analyzer->lookup();
                 }
-                if (cursor->value() == m_current_value) {
+                if (cursor.value() == m_current_value) {
                     m_current_payload =
-                        m_accumulate(m_current_payload, *cursor, m_cursor_idx[sorted_position]);
+                        m_accumulate(m_current_payload, cursor, m_cursor_idx[sorted_position]);
                 }
             }
         }
@@ -168,7 +161,6 @@ struct MaxScoreJoin {
 
    private:
     CursorContainer m_cursors;
-    std::vector<cursor_type*> m_sorted_cursors;
     std::vector<std::size_t> m_cursor_idx;
     std::vector<payload_type> m_upper_bounds;
     payload_type m_init;
@@ -221,12 +213,8 @@ auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& 
     using cursor_type = decltype(index.max_scored_cursor(0, scorer));
     using value_type = decltype(index.max_scored_cursor(0, scorer).value());
 
-    std::vector<cursor_type> cursors;
-    std::transform(term_ids.begin(), term_ids.end(), std::back_inserter(cursors), [&](auto term) {
-        return index.max_scored_cursor(term, scorer);
-    });
-
-    auto accumulate = [](auto& score, auto& cursor, auto /* term_position */) {
+    auto cursors = index.max_scored_cursors(gsl::make_span(term_ids), scorer);
+    auto accumulate = [](float& score, auto& cursor, auto /* term_position */) {
         score += cursor.payload();
         return score;
     };
@@ -270,15 +258,14 @@ struct MaxscoreAnalyzer {
         topk_queue topk(query.k());
         auto initial_threshold = query.threshold().value_or(-1.0);
         topk.set_threshold(initial_threshold);
-        auto joined = join_maxscore(
-            std::move(cursors),
-            0.0F,
-            [&](auto& score, auto& cursor, auto /* term_position */) {
-                score += cursor.payload();
-                return score;
-            },
-            [&](auto score) { return topk.would_enter(score); },
-            this);
+        auto joined = join_maxscore(std::move(cursors),
+                                    0.0F,
+                                    [&](auto& score, auto& cursor, auto /* term_position */) {
+                                        score += cursor.payload();
+                                        return score;
+                                    },
+                                    [&](auto score) { return topk.would_enter(score); },
+                                    this);
         v1::for_each(joined, [&](auto& cursor) {
             if (topk.insert(cursor.payload(), cursor.value())) {
                 inserts += 1;

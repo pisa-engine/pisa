@@ -78,6 +78,67 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
     return errors;
 }
 
+[[nodiscard]] auto build_scored_bigram_index(IndexMetadata meta,
+                                             std::string const& index_basename,
+                                             std::vector<std::pair<TermId, TermId>> const& bigrams)
+    -> std::pair<PostingFilePaths, PostingFilePaths>
+{
+    auto run = scored_index_runner(meta,
+                                   RawReader<std::uint32_t>{},
+                                   RawReader<std::uint8_t>{},
+                                   BlockedReader<::pisa::simdbp_block, true>{},
+                                   BlockedReader<::pisa::simdbp_block, false>{});
+
+    std::vector<std::array<TermId, 2>> pair_mapping;
+    auto scores_file_0 = fmt::format("{}.bigram_bm25_0", index_basename);
+    auto scores_file_1 = fmt::format("{}.bigram_bm25_1", index_basename);
+    auto score_offsets_file_0 = fmt::format("{}.bigram_bm25_offsets_0", index_basename);
+    auto score_offsets_file_1 = fmt::format("{}.bigram_bm25_offsets_1", index_basename);
+    std::ofstream score_out_0(scores_file_0);
+    std::ofstream score_out_1(scores_file_1);
+
+    run([&](auto&& index) {
+        ProgressStatus status(bigrams.size(),
+                              DefaultProgress("Building scored index"),
+                              std::chrono::milliseconds(100));
+        using index_type = std::decay_t<decltype(index)>;
+        using score_writer_type =
+            typename CursorTraits<typename index_type::payload_cursor_type>::Writer;
+
+        PostingBuilder<std::uint8_t> score_builder_0(score_writer_type{});
+        PostingBuilder<std::uint8_t> score_builder_1(score_writer_type{});
+
+        score_builder_0.write_header(score_out_0);
+        score_builder_1.write_header(score_out_1);
+
+        for (auto [left_term, right_term] : bigrams) {
+            auto intersection = intersect({index.scored_cursor(left_term, VoidScorer{}),
+                                           index.scored_cursor(right_term, VoidScorer{})},
+                                          std::array<std::uint8_t, 2>{0, 0},
+                                          [](auto& payload, auto& cursor, auto list_idx) {
+                                              payload[list_idx] = cursor.payload();
+                                              return payload;
+                                          });
+            if (intersection.empty()) {
+                status += 1;
+                continue;
+            }
+            for_each(intersection, [&](auto& cursor) {
+                auto payload = cursor.payload();
+                score_builder_0.accumulate(std::get<0>(payload));
+                score_builder_1.accumulate(std::get<1>(payload));
+            });
+            score_builder_0.flush_segment(score_out_0);
+            score_builder_1.flush_segment(score_out_1);
+            status += 1;
+        }
+        write_span(gsl::make_span(score_builder_0.offsets()), score_offsets_file_0);
+        write_span(gsl::make_span(score_builder_1.offsets()), score_offsets_file_1);
+    });
+    return {PostingFilePaths{scores_file_0, score_offsets_file_0},
+            PostingFilePaths{scores_file_1, score_offsets_file_1}};
+}
+
 void build_bigram_index(std::string const& yml,
                         std::vector<std::pair<TermId, TermId>> const& bigrams)
 {
@@ -147,13 +208,18 @@ void build_bigram_index(std::string const& yml,
         write_span(gsl::make_span(frequency_builder_1.offsets()), frequency_offsets_file_1);
         std::cerr << " Done.\n";
     });
-    std::cerr << "Writing metadata...";
     meta.bigrams = BigramMetadata{
         .documents = {.postings = documents_file, .offsets = document_offsets_file},
         .frequencies = {{.postings = frequencies_file_0, .offsets = frequency_offsets_file_0},
                         {.postings = frequencies_file_1, .offsets = frequency_offsets_file_1}},
+        .scores = {},
         .mapping = fmt::format("{}.bigram_mapping", index_basename),
         .count = pair_mapping.size()};
+    if (not meta.scores.empty()) {
+        meta.bigrams->scores.push_back(build_scored_bigram_index(meta, index_basename, bigrams));
+    }
+
+    std::cerr << "Writing metadata...";
     meta.write(yml);
     std::cerr << " Done.\nWriting bigram mapping...";
     write_span(gsl::make_span(pair_mapping), meta.bigrams->mapping);

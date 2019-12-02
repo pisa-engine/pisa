@@ -43,6 +43,7 @@ struct PostingFilePaths {
 struct BigramMetadata {
     PostingFilePaths documents;
     std::pair<PostingFilePaths, PostingFilePaths> frequencies;
+    std::vector<std::pair<PostingFilePaths, PostingFilePaths>> scores{};
     std::string mapping;
     std::size_t count;
 };
@@ -155,6 +156,26 @@ template <typename... Readers>
     auto document_offsets = source_span<std::size_t>(source, metadata.documents.offsets);
     auto score_offsets = source_span<std::size_t>(source, metadata.scores.front().offsets);
     auto document_lengths = source_span<std::uint32_t>(source, metadata.document_lengths_path);
+    tl::optional<gsl::span<std::size_t const>> bigram_document_offsets{};
+    tl::optional<std::array<gsl::span<std::size_t const>, 2>> bigram_score_offsets{};
+    tl::optional<gsl::span<std::byte const>> bigram_documents{};
+    tl::optional<std::array<gsl::span<std::byte const>, 2>> bigram_scores{};
+    tl::optional<gsl::span<std::array<TermId, 2> const>> bigram_mapping{};
+    if (metadata.bigrams) {
+        bigram_document_offsets =
+            source_span<std::size_t>(source, metadata.bigrams->documents.offsets);
+        bigram_score_offsets = {
+            source_span<std::size_t>(source, metadata.bigrams->scores[0].first.offsets),
+            source_span<std::size_t>(source, metadata.bigrams->scores[0].second.offsets)};
+        bigram_documents = source_span<std::byte>(source, metadata.bigrams->documents.postings);
+        bigram_scores = {
+            source_span<std::byte>(source, metadata.bigrams->scores[0].first.postings),
+            source_span<std::byte>(source, metadata.bigrams->scores[0].second.postings)};
+        auto mapping_span = source_span<std::byte>(source, metadata.bigrams->mapping);
+        bigram_mapping = gsl::span<std::array<TermId, 2> const>(
+            reinterpret_cast<std::array<TermId, 2> const*>(mapping_span.data()),
+            mapping_span.size() / (sizeof(TermId) * 2));
+    }
     gsl::span<std::uint8_t const> quantized_max_scores;
     if (not metadata.quantized_max_scores.empty()) {
         // TODO(michal): support many precomputed scores
@@ -164,17 +185,17 @@ template <typename... Readers>
     }
     return IndexRunner<Readers...>(document_offsets,
                                    score_offsets,
-                                   {},
-                                   {},
+                                   bigram_document_offsets,
+                                   bigram_score_offsets,
                                    documents,
                                    scores,
-                                   {}, // TODO(michal): support scored bigrams
-                                   {},
+                                   bigram_documents,
+                                   bigram_scores,
                                    document_lengths,
                                    tl::make_optional(metadata.avg_document_length),
                                    {},
                                    quantized_max_scores,
-                                   {},
+                                   bigram_mapping,
                                    std::move(source),
                                    std::move(readers));
 }

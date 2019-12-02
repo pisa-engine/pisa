@@ -37,8 +37,14 @@
 #include "v1/types.hpp"
 #include "v1/union_lookup.hpp"
 
-namespace v1 = pisa::v1;
 using namespace pisa;
+using pisa::v1::BlockedCursor;
+using pisa::v1::DocId;
+using pisa::v1::Frequency;
+using pisa::v1::Index;
+using pisa::v1::IndexMetadata;
+using pisa::v1::ListSelection;
+using pisa::v1::RawCursor;
 
 static constexpr auto RELATIVE_ERROR = 0.1F;
 
@@ -116,17 +122,15 @@ std::unique_ptr<IndexData<v0_Index, v1_Index, ScoredIndex>>
 
 TEMPLATE_TEST_CASE("Query",
                    "[v1][integration]",
-                   (IndexFixture<v1::RawCursor<v1::DocId>,
-                                 v1::RawCursor<v1::Frequency>,
-                                 v1::RawCursor<std::uint8_t>>),
-                   (IndexFixture<v1::BlockedCursor<::pisa::simdbp_block, true>,
-                                 v1::BlockedCursor<::pisa::simdbp_block, false>,
-                                 v1::RawCursor<std::uint8_t>>))
+                   (IndexFixture<RawCursor<DocId>, RawCursor<Frequency>, RawCursor<std::uint8_t>>),
+                   (IndexFixture<BlockedCursor<::pisa::simdbp_block, true>,
+                                 BlockedCursor<::pisa::simdbp_block, false>,
+                                 RawCursor<std::uint8_t>>))
 {
     tbb::task_scheduler_init init(1);
     auto data = IndexData<single_index,
-                          v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<v1::Frequency>>,
-                          v1::Index<v1::RawCursor<v1::DocId>, v1::RawCursor<float>>>::get();
+                          Index<RawCursor<DocId>, RawCursor<Frequency>>,
+                          Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
     auto input_data = GENERATE(table<char const*, bool>({{"daat_or", false},
                                                          {"maxscore", false},
@@ -139,7 +143,7 @@ TEMPLATE_TEST_CASE("Query",
     CAPTURE(algorithm);
     CAPTURE(with_threshold);
     auto index_basename = (fixture.tmpdir().path() / "inv").string();
-    auto meta = v1::IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
+    auto meta = IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
     ranked_or_query or_q(10);
     auto run_query = [](std::string const& name, auto query, auto&& index, auto scorer) {
         if (name == "daat_or") {
@@ -152,7 +156,7 @@ TEMPLATE_TEST_CASE("Query",
             return maxscore_union_lookup(query, index, topk_queue(10), scorer);
         }
         if (name == "unigram_union_lookup") {
-            query.selections(v1::ListSelection{.unigrams = query.get_term_ids(), .bigrams = {}});
+            query.selections(ListSelection{.unigrams = query.get_term_ids(), .bigrams = {}});
             return unigram_union_lookup(query, index, topk_queue(10), scorer);
         }
         if (name == "union_lookup") {
@@ -185,7 +189,7 @@ TEMPLATE_TEST_CASE("Query",
 
         auto on_the_fly = [&]() {
             auto run =
-                v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
+                pisa::v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
             std::vector<typename topk_queue::entry_type> results;
             run([&](auto&& index) {
                 auto que = run_query(algorithm, query, index, make_bm25(index));
