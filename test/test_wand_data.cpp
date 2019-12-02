@@ -27,11 +27,13 @@ TEST_CASE("wand_data_range")
 
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
+    std::unordered_set<size_t> dropped_term_ids;
     WandType wdata_range(document_sizes.begin()->begin(),
                          collection.num_docs(),
                          collection,
                          scorer_name,
-                         BlockSize(FixedBlock()));
+                         BlockSize(FixedBlock()),
+                         dropped_term_ids);
 
     auto scorer = scorer::from_name(scorer_name, wdata_range);
 
