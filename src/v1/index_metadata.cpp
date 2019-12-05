@@ -65,6 +65,13 @@ constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
         }(),
         .bigrams = [&]() -> tl::optional<BigramMetadata> {
             if (config[BIGRAM]) {
+                std::vector<std::pair<PostingFilePaths, PostingFilePaths>> scores;
+                if (config[BIGRAM]["scores_0"]) {
+                    scores = {{{.postings = config[BIGRAM]["scores_0"][POSTINGS].as<std::string>(),
+                                .offsets = config[BIGRAM]["scores_0"][OFFSETS].as<std::string>()},
+                               {.postings = config[BIGRAM]["scores_1"][POSTINGS].as<std::string>(),
+                                .offsets = config[BIGRAM]["scores_1"][OFFSETS].as<std::string>()}}};
+                }
                 return BigramMetadata{
                     .documents = {.postings = config[BIGRAM][DOCUMENTS][POSTINGS].as<std::string>(),
                                   .offsets = config[BIGRAM][DOCUMENTS][OFFSETS].as<std::string>()},
@@ -73,11 +80,7 @@ constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
                           .offsets = config[BIGRAM]["frequencies_0"][OFFSETS].as<std::string>()},
                          {.postings = config[BIGRAM]["frequencies_1"][POSTINGS].as<std::string>(),
                           .offsets = config[BIGRAM]["frequencies_1"][OFFSETS].as<std::string>()}},
-                    .scores = {{{.postings = config[BIGRAM]["scores_0"][POSTINGS].as<std::string>(),
-                                 .offsets = config[BIGRAM]["scores_0"][OFFSETS].as<std::string>()},
-                                {.postings = config[BIGRAM]["scores_1"][POSTINGS].as<std::string>(),
-                                 .offsets =
-                                     config[BIGRAM]["scores_1"][OFFSETS].as<std::string>()}}},
+                    .scores = std::move(scores),
                     .mapping = config[BIGRAM]["mapping"].as<std::string>(),
                     .count = config[BIGRAM]["count"].as<std::size_t>()};
             }

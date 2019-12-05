@@ -16,7 +16,7 @@ template <typename CursorContainer,
           typename Payload,
           typename AccumulateFn,
           typename ThresholdFn,
-          typename Analyzer = void>
+          typename Inspect = void>
 struct MaxScoreJoin {
     using cursor_type = typename CursorContainer::value_type;
     using payload_type = Payload;
@@ -46,7 +46,7 @@ struct MaxScoreJoin {
                            Payload init,
                            AccumulateFn accumulate,
                            ThresholdFn above_threshold,
-                           Analyzer* analyzer)
+                           Inspect* inspect)
         : m_cursors(std::move(cursors)),
           m_cursor_idx(m_cursors.size()),
           m_upper_bounds(m_cursors.size()),
@@ -54,7 +54,7 @@ struct MaxScoreJoin {
           m_accumulate(std::move(accumulate)),
           m_above_threshold(std::move(above_threshold)),
           m_size(std::nullopt),
-          m_analyzer(analyzer)
+          m_inspect(inspect)
     {
         initialize();
     }
@@ -107,8 +107,8 @@ struct MaxScoreJoin {
             m_current_payload = m_init;
             m_current_value = std::exchange(m_next_docid, sentinel());
 
-            if constexpr (not std::is_void_v<Analyzer>) {
-                m_analyzer->document();
+            if constexpr (not std::is_void_v<Inspect>) {
+                m_inspect->document();
             }
 
             for (auto sorted_position = m_non_essential_count; sorted_position < m_cursors.size();
@@ -116,8 +116,8 @@ struct MaxScoreJoin {
 
                 auto& cursor = m_cursors[sorted_position];
                 if (cursor.value() == m_current_value) {
-                    if constexpr (not std::is_void_v<Analyzer>) {
-                        m_analyzer->posting();
+                    if constexpr (not std::is_void_v<Inspect>) {
+                        m_inspect->posting();
                     }
                     m_current_payload =
                         m_accumulate(m_current_payload, cursor, m_cursor_idx[sorted_position]);
@@ -137,8 +137,8 @@ struct MaxScoreJoin {
                 }
                 auto& cursor = m_cursors[sorted_position];
                 cursor.advance_to_geq(m_current_value);
-                if constexpr (not std::is_void_v<Analyzer>) {
-                    m_analyzer->lookup();
+                if constexpr (not std::is_void_v<Inspect>) {
+                    m_inspect->lookup();
                 }
                 if (cursor.value() == m_current_value) {
                     m_current_payload =
@@ -175,7 +175,7 @@ struct MaxScoreJoin {
     std::size_t m_non_essential_count = 0;
     payload_type m_previous_threshold{};
 
-    Analyzer* m_analyzer;
+    Inspect* m_inspect;
 };
 
 template <typename CursorContainer, typename Payload, typename AccumulateFn, typename ThresholdFn>
@@ -192,15 +192,15 @@ template <typename CursorContainer,
           typename Payload,
           typename AccumulateFn,
           typename ThresholdFn,
-          typename Analyzer>
+          typename Inspect>
 auto join_maxscore(CursorContainer cursors,
                    Payload init,
                    AccumulateFn accumulate,
                    ThresholdFn threshold,
-                   Analyzer* analyzer)
+                   Inspect* inspect)
 {
-    return MaxScoreJoin<CursorContainer, Payload, AccumulateFn, ThresholdFn, Analyzer>(
-        std::move(cursors), std::move(init), std::move(accumulate), std::move(threshold), analyzer);
+    return MaxScoreJoin<CursorContainer, Payload, AccumulateFn, ThresholdFn, Inspect>(
+        std::move(cursors), std::move(init), std::move(accumulate), std::move(threshold), inspect);
 }
 
 template <typename Index, typename Scorer>
@@ -228,8 +228,8 @@ auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& 
 }
 
 template <typename Index, typename Scorer>
-struct MaxscoreAnalyzer {
-    MaxscoreAnalyzer(Index const& index, Scorer scorer)
+struct MaxscoreInspector {
+    MaxscoreInspector(Index const& index, Scorer scorer)
         : m_index(index), m_scorer(std::move(scorer))
     {
         std::cout << fmt::format("documents\tpostings\tinserts\tlookups\n");
@@ -258,14 +258,15 @@ struct MaxscoreAnalyzer {
         topk_queue topk(query.k());
         auto initial_threshold = query.threshold().value_or(-1.0);
         topk.set_threshold(initial_threshold);
-        auto joined = join_maxscore(std::move(cursors),
-                                    0.0F,
-                                    [&](auto& score, auto& cursor, auto /* term_position */) {
-                                        score += cursor.payload();
-                                        return score;
-                                    },
-                                    [&](auto score) { return topk.would_enter(score); },
-                                    this);
+        auto joined = join_maxscore(
+            std::move(cursors),
+            0.0F,
+            [&](auto& score, auto& cursor, auto /* term_position */) {
+                score += cursor.payload();
+                return score;
+            },
+            [&](auto score) { return topk.would_enter(score); },
+            this);
         v1::for_each(joined, [&](auto& cursor) {
             if (topk.insert(cursor.payload(), cursor.value())) {
                 inserts += 1;

@@ -132,12 +132,15 @@ TEMPLATE_TEST_CASE("Query",
                           Index<RawCursor<DocId>, RawCursor<Frequency>>,
                           Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
-    auto input_data = GENERATE(table<char const*, bool>({{"daat_or", false},
-                                                         {"maxscore", false},
-                                                         {"maxscore", true},
-                                                         {"maxscore_union_lookup", true},
-                                                         {"unigram_union_lookup", true},
-                                                         {"union_lookup", true}}));
+    auto input_data = GENERATE(table<char const*, bool>({
+        {"daat_or", false},
+        {"maxscore", false},
+        {"maxscore", true},
+        {"maxscore_union_lookup", true},
+        {"unigram_union_lookup", true},
+        {"union_lookup", true},
+        //{"disjoint_union_lookup", true}
+    }));
     std::string algorithm = std::get<0>(input_data);
     bool with_threshold = std::get<1>(input_data);
     CAPTURE(algorithm);
@@ -165,13 +168,19 @@ TEMPLATE_TEST_CASE("Query",
             }
             return union_lookup(query, index, topk_queue(10), scorer);
         }
+        if (name == "disjoint_union_lookup") {
+            if (query.get_term_ids().size() > 8 || query.get_selections().overlapping()) {
+                return maxscore_union_lookup(query, index, topk_queue(10), scorer);
+            }
+            return disjoint_union_lookup(query, index, topk_queue(10), scorer);
+        }
         std::abort();
     };
     int idx = 0;
     auto const intersections =
         pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
     for (auto& query : test_queries()) {
-        if (algorithm == "union_lookup") {
+        if (algorithm == "union_lookup" || algorithm == "disjoint_union_lookup") {
             query.selections(gsl::make_span(intersections[idx]));
         }
 
@@ -195,29 +204,20 @@ TEMPLATE_TEST_CASE("Query",
                 auto que = run_query(algorithm, query, index, make_bm25(index));
                 que.finalize();
                 results = que.topk();
-                results.erase(std::remove_if(results.begin(),
-                                             results.end(),
-                                             [last_score = results.back().first](auto&& entry) {
-                                                 return entry.first <= last_score;
-                                             }),
-                              results.end());
-                std::sort(results.begin(), results.end(), approximate_order);
+                if (not results.empty()) {
+                    results.erase(std::remove_if(results.begin(),
+                                                 results.end(),
+                                                 [last_score = results.back().first](auto&& entry) {
+                                                     return entry.first <= last_score;
+                                                 }),
+                                  results.end());
+                    std::sort(results.begin(), results.end(), approximate_order);
+                }
             });
             return results;
         }();
         expected.resize(on_the_fly.size());
         std::sort(expected.begin(), expected.end(), approximate_order);
-
-        // if (algorithm == "union_lookup") {
-        //    for (size_t i = 0; i < on_the_fly.size(); ++i) {
-        //        std::cerr << fmt::format("{}, {:f} -- {}, {:f}\n",
-        //                                 on_the_fly[i].second,
-        //                                 on_the_fly[i].first,
-        //                                 expected[i].second,
-        //                                 expected[i].first);
-        //    }
-        //}
-        // std::cerr << '\n';
 
         for (size_t i = 0; i < on_the_fly.size(); ++i) {
             REQUIRE(on_the_fly[i].second == expected[i].second);

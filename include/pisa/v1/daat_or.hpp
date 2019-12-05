@@ -26,8 +26,8 @@ auto daat_or(Query const& query, Index const& index, topk_queue topk, Scorer&& s
 }
 
 template <typename Index, typename Scorer>
-struct DaatOrAnalyzer {
-    DaatOrAnalyzer(Index const& index, Scorer scorer) : m_index(index), m_scorer(std::move(scorer))
+struct DaatOrInspector {
+    DaatOrInspector(Index const& index, Scorer scorer) : m_index(index), m_scorer(std::move(scorer))
     {
         std::cout << fmt::format("documents\tpostings\n");
     }

@@ -12,7 +12,6 @@
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
-#include "v1/analyze_query.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/daat_or.hpp"
 #include "v1/index_metadata.hpp"
@@ -29,21 +28,11 @@ using pisa::resolve_query_parser;
 using pisa::TermProcessor;
 using pisa::v1::BlockedReader;
 using pisa::v1::daat_or;
-using pisa::v1::DaatOrAnalyzer;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
-using pisa::v1::ListSelection;
-using pisa::v1::maxscore_union_lookup;
-using pisa::v1::MaxscoreAnalyzer;
-using pisa::v1::MaxscoreUnionLookupAnalyzer;
 using pisa::v1::Query;
-using pisa::v1::QueryAnalyzer;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
-using pisa::v1::unigram_union_lookup;
-using pisa::v1::UnigramUnionLookupAnalyzer;
-using pisa::v1::union_lookup;
-using pisa::v1::UnionLookupAnalyzer;
 using pisa::v1::VoidScorer;
 
 int main(int argc, char** argv)

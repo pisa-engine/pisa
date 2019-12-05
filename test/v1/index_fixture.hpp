@@ -60,8 +60,8 @@ struct IndexFixture {
                                                   index_basename);
         REQUIRE(errors.empty());
         auto yml = fmt::format("{}.yml", index_basename);
-        v1::build_bigram_index(yml, collect_unique_bigrams(test_queries(), []() {}));
         v1::score_index(yml, 1);
+        v1::build_bigram_index(yml, collect_unique_bigrams(test_queries(), []() {}));
     }
 
     [[nodiscard]] auto const& tmpdir() const { return *m_tmpdir; }

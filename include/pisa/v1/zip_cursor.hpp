@@ -19,8 +19,9 @@ struct ZipCursor {
     [[nodiscard]] constexpr auto operator*() const -> Value { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Value
     {
-        auto deref = [](auto... cursors) { return std::make_tuple(cursors.value()...); };
-        return std::apply(deref, m_cursors);
+        // auto deref = [](auto... cursors) { return std::make_tuple(cursors.value()...); };
+        // return std::apply(deref, m_cursors);
+        return std::make_tuple(std::get<0>(m_cursors).value(), std::get<1>(m_cursors).value());
     }
     constexpr void advance()
     {
@@ -35,8 +36,8 @@ struct ZipCursor {
         // TODO: Why generic doesn't work?
         // auto advance_all = [pos](auto... cursors) { (cursors.advance_to_position(pos), ...); };
         // std::apply(advance_all, m_cursors);
-        std::get<0>(m_cursors).advance();
-        std::get<1>(m_cursors).advance();
+        std::get<0>(m_cursors).advance_to_position(pos);
+        std::get<1>(m_cursors).advance_to_position(pos);
     }
     [[nodiscard]] constexpr auto empty() const noexcept -> bool
     {

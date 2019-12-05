@@ -24,18 +24,14 @@ set -x
 #./bin/score -i "${BASENAME}.yml" -j ${THREADS}
 
 # This will produce both quantized scores and max scores (both quantized and not).
-# ./bin/bigram-index -i "${BASENAME}.yml" -q ${QUERIES}
+#./bin/bigram-index -i "${BASENAME}.yml" -q ${QUERIES}
 
 # Filter out queries witout existing terms.
-#${PISA_BIN}/filter-queries -i ${BASENAME}.yml -q ${QUERIES} | grep -v "\[warning\]" \
-#    > ${FILTERED_QUERIES}
+#${PISA_BIN}/filter-queries -i ${BASENAME}.yml -q ${QUERIES} | grep -v "\[warning\]" > ${FILTERED_QUERIES}
 
 # Extract thresholds (TODO: estimates)
-#${PISA_BIN}/thresholds -t ${TYPE} -i ${INV}.${TYPE} \
-#    -w ${INV}.wand -q ${FILTERED_QUERIES} -k ${K} --terms "${FWD}.termlex" --stemmer porter2 \
-#   | grep -v "\[warning\]" \
-#    > ${THRESHOLDS}
-#cut -d: -f1 ${FILTERED_QUERIES} | paste - ${OUTPUT_DIR}/thresholds > ${OUTPUT_DIR}/thresholds.tsv
+#${PISA_BIN}/threshold -i ${BASENAME}.yml -q ${FILTERED_QUERIES} -k ${K} \
+#   | grep -v "\[warning\]" > ${THRESHOLDS}
 #cut -d: -f1 ${FILTERED_QUERIES} | paste - ${THRESHOLDS} > ${OUTPUT_DIR}/thresholds.tsv
 
 # Extract intersections
@@ -44,45 +40,36 @@ set -x
 #    | grep -v "\[warning\]" \
 #    > ${OUTPUT_DIR}/intersections.tsv
 
-## Select unigrams
+# Select unigrams
 #${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
 #    --terse --max 1 > ${OUTPUT_DIR}/selections.1
-#
-## Select unigrams and bigrams
 #${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
 #    --terse --max 2 > ${OUTPUT_DIR}/selections.2
-#
-## Select unigrams and bigrams scaled
 #${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
 #    --terse --max 2 --scale 1.5 > ${OUTPUT_DIR}/selections.2.scaled-1.5
-#
-# Select unigrams and bigrams scaled
-${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
-    --terse --max 2 --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
-#
+#${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
+#    --terse --max 2 --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
 #${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
 #    --terse --max 2 --scale-by-query-len > ${OUTPUT_DIR}/selections.2.scaled-smart
 
 # Run benchmarks
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore > ${OUTPUT_DIR}/bench.maxscore
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore \
-#    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/bench.maxscore-threshold
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore-union-lookup \
-#    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/bench.maxscore-union-lookup
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm unigram-union-lookup \
-#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/bench.unigram-union-lookup
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
-#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/bench.union-lookup.1
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
-#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/bench.union-lookup.2
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm two-phase-union-lookup \
-#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/bench.two-phase-union-lookup
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore > ${OUTPUT_DIR}/bench.maxscore
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore \
+    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/bench.maxscore-threshold
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore-union-lookup \
+    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/bench.maxscore-union-lookup
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm unigram-union-lookup \
+    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/bench.unigram-union-lookup
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
+    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/bench.union-lookup.2
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm lookup-union \
+    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/bench.lookup-union
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
 #    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-1.5 > ${OUTPUT_DIR}/bench.union-lookup.scaled-1.5
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
 #    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-2 > ${OUTPUT_DIR}/bench.union-lookup.scaled-2
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-3 > ${OUTPUT_DIR}/bench.union-lookup.scaled-3
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-3 > ${OUTPUT_DIR}/bench.union-lookup.scaled-3
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm union-lookup \
 #    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-smart > ${OUTPUT_DIR}/bench.union-lookup.scaled-smart
 
@@ -95,21 +82,19 @@ ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algori
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm unigram-union-lookup \
     --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/stats.unigram-union-lookup
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/stats.union-lookup.1
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
     --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.union-lookup.2
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm two-phase-union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.two-phase-union-lookup
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-1.5 > ${OUTPUT_DIR}/stats.union-lookup.scaled-1.5
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-2 > ${OUTPUT_DIR}/stats.union-lookup.scaled-2
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-3 > ${OUTPUT_DIR}/stats.union-lookup.scaled-3
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-smart > ${OUTPUT_DIR}/stats.union-lookup.scaled-smart
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm lookup-union \
+    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.lookup-union
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-1.5 > ${OUTPUT_DIR}/stats.union-lookup.scaled-1.5
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-2 > ${OUTPUT_DIR}/stats.union-lookup.scaled-2
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-3 > ${OUTPUT_DIR}/stats.union-lookup.scaled-3
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-smart > ${OUTPUT_DIR}/stats.union-lookup.scaled-smart
 
-# Evaluate
+## Evaluate
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxscore > "${OUTPUT_DIR}/eval.maxscore"
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxscore \
     --thresholds ${THRESHOLDS} > "${OUTPUT_DIR}/eval.maxscore-threshold"
@@ -118,16 +103,14 @@ ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxsco
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm unigram-union-lookup \
     --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > "${OUTPUT_DIR}/eval.unigram-union-lookup"
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > "${OUTPUT_DIR}/eval.union-lookup.1"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
     --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > "${OUTPUT_DIR}/eval.union-lookup.2"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm two-phase-union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > "${OUTPUT_DIR}/eval.two-phase-union-lookup"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-1.5 > "${OUTPUT_DIR}/eval.union-lookup.scale-1.5"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-2 > "${OUTPUT_DIR}/eval.union-lookup.scale-2"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-3 > "${OUTPUT_DIR}/eval.union-lookup.scale-3"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-smart > "${OUTPUT_DIR}/eval.union-lookup.scale-smart"
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm lookup-union \
+    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > "${OUTPUT_DIR}/eval.lookup-union"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-1.5 > "${OUTPUT_DIR}/eval.union-lookup.scale-1.5"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-2 > "${OUTPUT_DIR}/eval.union-lookup.scale-2"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-3 > "${OUTPUT_DIR}/eval.union-lookup.scale-3"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-smart > "${OUTPUT_DIR}/eval.union-lookup.scale-smart"

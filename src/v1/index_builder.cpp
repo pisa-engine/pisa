@@ -83,7 +83,7 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
                                              std::vector<std::pair<TermId, TermId>> const& bigrams)
     -> std::pair<PostingFilePaths, PostingFilePaths>
 {
-    auto run = scored_index_runner(meta,
+    auto run = scored_index_runner(std::move(meta),
                                    RawReader<std::uint32_t>{},
                                    RawReader<std::uint8_t>{},
                                    BlockedReader<::pisa::simdbp_block, true>{},
@@ -92,10 +92,13 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
     std::vector<std::array<TermId, 2>> pair_mapping;
     auto scores_file_0 = fmt::format("{}.bigram_bm25_0", index_basename);
     auto scores_file_1 = fmt::format("{}.bigram_bm25_1", index_basename);
+    // auto compound_scores_file = fmt::format("{}.bigram_bm25", index_basename);
     auto score_offsets_file_0 = fmt::format("{}.bigram_bm25_offsets_0", index_basename);
     auto score_offsets_file_1 = fmt::format("{}.bigram_bm25_offsets_1", index_basename);
+    // auto compound_score_offsets_file = fmt::format("{}.bigram_bm25_offsets", index_basename);
     std::ofstream score_out_0(scores_file_0);
     std::ofstream score_out_1(scores_file_1);
+    // std::ofstream compound_score_out(compound_scores_file);
 
     run([&](auto&& index) {
         ProgressStatus status(bigrams.size(),
@@ -107,6 +110,7 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
 
         PostingBuilder<std::uint8_t> score_builder_0(score_writer_type{});
         PostingBuilder<std::uint8_t> score_builder_1(score_writer_type{});
+        PostingBuilder<std::uint8_t>(score_writer_type{});
 
         score_builder_0.write_header(score_out_0);
         score_builder_1.write_header(score_out_1);
@@ -208,7 +212,7 @@ void build_bigram_index(std::string const& yml,
         write_span(gsl::make_span(frequency_builder_1.offsets()), frequency_offsets_file_1);
         std::cerr << " Done.\n";
     });
-    meta.bigrams = BigramMetadata{
+    BigramMetadata bigram_meta{
         .documents = {.postings = documents_file, .offsets = document_offsets_file},
         .frequencies = {{.postings = frequencies_file_0, .offsets = frequency_offsets_file_0},
                         {.postings = frequencies_file_1, .offsets = frequency_offsets_file_1}},
@@ -216,8 +220,9 @@ void build_bigram_index(std::string const& yml,
         .mapping = fmt::format("{}.bigram_mapping", index_basename),
         .count = pair_mapping.size()};
     if (not meta.scores.empty()) {
-        meta.bigrams->scores.push_back(build_scored_bigram_index(meta, index_basename, bigrams));
+        bigram_meta.scores.push_back(build_scored_bigram_index(meta, index_basename, bigrams));
     }
+    meta.bigrams = bigram_meta;
 
     std::cerr << "Writing metadata...";
     meta.write(yml);

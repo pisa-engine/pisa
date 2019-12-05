@@ -13,10 +13,10 @@
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
-#include "v1/analyze_query.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/daat_or.hpp"
 #include "v1/index_metadata.hpp"
+#include "v1/inspect_query.hpp"
 #include "v1/intersection.hpp"
 #include "v1/maxscore.hpp"
 #include "v1/query.hpp"
@@ -29,22 +29,23 @@
 using pisa::resolve_query_parser;
 using pisa::v1::BlockedReader;
 using pisa::v1::daat_or;
-using pisa::v1::DaatOrAnalyzer;
+using pisa::v1::DaatOrInspector;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::ListSelection;
+using pisa::v1::lookup_union;
+using pisa::v1::LookupUnionInspector;
 using pisa::v1::maxscore_union_lookup;
-using pisa::v1::MaxscoreAnalyzer;
-using pisa::v1::MaxscoreUnionLookupAnalyzer;
+using pisa::v1::MaxscoreInspector;
+using pisa::v1::MaxscoreUnionLookupInspect;
 using pisa::v1::Query;
-using pisa::v1::QueryAnalyzer;
+using pisa::v1::QueryInspector;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
-using pisa::v1::TwoPhaseUnionLookupAnalyzer;
 using pisa::v1::unigram_union_lookup;
-using pisa::v1::UnigramUnionLookupAnalyzer;
+using pisa::v1::UnigramUnionLookupInspect;
 using pisa::v1::union_lookup;
-using pisa::v1::UnionLookupAnalyzer;
+using pisa::v1::UnionLookupInspect;
 using pisa::v1::VoidScorer;
 
 using RetrievalAlgorithm = std::function<::pisa::topk_queue(pisa::v1::Query, ::pisa::topk_queue)>;
@@ -92,13 +93,13 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
                 query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
     }
-    if (name == "two-phase-union-lookup") {
+    if (name == "lookup-union") {
         return RetrievalAlgorithm([&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
-            if (query.get_term_ids().size() > 8) {
-                return pisa::v1::maxscore_union_lookup(
+            if (query.selections()->bigrams.empty()) {
+                return pisa::v1::unigram_union_lookup(
                     query, index, std::move(topk), std::forward<Scorer>(scorer));
             }
-            return pisa::v1::two_phase_union_lookup(
+            return pisa::v1::lookup_union(
                 query, index, std::move(topk), std::forward<Scorer>(scorer));
         });
     }
@@ -107,28 +108,27 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
 }
 
 template <typename Index, typename Scorer>
-auto resolve_analyze(std::string const& name, Index const& index, Scorer&& scorer) -> QueryAnalyzer
+auto resolve_inspect(std::string const& name, Index const& index, Scorer&& scorer) -> QueryInspector
 {
     if (name == "daat_or") {
-        return QueryAnalyzer(DaatOrAnalyzer(index, std::forward<Scorer>(scorer)));
+        return QueryInspector(DaatOrInspector(index, std::forward<Scorer>(scorer)));
     }
     if (name == "maxscore") {
-        return QueryAnalyzer(MaxscoreAnalyzer(index, std::forward<Scorer>(scorer)));
+        return QueryInspector(MaxscoreInspector(index, std::forward<Scorer>(scorer)));
     }
     if (name == "maxscore-union-lookup") {
-        return QueryAnalyzer(
-            MaxscoreUnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(
+            MaxscoreUnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "unigram-union-lookup") {
-        return QueryAnalyzer(
-            UnigramUnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(
+            UnigramUnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "union-lookup") {
-        return QueryAnalyzer(UnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(UnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
     }
-    if (name == "two-phase-union-lookup") {
-        return QueryAnalyzer(
-            TwoPhaseUnionLookupAnalyzer<Index, std::decay_t<Scorer>>(index, scorer));
+    if (name == "lookup-union") {
+        return QueryInspector(LookupUnionInspector<Index, std::decay_t<Scorer>>(index, scorer));
     }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
@@ -186,15 +186,12 @@ void benchmark(std::vector<Query> const& queries, int k, RetrievalAlgorithm retr
     spdlog::info("95% quantile: {} us", q95);
 }
 
-void analyze_queries(std::vector<Query> const& queries, QueryAnalyzer analyzer)
+void inspect_queries(std::vector<Query> const& queries, QueryInspector inspect)
 {
-    std::vector<double> times(queries.size(), std::numeric_limits<double>::max());
-    for (auto run = 0; run < 5; run += 1) {
-        for (auto query = 0; query < queries.size(); query += 1) {
-            analyzer(queries[query]);
-        }
+    for (auto query = 0; query < queries.size(); query += 1) {
+        inspect(queries[query]);
     }
-    std::move(analyzer).summarize();
+    std::move(inspect).summarize();
 }
 
 int main(int argc, char** argv)
@@ -205,13 +202,13 @@ int main(int argc, char** argv)
     std::string algorithm = "daat_or";
     tl::optional<std::string> threshold_file;
     tl::optional<std::string> inter_filename;
-    bool analyze = false;
+    bool inspect = false;
 
     pisa::QueryApp app("Queries a v1 index.");
     app.add_option("--algorithm", algorithm, "Query retrieval algorithm.", true);
     app.add_option("--thresholds", threshold_file, "File with (estimated) thresholds.", false);
     app.add_option("--intersections", inter_filename, "Intersections filename");
-    app.add_flag("--analyze", analyze, "Analyze query execution and stats");
+    app.add_flag("--inspect", inspect, "Analyze query execution and stats");
     CLI11_PARSE(app, argc, argv);
 
     try {
@@ -290,8 +287,8 @@ int main(int argc, char** argv)
             run([&](auto&& index) {
                 if (app.is_benchmark) {
                     benchmark(queries, app.k, resolve_algorithm(algorithm, index, VoidScorer{}));
-                } else if (analyze) {
-                    analyze_queries(queries, resolve_analyze(algorithm, index, VoidScorer{}));
+                } else if (inspect) {
+                    inspect_queries(queries, resolve_inspect(algorithm, index, VoidScorer{}));
                 } else {
                     evaluate(
                         queries, app.k, docmap, resolve_algorithm(algorithm, index, VoidScorer{}));
@@ -307,8 +304,8 @@ int main(int argc, char** argv)
                 with_scorer("bm25", [&](auto scorer) {
                     if (app.is_benchmark) {
                         benchmark(queries, app.k, resolve_algorithm(algorithm, index, scorer));
-                    } else if (analyze) {
-                        analyze_queries(queries, resolve_analyze(algorithm, index, scorer));
+                    } else if (inspect) {
+                        inspect_queries(queries, resolve_inspect(algorithm, index, scorer));
                     } else {
                         evaluate(
                             queries, app.k, docmap, resolve_algorithm(algorithm, index, scorer));

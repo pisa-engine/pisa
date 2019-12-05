@@ -10,10 +10,10 @@
 #include <tl/optional.hpp>
 
 #include "topk_queue.hpp"
-#include "v1/analyze_query.hpp"
 #include "v1/cursor/for_each.hpp"
 #include "v1/cursor_intersection.hpp"
 #include "v1/cursor_union.hpp"
+#include "v1/inspect_query.hpp"
 #include "v1/intersection.hpp"
 #include "v1/types.hpp"
 
@@ -22,34 +22,9 @@ namespace pisa::v1 {
 struct ListSelection {
     std::vector<TermId> unigrams{};
     std::vector<std::pair<TermId, TermId>> bigrams{};
+
+    [[nodiscard]] auto overlapping() const -> bool;
 };
-
-template <typename T1, typename T2>
-std::ostream& operator<<(std::ostream& os, std::pair<T1, T2> const& p)
-{
-    return os << '(' << p.first << ", " << p.second << ')';
-}
-
-template <typename T>
-std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec)
-{
-    auto pos = vec.begin();
-    os << '[';
-    if (pos != vec.end()) {
-        os << *pos++;
-    }
-    for (; pos != vec.end(); ++pos) {
-        os << ' ' << *pos;
-    }
-    os << ']';
-    return os;
-}
-
-inline std::ostream& operator<<(std::ostream& os, ListSelection const& selection)
-{
-    return os << "ListSelection { unigrams: " << selection.unigrams
-              << ", bigrams: " << selection.bigrams << " }";
-}
 
 struct TermIdSet {
     explicit TermIdSet(std::vector<TermId> terms) : m_term_list(std::move(terms))
@@ -84,12 +59,6 @@ struct TermIdSet {
     std::vector<TermId> m_term_set{};
     std::unordered_map<TermId, std::size_t> m_sorted_positions{};
 };
-
-inline std::ostream& operator<<(std::ostream& os, TermIdSet const& term_ids)
-{
-    return os << "TermIdSet { original: " << term_ids.m_term_list
-              << ", unique: " << term_ids.m_term_set << " }";
-}
 
 struct Query {
     Query() = default;
@@ -145,6 +114,39 @@ std::ostream& operator<<(std::ostream& os, tl::optional<T> const& value)
         os << "Some(" << *value << ")";
     }
     return os;
+}
+
+template <typename T1, typename T2>
+std::ostream& operator<<(std::ostream& os, std::pair<T1, T2> const& p)
+{
+    return os << '(' << p.first << ", " << p.second << ')';
+}
+
+template <typename T>
+std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec)
+{
+    auto pos = vec.begin();
+    os << '[';
+    if (pos != vec.end()) {
+        os << *pos++;
+    }
+    for (; pos != vec.end(); ++pos) {
+        os << ' ' << *pos;
+    }
+    os << ']';
+    return os;
+}
+
+inline std::ostream& operator<<(std::ostream& os, ListSelection const& selection)
+{
+    return os << "ListSelection { unigrams: " << selection.unigrams
+              << ", bigrams: " << selection.bigrams << " }";
+}
+
+inline std::ostream& operator<<(std::ostream& os, TermIdSet const& term_ids)
+{
+    return os << "TermIdSet { original: " << term_ids.m_term_list
+              << ", unique: " << term_ids.m_term_set << " }";
 }
 
 inline std::ostream& operator<<(std::ostream& os, Query const& query)

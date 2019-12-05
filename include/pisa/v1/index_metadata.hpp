@@ -161,7 +161,7 @@ template <typename... Readers>
     tl::optional<gsl::span<std::byte const>> bigram_documents{};
     tl::optional<std::array<gsl::span<std::byte const>, 2>> bigram_scores{};
     tl::optional<gsl::span<std::array<TermId, 2> const>> bigram_mapping{};
-    if (metadata.bigrams) {
+    if (metadata.bigrams && not metadata.bigrams->scores.empty()) {
         bigram_document_offsets =
             source_span<std::size_t>(source, metadata.bigrams->documents.offsets);
         bigram_score_offsets = {
