@@ -1,6 +1,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/kruskal_min_spanning_tree.hpp>
+#include <range/v3/iterator/operations.hpp>
+
 
 #include <iostream>
 #include <optional>
@@ -33,6 +35,38 @@ using Edge = boost::graph_traits<Graph>::edge_descriptor;
     auto const dist = taily::fit_distribution(stats.term_stats);
     double const p_c = std::min(1.0, ntop / all);
     return boost::math::quantile(complement(dist, p_c));
+}
+
+void real_intersection_thresholds(const std::string &taily_stats_filename,
+                                  const std::vector<uint32_t> &intersections,
+                                  const std::vector<Query> &queries,
+                                  uint64_t k)
+{
+    std::ifstream ifs(taily_stats_filename);
+    int64_t collection_size;
+    ifs.read(reinterpret_cast<char *>(&collection_size), sizeof(collection_size));
+    int64_t term_num;
+    ifs.read(reinterpret_cast<char *>(&term_num), sizeof(term_num));
+
+    std::vector<taily::Feature_Statistics> stats;
+    for (int i = 0; i < term_num; ++i) {
+        stats.push_back(taily::Feature_Statistics::from_stream(ifs));
+    }
+
+    for (auto&& [idx, query] : queries | ranges::views::enumerate) {
+        auto terms = query.terms;
+        double threshold = 0;
+        if (terms.size()) {
+            double all = intersections[idx];
+            std::vector<taily::Feature_Statistics> term_stats;
+            for (auto &&t : terms) {
+                term_stats.push_back(stats[t]);
+            }
+            taily::Query_Statistics query_stats{term_stats, collection_size};
+            threshold = estimate_pairwise_cutoff(query_stats, k, all);
+        }
+        std::cout << threshold << '\n';
+    }
 }
 
 void pairwise_thresholds(const std::string &taily_stats_filename,
@@ -85,10 +119,10 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
 
             for (std::vector<Edge>::iterator ei = spanning_tree.begin(); ei != spanning_tree.end();
                  ++ei) {
-		      auto bi_it = bigrams_stats.find({terms[source(*ei, g)], terms[target(*ei, g)]});
-              double t1 = stats[terms[source(*ei, g)]].frequency / any;
-              double t2 = stats[terms[target(*ei, g)]].frequency / any;
-		      all *= (bi_it->second / any) / (t1 * t2);
+                auto bi_it = bigrams_stats.find({terms[source(*ei, g)], terms[target(*ei, g)]});
+                double t1 = stats[terms[source(*ei, g)]].frequency / any;
+                double t2 = stats[terms[target(*ei, g)]].frequency / any;
+                all *= (bi_it->second / any) / (t1 * t2);
             }
 
             for (auto &&t : terms) {
@@ -143,6 +177,7 @@ int main(int argc, const char **argv)
     uint64_t k = configuration::get().k;
 
     std::optional<std::string> pairwise_filename;
+    std::optional<std::string> intersection_filename;
 
     CLI::App app{"A tool for predicting thresholds for queries using Taily."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -150,6 +185,7 @@ int main(int argc, const char **argv)
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_option("-k", k, "k value");
     app.add_option("-p, --pairwise", pairwise_filename, "Pairwise filename");
+    app.add_option("-i, --intersection", intersection_filename, "Intersection filename");
     auto *terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
@@ -172,14 +208,22 @@ int main(int argc, const char **argv)
         while (std::getline(bigrams_fs, line)) {
             std::vector<std::string> tokens;
             boost::split(tokens, line, boost::is_any_of("\t"));
-	    if(tokens.size() == 3){
-            	bigrams_stats.insert(
-                	{{*term_processor(tokens[0]), *term_processor(tokens[1])}, std::stoi(tokens[2])});
+            if (tokens.size() == 3) {
+                bigrams_stats.insert({{*term_processor(tokens[0]), *term_processor(tokens[1])},
+                                      std::stoi(tokens[2])});
             }
-	}
+        }
         spdlog::info("Number of bigrams: {}", bigrams_stats.size());
 
         pairwise_thresholds(taily_stats_filename, bigrams_stats, queries, k);
+    } else if (intersection_filename) {
+        std::vector<uint32_t> intersections;
+        std::ifstream intersection_fs(*intersection_filename);
+        std::string line;
+        while (std::getline(intersection_fs, line)) {
+            intersections.push_back(std::stoi(line));
+        }
+        real_intersection_thresholds(taily_stats_filename, intersections, queries, k);
     } else {
         thresholds(taily_stats_filename, queries, k);
     }
