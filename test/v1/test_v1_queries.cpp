@@ -139,7 +139,7 @@ TEMPLATE_TEST_CASE("Query",
         {"maxscore_union_lookup", true},
         {"unigram_union_lookup", true},
         {"union_lookup", true},
-        //{"disjoint_union_lookup", true}
+        {"lookup_union", true},
     }));
     std::string algorithm = std::get<0>(input_data);
     bool with_threshold = std::get<1>(input_data);
@@ -168,11 +168,8 @@ TEMPLATE_TEST_CASE("Query",
             }
             return union_lookup(query, index, topk_queue(10), scorer);
         }
-        if (name == "disjoint_union_lookup") {
-            if (query.get_term_ids().size() > 8 || query.get_selections().overlapping()) {
-                return maxscore_union_lookup(query, index, topk_queue(10), scorer);
-            }
-            return disjoint_union_lookup(query, index, topk_queue(10), scorer);
+        if (name == "lookup_union") {
+            return lookup_union(query, index, topk_queue(10), scorer);
         }
         std::abort();
     };
@@ -180,7 +177,7 @@ TEMPLATE_TEST_CASE("Query",
     auto const intersections =
         pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
     for (auto& query : test_queries()) {
-        if (algorithm == "union_lookup" || algorithm == "disjoint_union_lookup") {
+        if (algorithm == "union_lookup" || algorithm == "lookup_union") {
             query.selections(gsl::make_span(intersections[idx]));
         }
 
@@ -226,67 +223,33 @@ TEMPLATE_TEST_CASE("Query",
 
         idx += 1;
 
-        // auto precomputed = [&]() {
-        //    auto run =
-        //        v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
-        //    std::vector<typename topk_queue::entry_type> results;
-        //    run([&](auto&& index) {
-        //        auto que = run_query(algorithm, v1::Query{q.terms}, index, v1::VoidScorer{});
-        //        que.finalize();
-        //        results = que.topk();
-        //    });
-        //    // Remove the tail that might be different due to quantization error.
-        //    // Note that `precomputed` will have summed quantized score, while the
-        //    // vector we compare to will have quantized sum---that's why whe remove anything
-        //    // that's withing 2 of the last result.
-        //    // auto last_score = results.back().first;
-        //    // results.erase(std::remove_if(
-        //    //                  results.begin(),
-        //    //                  results.end(),
-        //    //                  [last_score](auto&& entry) { return entry.first <= last_score + 3;
-        //    //                  }),
-        //    //              results.end());
-        //    // results.resize(5);
-        //    // std::sort(results.begin(), results.end(), [](auto&& lhs, auto&& rhs) {
-        //    //    return lhs.second < rhs.second;
-        //    //});
-        //    return results;
-        //}();
+        auto precomputed = [&]() {
+            auto run =
+                v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
+            std::vector<typename topk_queue::entry_type> results;
+            run([&](auto&& index) {
+                auto que = run_query(algorithm, query, index, v1::VoidScorer{});
+                que.finalize();
+                results = que.topk();
+            });
+            if (not results.empty()) {
+                results.erase(std::remove_if(results.begin(),
+                                             results.end(),
+                                             [last_score = results.back().first](auto&& entry) {
+                                                 return entry.first <= last_score;
+                                             }),
+                              results.end());
+                std::sort(results.begin(), results.end(), approximate_order);
+            }
+            return results;
+        }();
 
-        // constexpr float max_partial_score = 16.5724F;
-        // auto quantizer = [&](float score) {
-        //    return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
-        //                                     / max_partial_score);
-        //};
-
-        // auto expected_quantized = expected;
-        // std::sort(expected_quantized.begin(), expected_quantized.end(), [](auto&& lhs, auto&&
-        // rhs) {
-        //    return lhs.first > rhs.first;
-        //});
-        // for (auto& v : expected_quantized) {
-        //    v.first = quantizer(v.first);
-        //}
+        constexpr float max_partial_score = 16.5724F;
+        auto quantizer = [&](float score) {
+            return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
+                                             / max_partial_score);
+        };
 
         // TODO(michal): test the quantized results
-
-        // expected_quantized.resize(precomputed.size());
-        // std::sort(expected_quantized.begin(), expected_quantized.end(), [](auto&& lhs, auto&&
-        // rhs) {
-        //    return lhs.second < rhs.second;
-        //});
-
-        // for (size_t i = 0; i < precomputed.size(); ++i) {
-        //    std::cerr << fmt::format("{}, {:f} -- {}, {:f}\n",
-        //                             precomputed[i].second,
-        //                             precomputed[i].first,
-        //                             expected_quantized[i].second,
-        //                             expected_quantized[i].first);
-        //}
-
-        // for (size_t i = 0; i < precomputed.size(); ++i) {
-        //    REQUIRE(std::abs(precomputed[i].first - expected_quantized[i].first)
-        //            <= static_cast<float>(q.terms.size()));
-        //}
     }
 }

@@ -7,7 +7,7 @@ namespace pisa::v1::accumulate {
 
 struct Add {
     template <typename Score, typename Cursor>
-    auto operator()(Score&& score, Cursor&& cursor, std::size_t /* term_idx */)
+    auto operator()(Score&& score, Cursor&& cursor)
     {
         score += cursor.payload();
         return score;

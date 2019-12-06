@@ -22,8 +22,6 @@ namespace pisa::v1 {
 struct ListSelection {
     std::vector<TermId> unigrams{};
     std::vector<std::pair<TermId, TermId>> bigrams{};
-
-    [[nodiscard]] auto overlapping() const -> bool;
 };
 
 struct TermIdSet {

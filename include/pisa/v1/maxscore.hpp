@@ -8,6 +8,7 @@
 #include <range/v3/view/iota.hpp>
 
 #include "v1/algorithm.hpp"
+#include "v1/cursor_accumulator.hpp"
 #include "v1/query.hpp"
 
 namespace pisa::v1 {
@@ -32,7 +33,6 @@ struct MaxScoreJoin {
                            AccumulateFn accumulate,
                            ThresholdFn above_threshold)
         : m_cursors(std::move(cursors)),
-          m_cursor_idx(m_cursors.size()),
           m_upper_bounds(m_cursors.size()),
           m_init(std::move(init)),
           m_accumulate(std::move(accumulate)),
@@ -48,7 +48,6 @@ struct MaxScoreJoin {
                            ThresholdFn above_threshold,
                            Inspect* inspect)
         : m_cursors(std::move(cursors)),
-          m_cursor_idx(m_cursors.size()),
           m_upper_bounds(m_cursors.size()),
           m_init(std::move(init)),
           m_accumulate(std::move(accumulate)),
@@ -65,10 +64,6 @@ struct MaxScoreJoin {
             m_current_value = sentinel();
             m_current_payload = m_init;
         }
-        std::iota(m_cursor_idx.begin(), m_cursor_idx.end(), 0);
-        std::sort(m_cursor_idx.begin(), m_cursor_idx.end(), [this](auto&& lhs, auto&& rhs) {
-            return m_cursors[lhs].max_score() < m_cursors[rhs].max_score();
-        });
         std::sort(m_cursors.begin(), m_cursors.end(), [](auto&& lhs, auto&& rhs) {
             return lhs.max_score() < rhs.max_score();
         });
@@ -119,8 +114,7 @@ struct MaxScoreJoin {
                     if constexpr (not std::is_void_v<Inspect>) {
                         m_inspect->posting();
                     }
-                    m_current_payload =
-                        m_accumulate(m_current_payload, cursor, m_cursor_idx[sorted_position]);
+                    m_current_payload = m_accumulate(m_current_payload, cursor);
                     cursor.advance();
                 }
                 if (auto docid = cursor.value(); docid < m_next_docid) {
@@ -141,8 +135,7 @@ struct MaxScoreJoin {
                     m_inspect->lookup();
                 }
                 if (cursor.value() == m_current_value) {
-                    m_current_payload =
-                        m_accumulate(m_current_payload, cursor, m_cursor_idx[sorted_position]);
+                    m_current_payload = m_accumulate(m_current_payload, cursor);
                 }
             }
         }
@@ -161,7 +154,6 @@ struct MaxScoreJoin {
 
    private:
     CursorContainer m_cursors;
-    std::vector<std::size_t> m_cursor_idx;
     std::vector<payload_type> m_upper_bounds;
     payload_type m_init;
     AccumulateFn m_accumulate;
@@ -214,15 +206,12 @@ auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& 
     using value_type = decltype(index.max_scored_cursor(0, scorer).value());
 
     auto cursors = index.max_scored_cursors(gsl::make_span(term_ids), scorer);
-    auto accumulate = [](float& score, auto& cursor, auto /* term_position */) {
-        score += cursor.payload();
-        return score;
-    };
     if (query.threshold()) {
         topk.set_threshold(*query.threshold());
     }
-    auto joined = join_maxscore(
-        std::move(cursors), 0.0F, accumulate, [&](auto score) { return topk.would_enter(score); });
+    auto joined = join_maxscore(std::move(cursors), 0.0F, accumulate::Add{}, [&](auto score) {
+        return topk.would_enter(score);
+    });
     v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
     return topk;
 }
@@ -261,10 +250,7 @@ struct MaxscoreInspector {
         auto joined = join_maxscore(
             std::move(cursors),
             0.0F,
-            [&](auto& score, auto& cursor, auto /* term_position */) {
-                score += cursor.payload();
-                return score;
-            },
+            accumulate::Add{},
             [&](auto score) { return topk.would_enter(score); },
             this);
         v1::for_each(joined, [&](auto& cursor) {

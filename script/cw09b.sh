@@ -74,17 +74,17 @@ ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algo
 #    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-smart > ${OUTPUT_DIR}/bench.union-lookup.scaled-smart
 
 # Analyze
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm maxscore > ${OUTPUT_DIR}/stats.maxscore
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm maxscore \
-    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/stats.maxscore-thresholds
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm maxscore-union-lookup \
-    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/stats.maxscore-union-lookup
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm unigram-union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/stats.unigram-union-lookup
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.union-lookup.2
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm lookup-union \
-    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.lookup-union
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm maxscore > ${OUTPUT_DIR}/stats.maxscore
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm maxscore \
+#    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/stats.maxscore-thresholds
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm maxscore-union-lookup \
+#    --thresholds ${THRESHOLDS} > ${OUTPUT_DIR}/stats.maxscore-union-lookup
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm unigram-union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.1 > ${OUTPUT_DIR}/stats.unigram-union-lookup
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.union-lookup.2
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm lookup-union \
+#    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2 > ${OUTPUT_DIR}/stats.lookup-union
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \
 #    --thresholds ${THRESHOLDS} --intersections ${OUTPUT_DIR}/selections.2.scaled-1.5 > ${OUTPUT_DIR}/stats.union-lookup.scaled-1.5
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --analyze --algorithm union-lookup \

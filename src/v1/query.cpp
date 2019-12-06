@@ -18,25 +18,6 @@ using json = nlohmann::json;
     return terms;
 }
 
-[[nodiscard]] auto ListSelection::overlapping() const -> bool
-{
-    std::unordered_set<TermId> terms;
-    for (auto term : unigrams) {
-        terms.insert(term);
-    }
-    for (auto [left, right] : bigrams) {
-        if (terms.find(left) != terms.end()) {
-            return true;
-        }
-        if (terms.find(right) != terms.end()) {
-            return true;
-        }
-        terms.insert(left);
-        terms.insert(right);
-    }
-    return false;
-}
-
 void Query::add_selections(gsl::span<std::bitset<64> const> selections)
 {
     m_selections = ListSelection{};
