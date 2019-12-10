@@ -22,6 +22,7 @@
 
 #include <unordered_map>
 #include "scorer/bm25.hpp"
+#include "CLI/CLI.hpp"
 
 using namespace pisa;
 
@@ -354,17 +355,26 @@ int main(int argc, const char **argv)
 {
     using namespace pisa;
 
-    std::string type = argv[1];
-    std::string index_filename = argv[2];
-    std::string query_filename = argv[3];
-    std::string wand_data_filename = argv[4];
+    std::string type;
+    std::string index_filename;
+    std::string query_filename;
+    std::string wand_data_filename;
 
     std::optional<std::string> terms_file;
-    std::optional<std::string> stopwords_filename;
-    std::optional<std::string> stemmer = std::nullopt;
+    std::optional<std::string> stemmer;
+
+    CLI::App app{"A tool for computing index stats."};
+    app.set_config("--config", "", "Configuration .ini file", false);
+    app.add_option("-t,--type", type, "Index type")->required();
+    app.add_option("-i,--index", index_filename, "Collection basename")->required();
+    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
+    app.add_option("-q,--query", query_filename, "Queries filename");
+    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
+    CLI11_PARSE(app, argc, argv);
 
     std::vector<Query> queries;
-    auto push_query = resolve_query_parser(queries, terms_file, stopwords_filename, stemmer);
+    auto push_query = resolve_query_parser(queries, terms_file, std::nullopt, stemmer);
 
     std::ifstream is(query_filename);
     io::for_each_line(is, push_query);
