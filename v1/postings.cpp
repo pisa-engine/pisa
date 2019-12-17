@@ -6,6 +6,7 @@
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
+#include "app.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
@@ -17,6 +18,7 @@
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
 
+using pisa::App;
 using pisa::Query;
 using pisa::resolve_query_parser;
 using pisa::v1::BlockedReader;
@@ -24,6 +26,8 @@ using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
+
+namespace arg = pisa::arg;
 
 auto default_readers()
 {
@@ -70,7 +74,6 @@ template <typename First, typename... Optional>
 
 int main(int argc, char** argv)
 {
-    std::optional<std::string> yml{};
     std::optional<std::string> terms_file{};
     std::optional<std::string> documents_file{};
     std::string query_input{};
@@ -80,12 +83,7 @@ int main(int argc, char** argv)
     bool print_scores = false;
     bool precomputed = false;
 
-    CLI::App app{"Queries a v1 index."};
-    app.add_option("-i,--index",
-                   yml,
-                   "Path of .yml file of an index "
-                   "(if not provided, it will be looked for in the current directory)",
-                   false);
+    App<arg::Index> app{"Queries a v1 index."};
     app.add_option("--terms", terms_file, "Overrides document lexicon from .yml (if defined).");
     app.add_option("--documents",
                    documents_file,
@@ -98,7 +96,7 @@ int main(int argc, char** argv)
     app.add_option("query", query_input, "List of terms", false)->required();
     CLI11_PARSE(app, argc, argv);
 
-    auto meta = IndexMetadata::from_file(resolve_yml(yml));
+    auto meta = app.index_metadata();
     auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
     if (tid) {
         terms_file = std::nullopt;

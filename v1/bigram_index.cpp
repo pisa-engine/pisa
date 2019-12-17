@@ -6,6 +6,7 @@
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
+#include "app.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
 #include "timer.hpp"
@@ -21,6 +22,7 @@
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
 
+using pisa::App;
 using pisa::v1::build_bigram_index;
 using pisa::v1::collect_unique_bigrams;
 using pisa::v1::DefaultProgress;
@@ -32,60 +34,25 @@ using pisa::v1::Query;
 using pisa::v1::resolve_yml;
 using pisa::v1::TermId;
 
+namespace arg = pisa::arg;
+
 int main(int argc, char** argv)
 {
-    std::optional<std::string> yml{};
-    std::optional<std::string> query_file{};
     std::optional<std::string> terms_file{};
 
-    CLI::App app{"Creates a v1 bigram index."};
-    app.add_option("-i,--index",
-                   yml,
-                   "Path of .yml file of an index "
-                   "(if not provided, it will be looked for in the current directory)",
-                   false);
-    app.add_option("-q,--query", query_file, "Path to file with queries", false);
-    app.add_option("--terms", terms_file, "Overrides document lexicon from .yml (if defined).");
+    App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app{"Creates a v1 bigram index."};
     CLI11_PARSE(app, argc, argv);
 
-    auto resolved_yml = resolve_yml(yml);
-    auto meta = IndexMetadata::from_file(resolved_yml);
-    auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
-    if (meta.term_lexicon) {
-        terms_file = meta.term_lexicon.value();
-    }
+    auto meta = app.index_metadata();
 
     spdlog::info("Collecting queries...");
-    auto queries = [&]() {
-        std::vector<::pisa::Query> queries;
-        auto parse_query = resolve_query_parser(queries, terms_file, std::nullopt, stemmer);
-        if (query_file) {
-            std::ifstream is(*query_file);
-            pisa::io::for_each_line(is, parse_query);
-        } else {
-            pisa::io::for_each_line(std::cin, parse_query);
-        }
-        std::vector<Query> v1_queries;
-        v1_queries.reserve(queries.size());
-        for (auto q : queries) {
-            if (not q.terms.empty()) {
-                Query query(q.terms, [&]() {
-                    if (q.id) {
-                        return tl::make_optional(*q.id);
-                    }
-                    return tl::optional<std::string>{};
-                }());
-                v1_queries.push_back(query);
-            }
-        }
-        return v1_queries;
-    }();
+    auto queries = app.queries(meta);
 
     spdlog::info("Collected {} queries", queries.size());
     spdlog::info("Collecting bigrams...");
     ProgressStatus status(queries.size(), DefaultProgress{}, std::chrono::milliseconds(1000));
     auto bigrams = collect_unique_bigrams(queries, [&]() { status += 1; });
     spdlog::info("Collected {} bigrams", bigrams.size());
-    build_bigram_index(resolved_yml, bigrams);
+    build_bigram_index(meta, bigrams);
     return 0;
 }

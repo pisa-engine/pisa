@@ -32,11 +32,11 @@ using pisa::v1::resolve_yml;
 using pisa::v1::VoidScorer;
 
 template <typename Index, typename Scorer>
-void calculate_thresholds(Index&& index, Scorer&& scorer, std::vector<Query> const& queries, int k)
+void calculate_thresholds(Index&& index, Scorer&& scorer, std::vector<Query> const& queries)
 {
     for (auto const& query : queries) {
-        auto results =
-            pisa::v1::daat_or(query, index, ::pisa::topk_queue(k), std::forward<Scorer>(scorer));
+        auto results = pisa::v1::daat_or(
+            query, index, ::pisa::topk_queue(query.k()), std::forward<Scorer>(scorer));
         results.finalize();
         float threshold = 0.0;
         if (not results.topk().empty()) {
@@ -54,41 +54,16 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     try {
-        auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
-        auto stemmer =
-            meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
-        if (meta.term_lexicon) {
-            app.terms_file = meta.term_lexicon.value();
-        }
+        auto meta = app.index_metadata();
+        auto queries = app.queries(meta);
 
-        auto queries = [&]() {
-            std::vector<::pisa::Query> queries;
-            auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
-            if (app.query_file) {
-                std::ifstream is(*app.query_file);
-                pisa::io::for_each_line(is, parse_query);
-            } else {
-                pisa::io::for_each_line(std::cin, parse_query);
-            }
-            std::vector<Query> v1_queries(queries.size());
-            std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& parsed) {
-                Query query(parsed.terms);
-                if (parsed.id) {
-                    query.id(*parsed.id);
-                }
-                query.k(app.k);
-                return query;
-            });
-            return v1_queries;
-        }();
-
-        if (app.precomputed) {
+        if (app.use_quantized()) {
             auto run = scored_index_runner(meta,
                                            RawReader<std::uint32_t>{},
                                            RawReader<std::uint8_t>{},
                                            BlockedReader<::pisa::simdbp_block, true>{},
                                            BlockedReader<::pisa::simdbp_block, false>{});
-            run([&](auto&& index) { calculate_thresholds(index, VoidScorer{}, queries, app.k); });
+            run([&](auto&& index) { calculate_thresholds(index, VoidScorer{}, queries); });
         } else {
             auto run = index_runner(meta,
                                     RawReader<std::uint32_t>{},
@@ -96,9 +71,8 @@ int main(int argc, char** argv)
                                     BlockedReader<::pisa::simdbp_block, false>{});
             run([&](auto&& index) {
                 auto with_scorer = scorer_runner(index, make_bm25(index));
-                with_scorer("bm25", [&](auto scorer) {
-                    calculate_thresholds(index, scorer, queries, app.k);
-                });
+                with_scorer("bm25",
+                            [&](auto scorer) { calculate_thresholds(index, scorer, queries); });
             });
         }
     } catch (std::exception const& error) {

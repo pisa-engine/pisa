@@ -2,8 +2,10 @@
 
 #include <string>
 
+#include "v1/index_metadata.hpp"
+
 namespace pisa::v1 {
 
-void score_index(std::string const& yml, std::size_t threads);
+auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata;
 
 } // namespace pisa::v1

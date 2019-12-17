@@ -4,6 +4,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "query/queries.hpp"
 #include "v1/index_metadata.hpp"
 
 namespace pisa::v1 {
@@ -20,7 +21,7 @@ constexpr char const* BIGRAM = "bigram";
 constexpr char const* MAX_SCORES = "max_scores";
 constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
 
-[[nodiscard]] auto resolve_yml(std::optional<std::string> const& arg) -> std::string
+[[nodiscard]] auto resolve_yml(tl::optional<std::string> const& arg) -> std::string
 {
     if (arg) {
         return *arg;
@@ -38,6 +39,7 @@ constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
                                           .offsets = config[SCORES][OFFSETS].as<std::string>()});
     }
     return IndexMetadata{
+        .basename = file.substr(0, file.size() - 4),
         .documents = PostingFilePaths{.postings = config[DOCUMENTS][POSTINGS].as<std::string>(),
                                       .offsets = config[DOCUMENTS][OFFSETS].as<std::string>()},
         .frequencies = PostingFilePaths{.postings = config[FREQUENCIES][POSTINGS].as<std::string>(),
@@ -102,7 +104,9 @@ constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
             }()};
 }
 
-void IndexMetadata::write(std::string const& file)
+void IndexMetadata::update() const { write(fmt::format("{}.yml", get_basename())); }
+
+void IndexMetadata::write(std::string const& file) const
 {
     YAML::Node root;
     root[DOCUMENTS][POSTINGS] = documents.postings;
@@ -150,6 +154,31 @@ void IndexMetadata::write(std::string const& file)
     }
     std::ofstream fout(file);
     fout << root;
+}
+
+[[nodiscard]] auto IndexMetadata::query_parser() const -> std::function<void(Query&)>
+{
+    if (term_lexicon) {
+        auto term_processor =
+            ::pisa::TermProcessor(*term_lexicon, {}, [&]() -> std::optional<std::string> {
+                if (stemmer) {
+                    return *stemmer;
+                }
+                return std::nullopt;
+            }());
+        return [term_processor = std::move(term_processor)](Query& query) {
+            query.term_ids(parse_query_terms(query.get_raw(), term_processor).terms);
+        };
+    }
+    throw std::runtime_error("Unable to parse query: undefined term lexicon");
+}
+
+[[nodiscard]] auto IndexMetadata::get_basename() const -> std::string const&
+{
+    if (not basename) {
+        throw std::runtime_error("Unable to resolve index basename");
+    }
+    return basename.value();
 }
 
 } // namespace pisa::v1

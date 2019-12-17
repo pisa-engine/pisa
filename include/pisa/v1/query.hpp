@@ -78,18 +78,27 @@ struct Query {
     [[nodiscard]] auto k() const -> int;
     [[nodiscard]] auto selections() const -> tl::optional<ListSelection const&>;
     [[nodiscard]] auto threshold() const -> tl::optional<float>;
+    [[nodiscard]] auto raw() const -> tl::optional<std::string const&>;
 
     /// Throwing getters
     [[nodiscard]] auto get_term_ids() const -> std::vector<TermId> const&;
     [[nodiscard]] auto get_id() const -> std::string const&;
     [[nodiscard]] auto get_selections() const -> ListSelection const&;
     [[nodiscard]] auto get_threshold() const -> float;
+    [[nodiscard]] auto get_raw() const -> std::string const&;
 
     [[nodiscard]] auto sorted_position(TermId term) const -> std::size_t;
     [[nodiscard]] auto term_at_pos(std::size_t pos) const -> TermId;
 
+    template <typename Parser>
+    [[nodiscard]] auto parse(Parser&& parser)
+    {
+        parser(*this);
+    }
+
     void add_selections(gsl::span<std::bitset<64> const> selections);
     [[nodiscard]] static auto from_json(std::string_view) -> Query;
+    [[nodiscard]] static auto from_plain(std::string_view) -> Query;
 
    private:
     friend std::ostream& operator<<(std::ostream& os, Query const& query);

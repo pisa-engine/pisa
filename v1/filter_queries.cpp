@@ -40,21 +40,22 @@ int main(int argc, char** argv)
     pisa::QueryApp app("Filters out empty queries against a v1 index.");
     CLI11_PARSE(app, argc, argv);
 
-    auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
+    auto meta = app.index_metadata();
     auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
+    std::optional<std::string> term_lexicon = std::nullopt;
     if (meta.term_lexicon) {
-        app.terms_file = meta.term_lexicon.value();
+        term_lexicon = *meta.term_lexicon;
     }
 
-    auto term_processor = TermProcessor(app.terms_file, {}, stemmer);
+    auto term_processor = TermProcessor(term_lexicon, {}, stemmer);
     auto filter = [&](auto&& line) {
         auto query = parse_query_terms(line, term_processor);
         if (not query.terms.empty()) {
             std::cout << line << '\n';
         }
     };
-    if (app.query_file) {
-        std::ifstream is(*app.query_file);
+    if (app.query_file()) {
+        std::ifstream is(*app.query_file());
         pisa::io::for_each_line(is, filter);
     } else {
         pisa::io::for_each_line(std::cin, filter);

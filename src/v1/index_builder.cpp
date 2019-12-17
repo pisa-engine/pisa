@@ -143,12 +143,11 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
             PostingFilePaths{scores_file_1, score_offsets_file_1}};
 }
 
-void build_bigram_index(std::string const& yml,
-                        std::vector<std::pair<TermId, TermId>> const& bigrams)
+auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId>> const& bigrams)
+    -> IndexMetadata
 {
     Expects(not bigrams.empty());
-    auto index_basename = yml.substr(0, yml.size() - 4);
-    auto meta = IndexMetadata::from_file(yml);
+    auto index_basename = meta.get_basename();
     auto run = index_runner(meta,
                             RawReader<std::uint32_t>{},
                             BlockedReader<::pisa::simdbp_block, true>{},
@@ -225,10 +224,11 @@ void build_bigram_index(std::string const& yml,
     meta.bigrams = bigram_meta;
 
     std::cerr << "Writing metadata...";
-    meta.write(yml);
+    meta.update();
     std::cerr << " Done.\nWriting bigram mapping...";
     write_span(gsl::make_span(pair_mapping), meta.bigrams->mapping);
     std::cerr << " Done.\n";
+    return meta;
 }
 
 } // namespace pisa::v1

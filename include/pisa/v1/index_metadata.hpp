@@ -7,6 +7,7 @@
 #include <tl/optional.hpp>
 
 #include "v1/index.hpp"
+#include "v1/query.hpp"
 #include "v1/source.hpp"
 #include "v1/types.hpp"
 
@@ -15,7 +16,7 @@ namespace pisa::v1 {
 /// Return the passed file path if is not `nullopt`.
 /// Otherwise, look for an `.yml` file in the current directory.
 /// It will throw if no `.yml` file is found or there are multiple `.yml` files.
-[[nodiscard]] auto resolve_yml(std::optional<std::string> const& arg) -> std::string;
+[[nodiscard]] auto resolve_yml(tl::optional<std::string> const& arg) -> std::string;
 
 template <typename Optional>
 [[nodiscard]] auto convert_optional(Optional opt)
@@ -49,6 +50,7 @@ struct BigramMetadata {
 };
 
 struct IndexMetadata {
+    tl::optional<std::string> basename{};
     PostingFilePaths documents;
     PostingFilePaths frequencies;
     std::vector<PostingFilePaths> scores{};
@@ -61,7 +63,10 @@ struct IndexMetadata {
     std::map<std::string, std::string> max_scores{};
     std::map<std::string, std::string> quantized_max_scores{};
 
-    void write(std::string const& file);
+    void write(std::string const& file) const;
+    void update() const;
+    [[nodiscard]] auto query_parser() const -> std::function<void(Query&)>;
+    [[nodiscard]] auto get_basename() const -> std::string const&;
     [[nodiscard]] static auto from_file(std::string const& file) -> IndexMetadata;
 };
 

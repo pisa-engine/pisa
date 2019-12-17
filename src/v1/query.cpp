@@ -58,14 +58,71 @@ template <typename T>
     return tl::optional<T>{};
 }
 
+[[nodiscard]] auto Query::from_plain(std::string_view query_string) -> Query
+{
+    auto colon = std::find(query_string.begin(), query_string.end(), ':');
+    tl::optional<std::string> id;
+    if (colon != query_string.end()) {
+        id = std::string(query_string.begin(), colon);
+    }
+    auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
+    return Query(std::string(&*pos, std::distance(pos, query_string.end())), std::move(id));
+}
+
 [[nodiscard]] auto Query::from_json(std::string_view json_string) -> Query
 {
-    // auto query_json = json::parse(json_string);
-    // auto terms = get<std::vector<std::string>>(query_json, "terms");
-    // auto term_ids = get<std::vector<TermId>>(query_json, "term_ids");
-    Query query;
-    // query.m_raw_string = get<std::string>(query_json, "query");
-    return query;
+    try {
+        auto query_json = json::parse(json_string);
+        auto id = get<std::string>(query_json, "id");
+        auto raw_string = get<std::string>(query_json, "query");
+        auto term_ids = get<std::vector<TermId>>(query_json, "term_ids");
+        Query query = [&]() {
+            if (raw_string) {
+                auto query = Query(*raw_string.take(), id);
+                if (term_ids) {
+                    query.term_ids(*term_ids.take());
+                }
+                return query;
+            }
+            if (term_ids) {
+                return Query(*term_ids.take(), id);
+            }
+            throw std::invalid_argument(
+                "Failed to parse query: must define either raw string or term IDs");
+        }();
+        if (auto threshold = get<float>(query_json, "threshold"); threshold) {
+            query.threshold(*threshold);
+        }
+        if (auto k = get<int>(query_json, "k"); k) {
+            query.k(*k);
+        }
+        if (auto pos = query_json.find("selections"); pos != query_json.end()) {
+            auto const& selections = *pos;
+            auto unigrams = get<std::vector<std::size_t>>(selections, "unigrams")
+                                .value_or(std::vector<std::size_t>{});
+            auto bigrams =
+                get<std::vector<std::pair<std::size_t, std::size_t>>>(selections, "bigrams")
+                    .value_or(std::vector<std::pair<std::size_t, std::size_t>>{});
+            std::vector<std::bitset<64>> bitsets;
+            std::transform(
+                unigrams.begin(), unigrams.end(), std::back_inserter(bitsets), [](auto idx) {
+                    std::bitset<64> bs;
+                    bs.set(idx);
+                    return bs;
+                });
+            std::transform(
+                bigrams.begin(), bigrams.end(), std::back_inserter(bitsets), [](auto bigram) {
+                    std::bitset<64> bs;
+                    bs.set(bigram.first);
+                    bs.set(bigram.second);
+                    return bs;
+                });
+            query.selections(gsl::span<std::bitset<64>>(bitsets));
+        }
+        return query;
+    } catch (json::parse_error const& err) {
+        throw std::runtime_error(fmt::format("Failed to parse query: {}", err.what()));
+    }
 }
 
 Query::Query(std::vector<TermId> term_ids, tl::optional<std::string> id)
@@ -129,6 +186,13 @@ auto Query::selections() const -> tl::optional<ListSelection const&>
     return tl::nullopt;
 }
 auto Query::threshold() const -> tl::optional<float> { return m_threshold; }
+auto Query::raw() const -> tl::optional<std::string const&>
+{
+    if (m_raw_string) {
+        return *m_raw_string;
+    }
+    return tl::nullopt;
+}
 
 /// Throwing getters
 auto Query::get_term_ids() const -> std::vector<TermId> const&
@@ -161,6 +225,14 @@ auto Query::get_threshold() const -> float
         throw std::runtime_error("Threshold is not set");
     }
     return *m_threshold;
+}
+
+auto Query::get_raw() const -> std::string const&
+{
+    if (not m_raw_string) {
+        throw std::runtime_error("Raw query string is not set");
+    }
+    return *m_raw_string;
 }
 
 auto Query::sorted_position(TermId term) const -> std::size_t

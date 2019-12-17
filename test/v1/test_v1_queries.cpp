@@ -17,6 +17,7 @@
 #include "index_types.hpp"
 #include "io.hpp"
 #include "pisa_config.hpp"
+#include "query/algorithm/ranked_or_query.hpp"
 #include "query/queries.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"

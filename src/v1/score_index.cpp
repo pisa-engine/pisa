@@ -1,3 +1,5 @@
+#include <exception>
+
 #include <tbb/task_group.h>
 
 #include "codec/simdbp.hpp"
@@ -20,14 +22,13 @@ using pisa::v1::write_span;
 
 namespace pisa::v1 {
 
-void score_index(std::string const& yml, std::size_t threads)
+auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata
 {
-    auto meta = IndexMetadata::from_file(yml);
     auto run = index_runner(meta,
                             RawReader<std::uint32_t>{},
                             BlockedReader<::pisa::simdbp_block, true>{},
                             BlockedReader<::pisa::simdbp_block, false>{});
-    auto index_basename = yml.substr(0, yml.size() - 4);
+    auto const& index_basename = meta.get_basename();
     auto postings_path = fmt::format("{}.bm25", index_basename);
     auto offsets_path = fmt::format("{}.bm25_offsets", index_basename);
     auto max_scores_path = fmt::format("{}.bm25.maxf", index_basename);
@@ -87,7 +88,8 @@ void score_index(std::string const& yml, std::size_t threads)
     meta.scores.push_back(PostingFilePaths{.postings = postings_path, .offsets = offsets_path});
     meta.max_scores["bm25"] = max_scores_path;
     meta.quantized_max_scores["bm25"] = quantized_max_scores_path;
-    meta.write(yml);
+    meta.update();
+    return meta;
 }
 
 } // namespace pisa::v1

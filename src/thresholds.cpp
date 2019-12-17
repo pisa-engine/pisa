@@ -12,6 +12,7 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "query/algorithm/wand_query.hpp"
 #include "query/queries.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"

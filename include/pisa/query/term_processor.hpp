@@ -5,7 +5,7 @@
 #include <unordered_set>
 
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2/Porter2.hpp>
+#include <Porter2.hpp>
 #include <boost/algorithm/string.hpp>
 #include <mio/mmap.hpp>
 
@@ -24,9 +24,9 @@ class TermProcessor {
     std::function<std::optional<term_id_type>(std::string)> _to_id;
 
    public:
-    TermProcessor(std::optional<std::string> const &terms_file,
-                  std::optional<std::string> const &stopwords_filename,
-                  std::optional<std::string> const &stemmer_type)
+    TermProcessor(std::optional<std::string> const& terms_file,
+                  std::optional<std::string> const& stopwords_filename,
+                  std::optional<std::string> const& stemmer_type)
     {
         auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
         auto terms = Payload_Vector<>::from(*source);
@@ -49,7 +49,7 @@ class TermProcessor {
         } else if (*stemmer_type == "porter2") {
             _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
-                stem::Porter2 stemmer{};
+                porter2::Stemmer stemmer{};
                 return to_id(std::move(stemmer.stem(str)));
             };
         } else if (*stemmer_type == "krovetz") {
@@ -66,7 +66,7 @@ class TermProcessor {
         // Loads stopwords.
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);
-            io::for_each_line(is, [&](auto &&word) {
+            io::for_each_line(is, [&](auto&& word) {
                 if (auto processed_term = _to_id(std::move(word)); processed_term.has_value()) {
                     stopwords.insert(*processed_term);
                 }

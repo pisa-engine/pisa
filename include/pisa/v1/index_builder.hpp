@@ -229,7 +229,7 @@ auto collect_unique_bigrams(std::vector<Query> const& queries,
                             std::function<void()> const& callback)
     -> std::vector<std::pair<TermId, TermId>>;
 
-void build_bigram_index(std::string const& yml,
-                        std::vector<std::pair<TermId, TermId>> const& bigrams);
+auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId>> const& bigrams)
+    -> IndexMetadata;
 
 } // namespace pisa::v1

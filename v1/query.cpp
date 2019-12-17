@@ -13,6 +13,7 @@
 #include "query/queries.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
+#include "util/do_not_optimize_away.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/daat_or.hpp"
 #include "v1/index_metadata.hpp"
@@ -135,13 +136,12 @@ auto resolve_inspect(std::string const& name, Index const& index, Scorer&& score
 }
 
 void evaluate(std::vector<Query> const& queries,
-              int k,
               pisa::Payload_Vector<> const& docmap,
               RetrievalAlgorithm const& retrieve)
 {
     auto query_idx = 0;
     for (auto const& query : queries) {
-        auto que = retrieve(query, pisa::topk_queue(k));
+        auto que = retrieve(query, pisa::topk_queue(query.k()));
         que.finalize();
         auto rank = 0;
         for (auto result : que.topk()) {
@@ -158,14 +158,14 @@ void evaluate(std::vector<Query> const& queries,
     }
 }
 
-void benchmark(std::vector<Query> const& queries, int k, RetrievalAlgorithm retrieve)
+void benchmark(std::vector<Query> const& queries, RetrievalAlgorithm retrieve)
 
 {
     std::vector<double> times(queries.size(), std::numeric_limits<double>::max());
     for (auto run = 0; run < 5; run += 1) {
         for (auto query = 0; query < queries.size(); query += 1) {
             auto usecs = ::pisa::run_with_timer<std::chrono::microseconds>([&]() {
-                auto que = retrieve(queries[query], pisa::topk_queue(k));
+                auto que = retrieve(queries[query], pisa::topk_queue(queries[query].k()));
                 que.finalize();
                 do_not_optimize_away(que);
             });
@@ -212,42 +212,14 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     try {
-        auto meta = IndexMetadata::from_file(resolve_yml(app.yml));
-        auto stemmer =
-            meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
-        if (meta.term_lexicon) {
-            app.terms_file = meta.term_lexicon.value();
-        }
-        if (meta.document_lexicon) {
-            app.documents_file = meta.document_lexicon.value();
-        }
+        auto meta = app.index_metadata();
+        auto queries = app.queries(meta);
 
-        auto queries = [&]() {
-            std::vector<::pisa::Query> queries;
-            auto parse_query = resolve_query_parser(queries, app.terms_file, std::nullopt, stemmer);
-            if (app.query_file) {
-                std::ifstream is(*app.query_file);
-                pisa::io::for_each_line(is, parse_query);
-            } else {
-                pisa::io::for_each_line(std::cin, parse_query);
-            }
-            std::vector<Query> v1_queries(queries.size());
-            std::transform(queries.begin(), queries.end(), v1_queries.begin(), [&](auto&& parsed) {
-                Query query(parsed.terms);
-                if (parsed.id) {
-                    query.id(*parsed.id);
-                }
-                query.k(app.k);
-                return query;
-            });
-            return v1_queries;
-        }();
-
-        if (not app.documents_file) {
+        if (not meta.document_lexicon) {
             spdlog::error("Document lexicon not defined");
             std::exit(1);
         }
-        auto source = std::make_shared<mio::mmap_source>(app.documents_file.value().c_str());
+        auto source = std::make_shared<mio::mmap_source>(meta.document_lexicon.value().c_str());
         auto docmap = pisa::Payload_Vector<>::from(*source);
 
         if (threshold_file) {
@@ -278,20 +250,19 @@ int main(int argc, char** argv)
             }
         }
 
-        if (app.precomputed) {
+        if (app.use_quantized()) {
             auto run = scored_index_runner(meta,
                                            RawReader<std::uint32_t>{},
                                            RawReader<std::uint8_t>{},
                                            BlockedReader<::pisa::simdbp_block, true>{},
                                            BlockedReader<::pisa::simdbp_block, false>{});
             run([&](auto&& index) {
-                if (app.is_benchmark) {
-                    benchmark(queries, app.k, resolve_algorithm(algorithm, index, VoidScorer{}));
+                if (app.is_benchmark()) {
+                    benchmark(queries, resolve_algorithm(algorithm, index, VoidScorer{}));
                 } else if (inspect) {
                     inspect_queries(queries, resolve_inspect(algorithm, index, VoidScorer{}));
                 } else {
-                    evaluate(
-                        queries, app.k, docmap, resolve_algorithm(algorithm, index, VoidScorer{}));
+                    evaluate(queries, docmap, resolve_algorithm(algorithm, index, VoidScorer{}));
                 }
             });
         } else {
@@ -302,13 +273,12 @@ int main(int argc, char** argv)
             run([&](auto&& index) {
                 auto with_scorer = scorer_runner(index, make_bm25(index));
                 with_scorer("bm25", [&](auto scorer) {
-                    if (app.is_benchmark) {
-                        benchmark(queries, app.k, resolve_algorithm(algorithm, index, scorer));
+                    if (app.is_benchmark()) {
+                        benchmark(queries, resolve_algorithm(algorithm, index, scorer));
                     } else if (inspect) {
                         inspect_queries(queries, resolve_inspect(algorithm, index, scorer));
                     } else {
-                        evaluate(
-                            queries, app.k, docmap, resolve_algorithm(algorithm, index, scorer));
+                        evaluate(queries, docmap, resolve_algorithm(algorithm, index, scorer));
                     }
                 });
             });
