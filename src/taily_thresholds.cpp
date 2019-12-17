@@ -135,6 +135,74 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
     }
 }
 
+void disjunctive_taily(const std::string &taily_stats_filename,
+                const std::vector<Query> &queries,
+                uint64_t k)
+{
+    std::ifstream ifs(taily_stats_filename);
+    int64_t collection_size;
+    ifs.read(reinterpret_cast<char *>(&collection_size), sizeof(collection_size));
+    int64_t term_num;
+    ifs.read(reinterpret_cast<char *>(&term_num), sizeof(term_num));
+
+    std::vector<taily::Feature_Statistics> stats;
+    for (int i = 0; i < term_num; ++i) {
+        stats.push_back(taily::Feature_Statistics::from_stream(ifs));
+    }
+
+    for (auto const &query : queries) {
+        auto terms = query.terms;
+        double threshold = 0;
+        if (terms.size()) {
+            std::vector<taily::Feature_Statistics> term_stats;
+            for (auto &&t : terms) {
+                term_stats.push_back(stats[t]);
+            }
+            taily::Query_Statistics query_stats{term_stats, collection_size};
+            double any = taily::any(query_stats);
+
+            double sum1 = 0.0;
+            double sum2 = 0.0;
+            double variance = 0;
+            double expected_value = 0;
+
+            for(auto&& t : term_stats) {
+                sum1 += t.expected_value * t.frequency;
+                sum2 += (t.variance + std::pow(t.expected_value, 2) ) * t.frequency;
+            }
+
+            for (size_t i = 0; i < term_stats.size(); i++) {
+                for (size_t j = i + 1; j < term_stats.size(); j++) {
+                    sum2 += 2 * (term_stats[i].frequency / collection_size) * term_stats[j].frequency * term_stats[i].expected_value
+                            * term_stats[j].expected_value;
+                }
+            }
+
+            if (any * sum2 >= sum1 * sum1) {
+                expected_value = sum1 / any;
+                variance = (any * sum2 - sum1 * sum1) / (any * any);
+            } else {
+                any = sum1 * sum1 / sum2;
+                variance = 0.0;
+                expected_value = sum1 / any;
+            }
+
+
+            double epsilon = std::numeric_limits<double>::epsilon();
+            variance = std::max(epsilon, variance);
+            const double k = std::pow(expected_value, 2.0) / variance;
+            const double theta = variance / expected_value;
+            auto const dist = boost::math::gamma_distribution<>(k, theta);
+
+            double const p_c = std::min(1.0, k / any);
+            threshold = boost::math::quantile(complement(dist, p_c));
+        }
+        std::cout << threshold << '\n';
+    }
+
+}
+
+
 void thresholds(const std::string &taily_stats_filename,
                 const std::vector<Query> &queries,
                 uint64_t k)
@@ -174,6 +242,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> terms_file;
     std::optional<std::string> query_filename;
     std::optional<std::string> stemmer = std::nullopt;
+    bool is_disjunctive_taily = false;
     uint64_t k = configuration::get().k;
 
     std::optional<std::string> pairwise_filename;
@@ -184,6 +253,7 @@ int main(int argc, const char **argv)
     app.add_option("-t,--taily", taily_stats_filename, "Taily stats filename")->required();
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_option("-k", k, "k value");
+    app.add_flag("-d, --disjunctive", is_disjunctive_taily, "Disjunctive filename");
     app.add_option("-p, --pairwise", pairwise_filename, "Pairwise filename");
     app.add_option("-i, --intersection", intersection_filename, "Intersection filename");
     auto *terms_opt =
@@ -216,6 +286,8 @@ int main(int argc, const char **argv)
         spdlog::info("Number of bigrams: {}", bigrams_stats.size());
 
         pairwise_thresholds(taily_stats_filename, bigrams_stats, queries, k);
+    } else if (is_disjunctive_taily) {
+        disjunctive_taily(taily_stats_filename, queries, k);
     } else if (intersection_filename) {
         std::vector<uint32_t> intersections;
         std::ifstream intersection_fs(*intersection_filename);
