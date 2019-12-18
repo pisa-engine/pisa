@@ -19,6 +19,7 @@
 #include "pisa_config.hpp"
 #include "query/algorithm/ranked_or_query.hpp"
 #include "query/queries.hpp"
+#include "scorer/bm25.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"
 #include "v1/cursor_intersection.hpp"
@@ -60,7 +61,9 @@ struct IndexData {
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
-                BlockSize(FixedBlock()))
+                "bm25",
+                BlockSize(FixedBlock()),
+                {})
 
     {
         typename v0_Index::builder builder(collection.num_docs(), params);
@@ -186,8 +189,9 @@ TEMPLATE_TEST_CASE("Query",
         CAPTURE(idx);
         CAPTURE(intersections[idx]);
 
-        or_q(make_scored_cursors(
-                 data->v0_index, data->wdata, ::pisa::Query{{}, query.get_term_ids(), {}}),
+        or_q(make_scored_cursors(data->v0_index,
+                                 ::pisa::bm25<wand_data<wand_data_raw>>(data->wdata),
+                                 ::pisa::Query{{}, query.get_term_ids(), {}}),
              data->v0_index.num_docs());
         auto expected = or_q.topk();
         if (with_threshold) {

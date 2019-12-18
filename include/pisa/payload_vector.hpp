@@ -153,25 +153,24 @@ struct Payload_Vector_Buffer {
     std::vector<size_type> const offsets;
     std::vector<std::byte> const payloads;
 
-    [[nodiscard]] static auto from_file(std::string const& filename) -> Payload_Vector_Buffer
-    {
-        boost::system::error_code ec;
-        auto file_size = boost::filesystem::file_size(boost::filesystem::path(filename));
-        std::ifstream is(filename);
+    //[[nodiscard]] static auto from_file(std::string const& filename) -> Payload_Vector_Buffer
+    //{
+    //    auto file_size = boost::filesystem::file_size(boost::filesystem::path(filename));
+    //    std::ifstream is(filename);
 
-        size_type len;
-        is.read(reinterpret_cast<char*>(&len), sizeof(size_type));
+    //    size_type len;
+    //    is.read(reinterpret_cast<char*>(&len), sizeof(size_type));
 
-        auto offsets_bytes = (len + 1) * sizeof(size_type);
-        std::vector<size_type> offsets(len + 1);
-        is.read(reinterpret_cast<char*>(offsets.data()), offsets_bytes);
+    //    auto offsets_bytes = (len + 1) * sizeof(size_type);
+    //    std::vector<size_type> offsets(len + 1);
+    //    is.read(reinterpret_cast<char*>(offsets.data()), offsets_bytes);
 
-        auto payloads_bytes = file_size - offsets_bytes - sizeof(size_type);
-        std::vector<std::byte> payloads(payloads_bytes);
-        is.read(reinterpret_cast<char*>(payloads.data()), payloads_bytes);
+    //    auto payloads_bytes = file_size - offsets_bytes - sizeof(size_type);
+    //    std::vector<std::byte> payloads(payloads_bytes);
+    //    is.read(reinterpret_cast<char*>(payloads.data()), payloads_bytes);
 
-        return Payload_Vector_Buffer{std::move(offsets), std::move(payloads)};
-    }
+    //    return Payload_Vector_Buffer{std::move(offsets), std::move(payloads)};
+    //}
 
     void to_file(std::string const& filename) const
     {
