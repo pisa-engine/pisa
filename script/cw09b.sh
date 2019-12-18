@@ -1,16 +1,17 @@
 PISA_BIN="/home/michal/pisa/build/bin"
 INTERSECT_BIN="/home/michal/intersect/target/release/intersect"
-BINARY_FREQ_COLL="/data/michal/work/cw09b/inv"
-FWD="/data/michal/work/cw09b/fwd"
-INV="/data/michal/work/cw09b/inv"
+BINARY_FREQ_COLL="/home/amallia/cw09b/CW09B.inv"
+FWD="/home/amallia/cw09b/CW09B.fwd"
+INV="/home/amallia/cw09b/CW09B"
 BASENAME="/data/michal/work/v1/cw09b/cw09b"
 THREADS=4
 TYPE="block_simdbp" # v0.6
 ENCODING="simdbp" # v1
-QUERIES="/home/michal/biscorer/data/queries/05.efficiency_topics.no_dups.1k"
+#QUERIES="/home/michal/biscorer/data/queries/05.efficiency_topics.no_dups.1k"
+QUERIES="/home/michal/topics.web.51-200.jl"
 K=1000
 OUTPUT_DIR="/data/michal/intersect/cw09b"
-FILTERED_QUERIES="${OUTPUT_DIR}/filtered_queries"
+FILTERED_QUERIES="${OUTPUT_DIR}/topics.web.51-200.filtered"
 #THRESHOLDS="/home/michal/biscorer/data/thresholds/cw09b/thresholds.cw09b.top1000.bm25.web.51-200"
 THRESHOLDS="${OUTPUT_DIR}/thresholds"
 
@@ -35,22 +36,23 @@ set -x
 #cut -d: -f1 ${FILTERED_QUERIES} | paste - ${THRESHOLDS} > ${OUTPUT_DIR}/thresholds.tsv
 
 # Extract intersections
-#${PISA_BIN}/compute_intersection -t ${TYPE} -i ${INV}.${TYPE} \
-#    -w ${INV}.wand -q ${FILTERED_QUERIES} --combinations --terms "${FWD}.termlex" --stemmer porter2 \
-#    | grep -v "\[warning\]" \
-#    > ${OUTPUT_DIR}/intersections.tsv
+${PISA_BIN}/compute_intersection -t ${TYPE} -i ${INV}.${TYPE} \
+    -w ${INV}.wand -q <(jq '.id + ":" + .query' ${FILTERED_QUERIES} -r) \
+    --combinations --terms "${FWD}.termlex" --stemmer porter2 \
+    | grep -v "\[warning\]" \
+    > ${OUTPUT_DIR}/intersections.tsv
 
 # Select unigrams
-#${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
-#    --terse --max 1 > ${OUTPUT_DIR}/selections.1
-#${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
-#    --terse --max 2 > ${OUTPUT_DIR}/selections.2
-#${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
-#    --terse --max 2 --scale 1.5 > ${OUTPUT_DIR}/selections.2.scaled-1.5
-#${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
-#    --terse --max 2 --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
-#${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
-#    --terse --max 2 --scale-by-query-len > ${OUTPUT_DIR}/selections.2.scaled-smart
+${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
+    --terse --max 1 > ${OUTPUT_DIR}/selections.1
+${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
+    --terse --max 2 > ${OUTPUT_DIR}/selections.2
+${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
+    --terse --max 2 --scale 1.5 > ${OUTPUT_DIR}/selections.2.scaled-1.5
+${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
+    --terse --max 2 --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
+${INTERSECT_BIN} -t ${OUTPUT_DIR}/thresholds.tsv -m graph-greedy ${OUTPUT_DIR}/intersections.tsv \
+    --terse --max 2 --scale-by-query-len > ${OUTPUT_DIR}/selections.2.scaled-smart
 
 # Run benchmarks
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore > ${OUTPUT_DIR}/bench.maxscore
