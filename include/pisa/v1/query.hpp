@@ -5,6 +5,7 @@
 #include <functional>
 #include <vector>
 
+#include <nlohmann/json.hpp>
 #include <range/v3/action/unique.hpp>
 #include <range/v3/algorithm/sort.hpp>
 #include <tl/optional.hpp>
@@ -97,6 +98,8 @@ struct Query {
     }
 
     void add_selections(gsl::span<std::bitset<64> const> selections);
+
+    [[nodiscard]] auto to_json() const -> nlohmann::json;
     [[nodiscard]] static auto from_json(std::string_view) -> Query;
     [[nodiscard]] static auto from_plain(std::string_view) -> Query;
 

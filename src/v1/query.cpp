@@ -125,6 +125,24 @@ template <typename T>
     }
 }
 
+[[nodiscard]] auto Query::to_json() const -> nlohmann::json
+{
+    json query;
+    if (m_id) {
+        query["id"] = *m_id;
+    }
+    if (m_raw_string) {
+        query["query"] = *m_raw_string;
+    }
+    // TODO(michal)
+    // tl::optional<TermIdSet> m_term_ids{};
+    // tl::optional<ListSelection> m_selections{};
+    // tl::optional<float> m_threshold{};
+    // tl::optional<std::string> m_raw_string;
+    // int m_k = 1000;
+    return query;
+}
+
 Query::Query(std::vector<TermId> term_ids, tl::optional<std::string> id)
     : m_term_ids(std::move(term_ids)), m_id(std::move(id))
 {

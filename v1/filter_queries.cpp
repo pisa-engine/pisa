@@ -35,30 +35,20 @@ using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
 using pisa::v1::VoidScorer;
 
+namespace arg = pisa::arg;
+
 int main(int argc, char** argv)
 {
-    pisa::QueryApp app("Filters out empty queries against a v1 index.");
+    pisa::App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app(
+        "Filters out empty queries against a v1 index.");
     CLI11_PARSE(app, argc, argv);
 
     auto meta = app.index_metadata();
-    auto stemmer = meta.stemmer ? std::make_optional(*meta.stemmer) : std::optional<std::string>{};
-    std::optional<std::string> term_lexicon = std::nullopt;
-    if (meta.term_lexicon) {
-        term_lexicon = *meta.term_lexicon;
-    }
-
-    auto term_processor = TermProcessor(term_lexicon, {}, stemmer);
-    auto filter = [&](auto&& line) {
-        auto query = parse_query_terms(line, term_processor);
-        if (not query.terms.empty()) {
-            std::cout << line << '\n';
+    auto queries = app.queries(meta);
+    for (auto&& query : queries) {
+        if (query.term_ids()) {
+            std::cout << query.to_json() << '\n';
         }
-    };
-    if (app.query_file()) {
-        std::ifstream is(*app.query_file());
-        pisa::io::for_each_line(is, filter);
-    } else {
-        pisa::io::for_each_line(std::cin, filter);
     }
     return 0;
 }

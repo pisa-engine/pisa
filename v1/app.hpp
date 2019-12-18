@@ -49,7 +49,7 @@ namespace arg {
         [[nodiscard]] auto query_file() -> tl::optional<std::string const&>
         {
             if (m_query_file) {
-                tl::make_optional(m_query_file.value());
+                return m_query_file.value();
             }
             return tl::nullopt;
         }
