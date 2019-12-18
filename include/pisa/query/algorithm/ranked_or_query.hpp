@@ -7,7 +7,6 @@
 namespace pisa {
 
 struct ranked_or_query {
-    typedef bm25 scorer_type;
 
     ranked_or_query(uint64_t k)
         : m_topk(k){}

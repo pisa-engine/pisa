@@ -23,9 +23,9 @@
 #include "vec_map.hpp"
 
 using namespace pisa;
-using ranges::view::chunk;
-using ranges::view::iota;
-using ranges::view::zip;
+using ranges::views::chunk;
+using ranges::views::iota;
+using ranges::views::zip;
 
 int main(int argc, char **argv) {
 

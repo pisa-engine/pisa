@@ -23,6 +23,7 @@ inline void write_gamma_nonzero(bit_vector_builder& bvb, uint64_t n)
 inline uint64_t read_gamma(bit_vector::enumerator& it)
 {
     uint64_t l = it.skip_zeros();
+    assert(l < 64);
     return (it.take(l) | (uint64_t(1) << l)) - 1;
 }
 

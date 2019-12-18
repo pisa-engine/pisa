@@ -29,7 +29,7 @@ TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][un
     std::vector<gsl::span<Term_Id const>> spans = {gsl::make_span(documents[0]),
                                                    gsl::make_span(documents[1])};
 
-    auto postings = invert::map_to_postings(invert::Batch{spans, ranges::view::iota(0_d, 2_d)});
+    auto postings = invert::map_to_postings(invert::Batch{spans, ranges::views::iota(0_d, 2_d)});
     REQUIRE(postings
             == std::vector<std::pair<Term_Id, Document_Id>>{{0_t, 0_d},
                                                             {1_t, 0_d},

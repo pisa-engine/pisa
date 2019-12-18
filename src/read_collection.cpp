@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 
     binary_collection coll(collection_file.c_str());
     auto iter = coll.begin();
-    for ([[maybe_unused]] auto idx : ranges::view::iota(0, first)) {
+    for ([[maybe_unused]] auto idx : ranges::views::iota(0, first)) {
         ++iter;
     }
 

@@ -1,9 +1,9 @@
 #include <iostream>
 #include <optional>
 
-#include <functional>
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
+#include <functional>
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "mio/mmap.hpp"
@@ -12,9 +12,9 @@
 
 #include "mappable/mapper.hpp"
 
-#include <thread>
 #include "tbb/parallel_for.h"
 #include "tbb/task_scheduler_init.h"
+#include <thread>
 
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
@@ -26,10 +26,12 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
+#include "scorer/scorer.hpp"
+
 #include "CLI/CLI.hpp"
 
 using namespace pisa;
-using ranges::view::enumerate;
+using ranges::views::enumerate;
 
 template <typename IndexType, typename WandType>
 void evaluate_queries(const std::string &index_filename,
@@ -40,6 +42,7 @@ void evaluate_queries(const std::string &index_filename,
                       std::string const &query_type,
                       uint64_t k,
                       std::string const &documents_filename,
+                      std::string const &scorer_name,
                       std::string const &run_id = "R0",
                       std::string const &iteration = "Q0")
 {
@@ -48,6 +51,8 @@ void evaluate_queries(const std::string &index_filename,
     mapper::map(index, m);
 
     WandType wdata;
+
+    auto scorer = scorer::from_name(scorer_name, wdata);
 
     mio::mmap_source md;
     if (wand_data_filename) {
@@ -65,59 +70,60 @@ void evaluate_queries(const std::string &index_filename,
     if (query_type == "wand" && wand_data_filename) {
         query_fun = [&](Query query) {
             wand_query wand_q(k);
-            wand_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
+            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             return wand_q.topk();
         };
     } else if (query_type == "block_max_wand" && wand_data_filename) {
         query_fun = [&](Query query) {
             block_max_wand_query block_max_wand_q(k);
-            block_max_wand_q(make_block_max_scored_cursors(index, wdata, query), index.num_docs());
+            block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                             index.num_docs());
             return block_max_wand_q.topk();
         };
     } else if (query_type == "block_max_maxscore" && wand_data_filename) {
         query_fun = [&](Query query) {
             block_max_maxscore_query block_max_maxscore_q(k);
-            block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, query),
+            block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                                  index.num_docs());
             return block_max_maxscore_q.topk();
         };
     } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
         query_fun = [&](Query query) {
             block_max_ranked_and_query block_max_ranked_and_q(k);
-            block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, query),
-                                 index.num_docs());
+            block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                                   index.num_docs());
             return block_max_ranked_and_q.topk();
         };
     } else if (query_type == "ranked_and" && wand_data_filename) {
         query_fun = [&](Query query) {
             ranked_and_query ranked_and_q(k);
-            ranked_and_q(make_scored_cursors(index, wdata, query), index.num_docs());
+            ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
             return ranked_and_q.topk();
         };
     } else if (query_type == "ranked_or" && wand_data_filename) {
         query_fun = [&](Query query) {
             ranked_or_query ranked_or_q(k);
-            ranked_or_q(make_scored_cursors(index, wdata, query), index.num_docs());
+            ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
             return ranked_or_q.topk();
         };
     } else if (query_type == "maxscore" && wand_data_filename) {
         query_fun = [&](Query query) {
             maxscore_query maxscore_q(k);
-            maxscore_q(make_max_scored_cursors(index, wdata, query), index.num_docs());
+            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             return maxscore_q.topk();
         };
     } else if (query_type == "ranked_or_taat" && wand_data_filename) {
         query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
             ranked_or_taat_query ranked_or_taat_q(k);
-            ranked_or_taat_q(make_scored_cursors(index, wdata, query), index.num_docs(),
-                             accumulator);
+            ranked_or_taat_q(
+                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
             return ranked_or_taat_q.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
         query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
             ranked_or_taat_query ranked_or_taat_q(k);
-            ranked_or_taat_q(make_scored_cursors(index, wdata, query), index.num_docs(),
-                             accumulator);
+            ranked_or_taat_q(
+                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
             return ranked_or_taat_q.topk();
         };
     } else {
@@ -129,7 +135,7 @@ void evaluate_queries(const std::string &index_filename,
 
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
-    tbb::parallel_for (size_t(0), queries.size(), [&, query_fun] (size_t query_idx) {
+    tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
         raw_results[query_idx] = query_fun(queries[query_idx]);
     });
     auto end_batch = std::chrono::steady_clock::now();
@@ -137,7 +143,7 @@ void evaluate_queries(const std::string &index_filename,
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id;
-        for (auto && [ rank, result ] : enumerate(results)) {
+        for (auto &&[rank, result] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      qid.value_or(std::to_string(query_idx)),
                                      iteration,
@@ -148,8 +154,10 @@ void evaluate_queries(const std::string &index_filename,
         }
     }
     auto end_print = std::chrono::steady_clock::now();
-    double batch_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
-    double batch_with_print_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
+    double batch_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
+    double batch_with_print_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
     spdlog::info("Time taken to process queries: {}ms", batch_ms);
     spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
 }
@@ -166,6 +174,7 @@ int main(int argc, const char **argv)
     std::string index_filename;
     std::optional<std::string> terms_file;
     std::string documents_file;
+    std::string scorer_name;
     std::optional<std::string> wand_data_filename;
     std::optional<std::string> query_filename;
     std::optional<std::string> thresholds_filename;
@@ -184,11 +193,13 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_option("-r,--run", run_id, "Run identifier");
+    app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_option("--threads", threads, "Thread Count");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")->needs(terms_opt);
+    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
+        ->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     CLI11_PARSE(app, argc, argv);
@@ -211,7 +222,7 @@ int main(int argc, const char **argv)
     }
 
     /**/
-    if (false) {  // NOLINT
+    if (false) { // NOLINT
 #define LOOP_BODY(R, DATA, T)                                                                  \
     }                                                                                          \
     else if (type == BOOST_PP_STRINGIZE(T))                                                    \
@@ -225,6 +236,7 @@ int main(int argc, const char **argv)
                                                                           query_type,          \
                                                                           k,                   \
                                                                           documents_file,      \
+                                                                          scorer_name,         \
                                                                           run_id);             \
         } else {                                                                               \
             evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
@@ -235,6 +247,7 @@ int main(int argc, const char **argv)
                                                                       query_type,              \
                                                                       k,                       \
                                                                       documents_file,          \
+                                                                      scorer_name,             \
                                                                       run_id);                 \
         }                                                                                      \
         /**/

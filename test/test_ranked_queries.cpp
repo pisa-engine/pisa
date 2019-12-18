@@ -20,15 +20,17 @@ using namespace pisa;
 template <typename Index>
 struct IndexData {
 
-    static std::unique_ptr<IndexData> data;
+    static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
-    IndexData()
+    IndexData(std::string const &scorer_name, std::unordered_set<size_t> const &dropped_term_ids)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
-                BlockSize(FixedBlock()))
+                scorer_name,
+                BlockSize(FixedBlock()),
+                dropped_term_ids)
 
     {
         tbb::task_scheduler_init init;
@@ -49,18 +51,14 @@ struct IndexData {
         io::for_each_line(qfile, push_query);
 
         std::string t;
-        std::ifstream tin(PISA_SOURCE_DIR "/test/test_data/top5_thresholds");
-        while (std::getline(tin, t)) {
-            thresholds.push_back(std::stof(t));
-        }
     }
 
-    [[nodiscard]] static auto get()
+    [[nodiscard]] static auto get(std::string const &s_name, std::unordered_set<size_t> const &dropped_term_ids)
     {
-        if (IndexData::data == nullptr) {
-            IndexData::data = std::make_unique<IndexData<Index>>();
+        if (IndexData::data.find(s_name) == IndexData::data.end()) {
+            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, dropped_term_ids);
         }
-        return IndexData::data.get();
+        return IndexData::data[s_name].get();
     }
 
     global_parameters params;
@@ -68,12 +66,11 @@ struct IndexData {
     binary_collection document_sizes;
     Index index;
     std::vector<Query> queries;
-    std::vector<float> thresholds;
     wand_data<wand_data_raw> wdata;
 };
 
 template <typename Index>
-std::unique_ptr<IndexData<Index>> IndexData<Index>::data = nullptr;
+std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
 
 template <typename Acc>
 class ranked_or_taat_query_acc : public ranked_or_taat_query {
@@ -115,17 +112,22 @@ TEMPLATE_TEST_CASE("Ranked query test",
                    range_query_128<block_max_wand_query>,
                    range_query_128<block_max_maxscore_query>)
 {
-    auto data = IndexData<single_index>::get();
-    TestType op_q(10);
-    ranked_or_query or_q(10);
+    for (auto &&s_name : {"bm25", "qld"}) {
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
+        TestType op_q(10);
+        ranked_or_query or_q(10);
 
-    for (auto const &q : data->queries) {
-        or_q(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        REQUIRE(or_q.topk().size() == op_q.topk().size());
-        for (size_t i = 0; i < or_q.topk().size(); ++i) {
-            REQUIRE(or_q.topk()[i].first
-                    == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+        auto scorer = scorer::from_name(s_name, data->wdata);
+        for (auto const &q : data->queries) {
+            or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
+                 data->index.num_docs());
+            REQUIRE(or_q.topk().size() == op_q.topk().size());
+            for (size_t i = 0; i < or_q.topk().size(); ++i) {
+                REQUIRE(or_q.topk()[i].first
+                        == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            }
         }
     }
 }
@@ -134,33 +136,45 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
                    "[query][ranked][integration]",
                    block_max_ranked_and_query)
 {
-    auto data = IndexData<single_index>::get();
-    TestType op_q(10);
-    ranked_and_query and_q(10);
+    for (auto &&s_name : {"bm25", "qld"}) {
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
+        TestType op_q(10);
+        ranked_and_query and_q(10);
 
-    for (auto const &q : data->queries) {
-        and_q(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        REQUIRE(and_q.topk().size() == op_q.topk().size());
-        for (size_t i = 0; i < and_q.topk().size(); ++i) {
-            REQUIRE(and_q.topk()[i].first
-                    == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+        auto scorer = scorer::from_name(s_name, data->wdata);
+
+        for (auto const &q : data->queries) {
+            and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
+                 data->index.num_docs());
+            REQUIRE(and_q.topk().size() == op_q.topk().size());
+            for (size_t i = 0; i < and_q.topk().size(); ++i) {
+                REQUIRE(and_q.topk()[i].first
+                        == Approx(op_q.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            }
         }
     }
 }
 
 TEST_CASE("Top k")
 {
-    auto data = IndexData<single_index>::get();
-    ranked_or_query or_10(10);
-    ranked_or_query or_1(1);
+    for (auto &&s_name : {"bm25", "qld"}) {
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
+        ranked_or_query or_10(10);
+        ranked_or_query or_1(1);
 
-    for (auto const &q : data->queries) {
-        or_10(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        or_1(make_scored_cursors(data->index, data->wdata, q), data->index.num_docs());
-        if (not or_10.topk().empty()) {
-            REQUIRE(not or_1.topk().empty());
-            REQUIRE(or_1.topk().front().first == Approx(or_10.topk().front().first).epsilon(0.1));
+        auto scorer = scorer::from_name(s_name, data->wdata);
+
+        for (auto const &q : data->queries) {
+            or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            or_1(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            if (not or_10.topk().empty()) {
+                REQUIRE(not or_1.topk().empty());
+                REQUIRE(or_1.topk().front().first
+                        == Approx(or_10.topk().front().first).epsilon(0.1));
+            }
         }
     }
 }

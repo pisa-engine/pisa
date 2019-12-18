@@ -25,7 +25,8 @@ set_target_properties(${LIBSTXXL_SOURCES} PROPERTIES
 set_target_properties(stxxl_tool test1 test2 PROPERTIES
             CXX_STANDARD 14
 )
-
+target_compile_options(stxxl PRIVATE    -Wno-deprecated-declarations
+)
 
 
 # Add streamvbyte

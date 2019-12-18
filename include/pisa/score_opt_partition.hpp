@@ -5,7 +5,6 @@
 #include <iterator>
 #include <deque>
 #include "util/util.hpp"
-#include "scorer/bm25.hpp"
 
 namespace pisa {
 
@@ -37,9 +36,8 @@ namespace pisa {
             float sum;
             uint64_t end_sequence;
             uint64_t element_count;
-            float estimated_idf;
 
-            score_window(ForwardIterator begin, posting_t base, wand_cost_t cost_upper_bound, float fixed_cost, size_t size, float e_idf)
+            score_window(ForwardIterator begin, posting_t base, wand_cost_t cost_upper_bound, float fixed_cost, size_t size)
                     : start_it(begin)
                     , end_it(begin)
                     , min_p(base)
@@ -48,8 +46,7 @@ namespace pisa {
                     , m_fixed_cost(fixed_cost)
                     , sum(0)
                     , end_sequence(size)
-                    , element_count(0)
-                    , estimated_idf(e_idf) {}
+                    , element_count(0) {}
 
             uint64_t universe() const {
                 return max_p - min_p + 1;
@@ -62,7 +59,7 @@ namespace pisa {
             void advance_start() {
 
 
-                float v = std::get<1>(*start_it)*estimated_idf;
+                float v = std::get<1>(*start_it);
                 if (std::get<1>(*start_it)  == max_queue.front())
                     max_queue.pop_front();
 
@@ -76,7 +73,7 @@ namespace pisa {
             void advance_end() {
 
 
-                float v = std::get<1>(*end_it)*estimated_idf;
+                float v = std::get<1>(*end_it);
                 sum += v;
 
                 while (max_queue.size() > 0 && max_queue.back() < std::get<1>(*end_it)){
@@ -95,7 +92,7 @@ namespace pisa {
                 if (size() < 2)
                     return m_fixed_cost;
                 else
-                    return  size()*max_queue.front()*estimated_idf - sum + m_fixed_cost;
+                    return  size()*max_queue.front() - sum + m_fixed_cost;
             }
 
             float max(){
@@ -109,19 +106,18 @@ namespace pisa {
 
         template <typename ForwardIterator>
         score_opt_partition(ForwardIterator begin,
-                            uint32_t base, uint64_t size, double eps1, double eps2, float fixed_cost, float estimated_idf)
+                            uint32_t base, uint64_t size, double eps1, double eps2, float fixed_cost)
         {
-
 
             // compute cost of single block.
             float max = 0;
             float sum = 0;
             std::for_each(begin, begin + size, [&](auto& b) {
               max = std::max(max, std::get<1>(b));
-              sum += std::get<1>(b) * estimated_idf;
+              sum += std::get<1>(b);
             });
 
-            wand_cost_t single_block_cost = size*max*estimated_idf - sum;
+            wand_cost_t single_block_cost = size*max - sum;
             std::vector<wand_cost_t> min_cost(size + 1, single_block_cost);
             min_cost[0] = 0;
 
@@ -130,7 +126,7 @@ namespace pisa {
             wand_cost_t cost_lb = fixed_cost;
             wand_cost_t cost_bound = cost_lb;
             while (eps1 == 0 || cost_bound < cost_lb / eps1) {
-                windows.emplace_back(begin, base, cost_bound, fixed_cost, size, estimated_idf);
+                windows.emplace_back(begin, base, cost_bound, fixed_cost, size);
                 if (cost_bound >= single_block_cost) break;
                 cost_bound = cost_bound * (1 + eps2);
             }
