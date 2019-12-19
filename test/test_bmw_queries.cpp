@@ -22,14 +22,15 @@ struct IndexData {
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
 
-    IndexData(std::string const &scorer_name)
+    IndexData(std::string const &scorer_name, std::unordered_set<size_t> const &dropped_term_ids)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
                 scorer_name,
-                BlockSize(VariableBlock()))
+                BlockSize(VariableBlock()),
+                dropped_term_ids)
 
     {
         typename Index::builder builder(collection.num_docs(), params);
@@ -55,10 +56,10 @@ struct IndexData {
     std::vector<Query> queries;
     WandTypePlain wdata;
 
-    [[nodiscard]] static auto get(std::string const &s_name)
+    [[nodiscard]] static auto get(std::string const &s_name, std::unordered_set<size_t> const &dropped_term_ids)
     {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
-            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name);
+            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, dropped_term_ids);
         }
         return IndexData::data[s_name].get();
     }
@@ -70,7 +71,8 @@ std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::
 template <typename Wand>
 auto test(Wand &wdata, std::string const &s_name)
 {
-    auto data = IndexData<single_index>::get(s_name);
+    std::unordered_set<size_t> dropped_term_ids;
+    auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
     topk_queue topk_1(10);
     block_max_wand_query op_q(topk_1);
     topk_queue topk_2(10);
@@ -93,26 +95,30 @@ auto test(Wand &wdata, std::string const &s_name)
 TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
 {
     for (auto &&s_name : {"bm25", "qld"}) {
-
-        auto data = IndexData<single_index>::get(s_name);
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
 
         SECTION("Regular") { test(data->wdata, s_name); }
         SECTION("Fixed")
         {
+            std::unordered_set<size_t> dropped_term_ids;
             WandTypePlain wdata_fixed(data->document_sizes.begin()->begin(),
                                       data->collection.num_docs(),
                                       data->collection,
                                       s_name,
-                                      BlockSize(FixedBlock()));
+                                      BlockSize(FixedBlock()),
+                                      dropped_term_ids);
             test(wdata_fixed, s_name);
         }
         SECTION("Uniform")
         {
+            std::unordered_set<size_t> dropped_term_ids;
             WandTypeUniform wdata_uniform(data->document_sizes.begin()->begin(),
                                           data->collection.num_docs(),
                                           data->collection,
                                           s_name,
-                                          BlockSize(VariableBlock()));
+                                          BlockSize(VariableBlock()),
+                                          dropped_term_ids);
             test(wdata_uniform, s_name);
         }
     }

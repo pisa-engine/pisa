@@ -4,6 +4,8 @@
 #include <vector>
 
 #include <fmt/format.h>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include "CLI/CLI.hpp"
 #include "index_types.hpp"
@@ -72,6 +74,9 @@ using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, const char **argv)
 {
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     std::string type;
     std::string index_filename;
     std::optional<std::string> terms_file;

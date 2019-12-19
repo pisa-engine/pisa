@@ -22,14 +22,15 @@ struct IndexData {
 
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
-    IndexData(std::string const &scorer_name)
+    IndexData(std::string const &scorer_name, std::unordered_set<size_t> const &dropped_term_ids)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
                 collection.num_docs(),
                 collection,
                 scorer_name,
-                BlockSize(FixedBlock()))
+                BlockSize(FixedBlock()),
+                dropped_term_ids)
 
     {
         tbb::task_scheduler_init init;
@@ -52,10 +53,10 @@ struct IndexData {
         std::string t;
     }
 
-    [[nodiscard]] static auto get(std::string const &s_name)
+    [[nodiscard]] static auto get(std::string const &s_name, std::unordered_set<size_t> const &dropped_term_ids)
     {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
-            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name);
+            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, dropped_term_ids);
         }
         return IndexData::data[s_name].get();
     }
@@ -112,7 +113,8 @@ TEMPLATE_TEST_CASE("Ranked query test",
                    range_query_128<block_max_maxscore_query>)
 {
     for (auto &&s_name : {"bm25", "qld"}) {
-        auto data = IndexData<single_index>::get(s_name);
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
         topk_queue topk_1(10);
         TestType op_q(topk_1);
         topk_queue topk_2(10);
@@ -138,7 +140,8 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
 {
     for (auto &&s_name : {"bm25", "qld"}) {
 
-        auto data = IndexData<single_index>::get(s_name);
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
         topk_queue topk_1(10);
         TestType op_q(topk_1);
         topk_queue topk_2(10);
@@ -162,8 +165,8 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
 TEST_CASE("Top k")
 {
     for (auto &&s_name : {"bm25", "qld"}) {
-
-        auto data = IndexData<single_index>::get(s_name);
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
         topk_queue topk_1(10);
         ranked_or_query or_10(topk_1);
         topk_queue topk_2(1);
