@@ -18,3 +18,6 @@ target_link_libraries(filter-queries pisa CLI11)
 
 add_executable(threshold threshold.cpp)
 target_link_libraries(threshold pisa CLI11)
+
+add_executable(intersection intersection.cpp)
+target_link_libraries(intersection pisa CLI11)

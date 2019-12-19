@@ -65,7 +65,9 @@ namespace arg {
                     }
                     return v1::Query::from_plain(line);
                 }();
-                query.parse(parser);
+                if (not query.term_ids()) {
+                    query.parse(parser);
+                }
                 if constexpr (Mode == QueryMode::Ranked) {
                     query.k(m_k);
                 }

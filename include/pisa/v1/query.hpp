@@ -99,6 +99,7 @@ struct Query {
 
     void add_selections(gsl::span<std::bitset<64> const> selections);
 
+    [[nodiscard]] auto filtered_terms(std::bitset<64> selection) const -> std::vector<TermId>;
     [[nodiscard]] auto to_json() const -> nlohmann::json;
     [[nodiscard]] static auto from_json(std::string_view) -> Query;
     [[nodiscard]] static auto from_plain(std::string_view) -> Query;

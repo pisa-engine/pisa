@@ -32,9 +32,12 @@ using pisa::v1::resolve_yml;
 using pisa::v1::VoidScorer;
 
 template <typename Index, typename Scorer>
-void calculate_thresholds(Index&& index, Scorer&& scorer, std::vector<Query> const& queries)
+void calculate_thresholds(Index&& index,
+                          Scorer&& scorer,
+                          std::vector<Query>& queries,
+                          std::ostream& os)
 {
-    for (auto const& query : queries) {
+    for (auto&& query : queries) {
         auto results = pisa::v1::daat_or(
             query, index, ::pisa::topk_queue(query.k()), std::forward<Scorer>(scorer));
         results.finalize();
@@ -42,7 +45,8 @@ void calculate_thresholds(Index&& index, Scorer&& scorer, std::vector<Query> con
         if (not results.topk().empty()) {
             threshold = results.topk().back().first;
         }
-        std::cout << threshold << '\n';
+        query.threshold(threshold);
+        os << query.to_json() << '\n';
     }
 }
 
@@ -50,8 +54,16 @@ int main(int argc, char** argv)
 {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
+    bool in_place = false;
     pisa::QueryApp app("Calculates thresholds for a v1 index.");
+    app.add_flag("--in-place", in_place, "Edit the input file");
     CLI11_PARSE(app, argc, argv);
+
+    if (in_place && not app.query_file()) {
+        spdlog::error("Cannot edit in place when no query file passed");
+        std::exit(1);
+    }
 
     try {
         auto meta = app.index_metadata();
@@ -63,7 +75,14 @@ int main(int argc, char** argv)
                                            RawReader<std::uint8_t>{},
                                            BlockedReader<::pisa::simdbp_block, true>{},
                                            BlockedReader<::pisa::simdbp_block, false>{});
-            run([&](auto&& index) { calculate_thresholds(index, VoidScorer{}, queries); });
+            run([&](auto&& index) {
+                if (in_place) {
+                    std::ofstream os(app.query_file().value());
+                    calculate_thresholds(index, VoidScorer{}, queries, os);
+                } else {
+                    calculate_thresholds(index, VoidScorer{}, queries, std::cout);
+                }
+            });
         } else {
             auto run = index_runner(meta,
                                     RawReader<std::uint32_t>{},
@@ -71,8 +90,14 @@ int main(int argc, char** argv)
                                     BlockedReader<::pisa::simdbp_block, false>{});
             run([&](auto&& index) {
                 auto with_scorer = scorer_runner(index, make_bm25(index));
-                with_scorer("bm25",
-                            [&](auto scorer) { calculate_thresholds(index, scorer, queries); });
+                with_scorer("bm25", [&](auto scorer) {
+                    if (in_place) {
+                        std::ofstream os(app.query_file().value());
+                        calculate_thresholds(index, scorer, queries, os);
+                    } else {
+                        calculate_thresholds(index, scorer, queries, std::cout);
+                    }
+                });
             });
         }
     } catch (std::exception const& error) {

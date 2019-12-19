@@ -41,6 +41,19 @@ void Query::add_selections(gsl::span<std::bitset<64> const> selections)
     ranges::sort(m_selections->bigrams);
 }
 
+[[nodiscard]] auto Query::filtered_terms(std::bitset<64> selection) const -> std::vector<TermId>
+{
+    auto&& term_ids = get_term_ids();
+    std::vector<TermId> terms;
+    std::vector<float> weights;
+    for (std::size_t bitpos = 0; bitpos < term_ids.size(); ++bitpos) {
+        if (((1U << bitpos) & selection.to_ulong()) > 0) {
+            terms.push_back(term_ids.at(bitpos));
+        }
+    }
+    return terms;
+}
+
 auto Query::resolve_term(std::size_t pos) -> TermId
 {
     if (not m_term_ids) {
@@ -96,27 +109,12 @@ template <typename T>
         if (auto k = get<int>(query_json, "k"); k) {
             query.k(*k);
         }
-        if (auto pos = query_json.find("selections"); pos != query_json.end()) {
-            auto const& selections = *pos;
-            auto unigrams = get<std::vector<std::size_t>>(selections, "unigrams")
-                                .value_or(std::vector<std::size_t>{});
-            auto bigrams =
-                get<std::vector<std::pair<std::size_t, std::size_t>>>(selections, "bigrams")
-                    .value_or(std::vector<std::pair<std::size_t, std::size_t>>{});
+        if (auto selections = get<std::vector<std::size_t>>(query_json, "selections"); selections) {
             std::vector<std::bitset<64>> bitsets;
-            std::transform(
-                unigrams.begin(), unigrams.end(), std::back_inserter(bitsets), [](auto idx) {
-                    std::bitset<64> bs;
-                    bs.set(idx);
-                    return bs;
-                });
-            std::transform(
-                bigrams.begin(), bigrams.end(), std::back_inserter(bitsets), [](auto bigram) {
-                    std::bitset<64> bs;
-                    bs.set(bigram.first);
-                    bs.set(bigram.second);
-                    return bs;
-                });
+            std::transform(selections->begin(),
+                           selections->end(),
+                           std::back_inserter(bitsets),
+                           [](auto selection) { return std::bitset<64>(selection); });
             query.selections(gsl::span<std::bitset<64>>(bitsets));
         }
         return query;
@@ -134,11 +132,14 @@ template <typename T>
     if (m_raw_string) {
         query["query"] = *m_raw_string;
     }
+    if (m_term_ids) {
+        query["term_ids"] = m_term_ids->get();
+    }
+    if (m_threshold) {
+        query["threshold"] = *m_threshold;
+    }
     // TODO(michal)
-    // tl::optional<TermIdSet> m_term_ids{};
     // tl::optional<ListSelection> m_selections{};
-    // tl::optional<float> m_threshold{};
-    // tl::optional<std::string> m_raw_string;
     // int m_k = 1000;
     return query;
 }

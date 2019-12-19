@@ -200,14 +200,10 @@ int main(int argc, char** argv)
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     std::string algorithm = "daat_or";
-    tl::optional<std::string> threshold_file;
-    tl::optional<std::string> inter_filename;
     bool inspect = false;
 
     pisa::QueryApp app("Queries a v1 index.");
     app.add_option("--algorithm", algorithm, "Query retrieval algorithm.", true);
-    app.add_option("--thresholds", threshold_file, "File with (estimated) thresholds.", false);
-    app.add_option("--intersections", inter_filename, "Intersections filename");
     app.add_flag("--inspect", inspect, "Analyze query execution and stats");
     CLI11_PARSE(app, argc, argv);
 
@@ -221,34 +217,6 @@ int main(int argc, char** argv)
         }
         auto source = std::make_shared<mio::mmap_source>(meta.document_lexicon.value().c_str());
         auto docmap = pisa::Payload_Vector<>::from(*source);
-
-        if (threshold_file) {
-            std::ifstream is(*threshold_file);
-            auto queries_iter = queries.begin();
-            pisa::io::for_each_line(is, [&](auto&& line) {
-                if (queries_iter == queries.end()) {
-                    spdlog::error("Number of thresholds not equal to number of queries");
-                    std::exit(1);
-                }
-                queries_iter->threshold(std::stof(line));
-                ++queries_iter;
-            });
-            if (queries_iter != queries.end()) {
-                spdlog::error("Number of thresholds not equal to number of queries");
-                std::exit(1);
-            }
-        }
-
-        if (inter_filename) {
-            auto const intersections = pisa::v1::read_intersections(*inter_filename);
-            if (intersections.size() != queries.size()) {
-                spdlog::error("Number of intersections is not equal to number of queries");
-                std::exit(1);
-            }
-            for (auto query_idx = 0; query_idx < queries.size(); query_idx += 1) {
-                queries[query_idx].add_selections(gsl::make_span(intersections[query_idx]));
-            }
-        }
 
         if (app.use_quantized()) {
             auto run = scored_index_runner(meta,
