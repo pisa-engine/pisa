@@ -49,7 +49,7 @@ TEST_CASE("mapping_from_files", "[invert][unit]")
     shards.push_back(std::make_unique<std::istringstream>("D02\nD03\nD04"));
     shards.push_back(std::make_unique<std::istringstream>("D06\nD07\nD08\nD09\nD010\nD11"));
     auto stream_pointers =
-        ranges::view::transform(shards, [](auto const &s) { return s.get(); }) | ranges::to_vector;
+        ranges::views::transform(shards, [](auto const &s) { return s.get(); }) | ranges::to_vector;
     REQUIRE(mapping_from_files(&full, gsl::span<std::istream *>(stream_pointers)).as_vector()
             == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s});
 }
@@ -67,7 +67,7 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
     std::sort(documents.begin(), documents.end());
 
     REQUIRE(documents.as_vector()
-            == ranges::to_vector(ranges::view::iota(Document_Id{}, Document_Id{1000u})));
+            == ranges::to_vector(ranges::views::iota(Document_Id{}, Document_Id{1000u})));
     REQUIRE(counts.as_vector()
             == std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
 }
@@ -76,7 +76,7 @@ auto round_robin_mapping(int document_count, int shard_count)
 {
     VecMap<Document_Id, Shard_Id> mapping(document_count);
     Shard_Id shard = 0_s;
-    for (auto doc : ranges::view::iota(0_d, Document_Id{document_count})) {
+    for (auto doc : ranges::views::iota(0_d, Document_Id{document_count})) {
         mapping[doc] = shard++;
         if (shard == Shard_Id{shard_count}) {
             shard = 0_s;
@@ -106,7 +106,7 @@ auto shard_elements(Container const &container, Shard_Id shard_id, int shard_cou
 {
     Container elems;
     for (auto const &val :
-         ranges::view::drop(container, shard_id.as_int()) | ranges::view::stride(shard_count)) {
+         ranges::views::drop(container, shard_id.as_int()) | ranges::views::stride(shard_count)) {
         elems.push_back(val);
     }
     return elems;
@@ -127,7 +127,7 @@ TEST_CASE("copy_sequence", "[invert][unit]")
             {
                 std::ifstream is(fwd_basename);
                 std::ofstream os(output);
-                for ([[maybe_unused]] auto _ : ranges::view::ints(0, document_count)) {
+                for ([[maybe_unused]] auto _ : ranges::views::ints(0, document_count)) {
                     copy_sequence(is, os);
                 }
             }
@@ -158,7 +158,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
             auto mapping = round_robin_mapping(document_count, 13);
             REQUIRE(mapping.size() == document_count);
             rearrange_sequences(fwd_basename, output_basename, mapping);
-            auto shard_ids = ranges::view::iota(0_s, 13_s);
+            auto shard_ids = ranges::views::iota(0_s, 13_s);
 
             THEN("Sequences are properly rearranged")
             {
@@ -174,7 +174,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     return std::make_pair(lhs.second, lhs.first)
                            < std::make_pair(rhs.second, rhs.first);
                 });
-                expected = ranges::view::transform(
+                expected = ranges::views::transform(
                                sorted_mapping,
                                [&](auto &&entry) { return expected[entry.first.as_int()]; })
                            | ranges::to_vector;
@@ -216,7 +216,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
             auto mapping = round_robin_mapping(document_count, 13);
             REQUIRE(mapping.size() == document_count);
             partition_fwd_index(fwd_basename, output_basename, mapping);
-            auto shard_ids = ranges::view::iota(0_s, 13_s);
+            auto shard_ids = ranges::views::iota(0_s, 13_s);
 
             THEN("Document titles are correctly partitioned")
             {
@@ -249,7 +249,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     shards.back();
                 }
                 Shard_Id shard = 0_s;
-                for (auto doc : ranges::view::iota(0_d, Document_Id{document_count})) {
+                for (auto doc : ranges::views::iota(0_d, Document_Id{document_count})) {
                     CAPTURE(doc);
                     auto full_seq = *full_iter;
                     auto shard_seq = *shard_iterators[shard.as_int()];

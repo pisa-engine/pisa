@@ -15,7 +15,7 @@
 #include <gsl/gsl_assert>
 #include <pstl/algorithm>
 #include <pstl/execution>
-#include <range/v3/to_container.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
 #include <spdlog/fmt/ostr.h>
@@ -217,7 +217,7 @@ class Forward_Index_Builder {
         };
 
         spdlog::info("Collecting terms");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
+        for (auto batch : ranges::views::iota(0, batch_count)) {
             spdlog::debug("[Collecting terms] Batch {}/{}", batch, batch_count);
             auto mid = terms.size();
             std::ifstream terms_is(batch_file(basename, batch) + ".terms");
@@ -248,7 +248,7 @@ class Forward_Index_Builder {
         {
             spdlog::info("Merging titles");
             std::ofstream title_os(basename + ".documents");
-            for (auto batch : ranges::view::iota(0, batch_count)) {
+            for (auto batch : ranges::views::iota(0, batch_count)) {
                 spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
                 std::ifstream title_is(batch_file(basename, batch) + ".documents");
                 title_os << title_is.rdbuf();
@@ -264,7 +264,7 @@ class Forward_Index_Builder {
         {
             spdlog::info("Merging URLs");
             std::ofstream url_os(basename + ".urls");
-            for (auto batch : ranges::view::iota(0, batch_count)) {
+            for (auto batch : ranges::views::iota(0, batch_count)) {
                 spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
                 std::ifstream url_is(batch_file(basename, batch) + ".urls");
                 url_os << url_is.rdbuf();
@@ -281,7 +281,7 @@ class Forward_Index_Builder {
         auto term_mapping = reverse_mapping(std::move(terms));
 
         spdlog::info("Remapping IDs");
-        for (auto batch : ranges::view::iota(0, batch_count)) {
+        for (auto batch : ranges::views::iota(0, batch_count)) {
             spdlog::debug("[Remapping IDs] Batch {}/{}", batch, batch_count);
             auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
             std::vector<Term_Id> mapping(batch_terms.size());
@@ -301,7 +301,7 @@ class Forward_Index_Builder {
         spdlog::info("Concatenating batches");
         std::ofstream os(basename);
         write_header(os, document_count);
-        for (auto batch : ranges::view::iota(0, batch_count)) {
+        for (auto batch : ranges::views::iota(0, batch_count)) {
             spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
             std::ifstream is(batch_file(basename, batch));
             is.ignore(8);
@@ -373,7 +373,7 @@ class Forward_Index_Builder {
     {
         using boost::filesystem::path;
         using boost::filesystem::remove;
-        for (auto batch : ranges::view::iota(0, batch_count)) {
+        for (auto batch : ranges::views::iota(0, batch_count)) {
             auto batch_basename = batch_file(basename, batch);
             remove(path{batch_basename + ".documents"});
             remove(path{batch_basename + ".terms"});
