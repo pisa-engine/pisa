@@ -77,7 +77,7 @@ auto mapping_from_files(std::string const &full_titles, gsl::span<std::string co
         shard_is.push_back(std::make_unique<std::ifstream>(shard_file));
     }
     return mapping_from_files(
-        &fis, shard_is | ranges::view::transform([](auto &is) { return is.get(); }));
+        &fis, shard_is | ranges::views::transform([](auto &is) { return is.get(); }));
 }
 
 auto create_random_mapping(int document_count,
@@ -89,12 +89,12 @@ auto create_random_mapping(int document_count,
     std::mt19937 g(seed.value_or(rd()));
     VecMap<Document_Id, Shard_Id> mapping(document_count);
     auto shard_size = ceil_div(document_count, shard_count);
-    auto documents = ranges::view::iota(0_d, Document_Id{document_count})
+    auto documents = ranges::views::iota(0_d, Document_Id{document_count})
                      | ranges::to_vector
-                     | ranges::action::shuffle(g);
+                     | ranges::actions::shuffle(g);
 
-    ranges::for_each(ranges::view::zip(ranges::view::iota(0_s, Shard_Id(shard_count)),
-                                       ranges::view::chunk(documents, shard_size)),
+    ranges::for_each(ranges::views::zip(ranges::views::iota(0_s, Shard_Id(shard_count)),
+                                       ranges::views::chunk(documents, shard_size)),
                      [&](auto &&entry) {
                          auto &&[shard_id, shard_documents] = entry;
                          for (auto document : shard_documents) {
@@ -136,7 +136,7 @@ auto rearrange_sequences(std::string const &input_basename,
     std::ifstream dis(fmt::format("{}.documents", input_basename));
     VecMap<Shard_Id, std::ofstream> os;
     VecMap<Shard_Id, std::ofstream> dos;
-    for (auto shard : ranges::view::iota(0_s, *shard_count)) {
+    for (auto shard : ranges::views::iota(0_s, *shard_count)) {
         spdlog::debug("Initializing file for shard {}", shard.as_int());
         auto filename = fmt::format("{}.{:03d}", output_basename, shard.as_int());
         os.emplace_back(filename);
@@ -157,7 +157,7 @@ auto rearrange_sequences(std::string const &input_basename,
         shard_sizes[shard]++;
     }
     spdlog::info("Writing sizes");
-    for (auto &&[o, size] : ranges::view::zip(os.as_vector(), shard_sizes.as_vector())) {
+    for (auto &&[o, size] : ranges::views::zip(os.as_vector(), shard_sizes.as_vector())) {
         o.seekp(0);
         uint32_t one = 1;
         o.write(reinterpret_cast<char const *>(&one), sizeof(uint32_t));
@@ -183,7 +183,7 @@ auto process_shard(std::string const &input_basename,
 
     spdlog::debug("[Shard {}] Writing terms", shard_id.as_int());
     std::ofstream tos(fmt::format("{}.terms", basename));
-    for (auto &&[term, occurs] : ranges::view::zip(terms.as_vector(), has_term)) {
+    for (auto &&[term, occurs] : ranges::views::zip(terms.as_vector(), has_term)) {
         if (occurs) {
             tos << term << '\n';
         }
@@ -210,7 +210,7 @@ auto partition_fwd_index(std::string const &input_basename,
 {
     auto terms = read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
-    auto shard_ids = ranges::view::iota(0_s, shard_count) | ranges::to_vector;
+    auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);
     spdlog::info("Remapping shards");
     std::for_each(std::execution::par_unseq, shard_ids.begin(), shard_ids.end(), [&](auto &&id) {

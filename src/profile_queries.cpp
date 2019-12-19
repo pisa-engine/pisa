@@ -104,17 +104,20 @@ void profile(const std::string index_filename,
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query){
-                ranked_and_query ranked_and_q(10);
+                topk_queue topk(10);
+                ranked_and_query ranked_and_q(topk);
                 return ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type>(index, *scorer, query), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](Query query){
-                wand_query wand_q(10);
+                topk_queue topk(10);
+                wand_query wand_q(topk);
                 return wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, *scorer, query), index.num_docs());
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](Query query){
-                maxscore_query maxscore_q(10);
+                topk_queue topk(10);
+                maxscore_query maxscore_q(topk);
                 return maxscore_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(index, wdata, *scorer, query), index.num_docs());
             };
         } else {

@@ -113,8 +113,10 @@ TEMPLATE_TEST_CASE("Ranked query test",
 {
     for (auto &&s_name : {"bm25", "qld"}) {
         auto data = IndexData<single_index>::get(s_name);
-        TestType op_q(10);
-        ranked_or_query or_q(10);
+        topk_queue topk_1(10);
+        TestType op_q(topk_1);
+        topk_queue topk_2(10);
+        ranked_or_query or_q(topk_2);
 
         auto scorer = scorer::from_name(s_name, data->wdata);
         for (auto const &q : data->queries) {
@@ -137,8 +139,10 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
     for (auto &&s_name : {"bm25", "qld"}) {
 
         auto data = IndexData<single_index>::get(s_name);
-        TestType op_q(10);
-        ranked_and_query and_q(10);
+        topk_queue topk_1(10);
+        TestType op_q(topk_1);
+        topk_queue topk_2(10);
+        ranked_and_query and_q(topk_2);
 
         auto scorer = scorer::from_name(s_name, data->wdata);
 
@@ -160,8 +164,10 @@ TEST_CASE("Top k")
     for (auto &&s_name : {"bm25", "qld"}) {
 
         auto data = IndexData<single_index>::get(s_name);
-        ranked_or_query or_10(10);
-        ranked_or_query or_1(1);
+        topk_queue topk_1(10);
+        ranked_or_query or_10(topk_1);
+        topk_queue topk_2(1);
+        ranked_or_query or_1(topk_2);
 
         auto scorer = scorer::from_name(s_name, data->wdata);
 
