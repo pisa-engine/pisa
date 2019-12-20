@@ -78,9 +78,12 @@ void compute_intersections(Index const& index,
         auto intersections = nlohmann::json::array();
         auto inter = [&](auto&& query, tl::optional<std::bitset<64>> const& mask) {
             auto intersection = compute_intersection(index, query, mask);
-            intersections.push_back(nlohmann::json{{"intersection", mask.value_or(0).to_ulong()},
-                                                   {"cost", intersection.length},
-                                                   {"max_score", intersection.max_score}});
+            if (intersection.length > 0) {
+                intersections.push_back(
+                    nlohmann::json{{"intersection", mask.value_or(0).to_ulong()},
+                                   {"cost", intersection.length},
+                                   {"max_score", intersection.max_score}});
+            }
         };
         if (intersection_type == IntersectionType::Combinations) {
             for_all_subsets(query, max_term_count, inter);

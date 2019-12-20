@@ -255,6 +255,10 @@ auto unigram_union_lookup(Query const& query,
     std::vector<cursor_type> essential_cursors =
         index.max_scored_cursors(selections.unigrams, scorer);
 
+    if constexpr (not std::is_void_v<Inspect>) {
+        inspect->essential(essential_cursors.size());
+    }
+
     auto joined = join_union_lookup(
         std::move(essential_cursors),
         std::move(lookup_cursors),
@@ -304,25 +308,28 @@ auto maxscore_union_lookup(Query const& query,
         upper_bounds[i] = upper_bounds[i - 1] + cursors[i].max_score();
     }
     std::size_t non_essential_count = 0;
-    while (non_essential_count < cursors.size() && upper_bounds[non_essential_count] < threshold) {
+    while (non_essential_count < cursors.size() && upper_bounds[non_essential_count] <= threshold) {
         non_essential_count += 1;
     }
-
-    auto lookup_cursors = gsl::span<cursor_type>(&cursors[0], non_essential_count);
-    auto essential_cursors =
-        gsl::span<cursor_type>(&cursors[non_essential_count], cursors.size() - non_essential_count);
-    if (not lookup_cursors.empty()) {
-        std::reverse(lookup_cursors.begin(), lookup_cursors.end());
+    if constexpr (not std::is_void_v<Inspect>) {
+        inspect->essential(cursors.size() - non_essential_count);
     }
+
+    std::vector<cursor_type> essential_cursors;
+    std::move(std::next(cursors.begin(), non_essential_count),
+              cursors.end(),
+              std::back_inserter(essential_cursors));
+    cursors.erase(std::next(cursors.begin(), non_essential_count), cursors.end());
+    std::reverse(cursors.begin(), cursors.end());
 
     auto joined = join_union_lookup(
         std::move(essential_cursors),
-        std::move(lookup_cursors),
+        std::move(cursors),
         payload_type{},
         accumulate::Add{},
         [&](auto score) { return topk.would_enter(score); },
         inspect);
-    v1::for_each(joined, [&](auto& cursor) {
+    v1::for_each(joined, [&](auto&& cursor) {
         if constexpr (not std::is_void_v<Inspect>) {
             if (topk.insert(cursor.payload(), cursor.value())) {
                 inspect->insert();
@@ -390,12 +397,12 @@ struct LookupTransform {
 };
 
 /// This algorithm...
-template <typename Index, typename Scorer, typename Inspector = void>
+template <typename Index, typename Scorer, typename Inspect = void>
 auto lookup_union(Query const& query,
                   Index const& index,
                   topk_queue topk,
                   Scorer&& scorer,
-                  Inspector* inspector = nullptr)
+                  Inspect* inspect = nullptr)
 {
     using bigram_cursor_type = std::decay_t<decltype(*index.scored_bigram_cursor(0, 0, scorer))>;
     using lookup_cursor_type = std::decay_t<decltype(index.max_scored_cursor(0, scorer))>;
@@ -413,6 +420,10 @@ auto lookup_union(Query const& query,
     auto& essential_unigrams = selections.unigrams;
     auto& essential_bigrams = selections.bigrams;
 
+    if constexpr (not std::is_void_v<Inspect>) {
+        inspect->essential(essential_unigrams.size() + essential_bigrams.size());
+    }
+
     auto non_essential_terms =
         ranges::views::set_difference(term_ids, essential_unigrams) | ranges::to_vector;
 
@@ -428,13 +439,13 @@ auto lookup_union(Query const& query,
                                  0.0F,
                                  accumulate::Add{},
                                  is_above_threshold,
-                                 inspector);
+                                 inspect);
     }();
 
     using lookup_transform_type = LookupTransform<bigram_cursor_type,
                                                   lookup_cursor_type,
                                                   decltype(is_above_threshold),
-                                                  Inspector>;
+                                                  Inspect>;
     using transform_payload_cursor_type =
         TransformPayloadCursor<bigram_cursor_type, lookup_transform_type>;
 
@@ -461,7 +472,7 @@ auto lookup_union(Query const& query,
                                     lookup_transform_type(std::move(lookup_cursors),
                                                           lookup_cursors_upper_bound,
                                                           is_above_threshold,
-                                                          inspector));
+                                                          inspect));
     }
 
     auto accumulate = [&](float acc, auto& cursor, [[maybe_unused]] auto idx) {
@@ -474,9 +485,9 @@ auto lookup_union(Query const& query,
         std::make_tuple(accumulate, accumulate));
 
     v1::for_each(merged, [&](auto&& cursor) {
-        if constexpr (not std::is_void_v<Inspector>) {
+        if constexpr (not std::is_void_v<Inspect>) {
             if (topk.insert(cursor.payload(), cursor.value())) {
-                inspector->insert();
+                inspect->insert();
             }
         } else {
             topk.insert(cursor.payload(), cursor.value());
@@ -516,6 +527,10 @@ auto union_lookup(Query const& query,
 
     std::array<float, 8> initial_payload{
         0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; //, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    if constexpr (not std::is_void_v<Inspect>) {
+        inspect->essential(essential_unigrams.size() + essential_bigrams.size());
+    }
 
     std::vector<decltype(index.scored_cursor(0, scorer))> essential_unigram_cursors;
     std::transform(essential_unigrams.begin(),
@@ -644,7 +659,7 @@ struct BaseUnionLookupInspect {
     BaseUnionLookupInspect(Index const& index, Scorer scorer)
         : m_index(index), m_scorer(std::move(scorer))
     {
-        std::cout << fmt::format("documents\tpostings\tinserts\tlookups\n");
+        std::cout << fmt::format("documents\tpostings\tinserts\tlookups\tessential_lists\n");
     }
 
     void reset_current()
@@ -653,6 +668,7 @@ struct BaseUnionLookupInspect {
         m_current_postings = 0;
         m_current_lookups = 0;
         m_current_inserts = 0;
+        m_essential_lists = 0;
     }
 
     virtual void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) = 0;
@@ -668,15 +684,17 @@ struct BaseUnionLookupInspect {
 
         reset_current();
         run(query, m_index, m_scorer, topk_queue(query.k()));
-        std::cout << fmt::format("{}\t{}\t{}\t{}\n",
+        std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\n",
                                  m_current_documents,
                                  m_current_postings,
                                  m_current_inserts,
-                                 m_current_lookups);
+                                 m_current_lookups,
+                                 m_current_essential_lists);
         m_documents += m_current_documents;
         m_postings += m_current_postings;
         m_lookups += m_current_lookups;
         m_inserts += m_current_inserts;
+        m_essential_lists += m_current_essential_lists;
         m_count += 1;
     }
 
@@ -684,29 +702,33 @@ struct BaseUnionLookupInspect {
     {
         std::cerr << fmt::format(
             "=== SUMMARY ===\nAverage:\n- documents:\t{}\n"
-            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n",
+            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n- essential lists:\t{}\n",
             static_cast<float>(m_documents) / m_count,
             static_cast<float>(m_postings) / m_count,
             static_cast<float>(m_inserts) / m_count,
-            static_cast<float>(m_lookups) / m_count);
+            static_cast<float>(m_lookups) / m_count,
+            static_cast<float>(m_essential_lists) / m_count);
     }
 
     void document() { m_current_documents += 1; }
     void posting() { m_current_postings += 1; }
     void lookup() { m_current_lookups += 1; }
     void insert() { m_current_inserts += 1; }
+    void essential(std::size_t n) { m_current_essential_lists = n; }
 
    private:
     std::size_t m_current_documents = 0;
     std::size_t m_current_postings = 0;
     std::size_t m_current_lookups = 0;
     std::size_t m_current_inserts = 0;
+    std::size_t m_current_essential_lists = 0;
 
     std::size_t m_documents = 0;
     std::size_t m_postings = 0;
     std::size_t m_lookups = 0;
     std::size_t m_inserts = 0;
     std::size_t m_count = 0;
+    std::size_t m_essential_lists = 0;
     Index const& m_index;
     Scorer m_scorer;
 };

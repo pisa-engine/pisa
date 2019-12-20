@@ -5,6 +5,7 @@
 #include <CLI/CLI.hpp>
 #include <range/v3/view/filter.hpp>
 #include <range/v3/view/transform.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
@@ -39,6 +40,9 @@ namespace arg = pisa::arg;
 
 int main(int argc, char** argv)
 {
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     pisa::App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app(
         "Filters out empty queries against a v1 index.");
     CLI11_PARSE(app, argc, argv);
