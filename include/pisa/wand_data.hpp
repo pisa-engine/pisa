@@ -75,15 +75,17 @@ class wand_data {
         {
             pisa::progress progress("Storing score upper bounds", coll.size());
             size_t term_id = 0;
+            size_t new_term_id = 0;
             for (auto const &seq : coll) {
                 if(terms_to_drop.find(term_id) != terms_to_drop.end()){
                     progress.update(1);
                     term_id += 1;
                     continue;
                 }
-                auto v = builder.add_sequence(seq, coll, doc_lens, m_avg_len, scorer->term_scorer(term_id), block_size);
+                auto v = builder.add_sequence(seq, coll, doc_lens, m_avg_len, scorer->term_scorer(new_term_id), block_size);
                 max_term_weight.push_back(v);
                 term_id += 1;
+                new_term_id += 1;
                 progress.update(1);
             }
         }
