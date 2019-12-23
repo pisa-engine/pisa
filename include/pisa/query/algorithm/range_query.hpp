@@ -2,15 +2,13 @@
 
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
-#include "topk_queue.hpp"
 
 namespace pisa {
 
 template <typename QueryAlg>
 struct range_query {
 
-    range_query(topk_queue &topk)
-        : m_topk(topk) {}
+    range_query(topk_queue &topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(CursorRange &&cursors, uint64_t max_docid, size_t range_size)
@@ -20,8 +18,7 @@ struct range_query {
             return;
         }
 
-        for (size_t end = range_size;
-             end + range_size < max_docid; end += range_size) {
+        for (size_t end = range_size; end + range_size < max_docid; end += range_size) {
             process_range(cursors, end);
         }
         process_range(cursors, max_docid);

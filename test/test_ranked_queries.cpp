@@ -117,7 +117,8 @@ TEMPLATE_TEST_CASE("Ranked query test",
         auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
         topk_queue topk_1(10);
         TestType op_q(topk_1);
-        ranked_or_query or_q(10);
+        topk_queue topk_2(10);
+        ranked_or_query or_q(topk_2);
 
         auto scorer = scorer::from_name(s_name, data->wdata);
         for (auto const &q : data->queries) {
@@ -125,13 +126,14 @@ TEMPLATE_TEST_CASE("Ranked query test",
             op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
                  data->index.num_docs());
             topk_1.finalize();
-            REQUIRE(or_q.topk().size() == topk_1.topk().size());
-            for (size_t i = 0; i < or_q.topk().size(); ++i) {
-                REQUIRE(or_q.topk()[i].first
+            topk_2.finalize();
+            REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+            for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+                REQUIRE(topk_2.topk()[i].first
                         == Approx(topk_1.topk()[i].first).epsilon(0.1)); // tolerance is % relative
             }
             topk_1.clear();
-
+            topk_2.clear();
         }
     }
 }
@@ -172,19 +174,25 @@ TEST_CASE("Top k")
     for (auto &&s_name : {"bm25", "qld"}) {
         std::unordered_set<size_t> dropped_term_ids;
         auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
-        ranked_or_query or_10(10);
-        ranked_or_query or_1(1);
+        topk_queue topk_1(10);
+        ranked_or_query or_10(topk_1);
+        topk_queue topk_2(1);
+        ranked_or_query or_1(topk_2);
 
         auto scorer = scorer::from_name(s_name, data->wdata);
 
         for (auto const &q : data->queries) {
             or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             or_1(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            topk_1.finalize();
+            topk_2.finalize();
             if (not or_10.topk().empty()) {
                 REQUIRE(not or_1.topk().empty());
                 REQUIRE(or_1.topk().front().first
                         == Approx(or_10.topk().front().first).epsilon(0.1));
             }
+            topk_1.clear();
+            topk_2.clear();
         }
     }
 }

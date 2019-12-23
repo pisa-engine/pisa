@@ -8,14 +8,13 @@ namespace pisa {
 
 struct ranked_or_query {
 
-    ranked_or_query(uint64_t k)
-        : m_topk(k){}
+    ranked_or_query(topk_queue &topk)
+        : m_topk(topk){}
 
     template <typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
+    void operator()(CursorRange &&cursors, uint64_t max_docid) {
       using Cursor = typename std::decay_t<CursorRange>::value_type;
-      m_topk.clear();
-        if (cursors.empty()) return 0;
+        if (cursors.empty()) return;
         uint64_t cur_doc =
             std::min_element(cursors.begin(), cursors.end(),
                              [](Cursor const &lhs, Cursor const &rhs) {
@@ -39,15 +38,12 @@ struct ranked_or_query {
             m_topk.insert(score, cur_doc);
             cur_doc = next_doc;
         }
-
-        m_topk.finalize();
-        return m_topk.topk().size();
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue      m_topk;
+    topk_queue      &m_topk;
 };
 
 }  // namespace pisa
