@@ -11,12 +11,10 @@ struct block_max_wand_query {
         : m_topk(topk) {}
 
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
+    void operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        m_topk.clear();
-
         if (cursors.empty())
-            return 0;
+            return;
 
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -162,9 +160,6 @@ struct block_max_wand_query {
                 }
             }
         }
-
-        m_topk.finalize();
-        return m_topk.topk().size();
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
