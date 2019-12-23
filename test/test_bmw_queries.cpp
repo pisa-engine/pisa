@@ -73,8 +73,10 @@ auto test(Wand &wdata, std::string const &s_name)
 {
     std::unordered_set<size_t> dropped_term_ids;
     auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
-    block_max_wand_query op_q(10);
-    wand_query wand_q(10);
+    topk_queue topk_1(10);
+    block_max_wand_query op_q(topk_1);
+    topk_queue topk_2(10);
+    wand_query wand_q(topk_2);
     auto scorer = scorer::from_name(s_name, data->wdata);
 
     for (auto const &q : data->queries) {

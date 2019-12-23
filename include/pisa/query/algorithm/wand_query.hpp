@@ -4,13 +4,14 @@
 
 #include "topk_queue.hpp"
 #include "query/queries.hpp"
+#include "topk_queue.hpp"
 
 namespace pisa {
 
 struct wand_query {
 
-    wand_query(uint64_t k)
-        : m_topk(k) {}
+    wand_query(topk_queue &topk)
+        : m_topk(topk) {}
 
     template<typename CursorRange>
     uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
@@ -94,7 +95,7 @@ struct wand_query {
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue      m_topk;
+    topk_queue      &m_topk;
 };
 
 } // namespace pisa
