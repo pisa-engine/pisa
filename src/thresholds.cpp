@@ -52,11 +52,13 @@ void thresholds(const std::string &index_filename,
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
-
-    wand_query wand_q(k);
+    topk_queue topk(k);
+    wand_query wand_q(topk);
     for (auto const &query : queries) {
         wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-        auto  results   = wand_q.topk();
+        topk.finalize();
+        auto  results   = topk.topk();
+        topk.clear();
         float threshold = 0.0;
         if (results.size() == k) {
             threshold = results.back().first;

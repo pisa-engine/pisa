@@ -69,62 +69,80 @@ void evaluate_queries(const std::string &index_filename,
 
     if (query_type == "wand" && wand_data_filename) {
         query_fun = [&](Query query) {
-            wand_query wand_q(k);
+            topk_queue topk(k);
+            wand_query wand_q(topk);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            return wand_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "block_max_wand" && wand_data_filename) {
         query_fun = [&](Query query) {
-            block_max_wand_query block_max_wand_q(k);
+            topk_queue topk(k);
+            block_max_wand_query block_max_wand_q(topk);
             block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                              index.num_docs());
-            return block_max_wand_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "block_max_maxscore" && wand_data_filename) {
         query_fun = [&](Query query) {
-            block_max_maxscore_query block_max_maxscore_q(k);
+            topk_queue topk(k);
+            block_max_maxscore_query block_max_maxscore_q(topk);
             block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                                  index.num_docs());
-            return block_max_maxscore_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
         query_fun = [&](Query query) {
-            block_max_ranked_and_query block_max_ranked_and_q(k);
+            topk_queue topk(k);
+            block_max_ranked_and_query block_max_ranked_and_q(topk);
             block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                                    index.num_docs());
-            return block_max_ranked_and_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "ranked_and" && wand_data_filename) {
         query_fun = [&](Query query) {
-            ranked_and_query ranked_and_q(k);
+            topk_queue topk(k);
+            ranked_and_query ranked_and_q(topk);
             ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            return ranked_and_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "ranked_or" && wand_data_filename) {
         query_fun = [&](Query query) {
-            ranked_or_query ranked_or_q(k);
+            topk_queue topk(k);
+            ranked_or_query ranked_or_q(topk);
             ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            return ranked_or_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "maxscore" && wand_data_filename) {
         query_fun = [&](Query query) {
-            maxscore_query maxscore_q(k);
+            topk_queue topk(k);
+            maxscore_query maxscore_q(topk);
             maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            return maxscore_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "ranked_or_taat" && wand_data_filename) {
         query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
-            ranked_or_taat_query ranked_or_taat_q(k);
+            topk_queue topk(k);
+            ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
                 make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            return ranked_or_taat_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
         query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
-            ranked_or_taat_query ranked_or_taat_q(k);
+            topk_queue topk(k);
+            ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
                 make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            return ranked_or_taat_q.topk();
+            topk.finalize();
+            return topk.topk();
         };
     } else {
         spdlog::error("Unsupported query type: {}", query_type);

@@ -6,19 +6,20 @@
 
 #include "accumulator/simple_accumulator.hpp"
 
+#include "topk_queue.hpp"
+
 namespace pisa {
 
 class ranked_or_taat_query {
    public:
-    ranked_or_taat_query(uint64_t k)
-        : m_topk(k) {}
+    ranked_or_taat_query(topk_queue &topk)
+        : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid, Acc &&accumulator) {
+    void operator()(CursorRange &&cursors, uint64_t max_docid, Acc &&accumulator) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        m_topk.clear();
         if (cursors.empty()) {
-            return 0;
+            return;
         }
         accumulator.init();
 
@@ -31,14 +32,12 @@ class ranked_or_taat_query {
             }
         }
         accumulator.aggregate(m_topk);
-        m_topk.finalize();
-        return m_topk.topk().size();
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue m_topk;
+    topk_queue &m_topk;
 };
 
 };  // namespace pisa

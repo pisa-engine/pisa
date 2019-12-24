@@ -73,20 +73,25 @@ auto test(Wand &wdata, std::string const &s_name)
 {
     std::unordered_set<size_t> dropped_term_ids;
     auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
-    block_max_wand_query op_q(10);
-    wand_query wand_q(10);
+    topk_queue topk_1(10);
+    block_max_wand_query op_q(topk_1);
+    topk_queue topk_2(10);
+    wand_query wand_q(topk_2);
     auto scorer = scorer::from_name(s_name, data->wdata);
 
     for (auto const &q : data->queries) {
         wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());
         op_q(make_block_max_scored_cursors(data->index, wdata, *scorer, q), data->index.num_docs());
-        REQUIRE(wand_q.topk().size() == op_q.topk().size());
+        topk_1.finalize();
+        topk_2.finalize();
+        REQUIRE(topk_2.topk().size() == topk_1.topk().size());
 
         for (size_t i = 0; i < wand_q.topk().size(); ++i) {
-            REQUIRE(wand_q.topk()[i].first
-                    == Approx(op_q.topk()[i].first).epsilon(0.01)); // tolerance is % relative
+            REQUIRE(topk_2.topk()[i].first
+                    == Approx(topk_1.topk()[i].first).epsilon(0.01)); // tolerance is % relative
         }
-        op_q.clear_topk();
+        topk_1.clear();
+        topk_2.clear();
     }
 }
 
