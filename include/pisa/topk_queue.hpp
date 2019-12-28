@@ -26,7 +26,7 @@ struct topk_queue {
 
     bool insert(float score, uint64_t docid)
     {
-        if (PISA_UNLIKELY(score <= m_threshold)) {
+        if (PISA_UNLIKELY(score < m_threshold)) {
             return false;
         }
         m_q.emplace_back(score, docid);
@@ -66,6 +66,7 @@ struct topk_queue {
     }
 
     [[nodiscard]] uint64_t size() const noexcept { return m_k; }
+    [[nodiscard]] auto full() const noexcept -> bool { return m_q.size() == m_k; }
 
     void set_threshold(float threshold) noexcept { m_threshold = threshold; }
 

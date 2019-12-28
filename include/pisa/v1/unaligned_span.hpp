@@ -142,6 +142,7 @@ struct UnalignedSpan {
     [[nodiscard]] auto size() const -> std::size_t { return m_bytes.size() / sizeof(value_type); }
     [[nodiscard]] auto byte_size() const -> std::size_t { return m_bytes.size(); }
     [[nodiscard]] auto bytes() const -> gsl::span<std::byte const> { return m_bytes; }
+    [[nodiscard]] auto empty() const -> bool { return m_bytes.empty(); }
 
    private:
     gsl::span<std::byte const> m_bytes{};

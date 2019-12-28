@@ -106,8 +106,9 @@ set(TRECPP_BUILD_TOOL OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/trecpp)
 
 # Add trecpp
+set(JSON_MultipleHeaders ON CACHE BOOL "")
 set(WAPOPP_ENABLE_TESTING OFF CACHE BOOL "skip wapopp testing")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp EXCLUDE_FROM_ALL)
 
 # Add fmt
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
@@ -134,5 +135,6 @@ target_compile_options(rapidcheck PRIVATE -Wno-error=all)
 # Add json
 # TODO(michal): I had to comment this out because `wapocpp` already adds this target.
 #               How should we deal with it?
-# set(JSON_BuildTests OFF CACHE BOOL "skip building JSON tests")
-# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/json)
+#set(JSON_MultipleHeaders ON CACHE BOOL "")
+#set(JSON_BuildTests OFF CACHE BOOL "skip building JSON tests")
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/json)

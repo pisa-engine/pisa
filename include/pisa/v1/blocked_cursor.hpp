@@ -11,7 +11,6 @@
 #include <gsl/span>
 #include <tl/optional.hpp>
 
-#include "codec/block_codecs.hpp"
 #include "util/likely.hpp"
 #include "v1/bit_cast.hpp"
 #include "v1/cursor_traits.hpp"
@@ -21,195 +20,223 @@
 
 namespace pisa::v1 {
 
-/// Uncompressed example of implementation of a single value cursor.
-template <typename Codec, bool DeltaEncoded>
-struct BlockedCursor {
+/// Non-template base of blocked cursors.
+struct BaseBlockedCursor {
     using value_type = std::uint32_t;
+    using offset_type = std::uint32_t;
+    using size_type = std::uint32_t;
 
     /// Creates a cursor from the encoded bytes.
-    explicit constexpr BlockedCursor(gsl::span<std::byte const> encoded_blocks,
-                                     UnalignedSpan<value_type const> block_endpoints,
-                                     UnalignedSpan<value_type const> block_last_values,
-                                     std::uint32_t length,
-                                     std::uint32_t num_blocks)
+    BaseBlockedCursor(gsl::span<std::byte const> encoded_blocks,
+                      UnalignedSpan<value_type const> block_endpoints,
+                      size_type length,
+                      size_type num_blocks,
+                      size_type block_length)
         : m_encoded_blocks(encoded_blocks),
           m_block_endpoints(block_endpoints),
+          m_decoded_block(block_length),
+          m_length(length),
+          m_num_blocks(num_blocks),
+          m_block_length(block_length),
+          m_current_block({.number = 0,
+                           .offset = 0,
+                           .length = std::min(length, static_cast<size_type>(m_block_length))})
+    {
+    }
+
+    BaseBlockedCursor(BaseBlockedCursor const&) = default;
+    BaseBlockedCursor(BaseBlockedCursor&&) noexcept = default;
+    BaseBlockedCursor& operator=(BaseBlockedCursor const&) = default;
+    BaseBlockedCursor& operator=(BaseBlockedCursor&&) noexcept = default;
+    ~BaseBlockedCursor() = default;
+
+    [[nodiscard]] auto operator*() const -> value_type;
+    [[nodiscard]] auto value() const noexcept -> value_type;
+    [[nodiscard]] auto empty() const noexcept -> bool;
+    [[nodiscard]] auto position() const noexcept -> std::size_t;
+    [[nodiscard]] auto size() const -> std::size_t;
+    [[nodiscard]] auto sentinel() const -> value_type;
+
+   protected:
+    struct Block {
+        std::uint32_t number = 0;
+        std::uint32_t offset = 0;
+        std::uint32_t length = 0;
+    };
+
+    [[nodiscard]] auto block_offset(size_type block) const -> offset_type;
+    [[nodiscard]] auto decoded_block() -> value_type*;
+    [[nodiscard]] auto decoded_value(size_type n) -> value_type;
+    [[nodiscard]] auto encoded_block(offset_type offset) -> uint8_t const*;
+    [[nodiscard]] auto length() const -> size_type;
+    [[nodiscard]] auto num_blocks() const -> size_type;
+    [[nodiscard]] auto current_block() -> Block&;
+    void update_current_value(value_type val);
+    void increase_current_value(value_type val);
+
+   private:
+    gsl::span<std::byte const> m_encoded_blocks;
+    UnalignedSpan<const offset_type> m_block_endpoints;
+    std::vector<value_type> m_decoded_block{};
+    size_type m_length;
+    size_type m_num_blocks;
+    size_type m_block_length;
+    Block m_current_block;
+
+    value_type m_current_value{};
+};
+
+template <typename Codec, bool DeltaEncoded>
+struct GenericBlockedCursor : public BaseBlockedCursor {
+    using BaseBlockedCursor::offset_type;
+    using BaseBlockedCursor::size_type;
+    using BaseBlockedCursor::value_type;
+
+    GenericBlockedCursor(gsl::span<std::byte const> encoded_blocks,
+                         UnalignedSpan<offset_type const> block_endpoints,
+                         UnalignedSpan<value_type const> block_last_values,
+                         std::uint32_t length,
+                         std::uint32_t num_blocks)
+        : BaseBlockedCursor(encoded_blocks, block_endpoints, length, num_blocks, Codec::block_size),
           m_block_last_values(block_last_values),
-          m_length(length),
-          m_num_blocks(num_blocks),
-          m_current_block(
-              {.number = 0,
-               .offset = 0,
-               .length = std::min(length, static_cast<std::uint32_t>(Codec::block_size)),
-               .last_value = m_block_last_values[0]})
+          m_current_block_last_value(m_block_last_values.empty() ? value_type{}
+                                                                 : m_block_last_values[0])
     {
-        static_assert(DeltaEncoded,
-                      "Cannot initialize block_last_values for not delta-encoded list");
-        m_decoded_block.resize(Codec::block_size);
         reset();
     }
-
-    /// Creates a cursor from the encoded bytes.
-    explicit constexpr BlockedCursor(gsl::span<std::byte const> encoded_blocks,
-                                     UnalignedSpan<value_type const> block_endpoints,
-                                     std::uint32_t length,
-                                     std::uint32_t num_blocks)
-        : m_encoded_blocks(encoded_blocks),
-          m_block_endpoints(block_endpoints),
-          m_length(length),
-          m_num_blocks(num_blocks),
-          m_current_block(
-              {.number = 0,
-               .offset = 0,
-               .length = std::min(length, static_cast<std::uint32_t>(Codec::block_size)),
-               .last_value = 0})
-    {
-        static_assert(not DeltaEncoded, "Must initialize block_last_values for delta-encoded list");
-        m_decoded_block.resize(Codec::block_size);
-        reset();
-    }
-
-    constexpr BlockedCursor(BlockedCursor const&) = default;
-    constexpr BlockedCursor(BlockedCursor&&) noexcept = default;
-    constexpr BlockedCursor& operator=(BlockedCursor const&) = default;
-    constexpr BlockedCursor& operator=(BlockedCursor&&) noexcept = default;
-    ~BlockedCursor() = default;
 
     void reset() { decode_and_update_block(0); }
 
-    /// Dereferences the current value.
-    [[nodiscard]] constexpr auto operator*() const -> value_type { return m_current_value; }
-
-    /// Alias for `operator*()`.
-    [[nodiscard]] constexpr auto value() const noexcept -> value_type { return *(*this); }
-
     /// Advances the cursor to the next position.
-    constexpr void advance()
+    void advance()
     {
-        m_current_block.offset += 1;
-        if (PISA_UNLIKELY(m_current_block.offset == m_current_block.length)) {
-            if (m_current_block.number + 1 == m_num_blocks) {
-                m_current_value = sentinel();
+        auto& current_block = this->current_block();
+        current_block.offset += 1;
+        if (PISA_UNLIKELY(current_block.offset == current_block.length)) {
+            if (current_block.number + 1 == num_blocks()) {
+                update_current_value(sentinel());
                 return;
             }
-            decode_and_update_block(m_current_block.number + 1);
+            decode_and_update_block(current_block.number + 1);
         } else {
             if constexpr (DeltaEncoded) {
-                m_current_value += m_decoded_block[m_current_block.offset] + 1U;
+                increase_current_value(decoded_value(current_block.offset));
             } else {
-                m_current_value = m_decoded_block[m_current_block.offset] + 1U;
+                update_current_value(decoded_value(current_block.offset));
             }
         }
     }
 
     /// Moves the cursor to the position `pos`.
-    constexpr void advance_to_position(std::uint32_t pos)
+    void advance_to_position(std::uint32_t pos)
     {
         Expects(pos >= position());
+        auto& current_block = this->current_block();
         auto block = pos / Codec::block_size;
-        if (PISA_UNLIKELY(block != m_current_block.number)) {
+        if (PISA_UNLIKELY(block != current_block.number)) {
             decode_and_update_block(block);
         }
         while (position() < pos) {
+            current_block.offset += 1;
             if constexpr (DeltaEncoded) {
-                m_current_value += m_decoded_block[++m_current_block.offset] + 1U;
+                increase_current_value(decoded_value(current_block.offset));
             } else {
-                m_current_value = m_decoded_block[++m_current_block.offset] + 1U;
+                update_current_value(decoded_value(current_block.offset));
             }
         }
     }
 
-    /// Moves the cursor to the next value equal or greater than `value`.
-    constexpr void advance_to_geq(value_type value)
+   protected:
+    [[nodiscard]] auto& block_last_values() { return m_block_last_values; }
+    [[nodiscard]] auto& current_block_last_value() { return m_current_block_last_value; }
+
+    void decode_and_update_block(size_type block)
     {
-        // static_assert(DeltaEncoded, "Cannot call advance_to_geq on a not delta-encoded list");
-        // TODO(michal): This should be `static_assert` like above. But currently,
-        //               it would not compile. What needs to be done is separating document
-        //               and payload readers for the index runner.
-        assert(DeltaEncoded);
-        if (PISA_UNLIKELY(value > m_current_block.last_value)) {
-            if (value > m_block_last_values.back()) {
-                m_current_value = sentinel();
-                return;
-            }
-            auto block = m_current_block.number + 1U;
-            while (m_block_last_values[block] < value) {
-                ++block;
-            }
-            decode_and_update_block(block);
-        }
-
-        while (m_current_value < value) {
-            m_current_value += m_decoded_block[++m_current_block.offset] + 1U;
-            Ensures(m_current_block.offset < m_current_block.length);
-        }
-    }
-
-    ///// Returns `true` if there is no elements left.
-    [[nodiscard]] constexpr auto empty() const noexcept -> bool { return position() == m_length; }
-
-    /// Returns the current position.
-    [[nodiscard]] constexpr auto position() const noexcept -> std::size_t
-    {
-        return m_current_block.number * Codec::block_size + m_current_block.offset;
-    }
-
-    ///// Returns the number of elements in the list.
-    [[nodiscard]] constexpr auto size() const -> std::size_t { return m_length; }
-
-    /// The sentinel value, such that `value() != nullopt` is equivalent to `*(*this) < sentinel()`.
-    [[nodiscard]] constexpr auto sentinel() const -> value_type
-    {
-        return std::numeric_limits<value_type>::max();
-    }
-
-   private:
-    struct Block {
-        std::uint32_t number = 0;
-        std::uint32_t offset = 0;
-        std::uint32_t length = 0;
-        value_type last_value = 0;
-    };
-
-    void decode_and_update_block(std::uint32_t block)
-    {
-        constexpr auto block_size = Codec::block_size;
-        auto endpoint = block > 0U ? m_block_endpoints[block - 1] : static_cast<value_type>(0U);
-        std::uint8_t const* block_data =
-            std::next(reinterpret_cast<std::uint8_t const*>(m_encoded_blocks.data()), endpoint);
-        m_current_block.length =
+        auto block_size = Codec::block_size;
+        auto const* block_data = encoded_block(block_offset(block));
+        auto& current_block = this->current_block();
+        current_block.length =
             ((block + 1) * block_size <= size()) ? block_size : (size() % block_size);
 
         if constexpr (DeltaEncoded) {
             std::uint32_t first_value = block > 0U ? m_block_last_values[block - 1] + 1U : 0U;
-            m_current_block.last_value = m_block_last_values[block];
+            m_current_block_last_value = m_block_last_values[block];
             Codec::decode(block_data,
-                          m_decoded_block.data(),
-                          m_current_block.last_value - first_value - (m_current_block.length - 1),
-                          m_current_block.length);
-            m_decoded_block[0] += first_value;
+                          decoded_block(),
+                          m_current_block_last_value - first_value - (current_block.length - 1),
+                          current_block.length);
+            decoded_block()[0] += first_value;
         } else {
             Codec::decode(block_data,
-                          m_decoded_block.data(),
+                          decoded_block(),
                           std::numeric_limits<std::uint32_t>::max(),
-                          m_current_block.length);
-            m_decoded_block[0] += 1;
+                          current_block.length);
+            decoded_block()[0] += 1;
         }
 
-        m_current_block.number = block;
-        m_current_block.offset = 0U;
-        m_current_value = m_decoded_block[0];
+        current_block.number = block;
+        current_block.offset = 0U;
+        update_current_value(decoded_block()[0]);
     }
 
-    gsl::span<std::byte const> m_encoded_blocks;
-    UnalignedSpan<const value_type> m_block_endpoints;
+   private:
     UnalignedSpan<const value_type> m_block_last_values{};
-    std::vector<value_type> m_decoded_block;
+    value_type m_current_block_last_value{};
+};
 
-    std::uint32_t m_length;
-    std::uint32_t m_num_blocks;
-    Block m_current_block{};
-    value_type m_current_value{};
+template <typename Codec>
+struct DocumentBlockedCursor : public GenericBlockedCursor<Codec, true> {
+    using offset_type = typename GenericBlockedCursor<Codec, true>::offset_type;
+    using size_type = typename GenericBlockedCursor<Codec, true>::size_type;
+    using value_type = typename GenericBlockedCursor<Codec, true>::value_type;
+
+    DocumentBlockedCursor(gsl::span<std::byte const> encoded_blocks,
+                          UnalignedSpan<offset_type const> block_endpoints,
+                          UnalignedSpan<value_type const> block_last_values,
+                          std::uint32_t length,
+                          std::uint32_t num_blocks)
+        : GenericBlockedCursor<Codec, true>(
+            encoded_blocks, block_endpoints, block_last_values, length, num_blocks)
+    {
+    }
+
+    /// Moves the cursor to the next value equal or greater than `value`.
+    void advance_to_geq(value_type value)
+    {
+        auto& current_block = this->current_block();
+        if (PISA_UNLIKELY(value > this->current_block_last_value())) {
+            if (value > this->block_last_values().back()) {
+                this->update_current_value(this->sentinel());
+                return;
+            }
+            auto block = current_block.number + 1U;
+            while (this->block_last_values()[block] < value) {
+                ++block;
+            }
+            this->decode_and_update_block(block);
+        }
+
+        while (this->value() < value) {
+            this->increase_current_value(this->decoded_value(++current_block.offset));
+            Ensures(current_block.offset < current_block.length);
+        }
+    }
+};
+
+template <typename Codec>
+struct PayloadBlockedCursor : public GenericBlockedCursor<Codec, false> {
+    using offset_type = typename GenericBlockedCursor<Codec, false>::offset_type;
+    using size_type = typename GenericBlockedCursor<Codec, false>::size_type;
+    using value_type = typename GenericBlockedCursor<Codec, false>::value_type;
+
+    PayloadBlockedCursor(gsl::span<std::byte const> encoded_blocks,
+                         UnalignedSpan<offset_type const> block_endpoints,
+                         std::uint32_t length,
+                         std::uint32_t num_blocks)
+        : GenericBlockedCursor<Codec, false>(
+            encoded_blocks, block_endpoints, {}, length, num_blocks)
+    {
+    }
 };
 
 template <bool DeltaEncoded>
@@ -223,11 +250,10 @@ constexpr auto block_encoding_type() -> std::uint32_t
 }
 
 template <typename Codec, bool DeltaEncoded>
-struct BlockedReader {
+struct GenericBlockedReader {
     using value_type = std::uint32_t;
 
     [[nodiscard]] auto read(gsl::span<const std::byte> bytes) const
-        -> BlockedCursor<Codec, DeltaEncoded>
     {
         std::uint32_t length;
         auto begin = reinterpret_cast<uint8_t const*>(bytes.data());
@@ -245,11 +271,10 @@ struct BlockedReader {
         auto encoded_blocks = bytes.subspan(length_byte_size + block_last_values.byte_size()
                                             + block_endpoints.byte_size());
         if constexpr (DeltaEncoded) {
-            return BlockedCursor<Codec, DeltaEncoded>(
+            return DocumentBlockedCursor<Codec>(
                 encoded_blocks, block_endpoints, block_last_values, length, num_blocks);
         } else {
-            return BlockedCursor<Codec, DeltaEncoded>(
-                encoded_blocks, block_endpoints, length, num_blocks);
+            return PayloadBlockedCursor<Codec>(encoded_blocks, block_endpoints, length, num_blocks);
         }
     }
 
@@ -260,8 +285,13 @@ struct BlockedReader {
     }
 };
 
+template <typename Codec>
+using DocumentBlockedReader = GenericBlockedReader<Codec, true>;
+template <typename Codec>
+using PayloadBlockedReader = GenericBlockedReader<Codec, false>;
+
 template <typename Codec, bool DeltaEncoded>
-struct BlockedWriter {
+struct GenericBlockedWriter {
     using value_type = std::uint32_t;
 
     constexpr static auto encoding() -> std::uint32_t
@@ -356,10 +386,21 @@ struct BlockedWriter {
     value_type m_last_value = 0U;
 };
 
-template <typename T, bool DeltaEncoded>
-struct CursorTraits<BlockedCursor<T, DeltaEncoded>> {
-    using Writer = BlockedWriter<T, DeltaEncoded>;
-    using Reader = BlockedReader<T, DeltaEncoded>;
+template <typename Codec>
+using DocumentBlockedWriter = GenericBlockedWriter<Codec, true>;
+template <typename Codec>
+using PayloadBlockedWriter = GenericBlockedWriter<Codec, false>;
+
+template <typename Codec>
+struct CursorTraits<DocumentBlockedCursor<Codec>> {
+    using Writer = DocumentBlockedWriter<Codec>;
+    using Reader = DocumentBlockedReader<Codec>;
+};
+
+template <typename Codec>
+struct CursorTraits<PayloadBlockedCursor<Codec>> {
+    using Writer = PayloadBlockedWriter<Codec>;
+    using Reader = PayloadBlockedReader<Codec>;
 };
 
 } // namespace pisa::v1

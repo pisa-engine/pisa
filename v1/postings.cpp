@@ -11,6 +11,7 @@
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 #include "v1/blocked_cursor.hpp"
+#include "v1/default_index_runner.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/query.hpp"
 #include "v1/raw_cursor.hpp"
@@ -21,22 +22,12 @@
 using pisa::App;
 using pisa::Query;
 using pisa::resolve_query_parser;
-using pisa::v1::BlockedReader;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
 using pisa::v1::RawReader;
 using pisa::v1::resolve_yml;
 
 namespace arg = pisa::arg;
-
-auto default_readers()
-{
-    return std::make_tuple(RawReader<std::uint32_t>{},
-                           RawReader<std::uint8_t>{},
-                           RawReader<float>{},
-                           BlockedReader<::pisa::simdbp_block, true>{},
-                           BlockedReader<::pisa::simdbp_block, false>{});
-}
 
 [[nodiscard]] auto load_source(std::optional<std::string> const& file)
     -> std::shared_ptr<mio::mmap_source>
@@ -127,7 +118,7 @@ int main(int argc, char** argv)
 
     if (query.terms.size() == 1) {
         if (precomputed) {
-            auto run = scored_index_runner(meta, default_readers());
+            auto run = scored_index_runner(meta);
             run([&](auto&& index) {
                 auto print = [&](auto&& cursor) {
                     if (did) {
@@ -144,7 +135,7 @@ int main(int argc, char** argv)
                 for_each(index.cursor(query.terms.front()), print);
             });
         } else {
-            auto run = index_runner(meta, default_readers());
+            auto run = index_runner(meta);
             run([&](auto&& index) {
                 auto bm25 = make_bm25(index);
                 auto scorer = bm25.term_scorer(query.terms.front());

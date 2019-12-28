@@ -19,6 +19,7 @@ constexpr char const* LEXICON = "lexicon";
 constexpr char const* TERMS = "terms";
 constexpr char const* BIGRAM = "bigram";
 constexpr char const* MAX_SCORES = "max_scores";
+constexpr char const* BLOCK_MAX_SCORES = "block_max_scores";
 constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
 
 [[nodiscard]] auto resolve_yml(tl::optional<std::string> const& arg) -> std::string
@@ -95,6 +96,13 @@ constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
                 }
                 return std::map<std::string, std::string>{};
             }(),
+        .block_max_scores =
+            [&]() {
+                if (config[BLOCK_MAX_SCORES]) {
+                    return config[BLOCK_MAX_SCORES].as<std::map<std::string, UnigramFilePaths>>();
+                }
+                return std::map<std::string, UnigramFilePaths>{};
+            }(),
         .quantized_max_scores =
             [&]() {
                 if (config[QUANTIZED_MAX_SCORES]) {
@@ -145,6 +153,11 @@ void IndexMetadata::write(std::string const& file) const
     if (not max_scores.empty()) {
         for (auto [key, value] : max_scores) {
             root[MAX_SCORES][key] = value;
+        }
+    }
+    if (not block_max_scores.empty()) {
+        for (auto [key, value] : block_max_scores) {
+            root[BLOCK_MAX_SCORES][key] = value;
         }
     }
     if (not quantized_max_scores.empty()) {

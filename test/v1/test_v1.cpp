@@ -9,6 +9,7 @@
 #include <rapidcheck.h>
 #include <tbb/task_scheduler_init.h>
 
+#include "binary_freq_collection.hpp"
 #include "io.hpp"
 #include "pisa_config.hpp"
 #include "v1/algorithm.hpp"
@@ -30,6 +31,7 @@ using pisa::v1::load_bytes;
 using pisa::v1::next;
 using pisa::v1::parse_type;
 using pisa::v1::PostingBuilder;
+using pisa::v1::PostingData;
 using pisa::v1::PostingFormatHeader;
 using pisa::v1::Primitive;
 using pisa::v1::RawReader;
@@ -228,23 +230,20 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                 auto payload_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
 
-                IndexRunner runner(document_offsets,
-                                   frequency_offsets,
-                                   {},
-                                   {},
-                                   document_span,
-                                   payload_span,
-                                   {},
+                IndexRunner runner(PostingData{document_span, document_offsets},
+                                   PostingData{payload_span, frequency_offsets},
                                    {},
                                    document_sizes,
                                    tl::nullopt,
                                    {},
                                    {},
-                                   tl::nullopt,
+                                   {},
                                    std::move(source),
-                                   RawReader<std::uint32_t>{},
-                                   RawReader<std::uint32_t>{}); // Repeat to test that it only
-                                                                // executes once
+                                   std::make_tuple(RawReader<std::uint32_t>{},
+                                                   RawReader<std::uint32_t>{}), // Repeat to test
+                                                                                // that it only
+                                                                                // executes once
+                                   std::make_tuple(RawReader<std::uint32_t>{}));
                 int counter = 0;
                 runner([&](auto index) {
                     counter += 1;
@@ -271,21 +270,18 @@ TEST_CASE("Build raw document-frequency index", "[v1][unit]")
                     reinterpret_cast<std::byte const*>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
-                IndexRunner runner(document_offsets,
-                                   frequency_offsets,
-                                   {},
-                                   {},
-                                   document_span,
-                                   payload_span,
-                                   {},
+                IndexRunner runner(PostingData{document_span, document_offsets},
+                                   PostingData{payload_span, frequency_offsets},
                                    {},
                                    document_sizes,
                                    tl::nullopt,
                                    {},
                                    {},
-                                   tl::nullopt,
+                                   {},
                                    std::move(source),
-                                   RawReader<float>{}); // Correct encoding but not type!
+                                   std::make_tuple(RawReader<float>{}), // Correct encoding but not
+                                                                        // type!
+                                   std::make_tuple());
                 REQUIRE_THROWS_AS(runner([&](auto index) {}), std::domain_error);
             }
         }

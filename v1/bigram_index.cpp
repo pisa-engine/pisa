@@ -1,5 +1,3 @@
-#include <chrono>
-#include <fstream>
 #include <iostream>
 #include <optional>
 
@@ -7,32 +5,15 @@
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
-#include "io.hpp"
-#include "query/queries.hpp"
-#include "timer.hpp"
-#include "topk_queue.hpp"
-#include "v1/blocked_cursor.hpp"
-#include "v1/cursor_intersection.hpp"
 #include "v1/index_builder.hpp"
-#include "v1/index_metadata.hpp"
 #include "v1/progress_status.hpp"
-#include "v1/query.hpp"
-#include "v1/raw_cursor.hpp"
-#include "v1/scorer/bm25.hpp"
-#include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
 
 using pisa::App;
 using pisa::v1::build_bigram_index;
 using pisa::v1::collect_unique_bigrams;
 using pisa::v1::DefaultProgress;
-using pisa::v1::DocId;
-using pisa::v1::Frequency;
-using pisa::v1::IndexMetadata;
 using pisa::v1::ProgressStatus;
-using pisa::v1::Query;
-using pisa::v1::resolve_yml;
-using pisa::v1::TermId;
 
 namespace arg = pisa::arg;
 

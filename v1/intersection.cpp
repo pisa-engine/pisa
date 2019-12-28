@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <tl/optional.hpp>
@@ -15,6 +15,7 @@
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/for_each.hpp"
 #include "v1/cursor_intersection.hpp"
+#include "v1/default_index_runner.hpp"
 #include "v1/raw_cursor.hpp"
 #include "v1/scorer/bm25.hpp"
 
@@ -22,7 +23,6 @@ using pisa::App;
 using pisa::Intersection;
 using pisa::intersection::IntersectionType;
 using pisa::intersection::Mask;
-using pisa::v1::BlockedReader;
 using pisa::v1::intersect;
 using pisa::v1::make_bm25;
 using pisa::v1::RawReader;
@@ -90,7 +90,7 @@ void compute_intersections(Index const& index,
         } else {
             inter(query, tl::nullopt);
         }
-        auto output = query.to_json();
+        auto output = *query.to_json();
         output["intersections"] = intersections;
         std::cout << output << '\n';
     }
@@ -122,10 +122,7 @@ int main(int argc, const char** argv)
         auto meta = app.index_metadata();
         auto queries = app.queries(meta);
 
-        auto run = index_runner(meta,
-                                // RawReader<std::uint32_t>{},
-                                BlockedReader<::pisa::simdbp_block, true>{},
-                                BlockedReader<::pisa::simdbp_block, false>{});
+        auto run = index_runner(meta);
         run([&](auto&& index) { compute_intersections(index, queries, intersection_type, mtc); });
     } catch (std::exception const& error) {
         spdlog::error("{}", error.what());

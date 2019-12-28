@@ -32,11 +32,11 @@ target_link_libraries(queries
 #  CLI11
 #)
 
-add_executable(thresholds thresholds.cpp)
-target_link_libraries(thresholds
-  pisa
-  CLI11
-)
+#add_executable(thresholds thresholds.cpp)
+#target_link_libraries(thresholds
+#  pisa
+#  CLI11
+#)
 
 #add_executable(profile_queries profile_queries.cpp)
 #target_link_libraries(profile_queries

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
@@ -151,5 +152,18 @@ struct CursorTraits<RawCursor<T>> {
     using Reader = RawReader<T>;
     constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 };
+
+extern template struct RawCursor<std::uint32_t>;
+extern template struct RawCursor<std::uint8_t>;
+extern template struct RawCursor<float>;
+extern template struct RawReader<std::uint32_t>;
+extern template struct RawReader<std::uint8_t>;
+extern template struct RawReader<float>;
+extern template struct RawWriter<std::uint32_t>;
+extern template struct RawWriter<std::uint8_t>;
+extern template struct RawWriter<float>;
+extern template struct CursorTraits<RawCursor<std::uint32_t>>;
+extern template struct CursorTraits<RawCursor<std::uint8_t>>;
+extern template struct CursorTraits<RawCursor<float>>;
 
 } // namespace pisa::v1

@@ -8,6 +8,7 @@
 #include <tl/optional.hpp>
 #include <yaml-cpp/yaml.h>
 
+#include "binary_freq_collection.hpp"
 #include "v1/index.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/progress_status.hpp"

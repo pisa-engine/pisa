@@ -38,14 +38,16 @@
 #include "v1/taat_or.hpp"
 #include "v1/types.hpp"
 #include "v1/union_lookup.hpp"
+#include "v1/wand.hpp"
 
 using namespace pisa;
-using pisa::v1::BlockedCursor;
 using pisa::v1::DocId;
+using pisa::v1::DocumentBlockedCursor;
 using pisa::v1::Frequency;
 using pisa::v1::Index;
 using pisa::v1::IndexMetadata;
 using pisa::v1::ListSelection;
+using pisa::v1::PayloadBlockedCursor;
 using pisa::v1::RawCursor;
 
 static constexpr auto RELATIVE_ERROR = 0.1F;
@@ -127,8 +129,8 @@ std::unique_ptr<IndexData<v0_Index, v1_Index, ScoredIndex>>
 TEMPLATE_TEST_CASE("Query",
                    "[v1][integration]",
                    (IndexFixture<RawCursor<DocId>, RawCursor<Frequency>, RawCursor<std::uint8_t>>),
-                   (IndexFixture<BlockedCursor<::pisa::simdbp_block, true>,
-                                 BlockedCursor<::pisa::simdbp_block, false>,
+                   (IndexFixture<DocumentBlockedCursor<::pisa::simdbp_block>,
+                                 PayloadBlockedCursor<::pisa::simdbp_block>,
                                  RawCursor<std::uint8_t>>))
 {
     tbb::task_scheduler_init init(1);
@@ -140,6 +142,10 @@ TEMPLATE_TEST_CASE("Query",
         {"daat_or", false},
         {"maxscore", false},
         {"maxscore", true},
+        {"wand", false},
+        {"wand", true},
+        {"bmw", false},
+        {"bmw", true},
         {"maxscore_union_lookup", true},
         {"unigram_union_lookup", true},
         {"union_lookup", true},
@@ -158,6 +164,12 @@ TEMPLATE_TEST_CASE("Query",
         }
         if (name == "maxscore") {
             return maxscore(query, index, topk_queue(10), scorer);
+        }
+        if (name == "wand") {
+            return wand(query, index, topk_queue(10), scorer);
+        }
+        if (name == "bmw") {
+            return bmw(query, index, topk_queue(10), scorer);
         }
         if (name == "maxscore_union_lookup") {
             return maxscore_union_lookup(query, index, topk_queue(10), scorer);
@@ -199,8 +211,9 @@ TEMPLATE_TEST_CASE("Query",
         }
 
         auto on_the_fly = [&]() {
-            auto run =
-                pisa::v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
+            auto run = pisa::v1::index_runner(meta,
+                                              std::make_tuple(fixture.document_reader()),
+                                              std::make_tuple(fixture.frequency_reader()));
             std::vector<typename topk_queue::entry_type> results;
             run([&](auto&& index) {
                 auto que = run_query(algorithm, query, index, make_bm25(index));
@@ -221,6 +234,17 @@ TEMPLATE_TEST_CASE("Query",
         expected.resize(on_the_fly.size());
         std::sort(expected.begin(), expected.end(), approximate_order);
 
+        if (algorithm == "bmw") {
+            for (size_t i = 0; i < on_the_fly.size(); ++i) {
+                std::cerr << fmt::format("{} {} -- {} {}\n",
+                                         on_the_fly[i].second,
+                                         on_the_fly[i].first,
+                                         expected[i].second,
+                                         expected[i].first);
+            }
+            std::cerr << '\n';
+        }
+
         for (size_t i = 0; i < on_the_fly.size(); ++i) {
             REQUIRE(on_the_fly[i].second == expected[i].second);
             REQUIRE(on_the_fly[i].first == Approx(expected[i].first).epsilon(RELATIVE_ERROR));
@@ -228,9 +252,14 @@ TEMPLATE_TEST_CASE("Query",
 
         idx += 1;
 
+        if (algorithm == "bmw") {
+            continue;
+        }
+
         auto precomputed = [&]() {
-            auto run =
-                v1::scored_index_runner(meta, fixture.document_reader(), fixture.score_reader());
+            auto run = pisa::v1::scored_index_runner(meta,
+                                                     std::make_tuple(fixture.document_reader()),
+                                                     std::make_tuple(fixture.score_reader()));
             std::vector<typename topk_queue::entry_type> results;
             run([&](auto&& index) {
                 auto que = run_query(algorithm, query, index, v1::VoidScorer{});

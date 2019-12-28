@@ -18,9 +18,10 @@ using Result = std::pair<DocId, Score>;
 using ByteOStream = std::basic_ostream<std::byte>;
 
 enum EncodingId {
-    Raw = 0xda43,
+    Raw = 0xDA43,
     BlockDelta = 0xEF00,
     Block = 0xFF00,
+    Sequence = 0xDF00,
     SimdBP = 0x0001,
     Varbyte = 0x0002
 };

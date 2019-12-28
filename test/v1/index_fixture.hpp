@@ -58,9 +58,13 @@ struct IndexFixture {
                                        v1::make_writer<FrequencyWriter>());
         auto errors = v1::verify_compressed_index(PISA_SOURCE_DIR "/test/test_data/test_collection",
                                                   index_basename);
+        for (auto&& error : errors) {
+            std::cerr << error << '\n';
+        }
         REQUIRE(errors.empty());
         auto yml = fmt::format("{}.yml", index_basename);
         auto meta = v1::score_index(v1::IndexMetadata::from_file(yml), 1);
+        meta = v1::bm_score_index(meta, 5, 1);
         v1::build_bigram_index(meta, collect_unique_bigrams(test_queries(), []() {}));
     }
 

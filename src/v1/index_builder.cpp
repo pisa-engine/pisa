@@ -1,6 +1,7 @@
 #include "v1/index_builder.hpp"
 #include "codec/simdbp.hpp"
 #include "v1/blocked_cursor.hpp"
+#include "v1/default_index_runner.hpp"
 #include "v1/query.hpp"
 #include "v1/raw_cursor.hpp"
 
@@ -12,7 +13,7 @@ auto collect_unique_bigrams(std::vector<Query> const& queries,
 {
     std::vector<std::pair<TermId, TermId>> bigrams;
     auto idx = 0;
-    for (auto query : queries) {
+    for (auto const& query : queries) {
         auto const& term_ids = query.get_term_ids();
         if (term_ids.empty()) {
             continue;
@@ -35,10 +36,7 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
     std::vector<std::string> errors;
     pisa::binary_freq_collection const collection(input.c_str());
     auto meta = IndexMetadata::from_file(fmt::format("{}.yml", output));
-    auto run = index_runner(meta,
-                            RawReader<std::uint32_t>{},
-                            BlockedReader<::pisa::simdbp_block, true>{},
-                            BlockedReader<::pisa::simdbp_block, false>{});
+    auto run = index_runner(meta);
     ProgressStatus status(
         collection.size(), DefaultProgress("Verifying"), std::chrono::milliseconds(100));
     run([&](auto&& index) {
@@ -65,7 +63,11 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
                 }
                 if (cursor.payload() != *fit) {
                     errors.push_back(
-                        fmt::format("Frequency mismatch for term {} at position {}", term, pos));
+                        fmt::format("Frequency mismatch for term {} at position {}: {} != {}",
+                                    term,
+                                    pos,
+                                    cursor.payload(),
+                                    *fit));
                 }
                 cursor.advance();
                 ++dit;
@@ -83,11 +85,7 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
                                              std::vector<std::pair<TermId, TermId>> const& bigrams)
     -> std::pair<PostingFilePaths, PostingFilePaths>
 {
-    auto run = scored_index_runner(std::move(meta),
-                                   RawReader<std::uint32_t>{},
-                                   RawReader<std::uint8_t>{},
-                                   BlockedReader<::pisa::simdbp_block, true>{},
-                                   BlockedReader<::pisa::simdbp_block, false>{});
+    auto run = scored_index_runner(std::move(meta));
 
     std::vector<std::array<TermId, 2>> pair_mapping;
     auto scores_file_0 = fmt::format("{}.bigram_bm25_0", index_basename);
@@ -148,10 +146,7 @@ auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId
 {
     Expects(not bigrams.empty());
     auto index_basename = meta.get_basename();
-    auto run = index_runner(meta,
-                            RawReader<std::uint32_t>{},
-                            BlockedReader<::pisa::simdbp_block, true>{},
-                            BlockedReader<::pisa::simdbp_block, false>{});
+    auto run = index_runner(meta);
 
     std::vector<std::array<TermId, 2>> pair_mapping;
     auto documents_file = fmt::format("{}.bigram_documents", index_basename);

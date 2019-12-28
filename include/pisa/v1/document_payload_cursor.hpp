@@ -11,8 +11,7 @@ struct DocumentPayloadCursor {
     using Document = decltype(*std::declval<DocumentCursor>());
     using Payload = decltype(*std::declval<PayloadCursor>());
 
-    explicit constexpr DocumentPayloadCursor(DocumentCursor key_cursor,
-                                             PayloadCursor payload_cursor)
+    constexpr DocumentPayloadCursor(DocumentCursor key_cursor, PayloadCursor payload_cursor)
         : m_key_cursor(std::move(key_cursor)), m_payload_cursor(std::move(payload_cursor))
     {
     }
@@ -46,5 +45,12 @@ struct DocumentPayloadCursor {
     DocumentCursor m_key_cursor;
     PayloadCursor m_payload_cursor;
 };
+
+template <typename DocumentCursor, typename PayloadCursor>
+[[nodiscard]] auto document_payload_cursor(DocumentCursor key_cursor, PayloadCursor payload_cursor)
+{
+    return DocumentPayloadCursor<DocumentCursor, PayloadCursor>(std::move(key_cursor),
+                                                                std::move(payload_cursor));
+}
 
 } // namespace pisa::v1

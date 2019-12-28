@@ -1,4 +1,3 @@
-#include <cstdint>
 #include <optional>
 #include <string>
 #include <thread>
@@ -14,14 +13,13 @@ namespace arg = pisa::arg;
 int main(int argc, char** argv)
 {
     std::optional<std::string> yml{};
-    int bytes_per_score = 1;
+    std::size_t block_size;
     std::size_t threads = std::thread::hardware_concurrency();
 
-    App<arg::Index, arg::Threads> app{"Scores v1 index."};
-    // TODO(michal): enable
-    // app.add_option(
-    //    "-b,--bytes-per-score", yml, "Quantize computed scores to this many bytes", true);
+    App<arg::Index, arg::Threads> app{"Constructs block-max score lists for v1 index."};
+    app.add_option("--block-size", block_size, "The size of a block for max scores", false)
+        ->required();
     CLI11_PARSE(app, argc, argv);
-    pisa::v1::score_index(app.index_metadata(), app.threads());
+    pisa::v1::bm_score_index(app.index_metadata(), block_size, app.threads());
     return 0;
 }

@@ -123,20 +123,20 @@ template <typename T>
     }
 }
 
-[[nodiscard]] auto Query::to_json() const -> nlohmann::json
+[[nodiscard]] auto Query::to_json() const -> std::unique_ptr<nlohmann::json>
 {
-    json query;
+    auto query = std::make_unique<json>();
     if (m_id) {
-        query["id"] = *m_id;
+        (*query)["id"] = *m_id;
     }
     if (m_raw_string) {
-        query["query"] = *m_raw_string;
+        (*query)["query"] = *m_raw_string;
     }
     if (m_term_ids) {
-        query["term_ids"] = m_term_ids->get();
+        (*query)["term_ids"] = m_term_ids->get();
     }
     if (m_threshold) {
-        query["threshold"] = *m_threshold;
+        (*query)["threshold"] = *m_threshold;
     }
     // TODO(michal)
     // tl::optional<ListSelection> m_selections{};

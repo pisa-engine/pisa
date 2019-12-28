@@ -8,6 +8,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
+option(PISA_COMPILE_TOOLS "Compile CLI tools." ON)
+option(FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." ON)
+option(PISA_LIBCXX "Use libc++ standard library." OFF)
 
 configure_file(
   ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp.in
@@ -29,6 +32,7 @@ ExternalProject_Add(gumbo-external
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
+    BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a
     BUILD_COMMAND ${MAKE})
 add_library(gumbo::gumbo STATIC IMPORTED)
 set_property(TARGET gumbo::gumbo APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -45,7 +49,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake"
 find_package(codecov)
 list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
 
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DGSL_UNENFORCED_ON_CONTRACT_VIOLATION")
 if (UNIX)
    # For hardware popcount and other special instructions
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -59,8 +64,21 @@ if (UNIX)
 
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
 
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -Wfatal-errors")
 
+   if (${FORCE_COLORED_OUTPUT})
+       if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+       elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+          set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
+       endif ()
+   endif ()
+
+endif()
+
+if (PISA_LIBCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++ -lc++abi")
 endif()
 
 find_package(OpenMP)
@@ -106,12 +124,14 @@ target_link_libraries(pisa PUBLIC
 )
 target_include_directories(pisa PUBLIC external)
 
-add_subdirectory(v1)
-add_subdirectory(src)
+if (PISA_COMPILE_TOOLS)
+    add_subdirectory(v1)
+    add_subdirectory(src)
+endif()
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()
-    add_subdirectory(test)
+    #add_subdirectory(test)
     add_subdirectory(test/v1)
 endif()
 

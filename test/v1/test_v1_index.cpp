@@ -13,19 +13,20 @@
 #include "pisa_config.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"
+#include "v1/default_index_runner.hpp"
 #include "v1/index.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/types.hpp"
 
 using pisa::binary_freq_collection;
-using pisa::v1::BlockedReader;
-using pisa::v1::BlockedWriter;
 using pisa::v1::compress_binary_collection;
 using pisa::v1::DocId;
+using pisa::v1::DocumentBlockedWriter;
 using pisa::v1::Frequency;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
+using pisa::v1::PayloadBlockedWriter;
 using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
 using pisa::v1::TermId;
@@ -47,10 +48,7 @@ TEST_CASE("Binary collection index", "[v1][unit]")
     REQUIRE(meta.frequencies.postings == (tmpdir.path() / "index.frequencies").string());
     REQUIRE(meta.frequencies.offsets == (tmpdir.path() / "index.frequency_offsets").string());
     REQUIRE(meta.document_lengths_path == (tmpdir.path() / "index.document_lengths").string());
-    auto run = index_runner(meta,
-                            RawReader<DocId>{},
-                            BlockedReader<pisa::simdbp_block, false>{},
-                            BlockedReader<pisa::simdbp_block, true>{});
+    auto run = index_runner(meta);
     run([&](auto index) {
         REQUIRE(bci.num_docs() == index.num_documents());
         REQUIRE(bci.size() == index.num_terms());
@@ -74,18 +72,15 @@ TEST_CASE("Binary collection index -- SIMDBP", "[v1][unit]")
                                (tmpdir.path() / "fwd").string(),
                                (tmpdir.path() / "index").string(),
                                8,
-                               make_writer(BlockedWriter<::pisa::simdbp_block, true>{}),
-                               make_writer(BlockedWriter<::pisa::simdbp_block, false>{}));
+                               make_writer(DocumentBlockedWriter<::pisa::simdbp_block>{}),
+                               make_writer(PayloadBlockedWriter<::pisa::simdbp_block>{}));
     auto meta = IndexMetadata::from_file((tmpdir.path() / "index.yml").string());
     REQUIRE(meta.documents.postings == (tmpdir.path() / "index.documents").string());
     REQUIRE(meta.documents.offsets == (tmpdir.path() / "index.document_offsets").string());
     REQUIRE(meta.frequencies.postings == (tmpdir.path() / "index.frequencies").string());
     REQUIRE(meta.frequencies.offsets == (tmpdir.path() / "index.frequency_offsets").string());
     REQUIRE(meta.document_lengths_path == (tmpdir.path() / "index.document_lengths").string());
-    auto run = index_runner(meta,
-                            RawReader<DocId>{},
-                            BlockedReader<pisa::simdbp_block, false>{},
-                            BlockedReader<pisa::simdbp_block, true>{});
+    auto run = index_runner(meta);
     run([&](auto index) {
         REQUIRE(bci.num_docs() == index.num_documents());
         REQUIRE(bci.size() == index.num_terms());

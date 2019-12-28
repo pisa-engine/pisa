@@ -19,20 +19,10 @@
 #include "v1/posting_builder.hpp"
 #include "v1/types.hpp"
 
-using pisa::v1::BlockedReader;
-using pisa::v1::BlockedWriter;
-using pisa::v1::collect;
-using pisa::v1::compress_binary_collection;
 using pisa::v1::DocId;
 using pisa::v1::DocumentPayloadCursor;
 using pisa::v1::Frequency;
-using pisa::v1::index_runner;
-using pisa::v1::IndexMetadata;
-using pisa::v1::load_bytes;
-using pisa::v1::PostingBuilder;
 using pisa::v1::RawCursor;
-using pisa::v1::RawReader;
-using pisa::v1::read_sizes;
 using pisa::v1::TermId;
 
 TEST_CASE("Document-payload cursor", "[v1][unit]")

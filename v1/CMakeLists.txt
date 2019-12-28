@@ -10,6 +10,9 @@ target_link_libraries(postings pisa CLI11)
 add_executable(score score.cpp)
 target_link_libraries(score pisa CLI11)
 
+add_executable(bmscore bmscore.cpp)
+target_link_libraries(bmscore pisa CLI11)
+
 add_executable(bigram-index bigram_index.cpp)
 target_link_libraries(bigram-index pisa CLI11)
 

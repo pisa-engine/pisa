@@ -21,19 +21,13 @@
 #include "v1/io.hpp"
 #include "v1/maxscore.hpp"
 #include "v1/posting_builder.hpp"
+#include "v1/scorer/bm25.hpp"
 #include "v1/types.hpp"
 
-using pisa::v1::BlockedReader;
-using pisa::v1::BlockedWriter;
 using pisa::v1::collect;
 using pisa::v1::DocId;
 using pisa::v1::Frequency;
-using pisa::v1::IndexRunner;
 using pisa::v1::join_maxscore;
-using pisa::v1::PostingBuilder;
-using pisa::v1::RawReader;
-using pisa::v1::read_sizes;
-using pisa::v1::TermId;
 using pisa::v1::accumulate::Add;
 
 TEMPLATE_TEST_CASE("Max score join",
@@ -57,8 +51,9 @@ TEMPLATE_TEST_CASE("Max score join",
             auto add = [](auto score, auto&& cursor, [[maybe_unused]] auto idx) {
                 return score + cursor.payload();
             };
-            auto run =
-                v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
+            auto run = v1::index_runner(meta,
+                                        std::make_tuple(fixture.document_reader()),
+                                        std::make_tuple(fixture.frequency_reader()));
             run([&](auto&& index) {
                 auto union_results = collect(v1::union_merge(
                     index.scored_cursors(gsl::make_span(q.get_term_ids()), make_bm25(index)),

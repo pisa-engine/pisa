@@ -1,20 +1,17 @@
 #include <fstream>
 #include <iostream>
-#include <optional>
 
 #include <CLI/CLI.hpp>
-#include <range/v3/view/filter.hpp>
-#include <range/v3/view/transform.hpp>
+#include <nlohmann/json.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
-#include "io.hpp"
 #include "query/queries.hpp"
-#include "timer.hpp"
 #include "topk_queue.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/daat_or.hpp"
+#include "v1/default_index_runner.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/query.hpp"
 #include "v1/raw_cursor.hpp"
@@ -22,13 +19,8 @@
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
 
-using pisa::resolve_query_parser;
-using pisa::v1::BlockedReader;
 using pisa::v1::index_runner;
-using pisa::v1::IndexMetadata;
 using pisa::v1::Query;
-using pisa::v1::RawReader;
-using pisa::v1::resolve_yml;
 using pisa::v1::VoidScorer;
 
 template <typename Index, typename Scorer>
@@ -46,7 +38,7 @@ void calculate_thresholds(Index&& index,
             threshold = results.topk().back().first;
         }
         query.threshold(threshold);
-        os << query.to_json() << '\n';
+        os << *query.to_json() << '\n';
     }
 }
 
@@ -70,11 +62,7 @@ int main(int argc, char** argv)
         auto queries = app.queries(meta);
 
         if (app.use_quantized()) {
-            auto run = scored_index_runner(meta,
-                                           RawReader<std::uint32_t>{},
-                                           RawReader<std::uint8_t>{},
-                                           BlockedReader<::pisa::simdbp_block, true>{},
-                                           BlockedReader<::pisa::simdbp_block, false>{});
+            auto run = scored_index_runner(meta);
             run([&](auto&& index) {
                 if (in_place) {
                     std::ofstream os(app.query_file().value());
@@ -84,10 +72,7 @@ int main(int argc, char** argv)
                 }
             });
         } else {
-            auto run = index_runner(meta,
-                                    RawReader<std::uint32_t>{},
-                                    BlockedReader<::pisa::simdbp_block, true>{},
-                                    BlockedReader<::pisa::simdbp_block, false>{});
+            auto run = index_runner(meta);
             run([&](auto&& index) {
                 auto with_scorer = scorer_runner(index, make_bm25(index));
                 with_scorer("bm25", [&](auto scorer) {

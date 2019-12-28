@@ -218,7 +218,7 @@ namespace pisa {
 
     typedef std::vector<pisa::time_prediction::predictor> predictors_vec_type;
 
-    predictors_vec_type load_predictors(const char* predictors_filename)
+    inline predictors_vec_type load_predictors(const char* predictors_filename)
     {
         std::vector<time_prediction::predictor> predictors(mixed_block::block_types);
 

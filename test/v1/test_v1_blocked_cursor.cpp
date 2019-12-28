@@ -19,13 +19,16 @@
 #include "v1/posting_builder.hpp"
 #include "v1/types.hpp"
 
-using pisa::v1::BlockedReader;
-using pisa::v1::BlockedWriter;
 using pisa::v1::collect;
 using pisa::v1::DocId;
+using pisa::v1::DocumentBlockedReader;
+using pisa::v1::DocumentBlockedWriter;
 using pisa::v1::Frequency;
 using pisa::v1::IndexRunner;
+using pisa::v1::PayloadBlockedReader;
+using pisa::v1::PayloadBlockedWriter;
 using pisa::v1::PostingBuilder;
+using pisa::v1::PostingData;
 using pisa::v1::RawReader;
 using pisa::v1::read_sizes;
 using pisa::v1::TermId;
@@ -38,7 +41,7 @@ TEST_CASE("Build single-block blocked document file", "[v1][unit]")
     std::vector<DocId> docids{3, 4, 5, 6, 7, 8, 9, 10, 51, 115};
     std::vector<std::byte> docbuf;
     auto document_offsets = [&]() {
-        PostingBuilder<DocId> document_builder(BlockedWriter<pisa::simdbp_block, true>{});
+        PostingBuilder<DocId> document_builder(DocumentBlockedWriter<pisa::simdbp_block>{});
         vector_stream_type docstream{sink_type{docbuf}};
         document_builder.write_header(docstream);
         document_builder.write_segment(docstream, docids.begin(), docids.end());
@@ -47,7 +50,7 @@ TEST_CASE("Build single-block blocked document file", "[v1][unit]")
 
     auto documents = gsl::span<std::byte const>(docbuf).subspan(8);
     CHECK(docbuf.size() == document_offsets.back() + 8);
-    BlockedReader<pisa::simdbp_block, true> document_reader;
+    DocumentBlockedReader<pisa::simdbp_block> document_reader;
     auto term = 0;
     auto actual = collect(document_reader.read(documents.subspan(
         document_offsets[term], document_offsets[term + 1] - document_offsets[term])));
@@ -67,8 +70,8 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
             std::vector<std::byte> docbuf;
             std::vector<std::byte> freqbuf;
 
-            PostingBuilder<DocId> document_builder(BlockedWriter<pisa::simdbp_block, true>{});
-            PostingBuilder<Frequency> frequency_builder(BlockedWriter<pisa::simdbp_block, false>{});
+            PostingBuilder<DocId> document_builder(DocumentBlockedWriter<pisa::simdbp_block>{});
+            PostingBuilder<Frequency> frequency_builder(PayloadBlockedWriter<pisa::simdbp_block>{});
             {
                 vector_stream_type docstream{sink_type{docbuf}};
                 vector_stream_type freqstream{sink_type{freqbuf}};
@@ -94,8 +97,8 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
             THEN("The values read back are euqual to the binary collection's")
             {
                 CHECK(docbuf.size() == document_offsets.back() + 8);
-                BlockedReader<pisa::simdbp_block, true> document_reader;
-                BlockedReader<pisa::simdbp_block, false> frequency_reader;
+                DocumentBlockedReader<pisa::simdbp_block> document_reader;
+                PayloadBlockedReader<pisa::simdbp_block> frequency_reader;
                 auto term = 0;
                 std::for_each(collection.begin(), collection.end(), [&](auto&& seq) {
                     std::vector<DocId> expected_documents(seq.docs.begin(), seq.docs.end());
@@ -123,22 +126,17 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
                 auto payload_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
 
-                IndexRunner runner(document_offsets,
-                                   frequency_offsets,
-                                   {},
-                                   {},
-                                   document_span,
-                                   payload_span,
-                                   {},
+                IndexRunner runner(PostingData{document_span, document_offsets},
+                                   PostingData{payload_span, frequency_offsets},
                                    {},
                                    document_sizes,
                                    tl::nullopt,
                                    {},
                                    {},
-                                   tl::nullopt,
+                                   {},
                                    std::move(source),
-                                   BlockedReader<pisa::simdbp_block, true>{},
-                                   BlockedReader<pisa::simdbp_block, false>{});
+                                   std::make_tuple(DocumentBlockedReader<pisa::simdbp_block>{}),
+                                   std::make_tuple(PayloadBlockedReader<pisa::simdbp_block>{}));
                 int counter = 0;
                 runner([&](auto index) {
                     counter += 1;
@@ -180,21 +178,17 @@ TEST_CASE("Build blocked document-frequency index", "[v1][unit]")
                     reinterpret_cast<std::byte const*>(source[0].data()), source[0].size());
                 auto payload_span = gsl::span<std::byte const>(
                     reinterpret_cast<std::byte const*>(source[1].data()), source[1].size());
-                IndexRunner runner(document_offsets,
-                                   frequency_offsets,
-                                   {},
-                                   {},
-                                   document_span,
-                                   payload_span,
-                                   {},
+                IndexRunner runner(PostingData{document_span, document_offsets},
+                                   PostingData{payload_span, frequency_offsets},
                                    {},
                                    document_sizes,
                                    tl::nullopt,
                                    {},
                                    {},
-                                   tl::nullopt,
+                                   {},
                                    std::move(source),
-                                   RawReader<std::uint32_t>{}); // Correct encoding but not type!
+                                   std::make_tuple(RawReader<std::uint32_t>{}),
+                                   std::make_tuple());
                 REQUIRE_THROWS_AS(runner([&](auto index) {}), std::domain_error);
             }
         }

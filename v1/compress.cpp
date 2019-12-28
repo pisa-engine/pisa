@@ -4,7 +4,6 @@
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
 
-#include "binary_freq_collection.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/index_metadata.hpp"
@@ -13,10 +12,11 @@
 
 using std::literals::string_view_literals::operator""sv;
 
-using pisa::v1::BlockedWriter;
 using pisa::v1::compress_binary_collection;
+using pisa::v1::DocumentBlockedWriter;
 using pisa::v1::EncodingId;
 using pisa::v1::make_index_builder;
+using pisa::v1::PayloadBlockedWriter;
 using pisa::v1::RawWriter;
 using pisa::v1::verify_compressed_index;
 
@@ -63,8 +63,8 @@ int main(int argc, char** argv)
 
     tbb::task_scheduler_init init(threads);
     auto build = make_index_builder(RawWriter<std::uint32_t>{},
-                                    BlockedWriter<::pisa::simdbp_block, true>{},
-                                    BlockedWriter<::pisa::simdbp_block, false>{});
+                                    DocumentBlockedWriter<::pisa::simdbp_block>{},
+                                    PayloadBlockedWriter<::pisa::simdbp_block>{});
     build(document_encoding(encoding),
           frequency_encoding(encoding),
           [&](auto document_writer, auto payload_writer) {

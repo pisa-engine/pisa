@@ -25,7 +25,7 @@ TEST_CASE("Parse query from JSON", "[v1][unit]")
     auto query = Query::from_json(
         R"({"id": "Q0", "query": "send dog pics", "term_ids": [0, 32, 4], "k": 15, )"
         R"("threshold": 40.5, "selections": )"
-        R"({ "unigrams": [0, 2], "bigrams": [[0, 2], [2, 1]]}})");
+        R"([1, 4, 5, 6]})");
     REQUIRE(query.get_id() == "Q0");
     REQUIRE(query.k() == 15);
     REQUIRE(query.get_term_ids() == std::vector<TermId>{0, 4, 32});
@@ -34,8 +34,4 @@ TEST_CASE("Parse query from JSON", "[v1][unit]")
     REQUIRE(query.get_selections().unigrams == std::vector<TermId>{0, 4});
     REQUIRE(query.get_selections().bigrams
             == std::vector<std::pair<TermId, TermId>>{{0, 4}, {4, 32}});
-    REQUIRE_THROWS(Query::from_json(
-        R"({"id": "Q0", "query": "send dog pics", "term_ids": [0, 32, 4], "k": 15, )"
-        R"("threshold": 40.5, "selections": )"
-        R"({ "unigrams": [0, 4], "bigrams": [[0, 4], [4, 5]]}})"));
 }

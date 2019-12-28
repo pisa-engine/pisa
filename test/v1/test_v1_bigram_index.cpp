@@ -44,8 +44,8 @@ TEMPLATE_TEST_CASE("Bigram v intersection",
                    (IndexFixture<v1::RawCursor<v1::DocId>,
                                  v1::RawCursor<v1::Frequency>,
                                  v1::RawCursor<std::uint8_t>>),
-                   (IndexFixture<v1::BlockedCursor<::pisa::simdbp_block, true>,
-                                 v1::BlockedCursor<::pisa::simdbp_block, false>,
+                   (IndexFixture<v1::DocumentBlockedCursor<::pisa::simdbp_block>,
+                                 v1::PayloadBlockedCursor<::pisa::simdbp_block>,
                                  v1::RawCursor<std::uint8_t>>))
 {
     tbb::task_scheduler_init init(1);
@@ -57,7 +57,9 @@ TEMPLATE_TEST_CASE("Bigram v intersection",
         CAPTURE(q.get_term_ids());
         CAPTURE(idx++);
 
-        auto run = v1::index_runner(meta, fixture.document_reader(), fixture.frequency_reader());
+        auto run = v1::index_runner(meta,
+                                    std::make_tuple(fixture.document_reader()),
+                                    std::make_tuple(fixture.frequency_reader()));
         std::vector<typename pisa::topk_queue::entry_type> results;
         run([&](auto&& index) {
             for (auto left = 0; left < q.get_term_ids().size(); left += 1) {
