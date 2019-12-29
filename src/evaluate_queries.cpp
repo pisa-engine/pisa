@@ -147,7 +147,7 @@ void evaluate_queries(const std::string &index_filename,
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      qid.value_or(std::to_string(query_idx)),
                                      iteration,
-                                     docmap[result.second],
+                                     result.second,
                                      rank,
                                      result.first,
                                      run_id);

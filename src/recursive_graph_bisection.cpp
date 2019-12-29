@@ -59,6 +59,8 @@ int main(int argc, char const *argv[])
     std::string config_file;
     std::optional<std::string> documents_filename;
     std::optional<std::string> reordered_documents_filename;
+    std::optional<std::string> mapping_filename;
+
     size_t min_len = 0;
     size_t depth = 0;
     size_t threads = std::thread::hardware_concurrency();
@@ -72,6 +74,7 @@ int main(int argc, char const *argv[])
     app.add_option("--fwdidx", input_fwd, "Use this forward index");
     auto docs_opt = app.add_option("--documents", documents_filename, "Documents lexicon");
     app.add_option("--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")->needs(docs_opt);
+    app.add_option("--mapping-filename", mapping_filename, "Mapping filename");
     app.add_option("-m,--min-len", min_len, "Minimum list threshold");
     auto optdepth =
         app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
@@ -122,7 +125,15 @@ int main(int argc, char const *argv[])
         auto mapping = get_mapping(documents);
         fwd.clear();
         documents.clear();
-        reorder_inverted_index(input_basename, output_basename, mapping);
+        if(mapping_filename){
+            std::ofstream mapping_file(*mapping_filename);
+            for (size_t i = 0; i < mapping.size(); ++i){
+                mapping_file << i << " " << mapping[i] << std::endl;
+            }
+        } else {
+            reorder_inverted_index(input_basename, output_basename, mapping);
+        }
+
 
         if(documents_filename) {
            auto doc_buffer = Payload_Vector_Buffer::from_file(*documents_filename);
