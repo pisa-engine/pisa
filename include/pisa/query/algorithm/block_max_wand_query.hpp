@@ -122,12 +122,12 @@ struct block_max_wand_query {
                 uint64_t next;
                 uint64_t next_list = pivot;
 
-                float q_weight = ordered_cursors[next_list]->q_weight;
+                float max_weight = ordered_cursors[next_list]->max_weight;
 
                 for (uint64_t i = 0; i < pivot; i++) {
-                    if (ordered_cursors[i]->q_weight > q_weight) {
+                    if (ordered_cursors[i]->max_weight > max_weight) {
                         next_list = i;
-                        q_weight  = ordered_cursors[i]->q_weight;
+                        max_weight  = ordered_cursors[i]->max_weight;
                     }
                 }
 
