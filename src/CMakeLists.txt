@@ -51,6 +51,7 @@ target_link_libraries(profile_decoding
 add_executable(shuffle_docids shuffle_docids.cpp)
 target_link_libraries(shuffle_docids
   pisa
+  CLI11
 )
 
 add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
