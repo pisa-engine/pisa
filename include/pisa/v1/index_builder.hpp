@@ -16,9 +16,13 @@
 
 namespace pisa::v1 {
 
-template <typename... Writers>
+template <typename DocumentWriters, typename PayloadWriters>
 struct IndexBuilder {
-    explicit IndexBuilder(Writers... writers) : m_writers(std::move(writers)...) {}
+    explicit IndexBuilder(DocumentWriters document_writers, PayloadWriters payload_writers)
+        : m_document_writers(std::move(document_writers)),
+          m_payload_writers(std::move(payload_writers))
+    {
+    }
 
     template <typename Fn>
     void operator()(Encoding document_encoding, Encoding payload_encoding, Fn fn)
@@ -32,28 +36,30 @@ struct IndexBuilder {
             return false;
         };
         bool success = std::apply(
-            [&](Writers... dwriters) {
+            [&](auto... dwriters) {
                 auto with_document_writer = [&](auto dwriter) {
                     return std::apply(
-                        [&](Writers... pwriters) { return (run(dwriter, pwriters) || ...); },
-                        m_writers);
+                        [&](auto... pwriters) { return (run(dwriter, pwriters) || ...); },
+                        m_payload_writers);
                 };
                 return (with_document_writer(dwriters) || ...);
             },
-            m_writers);
+            m_document_writers);
         if (not success) {
             throw std::domain_error("Unknown posting encoding");
         }
     }
 
    private:
-    std::tuple<Writers...> m_writers;
+    DocumentWriters m_document_writers;
+    PayloadWriters m_payload_writers;
 };
 
-template <typename... Writers>
-auto make_index_builder(Writers... writers)
+template <typename DocumentWriters, typename PayloadWriters>
+auto make_index_builder(DocumentWriters document_writers, PayloadWriters payload_writers)
 {
-    return IndexBuilder<Writers...>(std::move(writers)...);
+    return IndexBuilder<DocumentWriters, PayloadWriters>(std::move(document_writers),
+                                                         std::move(payload_writers));
 }
 
 template <typename CollectionIterator>
@@ -101,6 +107,8 @@ inline void compress_binary_collection(std::string const& input,
                                        Writer<Frequency> frequency_writer)
 {
     pisa::binary_freq_collection const collection(input.c_str());
+    document_writer.init(collection);
+    frequency_writer.init(collection);
     ProgressStatus status(collection.size(),
                           DefaultProgress("Compressing in parallel"),
                           std::chrono::milliseconds(100));

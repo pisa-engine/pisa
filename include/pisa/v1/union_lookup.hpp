@@ -97,7 +97,11 @@ struct UnionLookupJoin {
           m_inspect(inspect)
     {
         if (m_essential_cursors.empty()) {
-            m_sentinel = std::numeric_limits<value_type>::max();
+            if (m_lookup_cursors.empty()) {
+                m_sentinel = std::numeric_limits<value_type>::max();
+            } else {
+                m_sentinel = min_sentinel(m_lookup_cursors);
+            }
             m_current_value = m_sentinel;
             m_current_payload = m_init;
             return;

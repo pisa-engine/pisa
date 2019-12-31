@@ -20,14 +20,19 @@ inline void write_gamma_nonzero(bit_vector_builder& bvb, uint64_t n)
     write_gamma(bvb, n - 1);
 }
 
-inline uint64_t read_gamma(bit_vector::enumerator& it)
+template <typename BitVectorEnumerator>
+inline uint64_t read_gamma(BitVectorEnumerator& it)
 {
     uint64_t l = it.skip_zeros();
     assert(l < 64);
     return (it.take(l) | (uint64_t(1) << l)) - 1;
 }
 
-inline uint64_t read_gamma_nonzero(bit_vector::enumerator& it) { return read_gamma(it) + 1; }
+template <typename BitVectorEnumerator>
+inline uint64_t read_gamma_nonzero(BitVectorEnumerator& it)
+{
+    return read_gamma(it) + 1;
+}
 
 inline void write_delta(bit_vector_builder& bvb, uint64_t n)
 {
@@ -38,7 +43,8 @@ inline void write_delta(bit_vector_builder& bvb, uint64_t n)
     bvb.append_bits(nn ^ hb, l);
 }
 
-inline uint64_t read_delta(bit_vector::enumerator& it)
+template <typename BitVectorEnumerator>
+inline uint64_t read_delta(BitVectorEnumerator& it)
 {
     uint64_t l = read_gamma(it);
     return (it.take(l) | (uint64_t(1) << l)) - 1;

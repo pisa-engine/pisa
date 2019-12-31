@@ -231,6 +231,8 @@ namespace pisa {
                 return m_partitions;
             }
 
+            [[nodiscard]] auto universe() const -> std::uint64_t { return m_universe; }
+
             friend class partitioned_sequence_test;
 
         private:

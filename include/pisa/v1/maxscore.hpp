@@ -91,6 +91,10 @@ struct MaxScoreJoin {
 
     constexpr void advance()
     {
+        while (m_non_essential_count < m_cursors.size()
+               && not m_above_threshold(m_upper_bounds[m_non_essential_count])) {
+            m_non_essential_count += 1;
+        }
         bool exit = false;
         while (not exit) {
             if (PISA_UNLIKELY(m_non_essential_count == m_cursors.size()
@@ -138,11 +142,6 @@ struct MaxScoreJoin {
                     m_current_payload = m_accumulate(m_current_payload, cursor);
                 }
             }
-        }
-
-        while (m_non_essential_count < m_cursors.size()
-               && not m_above_threshold(m_upper_bounds[m_non_essential_count])) {
-            m_non_essential_count += 1;
         }
     }
 

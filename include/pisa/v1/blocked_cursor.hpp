@@ -12,6 +12,7 @@
 #include <tl/optional.hpp>
 
 #include "util/likely.hpp"
+#include "v1/base_index.hpp"
 #include "v1/bit_cast.hpp"
 #include "v1/cursor_traits.hpp"
 #include "v1/encoding_traits.hpp"
@@ -253,6 +254,7 @@ template <typename Codec, bool DeltaEncoded>
 struct GenericBlockedReader {
     using value_type = std::uint32_t;
 
+    void init(BaseIndex const& index) {}
     [[nodiscard]] auto read(gsl::span<const std::byte> bytes) const
     {
         std::uint32_t length;
@@ -294,12 +296,16 @@ template <typename Codec, bool DeltaEncoded>
 struct GenericBlockedWriter {
     using value_type = std::uint32_t;
 
+    GenericBlockedWriter() = default;
+    explicit GenericBlockedWriter([[maybe_unused]] std::size_t num_documents) {}
+
     constexpr static auto encoding() -> std::uint32_t
     {
         return block_encoding_type<DeltaEncoded>()
                | encoding_traits<Codec>::encoding_tag::encoding();
     }
 
+    void init([[maybe_unused]] pisa::binary_freq_collection const& collection) {}
     void push(value_type const& posting)
     {
         if constexpr (DeltaEncoded) {

@@ -84,7 +84,6 @@ struct WandJoin {
             return lhs->value() < rhs->value();
         });
 
-        m_next_docid = min_value(m_cursors);
         m_sentinel = min_sentinel(m_cursors);
         advance();
     }
@@ -102,45 +101,67 @@ struct WandJoin {
 
     PISA_ALWAYSINLINE void advance()
     {
-        while (true) {
-            auto pivot = find_pivot();
-            if (pivot == m_cursor_pointers.end()) {
+        bool exit = false;
+        while (not exit) {
+            auto upper_bound = 0.0F;
+            std::size_t pivot;
+            bool found_pivot = false;
+            for (pivot = 0; pivot < m_cursor_pointers.size(); ++pivot) {
+                if (m_cursor_pointers[pivot]->empty()) {
+                    break;
+                }
+                upper_bound += m_cursor_pointers[pivot]->max_score();
+                if (m_above_threshold(upper_bound)) {
+                    found_pivot = true;
+                    break;
+                }
+            }
+            // auto pivot = find_pivot();
+            // if (PISA_UNLIKELY(not pivot)) {
+            //    m_current_value = sentinel();
+            //    exit = true;
+            //    break;
+            //}
+            if (not found_pivot) {
                 m_current_value = sentinel();
-                return;
+                exit = true;
+                break;
             }
 
-            auto pivot_docid = (*pivot)->value();
+            // auto pivot_docid = (*pivot)->value();
+            auto pivot_docid = m_cursor_pointers[pivot]->value();
             if (pivot_docid == m_cursor_pointers.front()->value()) {
                 m_current_value = pivot_docid;
                 m_current_payload = m_init;
 
-                [&]() {
-                    auto iter = m_cursor_pointers.begin();
-                    for (; iter != m_cursor_pointers.end(); ++iter) {
-                        auto* cursor = *iter;
-                        if (cursor->value() != pivot_docid) {
-                            break;
-                        }
-                        m_current_payload = m_accumulate(m_current_payload, *cursor);
-                        cursor->advance();
+                for (auto* cursor : m_cursor_pointers) {
+                    if (cursor->value() != pivot_docid) {
+                        break;
                     }
-                    return iter;
-                }();
+                    m_current_payload = m_accumulate(m_current_payload, *cursor);
+                    cursor->advance();
+                }
 
                 auto by_docid = [](auto&& lhs, auto&& rhs) { return lhs->value() < rhs->value(); };
                 std::sort(m_cursor_pointers.begin(), m_cursor_pointers.end(), by_docid);
-                return;
+                exit = true;
+            } else {
+                auto next_list = pivot;
+                for (; m_cursor_pointers[next_list]->value() == pivot_docid; --next_list) {
+                }
+                m_cursor_pointers[next_list]->advance_to_geq(pivot_docid);
+                // bubble_down(next_list);
+                for (size_t idx = next_list + 1; idx < m_cursor_pointers.size(); idx += 1) {
+                    if (m_cursor_pointers[idx]->value() < m_cursor_pointers[idx - 1]->value()) {
+                        std::swap(m_cursor_pointers[idx], m_cursor_pointers[idx - 1]);
+                    } else {
+                        break;
+                    }
+                }
             }
-
-            auto next_list = std::distance(m_cursor_pointers.begin(), pivot);
-            for (; m_cursor_pointers[next_list]->value() == pivot_docid; --next_list) {
-            }
-            m_cursor_pointers[next_list]->advance_to_geq(pivot_docid);
-            bubble_down(next_list);
         }
     }
 
-    [[nodiscard]] constexpr auto position() const noexcept -> std::size_t; // TODO(michal)
     [[nodiscard]] constexpr auto empty() const noexcept -> bool
     {
         return m_current_value >= sentinel();
@@ -158,27 +179,39 @@ struct WandJoin {
         }
     }
 
-    PISA_ALWAYSINLINE auto find_pivot()
+    PISA_ALWAYSINLINE auto find_pivot() -> tl::optional<std::size_t>
     {
         auto upper_bound = 0.0F;
-        for (auto pivot = m_cursor_pointers.begin(); pivot != m_cursor_pointers.end(); ++pivot) {
-            auto&& cursor = **pivot;
-            if (cursor.empty()) {
+        std::size_t pivot;
+        for (pivot = 0; pivot < m_cursor_pointers.size(); ++pivot) {
+            if (m_cursor_pointers[pivot]->empty()) {
                 break;
             }
-            upper_bound += cursor.max_score();
+            upper_bound += m_cursor_pointers[pivot]->max_score();
             if (m_above_threshold(upper_bound)) {
-                auto pivot_docid = (*pivot)->value();
-                while (std::next(pivot) != m_cursor_pointers.end()) {
-                    if ((*std::next(pivot))->value() != pivot_docid) {
-                        break;
-                    }
-                    pivot = std::next(pivot);
-                }
-                return pivot;
+                return tl::make_optional(pivot);
             }
         }
-        return m_cursor_pointers.end();
+        return tl::nullopt;
+        // auto upper_bound = 0.0F;
+        // for (auto pivot = m_cursor_pointers.begin(); pivot != m_cursor_pointers.end(); ++pivot) {
+        //    auto&& cursor = **pivot;
+        //    if (cursor.empty()) {
+        //        break;
+        //    }
+        //    upper_bound += cursor.max_score();
+        //    if (m_above_threshold(upper_bound)) {
+        //        auto pivot_docid = (*pivot)->value();
+        //        while (std::next(pivot) != m_cursor_pointers.end()) {
+        //            if ((*std::next(pivot))->value() != pivot_docid) {
+        //                break;
+        //            }
+        //            pivot = std::next(pivot);
+        //        }
+        //        return pivot;
+        //    }
+        //}
+        // return m_cursor_pointers.end();
     }
 
     CursorContainer m_cursors;
@@ -191,7 +224,6 @@ struct WandJoin {
     value_type m_current_value{};
     value_type m_sentinel{};
     payload_type m_current_payload{};
-    std::uint32_t m_next_docid{};
     payload_type m_previous_threshold{};
 
     Inspect* m_inspect;
@@ -248,76 +280,78 @@ struct BlockMaxWandJoin {
     }
     [[nodiscard]] constexpr auto empty() const noexcept -> bool { return m_wand_join.empty(); }
 
-    constexpr void advance()
-    {
-        while (true) {
-            auto pivot = m_wand_join.find_pivot();
-            if (pivot == m_wand_join.m_cursor_pointers.end()) {
-                m_wand_join.m_current_value = m_wand_join.sentinel();
-                return;
-            }
+    constexpr void advance() { m_wand_join.advance(); }
+    // constexpr void advance()
+    //{
+    //    while (true) {
+    //        auto pivot = m_wand_join.find_pivot();
+    //        if (pivot == m_wand_join.m_cursor_pointers.end()) {
+    //            m_wand_join.m_current_value = m_wand_join.sentinel();
+    //            return;
+    //        }
 
-            auto pivot_docid = (*pivot)->value();
-            // auto block_upper_bound = std::accumulate(
-            //    m_wand_join.m_cursor_pointers.begin(),
-            //    std::next(pivot),
-            //    0.0F,
-            //    [&](auto acc, auto* cursor) { return acc + cursor->block_max_score(pivot_docid);
-            //    });
-            // if (not m_wand_join.m_above_threshold(block_upper_bound)) {
-            //    block_max_advance(pivot, pivot_docid);
-            //    continue;
-            //}
-            if (pivot_docid == m_wand_join.m_cursor_pointers.front()->value()) {
-                m_wand_join.m_current_value = pivot_docid;
-                m_wand_join.m_current_payload = m_wand_join.m_init;
+    //        auto pivot_docid = (*pivot)->value();
+    //        // auto block_upper_bound = std::accumulate(
+    //        //    m_wand_join.m_cursor_pointers.begin(),
+    //        //    std::next(pivot),
+    //        //    0.0F,
+    //        //    [&](auto acc, auto* cursor) { return acc + cursor->block_max_score(pivot_docid);
+    //        //    });
+    //        // if (not m_wand_join.m_above_threshold(block_upper_bound)) {
+    //        //    block_max_advance(pivot, pivot_docid);
+    //        //    continue;
+    //        //}
+    //        if (pivot_docid == m_wand_join.m_cursor_pointers.front()->value()) {
+    //            m_wand_join.m_current_value = pivot_docid;
+    //            m_wand_join.m_current_payload = m_wand_join.m_init;
 
-                [&]() {
-                    auto iter = m_wand_join.m_cursor_pointers.begin();
-                    for (; iter != m_wand_join.m_cursor_pointers.end(); ++iter) {
-                        auto* cursor = *iter;
-                        if (cursor->value() != pivot_docid) {
-                            break;
-                        }
-                        m_wand_join.m_current_payload =
-                            m_wand_join.m_accumulate(m_wand_join.m_current_payload, *cursor);
-                        cursor->advance();
-                    }
-                    return iter;
-                }();
-                // for (auto* cursor : m_wand_join.m_cursor_pointers) {
-                //    if (cursor->value() != pivot_docid) {
-                //        break;
-                //    }
-                //    m_wand_join.m_current_payload =
-                //        m_wand_join.m_accumulate(m_wand_join.m_current_payload, *cursor);
-                //    block_upper_bound -= cursor->block_max_score() - cursor->payload();
-                //    if (not m_wand_join.m_above_threshold(block_upper_bound)) {
-                //        break;
-                //    }
-                //}
+    //            [&]() {
+    //                auto iter = m_wand_join.m_cursor_pointers.begin();
+    //                for (; iter != m_wand_join.m_cursor_pointers.end(); ++iter) {
+    //                    auto* cursor = *iter;
+    //                    if (cursor->value() != pivot_docid) {
+    //                        break;
+    //                    }
+    //                    m_wand_join.m_current_payload =
+    //                        m_wand_join.m_accumulate(m_wand_join.m_current_payload, *cursor);
+    //                    cursor->advance();
+    //                }
+    //                return iter;
+    //            }();
+    //            // for (auto* cursor : m_wand_join.m_cursor_pointers) {
+    //            //    if (cursor->value() != pivot_docid) {
+    //            //        break;
+    //            //    }
+    //            //    m_wand_join.m_current_payload =
+    //            //        m_wand_join.m_accumulate(m_wand_join.m_current_payload, *cursor);
+    //            //    block_upper_bound -= cursor->block_max_score() - cursor->payload();
+    //            //    if (not m_wand_join.m_above_threshold(block_upper_bound)) {
+    //            //        break;
+    //            //    }
+    //            //}
 
-                // for (auto* cursor : m_wand_join.m_cursor_pointers) {
-                //    if (cursor->value() != pivot_docid) {
-                //        break;
-                //    }
-                //    cursor->advance();
-                //}
+    //            // for (auto* cursor : m_wand_join.m_cursor_pointers) {
+    //            //    if (cursor->value() != pivot_docid) {
+    //            //        break;
+    //            //    }
+    //            //    cursor->advance();
+    //            //}
 
-                auto by_docid = [](auto&& lhs, auto&& rhs) { return lhs->value() < rhs->value(); };
-                std::sort(m_wand_join.m_cursor_pointers.begin(),
-                          m_wand_join.m_cursor_pointers.end(),
-                          by_docid);
-                return;
-            }
+    //            auto by_docid = [](auto&& lhs, auto&& rhs) { return lhs->value() < rhs->value();
+    //            }; std::sort(m_wand_join.m_cursor_pointers.begin(),
+    //                      m_wand_join.m_cursor_pointers.end(),
+    //                      by_docid);
+    //            return;
+    //        }
 
-            auto next_list = std::distance(m_wand_join.m_cursor_pointers.begin(), pivot);
-            for (; m_wand_join.m_cursor_pointers[next_list]->value() == pivot_docid; --next_list) {
-            }
-            m_wand_join.m_cursor_pointers[next_list]->advance_to_geq(pivot_docid);
-            m_wand_join.bubble_down(next_list);
-        }
-    }
+    //        auto next_list = std::distance(m_wand_join.m_cursor_pointers.begin(), pivot);
+    //        for (; m_wand_join.m_cursor_pointers[next_list]->value() == pivot_docid; --next_list)
+    //        {
+    //        }
+    //        m_wand_join.m_cursor_pointers[next_list]->advance_to_geq(pivot_docid);
+    //        m_wand_join.bubble_down(next_list);
+    //    }
+    //}
 
    private:
     template <typename Iter>

@@ -12,6 +12,7 @@
 #include <tl/optional.hpp>
 
 #include "util/likely.hpp"
+#include "v1/base_index.hpp"
 #include "v1/bit_cast.hpp"
 #include "v1/cursor_traits.hpp"
 #include "v1/types.hpp"
@@ -116,6 +117,7 @@ struct RawReader {
         return RawCursor<T>(bytes);
     }
 
+    void init(BaseIndex const& index) {}
     constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 };
 
@@ -124,8 +126,12 @@ struct RawWriter {
     static_assert(std::is_trivially_copyable<T>::value);
     using value_type = T;
 
+    RawWriter() = default;
+    explicit RawWriter([[maybe_unused]] std::size_t num_documents) {}
+
     constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }
 
+    void init([[maybe_unused]] pisa::binary_freq_collection const& collection) {}
     void push(T const& posting) { m_postings.push_back(posting); }
     void push(T&& posting) { m_postings.push_back(posting); }
 

@@ -47,25 +47,38 @@ struct IndexFixture {
     using FrequencyReader = typename v1::CursorTraits<FrequencyCursor>::Reader;
     using ScoreReader = typename v1::CursorTraits<ScoreCursor>::Reader;
 
-    IndexFixture() : m_tmpdir(std::make_unique<Temporary_Directory>())
+    explicit IndexFixture(bool verify = true,
+                          bool score = true,
+                          bool bm_score = true,
+                          bool build_bigrams = true)
+        : m_tmpdir(std::make_unique<Temporary_Directory>())
     {
         auto index_basename = (tmpdir().path() / "inv").string();
         v1::compress_binary_collection(PISA_SOURCE_DIR "/test/test_data/test_collection",
                                        PISA_SOURCE_DIR "/test/test_data/test_collection.fwd",
                                        index_basename,
-                                       2,
+                                       1,
                                        v1::make_writer<DocumentWriter>(),
                                        v1::make_writer<FrequencyWriter>());
-        auto errors = v1::verify_compressed_index(PISA_SOURCE_DIR "/test/test_data/test_collection",
-                                                  index_basename);
-        for (auto&& error : errors) {
-            std::cerr << error << '\n';
+        if (verify) {
+            auto errors = v1::verify_compressed_index(
+                PISA_SOURCE_DIR "/test/test_data/test_collection", index_basename);
+            for (auto&& error : errors) {
+                std::cerr << error << '\n';
+            }
+            REQUIRE(errors.empty());
         }
-        REQUIRE(errors.empty());
         auto yml = fmt::format("{}.yml", index_basename);
-        auto meta = v1::score_index(v1::IndexMetadata::from_file(yml), 1);
-        meta = v1::bm_score_index(meta, 5, 1);
-        v1::build_bigram_index(meta, collect_unique_bigrams(test_queries(), []() {}));
+        auto meta = v1::IndexMetadata::from_file(yml);
+        if (score) {
+            meta = v1::score_index(v1::IndexMetadata::from_file(yml), 1);
+        }
+        if (bm_score) {
+            meta = v1::bm_score_index(meta, 5, 1);
+        }
+        if (build_bigrams) {
+            v1::build_bigram_index(meta, collect_unique_bigrams(test_queries(), []() {}));
+        }
     }
 
     [[nodiscard]] auto const& tmpdir() const { return *m_tmpdir; }

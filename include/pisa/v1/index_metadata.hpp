@@ -166,7 +166,7 @@ template <typename DocumentReaders, typename PayloadReaders>
         std::move(source),
         std::move(document_readers),
         std::move(payload_readers));
-} // namespace pisa::v1
+}
 
 template <typename DocumentReaders, typename PayloadReaders>
 [[nodiscard]] inline auto scored_index_runner(IndexMetadata metadata,

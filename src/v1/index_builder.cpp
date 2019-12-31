@@ -169,9 +169,9 @@ auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId
         using frequency_writer_type =
             typename CursorTraits<typename index_type::payload_cursor_type>::Writer;
 
-        PostingBuilder<DocId> document_builder(document_writer_type{});
-        PostingBuilder<Frequency> frequency_builder_0(frequency_writer_type{});
-        PostingBuilder<Frequency> frequency_builder_1(frequency_writer_type{});
+        PostingBuilder<DocId> document_builder(document_writer_type{index.num_documents()});
+        PostingBuilder<Frequency> frequency_builder_0(frequency_writer_type{index.num_documents()});
+        PostingBuilder<Frequency> frequency_builder_1(frequency_writer_type{index.num_documents()});
 
         document_builder.write_header(document_out);
         frequency_builder_0.write_header(frequency_out_0);

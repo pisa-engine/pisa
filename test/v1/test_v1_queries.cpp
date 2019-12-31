@@ -20,6 +20,7 @@
 #include "query/algorithm/ranked_or_query.hpp"
 #include "query/queries.hpp"
 #include "scorer/bm25.hpp"
+#include "v1/bit_sequence_cursor.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"
 #include "v1/cursor_intersection.hpp"
@@ -35,19 +36,24 @@
 #include "v1/query.hpp"
 #include "v1/score_index.hpp"
 #include "v1/scorer/bm25.hpp"
+#include "v1/sequence/partitioned_sequence.hpp"
+#include "v1/sequence/positive_sequence.hpp"
 #include "v1/taat_or.hpp"
 #include "v1/types.hpp"
 #include "v1/union_lookup.hpp"
 #include "v1/wand.hpp"
 
-using namespace pisa;
 using pisa::v1::DocId;
+using pisa::v1::DocumentBitSequenceCursor;
 using pisa::v1::DocumentBlockedCursor;
 using pisa::v1::Frequency;
 using pisa::v1::Index;
 using pisa::v1::IndexMetadata;
 using pisa::v1::ListSelection;
+using pisa::v1::PartitionedSequence;
+using pisa::v1::PayloadBitSequenceCursor;
 using pisa::v1::PayloadBlockedCursor;
+using pisa::v1::PositiveSequence;
 using pisa::v1::RawCursor;
 
 static constexpr auto RELATIVE_ERROR = 0.1F;
@@ -64,7 +70,7 @@ struct IndexData {
                 collection.num_docs(),
                 collection,
                 "bm25",
-                BlockSize(FixedBlock()),
+                ::pisa::BlockSize(::pisa::FixedBlock()),
                 {})
 
     {
@@ -77,12 +83,12 @@ struct IndexData {
         }
         builder.build(v0_index);
 
-        term_id_vec q;
+        ::pisa::term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         auto push_query = [&](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
+            queries.push_back(::pisa::parse_query_ids(query_line));
         };
-        io::for_each_line(qfile, push_query);
+        ::pisa::io::for_each_line(qfile, push_query);
 
         std::string t;
         std::ifstream tin(PISA_SOURCE_DIR "/test/test_data/top5_thresholds");
@@ -99,13 +105,13 @@ struct IndexData {
         return IndexData::data.get();
     }
 
-    global_parameters params;
-    binary_freq_collection collection;
-    binary_collection document_sizes;
+    ::pisa::global_parameters params;
+    ::pisa::binary_freq_collection collection;
+    ::pisa::binary_collection document_sizes;
     v0_Index v0_index;
-    std::vector<Query> queries;
+    std::vector<::pisa::Query> queries;
     std::vector<float> thresholds;
-    wand_data<wand_data_raw> wdata;
+    ::pisa::wand_data<::pisa::wand_data_raw> wdata;
 };
 
 /// Inefficient, do not use in production code.
@@ -131,10 +137,13 @@ TEMPLATE_TEST_CASE("Query",
                    (IndexFixture<RawCursor<DocId>, RawCursor<Frequency>, RawCursor<std::uint8_t>>),
                    (IndexFixture<DocumentBlockedCursor<::pisa::simdbp_block>,
                                  PayloadBlockedCursor<::pisa::simdbp_block>,
+                                 RawCursor<std::uint8_t>>),
+                   (IndexFixture<DocumentBitSequenceCursor<PartitionedSequence<>>,
+                                 PayloadBitSequenceCursor<PositiveSequence<>>,
                                  RawCursor<std::uint8_t>>))
 {
     tbb::task_scheduler_init init(1);
-    auto data = IndexData<single_index,
+    auto data = IndexData<::pisa::single_index,
                           Index<RawCursor<DocId>, RawCursor<Frequency>>,
                           Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
@@ -157,35 +166,35 @@ TEMPLATE_TEST_CASE("Query",
     CAPTURE(with_threshold);
     auto index_basename = (fixture.tmpdir().path() / "inv").string();
     auto meta = IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
-    ranked_or_query or_q(10);
+    ::pisa::ranked_or_query or_q(10);
     auto run_query = [](std::string const& name, auto query, auto&& index, auto scorer) {
         if (name == "daat_or") {
-            return daat_or(query, index, topk_queue(10), scorer);
+            return daat_or(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "maxscore") {
-            return maxscore(query, index, topk_queue(10), scorer);
+            return maxscore(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "wand") {
-            return wand(query, index, topk_queue(10), scorer);
+            return wand(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "bmw") {
-            return bmw(query, index, topk_queue(10), scorer);
+            return bmw(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "maxscore_union_lookup") {
-            return maxscore_union_lookup(query, index, topk_queue(10), scorer);
+            return maxscore_union_lookup(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "unigram_union_lookup") {
             query.selections(ListSelection{.unigrams = query.get_term_ids(), .bigrams = {}});
-            return unigram_union_lookup(query, index, topk_queue(10), scorer);
+            return unigram_union_lookup(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "union_lookup") {
             if (query.get_term_ids().size() > 8) {
-                return maxscore_union_lookup(query, index, topk_queue(10), scorer);
+                return maxscore_union_lookup(query, index, ::pisa::topk_queue(10), scorer);
             }
-            return union_lookup(query, index, topk_queue(10), scorer);
+            return union_lookup(query, index, ::pisa::topk_queue(10), scorer);
         }
         if (name == "lookup_union") {
-            return lookup_union(query, index, topk_queue(10), scorer);
+            return lookup_union(query, index, ::pisa::topk_queue(10), scorer);
         }
         std::abort();
     };
@@ -201,10 +210,11 @@ TEMPLATE_TEST_CASE("Query",
         CAPTURE(idx);
         CAPTURE(intersections[idx]);
 
-        or_q(make_scored_cursors(data->v0_index,
-                                 ::pisa::bm25<wand_data<wand_data_raw>>(data->wdata),
-                                 ::pisa::Query{{}, query.get_term_ids(), {}}),
-             data->v0_index.num_docs());
+        or_q(
+            make_scored_cursors(data->v0_index,
+                                ::pisa::bm25<::pisa::wand_data<::pisa::wand_data_raw>>(data->wdata),
+                                ::pisa::Query{{}, query.get_term_ids(), {}}),
+            data->v0_index.num_docs());
         auto expected = or_q.topk();
         if (with_threshold) {
             query.threshold(expected.back().first - 1.0F);
@@ -214,7 +224,7 @@ TEMPLATE_TEST_CASE("Query",
             auto run = pisa::v1::index_runner(meta,
                                               std::make_tuple(fixture.document_reader()),
                                               std::make_tuple(fixture.frequency_reader()));
-            std::vector<typename topk_queue::entry_type> results;
+            std::vector<typename ::pisa::topk_queue::entry_type> results;
             run([&](auto&& index) {
                 auto que = run_query(algorithm, query, index, make_bm25(index));
                 que.finalize();
@@ -234,16 +244,16 @@ TEMPLATE_TEST_CASE("Query",
         expected.resize(on_the_fly.size());
         std::sort(expected.begin(), expected.end(), approximate_order);
 
-        if (algorithm == "bmw") {
-            for (size_t i = 0; i < on_the_fly.size(); ++i) {
-                std::cerr << fmt::format("{} {} -- {} {}\n",
-                                         on_the_fly[i].second,
-                                         on_the_fly[i].first,
-                                         expected[i].second,
-                                         expected[i].first);
-            }
-            std::cerr << '\n';
-        }
+        // if (algorithm == "bmw") {
+        //    for (size_t i = 0; i < on_the_fly.size(); ++i) {
+        //        std::cerr << fmt::format("{} {} -- {} {}\n",
+        //                                 on_the_fly[i].second,
+        //                                 on_the_fly[i].first,
+        //                                 expected[i].second,
+        //                                 expected[i].first);
+        //    }
+        //    std::cerr << '\n';
+        //}
 
         for (size_t i = 0; i < on_the_fly.size(); ++i) {
             REQUIRE(on_the_fly[i].second == expected[i].second);
@@ -260,7 +270,7 @@ TEMPLATE_TEST_CASE("Query",
             auto run = pisa::v1::scored_index_runner(meta,
                                                      std::make_tuple(fixture.document_reader()),
                                                      std::make_tuple(fixture.score_reader()));
-            std::vector<typename topk_queue::entry_type> results;
+            std::vector<typename ::pisa::topk_queue::entry_type> results;
             run([&](auto&& index) {
                 auto que = run_query(algorithm, query, index, v1::VoidScorer{});
                 que.finalize();

@@ -157,14 +157,4 @@ template auto BaseIndex::fetch_bigram_payloads<1>(TermId bigram) const
     return m_quantized_max_scores.at(term);
 }
 
-[[nodiscard]] auto BaseIndex::block_max_document_reader() const -> Reader<RawCursor<DocId>> const&
-{
-    return m_block_max_document_reader;
-}
-
-[[nodiscard]] auto BaseIndex::block_max_score_reader() const -> Reader<RawCursor<float>> const&
-{
-    return m_block_max_score_reader;
-}
-
 } // namespace pisa::v1
