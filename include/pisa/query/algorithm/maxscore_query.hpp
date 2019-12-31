@@ -36,6 +36,14 @@ struct maxscore_query {
         }
 
         uint64_t non_essential_lists = 0;
+        auto update_non_essential_lists = [&](){
+            while (non_essential_lists < ordered_cursors.size() &&
+                   !m_topk.would_enter(upper_bounds[non_essential_lists])) {
+                non_essential_lists += 1;
+            }
+        };
+        update_non_essential_lists();
+        
         uint64_t cur_doc =
             std::min_element(cursors.begin(),
                              cursors.end(),
@@ -69,11 +77,7 @@ struct maxscore_query {
             }
 
             if (m_topk.insert(score, cur_doc)) {
-                // update non-essential lists
-                while (non_essential_lists < ordered_cursors.size() &&
-                       !m_topk.would_enter(upper_bounds[non_essential_lists])) {
-                    non_essential_lists += 1;
-                }
+                update_non_essential_lists();
             }
 
             cur_doc = next_doc;
