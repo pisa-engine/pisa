@@ -32,7 +32,7 @@ def main():
     # Documents dict, where each element maps an id with a document (or url).
     with open(args.input, "r") as in_file, open(args.output, mode='w') as out_file:
         for line in in_file:
-            out_file.write(reverse_url(line)+"\n")
+            out_file.write(reverse_url(line[:-1])+"\n")
 
 if __name__ == "__main__":
     main()
