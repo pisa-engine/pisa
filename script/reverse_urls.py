@@ -4,11 +4,11 @@ from argparse import ArgumentParser
 from urllib.parse import urlsplit
 import re
 
-"""
->>> reverse_url("http://www.face.bnl.gov/FACEDailyReports/Facts_I/Archive/03132003/ArchivePage.htm")
-gov.bnl.face.www.facedailyreports.facts_i.archive.03132003.archivepage.htm.
-"""
 def reverse_url(url):
+    """
+    >>> reverse_url("http://www.face.bnl.gov/FACEDailyReports/Facts_I/Archive/03132003/ArchivePage.htm")
+    gov.bnl.face.www.facedailyreports.facts_i.archive.03132003.archivepage.htm.
+    """
     components = urlsplit(url)
     hostname = components.netloc.partition(':')[0]
     result = '.'.join(hostname.split('.')[::-1])
