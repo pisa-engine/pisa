@@ -4,6 +4,10 @@ from argparse import ArgumentParser
 from urllib.parse import urlsplit
 import re
 
+"""
+>>> reverse_url("http://some.url/to?reverse=true")
+gov.bnl.face.www.facedailyreports.facts_i.archive.03132003.archivepage.htm.
+"""
 def reverse_url(url):
     components = urlsplit(url)
     hostname = components.netloc.partition(':')[0]
