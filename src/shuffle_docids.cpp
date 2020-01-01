@@ -25,18 +25,17 @@ int main(int argc, const char **argv) {
   std::optional<std::string> mapping_filename;
   std::optional<std::string> documents_filename;
   std::optional<std::string> reordered_documents_filename;
-
+  unsigned seed = std::random_device{}();
+  
   CLI::App app{"Shuffle document IDs."};
   app.add_option("-c,--collection", input_basename, "Collection basename")
       ->required();
   app.add_option("-o,--output", output_basename, "Output basename");
-  app.add_option("--mapping-filename", mapping_filename, "Ordering file is of the form <current ID> <new ID>");
+  auto mapping_opt = app.add_option("--mapping-filename", mapping_filename, "Ordering file is of the form <current ID> <new ID>");
+  app.add_option("--seed", seed, "Seed state")->excludes(mapping_opt);
   auto docs_opt = app.add_option("--documents", documents_filename, "Documents lexicon");
   app.add_option("--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")->needs(docs_opt);
   CLI11_PARSE(app, argc, argv);
-
-  constexpr uint32_t seed = 1729;
-  std::mt19937 rng(seed);
 
   binary_freq_collection input(input_basename.c_str());
   size_t num_docs = input.num_docs();
@@ -58,7 +57,7 @@ int main(int argc, const char **argv) {
   else {
     spdlog::info("Computing random permutation");
     std::iota(mapping.begin(), mapping.end(), uint32_t());
-    std::shuffle(mapping.begin(), mapping.end(), rng);
+    std::shuffle(mapping.begin(), mapping.end(), std::mt19937{seed});
   }
   {
     spdlog::info("Shuffling document sizes");
