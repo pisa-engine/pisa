@@ -82,6 +82,9 @@ int main(int argc, char **argv)
             }
             return sample;
         };
+    } else if (type == "slice") {
+        slice_inverted_index(input_basename, output_basename, rate);
+        return 0;
     } else {
         spdlog::error("Unknown type {}", type);
         std::abort();

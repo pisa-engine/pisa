@@ -1,5 +1,4 @@
 #pragma once
-#include <unordered_set>
 #include "binary_freq_collection.hpp"
 #include "invert.hpp"
 #include "util/progress.hpp"
@@ -56,6 +55,34 @@ void sample_inverted_index(std::string const &input_basename,
         write_sequence(fos, gsl::span<uint32_t const>(sampled_freqs));
         term += 1;
         progress.update(1);
+    }
+}
+
+void slice_inverted_index(std::string const &input_basename,
+                          std::string const &output_basename,
+                          float rate)
+{
+    binary_freq_collection input(input_basename.c_str());
+
+    boost::filesystem::copy_file(fmt::format("{}.sizes", input_basename),
+                                 fmt::format("{}.sizes", output_basename),
+                                 boost::filesystem::copy_option::overwrite_if_exists);
+
+    std::ofstream dos(output_basename + ".docs");
+    std::ofstream fos(output_basename + ".freqs");
+    emit(dos, 1);
+    emit(dos, input.num_docs());
+    size_t term_count = std::ceil(input.size() * rate);
+    pisa::progress progress("Sampling inverted index", term_count);
+
+    for (const auto &plist : input) {
+        emit(dos, plist.docs.size());
+        emit(fos, plist.freqs.size());
+        dos.write((char *)&plist.docs[0], plist.docs.size() * sizeof(uint32_t));
+        fos.write((char *)&plist.freqs[0], plist.freqs.size() * sizeof(uint32_t));
+        progress.update(1);
+        if (--term_count <= 0)
+            break;
     }
 }
 

@@ -151,3 +151,38 @@ TEST_CASE("sample_inverted_index_reverse")
             REQUIRE(*soit++ == *ssit++);
     }
 }
+
+TEST_CASE("slice_inverted_index"){
+    // given
+    using pisa::binary_freq_collection;
+    std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
+    Temporary_Directory tmpdir;
+    std::string output = tmpdir.path().string();
+    auto original = binary_freq_collection(input.c_str());
+
+    // when the rate is 1...
+    pisa::slice_inverted_index(input, output, 1);
+    auto sampled = binary_freq_collection(output.c_str());
+
+    // then, gets the same index...
+    REQUIRE(sampled.num_docs() == original.num_docs());
+    auto oit = original.begin();
+    auto sit = sampled.begin();
+    for (auto i = 0; oit != original.end(); ++oit, ++sit) {
+        std::vector<uint32_t> odocs(oit->docs.begin(), oit->docs.end());
+        std::vector<uint32_t> sdocs(sit->docs.begin(), sit->docs.end());
+        std::vector<uint32_t> ofreqs(oit->freqs.begin(), oit->freqs.end());
+        std::vector<uint32_t> sfreqs(sit->freqs.begin(), sit->freqs.end());
+        REQUIRE(std::equal(odocs.begin(), odocs.end(), sdocs.begin()));
+        REQUIRE(std::equal(ofreqs.begin(), ofreqs.end(), sfreqs.begin()));
+    }
+    REQUIRE(sit == sampled.end());
+
+    pisa::binary_collection osizes((input + ".sizes").c_str());
+    pisa::binary_collection ssizes((output + ".sizes").c_str());
+    auto soit = osizes.begin()->begin();
+    auto ssit = ssizes.begin()->begin();
+    for (size_t i = 0; i < original.num_docs(); ++i) {
+        REQUIRE(*soit++ == *ssit++);
+    }
+}
