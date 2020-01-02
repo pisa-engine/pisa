@@ -46,7 +46,8 @@ void extract_times(Fn fn,
     for (auto &&[qid, query] : enumerate(queries)) {
         do_not_optimize_away(fn(query, thresholds[qid]));
         std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
-            return run_with_timer<std::chrono::microseconds>([&]() { do_not_optimize_away(fn(q, t)); })
+            return run_with_timer<std::chrono::microseconds>(
+                       [&]() { do_not_optimize_away(fn(q, t)); })
                 .count();
         });
         auto mean =
@@ -149,12 +150,10 @@ void perftest(const std::string &index_filename,
     if (thresholds_filename) {
         std::string t;
         std::ifstream tin(*thresholds_filename);
-    size_t idx = 0;
-        while (std::getline(tin, t)) {
-            thresholds[idx] = std::stof(t);
-        idx += 1;
-        }
-        assert(idx == queries.size());
+        auto t_begin = std::istream_iterator<float>(tin);
+        auto t_end = std::istream_iterator<float>();
+        assert(std::distance(t_begin, t_end) == queries.size());
+        std::copy(t_begin , t_end, thresholds.begin());
     }
 
     auto scorer = scorer::from_name(scorer_name, wdata);
@@ -183,37 +182,36 @@ void perftest(const std::string &index_filename,
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors(index, wdata, *scorer, query),
-                              index.num_docs());
+                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.size();
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                        index.num_docs());
+                                 index.num_docs());
                 topk.finalize();
                 return topk.size();
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 block_max_maxscore_query block_max_maxscore_q(topk);
-                block_max_maxscore_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                                     index.num_docs());
                 topk.finalize();
                 return topk.size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
@@ -222,17 +220,17 @@ void perftest(const std::string &index_filename,
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
-                block_max_ranked_and_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                                       index.num_docs());
                 topk.finalize();
                 return topk.size();
             };
         } else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 ranked_or_query ranked_or_q(topk);
                 ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
@@ -241,10 +239,9 @@ void perftest(const std::string &index_filename,
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-        topk.set_threshold(t);
+                topk.set_threshold(t);
                 maxscore_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query),
-                                  index.num_docs());
+                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.size();
             };
@@ -264,7 +261,7 @@ void perftest(const std::string &index_filename,
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
-            topk.set_threshold(t);
+                topk.set_threshold(t);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
