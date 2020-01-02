@@ -39,7 +39,7 @@ struct topk_queue {
         return true;
     }
 
-    bool would_enter(float score) const { return m_q.size() < m_k || score > m_threshold; }
+    bool would_enter(float score) const { return score > m_threshold; }
 
     void finalize() {
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
