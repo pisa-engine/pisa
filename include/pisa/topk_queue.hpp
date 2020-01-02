@@ -6,6 +6,7 @@
 
 namespace pisa {
 
+using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
@@ -52,6 +53,10 @@ struct topk_queue {
     }
 
     [[nodiscard]] std::vector<entry_type> const &topk() const noexcept { return m_q; }
+
+    void set_threshold(Threshold t) noexcept {
+        m_threshold = t;
+    }
 
     void clear() noexcept {
         m_q.clear();
