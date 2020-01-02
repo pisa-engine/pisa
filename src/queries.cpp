@@ -152,7 +152,9 @@ void perftest(const std::string &index_filename,
         std::ifstream tin(*thresholds_filename);
         auto t_begin = std::istream_iterator<float>(tin);
         auto t_end = std::istream_iterator<float>();
-        assert(std::distance(t_begin, t_end) == queries.size());
+        if(std::distance(t_begin, t_end) != queries.size()) {
+            throw std::invalid_argument("Invalid thresholds file.");
+        }
         std::copy(t_begin , t_end, thresholds.begin());
     }
 
