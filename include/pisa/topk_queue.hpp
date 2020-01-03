@@ -6,6 +6,7 @@
 
 namespace pisa {
 
+using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
@@ -38,7 +39,7 @@ struct topk_queue {
         return true;
     }
 
-    bool would_enter(float score) const { return m_q.size() < m_k || score > m_threshold; }
+    bool would_enter(float score) const { return score > m_threshold; }
 
     void finalize() {
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
@@ -52,6 +53,10 @@ struct topk_queue {
     }
 
     [[nodiscard]] std::vector<entry_type> const &topk() const noexcept { return m_q; }
+
+    void set_threshold(Threshold t) noexcept {
+        m_threshold = t;
+    }
 
     void clear() noexcept {
         m_q.clear();
