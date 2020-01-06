@@ -53,7 +53,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DGSL_UNENFORCED_ON_CONTRACT_VIOLATION -flto")
 if (UNIX)
    # For hardware popcount and other special instructions
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wno-odr -Wfatal-errors")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wno-odr")
 
    # Extensive warnings
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-missing-braces")

@@ -72,6 +72,7 @@ struct Query {
     auto selections(gsl::span<std::bitset<64> const> selections) -> Query&;
     auto selections(ListSelection selections) -> Query&;
     auto threshold(float threshold) -> Query&;
+    auto probability(float probability) -> Query&;
 
     /// Non-throwing getters
     [[nodiscard]] auto term_ids() const -> tl::optional<std::vector<TermId> const&>;
@@ -79,6 +80,7 @@ struct Query {
     [[nodiscard]] auto k() const -> int;
     [[nodiscard]] auto selections() const -> tl::optional<ListSelection const&>;
     [[nodiscard]] auto threshold() const -> tl::optional<float>;
+    [[nodiscard]] auto probability() const -> tl::optional<float>;
     [[nodiscard]] auto raw() const -> tl::optional<std::string const&>;
 
     /// Throwing getters
@@ -86,6 +88,7 @@ struct Query {
     [[nodiscard]] auto get_id() const -> std::string const&;
     [[nodiscard]] auto get_selections() const -> ListSelection const&;
     [[nodiscard]] auto get_threshold() const -> float;
+    [[nodiscard]] auto get_probability() const -> float;
     [[nodiscard]] auto get_raw() const -> std::string const&;
 
     [[nodiscard]] auto sorted_position(TermId term) const -> std::size_t;
@@ -113,6 +116,7 @@ struct Query {
     tl::optional<float> m_threshold{};
     tl::optional<std::string> m_id{};
     tl::optional<std::string> m_raw_string;
+    tl::optional<float> m_probability;
     int m_k = 1000;
 };
 

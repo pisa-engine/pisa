@@ -1,9 +1,16 @@
-#include "v1/index_builder.hpp"
+#include <cstddef>
+#include <functional>
+
+#include <range/v3/view/transform.hpp>
+
 #include "codec/simdbp.hpp"
 #include "v1/blocked_cursor.hpp"
+#include "v1/cursor/accumulate.hpp"
+#include "v1/cursor_intersection.hpp"
 #include "v1/default_index_runner.hpp"
+#include "v1/index_builder.hpp"
 #include "v1/query.hpp"
-#include "v1/raw_cursor.hpp"
+#include "v1/scorer/bm25.hpp"
 
 namespace pisa::v1 {
 
@@ -90,13 +97,10 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
     std::vector<std::array<TermId, 2>> pair_mapping;
     auto scores_file_0 = fmt::format("{}.bigram_bm25_0", index_basename);
     auto scores_file_1 = fmt::format("{}.bigram_bm25_1", index_basename);
-    // auto compound_scores_file = fmt::format("{}.bigram_bm25", index_basename);
     auto score_offsets_file_0 = fmt::format("{}.bigram_bm25_offsets_0", index_basename);
     auto score_offsets_file_1 = fmt::format("{}.bigram_bm25_offsets_1", index_basename);
-    // auto compound_score_offsets_file = fmt::format("{}.bigram_bm25_offsets", index_basename);
     std::ofstream score_out_0(scores_file_0);
     std::ofstream score_out_1(scores_file_1);
-    // std::ofstream compound_score_out(compound_scores_file);
 
     run([&](auto&& index) {
         ProgressStatus status(bigrams.size(),
@@ -139,6 +143,87 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
     });
     return {PostingFilePaths{scores_file_0, score_offsets_file_0},
             PostingFilePaths{scores_file_1, score_offsets_file_1}};
+}
+
+template <typename T, typename Order = std::less<>>
+struct HeapPriorityQueue {
+    using value_type = T;
+
+    explicit HeapPriorityQueue(std::size_t capacity, Order order = Order())
+        : m_capacity(capacity), m_order(std::move(order))
+    {
+        m_elements.reserve(m_capacity + 1);
+    }
+    HeapPriorityQueue(HeapPriorityQueue const&) = default;
+    HeapPriorityQueue(HeapPriorityQueue&&) noexcept = default;
+    HeapPriorityQueue& operator=(HeapPriorityQueue const&) = default;
+    HeapPriorityQueue& operator=(HeapPriorityQueue&&) noexcept = default;
+    ~HeapPriorityQueue() = default;
+
+    void push(value_type value)
+    {
+        m_elements.push_back(value);
+        if (PISA_UNLIKELY(m_elements.size() <= m_capacity)) {
+            std::push_heap(m_elements.begin(), m_elements.end(), m_order);
+        } else {
+            std::pop_heap(m_elements.begin(), m_elements.end(), m_order);
+            m_elements.pop_back();
+        }
+    }
+
+    [[nodiscard]] auto size() const noexcept { return m_elements.size(); }
+    [[nodiscard]] auto capacity() const noexcept { return m_capacity; }
+
+    [[nodiscard]] auto take() && -> std::vector<value_type>
+    {
+        std::sort(m_elements.begin(), m_elements.end(), m_order);
+        return std::move(m_elements);
+    }
+
+   private:
+    std::size_t m_capacity;
+    std::vector<value_type> m_elements;
+    Order m_order;
+};
+
+[[nodiscard]] auto select_best_bigrams(IndexMetadata const& meta,
+                                       std::vector<Query> const& queries,
+                                       std::size_t num_bigrams_to_select)
+    -> std::vector<std::pair<TermId, TermId>>
+{
+    using Bigram = std::pair<Query const*, float>;
+    auto order = [](auto&& lhs, auto&& rhs) { return lhs.second > rhs.second; };
+    auto top_bigrams = HeapPriorityQueue<Bigram, decltype(order)>(num_bigrams_to_select, order);
+
+    auto run = index_runner(meta);
+    run([&](auto&& index) {
+        auto bigram_gain = [&](Query const& bigram) -> float {
+            auto&& term_ids = bigram.get_term_ids();
+            runtime_assert(term_ids.size() == 2, "Queries must be of exactly two unique terms");
+            auto cursors = index.scored_cursors(term_ids, make_bm25(index));
+            auto union_length = cursors[0].size() + cursors[1].size();
+            auto intersection_length =
+                accumulate(intersect(std::move(cursors),
+                                     false,
+                                     []([[maybe_unused]] auto count,
+                                        [[maybe_unused]] auto&& cursor,
+                                        [[maybe_unused]] auto idx) { return true; }),
+                           std::size_t{0},
+                           [](auto count, [[maybe_unused]] auto&& cursor) { return count + 1; });
+            return static_cast<double>(bigram.get_probability()) * static_cast<double>(union_length)
+                   / static_cast<double>(intersection_length);
+        };
+        for (auto&& query : queries) {
+            top_bigrams.push(std::make_pair(&query, bigram_gain(query)));
+        }
+    });
+    auto top = std::move(top_bigrams).take();
+    return ranges::views::transform(top,
+                                    [](auto&& elem) {
+                                        auto&& term_ids = elem.first->get_term_ids();
+                                        return std::make_pair(term_ids[0], term_ids[1]);
+                                    })
+           | ranges::to_vector;
 }
 
 auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId>> const& bigrams)

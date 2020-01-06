@@ -138,6 +138,9 @@ template <typename T>
     if (m_threshold) {
         (*query)["threshold"] = *m_threshold;
     }
+    if (m_probability) {
+        (*query)["probability"] = *m_probability;
+    }
     // TODO(michal)
     // tl::optional<ListSelection> m_selections{};
     // int m_k = 1000;
@@ -190,6 +193,12 @@ auto Query::threshold(float threshold) -> Query&
     return *this;
 }
 
+auto Query::probability(float probability) -> Query&
+{
+    m_probability = probability;
+    return *this;
+}
+
 auto Query::term_ids() const -> tl::optional<std::vector<TermId> const&>
 {
     return m_term_ids.map(
@@ -205,6 +214,7 @@ auto Query::selections() const -> tl::optional<ListSelection const&>
     return tl::nullopt;
 }
 auto Query::threshold() const -> tl::optional<float> { return m_threshold; }
+auto Query::probability() const -> tl::optional<float> { return m_probability; }
 auto Query::raw() const -> tl::optional<std::string const&>
 {
     if (m_raw_string) {
@@ -244,6 +254,14 @@ auto Query::get_threshold() const -> float
         throw std::runtime_error("Threshold is not set");
     }
     return *m_threshold;
+}
+
+auto Query::get_probability() const -> float
+{
+    if (not m_probability) {
+        throw std::runtime_error("Probability is not set");
+    }
+    return *m_probability;
 }
 
 auto Query::get_raw() const -> std::string const&

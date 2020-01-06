@@ -238,6 +238,11 @@ auto collect_unique_bigrams(std::vector<Query> const& queries,
                             std::function<void()> const& callback)
     -> std::vector<std::pair<TermId, TermId>>;
 
+[[nodiscard]] auto select_best_bigrams(IndexMetadata const& meta,
+                                       std::vector<Query> const& queries,
+                                       std::size_t num_bigrams_to_select)
+    -> std::vector<std::pair<TermId, TermId>>;
+
 auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId>> const& bigrams)
     -> IndexMetadata;
 

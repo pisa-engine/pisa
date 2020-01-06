@@ -37,7 +37,7 @@ set -x
 #    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml > ${FILTERED_QUERIES}
 
 # This will produce both quantized scores and max scores (both quantized and not).
-#${PISA_BIN}/bigram-index -i "${BASENAME}.yml" -q ${FILTERED_QUERIES}
+${PISA_BIN}/bigram-index -i "${BASENAME}.yml" -q ${FILTERED_QUERIES}
 
 # Extract intersections
 ${PISA_BIN}/intersection -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations --existing \
