@@ -13,6 +13,7 @@
 #include "intersection.hpp"
 #include "query/queries.hpp"
 #include "v1/blocked_cursor.hpp"
+#include "v1/cursor/accumulate.hpp"
 #include "v1/cursor/for_each.hpp"
 #include "v1/cursor_intersection.hpp"
 #include "v1/default_index_runner.hpp"
@@ -72,7 +73,8 @@ template <typename Index>
 void compute_intersections(Index const& index,
                            std::vector<pisa::v1::Query> const& queries,
                            IntersectionType intersection_type,
-                           tl::optional<std::size_t> max_term_count)
+                           tl::optional<std::size_t> max_term_count,
+                           bool existing)
 {
     for (auto const& query : queries) {
         auto intersections = nlohmann::json::array();
@@ -86,7 +88,40 @@ void compute_intersections(Index const& index,
             }
         };
         if (intersection_type == IntersectionType::Combinations) {
-            for_all_subsets(query, max_term_count, inter);
+            if (existing) {
+                std::uint64_t left_mask = 1;
+                auto term_ids = query.get_term_ids();
+                for (auto left = 0; left < term_ids.size(); left += 1) {
+                    auto cursor = index.max_scored_cursor(term_ids[left], make_bm25(index));
+                    intersections.push_back(nlohmann::json{{"intersection", left_mask},
+                                                           {"cost", cursor.size()},
+                                                           {"max_score", cursor.max_score()}});
+                    std::uint64_t right_mask = left_mask << 1;
+                    for (auto right = left + 1; right < term_ids.size(); right += 1) {
+                        index
+                            .scored_bigram_cursor(term_ids[left], term_ids[right], make_bm25(index))
+                            .map([&](auto&& cursor) {
+                                // TODO(michal): Do not traverse once max scores for bigrams are
+                                //               implemented
+                                auto cost = cursor.size();
+                                auto max_score =
+                                    accumulate(cursor, 0.0F, [](float acc, auto&& cursor) {
+                                        auto score = std::get<0>(cursor.payload())
+                                                     + std::get<1>(cursor.payload());
+                                        return std::max(acc, score);
+                                    });
+                                intersections.push_back(
+                                    nlohmann::json{{"intersection", left_mask | right_mask},
+                                                   {"cost", cost},
+                                                   {"max_score", max_score}});
+                            });
+                        right_mask <<= 1;
+                    }
+                    left_mask <<= 1;
+                }
+            } else {
+                for_all_subsets(query, max_term_count, inter);
+            }
         } else {
             inter(query, tl::nullopt);
         }
@@ -102,16 +137,20 @@ int main(int argc, const char** argv)
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     bool combinations = false;
+    bool existing = false;
     std::optional<std::size_t> max_term_count;
 
     pisa::App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app(
         "Calculates intersections for a v1 index.");
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
-    app.add_option("--max-term-count,--mtc",
-                   max_term_count,
-                   "Max number of terms when computing combinations")
-        ->needs(combinations_flag);
+    auto* mtc_flag = app.add_option("--max-term-count,--mtc",
+                                    max_term_count,
+                                    "Max number of terms when computing combinations");
+    mtc_flag->needs(combinations_flag);
+    app.add_flag("--existing", existing, "Use only existing bigrams")
+        ->needs(combinations_flag)
+        ->excludes(mtc_flag);
     CLI11_PARSE(app, argc, argv);
     auto mtc = max_term_count ? tl::make_optional(*max_term_count) : tl::optional<std::size_t>{};
 
@@ -123,7 +162,9 @@ int main(int argc, const char** argv)
         auto queries = app.queries(meta);
 
         auto run = index_runner(meta);
-        run([&](auto&& index) { compute_intersections(index, queries, intersection_type, mtc); });
+        run([&](auto&& index) {
+            compute_intersections(index, queries, intersection_type, mtc, existing);
+        });
     } catch (std::exception const& error) {
         spdlog::error("{}", error.what());
     }

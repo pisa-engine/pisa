@@ -13,6 +13,7 @@
 #include "util/do_not_optimize_away.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/daat_or.hpp"
+#include "v1/default_index_runner.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/inspect_query.hpp"
 #include "v1/maxscore.hpp"
@@ -144,7 +145,7 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
                     return pisa::v1::unigram_union_lookup(
                         query, index, std::move(topk), std::forward<Scorer>(scorer));
                 }
-                if (query.get_term_ids().size() > 8) {
+                if (query.get_term_ids().size() >= 8) {
                     return pisa::v1::maxscore(
                         query, index, std::move(topk), std::forward<Scorer>(scorer));
                 }
@@ -301,10 +302,7 @@ int main(int argc, char** argv)
                 }
             });
         } else {
-            auto run = index_runner(meta,
-                                    std::make_tuple(RawReader<std::uint32_t>{},
-                                                    DocumentBlockedReader<::pisa::simdbp_block>{}),
-                                    std::make_tuple(PayloadBlockedReader<::pisa::simdbp_block>{}));
+            auto run = index_runner(meta);
             run([&](auto&& index) {
                 auto with_scorer = scorer_runner(index, make_bm25(index));
                 with_scorer("bm25", [&](auto scorer) {

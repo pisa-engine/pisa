@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     auto meta = app.index_metadata();
     auto queries = app.queries(meta);
     for (auto&& query : queries) {
-        if (query.term_ids()) {
+        if (not query.get_term_ids().empty()) {
             std::cout << *query.to_json() << '\n';
         }
     }
