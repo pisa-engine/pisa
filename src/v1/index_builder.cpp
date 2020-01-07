@@ -122,7 +122,7 @@ auto verify_compressed_index(std::string const& input, std::string_view output)
                                            index.scored_cursor(right_term, VoidScorer{})},
                                           std::array<std::uint8_t, 2>{0, 0},
                                           [](auto& payload, auto& cursor, auto list_idx) {
-                                              payload[list_idx] = cursor.payload();
+                                              gsl::at(payload, list_idx) = cursor.payload();
                                               return payload;
                                           });
             if (intersection.empty()) {
@@ -163,9 +163,8 @@ struct HeapPriorityQueue {
     void push(value_type value)
     {
         m_elements.push_back(value);
-        if (PISA_UNLIKELY(m_elements.size() <= m_capacity)) {
-            std::push_heap(m_elements.begin(), m_elements.end(), m_order);
-        } else {
+        std::push_heap(m_elements.begin(), m_elements.end(), m_order);
+        if (PISA_LIKELY(m_elements.size() > m_capacity)) {
             std::pop_heap(m_elements.begin(), m_elements.end(), m_order);
             m_elements.pop_back();
         }
@@ -210,10 +209,14 @@ struct HeapPriorityQueue {
                                         [[maybe_unused]] auto idx) { return true; }),
                            std::size_t{0},
                            [](auto count, [[maybe_unused]] auto&& cursor) { return count + 1; });
+            if (intersection_length == 0) {
+                return 0.0;
+            }
             return static_cast<double>(bigram.get_probability()) * static_cast<double>(union_length)
                    / static_cast<double>(intersection_length);
         };
         for (auto&& query : queries) {
+            auto&& term_ids = query.get_term_ids();
             top_bigrams.push(std::make_pair(&query, bigram_gain(query)));
         }
     });
@@ -266,7 +269,7 @@ auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId
             auto intersection = intersect({index.cursor(left_term), index.cursor(right_term)},
                                           std::array<Frequency, 2>{0, 0},
                                           [](auto& payload, auto& cursor, auto list_idx) {
-                                              payload[list_idx] = cursor.payload();
+                                              gsl::at(payload, list_idx) = cursor.payload();
                                               return payload;
                                           });
             if (intersection.empty()) {

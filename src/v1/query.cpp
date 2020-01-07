@@ -106,6 +106,9 @@ template <typename T>
         if (auto threshold = get<float>(query_json, "threshold"); threshold) {
             query.threshold(*threshold);
         }
+        if (auto probability = get<float>(query_json, "probability"); probability) {
+            query.probability(*probability);
+        }
         if (auto k = get<int>(query_json, "k"); k) {
             query.k(*k);
         }
@@ -199,6 +202,43 @@ auto Query::probability(float probability) -> Query&
     return *this;
 }
 
+auto Query::with_term_ids(std::vector<TermId> term_ids) && -> Query
+{
+    this->term_ids(std::move(term_ids));
+    return std::move(*this);
+}
+auto Query::with_id(std::string id) && -> Query
+{
+    m_id = std::move(id);
+    return std::move(*this);
+}
+auto Query::with_k(int k) && -> Query
+{
+    m_k = k;
+    return std::move(*this);
+}
+auto Query::with_selections(gsl::span<std::bitset<64> const> selections) && -> Query
+{
+    this->selections(selections);
+    return std::move(*this);
+}
+auto Query::with_selections(ListSelection selections) && -> Query
+{
+    this->selections(std::move(selections));
+    return std::move(*this);
+}
+auto Query::with_threshold(float threshold) && -> Query
+{
+    m_threshold = threshold;
+    return std::move(*this);
+}
+auto Query::with_probability(float probability) && -> Query
+{
+    m_probability = probability;
+    return std::move(*this);
+}
+
+/// Getters
 auto Query::term_ids() const -> tl::optional<std::vector<TermId> const&>
 {
     return m_term_ids.map(

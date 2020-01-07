@@ -65,6 +65,14 @@ struct Query {
     explicit Query(std::string query, tl::optional<std::string> id = tl::nullopt);
     explicit Query(std::vector<TermId> term_ids, tl::optional<std::string> id = tl::nullopt);
 
+    template <typename ...Ids>
+    static auto from_ids(Ids... ids) -> Query
+    {
+        std::vector<TermId> id_vec;
+        (id_vec.push_back(ids), ...);
+        return Query(std::move(id_vec));
+    }
+
     /// Setters for optional values (or ones with default value).
     auto term_ids(std::vector<TermId> term_ids) -> Query&;
     auto id(std::string) -> Query&;
@@ -73,6 +81,15 @@ struct Query {
     auto selections(ListSelection selections) -> Query&;
     auto threshold(float threshold) -> Query&;
     auto probability(float probability) -> Query&;
+
+    /// Consuming setters.
+    auto with_term_ids(std::vector<TermId> term_ids) && -> Query;
+    auto with_id(std::string) && -> Query;
+    auto with_k(int k) && -> Query;
+    auto with_selections(gsl::span<std::bitset<64> const> selections) && -> Query;
+    auto with_selections(ListSelection selections) && -> Query;
+    auto with_threshold(float threshold) && -> Query;
+    auto with_probability(float probability) && -> Query;
 
     /// Non-throwing getters
     [[nodiscard]] auto term_ids() const -> tl::optional<std::vector<TermId> const&>;

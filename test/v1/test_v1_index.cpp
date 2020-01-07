@@ -15,11 +15,13 @@
 #include "v1/bit_sequence_cursor.hpp"
 #include "v1/blocked_cursor.hpp"
 #include "v1/cursor/collect.hpp"
+#include "v1/cursor/for_each.hpp"
 #include "v1/default_index_runner.hpp"
 #include "v1/index.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/raw_cursor.hpp"
+#include "v1/scorer/bm25.hpp"
 #include "v1/sequence/partitioned_sequence.hpp"
 #include "v1/sequence/positive_sequence.hpp"
 #include "v1/types.hpp"
@@ -30,14 +32,17 @@ using pisa::v1::DocId;
 using pisa::v1::DocumentBitSequenceCursor;
 using pisa::v1::DocumentBlockedCursor;
 using pisa::v1::DocumentBlockedWriter;
+using pisa::v1::for_each;
 using pisa::v1::Frequency;
 using pisa::v1::index_runner;
 using pisa::v1::IndexMetadata;
+using pisa::v1::make_bm25;
 using pisa::v1::PartitionedSequence;
 using pisa::v1::PayloadBitSequenceCursor;
 using pisa::v1::PayloadBlockedCursor;
 using pisa::v1::PayloadBlockedWriter;
 using pisa::v1::PositiveSequence;
+using pisa::v1::Query;
 using pisa::v1::RawCursor;
 using pisa::v1::RawWriter;
 using pisa::v1::TermId;
@@ -139,4 +144,55 @@ TEMPLATE_TEST_CASE("Index",
             ++bci_iter;
         }
     });
+}
+
+TEST_CASE("Select best bigrams", "[v1][integration]")
+{
+    tbb::task_scheduler_init init;
+    IndexFixture<RawCursor<DocId>, RawCursor<Frequency>, RawCursor<std::uint8_t>> fixture(
+        false, false, false, false);
+    std::string index_basename = (fixture.tmpdir().path() / "inv").string();
+    auto meta = IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
+    {
+        std::vector<Query> queries;
+        auto best_bigrams = select_best_bigrams(meta, queries, 10);
+        REQUIRE(best_bigrams.empty());
+    }
+    {
+        std::vector<Query> queries = {Query::from_ids(0, 1).with_probability(0.1)};
+        auto best_bigrams = select_best_bigrams(meta, queries, 10);
+        REQUIRE(best_bigrams == std::vector<std::pair<TermId, TermId>>{{0, 1}});
+    }
+    {
+        std::vector<Query> queries = {
+            Query::from_ids(0, 1).with_probability(0.2), // u: 3758, i: 808  u/i: 4.650990099009901
+            Query::from_ids(1, 2).with_probability(0.2), // u: 3961, i: 734  u/i: 5.3964577656675745
+            Query::from_ids(2, 3).with_probability(0.2), // u: 2298, i: 61   u/i: 37.67213114754098
+            Query::from_ids(3, 4).with_probability(0.2), // u: 90,   i: 3    u/i: 30.0
+            Query::from_ids(4, 5).with_probability(0.2), // u: 21,   i: 1    u/i: 21.0
+            Query::from_ids(5, 6).with_probability(0.2), // u: 8,    i: 3    u/i: 2.6666666666666665
+            Query::from_ids(6, 7).with_probability(0.2), // u: 4,    i: 0    u/i: ---
+            Query::from_ids(7, 8).with_probability(0.2), // u: 2,    i: 1    u/i: 2
+            Query::from_ids(8, 9).with_probability(0.2), // u: 2,    i: 1    u/i: 2
+            Query::from_ids(9, 10).with_probability(0.2) // u: 2,    i: 1    u/i: 2
+        };
+        auto best_bigrams = select_best_bigrams(meta, queries, 3);
+        REQUIRE(best_bigrams == std::vector<std::pair<TermId, TermId>>{{2, 3}, {3, 4}, {4, 5}});
+    }
+    {
+        std::vector<Query> queries = {
+            Query::from_ids(0, 1).with_probability(0.2), // u: 3758, i: 808  u/i: 4.650990099009901
+            Query::from_ids(1, 2).with_probability(0.2), // u: 3961, i: 734  u/i: 5.3964577656675745
+            Query::from_ids(2, 3).with_probability(0.2), // u: 2298, i: 61   u/i: 37.67213114754098
+            Query::from_ids(3, 4).with_probability(0.4), // u: 90,   i: 3    u/i: 30.0
+            Query::from_ids(4, 5).with_probability(0.01), // u: 21,   i: 1    u/i: 21.0
+            Query::from_ids(5, 6).with_probability(0.2), // u: 8,    i: 3    u/i: 2.6666666666666665
+            Query::from_ids(6, 7).with_probability(0.2), // u: 4,    i: 0    u/i: ---
+            Query::from_ids(7, 8).with_probability(0.2), // u: 2,    i: 1    u/i: 2
+            Query::from_ids(8, 9).with_probability(0.2), // u: 2,    i: 1    u/i: 2
+            Query::from_ids(9, 10).with_probability(0.2) // u: 2,    i: 1    u/i: 2
+        };
+        auto best_bigrams = select_best_bigrams(meta, queries, 3);
+        REQUIRE(best_bigrams == std::vector<std::pair<TermId, TermId>>{{3, 4}, {2, 3}, {1, 2}});
+    }
 }

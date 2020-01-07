@@ -32,9 +32,9 @@ set -x
 #${PISA_BIN}/bmscore -i "${BASENAME}.yml" -j ${THREADS} --block-size 128
 
 # Filter out queries witout existing terms.
-#paste -d: ${QUERIES} ${THRESHOLDS} \
-#    | jq '{"id": split(":")[0], "query": split(":")[1], "threshold": split(":")[2] | tonumber}' -R -c \
-#    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml > ${FILTERED_QUERIES}
+paste -d: ${QUERIES} ${THRESHOLDS} \
+    | jq '{"id": split(":")[0], "query": split(":")[1], "threshold": split(":")[2] | tonumber}' -R -c \
+    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml > ${FILTERED_QUERIES}
 
 # This will produce both quantized scores and max scores (both quantized and not).
 ${PISA_BIN}/bigram-index -i "${BASENAME}.yml" -q ${FILTERED_QUERIES}
