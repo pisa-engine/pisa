@@ -134,32 +134,19 @@ void evaluate_queries(const std::string &index_filename,
     auto docmap = Payload_Vector<>::from(*source);
 
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
-    auto start_batch = std::chrono::steady_clock::now();
-    tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
-        raw_results[query_idx] = query_fun(queries[query_idx]);
-    });
-    auto end_batch = std::chrono::steady_clock::now();
-
-    for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
-        auto results = raw_results[query_idx];
-        auto qid = queries[query_idx].id;
+    for (int i = 0; i < queries.size(); ++i)
+    {
+        auto results = query_fun(queries[i]);
         for (auto &&[rank, result] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     qid.value_or(std::to_string(query_idx)),
-                                     iteration,
-                                     result.second,
-                                     rank,
-                                     result.first,
-                                     run_id);
+                                         *(queries[i].id),
+                                         iteration,
+                                         result.second,
+                                         rank,
+                                         result.first,
+                                         run_id);
         }
     }
-    auto end_print = std::chrono::steady_clock::now();
-    double batch_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_batch - start_batch).count();
-    double batch_with_print_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(end_print - start_batch).count();
-    spdlog::info("Time taken to process queries: {}ms", batch_ms);
-    spdlog::info("Time taken to process queries with printing: {}ms", batch_with_print_ms);
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
