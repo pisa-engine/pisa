@@ -33,8 +33,8 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-static size_t nextgeq_n = 0;
-static size_t score_n = 0;
+extern static size_t nextgeq_n = 0;
+extern static size_t score_n = 0;
 
 template <typename Fn>
 void extract_times(Fn fn,
