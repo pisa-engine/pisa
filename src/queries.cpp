@@ -1,3 +1,6 @@
+extern size_t nextgeq_n = 0;
+extern size_t score_n = 0;
+
 #include <algorithm>
 #include <iostream>
 #include <numeric>
@@ -33,8 +36,6 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-extern size_t nextgeq_n = 0;
-extern size_t score_n = 0;
 
 template <typename Fn>
 void extract_times(Fn fn,
