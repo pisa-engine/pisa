@@ -33,6 +33,9 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
+static size_t nextgeq_n = 0;
+static size_t score_n = 0;
+
 template <typename Fn>
 void extract_times(Fn fn,
                    std::vector<Query> const &queries,
@@ -373,4 +376,7 @@ int main(int argc, const char **argv)
     } else {
         spdlog::error("Unknown type {}", type);
     }
+
+    std::cout << "nextgeq: " << nextgeq_n<< std::endl;
+    std::cout << "score: " << score_n<< std::endl;
 }

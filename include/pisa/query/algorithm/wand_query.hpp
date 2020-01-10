@@ -7,6 +7,8 @@
 #include "topk_queue.hpp"
 
 namespace pisa {
+extern size_t nextgeq_n;
+extern size_t score_n;
 
 struct wand_query {
 
@@ -64,6 +66,7 @@ struct wand_query {
                         break;
                     }
                     score += en->scorer(en->docs_enum.docid(), en->docs_enum.freq());
+                    score_n += 1;
                     en->docs_enum.next();
                 }
 
@@ -75,6 +78,7 @@ struct wand_query {
                 uint64_t next_list = pivot;
                 for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list) {}
                 ordered_cursors[next_list]->docs_enum.next_geq(pivot_id);
+                nextgeq_n += 1;
                 // bubble down the advanced list
                 for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
                     if (ordered_cursors[i]->docs_enum.docid() <
