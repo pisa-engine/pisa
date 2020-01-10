@@ -208,7 +208,7 @@ auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& 
     if (query.threshold()) {
         topk.set_threshold(*query.threshold());
     }
-    auto joined = join_maxscore(std::move(cursors), 0.0F, accumulate::Add{}, [&](auto score) {
+    auto joined = join_maxscore(std::move(cursors), 0.0F, accumulators::Add{}, [&](auto score) {
         return topk.would_enter(score);
     });
     v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
@@ -249,7 +249,7 @@ struct MaxscoreInspector {
         auto joined = join_maxscore(
             std::move(cursors),
             0.0F,
-            accumulate::Add{},
+            accumulators::Add{},
             [&](auto score) { return topk.would_enter(score); },
             this);
         v1::for_each(joined, [&](auto& cursor) {

@@ -28,7 +28,7 @@ using pisa::v1::collect;
 using pisa::v1::DocId;
 using pisa::v1::Frequency;
 using pisa::v1::join_maxscore;
-using pisa::v1::accumulate::Add;
+using pisa::v1::accumulators::Add;
 
 TEMPLATE_TEST_CASE("Max score join",
                    "[v1][integration]",

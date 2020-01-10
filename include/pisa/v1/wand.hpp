@@ -450,7 +450,7 @@ auto wand(Query const& query, Index const& index, topk_queue topk, Scorer&& scor
     if (query.threshold()) {
         topk.set_threshold(*query.threshold());
     }
-    auto joined = join_wand(std::move(cursors), 0.0F, accumulate::Add{}, [&](auto score) {
+    auto joined = join_wand(std::move(cursors), 0.0F, accumulators::Add{}, [&](auto score) {
         return topk.would_enter(score);
     });
     v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
@@ -468,7 +468,7 @@ auto bmw(Query const& query, Index const& index, topk_queue topk, Scorer&& score
     if (query.threshold()) {
         topk.set_threshold(*query.threshold());
     }
-    auto joined = join_block_max_wand(std::move(cursors), 0.0F, accumulate::Add{}, [&](auto score) {
+    auto joined = join_block_max_wand(std::move(cursors), 0.0F, accumulators::Add{}, [&](auto score) {
         return topk.would_enter(score);
     });
     v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });

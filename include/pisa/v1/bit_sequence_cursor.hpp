@@ -106,7 +106,7 @@ struct BitSequenceReader {
 
     [[nodiscard]] auto read(gsl::span<std::byte const> bytes) const -> Cursor
     {
-        runtime_assert(bytes.size() % sizeof(BitVector::storage_type) == 0, [&]() {
+        runtime_assert(bytes.size() % sizeof(BitVector::storage_type) == 0).or_throw([&]() {
             return fmt::format(
                 "Attempted to read no. bytes ({}) not aligned with the storage type of size {}",
                 bytes.size(),
@@ -182,9 +182,9 @@ struct BitSequenceWriter {
     template <typename CharT>
     [[nodiscard]] auto write(std::basic_ostream<CharT>& os) const -> std::size_t
     {
-        runtime_assert(m_num_documents.has_value(),
-                       "Uninitialized writer. Must call `init()` before writing.");
-        runtime_assert(!m_postings.empty(), "Tried to write an empty posting list");
+        runtime_assert(m_num_documents.has_value())
+            .or_throw("Uninitialized writer. Must call `init()` before writing.");
+        runtime_assert(!m_postings.empty()).or_throw("Tried to write an empty posting list");
         bit_vector_builder builder;
         auto universe = [&]() {
             if constexpr (DocumentWriter) {
@@ -205,12 +205,13 @@ struct BitSequenceWriter {
         auto memory = gsl::as_bytes(gsl::make_span(data.data(), data.size()));
         os.write(reinterpret_cast<CharT const*>(memory.data()), memory.size());
         auto bytes_written = sizeof(true_bit_length) + memory.size();
-        runtime_assert(bytes_written % sizeof(typename BitVector::storage_type) == 0, [&]() {
-            return fmt::format(
-                "Bytes written ({}) are not aligned with the storage type of size {}",
-                bytes_written,
-                sizeof(typename BitVector::storage_type));
-        });
+        runtime_assert(bytes_written % sizeof(typename BitVector::storage_type) == 0)
+            .or_throw([&]() {
+                return fmt::format(
+                    "Bytes written ({}) are not aligned with the storage type of size {}",
+                    bytes_written,
+                    sizeof(typename BitVector::storage_type));
+            });
         return bytes_written;
     }
 

@@ -24,3 +24,6 @@ target_link_libraries(threshold pisa CLI11)
 
 add_executable(intersection intersection.cpp)
 target_link_libraries(intersection pisa CLI11)
+
+add_executable(select-pairs select_pairs.cpp)
+target_link_libraries(select-pairs pisa CLI11)

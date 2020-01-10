@@ -69,9 +69,9 @@ auto for_all_subsets(v1::Query const& query, tl::optional<std::size_t> max_term_
     }
 }
 
-template <typename Index>
+template <typename Index, typename QRng>
 void compute_intersections(Index const& index,
-                           std::vector<pisa::v1::Query> const& queries,
+                           QRng queries,
                            IntersectionType intersection_type,
                            tl::optional<std::size_t> max_term_count,
                            bool existing)
@@ -96,7 +96,7 @@ void compute_intersections(Index const& index,
                     intersections.push_back(nlohmann::json{{"intersection", left_mask},
                                                            {"cost", cursor.size()},
                                                            {"max_score", cursor.max_score()}});
-                    std::uint64_t right_mask = left_mask << 1;
+                    std::uint64_t right_mask = left_mask << 1U;
                     for (auto right = left + 1; right < term_ids.size(); right += 1) {
                         index
                             .scored_bigram_cursor(term_ids[left], term_ids[right], make_bm25(index))
@@ -115,9 +115,9 @@ void compute_intersections(Index const& index,
                                                    {"cost", cost},
                                                    {"max_score", max_score}});
                             });
-                        right_mask <<= 1;
+                        right_mask <<= 1U;
                     }
-                    left_mask <<= 1;
+                    left_mask <<= 1U;
                 }
             } else {
                 for_all_subsets(query, max_term_count, inter);
@@ -159,7 +159,7 @@ int main(int argc, const char** argv)
 
     try {
         auto meta = app.index_metadata();
-        auto queries = app.queries(meta);
+        auto queries = app.query_range(meta);
 
         auto run = index_runner(meta);
         run([&](auto&& index) {

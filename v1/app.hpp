@@ -5,10 +5,13 @@
 #include <thread>
 
 #include <CLI/CLI.hpp>
+#include <range/v3/view/getlines.hpp>
+#include <range/v3/view/transform.hpp>
 #include <tl/optional.hpp>
 
 #include "io.hpp"
 #include "v1/index_metadata.hpp"
+#include "v1/runtime_assert.hpp"
 
 namespace pisa {
 
@@ -44,6 +47,9 @@ namespace arg {
             if constexpr (Mode == QueryMode::Ranked) {
                 app->add_option("-k", m_k, "The number of top results to return", true);
             }
+            app->add_flag("--force-parse",
+                          m_force_parse,
+                          "Force parsing of query string even ifterm IDs already available");
         }
 
         [[nodiscard]] auto query_file() -> tl::optional<std::string const&>
@@ -65,7 +71,7 @@ namespace arg {
                     }
                     return v1::Query::from_plain(line);
                 }();
-                if (not query.term_ids()) {
+                if (not query.term_ids() || m_force_parse) {
                     query.parse(parser);
                 }
                 if constexpr (Mode == QueryMode::Ranked) {
@@ -82,10 +88,49 @@ namespace arg {
             return queries;
         }
 
+        [[nodiscard]] auto query_range(v1::IndexMetadata const& meta)
+        {
+            auto lines = [&] {
+                if (m_query_file) {
+                    m_query_file_handle = std::make_unique<std::ifstream>(*m_query_file);
+                    return ranges::getlines(*m_query_file_handle);
+                }
+                return ranges::getlines(std::cin);
+            }();
+            return ranges::views::transform(lines,
+                                            [force_parse = m_force_parse,
+                                             k = m_k,
+                                             parser = meta.query_parser(),
+                                             qfmt = m_query_input_format](auto&& line) {
+                                                auto query = [&]() {
+                                                    if (qfmt == "jl") {
+                                                        return v1::Query::from_json(line);
+                                                    }
+                                                    if (qfmt == "plain") {
+                                                        return v1::Query::from_plain(line);
+                                                    }
+                                                    spdlog::error("Unknown  query format: {}",
+                                                                  qfmt);
+                                                    std::exit(1);
+                                                }();
+                                                if (not query.term_ids() || force_parse) {
+                                                    query.parse(parser);
+                                                }
+                                                // Not constexpr to silence unused k value warning.
+                                                // Performance is not a concern.
+                                                if (Mode == QueryMode::Ranked) {
+                                                    query.k(k);
+                                                }
+                                                return query;
+                                            });
+        }
+
        private:
+        std::unique_ptr<std::ifstream> m_query_file_handle = nullptr;
         tl::optional<std::string> m_query_file;
-        tl::optional<std::string> m_query_input_format = "jl";
+        std::string m_query_input_format = "jl";
         int m_k = DefaultK;
+        bool m_force_parse{false};
     };
 
     struct Benchmark {

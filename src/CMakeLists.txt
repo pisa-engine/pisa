@@ -95,12 +95,12 @@ target_link_libraries(compute_intersection
   CLI11
 )
 
-#add_executable(lexicon lexicon.cpp)
-#target_link_libraries(lexicon
-#  pisa
-#  CLI11
-#)
-#
+add_executable(lexicon lexicon.cpp)
+target_link_libraries(lexicon
+  pisa
+  CLI11
+)
+
 #add_executable(extract_topics extract_topics.cpp)
 #target_link_libraries(extract_topics
 #  pisa

@@ -19,8 +19,7 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     auto meta = app.index_metadata();
-    auto queries = app.queries(meta);
-    for (auto&& query : queries) {
+    for (auto&& query : app.query_range(meta)) {
         if (not query.get_term_ids().empty()) {
             std::cout << *query.to_json() << '\n';
         }

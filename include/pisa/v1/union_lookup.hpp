@@ -267,7 +267,7 @@ auto unigram_union_lookup(Query const& query,
         std::move(essential_cursors),
         std::move(lookup_cursors),
         payload_type{},
-        accumulate::Add{},
+        accumulators::Add{},
         [&](auto score) { return topk.would_enter(score); },
         inspect);
     v1::for_each(joined, [&](auto&& cursor) {
@@ -330,7 +330,7 @@ auto maxscore_union_lookup(Query const& query,
         std::move(essential_cursors),
         std::move(cursors),
         payload_type{},
-        accumulate::Add{},
+        accumulators::Add{},
         [&](auto score) { return topk.would_enter(score); },
         inspect);
     v1::for_each(joined, [&](auto&& cursor) {
@@ -441,7 +441,7 @@ auto lookup_union(Query const& query,
         return join_union_lookup(std::move(essential_cursors),
                                  std::move(lookup_cursors),
                                  0.0F,
-                                 accumulate::Add{},
+                                 accumulators::Add{},
                                  is_above_threshold,
                                  inspect);
     }();

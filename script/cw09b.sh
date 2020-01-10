@@ -21,6 +21,7 @@ echo "  THRESHOLDS       = ${THRESHOLDS}"
 echo ""
 
 set -x
+mkdir -p ${OUTPUT_DIR}
 
 ## Compress an inverted index in `binary_freq_collection` format.
 #${PISA_BIN}/compress -i ${BINARY_FREQ_COLL} --fwd ${FWD} -o ${BASENAME} -j ${THREADS} -e ${ENCODING}
@@ -58,51 +59,50 @@ ${INTERSECT_BIN} -m bigram ${OUTPUT_DIR}/intersections.jl \
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --benchmark --algorithm maxscore --safe > ${OUTPUT_DIR}/bench.maxscore
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm bmw --safe \
 #    > ${OUTPUT_DIR}/bench.bmw-threshold
-#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore --safe \
-#    > ${OUTPUT_DIR}/bench.maxscore-threshold
+${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore --safe \
+    > ${OUTPUT_DIR}/bench.maxscore-threshold
 #${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore-union-lookup --safe \
 #    > ${OUTPUT_DIR}/bench.maxscore-union-lookup
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --benchmark --algorithm unigram-union-lookup --safe \
     > ${OUTPUT_DIR}/bench.unigram-union-lookup
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm union-lookup --safe \
-    > ${OUTPUT_DIR}/bench.union-lookup
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm union-lookup --safe \
+#    > ${OUTPUT_DIR}/bench.union-lookup
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm lookup-union --safe \
     > ${OUTPUT_DIR}/bench.lookup-union
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --safe \
-    --benchmark --algorithm lookup-union \
-    > ${OUTPUT_DIR}/bench.lookup-union.scaled-1.5
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
-    --benchmark --algorithm lookup-union \
-    > ${OUTPUT_DIR}/bench.lookup-union.scaled-2
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --safe \
+#    --benchmark --algorithm lookup-union \
+#    > ${OUTPUT_DIR}/bench.lookup-union.scaled-1.5
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
+#    --benchmark --algorithm lookup-union \
+#    > ${OUTPUT_DIR}/bench.lookup-union.scaled-2
 
 # Analyze
-${PISA_BIN}/query -i "${BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --inspect --algorithm maxscore > ${OUTPUT_DIR}/stats.maxscore
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore \
-    > ${OUTPUT_DIR}/stats.maxscore-threshold
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore-union-lookup \
-    > ${OUTPUT_DIR}/stats.maxscore-union-lookup
+# ${PISA_BIN}/query -i "${BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --inspect --algorithm maxscore > ${OUTPUT_DIR}/stats.maxscore
+# ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore \
+#     > ${OUTPUT_DIR}/stats.maxscore-threshold
+# ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore-union-lookup \
+#     > ${OUTPUT_DIR}/stats.maxscore-union-lookup
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --inspect --algorithm unigram-union-lookup \
     > ${OUTPUT_DIR}/stats.unigram-union-lookup
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm union-lookup \
-    > ${OUTPUT_DIR}/stats.union-lookup
+# ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm union-lookup \
+#     > ${OUTPUT_DIR}/stats.union-lookup
 ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm lookup-union \
     > ${OUTPUT_DIR}/stats.lookup-union
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 \
-    --inspect --algorithm lookup-union \
-    > ${OUTPUT_DIR}/stats.lookup-union.scaled-1.5
+# ${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 \
+#     --inspect --algorithm lookup-union \
+#     > ${OUTPUT_DIR}/stats.lookup-union.scaled-1.5
 
 # Evaluate
-${PISA_BIN}/query -i "${BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --algorithm maxscore > "${OUTPUT_DIR}/eval.maxscore"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxscore \
-    > "${OUTPUT_DIR}/eval.maxscore-threshold"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxscore-union-lookup \
-    > "${OUTPUT_DIR}/eval.maxscore-union-lookup"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --algorithm unigram-union-lookup \
-    > "${OUTPUT_DIR}/eval.unigram-union-lookup"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --algorithm union-lookup \
-    > "${OUTPUT_DIR}/eval.union-lookup"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --algorithm lookup-union \
-    > "${OUTPUT_DIR}/eval.lookup-union"
-${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --algorithm lookup-union \
-    > "${OUTPUT_DIR}/eval.lookup-union.scaled-1.5"
-
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --algorithm maxscore > "${OUTPUT_DIR}/eval.maxscore"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxscore \
+#    > "${OUTPUT_DIR}/eval.maxscore-threshold"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${FILTERED_QUERIES} --algorithm maxscore-union-lookup \
+#    > "${OUTPUT_DIR}/eval.maxscore-union-lookup"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --algorithm unigram-union-lookup \
+#    > "${OUTPUT_DIR}/eval.unigram-union-lookup"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --algorithm union-lookup \
+#    > "${OUTPUT_DIR}/eval.union-lookup"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --algorithm lookup-union \
+#    > "${OUTPUT_DIR}/eval.lookup-union"
+#${PISA_BIN}/query -i "${BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --algorithm lookup-union \
+#    > "${OUTPUT_DIR}/eval.lookup-union.scaled-1.5"

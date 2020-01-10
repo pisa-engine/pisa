@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace pisa::v1::accumulate {
+namespace pisa::v1::accumulators {
 
 struct Add {
     template <typename Score, typename Cursor>

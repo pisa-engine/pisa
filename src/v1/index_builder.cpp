@@ -198,7 +198,8 @@ struct HeapPriorityQueue {
     run([&](auto&& index) {
         auto bigram_gain = [&](Query const& bigram) -> float {
             auto&& term_ids = bigram.get_term_ids();
-            runtime_assert(term_ids.size() == 2, "Queries must be of exactly two unique terms");
+            runtime_assert(term_ids.size() == 2)
+                .or_throw("Queries must be of exactly two unique terms");
             auto cursors = index.scored_cursors(term_ids, make_bm25(index));
             auto union_length = cursors[0].size() + cursors[1].size();
             auto intersection_length =

@@ -9,10 +9,14 @@
 #include <yaml-cpp/yaml.h>
 
 #include "binary_freq_collection.hpp"
+#include "v1/cursor/accumulate.hpp"
+#include "v1/cursor_intersection.hpp"
 #include "v1/index.hpp"
 #include "v1/index_metadata.hpp"
 #include "v1/progress_status.hpp"
 #include "v1/query.hpp"
+#include "v1/runtime_assert.hpp"
+#include "v1/scorer/bm25.hpp"
 
 namespace pisa::v1 {
 
@@ -229,6 +233,28 @@ inline void compress_binary_collection(std::string const& input,
         .document_lexicon = tl::make_optional(fmt::format("{}.doclex", fwd)),
         .stemmer = tl::make_optional("porter2")}
         .write(fmt::format("{}.yml", output));
+}
+
+template <typename Index>
+auto bigram_gain(Index&& index, Query const& bigram) -> float
+{
+    auto&& term_ids = bigram.get_term_ids();
+    runtime_assert(term_ids.size() == 2).or_throw("Queries must be of exactly two unique terms");
+    auto cursors = index.scored_cursors(term_ids, make_bm25(index));
+    auto union_length = cursors[0].size() + cursors[1].size();
+    auto intersection_length =
+        accumulate(intersect(std::move(cursors),
+                             false,
+                             []([[maybe_unused]] auto count,
+                                [[maybe_unused]] auto&& cursor,
+                                [[maybe_unused]] auto idx) { return true; }),
+                   std::size_t{0},
+                   [](auto count, [[maybe_unused]] auto&& cursor) { return count + 1; });
+    if (intersection_length == 0) {
+        return 0.0;
+    }
+    return static_cast<double>(bigram.get_probability()) * static_cast<double>(union_length)
+           / static_cast<double>(intersection_length);
 }
 
 auto verify_compressed_index(std::string const& input, std::string_view output)

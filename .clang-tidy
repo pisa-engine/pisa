@@ -13,4 +13,5 @@ Checks: |
     -cppcoreguidelines-avoid-magic-numbers,
     -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
     -modernize-use-trailing-return-type,
-    -misc-non-private-member-variables-in-classes
+    -misc-non-private-member-variables-in-classes,
+    -readability-magic-numbers

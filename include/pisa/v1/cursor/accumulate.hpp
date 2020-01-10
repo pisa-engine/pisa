@@ -1,3 +1,5 @@
+#pragma once
+
 #include "v1/cursor/for_each.hpp"
 
 namespace pisa::v1 {
