@@ -1,11 +1,12 @@
-extern size_t nextgeq_n = 0;
-extern size_t score_n = 0;
 
 #include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <optional>
 #include <string>
+
+extern size_t nextgeq_n = 0;
+extern size_t score_n = 0;
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
