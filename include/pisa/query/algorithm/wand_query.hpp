@@ -7,8 +7,6 @@
 #include "topk_queue.hpp"
 
 namespace pisa {
-extern size_t nextgeq_n;
-extern size_t score_n;
 
 struct wand_query {
 
