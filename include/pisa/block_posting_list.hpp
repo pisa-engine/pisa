@@ -137,6 +137,7 @@ namespace pisa {
                     }
 
                     decode_docs_block(block);
+                    decoded_block_n +=1;
                 }
 
                 while (docid() < lower_bound) {

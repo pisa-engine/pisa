@@ -4,9 +4,14 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <vector>
 
 extern size_t nextgeq_n = 0;
 extern size_t score_n = 0;
+extern size_t decoded_block_n = 0;
+extern size_t enter_queue_n = 0;
+extern std::vector<size_t> docid_gaps{};
+extern std::vector<size_t> avg_pos{};
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -200,9 +205,19 @@ void perftest(const std::string &index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
-                block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                auto cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
+                block_max_wand_q(cursors,
                                  index.num_docs());
                 topk.finalize();
+                auto last = topk.topk().back().second;
+                size_t positions = 0;
+                for(auto&& e : cursors) {
+                    e.docs_enum.next_geq(last);
+                    if(e.docs_enum.docid() == last) {
+                        positions = e.docs_enum.position();
+                    }
+                }
+                avg_pos.push_back(positions/cursors.size());
                 return topk.size();
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
@@ -378,7 +393,12 @@ int main(int argc, const char **argv)
     } else {
         spdlog::error("Unknown type {}", type);
     }
+    std::locale::global(std::locale("en_US.UTF-8"));
+    fmt::print("nextgeq: {:n}", nextgeq_n);
+    fmt::print("score: {:n}", score_n);
+    fmt::print("decoded block: {:n}", decoded_block_n);
+    fmt::print("insert heap: {:n}", enter_queue_n);
+    fmt::print("avg docid gap: {:n}", accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0) / docid_gaps.size());
+    fmt::print("avg last doc pos: {:n}", accumulate(avg_pos.begin(), avg_pos.end(), 0.0) / avg_pos.size());
 
-    std::cout << "nextgeq: " << nextgeq_n<< std::endl;
-    std::cout << "score: " << score_n<< std::endl;
 }

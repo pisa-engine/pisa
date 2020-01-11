@@ -3,6 +3,7 @@
 #include <vector>
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
+
 namespace pisa {
 
 struct block_max_wand_query {
@@ -12,6 +13,7 @@ struct block_max_wand_query {
 
     template<typename CursorRange>
     void operator()(CursorRange &&cursors, uint64_t max_docid) {
+        uint32_t last_scored = 0;
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty())
             return;
@@ -77,11 +79,14 @@ struct block_max_wand_query {
                 // check if pivot is a possible match
                 if (pivot_id == ordered_cursors[0]->docs_enum.docid()) {
                     float score    = 0;
+                    docid_gaps.push_back(pivot_id - last_scored);
+                    last_scored = pivot_id;
                     for (Cursor *en : ordered_cursors) {
                         if (en->docs_enum.docid() != pivot_id) {
                             break;
                         }
                         float part_score = en->scorer(en->docs_enum.docid(), en->docs_enum.freq());
+                        score_n += 1;
                         score += part_score;
                         block_upper_bound -= en->w.score() * en->q_weight - part_score;
                         if (!m_topk.would_enter(block_upper_bound)) {
@@ -96,6 +101,7 @@ struct block_max_wand_query {
                     }
 
                     m_topk.insert(score, pivot_id);
+                    enter_queue_n += 1;
                     // resort by docid
                     sort_cursors();
 
@@ -105,6 +111,7 @@ struct block_max_wand_query {
                     for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list)
                         ;
                     ordered_cursors[next_list]->docs_enum.next_geq(pivot_id);
+                    nextgeq_n += 1;
 
                     // bubble down the advanced list
                     for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
@@ -148,6 +155,7 @@ struct block_max_wand_query {
                 }
 
                 ordered_cursors[next_list]->docs_enum.next_geq(next);
+                nextgeq_n += 1;
 
                 // bubble down the advanced list
                 for (size_t i = next_list + 1; i < ordered_cursors.size(); ++i) {
