@@ -15,7 +15,8 @@ struct wand_query {
 
     template<typename CursorRange>
     void operator()(CursorRange &&cursors, uint64_t max_docid) {
-        using Cursor = typename std::decay_t<CursorRange>::value_type;
+        uint32_t last_scored = 0;
+	using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty())
             return;
 
@@ -59,6 +60,9 @@ struct wand_query {
             uint64_t pivot_id = ordered_cursors[pivot]->docs_enum.docid();
             if (pivot_id == ordered_cursors[0]->docs_enum.docid()) {
                 float score    = 0;
+		docid_gaps.push_back(pivot_id - last_scored);
+                last_scored = pivot_id;
+
                 for (Cursor *en : ordered_cursors) {
                     if (en->docs_enum.docid() != pivot_id) {
                         break;
@@ -69,6 +73,8 @@ struct wand_query {
                 }
 
                 m_topk.insert(score, pivot_id);
+		enter_queue_n += 1;
+
                 // resort by docid
                 sort_enums();
             } else {

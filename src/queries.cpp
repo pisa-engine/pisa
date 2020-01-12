@@ -409,6 +409,7 @@ int main(int argc, const char **argv)
     fmt::print("decoded block: {:n}", decoded_block_n);
     fmt::print("insert heap: {:n}", enter_queue_n);
     fmt::print("avg docid gap: {:n}", accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0) / docid_gaps.size());
+    fmt::print("avg log docid gap: {:n}", accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0, [](size_t x, size_t y){ return x + log2f(y)}) / docid_gaps.size());
     fmt::print("avg last doc pos: {:n}", accumulate(avg_pos.begin(), avg_pos.end(), 0.0) / avg_pos.size());
 
 }
