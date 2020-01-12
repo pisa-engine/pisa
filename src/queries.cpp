@@ -197,18 +197,22 @@ void perftest(const std::string &index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 wand_query wand_q(topk);
-                auto cursors = make_max_scored_cursors(index, wdata, *scorer, query);
-		wand_q(cursors, index.num_docs());
+                auto cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
+		        wand_q(cursors, index.num_docs());
                 topk.finalize();
                 auto last = topk.topk().back().second;
                 size_t positions = 0;
+                size_t n = 0;
+                cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
                 for(auto&& e : cursors) {
                     e.docs_enum.next_geq(last);
                     if(e.docs_enum.docid() == last) {
-                        positions = e.docs_enum.position();
+                        positions += e.docs_enum.position();
+                        n+=1;
                     }
                 }
-                avg_pos.push_back(positions/cursors.size());
+                if(positions)
+                    avg_pos.push_back(positions/n);
                 return topk.size();
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
@@ -222,14 +226,17 @@ void perftest(const std::string &index_filename,
                 topk.finalize();
                 auto last = topk.topk().back().second;
                 size_t positions = 0;
+                size_t n = 0;
                 cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
                 for(auto&& e : cursors) {
                     e.docs_enum.next_geq(last);
                     if(e.docs_enum.docid() == last) {
-                        positions = e.docs_enum.position();
+                        positions += e.docs_enum.position();
+                        n+=1;
                     }
                 }
-                avg_pos.push_back(positions/cursors.size());
+                if(positions)
+                    avg_pos.push_back(positions/n);
                 return topk.size();
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
@@ -275,8 +282,23 @@ void perftest(const std::string &index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 maxscore_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                auto cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
+                maxscore_q(cursors, index.num_docs());
                 topk.finalize();
+                auto last = topk.topk().back().second;
+                std::cout << last << std::endl;
+                size_t positions = 0;
+                size_t n = 0;
+                cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
+                for(auto&& e : cursors) {
+                    e.docs_enum.next_geq(last);
+                    if(e.docs_enum.docid() == last) {
+                        positions += e.docs_enum.position();
+                        n +=1;
+                    }
+                }
+                if(positions)
+                    avg_pos.push_back(positions/n);
                 return topk.size();
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
@@ -412,7 +434,12 @@ int main(int argc, const char **argv)
     fmt::print("decoded block: {:n}\n", size_t(decoded_block_n/queries.size()));
     fmt::print("insert heap: {:n}\n", size_t(enter_queue_n/queries.size()));
     fmt::print("avg docid gap: {:n}\n", size_t(accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0) / docid_gaps.size()));
-    fmt::print("avg log docid gap: {:n}", accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0, [](size_t x, size_t y){ return x + log2f(y)}) / docid_gaps.size());
-    fmt::print("avg last doc pos: {:n}\n", size_t(accumulate(avg_pos.begin(), avg_pos.end(), 0.0) / avg_pos.size()));
+    auto log_sum = 0.0;
+    for(auto&& g: docid_gaps) {
+        if(g)
+            log_sum += log2f(g);
+    }
+    fmt::print("avg log docid gap: {}\n",  log_sum / docid_gaps.size());
+    fmt::print("avg last doc pos: {:n}\n",  size_t(accumulate(avg_pos.begin(), avg_pos.end(), 0.0) / avg_pos.size()));
 
 }
