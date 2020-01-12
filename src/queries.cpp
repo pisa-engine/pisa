@@ -196,8 +196,18 @@ void perftest(const std::string &index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                auto cursors = make_max_scored_cursors(index, wdata, *scorer, query);
+		wand_q(cursors, index.num_docs());
                 topk.finalize();
+                auto last = topk.topk().back().second;
+                size_t positions = 0;
+                for(auto&& e : cursors) {
+                    e.docs_enum.next_geq(last);
+                    if(e.docs_enum.docid() == last) {
+                        positions = e.docs_enum.position();
+                    }
+                }
+                avg_pos.push_back(positions/cursors.size());
                 return topk.size();
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
