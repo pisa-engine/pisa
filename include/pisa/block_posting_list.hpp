@@ -123,6 +123,7 @@ namespace pisa {
 
             void PISA_ALWAYSINLINE next_geq(uint64_t lower_bound)
             {
+		size_t jump = 0;
                 assert(lower_bound >= m_cur_docid || position() == 0);
                 if (PISA_UNLIKELY(lower_bound > m_cur_block_max)) {
                     // binary search seems to perform worse here
@@ -134,16 +135,18 @@ namespace pisa {
                     uint64_t block = m_cur_block + 1;
                     while (block_max(block) < lower_bound) {
                         ++block;
+			jump += BlockCodec::block_size;
                     }
 
                     decode_docs_block(block);
                     decoded_block_n +=1;
                 }
-
                 while (docid() < lower_bound) {
                     m_cur_docid += m_docs_buf[++m_pos_in_block] + 1;
                     assert(m_pos_in_block < m_cur_block_size);
-                }
+               	jump+=1;
+		 }
+		avg_nextgeq_jump.push_back(jump);
             }
 
             void PISA_ALWAYSINLINE move(uint64_t pos)

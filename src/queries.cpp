@@ -12,6 +12,7 @@ extern size_t decoded_block_n = 0;
 extern size_t enter_queue_n = 0;
 extern std::vector<size_t> docid_gaps{};
 extern std::vector<size_t> avg_pos{};
+extern std::vector<size_t> avg_nextgeq_jump{};
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -221,6 +222,7 @@ void perftest(const std::string &index_filename,
                 topk.finalize();
                 auto last = topk.topk().back().second;
                 size_t positions = 0;
+                cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);
                 for(auto&& e : cursors) {
                     e.docs_enum.next_geq(last);
                     if(e.docs_enum.docid() == last) {
@@ -404,12 +406,13 @@ int main(int argc, const char **argv)
         spdlog::error("Unknown type {}", type);
     }
     std::locale::global(std::locale("en_US.UTF-8"));
-    fmt::print("nextgeq: {:n}", nextgeq_n);
-    fmt::print("score: {:n}", score_n);
-    fmt::print("decoded block: {:n}", decoded_block_n);
-    fmt::print("insert heap: {:n}", enter_queue_n);
-    fmt::print("avg docid gap: {:n}", accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0) / docid_gaps.size());
+    fmt::print("nextgeq: {:n}\n", size_t(nextgeq_n/queries.size()));
+    fmt::print("avg nextgeq jump: {:n}\n", size_t(accumulate(avg_nextgeq_jump.begin(), avg_nextgeq_jump.end(), 0.0) / avg_nextgeq_jump.size()));
+    fmt::print("score: {:n}\n", size_t(score_n/queries.size()));
+    fmt::print("decoded block: {:n}\n", size_t(decoded_block_n/queries.size()));
+    fmt::print("insert heap: {:n}\n", size_t(enter_queue_n/queries.size()));
+    fmt::print("avg docid gap: {:n}\n", size_t(accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0) / docid_gaps.size()));
     fmt::print("avg log docid gap: {:n}", accumulate(docid_gaps.begin(), docid_gaps.end(), 0.0, [](size_t x, size_t y){ return x + log2f(y)}) / docid_gaps.size());
-    fmt::print("avg last doc pos: {:n}", accumulate(avg_pos.begin(), avg_pos.end(), 0.0) / avg_pos.size());
+    fmt::print("avg last doc pos: {:n}\n", size_t(accumulate(avg_pos.begin(), avg_pos.end(), 0.0) / avg_pos.size()));
 
 }
