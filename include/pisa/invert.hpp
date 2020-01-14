@@ -173,7 +173,7 @@ namespace invert {
         std::ofstream dstream(basename + ".docs");
         std::ofstream fstream(basename + ".freqs");
         std::ofstream sstream(basename + ".sizes");
-        std::uint32_t count = index.documents.size();
+        std::uint32_t count = index.document_sizes.size();
         write_sequence(dstream, gsl::make_span<uint32_t const>(&count, 1));
         for (auto term : ranges::views::iota(Term_Id(0), Term_Id(term_count))) {
             if (auto pos = index.documents.find(term); pos != index.documents.end()) {
