@@ -286,7 +286,6 @@ void perftest(const std::string &index_filename,
                 maxscore_q(cursors, index.num_docs());
                 topk.finalize();
                 auto last = topk.topk().back().second;
-                std::cout << last << std::endl;
                 size_t positions = 0;
                 size_t n = 0;
                 cursors = make_block_max_scored_cursors(index, wdata, *scorer, query);

@@ -100,8 +100,10 @@ struct block_max_wand_query {
                         en->docs_enum.next();
                     }
 
-                    m_topk.insert(score, pivot_id);
-                    enter_queue_n += 1;
+                    if(m_topk.insert(score, pivot_id)){
+                        enter_queue_n += 1;
+                    }
+
                     // resort by docid
                     sort_cursors();
 

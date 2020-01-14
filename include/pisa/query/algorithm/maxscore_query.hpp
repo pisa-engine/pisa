@@ -16,7 +16,7 @@ struct maxscore_query {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty())
             return;
-
+        size_t last_doc = 0;
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
         for (auto &en : cursors) {
@@ -43,7 +43,7 @@ struct maxscore_query {
             }
         };
         update_non_essential_lists();
-        
+
         uint64_t cur_doc =
             std::min_element(cursors.begin(),
                              cursors.end(),
@@ -57,7 +57,10 @@ struct maxscore_query {
             uint64_t next_doc = max_docid;
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
                 if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
+                    docid_gaps.push_back(cur_doc - last_doc);
+                    last_doc = cur_doc;
                     score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
+                    score_n += 1;
                     ordered_cursors[i]->docs_enum.next();
                 }
                 if (ordered_cursors[i]->docs_enum.docid() < next_doc) {
@@ -71,12 +74,15 @@ struct maxscore_query {
                     break;
                 }
                 ordered_cursors[i]->docs_enum.next_geq(cur_doc);
+                nextgeq_n += 1;
                 if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
                     score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
+                    score_n += 1;
                 }
             }
 
             if (m_topk.insert(score, cur_doc)) {
+                enter_queue_n += 1;
                 update_non_essential_lists();
             }
 
