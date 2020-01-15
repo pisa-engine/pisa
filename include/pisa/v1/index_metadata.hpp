@@ -14,6 +14,8 @@
 
 namespace pisa::v1 {
 
+[[nodiscard]] auto append_extension(std::string file_path) -> std::string;
+
 /// Return the passed file path if is not `nullopt`.
 /// Otherwise, look for an `.yml` file in the current directory.
 /// It will throw if no `.yml` file is found or there are multiple `.yml` files.

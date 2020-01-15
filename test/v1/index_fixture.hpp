@@ -9,6 +9,7 @@
 #include "v1/index.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/intersection.hpp"
+#include "v1/io.hpp"
 #include "v1/query.hpp"
 #include "v1/score_index.hpp"
 
@@ -74,10 +75,11 @@ struct IndexFixture {
             meta = v1::score_index(v1::IndexMetadata::from_file(yml), 1);
         }
         if (bm_score) {
-            meta = v1::bm_score_index(meta, 5, 1);
+            meta = v1::bm_score_index(meta, pisa::v1::FixedBlock{5}, 1);
         }
         if (build_bigrams) {
-            v1::build_bigram_index(meta, collect_unique_bigrams(test_queries(), []() {}));
+            v1::build_pair_index(
+                meta, collect_unique_bigrams(test_queries(), []() {}), tl::nullopt, 4);
         }
     }
 

@@ -288,12 +288,11 @@ TEMPLATE_TEST_CASE("Query",
             return results;
         }();
 
-        constexpr float max_partial_score = 16.5724F;
-        auto quantizer = [&](float score) {
-            return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
-                                             / max_partial_score);
-        };
-
         // TODO(michal): test the quantized results
+        // constexpr float max_partial_score = 16.5724F;
+        // auto quantizer = [&](float score) {
+        //    return static_cast<std::uint8_t>(score * std::numeric_limits<std::uint8_t>::max()
+        //                                     / max_partial_score);
+        //};
     }
 }

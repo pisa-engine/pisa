@@ -69,10 +69,12 @@ struct BaseIndex {
 
     [[nodiscard]] auto num_terms() const -> std::size_t;
     [[nodiscard]] auto num_documents() const -> std::size_t;
+    [[nodiscard]] auto num_pairs() const -> std::size_t;
     [[nodiscard]] auto document_length(DocId docid) const -> std::uint32_t;
     [[nodiscard]] auto avg_document_length() const -> float;
     [[nodiscard]] auto normalized_document_length(DocId docid) const -> float;
     [[nodiscard]] auto bigram_id(TermId left_term, TermId right_term) const -> tl::optional<TermId>;
+    [[nodiscard]] auto pairs() const -> tl::optional<gsl::span<std::array<TermId, 2> const>>;
 
    protected:
     void assert_term_in_bounds(TermId term) const;

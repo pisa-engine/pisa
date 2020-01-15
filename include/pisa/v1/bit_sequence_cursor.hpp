@@ -235,12 +235,14 @@ using PayloadBitSequenceWriter = BitSequenceWriter<BitSequence, false>;
 
 template <typename BitSequence>
 struct CursorTraits<DocumentBitSequenceCursor<BitSequence>> {
+    using Value = std::uint32_t;
     using Writer = DocumentBitSequenceWriter<BitSequence>;
     using Reader = DocumentBitSequenceReader<BitSequence>;
 };
 
 template <typename BitSequence>
 struct CursorTraits<PayloadBitSequenceCursor<BitSequence>> {
+    using Value = std::uint32_t;
     using Writer = PayloadBitSequenceWriter<BitSequence>;
     using Reader = PayloadBitSequenceReader<BitSequence>;
 };

@@ -27,3 +27,9 @@ target_link_libraries(intersection pisa CLI11)
 
 add_executable(select-pairs select_pairs.cpp)
 target_link_libraries(select-pairs pisa CLI11)
+
+add_executable(count-postings count_postings.cpp)
+target_link_libraries(count-postings pisa CLI11)
+
+add_executable(stats stats.cpp)
+target_link_libraries(stats pisa CLI11)

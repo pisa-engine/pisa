@@ -3,7 +3,9 @@
 #include <tbb/task_group.h>
 
 #include "codec/simdbp.hpp"
+#include "score_opt_partition.hpp"
 #include "v1/blocked_cursor.hpp"
+#include "v1/cursor/collect.hpp"
 #include "v1/default_index_runner.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/index_metadata.hpp"
@@ -12,11 +14,10 @@
 #include "v1/score_index.hpp"
 #include "v1/scorer/bm25.hpp"
 
-using pisa::v1::DefaultProgress;
+using pisa::v1::DefaultProgressCallback;
 using pisa::v1::IndexMetadata;
 using pisa::v1::PostingFilePaths;
 using pisa::v1::ProgressStatus;
-using pisa::v1::RawReader;
 using pisa::v1::RawWriter;
 using pisa::v1::TermId;
 using pisa::v1::write_span;
@@ -33,10 +34,10 @@ auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata
     auto quantized_max_scores_path = fmt::format("{}.bm25.maxq", index_basename);
     run([&](auto&& index) {
         ProgressStatus calc_max_status(index.num_terms(),
-                                       DefaultProgress("Calculating max partial score"),
+                                       DefaultProgressCallback("Calculating max partial score"),
                                        std::chrono::milliseconds(100));
         std::vector<float> max_scores(index.num_terms(), 0.0F);
-        tbb::task_group group;
+        tbb::task_group group; // TODO(michal): Unused?
         auto batch_size = index.num_terms() / threads;
         for (auto thread_id = 0; thread_id < threads; thread_id += 1) {
             auto first_term = thread_id * batch_size;
@@ -55,8 +56,9 @@ auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata
                           });
         }
         group.wait();
+        calc_max_status.close();
         auto max_score = *std::max_element(max_scores.begin(), max_scores.end());
-        std::cerr << fmt::format("Max partial score is: {}. It will be scaled to {}.",
+        std::cerr << fmt::format("Max partial score is: {}. It will be scaled to {}.\n",
                                  max_score,
                                  std::numeric_limits<std::uint8_t>::max());
 
@@ -71,7 +73,7 @@ auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata
                        quantizer);
 
         ProgressStatus status(
-            index.num_terms(), DefaultProgress("Scoring"), std::chrono::milliseconds(100));
+            index.num_terms(), DefaultProgressCallback("Scoring"), std::chrono::milliseconds(100));
         std::ofstream score_file_stream(postings_path);
         auto offsets = score_index(index,
                                    score_file_stream,
@@ -91,8 +93,7 @@ auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata
 }
 
 // TODO: Use multiple threads
-auto bm_score_index(IndexMetadata meta, std::size_t block_size, std::size_t threads)
-    -> IndexMetadata
+auto bm_score_index(IndexMetadata meta, BlockType block_type, std::size_t threads) -> IndexMetadata
 {
     auto run = index_runner(meta);
     auto const& index_basename = meta.get_basename();
@@ -106,7 +107,7 @@ auto bm_score_index(IndexMetadata meta, std::size_t block_size, std::size_t thre
     run([&](auto&& index) {
         auto scorer = make_bm25(index);
         ProgressStatus status(index.num_terms(),
-                              DefaultProgress("Calculating max-blocks"),
+                              DefaultProgressCallback("Calculating max-blocks"),
                               std::chrono::milliseconds(100));
         std::ofstream document_out(paths.documents.postings);
         std::ofstream score_out(paths.payloads.postings);
@@ -116,21 +117,35 @@ auto bm_score_index(IndexMetadata meta, std::size_t block_size, std::size_t thre
         score_builder.write_header(score_out);
         for (TermId term_id = 0; term_id < index.num_terms(); term_id += 1) {
             auto cursor = index.scored_cursor(term_id, scorer);
-            while (not cursor.empty()) {
-                auto max_score = 0.0F;
-                auto last_docid = 0;
-                for (auto idx = 0; idx < block_size && not cursor.empty(); ++idx) {
-                    if (auto score = cursor.payload(); score > max_score) {
-                        max_score = score;
+            if (std::holds_alternative<FixedBlock>(block_type)) {
+                auto block_size = std::get<FixedBlock>(block_type).size;
+                while (not cursor.empty()) {
+                    auto max_score = 0.0F;
+                    auto last_docid = 0;
+                    for (auto idx = 0; idx < block_size && not cursor.empty(); ++idx) {
+                        if (auto score = cursor.payload(); score > max_score) {
+                            max_score = score;
+                        }
+                        last_docid = cursor.value();
+                        cursor.advance();
                     }
-                    last_docid = cursor.value();
-                    cursor.advance();
+                    document_builder.accumulate(last_docid);
+                    score_builder.accumulate(max_score);
                 }
-                document_builder.accumulate(last_docid);
-                score_builder.accumulate(max_score);
+                document_builder.flush_segment(document_out);
+                score_builder.flush_segment(score_out);
+            } else {
+                auto lambda = std::get<VariableBlock>(block_type).lambda;
+                auto eps1 = configuration::get().eps1_wand;
+                auto eps2 = configuration::get().eps2_wand;
+                auto vec = collect_with_payload(cursor);
+                auto partition =
+                    score_opt_partition(vec.begin(), 0, vec.size(), eps1, eps2, lambda);
+                document_builder.write_segment(
+                    document_out, partition.docids.begin(), partition.docids.end());
+                score_builder.write_segment(
+                    score_out, partition.max_values.begin(), partition.max_values.end());
             }
-            document_builder.flush_segment(document_out);
-            score_builder.flush_segment(score_out);
             status += 1;
         }
         write_span(gsl::make_span(document_builder.offsets()), paths.documents.offsets);

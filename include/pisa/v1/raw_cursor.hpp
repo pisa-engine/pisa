@@ -154,6 +154,7 @@ struct RawWriter {
 
 template <typename T>
 struct CursorTraits<RawCursor<T>> {
+    using Value = T;
     using Writer = RawWriter<T>;
     using Reader = RawReader<T>;
     constexpr static auto encoding() -> std::uint32_t { return EncodingId::Raw + sizeof(T); }

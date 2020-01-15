@@ -22,6 +22,23 @@ constexpr char const* MAX_SCORES = "max_scores";
 constexpr char const* BLOCK_MAX_SCORES = "block_max_scores";
 constexpr char const* QUANTIZED_MAX_SCORES = "quantized_max_scores";
 
+[[nodiscard]] auto has_extension(std::string_view file_path, std::string_view extension) -> bool
+{
+    if (file_path.size() <= 4) {
+        return false;
+    }
+    return std::string_view(file_path.data(), file_path.size() - 4) == extension;
+}
+
+[[nodiscard]] auto append_extension(std::string file_path) -> std::string
+{
+    using namespace std::literals;
+    if (has_extension(file_path, ".yml"sv)) {
+        return file_path;
+    }
+    return fmt::format("{}{}", file_path, ".yml"sv);
+}
+
 [[nodiscard]] auto resolve_yml(tl::optional<std::string> const& arg) -> std::string
 {
     if (arg) {

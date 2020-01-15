@@ -399,12 +399,14 @@ using PayloadBlockedWriter = GenericBlockedWriter<Codec, false>;
 
 template <typename Codec>
 struct CursorTraits<DocumentBlockedCursor<Codec>> {
+    using Value = std::uint32_t;
     using Writer = DocumentBlockedWriter<Codec>;
     using Reader = DocumentBlockedReader<Codec>;
 };
 
 template <typename Codec>
 struct CursorTraits<PayloadBlockedCursor<Codec>> {
+    using Value = std::uint32_t;
     using Writer = PayloadBlockedWriter<Codec>;
     using Reader = PayloadBlockedReader<Codec>;
 };

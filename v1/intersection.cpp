@@ -38,6 +38,10 @@ auto compute_intersection(Index const& index,
 {
     auto const term_ids =
         term_selection ? query.filtered_terms(*term_selection) : query.get_term_ids();
+    if (term_ids.size() == 1) {
+        auto cursor = index.max_scored_cursor(term_ids[0], make_bm25(index));
+        return Intersection{cursor.size(), cursor.max_score()};
+    }
     auto cursors = index.scored_cursors(gsl::make_span(term_ids), make_bm25(index));
     auto intersection =
         intersect(cursors, 0.0F, [](auto score, auto&& cursor, [[maybe_unused]] auto idx) {

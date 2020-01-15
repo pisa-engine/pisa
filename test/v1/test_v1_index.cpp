@@ -27,6 +27,8 @@
 #include "v1/types.hpp"
 
 using pisa::binary_freq_collection;
+using pisa::v1::BigramMetadata;
+using pisa::v1::build_pair_index;
 using pisa::v1::compress_binary_collection;
 using pisa::v1::DocId;
 using pisa::v1::DocumentBitSequenceCursor;
@@ -42,6 +44,7 @@ using pisa::v1::PayloadBitSequenceCursor;
 using pisa::v1::PayloadBlockedCursor;
 using pisa::v1::PayloadBlockedWriter;
 using pisa::v1::PositiveSequence;
+using pisa::v1::PostingFilePaths;
 using pisa::v1::Query;
 using pisa::v1::RawCursor;
 using pisa::v1::RawWriter;
@@ -194,5 +197,50 @@ TEST_CASE("Select best bigrams", "[v1][integration]")
         };
         auto best_bigrams = select_best_bigrams(meta, queries, 3);
         REQUIRE(best_bigrams == std::vector<std::pair<TermId, TermId>>{{3, 4}, {2, 3}, {1, 2}});
+    }
+}
+
+TEST_CASE("Build pair index", "[v1][integration]")
+{
+    tbb::task_scheduler_init init;
+    IndexFixture<RawCursor<DocId>, RawCursor<Frequency>, RawCursor<std::uint8_t>> fixture(
+        true, true, true, false);
+    std::string index_basename = (fixture.tmpdir().path() / "inv").string();
+    auto meta = IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
+    SECTION("In place")
+    {
+        build_pair_index(meta, {{0, 1}, {0, 2}, {0, 3}, {0, 4}, {0, 5}}, tl::nullopt, 4);
+        auto run = index_runner(IndexMetadata::from_file(fmt::format("{}.yml", index_basename)));
+        run([&](auto&& index) {
+            REQUIRE(index.bigram_cursor(0, 1).has_value());
+            REQUIRE(index.bigram_cursor(1, 0).has_value());
+            REQUIRE(not index.bigram_cursor(1, 2).has_value());
+            REQUIRE(not index.bigram_cursor(2, 1).has_value());
+        });
+    }
+    SECTION("Cloned")
+    {
+        auto cloned_basename = (fixture.tmpdir().path() / "cloned").string();
+        build_pair_index(
+            meta, {{0, 1}, {0, 2}, {0, 3}, {0, 4}, {0, 5}}, tl::make_optional(cloned_basename), 4);
+        SECTION("Original index has no pairs")
+        {
+            auto run =
+                index_runner(IndexMetadata::from_file(fmt::format("{}.yml", index_basename)));
+            run([&](auto&& index) {
+                REQUIRE_THROWS_AS(index.bigram_cursor(0, 1), std::logic_error);
+            });
+        }
+        SECTION("New index has pairs")
+        {
+            auto run =
+                index_runner(IndexMetadata::from_file(fmt::format("{}.yml", cloned_basename)));
+            run([&](auto&& index) {
+                REQUIRE(index.bigram_cursor(0, 1).has_value());
+                REQUIRE(index.bigram_cursor(1, 0).has_value());
+                REQUIRE(not index.bigram_cursor(1, 2).has_value());
+                REQUIRE(not index.bigram_cursor(2, 1).has_value());
+            });
+        }
     }
 }

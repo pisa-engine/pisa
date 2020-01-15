@@ -42,6 +42,14 @@ namespace pisa::v1 {
     return m_document_lengths.size();
 }
 
+[[nodiscard]] auto BaseIndex::num_pairs() const -> std::size_t
+{
+    if (not m_bigrams) {
+        throw std::logic_error("Bigrams are missing");
+    }
+    return m_bigrams->mapping.size();
+}
+
 [[nodiscard]] auto BaseIndex::document_length(DocId docid) const -> std::uint32_t
 {
     return m_document_lengths[docid];
@@ -155,6 +163,11 @@ template auto BaseIndex::fetch_bigram_payloads<1>(TermId bigram) const
         throw std::logic_error("Missing quantized max scores.");
     }
     return m_quantized_max_scores.at(term);
+}
+
+[[nodiscard]] auto BaseIndex::pairs() const -> tl::optional<gsl::span<std::array<TermId, 2> const>>
+{
+    return m_bigrams.map([](auto&& bigrams) { return bigrams.mapping; });
 }
 
 } // namespace pisa::v1

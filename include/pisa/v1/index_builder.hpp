@@ -96,11 +96,17 @@ auto compress_batch(CollectionIterator first,
 }
 
 template <typename T>
+void write_span(gsl::span<T> offsets, std::ofstream& os)
+{
+    auto bytes = gsl::as_bytes(offsets);
+    os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
+}
+
+template <typename T>
 void write_span(gsl::span<T> offsets, std::string const& file)
 {
     std::ofstream os(file);
-    auto bytes = gsl::as_bytes(offsets);
-    os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
+    write_span(offsets, os);
 }
 
 inline void compress_binary_collection(std::string const& input,
@@ -114,7 +120,7 @@ inline void compress_binary_collection(std::string const& input,
     document_writer.init(collection);
     frequency_writer.init(collection);
     ProgressStatus status(collection.size(),
-                          DefaultProgress("Compressing in parallel"),
+                          DefaultProgressCallback("Compressing in parallel"),
                           std::chrono::milliseconds(100));
     tbb::task_group group;
     auto const num_terms = collection.size();
@@ -189,7 +195,7 @@ inline void compress_binary_collection(std::string const& input,
 
     {
         ProgressStatus merge_status(
-            threads, DefaultProgress("Merging files"), std::chrono::milliseconds(500));
+            threads, DefaultProgressCallback("Merging files"), std::chrono::milliseconds(500));
         for_each_batch([&](auto thread_idx) {
             std::transform(
                 std::next(document_offsets[thread_idx].begin()),
@@ -269,7 +275,13 @@ auto collect_unique_bigrams(std::vector<Query> const& queries,
                                        std::size_t num_bigrams_to_select)
     -> std::vector<std::pair<TermId, TermId>>;
 
-auto build_bigram_index(IndexMetadata meta, std::vector<std::pair<TermId, TermId>> const& bigrams)
-    -> IndexMetadata;
+auto build_bigram_index(IndexMetadata meta,
+                        std::vector<std::pair<TermId, TermId>> const& bigrams,
+                        tl::optional<std::string> const& clone_path) -> IndexMetadata;
+
+auto build_pair_index(IndexMetadata meta,
+                      std::vector<std::pair<TermId, TermId>> const& pairs,
+                      tl::optional<std::string> const& clone_path,
+                      std::size_t threads) -> IndexMetadata;
 
 } // namespace pisa::v1

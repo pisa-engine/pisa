@@ -3,6 +3,7 @@
 
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
+#include <tl/optional.hpp>
 
 #include "app.hpp"
 #include "v1/index_builder.hpp"
@@ -10,18 +11,20 @@
 #include "v1/types.hpp"
 
 using pisa::App;
-using pisa::v1::build_bigram_index;
+using pisa::v1::build_pair_index;
 using pisa::v1::collect_unique_bigrams;
-using pisa::v1::DefaultProgress;
+using pisa::v1::DefaultProgressCallback;
 using pisa::v1::ProgressStatus;
 
 namespace arg = pisa::arg;
 
 int main(int argc, char** argv)
 {
-    std::optional<std::string> terms_file{};
+    tl::optional<std::string> clone_path{};
 
-    App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app{"Creates a v1 bigram index."};
+    App<arg::Index, arg::Query<arg::QueryMode::Unranked>, arg::Threads> app{
+        "Creates a v1 bigram index."};
+    app.add_option("--clone", clone_path, "Instead", false);
     CLI11_PARSE(app, argc, argv);
 
     auto meta = app.index_metadata();
@@ -31,9 +34,11 @@ int main(int argc, char** argv)
 
     spdlog::info("Collected {} queries", queries.size());
     spdlog::info("Collecting bigrams...");
-    ProgressStatus status(queries.size(), DefaultProgress{}, std::chrono::milliseconds(1000));
+    ProgressStatus status(
+        queries.size(), DefaultProgressCallback{}, std::chrono::milliseconds(1000));
     auto bigrams = collect_unique_bigrams(queries, [&]() { status += 1; });
+    status.close();
     spdlog::info("Collected {} bigrams", bigrams.size());
-    build_bigram_index(meta, bigrams);
+    build_pair_index(meta, bigrams, clone_path, app.threads());
     return 0;
 }

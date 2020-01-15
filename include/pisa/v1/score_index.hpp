@@ -8,6 +8,16 @@
 
 namespace pisa::v1 {
 
+struct FixedBlock {
+    std::size_t size;
+};
+
+struct VariableBlock {
+    float lambda;
+};
+
+using BlockType = std::variant<FixedBlock, VariableBlock>;
+
 template <typename CharT,
           typename Index,
           typename Writer,
@@ -52,7 +62,6 @@ auto score_index(Index const& index, std::basic_ostream<CharT>& os, Writer write
 }
 
 auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata;
-auto bm_score_index(IndexMetadata meta, std::size_t block_size, std::size_t threads)
-    -> IndexMetadata;
+auto bm_score_index(IndexMetadata meta, BlockType block_type, std::size_t threads) -> IndexMetadata;
 
 } // namespace pisa::v1
