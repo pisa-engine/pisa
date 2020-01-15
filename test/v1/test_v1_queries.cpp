@@ -147,26 +147,33 @@ TEMPLATE_TEST_CASE("Query",
                           Index<RawCursor<DocId>, RawCursor<Frequency>>,
                           Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
-    auto input_data = GENERATE(table<char const*, bool>({
-        {"daat_or", false},
-        {"maxscore", false},
-        {"maxscore", true},
-        {"wand", false},
-        {"wand", true},
-        {"bmw", false},
-        {"bmw", true},
-        {"maxscore_union_lookup", true},
-        {"unigram_union_lookup", true},
-        {"union_lookup", true},
-        {"lookup_union", true},
+    auto input_data = GENERATE(table<char const*, bool, bool>({
+        {"daat_or", false, false},
+        {"maxscore", false, false},
+        {"maxscore", true, false},
+        {"wand", false, false},
+        {"wand", true, false},
+        {"bmw", false, false},
+        {"bmw", true, false},
+        {"bmw", false, true},
+        {"bmw", true, true},
+        {"maxscore_union_lookup", true, false},
+        {"unigram_union_lookup", true, false},
+        {"union_lookup", true, false},
+        {"lookup_union", true, false},
     }));
     std::string algorithm = std::get<0>(input_data);
     bool with_threshold = std::get<1>(input_data);
+    bool rebuild_with_variable_blocks = std::get<2>(input_data);
+    if (rebuild_with_variable_blocks) {
+        fixture.rebuild_bm_scores(pisa::v1::VariableBlock{12.0});
+    }
     CAPTURE(algorithm);
     CAPTURE(with_threshold);
     auto index_basename = (fixture.tmpdir().path() / "inv").string();
     auto meta = IndexMetadata::from_file(fmt::format("{}.yml", index_basename));
-    ::pisa::ranked_or_query or_q(10);
+    auto heap = ::pisa::topk_queue(10);
+    ::pisa::ranked_or_query or_q(heap);
     auto run_query = [](std::string const& name, auto query, auto&& index, auto scorer) {
         if (name == "daat_or") {
             return daat_or(query, index, ::pisa::topk_queue(10), scorer);
@@ -202,6 +209,7 @@ TEMPLATE_TEST_CASE("Query",
     auto const intersections =
         pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
     for (auto& query : test_queries()) {
+        heap.clear();
         if (algorithm == "union_lookup" || algorithm == "lookup_union") {
             query.selections(gsl::make_span(intersections[idx]));
         }
@@ -215,6 +223,7 @@ TEMPLATE_TEST_CASE("Query",
                                 ::pisa::bm25<::pisa::wand_data<::pisa::wand_data_raw>>(data->wdata),
                                 ::pisa::Query{{}, query.get_term_ids(), {}}),
             data->v0_index.num_docs());
+        heap.finalize();
         auto expected = or_q.topk();
         if (with_threshold) {
             query.threshold(expected.back().first - 1.0F);

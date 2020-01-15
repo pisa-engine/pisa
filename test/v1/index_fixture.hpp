@@ -83,6 +83,11 @@ struct IndexFixture {
         }
     }
 
+    void rebuild_bm_scores(pisa::v1::BlockType block_type)
+    {
+        v1::bm_score_index(meta(), block_type, 1);
+    }
+
     [[nodiscard]] auto const& tmpdir() const { return *m_tmpdir; }
     [[nodiscard]] auto document_reader() const { return m_document_reader; }
     [[nodiscard]] auto frequency_reader() const { return m_frequency_reader; }
