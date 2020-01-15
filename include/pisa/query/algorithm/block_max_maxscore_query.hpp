@@ -9,15 +9,14 @@ namespace pisa {
 
 struct block_max_maxscore_query {
 
-    block_max_maxscore_query(uint64_t k)
-        : m_topk(k) {}
+    block_max_maxscore_query(topk_queue &topk)
+        : m_topk(topk) {}
 
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
+    void operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        m_topk.clear();
         if (cursors.empty())
-            return 0;
+            return;
 
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -98,13 +97,11 @@ struct block_max_maxscore_query {
             }
             cur_doc = next_doc;
         }
-        m_topk.finalize();
-        return m_topk.topk().size();
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
 
    private:
-    topk_queue      m_topk;
+    topk_queue      &m_topk;
 };
 } // namespace pisa

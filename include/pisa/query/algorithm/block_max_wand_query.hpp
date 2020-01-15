@@ -2,21 +2,19 @@
 
 #include <vector>
 #include "query/queries.hpp"
-
+#include "topk_queue.hpp"
 namespace pisa {
 
 struct block_max_wand_query {
 
-    block_max_wand_query(uint64_t k)
-        : m_topk(k) {}
+    block_max_wand_query(topk_queue &topk)
+        : m_topk(topk) {}
 
     template<typename CursorRange>
-    uint64_t operator()(CursorRange &&cursors, uint64_t max_docid) {
+    void operator()(CursorRange &&cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        m_topk.clear();
-
         if (cursors.empty())
-            return 0;
+            return;
 
         std::vector<Cursor *> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -124,12 +122,12 @@ struct block_max_wand_query {
                 uint64_t next;
                 uint64_t next_list = pivot;
 
-                float q_weight = ordered_cursors[next_list]->q_weight;
+                float max_weight = ordered_cursors[next_list]->max_weight;
 
                 for (uint64_t i = 0; i < pivot; i++) {
-                    if (ordered_cursors[i]->q_weight > q_weight) {
+                    if (ordered_cursors[i]->max_weight > max_weight) {
                         next_list = i;
-                        q_weight  = ordered_cursors[i]->q_weight;
+                        max_weight  = ordered_cursors[i]->max_weight;
                     }
                 }
 
@@ -162,9 +160,6 @@ struct block_max_wand_query {
                 }
             }
         }
-
-        m_topk.finalize();
-        return m_topk.topk().size();
     }
 
     std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
@@ -174,7 +169,7 @@ struct block_max_wand_query {
     topk_queue const &get_topk() const { return m_topk; }
 
    private:
-    topk_queue      m_topk;
+    topk_queue      &m_topk;
 };
 
 } // namespace pisa

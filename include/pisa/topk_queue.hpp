@@ -6,6 +6,7 @@
 
 namespace pisa {
 
+using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
