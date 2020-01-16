@@ -139,7 +139,6 @@ namespace pisa {
                     }
 
                     decode_docs_block(block);
-                    decoded_block_n +=1;
                 }
                 while (docid() < lower_bound) {
                     m_cur_docid += m_docs_buf[++m_pos_in_block] + 1;
@@ -320,6 +319,7 @@ namespace pisa {
                 if (Profile) {
                     ++m_block_profile[2 * m_cur_block];
                 }
+		decoded_block_n += 1;
             }
 
             void PISA_NOINLINE decode_freqs_block()
