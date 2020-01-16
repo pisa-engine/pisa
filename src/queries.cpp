@@ -161,12 +161,14 @@ void perftest(const std::string &index_filename,
     if (thresholds_filename) {
         std::string t;
         std::ifstream tin(*thresholds_filename);
-        auto t_begin = std::istream_iterator<float>(tin);
-        auto t_end = std::istream_iterator<float>();
-        if(std::distance(t_begin, t_end) != queries.size()) {
+        size_t idx = 0;
+        while (std::getline(tin, t)) {
+            thresholds[idx] = std::stof(t);
+            idx += 1;
+        }
+        if (idx != queries.size()) {
             throw std::invalid_argument("Invalid thresholds file.");
         }
-        std::copy(t_begin , t_end, thresholds.begin());
     }
 
     auto scorer = scorer::from_name(scorer_name, wdata);
