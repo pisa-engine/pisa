@@ -430,7 +430,8 @@ int main(int argc, const char **argv)
     }
     std::locale::global(std::locale("en_US.UTF-8"));
     fmt::print("nextgeq: {:n}\n", size_t(nextgeq_n/queries.size()));
-    fmt::print("avg nextgeq jump: {:n}\n", size_t(accumulate(avg_nextgeq_jump.begin(), avg_nextgeq_jump.end(), 0.0) / avg_nextgeq_jump.size()));
+    fmt::print("nextgeq: {:n}\n", size_t(avg_nextgeq_jump.size()/queries.size()));
+    fmt::print("avg nextgeq jump: {:n}\n", size_t(accumulate(avg_nextgeq_jump.begin(), avg_nextgeq_jump.end(), 0.0)));
     fmt::print("score: {:n}\n", size_t(score_n/queries.size()));
     fmt::print("decoded block: {:n}\n", size_t(decoded_block_n/queries.size()));
     fmt::print("insert heap: {:n}\n", size_t(enter_queue_n/queries.size()));

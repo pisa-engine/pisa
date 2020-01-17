@@ -22,7 +22,7 @@ struct topk_queue {
     bool insert(float score) { return insert(score, 0); }
 
     bool insert(float score, uint64_t docid) {
-        if (PISA_UNLIKELY(score <= m_threshold)) {
+        if (PISA_UNLIKELY(score < m_threshold)) {
             return false;
         }
         m_q.emplace_back(score, docid);

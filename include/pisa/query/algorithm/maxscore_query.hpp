@@ -55,9 +55,9 @@ struct maxscore_query {
         while (non_essential_lists < ordered_cursors.size() && cur_doc < max_docid) {
             float    score    = 0;
             uint64_t next_doc = max_docid;
+             docid_gaps.push_back(cur_doc - last_doc);
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
                 if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
-                    docid_gaps.push_back(cur_doc - last_doc);
                     last_doc = cur_doc;
                     score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
                     score_n += 1;
