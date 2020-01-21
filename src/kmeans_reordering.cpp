@@ -1,14 +1,18 @@
 #include <CLI/CLI.hpp>
 #include <boost/numeric/ublas/vector_sparse.hpp>
-#include <optional>
+#include <boost/numeric/ublas/io.hpp>
+
+#include <boost/range/combine.hpp>
+#include <complex>
 #include <mio/mmap.hpp>
+#include <optional>
 
 #include "binary_freq_collection.hpp"
-#include "util/progress.hpp"
 #include "mappable/mapper.hpp"
+#include "scorer/scorer.hpp"
+#include "util/progress.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
-#include "scorer/scorer.hpp"
 
 using namespace pisa;
 using namespace boost::numeric::ublas;
@@ -16,10 +20,120 @@ using namespace boost::numeric::ublas;
 using wand_raw_index = wand_data<wand_data_raw>;
 using id_type = std::uint32_t;
 
+class Cluster {
+    std::vector<id_type> m_document_ids;
+    id_type m_centroid;
+
+   public:
+    Cluster(std::vector<id_type> const &ids, id_type centroid)
+        : m_document_ids(ids), m_centroid(centroid)
+    {
+    }
+
+    explicit Cluster(id_type centroid)
+        : m_centroid(centroid)
+    {
+    }
+
+    std::vector<id_type> const& document_ids() {return m_document_ids;}
+
+    void add_document_index(id_type id) { m_document_ids.push_back(id); }
+
+    bool needs_partition() { return false; }
+};
+
+std::vector<Cluster> kmeans(
+    std::vector<compressed_vector<float>> const &fwd,
+    std::function<float(compressed_vector<float>, compressed_vector<float>)> distance,
+    std::function<std::vector<size_t>()> seed,
+    uint32_t MAX_ITER = 10)
+{
+    std::vector<size_t> centroid_indexes = seed();
+
+    std::vector<Cluster> clusters;
+    for(auto&& ci : centroid_indexes) {
+        clusters.emplace_back(ci);
+    }
+
+    bool termination = false;
+    uint32_t iterations = 0;
+    while (!termination) {
+        iterations += 1;
+
+        size_t doc_index = 0;
+        for (auto &&doc : fwd) {
+            double smallest_distance = std::numeric_limits<float>::max();
+            uint32_t closer_cluster_index = 0;
+            for (uint32_t i = 0; i < centroid_indexes.size(); ++i) { // select best cluster
+                auto cur_distance = distance(doc, fwd[centroid_indexes[i]]);
+                if (cur_distance < smallest_distance) {
+                    smallest_distance = cur_distance;
+                    closer_cluster_index = i;
+                }
+            }
+            clusters[closer_cluster_index].add_document_index(doc_index);
+            doc_index += 1;
+        }
+        termination = true;
+        if (iterations != MAX_ITER)
+        {
+            // check if we can stop:
+        }
+    }
+
+    return clusters;
+}
+
+auto euclidean = [](compressed_vector<float> const &lhs, compressed_vector<float> const &rhs) {
+    float square_sum = 0;
+    if(lhs.size() != rhs.size()) {
+        throw std::runtime_error("Cannot compute distance between vectors with difference sizes.");
+    }
+    for (size_t i = 0; i < lhs.size(); ++i)
+    {
+        float x = lhs[i];
+        float y = rhs[i];
+        square_sum += std::pow(y - x, 2);
+    }
+    return std::sqrt(square_sum);
+};
+
+auto seed = []() {
+    std::vector<size_t> centroid_indexes;
+    centroid_indexes.push_back(0);
+    centroid_indexes.push_back(1);
+    return centroid_indexes;
+};
+
+std::list<Cluster> compute_clusters(std::vector<compressed_vector<float>> const &fwd)
+{
+    std::vector<id_type> ids(fwd.size());
+    std::iota(ids.begin(), ids.end(), 0);
+    Cluster root(ids, 0);
+
+    std::deque<Cluster> to_split;
+    to_split.push_back(std::move(root));
+    std::list<Cluster> final_clusters;
+    while (to_split.size()) {
+        auto &parent = to_split.front();
+        auto children = kmeans(fwd, euclidean, seed);
+        to_split.pop_front(); // destroy front item
+        for (auto &c : children) {
+            if (c.needs_partition()) {
+                to_split.push_back(std::move(c));
+            } else {
+                final_clusters.push_back(std::move(c));
+            }
+        }
+    }
+
+    return final_clusters;
+}
+
 std::vector<compressed_vector<float>> from_inverted_index(const std::string &input_basename,
                                                           const std::string &wand_data_filename,
                                                           std::string const &scorer_name,
-                                                          size_t             min_len)
+                                                          size_t min_len)
 {
     binary_freq_collection coll((input_basename).c_str());
 
@@ -37,7 +151,7 @@ std::vector<compressed_vector<float>> from_inverted_index(const std::string &inp
 
     auto num_terms = 0;
     for (auto const &seq : coll) {
-        if(seq.docs.size() >= min_len){
+        if (seq.docs.size() >= min_len) {
             num_terms += 1;
         }
     }
@@ -53,7 +167,7 @@ std::vector<compressed_vector<float>> from_inverted_index(const std::string &inp
         id_type tid = 0;
         for (auto const &seq : coll) {
             auto t_scorer = scorer->term_scorer(tid);
-            if(seq.docs.size() >= min_len){
+            if (seq.docs.size() >= min_len) {
                 for (size_t i = 0; i < seq.docs.size(); ++i) {
                     uint64_t docid = *(seq.docs.begin() + i);
                     uint64_t freq = *(seq.freqs.begin() + i);
@@ -87,7 +201,12 @@ int main(int argc, char const *argv[])
         ->needs(docs_opt);
     CLI11_PARSE(app, argc, argv);
     auto fwd = from_inverted_index(input_basename, wand_data_filename, "bm25", min_len);
-
-
-
+    auto clusters = compute_clusters(fwd);
+    size_t document_idx = 0;
+    for(auto&& c : clusters) {
+        for(auto&& d : c.document_ids()) {
+            std::cout << document_idx << " " << d << std::endl;
+            document_idx += 1;
+        }
+    }
 }
