@@ -4,6 +4,8 @@
 
 #include <gsl/span>
 
+#include "v1/cursor_traits.hpp"
+
 namespace pisa::v1 {
 
 template <typename DocumentCursor, typename PayloadCursor>
@@ -52,5 +54,10 @@ template <typename DocumentCursor, typename PayloadCursor>
     return DocumentPayloadCursor<DocumentCursor, PayloadCursor>(std::move(key_cursor),
                                                                 std::move(payload_cursor));
 }
+
+template <typename DocumentCursor, typename PayloadCursor>
+struct CursorTraits<DocumentPayloadCursor<DocumentCursor, PayloadCursor>> {
+    using Value = typename CursorTraits<DocumentCursor>::Value;
+};
 
 } // namespace pisa::v1

@@ -6,18 +6,13 @@
 #include <range/v3/view/set_algorithm.hpp>
 
 #include "v1/algorithm.hpp"
+#include "v1/cursor/labeled_cursor.hpp"
 #include "v1/cursor/transform.hpp"
 #include "v1/cursor_accumulator.hpp"
 #include "v1/query.hpp"
+#include "v1/runtime_assert.hpp"
 
 namespace pisa::v1 {
-
-inline void ensure(bool condition, char const* message)
-{
-    if (condition) {
-        throw std::invalid_argument(message);
-    }
-}
 
 /// This cursor operator takes a number of essential cursors (in an arbitrary order)
 /// and a list of lookup cursors. The documents traversed will be in the DaaT order,
@@ -247,7 +242,7 @@ auto unigram_union_lookup(Query const& query,
     }
 
     auto const& selections = query.get_selections();
-    ensure(not selections.bigrams.empty(), "This algorithm only supports unigrams");
+    runtime_assert(selections.bigrams.empty()).or_exit("This algorithm only supports unigrams");
 
     topk.set_threshold(query.get_threshold());
 
@@ -529,8 +524,7 @@ auto union_lookup(Query const& query,
 
     topk.set_threshold(threshold);
 
-    std::array<float, 8> initial_payload{
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}; //, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+    std::array<float, 8> initial_payload{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
 
     if constexpr (not std::is_void_v<Inspect>) {
         inspect->essential(essential_unigrams.size() + essential_bigrams.size());
@@ -542,6 +536,7 @@ auto union_lookup(Query const& query,
                    std::back_inserter(essential_unigram_cursors),
                    [&](auto term) { return index.scored_cursor(term, scorer); });
 
+    /// TODO: remap according to max score instead of term sorted order
     std::vector<std::size_t> unigram_query_positions(essential_unigrams.size());
     for (std::size_t unigram_position = 0; unigram_position < essential_unigrams.size();
          unigram_position += 1) {
@@ -646,6 +641,225 @@ auto union_lookup(Query const& query,
                 }
             }
             upper_bound -= lookup_cursor.max_score();
+        }
+        if constexpr (not std::is_void_v<Inspect>) {
+            if (topk.insert(score, docid)) {
+                inspect->insert();
+            }
+        } else {
+            topk.insert(score, docid);
+        }
+    });
+    return topk;
+}
+
+inline auto precompute_next_lookup(std::size_t essential_count,
+                                   std::size_t non_essential_count,
+                                   std::vector<std::vector<std::uint32_t>> essential_bigrams)
+{
+    runtime_assert(essential_count + non_essential_count <= 8).or_throw("Must be shorter than 9");
+    std::uint32_t term_count = essential_count + non_essential_count;
+    std::vector<std::int32_t> next_lookup((term_count + 1) * (1U << term_count), -1);
+    auto unnecessary = [&](auto p, auto state) {
+        if (((1U << p) & state) > 0) {
+            return true;
+        }
+        for (auto k : essential_bigrams[p]) {
+            if (((1U << k) & state) > 0) {
+                return true;
+            }
+        }
+        return false;
+    };
+    for (auto term_idx = essential_count; term_idx < term_count; term_idx += 1) {
+        for (std::uint32_t state = 0; state < (1U << term_count); state += 1) {
+            auto p = term_idx;
+            while (p < term_count && unnecessary(p, state)) {
+                ++p;
+            }
+            if (p == term_count) {
+                next_lookup[(term_idx << term_count) + state] = -1;
+            } else {
+                next_lookup[(term_idx << term_count) + state] = p;
+            }
+        }
+    }
+    return next_lookup;
+}
+
+template <typename Index, typename Scorer, typename Inspect = void>
+auto union_lookup_plus(Query const& query,
+                       Index const& index,
+                       topk_queue topk,
+                       Scorer&& scorer,
+                       Inspect* inspect = nullptr)
+{
+    using bigram_cursor_type =
+        LabeledCursor<std::decay_t<decltype(*index.scored_bigram_cursor(0, 0, scorer))>,
+                      std::pair<std::uint32_t, std::uint32_t>>;
+
+    auto term_ids = gsl::make_span(query.get_term_ids());
+    std::size_t term_count = term_ids.size();
+    if (term_ids.empty()) {
+        return topk;
+    }
+    runtime_assert(term_ids.size() <= 8)
+        .or_throw("Generic version of union-Lookup supported only for queries of length <= 8");
+    topk.set_threshold(query.get_threshold());
+    auto const& selections = query.get_selections();
+    auto& essential_unigrams = selections.unigrams;
+    auto& essential_bigrams = selections.bigrams;
+
+    auto non_essential_terms =
+        ranges::views::set_difference(term_ids, essential_unigrams) | ranges::to_vector;
+
+    std::array<float, 8> initial_payload{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+    if constexpr (not std::is_void_v<Inspect>) {
+        inspect->essential(essential_unigrams.size() + essential_bigrams.size());
+    }
+
+    auto essential_unigram_cursors = index.cursors(term_ids, [&](auto&& index, auto term) {
+        return label(index.scored_cursor(term, scorer), term);
+    });
+
+    auto lookup_cursors =
+        index.cursors(gsl::make_span(non_essential_terms), [&](auto&& index, auto term) {
+            return label(index.max_scored_cursor(term, scorer), term);
+        });
+    std::sort(lookup_cursors.begin(), lookup_cursors.end(), [](auto&& lhs, auto&& rhs) {
+        return lhs.max_score() > rhs.max_score();
+    });
+
+    auto merged_unigrams = v1::union_merge(
+        essential_unigram_cursors, initial_payload, [&](auto& acc, auto& cursor, auto idx) {
+            if constexpr (not std::is_void_v<Inspect>) {
+                inspect->posting();
+            }
+            acc[idx] = cursor.payload();
+            return acc;
+        });
+
+    auto term_to_position = [&] {
+        std::unordered_map<TermId, std::uint32_t> term_to_position;
+        std::uint32_t position = 0;
+        for (auto&& cursor : essential_unigram_cursors) {
+            term_to_position[cursor.label()] = position++;
+        }
+        for (auto&& cursor : lookup_cursors) {
+            term_to_position[cursor.label()] = position++;
+        }
+        return term_to_position;
+    }();
+
+    std::vector<bigram_cursor_type> essential_bigram_cursors;
+    for (auto [left, right] : essential_bigrams) {
+        auto cursor = index.scored_bigram_cursor(left, right, scorer);
+        if (not cursor) {
+            throw std::runtime_error(fmt::format("Bigram not found: <{}, {}>", left, right));
+        }
+        essential_bigram_cursors.push_back(
+            label(cursor.take().value(),
+                  std::make_pair(term_to_position[left], term_to_position[right])));
+    }
+
+    auto merged_bigrams = v1::union_merge(std::move(essential_bigram_cursors),
+                                          initial_payload,
+                                          [&](auto& acc, auto& cursor, auto /* bigram_idx */) {
+                                              if constexpr (not std::is_void_v<Inspect>) {
+                                                  inspect->posting();
+                                              }
+                                              auto payload = cursor.payload();
+                                              acc[cursor.label().first] = std::get<0>(payload);
+                                              acc[cursor.label().second] = std::get<1>(payload);
+                                              return acc;
+                                          });
+
+    auto accumulate = [&](auto& acc, auto& cursor, auto /* union_idx */) {
+        auto payload = cursor.payload();
+        for (auto idx = 0; idx < acc.size(); idx += 1) {
+            if (acc[idx] == 0.0F) {
+                acc[idx] = payload[idx];
+            }
+        }
+        return acc;
+    };
+    auto merged = v1::variadic_union_merge(
+        initial_payload,
+        std::make_tuple(std::move(merged_unigrams), std::move(merged_bigrams)),
+        std::make_tuple(accumulate, accumulate));
+
+    auto lookup_cursors_upper_bound = std::accumulate(
+        lookup_cursors.begin(), lookup_cursors.end(), 0.0F, [](auto acc, auto&& cursor) {
+            return acc + cursor.max_score();
+        });
+
+    auto next_lookup =
+        precompute_next_lookup(essential_unigrams.size(), lookup_cursors.size(), [&] {
+            std::unordered_map<TermId, std::vector<TermId>> bigram_map;
+            for (auto [left, right] : essential_bigrams) {
+                bigram_map[left].push_back(right);
+                bigram_map[right].push_back(left);
+            }
+            std::uint32_t position = essential_unigrams.size();
+            std::vector<std::vector<std::uint32_t>> mapping(term_ids.size());
+            for (auto&& cursor : lookup_cursors) {
+                for (auto b : bigram_map[cursor.label()]) {
+                    mapping[position].push_back(term_to_position[b]);
+                }
+                position++;
+            }
+            return mapping;
+        }());
+    auto mus = [&] {
+        std::size_t term_count = term_ids.size();
+        std::vector<float> mus((term_count + 1) * (1U << term_count), 0.0);
+        for (auto term_idx = term_count; term_idx + 1 >= 1; term_idx -= 1) {
+            for (std::uint32_t state = (1U << term_count) - 1; state + 1 >= 1; state -= 1) {
+                auto nt = next_lookup[(term_idx << term_count) + state];
+                if (nt == -1) {
+                    mus[(term_idx << term_count) + state] = 0.0F;
+                } else {
+                    mus[(term_idx << term_count) + state] =
+                        std::max(lookup_cursors[term_idx - essential_unigrams.size()].max_score()
+                                     + mus[((term_idx + 1) << term_count) + (state | (1 << nt))],
+                                 mus[((term_idx + 1) << term_count) + state]);
+                }
+            }
+        }
+        return mus;
+    }();
+
+    v1::for_each(merged, [&](auto& cursor) {
+        if constexpr (not std::is_void_v<Inspect>) {
+            inspect->document();
+        }
+        auto docid = cursor.value();
+        auto scores = cursor.payload();
+        auto score = std::accumulate(scores.begin(), scores.end(), 0.0F, std::plus{});
+
+        std::uint32_t state = essential_unigrams.size() << term_count;
+        for (auto pos = 0U; pos < scores.size(); pos += 1) {
+            if (score > 0) {
+                state |= 1U << pos;
+            }
+        }
+
+        auto next_idx = next_lookup[state];
+        while (next_idx >= 0 && topk.would_enter(score + mus[state])) {
+            auto lookup_idx = next_idx - essential_unigrams.size();
+            assert(lookup_idx >= 0 && lookup_idx < lookup_cursors.size());
+            auto&& lookup_cursor = lookup_cursors[lookup_idx];
+            lookup_cursor.advance_to_geq(docid);
+            if constexpr (not std::is_void_v<Inspect>) {
+                inspect->lookup();
+            }
+            if (PISA_UNLIKELY(lookup_cursor.value() == docid)) {
+                score += lookup_cursor.payload();
+                state |= (1U << next_idx);
+            }
+            state = (state & ((1U << term_count) - 1)) + ((next_idx + 1) << term_count);
+            next_idx = next_lookup[state];
         }
         if constexpr (not std::is_void_v<Inspect>) {
             if (topk.insert(score, docid)) {

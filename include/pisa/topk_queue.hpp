@@ -44,7 +44,7 @@ struct topk_queue {
         return true;
     }
 
-    [[nodiscard]] bool would_enter(float score) const { return score > m_threshold; }
+    [[nodiscard]] bool would_enter(float score) const { return score >= m_threshold; }
 
     void finalize()
     {

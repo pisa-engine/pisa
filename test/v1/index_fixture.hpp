@@ -75,7 +75,7 @@ struct IndexFixture {
             meta = v1::score_index(v1::IndexMetadata::from_file(yml), 1);
         }
         if (bm_score) {
-            meta = v1::bm_score_index(meta, pisa::v1::FixedBlock{5}, 1);
+            meta = v1::bm_score_index(meta, pisa::v1::FixedBlock{5}, tl::nullopt, 1);
         }
         if (build_bigrams) {
             v1::build_pair_index(
@@ -85,7 +85,7 @@ struct IndexFixture {
 
     void rebuild_bm_scores(pisa::v1::BlockType block_type)
     {
-        v1::bm_score_index(meta(), block_type, 1);
+        v1::bm_score_index(meta(), block_type, tl::nullopt, 1);
     }
 
     [[nodiscard]] auto const& tmpdir() const { return *m_tmpdir; }

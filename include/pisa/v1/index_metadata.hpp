@@ -74,7 +74,8 @@ struct IndexMetadata final {
 
     void write(std::string const& file) const;
     void update() const;
-    [[nodiscard]] auto query_parser() const -> std::function<void(Query&)>;
+    [[nodiscard]] auto query_parser(tl::optional<std::string> const& stop_words = tl::nullopt) const
+        -> std::function<void(Query&)>;
     [[nodiscard]] auto get_basename() const -> std::string const&;
     [[nodiscard]] static auto from_file(std::string const& file) -> IndexMetadata;
 };

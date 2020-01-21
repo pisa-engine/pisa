@@ -62,6 +62,9 @@ auto score_index(Index const& index, std::basic_ostream<CharT>& os, Writer write
 }
 
 auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata;
-auto bm_score_index(IndexMetadata meta, BlockType block_type, std::size_t threads) -> IndexMetadata;
+auto bm_score_index(IndexMetadata meta,
+                    BlockType block_type,
+                    tl::optional<std::string> const& clone_path,
+                    std::size_t threads) -> IndexMetadata;
 
 } // namespace pisa::v1

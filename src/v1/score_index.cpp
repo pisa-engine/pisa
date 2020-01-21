@@ -93,11 +93,14 @@ auto score_index(IndexMetadata meta, std::size_t threads) -> IndexMetadata
 }
 
 // TODO: Use multiple threads
-auto bm_score_index(IndexMetadata meta, BlockType block_type, std::size_t threads) -> IndexMetadata
+auto bm_score_index(IndexMetadata meta,
+                    BlockType block_type,
+                    tl::optional<std::string> const& clone_path,
+                    std::size_t threads) -> IndexMetadata
 {
     auto run = index_runner(meta);
-    auto const& index_basename = meta.get_basename();
-    auto prefix = fmt::format("{}.bm25_block_max", meta.get_basename());
+    std::string index_basename = clone_path.value_or(std::string(meta.get_basename()));
+    auto prefix = fmt::format("{}.bm25_block_max", index_basename);
     UnigramFilePaths paths{
         .documents = PostingFilePaths{.postings = fmt::format("{}_documents", prefix),
                                       .offsets = fmt::format("{}_document_offsets", prefix)},
@@ -152,7 +155,11 @@ auto bm_score_index(IndexMetadata meta, BlockType block_type, std::size_t thread
         write_span(gsl::make_span(score_builder.offsets()), paths.payloads.offsets);
     });
     meta.block_max_scores["bm25"] = paths;
-    meta.update();
+    if (clone_path) {
+        meta.write(append_extension(clone_path.value()));
+    } else {
+        meta.update();
+    }
     return meta;
 }
 

@@ -5,6 +5,7 @@
 
 #include <fmt/format.h>
 #include <gsl/span>
+#include <range/v3/view/transform.hpp>
 #include <tl/optional.hpp>
 
 #include "v1/base_index.hpp"
@@ -135,6 +136,13 @@ struct Index : public BaseIndex {
         } else {
             return scoring_cursor(term, std::forward<Scorer>(scorer));
         }
+    }
+
+    template <typename Fn>
+    [[nodiscard]] auto cursors(gsl::span<TermId const> terms, Fn&& fn) const
+    {
+        return ranges::views::transform(terms, [this, &fn](auto term) { return fn(*this, term); })
+               | ranges::to_vector;
     }
 
     template <typename Scorer>

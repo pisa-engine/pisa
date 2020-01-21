@@ -4,6 +4,7 @@
 
 #include <gsl/span>
 
+#include "v1/cursor_traits.hpp"
 #include "v1/types.hpp"
 
 namespace pisa::v1 {
@@ -155,5 +156,20 @@ template <typename BaseScoredCursor, typename BlockMaxCursor, typename ScoreT>
     return BlockMaxScoreCursor<BaseScoredCursor, BlockMaxCursor, ScoreT>(
         std::move(base_cursor), std::move(block_max_cursor), max_score);
 }
+
+template <typename BaseCursor, typename TermScorer>
+struct CursorTraits<ScoringCursor<BaseCursor, TermScorer>> {
+    using Value = typename CursorTraits<BaseCursor>::Value;
+};
+
+template <typename BaseCursor, typename ScoreT>
+struct CursorTraits<MaxScoreCursor<BaseCursor, ScoreT>> {
+    using Value = typename CursorTraits<BaseCursor>::Value;
+};
+
+template <typename BaseScoredCursor, typename BlockMaxCursor, typename ScoreT>
+struct CursorTraits<BlockMaxScoreCursor<BaseScoredCursor, BlockMaxCursor, ScoreT>> {
+    using Value = typename CursorTraits<BaseScoredCursor>::Value;
+};
 
 } // namespace pisa::v1

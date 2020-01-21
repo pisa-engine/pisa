@@ -148,18 +148,19 @@ TEMPLATE_TEST_CASE("Query",
                           Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
     auto input_data = GENERATE(table<char const*, bool, bool>({
-        {"daat_or", false, false},
-        {"maxscore", false, false},
-        {"maxscore", true, false},
-        {"wand", false, false},
-        {"wand", true, false},
-        {"bmw", false, false},
-        {"bmw", true, false},
-        {"bmw", false, true},
-        {"bmw", true, true},
-        {"maxscore_union_lookup", true, false},
-        {"unigram_union_lookup", true, false},
-        {"union_lookup", true, false},
+        //{"daat_or", false, false},
+        //{"maxscore", false, false},
+        //{"maxscore", true, false},
+        //{"wand", false, false},
+        //{"wand", true, false},
+        //{"bmw", false, false},
+        //{"bmw", true, false},
+        //{"bmw", false, true},
+        //{"bmw", true, true},
+        //{"maxscore_union_lookup", true, false},
+        //{"unigram_union_lookup", true, false},
+        //{"union_lookup", true, false},
+        {"union_lookup_plus", true, false},
         {"lookup_union", true, false},
     }));
     std::string algorithm = std::get<0>(input_data);
@@ -200,6 +201,12 @@ TEMPLATE_TEST_CASE("Query",
             }
             return union_lookup(query, index, ::pisa::topk_queue(10), scorer);
         }
+        if (name == "union_lookup_plus") {
+            if (query.get_term_ids().size() > 8) {
+                return maxscore_union_lookup(query, index, ::pisa::topk_queue(10), scorer);
+            }
+            return union_lookup_plus(query, index, ::pisa::topk_queue(10), scorer);
+        }
         if (name == "lookup_union") {
             return lookup_union(query, index, ::pisa::topk_queue(10), scorer);
         }
@@ -210,7 +217,8 @@ TEMPLATE_TEST_CASE("Query",
         pisa::v1::read_intersections(PISA_SOURCE_DIR "/test/test_data/top10_selections");
     for (auto& query : test_queries()) {
         heap.clear();
-        if (algorithm == "union_lookup" || algorithm == "lookup_union") {
+        if (algorithm == "union_lookup" || algorithm == "union_lookup_plus"
+            || algorithm == "lookup_union") {
             query.selections(gsl::make_span(intersections[idx]));
         }
 

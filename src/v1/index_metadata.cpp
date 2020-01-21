@@ -186,11 +186,19 @@ void IndexMetadata::write(std::string const& file) const
     fout << root;
 }
 
-[[nodiscard]] auto IndexMetadata::query_parser() const -> std::function<void(Query&)>
+[[nodiscard]] auto IndexMetadata::query_parser(tl::optional<std::string> const& stop_words) const
+    -> std::function<void(Query&)>
 {
     if (term_lexicon) {
-        auto term_processor =
-            ::pisa::TermProcessor(*term_lexicon, {}, [&]() -> std::optional<std::string> {
+        auto term_processor = ::pisa::TermProcessor(
+            *term_lexicon,
+            [&]() -> std::optional<std::string> {
+                if (stop_words) {
+                    return *stop_words;
+                }
+                return std::nullopt;
+            }(),
+            [&]() -> std::optional<std::string> {
                 if (stemmer) {
                     return *stemmer;
                 }

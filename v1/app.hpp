@@ -50,6 +50,8 @@ namespace arg {
             app->add_flag("--force-parse",
                           m_force_parse,
                           "Force parsing of query string even ifterm IDs already available");
+            app->add_option(
+                "--stopwords", m_stop_words, "List of blacklisted stop words to filter out");
         }
 
         [[nodiscard]] auto query_file() -> tl::optional<std::string const&>
@@ -63,7 +65,7 @@ namespace arg {
         [[nodiscard]] auto queries(v1::IndexMetadata const& meta) const -> std::vector<v1::Query>
         {
             std::vector<v1::Query> queries;
-            auto parser = meta.query_parser();
+            auto parser = meta.query_parser(m_stop_words);
             auto parse_line = [&](auto&& line) {
                 auto query = [&line, this]() {
                     if (m_query_input_format == "jl") {
@@ -100,7 +102,7 @@ namespace arg {
             return ranges::views::transform(lines,
                                             [force_parse = m_force_parse,
                                              k = m_k,
-                                             parser = meta.query_parser(),
+                                             parser = meta.query_parser(m_stop_words),
                                              qfmt = m_query_input_format](auto&& line) {
                                                 auto query = [&]() {
                                                     if (qfmt == "jl") {
@@ -131,6 +133,7 @@ namespace arg {
         std::string m_query_input_format = "jl";
         int m_k = DefaultK;
         bool m_force_parse{false};
+        tl::optional<std::string> m_stop_words{tl::nullopt};
     };
 
     struct Benchmark {
