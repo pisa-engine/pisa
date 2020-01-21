@@ -113,3 +113,9 @@ target_link_libraries(sample_inverted_index
   pisa
   CLI11
 )
+
+add_executable(kmeans_reordering kmeans_reordering.cpp)
+target_link_libraries(kmeans_reordering
+  pisa
+  CLI11
+)
