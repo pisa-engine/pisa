@@ -41,6 +41,7 @@ std::vector<compressed_vector<float>> from_inverted_index(const std::string &inp
             num_terms += 1;
         }
     }
+    spdlog::info("Number of terms: {}", num_terms);
 
     std::vector<compressed_vector<float>> fwd(coll.num_docs());
     for (auto &&d : fwd) {
