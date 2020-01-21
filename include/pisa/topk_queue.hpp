@@ -22,7 +22,7 @@ struct topk_queue {
     bool insert(float score) { return insert(score, 0); }
 
     bool insert(float score, uint64_t docid) {
-        if (PISA_UNLIKELY(score <= m_threshold)) {
+        if (PISA_UNLIKELY(not would_enter(score))) {
             return false;
         }
         m_q.emplace_back(score, docid);
@@ -39,7 +39,7 @@ struct topk_queue {
         return true;
     }
 
-    bool would_enter(float score) const { return score > m_threshold; }
+    bool would_enter(float score) const { return score >= m_threshold; }
 
     void finalize() {
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
