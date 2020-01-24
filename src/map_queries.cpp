@@ -18,6 +18,7 @@ int main(int argc, const char **argv)
     std::optional<std::string> stopwords_filename;
     std::optional<std::string> stemmer = std::nullopt;
     std::string separator = "\t";
+    bool query_id = false;
 
     CLI::App app{"A tool for transforming textual queries to IDs."};
     app.add_option("-q,--query", query_filename, "Queries filename")->required();
@@ -25,6 +26,7 @@ int main(int argc, const char **argv)
     app.add_option("--stemmer", stemmer, "Stemmer type");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore");
     app.add_option("--sep", separator, "Separator");
+    app.add_flag("--query-id", query_id, "Print query ID (as id:T1 T2 ... TN)");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -36,6 +38,9 @@ int main(int argc, const char **argv)
     using boost::adaptors::transformed;
     using boost::algorithm::join;
     for (auto &&q : queries) {
+        if(query_id and q.id) {
+            std::cout << *(q.id) << ":";
+        }
         std::cout
             << join(q.terms | transformed([](auto d) { return std::to_string(d); }), separator)
             << std::endl;
