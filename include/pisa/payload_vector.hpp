@@ -11,8 +11,6 @@
 #include <gsl/gsl_assert>
 #include <gsl/span>
 
-#include "payload_vector.hpp"
-
 namespace pisa {
 
 namespace detail {
@@ -35,8 +33,7 @@ namespace detail {
             return *this;
         }
 
-        [[nodiscard]]
-        constexpr auto operator++(int) -> Payload_Vector_Iterator
+        [[nodiscard]] constexpr auto operator++(int) -> Payload_Vector_Iterator
         {
             Payload_Vector_Iterator next_iter{offset_iter, payload_iter};
             ++(*this);
@@ -45,50 +42,44 @@ namespace detail {
 
         constexpr auto operator--() -> Payload_Vector_Iterator & { return *this -= 1; }
 
-        [[nodiscard]]
-        constexpr auto operator--(int) -> Payload_Vector_Iterator
+        [[nodiscard]] constexpr auto operator--(int) -> Payload_Vector_Iterator
         {
             Payload_Vector_Iterator next_iter{offset_iter, payload_iter};
             --(*this);
             return next_iter;
         }
 
-        [[nodiscard]]
-        constexpr auto operator+(size_type n) const -> Payload_Vector_Iterator
+        [[nodiscard]] constexpr auto operator+(size_type n) const -> Payload_Vector_Iterator
         {
             return {std::next(offset_iter, n),
                     std::next(payload_iter, *std::next(offset_iter, n) - *offset_iter)};
         }
 
-        [[nodiscard]]
-        constexpr auto operator+=(size_type n) -> Payload_Vector_Iterator &
+        [[nodiscard]] constexpr auto operator+=(size_type n) -> Payload_Vector_Iterator &
         {
             std::advance(payload_iter, *std::next(offset_iter, n) - *offset_iter);
             std::advance(offset_iter, n);
             return *this;
         }
 
-        [[nodiscard]]
-        constexpr auto operator-(size_type n) const -> Payload_Vector_Iterator
+        [[nodiscard]] constexpr auto operator-(size_type n) const -> Payload_Vector_Iterator
         {
             return {std::prev(offset_iter, n),
                     std::prev(payload_iter, *offset_iter - *std::prev(offset_iter, n))};
         }
 
-        [[nodiscard]]
-        constexpr auto operator-=(size_type n) -> Payload_Vector_Iterator &
+        [[nodiscard]] constexpr auto operator-=(size_type n) -> Payload_Vector_Iterator &
         {
             return *this = *this - n;
         }
 
-        [[nodiscard]]
-        constexpr auto operator-(Payload_Vector_Iterator const& other) -> difference_type
+        [[nodiscard]] constexpr auto operator-(Payload_Vector_Iterator const &other)
+            -> difference_type
         {
             return offset_iter - other.offset_iter;
         }
 
-        [[nodiscard]]
-        constexpr auto operator*() -> value_type
+        [[nodiscard]] constexpr auto operator*() -> value_type
         {
             return value_type(reinterpret_cast<char const *>(&*payload_iter),
                               *std::next(offset_iter) - *offset_iter);
@@ -228,13 +219,14 @@ auto encode_payload_vector(InputIterator first, InputIterator last)
     });
 }
 
-auto encode_payload_vector(gsl::span<std::string const> values)
+inline auto encode_payload_vector(gsl::span<std::string const> values)
 {
     return encode_payload_vector(values.begin(), values.end());
 }
 
 template <typename... T>
-constexpr auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., gsl::span<std::byte const>>
+constexpr auto unpack_head(gsl::span<std::byte const> mem)
+    -> std::tuple<T..., gsl::span<std::byte const>>
 {
     static_assert(detail::all_pod<T...>::value);
     auto offset = detail::sizeofs<T...>::value;
@@ -247,7 +239,7 @@ constexpr auto unpack_head(gsl::span<std::byte const> mem) -> std::tuple<T..., g
     return std::tuple_cat(head, std::tuple<gsl::span<std::byte const>>(tail));
 }
 
-[[nodiscard]] auto split(gsl::span<std::byte const> mem, std::size_t offset)
+[[nodiscard]] inline auto split(gsl::span<std::byte const> mem, std::size_t offset)
 {
     if (offset > mem.size()) {
         throw std::runtime_error(
@@ -277,44 +269,42 @@ class Payload_Vector {
 
     Payload_Vector(Payload_Vector_Buffer const &container)
         : offsets_(container.offsets), payloads_(container.payloads)
-    {}
+    {
+    }
 
     Payload_Vector(gsl::span<size_type const> offsets, gsl::span<std::byte const> payloads)
-        : offsets_(std::move(offsets)),
-          payloads_(std::move(payloads))
-    {}
+        : offsets_(std::move(offsets)), payloads_(std::move(payloads))
+    {
+    }
 
     template <typename ContiguousContainer>
-    [[nodiscard]]
-    constexpr static auto from(ContiguousContainer&& mem) -> Payload_Vector
+    [[nodiscard]] constexpr static auto from(ContiguousContainer &&mem) -> Payload_Vector
     {
         return from(gsl::make_span(reinterpret_cast<std::byte const *>(mem.data()), mem.size()));
     }
 
-    [[nodiscard]]
-    static auto from(gsl::span<std::byte const> mem) -> Payload_Vector
+    [[nodiscard]] static auto from(gsl::span<std::byte const> mem) -> Payload_Vector
     {
         size_type length;
         gsl::span<std::byte const> tail;
         try {
             std::tie(length, tail) = unpack_head<size_type>(mem);
         } catch (std::runtime_error const &err) {
-            throw std::runtime_error(std::string("Failed to parse payload vector length: ") +
-                                     err.what());
+            throw std::runtime_error(std::string("Failed to parse payload vector length: ")
+                                     + err.what());
         }
 
         gsl::span<std::byte const> offsets, payloads;
         try {
             std::tie(offsets, payloads) = split(tail, (length + 1u) * sizeof(size_type));
-        } catch (std::runtime_error const& err) {
-            throw std::runtime_error(std::string("Failed to parse payload vector offset table: ") +
-                                     err.what());
+        } catch (std::runtime_error const &err) {
+            throw std::runtime_error(std::string("Failed to parse payload vector offset table: ")
+                                     + err.what());
         }
         return Payload_Vector<Payload_View>(cast_span<size_type>(offsets), payloads);
     }
 
-    [[nodiscard]]
-    constexpr auto operator[](size_type idx) const -> payload_type
+    [[nodiscard]] constexpr auto operator[](size_type idx) const -> payload_type
     {
         if (idx >= offsets_.size()) {
             throw std::out_of_range(fmt::format(
@@ -329,20 +319,17 @@ class Payload_Vector {
         return *(begin() + idx);
     }
 
-    [[nodiscard]]
-    constexpr auto begin() const -> iterator
+    [[nodiscard]] constexpr auto begin() const -> iterator
     {
         return {offsets_.begin(), payloads_.begin()};
     }
-    [[nodiscard]]
-    constexpr auto end() const -> iterator
+    [[nodiscard]] constexpr auto end() const -> iterator
     {
         return {std::prev(offsets_.end()), payloads_.end()};
     }
     [[nodiscard]] constexpr auto cbegin() const -> iterator { return begin(); }
     [[nodiscard]] constexpr auto cend() const -> iterator { return end(); }
-    [[nodiscard]]
-    constexpr auto size() const -> size_type
+    [[nodiscard]] constexpr auto size() const -> size_type
     {
         return offsets_.size() - size_type{1};
     }

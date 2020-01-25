@@ -11,6 +11,7 @@
 #include "index_types.hpp"
 #include "pisa_config.hpp"
 #include "query/queries.hpp"
+#include "wand_data.hpp"
 #include "wand_data_range.hpp"
 
 #include "scorer/scorer.hpp"
