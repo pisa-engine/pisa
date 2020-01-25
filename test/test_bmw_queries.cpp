@@ -10,6 +10,9 @@
 #include "index_types.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm.hpp"
+#include "wand_data.hpp"
+#include "wand_data_compressed.hpp"
+#include "wand_data_raw.hpp"
 
 using namespace pisa;
 

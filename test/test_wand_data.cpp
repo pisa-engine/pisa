@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <range/v3/view/iota.hpp>
+#include <range/v3/view/zip.hpp>
 #include <tbb/task_scheduler_init.h>
 
 #include "test_common.hpp"
