@@ -33,3 +33,6 @@ target_link_libraries(count-postings pisa CLI11)
 
 add_executable(stats stats.cpp)
 target_link_libraries(stats pisa CLI11)
+
+add_executable(id-to-term id_to_term.cpp)
+target_link_libraries(id-to-term pisa CLI11)

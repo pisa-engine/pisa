@@ -148,18 +148,18 @@ TEMPLATE_TEST_CASE("Query",
                           Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
     auto input_data = GENERATE(table<char const*, bool, bool>({
-        //{"daat_or", false, false},
-        //{"maxscore", false, false},
-        //{"maxscore", true, false},
-        //{"wand", false, false},
-        //{"wand", true, false},
-        //{"bmw", false, false},
-        //{"bmw", true, false},
-        //{"bmw", false, true},
-        //{"bmw", true, true},
-        //{"maxscore_union_lookup", true, false},
-        //{"unigram_union_lookup", true, false},
-        //{"union_lookup", true, false},
+        {"daat_or", false, false},
+        {"maxscore", false, false},
+        {"maxscore", true, false},
+        {"wand", false, false},
+        {"wand", true, false},
+        {"bmw", false, false},
+        {"bmw", true, false},
+        {"bmw", false, true},
+        {"bmw", true, true},
+        {"maxscore_union_lookup", true, false},
+        {"unigram_union_lookup", true, false},
+        {"union_lookup", true, false},
         {"union_lookup_plus", true, false},
         {"lookup_union", true, false},
     }));
@@ -226,6 +226,11 @@ TEMPLATE_TEST_CASE("Query",
         CAPTURE(idx);
         CAPTURE(intersections[idx]);
 
+        // if (query.get_selections().unigrams.empty() or idx < 8) {
+        //    idx += 1;
+        //    continue;
+        //}
+
         or_q(
             make_scored_cursors(data->v0_index,
                                 ::pisa::bm25<::pisa::wand_data<::pisa::wand_data_raw>>(data->wdata),
@@ -261,7 +266,7 @@ TEMPLATE_TEST_CASE("Query",
         expected.resize(on_the_fly.size());
         std::sort(expected.begin(), expected.end(), approximate_order);
 
-        // if (algorithm == "bmw") {
+        // if (algorithm == "union_lookup_plus") {
         //    for (size_t i = 0; i < on_the_fly.size(); ++i) {
         //        std::cerr << fmt::format("{} {} -- {} {}\n",
         //                                 on_the_fly[i].second,

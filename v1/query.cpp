@@ -41,7 +41,9 @@ using pisa::v1::RawReader;
 using pisa::v1::unigram_union_lookup;
 using pisa::v1::UnigramUnionLookupInspect;
 using pisa::v1::union_lookup;
+using pisa::v1::union_lookup_plus;
 using pisa::v1::UnionLookupInspect;
+using pisa::v1::UnionLookupPlusInspect;
 using pisa::v1::VoidScorer;
 using pisa::v1::wand;
 
@@ -155,10 +157,31 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
             fallback,
             safe);
     }
+    if (name == "union-lookup-plus") {
+        return RetrievalAlgorithm(
+            [&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+                if (query.selections()->bigrams.empty()) {
+                    return pisa::v1::unigram_union_lookup(
+                        query, index, std::move(topk), std::forward<Scorer>(scorer));
+                }
+                if (query.get_term_ids().size() >= 8) {
+                    return pisa::v1::maxscore(
+                        query, index, std::move(topk), std::forward<Scorer>(scorer));
+                }
+                return pisa::v1::union_lookup_plus(
+                    query, index, std::move(topk), std::forward<Scorer>(scorer));
+            },
+            fallback,
+            safe);
+    }
     if (name == "lookup-union") {
         return RetrievalAlgorithm(
             [&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
                 if (query.selections()->bigrams.empty()) {
+                    if (query.selections()->unigrams.empty()) {
+                        return pisa::v1::maxscore(
+                            query, index, std::move(topk), std::forward<Scorer>(scorer));
+                    }
                     return pisa::v1::unigram_union_lookup(
                         query, index, std::move(topk), std::forward<Scorer>(scorer));
                 }
@@ -194,6 +217,9 @@ auto resolve_inspect(std::string const& name, Index const& index, Scorer&& score
     }
     if (name == "lookup-union") {
         return QueryInspector(LookupUnionInspector<Index, std::decay_t<Scorer>>(index, scorer));
+    }
+    if (name == "union-lookup-plus") {
+        return QueryInspector(UnionLookupPlusInspect<Index, std::decay_t<Scorer>>(index, scorer));
     }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
