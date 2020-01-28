@@ -113,3 +113,9 @@ target_link_libraries(sample_inverted_index
   pisa
   CLI11
 )
+
+add_executable(kth_score kth_score.cpp)
+target_link_libraries(kth_score
+  pisa
+  CLI11
+)
