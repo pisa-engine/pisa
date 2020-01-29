@@ -142,6 +142,21 @@ std::vector<Cluster> kmeans(
     return clusters;
 }
 
+auto inverse_scalar_product = [](compressed_vector<float> const &lhs, compressed_vector<float> const &rhs) {
+    float scalar_product = 0;
+    if (lhs.size() != rhs.size()) {
+        throw std::runtime_error("Cannot compute distance between vectors with difference sizes.");
+    }
+    for (size_t i = 0; i < lhs.size(); ++i) {
+        float x = lhs[i];
+        float y = rhs[i];
+        scalar_product += x*y;
+    }
+    return 1/scalar_product;
+};
+
+
+
 auto euclidean = [](compressed_vector<float> const &lhs, compressed_vector<float> const &rhs) {
     float square_sum = 0;
     if (lhs.size() != rhs.size()) {
@@ -186,7 +201,7 @@ std::list<Cluster> compute_clusters(std::vector<compressed_vector<float>> const 
     std::list<Cluster> final_clusters;
     while (to_split.size()) {
         auto &parent = to_split.front();
-        auto children = kmeans(fwd, parent, euclidean, seed);
+        auto children = kmeans(fwd, parent, inverse_scalar_product, seed);
         to_split.pop_front(); // destroy front item
         for (auto &c : children) {
             if (c.needs_partition()) {
