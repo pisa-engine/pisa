@@ -1,6 +1,8 @@
 #include <CLI/CLI.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/vector_sparse.hpp>
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
 #include <boost/range/combine.hpp>
 #include <complex>
@@ -227,6 +229,9 @@ std::vector<compressed_vector<float>> from_inverted_index(const std::string &inp
 
 int main(int argc, char const *argv[])
 {
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     std::string input_basename;
     std::string wand_data_filename;
     std::string output_basename;
