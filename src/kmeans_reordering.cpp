@@ -1,11 +1,12 @@
 #include <CLI/CLI.hpp>
-#include <boost/numeric/ublas/vector_sparse.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/vector_sparse.hpp>
 
 #include <boost/range/combine.hpp>
 #include <complex>
 #include <mio/mmap.hpp>
 #include <optional>
+#include <random>
 
 #include "binary_freq_collection.hpp"
 #include "mappable/mapper.hpp"
@@ -21,47 +22,67 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using id_type = std::uint32_t;
 
 class Cluster {
-    std::vector<id_type> m_document_ids;
+    std::vector<id_type> m_prev_document_ids;
+    std::vector<id_type> m_cur_document_ids;
     id_type m_centroid;
+    size_t m_depth;
 
    public:
-    Cluster(std::vector<id_type> const &ids, id_type centroid)
-        : m_document_ids(ids), m_centroid(centroid)
+    Cluster(std::vector<id_type> const &ids, id_type centroid, size_t depth)
+        : m_cur_document_ids(ids), m_centroid(centroid), m_depth(depth)
     {
+        spdlog::info("Cluster created at depth: {}", m_depth);
     }
 
-    explicit Cluster(id_type centroid)
-        : m_centroid(centroid)
+    explicit Cluster(id_type centroid, size_t depth) : m_centroid(centroid), m_depth(depth)
     {
+        spdlog::info("Cluster created at depth: {}", m_depth);
     }
 
-    std::vector<id_type> const& document_ids() {return m_document_ids;}
+    size_t depth() const { return m_depth; }
 
-    void add_document_index(id_type id) { m_document_ids.push_back(id); }
+    void dump()
+    {
+        m_prev_document_ids.swap(m_cur_document_ids);
+        m_cur_document_ids.clear();
+    }
 
-    bool needs_partition() { return false; }
+    bool same_as_before() { return true; }
+
+    std::vector<id_type> const &document_ids() const { return m_cur_document_ids; }
+
+    void add_document_index(id_type id) { m_cur_document_ids.push_back(id); }
+
+    bool needs_partition()
+    {
+        spdlog::info("Depth: {}, Size: {}", m_depth, m_cur_document_ids.size());
+
+        return m_cur_document_ids.size() > 128;
+    }
 };
 
+template <typename SeedFn>
 std::vector<Cluster> kmeans(
     std::vector<compressed_vector<float>> const &fwd,
+    Cluster const &parent,
     std::function<float(compressed_vector<float>, compressed_vector<float>)> distance,
-    std::function<std::vector<size_t>()> seed,
+    SeedFn seed,
     uint32_t MAX_ITER = 10)
 {
-    std::vector<size_t> centroid_indexes = seed();
+    std::vector<size_t> centroid_indexes = seed(parent);
 
     std::vector<Cluster> clusters;
-    for(auto&& ci : centroid_indexes) {
-        clusters.emplace_back(ci);
+    for (auto &&ci : centroid_indexes) {
+        clusters.emplace_back(ci, parent.depth() + 1);
     }
 
     bool termination = false;
     uint32_t iterations = 0;
     while (!termination) {
         iterations += 1;
-
         size_t doc_index = 0;
-        for (auto &&doc : fwd) {
+        for (auto &&doc_index : parent.document_ids()) {
+            auto &doc = fwd[doc_index];
             double smallest_distance = std::numeric_limits<float>::max();
             uint32_t closer_cluster_index = 0;
             for (uint32_t i = 0; i < centroid_indexes.size(); ++i) { // select best cluster
@@ -72,12 +93,23 @@ std::vector<Cluster> kmeans(
                 }
             }
             clusters[closer_cluster_index].add_document_index(doc_index);
-            doc_index += 1;
         }
+
         termination = true;
-        if (iterations != MAX_ITER)
-        {
+        if (iterations != MAX_ITER) {
             // check if we can stop:
+            auto k = clusters.size();
+            for (uint32_t i = 0; i < k - 1; ++i) {
+                auto &c = clusters[i];
+                if (!c.same_as_before()) {
+                    c.dump();
+                    termination = false;
+                }
+            }
+            if (!termination) {
+                auto &c = clusters[k - 1];
+                c.dump();
+            }
         }
     }
 
@@ -86,11 +118,10 @@ std::vector<Cluster> kmeans(
 
 auto euclidean = [](compressed_vector<float> const &lhs, compressed_vector<float> const &rhs) {
     float square_sum = 0;
-    if(lhs.size() != rhs.size()) {
+    if (lhs.size() != rhs.size()) {
         throw std::runtime_error("Cannot compute distance between vectors with difference sizes.");
     }
-    for (size_t i = 0; i < lhs.size(); ++i)
-    {
+    for (size_t i = 0; i < lhs.size(); ++i) {
         float x = lhs[i];
         float y = rhs[i];
         square_sum += std::pow(y - x, 2);
@@ -98,25 +129,38 @@ auto euclidean = [](compressed_vector<float> const &lhs, compressed_vector<float
     return std::sqrt(square_sum);
 };
 
-auto seed = []() {
-    std::vector<size_t> centroid_indexes;
-    centroid_indexes.push_back(0);
-    centroid_indexes.push_back(1);
-    return centroid_indexes;
+template <typename Iter, typename RandomGenerator>
+Iter select_randomly(Iter start, Iter end, RandomGenerator &g)
+{
+    std::uniform_int_distribution<> dis(0, std::distance(start, end) - 1);
+    std::advance(start, dis(g));
+    return start;
+}
+
+auto seed = [](Cluster const &c) -> std::vector<size_t>{
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+    auto first = select_randomly(c.document_ids().begin(), c.document_ids().end(), gen);
+    auto second = first;
+    while (second == first) {
+        second = select_randomly(c.document_ids().begin(), c.document_ids().end(), gen);
+    }
+
+    return {*first, *second};
 };
 
 std::list<Cluster> compute_clusters(std::vector<compressed_vector<float>> const &fwd)
 {
     std::vector<id_type> ids(fwd.size());
     std::iota(ids.begin(), ids.end(), 0);
-    Cluster root(ids, 0);
+    Cluster root(ids, 0, 0);
 
     std::deque<Cluster> to_split;
     to_split.push_back(std::move(root));
     std::list<Cluster> final_clusters;
     while (to_split.size()) {
         auto &parent = to_split.front();
-        auto children = kmeans(fwd, euclidean, seed);
+        auto children = kmeans(fwd, parent, euclidean, seed);
         to_split.pop_front(); // destroy front item
         for (auto &c : children) {
             if (c.needs_partition()) {
@@ -201,10 +245,12 @@ int main(int argc, char const *argv[])
         ->needs(docs_opt);
     CLI11_PARSE(app, argc, argv);
     auto fwd = from_inverted_index(input_basename, wand_data_filename, "bm25", min_len);
+    spdlog::info("Computing clusters");
     auto clusters = compute_clusters(fwd);
+    spdlog::info("Reordering documents");
     size_t document_idx = 0;
-    for(auto&& c : clusters) {
-        for(auto&& d : c.document_ids()) {
+    for (auto &&c : clusters) {
+        for (auto &&d : c.document_ids()) {
             std::cout << document_idx << " " << d << std::endl;
             document_idx += 1;
         }
