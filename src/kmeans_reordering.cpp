@@ -1,14 +1,21 @@
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
 #include <CLI/CLI.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/vector_sparse.hpp>
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include <mutex>
+#include <thread>
+
+#include "pstl/algorithm"
+#include "pstl/execution"
+#include "tbb/task_group.h"
 
 #include <boost/range/combine.hpp>
 #include <complex>
 #include <mio/mmap.hpp>
 #include <optional>
 #include <random>
+#include <tbb/task_scheduler_init.h>
 
 #include "binary_freq_collection.hpp"
 #include "mappable/mapper.hpp"
@@ -28,6 +35,7 @@ class Cluster {
     std::vector<id_type> m_cur_document_ids;
     id_type m_centroid;
     size_t m_depth;
+    std::mutex mutex;
 
    public:
     Cluster(std::vector<id_type> const &ids, id_type centroid, size_t depth)
@@ -39,6 +47,14 @@ class Cluster {
     explicit Cluster(id_type centroid, size_t depth) : m_centroid(centroid), m_depth(depth)
     {
         spdlog::info("Cluster created at depth: {}", m_depth);
+    }
+
+    Cluster(Cluster &&rhs)
+        : m_prev_document_ids(rhs.m_prev_document_ids),
+          m_cur_document_ids(rhs.m_cur_document_ids),
+          m_centroid(rhs.m_centroid),
+          m_depth(rhs.m_depth)
+    {
     }
 
     size_t depth() const { return m_depth; }
@@ -53,7 +69,12 @@ class Cluster {
 
     std::vector<id_type> const &document_ids() const { return m_cur_document_ids; }
 
-    void add_document_index(id_type id) { m_cur_document_ids.push_back(id); }
+    void add_document_index(id_type id)
+    {
+        mutex.lock();
+        m_cur_document_ids.push_back(id);
+        mutex.unlock();
+    }
 
     bool needs_partition()
     {
@@ -82,20 +103,23 @@ std::vector<Cluster> kmeans(
     uint32_t iterations = 0;
     while (!termination) {
         iterations += 1;
-        size_t doc_index = 0;
+        tbb::task_group group;
         for (auto &&doc_index : parent.document_ids()) {
-            auto &doc = fwd[doc_index];
-            double smallest_distance = std::numeric_limits<float>::max();
-            uint32_t closer_cluster_index = 0;
-            for (uint32_t i = 0; i < centroid_indexes.size(); ++i) { // select best cluster
-                auto cur_distance = distance(doc, fwd[centroid_indexes[i]]);
-                if (cur_distance < smallest_distance) {
-                    smallest_distance = cur_distance;
-                    closer_cluster_index = i;
+            group.run([&]() {
+                auto &doc = fwd[doc_index];
+                double smallest_distance = std::numeric_limits<float>::max();
+                uint32_t closer_cluster_index = 0;
+                for (uint32_t i = 0; i < centroid_indexes.size(); ++i) { // select best cluster
+                    auto cur_distance = distance(doc, fwd[centroid_indexes[i]]);
+                    if (cur_distance < smallest_distance) {
+                        smallest_distance = cur_distance;
+                        closer_cluster_index = i;
+                    }
                 }
-            }
-            clusters[closer_cluster_index].add_document_index(doc_index);
+                clusters[closer_cluster_index].add_document_index(doc_index);
+            });
         }
+        group.wait();
 
         termination = true;
         if (iterations != MAX_ITER) {
@@ -139,7 +163,7 @@ Iter select_randomly(Iter start, Iter end, RandomGenerator &g)
     return start;
 }
 
-auto seed = [](Cluster const &c) -> std::vector<size_t>{
+auto seed = [](Cluster const &c) -> std::vector<size_t> {
     static std::random_device rd;
     static std::mt19937 gen(rd());
     auto first = select_randomly(c.document_ids().begin(), c.document_ids().end(), gen);
@@ -238,6 +262,7 @@ int main(int argc, char const *argv[])
     std::optional<std::string> documents_filename;
     std::optional<std::string> reordered_documents_filename;
     size_t min_len = 0;
+    size_t threads = std::thread::hardware_concurrency();
 
     CLI::App app{"K-means reordering algorithm used for inverted indexed reordering."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
@@ -249,6 +274,9 @@ int main(int argc, char const *argv[])
            "--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")
         ->needs(docs_opt);
     CLI11_PARSE(app, argc, argv);
+    tbb::task_scheduler_init init(threads);
+    spdlog::info("Number of threads: {}", threads);
+
     auto fwd = from_inverted_index(input_basename, wand_data_filename, "bm25", min_len);
     spdlog::info("Computing clusters");
     auto clusters = compute_clusters(fwd);
