@@ -38,11 +38,11 @@ int main(int argc, const char **argv)
     using boost::adaptors::transformed;
     using boost::algorithm::join;
     for (auto &&q : queries) {
-        if(query_id and q.id) {
+        if (query_id and q.id) {
             std::cout << *(q.id) << ":";
         }
         std::cout
             << join(q.terms | transformed([](auto d) { return std::to_string(d); }), separator)
-            << std::endl;
+            << "\n";
     }
 }
