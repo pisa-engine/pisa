@@ -355,6 +355,9 @@ int main(int argc, const char **argv)
 {
     using namespace pisa;
 
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     std::string type;
     std::string index_filename;
     std::string query_filename;
