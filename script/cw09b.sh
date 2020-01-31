@@ -35,10 +35,10 @@ mkdir -p ${OUTPUT_DIR}
 #${PISA_BIN}/bmscore -i "${BASENAME}.yml" -j ${THREADS} --variable-blocks 22.5 --clone ${BASENAME}-var
 
 # Filter out queries witout existing terms.
-paste -d: ${QUERIES} ${THRESHOLDS} \
-    | jq '{"id": split(":")[0], "query": split(":")[1], "threshold": split(":")[2] | tonumber}' -R -c \
-    | head -${QUERY_LIMIT} \
-    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml --min 2 --max 8 > ${FILTERED_QUERIES}
+#paste -d: ${QUERIES} ${THRESHOLDS} \
+#    | jq '{"id": split(":")[0], "query": split(":")[1], "threshold": split(":")[2] | tonumber}' -R -c \
+#    | head -${QUERY_LIMIT} \
+#    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml --min 2 --max 8 > ${FILTERED_QUERIES}
 
 # This will produce both quantized scores and max scores (both quantized and not).
 #${PISA_BIN}/bigram-index -i "${BASENAME}.yml" -q ${PAIRS} --clone ${PAIR_INDEX_BASENAME} -j 4
@@ -47,19 +47,19 @@ paste -d: ${QUERIES} ${THRESHOLDS} \
 #${PISA_BIN}/intersection -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations --existing \
 #    | grep -v "\[warning\]" \
 #    > ${OUTPUT_DIR}/intersections.jl
-${PISA_BIN}/intersection -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations \
-    --in /home/michal/real.aol.top1m.tsv \
-    | grep -v "\[warning\]" \
-    > ${OUTPUT_DIR}/intersections.jl
+#${PISA_BIN}/intersection -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations \
+#    --in /home/michal/real.aol.top1m.tsv \
+#    | grep -v "\[warning\]" \
+#    > ${OUTPUT_DIR}/intersections.jl
 
 # Select unigrams
 ${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.1
 ${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.1.time
-${INTERSECT_BIN} -m bigram ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.2
-${INTERSECT_BIN} -m bigram ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.2.time
-${INTERSECT_BIN} -m bigram ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
-${INTERSECT_BIN} -m bigram ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${OUTPUT_DIR}/selections.2.scaled-2.time
-${INTERSECT_BIN} -m exact ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.exact
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.2
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.2.time
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${OUTPUT_DIR}/selections.2.scaled-2.time
+#${INTERSECT_BIN} -m exact ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.exact
 
 # Run benchmarks
 #${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --benchmark --algorithm wand --safe > ${OUTPUT_DIR}/bench.wand
