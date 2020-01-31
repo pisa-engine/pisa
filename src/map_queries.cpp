@@ -43,6 +43,6 @@ int main(int argc, const char **argv)
         }
         std::cout
             << join(q.terms | transformed([](auto d) { return std::to_string(d); }), separator)
-            << "\n";
+            << '\n';
     }
 }
