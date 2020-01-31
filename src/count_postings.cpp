@@ -24,7 +24,7 @@ int main(int argc, char** argv)
         throw std::invalid_argument("First sequence should only contain number of documents");
     }
 
-    std::size_t count = 0;
+    std::size_t count = -1; // Takes care of the first 'fake' sequence
     for(auto&& p : coll) {
         count += p.size();
     }
