@@ -396,12 +396,16 @@ struct LookupTransform {
 };
 
 /// This algorithm...
-template <typename Index, typename Scorer, typename Inspect = void>
+template <typename Index,
+          typename Scorer,
+          typename InspectUnigram = void,
+          typename InspectBigram = void>
 auto lookup_union(Query const& query,
                   Index const& index,
                   topk_queue topk,
                   Scorer&& scorer,
-                  Inspect* inspect = nullptr)
+                  InspectUnigram* inspect_unigram = nullptr,
+                  InspectBigram* inspect_bigram = nullptr)
 {
     using bigram_cursor_type = std::decay_t<decltype(*index.scored_bigram_cursor(0, 0, scorer))>;
     using lookup_cursor_type = std::decay_t<decltype(index.max_scored_cursor(0, scorer))>;
@@ -419,8 +423,11 @@ auto lookup_union(Query const& query,
     auto& essential_unigrams = selections.unigrams;
     auto& essential_bigrams = selections.bigrams;
 
-    if constexpr (not std::is_void_v<Inspect>) {
-        inspect->essential(essential_unigrams.size() + essential_bigrams.size());
+    if constexpr (not std::is_void_v<InspectUnigram>) {
+        inspect_unigram->essential(essential_unigrams.size());
+    }
+    if constexpr (not std::is_void_v<InspectBigram>) {
+        inspect_bigram->essential(essential_bigrams.size());
     }
 
     auto non_essential_terms =
@@ -438,13 +445,13 @@ auto lookup_union(Query const& query,
                                  0.0F,
                                  accumulators::Add{},
                                  is_above_threshold,
-                                 inspect);
+                                 inspect_unigram);
     }();
 
     using lookup_transform_type = LookupTransform<bigram_cursor_type,
                                                   lookup_cursor_type,
                                                   decltype(is_above_threshold),
-                                                  Inspect>;
+                                                  InspectBigram>;
     using transform_payload_cursor_type =
         TransformPayloadCursor<bigram_cursor_type, lookup_transform_type>;
 
@@ -471,7 +478,7 @@ auto lookup_union(Query const& query,
                                     lookup_transform_type(std::move(lookup_cursors),
                                                           lookup_cursors_upper_bound,
                                                           is_above_threshold,
-                                                          inspect));
+                                                          inspect_bigram));
     }
 
     auto accumulate = [&](float acc, auto& cursor, [[maybe_unused]] auto idx) {
@@ -484,9 +491,9 @@ auto lookup_union(Query const& query,
         std::make_tuple(accumulate, accumulate));
 
     v1::for_each(merged, [&](auto&& cursor) {
-        if constexpr (not std::is_void_v<Inspect>) {
+        if constexpr (not std::is_void_v<InspectUnigram>) {
             if (topk.insert(cursor.payload(), cursor.value())) {
-                inspect->insert();
+                inspect_unigram->insert();
             }
         } else {
             topk.insert(cursor.payload(), cursor.value());
@@ -1005,6 +1012,56 @@ struct UnionLookupPlusInspect : public BaseUnionLookupInspect<Index, Scorer> {
     }
 };
 
+struct ComponentInspect {
+    void reset_current()
+    {
+        m_documents += m_current_documents;
+        m_postings += m_current_postings;
+        m_lookups += m_current_lookups;
+        m_inserts += m_current_inserts;
+        m_essential_lists += m_current_essential_lists;
+        m_count += 1;
+
+        m_current_documents = 0;
+        m_current_postings = 0;
+        m_current_lookups = 0;
+        m_current_inserts = 0;
+        m_essential_lists = 0;
+    }
+
+    void document() { m_current_documents += 1; }
+    void posting() { m_current_postings += 1; }
+    void lookup() { m_current_lookups += 1; }
+    void insert() { m_current_inserts += 1; }
+    void essential(std::size_t n) { m_current_essential_lists = n; }
+
+    [[nodiscard]] auto current_documents() const { return m_current_documents; }
+    [[nodiscard]] auto current_postings() const { return m_current_postings; }
+    [[nodiscard]] auto current_lookups() const { return m_current_lookups; }
+    [[nodiscard]] auto current_inserts() const { return m_current_inserts; }
+    [[nodiscard]] auto current_essential_lists() const { return m_current_essential_lists; }
+
+    [[nodiscard]] auto documents() const { return m_documents; }
+    [[nodiscard]] auto postings() const { return m_postings; }
+    [[nodiscard]] auto lookups() const { return m_lookups; }
+    [[nodiscard]] auto inserts() const { return m_inserts; }
+    [[nodiscard]] auto essential_lists() const { return m_essential_lists; }
+
+   private:
+    std::size_t m_current_documents = 0;
+    std::size_t m_current_postings = 0;
+    std::size_t m_current_lookups = 0;
+    std::size_t m_current_inserts = 0;
+    std::size_t m_current_essential_lists = 0;
+
+    std::size_t m_documents = 0;
+    std::size_t m_postings = 0;
+    std::size_t m_lookups = 0;
+    std::size_t m_inserts = 0;
+    std::size_t m_count = 0;
+    std::size_t m_essential_lists = 0;
+};
+
 template <typename Index, typename Scorer>
 struct LookupUnionInspector : public BaseUnionLookupInspect<Index, Scorer> {
     LookupUnionInspector(Index const& index, Scorer scorer)
@@ -1019,6 +1076,94 @@ struct LookupUnionInspector : public BaseUnionLookupInspect<Index, Scorer> {
             lookup_union(query, index, std::move(topk), scorer, this);
         }
     }
+};
+
+template <typename Index, typename Scorer>
+struct LookupUnionInspect {
+    LookupUnionInspect(Index const& index, Scorer scorer)
+        : m_index(index), m_scorer(std::move(scorer))
+    {
+        std::cout << fmt::format(
+            "documents\tpostings\tinserts\tlookups\tessential_lists\t"
+            "postings-uni\tlookups-uni\tpostings-bi\tlookups-bi\n");
+    }
+
+    void reset_current()
+    {
+        m_unigram_inspect.reset_current();
+        m_bigram_inspect.reset_current();
+        m_count += 1;
+    }
+
+    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk)
+    {
+        if (query.selections()->bigrams.empty()) {
+            unigram_union_lookup(query, index, std::move(topk), scorer, &m_unigram_inspect);
+        } else {
+            lookup_union(
+                query, index, std::move(topk), scorer, &m_unigram_inspect, &m_bigram_inspect);
+        }
+    }
+
+    void operator()(Query const& query)
+    {
+        auto const& term_ids = query.get_term_ids();
+        if (term_ids.empty()) {
+            return;
+        }
+        using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
+        using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
+
+        run(query, m_index, m_scorer, topk_queue(query.k()));
+        std::cout << fmt::format(
+            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            m_unigram_inspect.current_documents() + m_bigram_inspect.current_documents(),
+            m_unigram_inspect.current_postings() + m_bigram_inspect.current_postings(),
+            m_unigram_inspect.current_inserts() + m_bigram_inspect.current_inserts(),
+            m_unigram_inspect.current_lookups() + m_bigram_inspect.current_lookups(),
+            m_unigram_inspect.current_essential_lists()
+                + m_bigram_inspect.current_essential_lists(),
+            m_unigram_inspect.current_postings(),
+            m_unigram_inspect.current_lookups(),
+            m_bigram_inspect.current_postings(),
+            m_bigram_inspect.current_lookups());
+        reset_current();
+    }
+
+    void summarize() &&
+    {
+        auto documents = m_unigram_inspect.documents() + m_bigram_inspect.documents();
+        auto postings = m_unigram_inspect.postings() + m_bigram_inspect.postings();
+        auto inserts = m_unigram_inspect.inserts() + m_bigram_inspect.inserts();
+        auto lookups = m_unigram_inspect.lookups() + m_bigram_inspect.lookups();
+        auto essential_lists =
+            m_unigram_inspect.essential_lists() + m_bigram_inspect.essential_lists();
+        auto uni_postings = m_unigram_inspect.postings();
+        auto uni_lookups = m_unigram_inspect.lookups();
+        auto bi_postings = m_bigram_inspect.postings();
+        auto bi_lookups = m_bigram_inspect.lookups();
+        std::cerr << fmt::format(
+            "=== SUMMARY ===\nAverage:\n- documents:\t{}\n"
+            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n- essential lists:\t{}\n"
+            "- uni-postings:\t{}\n- uni-lookups:\t{}\n"
+            "- bi-postings:\t{}\n- bi-lookups:\t{}\n",
+            static_cast<float>(documents) / m_count,
+            static_cast<float>(postings) / m_count,
+            static_cast<float>(inserts) / m_count,
+            static_cast<float>(lookups) / m_count,
+            static_cast<float>(essential_lists) / m_count,
+            static_cast<float>(uni_postings) / m_count,
+            static_cast<float>(uni_lookups) / m_count,
+            static_cast<float>(bi_postings) / m_count,
+            static_cast<float>(bi_lookups) / m_count);
+    }
+
+   private:
+    ComponentInspect m_unigram_inspect;
+    ComponentInspect m_bigram_inspect;
+    std::size_t m_count = 0;
+    Index const& m_index;
+    Scorer m_scorer;
 };
 
 } // namespace pisa::v1

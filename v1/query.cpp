@@ -30,7 +30,7 @@ using pisa::v1::DaatOrInspector;
 using pisa::v1::DocumentBlockedReader;
 using pisa::v1::index_runner;
 using pisa::v1::lookup_union;
-using pisa::v1::LookupUnionInspector;
+using pisa::v1::LookupUnionInspect;
 using pisa::v1::maxscore_union_lookup;
 using pisa::v1::MaxscoreInspector;
 using pisa::v1::MaxscoreUnionLookupInspect;
@@ -216,7 +216,7 @@ auto resolve_inspect(std::string const& name, Index const& index, Scorer&& score
         return QueryInspector(UnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "lookup-union") {
-        return QueryInspector(LookupUnionInspector<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(LookupUnionInspect<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "union-lookup-plus") {
         return QueryInspector(UnionLookupPlusInspect<Index, std::decay_t<Scorer>>(index, scorer));
