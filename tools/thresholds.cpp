@@ -5,18 +5,18 @@
 #include "boost/algorithm/string/split.hpp"
 
 #include "mio/mmap.hpp"
-#include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
 
 #include "mappable/mapper.hpp"
 
+#include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
-#include "query/queries.hpp"
+#include "query/algorithm.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-#include "cursor/max_scored_cursor.hpp"
 
 #include "scorer/scorer.hpp"
 
@@ -41,7 +41,6 @@ void thresholds(const std::string &index_filename,
 
     auto scorer = scorer::from_name(scorer_name, wdata);
 
-
     mio::mmap_source md;
     if (wand_data_filename) {
         std::error_code error;
@@ -57,7 +56,7 @@ void thresholds(const std::string &index_filename,
     for (auto const &query : queries) {
         wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
         topk.finalize();
-        auto  results   = topk.topk();
+        auto results = topk.topk();
         topk.clear();
         float threshold = 0.0;
         if (results.size() == k) {
@@ -114,7 +113,8 @@ int main(int argc, const char **argv)
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                            \
     }                                                                                    \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                                            \
+    else if (type == BOOST_PP_STRINGIZE(T))                                              \
+    {                                                                                    \
         if (compressed) {                                                                \
             thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
                                                                     wand_data_filename,  \

@@ -6,6 +6,7 @@
 
 #include "query/algorithm/and_query.hpp"
 #include "query/queries.hpp"
+#include "scorer/scorer.hpp"
 
 namespace pisa {
 

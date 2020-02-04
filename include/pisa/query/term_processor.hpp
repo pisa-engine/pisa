@@ -5,7 +5,7 @@
 #include <unordered_set>
 
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2/Porter2.hpp>
+#include <Porter2.hpp>
 #include <boost/algorithm/string.hpp>
 #include <mio/mmap.hpp>
 
@@ -49,7 +49,7 @@ class TermProcessor {
         } else if (*stemmer_type == "porter2") {
             _to_id = [=](auto str) {
                 boost::algorithm::to_lower(str);
-                stem::Porter2 stemmer{};
+                porter2::Stemmer stemmer{};
                 return to_id(std::move(stemmer.stem(str)));
             };
         } else if (*stemmer_type == "krovetz") {

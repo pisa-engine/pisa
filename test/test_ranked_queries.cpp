@@ -5,15 +5,14 @@
 
 #include <tbb/task_scheduler_init.h>
 
-#include "test_common.hpp"
-
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
-#include "query/queries.hpp"
+#include "query/algorithm.hpp"
+#include "test_common.hpp"
 
 using namespace pisa;
 
@@ -53,7 +52,8 @@ struct IndexData {
         std::string t;
     }
 
-    [[nodiscard]] static auto get(std::string const &s_name, std::unordered_set<size_t> const &dropped_term_ids)
+    [[nodiscard]] static auto get(std::string const &s_name,
+                                  std::unordered_set<size_t> const &dropped_term_ids)
     {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
             IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, dropped_term_ids);

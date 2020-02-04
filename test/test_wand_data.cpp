@@ -4,6 +4,7 @@
 #include <functional>
 
 #include <range/v3/view/iota.hpp>
+#include <range/v3/view/zip.hpp>
 #include <tbb/task_scheduler_init.h>
 
 #include "test_common.hpp"
@@ -11,6 +12,7 @@
 #include "index_types.hpp"
 #include "pisa_config.hpp"
 #include "query/queries.hpp"
+#include "wand_data.hpp"
 #include "wand_data_range.hpp"
 
 #include "scorer/scorer.hpp"

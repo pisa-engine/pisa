@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 
@@ -29,6 +30,7 @@ ExternalProject_Add(gumbo-external
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
+	BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a
     BUILD_COMMAND ${MAKE})
 add_library(gumbo::gumbo STATIC IMPORTED)
 set_property(TARGET gumbo::gumbo APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES
@@ -69,12 +71,15 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
+list(SORT PISA_SRC_FILES)
+
 include_directories(include)
-add_library(pisa INTERFACE)
-target_include_directories(pisa INTERFACE
+add_library(pisa ${PISA_SRC_FILES})
+target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa INTERFACE
+target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can switch to PRIVATE?
     Threads::Threads
     Boost::boost
     QMX
@@ -96,9 +101,11 @@ target_link_libraries(pisa INTERFACE
     fmt::fmt
     range-v3
 )
-target_include_directories(pisa INTERFACE external)
+target_include_directories(pisa PUBLIC external)
 
-add_subdirectory(src)
+if (PISA_BUILD_TOOLS)
+    add_subdirectory(tools)
+endif()
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     enable_testing()

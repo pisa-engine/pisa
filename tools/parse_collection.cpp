@@ -2,7 +2,7 @@
 
 #include <CLI/CLI.hpp>
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
-#include <Porter2/Porter2.hpp>
+#include <Porter2.hpp>
 #include <boost/algorithm/string.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -38,9 +38,8 @@ template <typename ReadSubsequentRecordFn>
     };
 }
 
-std::function<std::optional<Document_Record>(std::istream &)> record_parser(
-        std::string const &type,
-        std::istream& is)
+std::function<std::optional<Document_Record>(std::istream &)> record_parser(std::string const &type,
+                                                                            std::istream &is)
 {
     if (type == "plaintext") {
         return [](std::istream &in) -> std::optional<Document_Record> {
@@ -58,13 +57,14 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
     }
     if (type == "trecweb") {
         return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](
-                std::istream &in) -> std::optional<Document_Record> {
+                   std::istream &in) -> std::optional<Document_Record> {
             while (not in.eof()) {
                 auto record = trecpp::match(
                     parser->read_record(),
                     [](trecpp::Record const &rec) {
-                        return std::make_optional<Document_Record>(
-                            std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
+                        return std::make_optional<Document_Record>(std::move(rec.trecid()),
+                                                                   std::move(rec.content()),
+                                                                   std::move(rec.url()));
                     },
                     [](trecpp::Error const &error) {
                         spdlog::warn("Skipped invalid record: {}", error);
@@ -154,7 +154,7 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
     if (*type == "porter2") {
         return [](std::string &&term) -> std::string {
             boost::algorithm::to_lower(term);
-            return stem::Porter2{}.stem(term);
+            return porter2::Stemmer{}.stem(term);
         };
     }
     if (*type == "krovetz") {

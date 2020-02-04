@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <string>
 
-#include <Porter2/Porter2.hpp>
 #include <boost/filesystem.hpp>
 #include <catch2/catch.hpp>
 #include <gsl/span>

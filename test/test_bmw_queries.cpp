@@ -9,7 +9,10 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
-#include "query/queries.hpp"
+#include "query/algorithm.hpp"
+#include "wand_data.hpp"
+#include "wand_data_compressed.hpp"
+#include "wand_data_raw.hpp"
 
 using namespace pisa;
 
@@ -20,7 +23,6 @@ template <typename Index>
 struct IndexData {
 
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
-
 
     IndexData(std::string const &scorer_name, std::unordered_set<size_t> const &dropped_term_ids)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
@@ -56,7 +58,8 @@ struct IndexData {
     std::vector<Query> queries;
     WandTypePlain wdata;
 
-    [[nodiscard]] static auto get(std::string const &s_name, std::unordered_set<size_t> const &dropped_term_ids)
+    [[nodiscard]] static auto get(std::string const &s_name,
+                                  std::unordered_set<size_t> const &dropped_term_ids)
     {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
             IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, dropped_term_ids);
@@ -80,7 +83,8 @@ auto test(Wand &wdata, std::string const &s_name)
     auto scorer = scorer::from_name(s_name, data->wdata);
 
     for (auto const &q : data->queries) {
-        wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());
+        wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q),
+               data->index.num_docs());
         op_q(make_block_max_scored_cursors(data->index, wdata, *scorer, q), data->index.num_docs());
         topk_1.finalize();
         topk_2.finalize();
