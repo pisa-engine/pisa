@@ -118,3 +118,9 @@ target_link_libraries(lexicon
 #  pisa
 #  CLI11
 #)
+
+#add_executable(map_queries map_queries.cpp)
+#target_link_libraries(map_queries
+#  pisa
+#  CLI11
+#)
