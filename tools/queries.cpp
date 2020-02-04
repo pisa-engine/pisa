@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <mio/mmap.hpp>
@@ -12,49 +13,35 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "mappable/mapper.hpp"
-#include "topk_queue.hpp"
-
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
-#include "query/algorithm/and_query.hpp"
-#include "query/algorithm/block_max_maxscore_query.hpp"
-#include "query/algorithm/block_max_ranked_and_query.hpp"
-#include "query/algorithm/block_max_wand_query.hpp"
-#include "query/algorithm/maxscore_query.hpp"
-#include "query/algorithm/or_query.hpp"
-#include "query/algorithm/ranked_and_query.hpp"
-#include "query/algorithm/ranked_or_query.hpp"
-#include "query/algorithm/ranked_or_taat_query.hpp"
-#include "query/algorithm/wand_query.hpp"
-#include "query/queries.hpp"
+#include "mappable/mapper.hpp"
+#include "query/algorithm.hpp"
+#include "scorer/scorer.hpp"
 #include "timer.hpp"
-#include "util/do_not_optimize_away.hpp"
+#include "topk_queue.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-
-#include "CLI/CLI.hpp"
-#include "scorer/scorer.hpp"
 
 using namespace pisa;
 using ranges::views::enumerate;
 
 template <typename Fn>
 void extract_times(Fn fn,
-                   std::vector<Query> const &queries,
-                   std::vector<Threshold> const &thresholds,
-                   std::string const &index_type,
-                   std::string const &query_type,
+                   std::vector<Query> const& queries,
+                   std::vector<Threshold> const& thresholds,
+                   std::string const& index_type,
+                   std::string const& query_type,
                    size_t runs,
                    std::ostream& os)
 {
     std::vector<std::size_t> times(runs);
-    for (auto &&[qid, query] : enumerate(queries)) {
+    for (auto&& [qid, query] : enumerate(queries)) {
         do_not_optimize_away(fn(query, thresholds[qid]));
         std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
             return run_with_timer<std::chrono::microseconds>(
@@ -69,10 +56,10 @@ void extract_times(Fn fn,
 
 template <typename Functor>
 void op_perftest(Functor query_func,
-                 std::vector<Query> const &queries,
-                 std::vector<Threshold> const &thresholds,
-                 std::string const &index_type,
-                 std::string const &query_type,
+                 std::vector<Query> const& queries,
+                 std::vector<Threshold> const& thresholds,
+                 std::string const& index_type,
+                 std::string const& query_type,
                  size_t runs)
 {
 
@@ -80,7 +67,7 @@ void op_perftest(Functor query_func,
 
     for (size_t run = 0; run <= runs; ++run) {
         size_t idx = 0;
-        for (auto const &query : queries) {
+        for (auto const& query : queries) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query, thresholds[idx]);
                 do_not_optimize_away(result);

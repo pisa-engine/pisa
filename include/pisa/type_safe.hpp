@@ -47,7 +47,7 @@ class Integer {
         m_val += other.m_val;
         return *this;
     }
-    [[nodiscard]] Integer operator-(Integer const &other) const {
+    Integer operator-(Integer const &other) const {
         return Integer(m_val - other.m_val);
     }
     Integer &operator-=(Integer const &other) {

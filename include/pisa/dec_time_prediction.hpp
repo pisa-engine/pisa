@@ -1,9 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <sstream>
 #include <string>
-#include <algorithm>
 
 #include "boost/preprocessor/seq/enum.hpp"
 #include "boost/preprocessor/seq/for_each.hpp"
@@ -13,48 +13,47 @@
 
 #define PISA_FEATURE_TYPES (n)(size)(sum_of_logs)(entropy)(nonzeros)(max_b)(pfor_b)(pfor_exceptions)
 
-namespace pisa { namespace time_prediction {
+namespace pisa {
+namespace time_prediction {
 
     constexpr size_t num_features = BOOST_PP_SEQ_SIZE(PISA_FEATURE_TYPES);
 
-    enum class feature_type {
-        BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end
-    };
+    enum class feature_type { BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end };
 
     inline feature_type parse_feature_type(std::string const& name)
     {
         if (false) {
-#define LOOP_BODY(R, DATA, T)                           \
-            } else if (name == BOOST_PP_STRINGIZE(T)) { \
-                return feature_type::T;                \
-                    /**/
+#define LOOP_BODY(R, DATA, T)               \
+    }                                       \
+    else if (name == BOOST_PP_STRINGIZE(T)) \
+    {                                       \
+        return feature_type::T;             \
+        /**/
             BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_FEATURE_TYPES);
 #undef LOOP_BODY
         } else {
             throw std::invalid_argument("Invalid feature name " + name);
         }
-
     }
 
     inline std::string feature_name(feature_type f)
     {
         switch (f) {
-#define LOOP_BODY(R, DATA, T)                       \
-            case feature_type::T: return BOOST_PP_STRINGIZE(T); \
-            /**/
+#define LOOP_BODY(R, DATA, T)         \
+    case feature_type::T:             \
+        return BOOST_PP_STRINGIZE(T); \
+        /**/
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_FEATURE_TYPES);
+            BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_FEATURE_TYPES);
 #undef LOOP_BODY
-        default: throw std::invalid_argument("Invalid feature type");
+        default:
+            throw std::invalid_argument("Invalid feature type");
         }
     }
 
     class feature_vector {
-    public:
-        feature_vector()
-        {
-            std::fill(m_features.begin(), m_features.end(), 0);
-        }
+       public:
+        feature_vector() { std::fill(m_features.begin(), m_features.end(), 0); }
 
         float& operator[](feature_type f) { return m_features[(size_t)f]; }
         float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
@@ -68,19 +67,17 @@ namespace pisa { namespace time_prediction {
             return sl;
         }
 
-    protected:
+       protected:
         std::array<float, num_features> m_features;
     };
 
     class predictor : public feature_vector {
-    public:
-        predictor()
-            : m_bias(0)
-        {}
+       public:
+        predictor() : m_bias(0) {}
 
         predictor(std::vector<std::pair<std::string, float>> const& values)
         {
-            for (auto const& kv: values) {
+            for (auto const& kv : values) {
                 if (kv.first == "bias") {
                     bias() = kv.second;
                 } else {
@@ -102,7 +99,7 @@ namespace pisa { namespace time_prediction {
             return result;
         }
 
-    protected:
+       protected:
         float m_bias;
     };
 
@@ -110,7 +107,8 @@ namespace pisa { namespace time_prediction {
     {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
-        if (values.empty()) return;
+        if (values.empty())
+            return;
 
         uint32_t last_value = values.front();
         size_t group_begin = 0;
@@ -143,19 +141,23 @@ namespace pisa { namespace time_prediction {
         f[feature_type::max_b] = max_b;
     }
 
-    inline bool read_block_stats(std::istream& is, uint32_t& list_id, std::vector<uint32_t>& block_counts)
+    inline bool read_block_stats(std::istream& is,
+                                 uint32_t& list_id,
+                                 std::vector<uint32_t>& block_counts)
     {
         thread_local std::string line;
         uint32_t count;
         block_counts.clear();
-        if (!std::getline(is, line)) return false;
+        if (!std::getline(is, line))
+            return false;
 
         std::istringstream iss(line);
         iss >> list_id;
-        while (iss >> count) block_counts.push_back(count);
+        while (iss >> count)
+            block_counts.push_back(count);
 
         return true;
     }
 
-
-}}
+} // namespace time_prediction
+} // namespace pisa

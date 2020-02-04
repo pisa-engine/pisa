@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_COMPILE_TOOLS "Compile CLI tools." ON)
@@ -91,7 +92,7 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
-file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/v1/*cpp")
+file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
 list(SORT PISA_SRC_FILES)
 
 include_directories(include)
@@ -99,7 +100,7 @@ add_library(pisa ${PISA_SRC_FILES})
 target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa PUBLIC
+target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can switch to PRIVATE?
     Threads::Threads
     Boost::boost
     QMX
@@ -128,7 +129,7 @@ target_include_directories(pisa PUBLIC external)
 
 if (PISA_COMPILE_TOOLS)
     add_subdirectory(v1)
-    add_subdirectory(src)
+    add_subdirectory(tools)
 endif()
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)

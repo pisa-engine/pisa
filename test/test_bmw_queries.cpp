@@ -9,21 +9,10 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
-#include "query/algorithm/and_query.hpp"
-#include "query/algorithm/block_max_maxscore_query.hpp"
-#include "query/algorithm/block_max_ranked_and_query.hpp"
-#include "query/algorithm/block_max_wand_query.hpp"
-#include "query/algorithm/maxscore_query.hpp"
-#include "query/algorithm/or_query.hpp"
-#include "query/algorithm/ranked_and_query.hpp"
-#include "query/algorithm/ranked_or_query.hpp"
-#include "query/algorithm/ranked_or_taat_query.hpp"
-#include "query/algorithm/wand_query.hpp"
-#include "query/queries.hpp"
-#include "topk_queue.hpp"
+#include "query/algorithm.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
-#include "wand_data_range.hpp"
+#include "wand_data_raw.hpp"
 
 using namespace pisa;
 

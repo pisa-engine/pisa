@@ -5,26 +5,14 @@
 
 #include <tbb/task_scheduler_init.h>
 
-#include "test_common.hpp"
-
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
-#include "query/algorithm/and_query.hpp"
-#include "query/algorithm/block_max_maxscore_query.hpp"
-#include "query/algorithm/block_max_ranked_and_query.hpp"
-#include "query/algorithm/block_max_wand_query.hpp"
-#include "query/algorithm/maxscore_query.hpp"
-#include "query/algorithm/or_query.hpp"
-#include "query/algorithm/range_query.hpp"
-#include "query/algorithm/ranked_and_query.hpp"
-#include "query/algorithm/ranked_or_query.hpp"
-#include "query/algorithm/ranked_or_taat_query.hpp"
-#include "query/algorithm/wand_query.hpp"
-#include "query/queries.hpp"
+#include "query/algorithm.hpp"
+#include "test_common.hpp"
 
 using namespace pisa;
 
@@ -90,7 +78,7 @@ class ranked_or_taat_query_acc : public ranked_or_taat_query {
     using ranked_or_taat_query::ranked_or_taat_query;
 
     template <typename CursorRange>
-    void operator()(CursorRange &&cursors, uint64_t max_docid)
+    void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
         Acc accumulator(max_docid);
         ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
@@ -103,7 +91,7 @@ class range_query_128 : public range_query<T> {
     using range_query<T>::range_query;
 
     template <typename CursorRange>
-    void operator()(CursorRange &&cursors, uint64_t max_docid)
+    void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
         range_query<T>::operator()(cursors, max_docid, 128);
     }
