@@ -1,3 +1,55 @@
+### Version 0.7.0
+- Create FUNDING.yml
+- Update README.md
+- Update README.md
+- Moved Funding.yml
+- Update FUNDING.yml
+- Compute norm_lens at run time (#220)
+- Added term_count and collection_len (#221)
+- Cleanup (#223)
+- Update README.md
+- Update README.md
+- Update wand_data_compressed.hpp
+- Rename PEF (#192)
+- Docname & URL reordering scripts and docs (#232)
+- Fix taat (#233)
+- Small chances to taat (#234)
+- Update tokenizer (#243)
+- Update documentation (#239)
+- Update query processing (#244)
+- Bad alloc (#257)
+- Intersection with terms (#253)
+- Added sampling task (#266)
+- Fix documentation (#269)
+- Update parsing.md (#268)
+- Fixed sampling (#271)
+- Fix TBB leaks in tests (#272)
+- Added terms len into wand file (#274)
+- Fix MacOS build (#276)
+- Update .travis.yml (#275)
+- Update block_posting_list.hpp (#279)
+- Simplify BMW flow (#282)
+- Create generate_mapping_from_permutations.py (#283)
+- logger to stderr (#284)
+- Fixing static analyzer errors (#273)
+- Fix rapidcheck compilation with GCC9 (#287)
+- Implementation of multiple scorers (#285)
+- Update compute_intersection.cpp
+- Update compute_intersection.cpp
+- Sampling (#289)
+- Fix warnings (#292)
+- Fix sampling (#295)
+- Pass top-k queue to the query algorithm (#297)
+- Update block skip logic (#300)
+- Update maxscore_query.hpp (#301)
+- Reverse url and update doclex order  (#302)
+- Pass thresholds to heap (#304)
+- Update invert.hpp (#307)
+- Fix thresholds load (#308)
+- Update topk_queue.hpp (#309)
+- Count postings (#311)
+- Added tool to map textual queries to our query ID format (#310)
+
 ### Version 0.6.6
 - Fix: issue with using an old version of trecpp
 
