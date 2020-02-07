@@ -39,7 +39,7 @@ void evaluate_queries(const std::string &index_filename,
                       uint64_t k,
                       std::string const &documents_filename,
                       std::string const &scorer_name,
-                      std::string const &run_id = "R0",
+                      std::string const &run_id = "PISA",
                       std::string const &iteration = "Q0")
 {
     IndexType index;
