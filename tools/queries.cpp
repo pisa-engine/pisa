@@ -100,7 +100,7 @@ void op_perftest(Functor query_func,
         spdlog::info("99% quantile: {}", q99);
       
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
-            "q95", q95);
+            "q95", q95)("q99", q99);
     }
 }
 
