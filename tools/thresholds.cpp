@@ -70,8 +70,11 @@ int main(int argc, const char **argv)
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
-    App<arg::Index, arg::Query<arg::QueryMode::Ranked, 1'000>, arg::Algorithm, arg::Scorer<>> app{
-        "Extracts query thresholds."};
+    App<arg::Index<arg::Encoding::Legacy>,
+        arg::Query<arg::QueryMode::Ranked, 1'000>,
+        arg::Algorithm,
+        arg::Scorer<>>
+        app{"Extracts query thresholds."};
     CLI11_PARSE(app, argc, argv);
 
     /**/

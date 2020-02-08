@@ -187,7 +187,7 @@ int main(int argc, const char **argv)
     std::string documents_file;
     std::string run_id = "R0";
 
-    App<arg::Index,
+    App<arg::Index<arg::Encoding::Legacy>,
         arg::Query<arg::QueryMode::Ranked, 1'000>,
         arg::Algorithm,
         arg::Scorer<>,

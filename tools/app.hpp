@@ -15,11 +15,21 @@ namespace pisa {
 
 namespace arg {
 
+    enum class Encoding : bool { Legacy, New };
+
+    template <Encoding encoding = Encoding::New>
     struct Index {
         explicit Index(CLI::App *app)
         {
             app->add_option("-i,--index", m_basename, "Inverted index basename")->required();
-            app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
+            if constexpr (encoding == Encoding::New) {
+                app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
+            } else {
+                app->add_option("-e,-t,--encoding,--type",
+                                m_encoding,
+                                "Index encoding\nDEPRECATED: -t/--type; USE: -e/--encoding")
+                    ->required();
+            }
             app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file");
         }
