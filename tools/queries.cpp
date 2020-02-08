@@ -90,15 +90,17 @@ void op_perftest(Functor query_func,
         double q50 = query_times[query_times.size() / 2];
         double q90 = query_times[90 * query_times.size() / 100];
         double q95 = query_times[95 * query_times.size() / 100];
-
+        double q99 = query_times[99 * query_times.size() / 100];
+      
         spdlog::info("---- {} {}", index_type, query_type);
         spdlog::info("Mean: {}", avg);
         spdlog::info("50% quantile: {}", q50);
         spdlog::info("90% quantile: {}", q90);
         spdlog::info("95% quantile: {}", q95);
-
+        spdlog::info("99% quantile: {}", q99);
+      
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
-            "q95", q95);
+            "q95", q95)("q99", q99);
     }
 }
 
