@@ -125,3 +125,9 @@ target_link_libraries(count_postings
   pisa
   CLI11
 )
+
+add_executable(kth_thresholds kth_thresholds.cpp)
+target_link_libraries(kth_thresholds
+  pisa
+  CLI11
+)
