@@ -6,19 +6,21 @@ source $1
 
 echo "Running experiment with the following environment:"
 echo ""
-echo "  PISA_BIN         = ${PISA_BIN}"
-echo "  INTERSECT_BIN    = ${INTERSECT_BIN}"
-echo "  BINARY_FREQ_COLL = ${BINARY_FREQ_COLL}"
-echo "  FWD              = ${FWD}"
-echo "  BASENAME         = ${BASENAME}"
-echo "  THREADS          = ${THREADS}"
-echo "  ENCODING         = ${ENCODING}"
-echo "  OUTPUT_DIR       = ${OUTPUT_DIR}"
-echo "  QUERIES          = ${QUERIES}"
-echo "  FILTERED_QUERIES = ${FILTERED_QUERIES}"
-echo "  K                = ${K}"
-echo "  THRESHOLDS       = ${THRESHOLDS}"
-echo "  QUERY_LIMIT      = ${QUERY_LIMIT}"
+echo "  PISA_BIN            = ${PISA_BIN}"
+echo "  INTERSECT_BIN       = ${INTERSECT_BIN}"
+echo "  BINARY_FREQ_COLL    = ${BINARY_FREQ_COLL}"
+echo "  FWD                 = ${FWD}"
+echo "  BASENAME            = ${BASENAME}"
+echo "  THREADS             = ${THREADS}"
+echo "  ENCODING            = ${ENCODING}"
+echo "  OUTPUT_DIR          = ${OUTPUT_DIR}"
+echo "  QUERIES             = ${QUERIES}"
+echo "  FILTERED_QUERIES    = ${FILTERED_QUERIES}"
+echo "  K                   = ${K}"
+echo "  THRESHOLDS          = ${THRESHOLDS}"
+echo "  QUERY_LIMIT         = ${QUERY_LIMIT}"
+echo "  PAIRS               = ${PAIRS}"
+echo "  PAIR_INDEX_BASENAME = ${PAIR_INDEX_BASENAME}"
 echo ""
 
 set -x
@@ -53,12 +55,12 @@ mkdir -p ${OUTPUT_DIR}
 #    > ${OUTPUT_DIR}/intersections.jl
 
 # Select unigrams
-${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.1
-${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.1.time
-${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.2
-${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.2.time
-${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
-${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${OUTPUT_DIR}/selections.2.scaled-2.time
+#${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.1
+#${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.1.time
+#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.2
+#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.2.time
+#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
+#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${OUTPUT_DIR}/selections.2.scaled-2.time
 #${INTERSECT_BIN} -m exact ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.exact
 
 # Run benchmarks
@@ -89,33 +91,39 @@ ${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${O
 #${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
 #    --benchmark --algorithm union-lookup-plus -k ${K} \
 #    > ${OUTPUT_DIR}/bench.plus.scaled-2
-${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
-    --benchmark --algorithm lookup-union -k ${K} \
-    > ${OUTPUT_DIR}/bench.lookup-union.scaled-2
+#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
+#    --benchmark --algorithm lookup-union -k ${K} \
+#    > ${OUTPUT_DIR}/bench.lookup-union.scaled-2
+#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
+#    --benchmark --algorithm lookup-union-eaat -k ${K} \
+#    > ${OUTPUT_DIR}/bench.lookup-union-eaat.scaled-2
 
 # Analyze
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --inspect --algorithm maxscore -k ${K} > ${OUTPUT_DIR}/stats.maxscore
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore -k ${K} \
-#    > ${OUTPUT_DIR}/stats.maxscore-threshold
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore-union-lookup \
-#    > ${OUTPUT_DIR}/stats.maxscore-union-lookup
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --inspect --algorithm unigram-union-lookup -k ${K} \
-#    > ${OUTPUT_DIR}/stats.unigram-union-lookup
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm union-lookup \
-#    > ${OUTPUT_DIR}/stats.union-lookup
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm union-lookup-plus \
-#    > ${OUTPUT_DIR}/stats.plus
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm lookup-union \
-#    > ${OUTPUT_DIR}/stats.lookup-union
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 \
-#    --inspect --algorithm lookup-union \
-#    > ${OUTPUT_DIR}/stats.lookup-union.scaled-1.5
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} \
-#    --inspect --algorithm union-lookup-plus \
-#    > ${OUTPUT_DIR}/stats.plus.scaled-2
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --inspect --algorithm maxscore -k ${K} > ${OUTPUT_DIR}/stats.maxscore
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore -k ${K} \
+    > ${OUTPUT_DIR}/stats.maxscore-threshold
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --inspect --algorithm maxscore-union-lookup \
+    > ${OUTPUT_DIR}/stats.maxscore-union-lookup
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --inspect --algorithm unigram-union-lookup -k ${K} \
+    > ${OUTPUT_DIR}/stats.unigram-union-lookup
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm union-lookup \
+    > ${OUTPUT_DIR}/stats.union-lookup
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm union-lookup-plus \
+    > ${OUTPUT_DIR}/stats.plus
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --inspect --algorithm lookup-union \
+    > ${OUTPUT_DIR}/stats.lookup-union
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 \
+    --inspect --algorithm lookup-union \
+    > ${OUTPUT_DIR}/stats.lookup-union.scaled-1.5
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} \
+    --inspect --algorithm union-lookup-plus \
+    > ${OUTPUT_DIR}/stats.plus.scaled-2
 ${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} \
     --inspect --algorithm lookup-union \
     > ${OUTPUT_DIR}/stats.lookup-union.scaled-2
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} \
+    --inspect --algorithm lookup-union-eaat \
+    > ${OUTPUT_DIR}/stats.lookup-union-eaat.scaled-2
 
 # Evaluate
 #${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --algorithm maxscore > "${OUTPUT_DIR}/eval.maxscore"
@@ -131,3 +139,12 @@ ${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.
 #    > "${OUTPUT_DIR}/eval.lookup-union"
 #${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --algorithm lookup-union \
 #    > "${OUTPUT_DIR}/eval.lookup-union.scaled-1.5"
+#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} \
+#    --algorithm union-lookup-plus \
+#    > ${OUTPUT_DIR}/eval.plus.scaled-2
+#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} --safe \
+#    --algorithm lookup-union \
+#    > ${OUTPUT_DIR}/eval.lookup-union.scaled-2
+#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 -k ${K} --safe \
+#    --algorithm lookup-union-eaat \
+#    > ${OUTPUT_DIR}/eval.lookup-union-eaat.scaled-2

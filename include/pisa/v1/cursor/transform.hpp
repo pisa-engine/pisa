@@ -15,6 +15,11 @@ struct TransformCursor {
         : m_cursor(std::move(cursor)), m_transform(std::move(transform))
     {
     }
+    TransformCursor(TransformCursor&&) noexcept = default;
+    TransformCursor(TransformCursor const&) = default;
+    TransformCursor& operator=(TransformCursor&&) noexcept = default;
+    TransformCursor& operator=(TransformCursor const&) = default;
+    ~TransformCursor() = default;
 
     [[nodiscard]] constexpr auto operator*() const -> Value { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept -> Value
@@ -47,6 +52,11 @@ struct TransformPayloadCursor {
         : m_cursor(std::move(cursor)), m_transform(std::move(transform))
     {
     }
+    TransformPayloadCursor(TransformPayloadCursor&&) noexcept = default;
+    TransformPayloadCursor(TransformPayloadCursor const&) = default;
+    TransformPayloadCursor& operator=(TransformPayloadCursor&&) noexcept = default;
+    TransformPayloadCursor& operator=(TransformPayloadCursor const&) = default;
+    ~TransformPayloadCursor() = default;
 
     [[nodiscard]] constexpr auto operator*() const { return value(); }
     [[nodiscard]] constexpr auto value() const noexcept { return m_cursor.value(); }

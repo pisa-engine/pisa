@@ -9,6 +9,7 @@
 
 #include "v1/algorithm.hpp"
 #include "v1/cursor_accumulator.hpp"
+#include "v1/inspect_query.hpp"
 #include "v1/query.hpp"
 
 namespace pisa::v1 {
@@ -194,8 +195,12 @@ auto join_maxscore(CursorContainer cursors,
         std::move(cursors), std::move(init), std::move(accumulate), std::move(threshold), inspect);
 }
 
-template <typename Index, typename Scorer>
-auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& scorer)
+template <typename Index, typename Scorer, typename Inspect = void>
+auto maxscore(Query const& query,
+              Index const& index,
+              topk_queue topk,
+              Scorer&& scorer,
+              Inspect* inspect = nullptr)
 {
     auto const& term_ids = query.get_term_ids();
     if (term_ids.empty()) {
@@ -208,94 +213,48 @@ auto maxscore(Query const& query, Index const& index, topk_queue topk, Scorer&& 
     if (query.threshold()) {
         topk.set_threshold(*query.threshold());
     }
-    auto joined = join_maxscore(std::move(cursors), 0.0F, accumulators::Add{}, [&](auto score) {
-        return topk.would_enter(score);
+    auto joined = join_maxscore(
+        std::move(cursors),
+        0.0F,
+        accumulators::Add{},
+        [&](auto score) { return topk.would_enter(score); },
+        inspect);
+    v1::for_each(joined, [&](auto& cursor) {
+        if constexpr (not std::is_void_v<Inspect>) {
+            if (topk.insert(cursor.payload(), cursor.value())) {
+                inspect->insert();
+            }
+        } else {
+            topk.insert(cursor.payload(), cursor.value());
+        }
     });
-    v1::for_each(joined, [&](auto& cursor) { topk.insert(cursor.payload(), cursor.value()); });
     return topk;
 }
 
 template <typename Index, typename Scorer>
-struct MaxscoreInspector {
-    MaxscoreInspector(Index const& index, Scorer scorer)
-        : m_index(index), m_scorer(std::move(scorer))
+struct InspectMaxScore : Inspect<Index,
+                                 Scorer,
+                                 InspectPostings,
+                                 InspectDocuments,
+                                 InspectLookups,
+                                 InspectInserts,
+                                 InspectEssential> {
+
+    InspectMaxScore(Index const& index, Scorer const& scorer)
+        : Inspect<Index,
+                  Scorer,
+                  InspectPostings,
+                  InspectDocuments,
+                  InspectLookups,
+                  InspectInserts,
+                  InspectEssential>(index, scorer)
     {
-        std::cout << fmt::format("documents\tpostings\tinserts\tlookups\n");
     }
 
-    void operator()(Query const& query)
+    void run(Query const& query, Index const& index, Scorer const& scorer, topk_queue topk) override
     {
-        auto const& term_ids = query.get_term_ids();
-        if (term_ids.empty()) {
-            return;
-        }
-        using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
-        using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
-
-        m_current_documents = 0;
-        m_current_postings = 0;
-        m_current_lookups = 0;
-
-        std::vector<cursor_type> cursors;
-        std::transform(term_ids.begin(),
-                       term_ids.end(),
-                       std::back_inserter(cursors),
-                       [&](auto term) { return m_index.max_scored_cursor(term, m_scorer); });
-
-        std::size_t inserts = 0;
-        topk_queue topk(query.k());
-        auto initial_threshold = query.threshold().value_or(-1.0);
-        topk.set_threshold(initial_threshold);
-        auto joined = join_maxscore(
-            std::move(cursors),
-            0.0F,
-            accumulators::Add{},
-            [&](auto score) { return topk.would_enter(score); },
-            this);
-        v1::for_each(joined, [&](auto& cursor) {
-            if (topk.insert(cursor.payload(), cursor.value())) {
-                inserts += 1;
-            };
-        });
-        std::cout << fmt::format("{}\t{}\t{}\t{}\n",
-                                 m_current_documents,
-                                 m_current_postings,
-                                 inserts,
-                                 m_current_lookups);
-        m_documents += m_current_documents;
-        m_postings += m_current_postings;
-        m_lookups += m_current_lookups;
-        m_inserts += inserts;
-        m_count += 1;
+        maxscore(query, index, std::move(topk), scorer, this);
     }
-
-    void summarize() &&
-    {
-        std::cerr << fmt::format(
-            "=== SUMMARY ===\nAverage:\n- documents:\t{}\n"
-            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n",
-            static_cast<float>(m_documents) / m_count,
-            static_cast<float>(m_postings) / m_count,
-            static_cast<float>(m_inserts) / m_count,
-            static_cast<float>(m_lookups) / m_count);
-    }
-
-    void document() { m_current_documents += 1; }
-    void posting() { m_current_postings += 1; }
-    void lookup() { m_current_lookups += 1; }
-
-   private:
-    std::size_t m_current_documents = 0;
-    std::size_t m_current_postings = 0;
-    std::size_t m_current_lookups = 0;
-
-    std::size_t m_documents = 0;
-    std::size_t m_postings = 0;
-    std::size_t m_lookups = 0;
-    std::size_t m_inserts = 0;
-    std::size_t m_count = 0;
-    Index const& m_index;
-    Scorer m_scorer;
 };
 
 } // namespace pisa::v1

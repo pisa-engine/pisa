@@ -17,33 +17,36 @@
 #include "v1/index_metadata.hpp"
 #include "v1/inspect_query.hpp"
 #include "v1/maxscore.hpp"
+#include "v1/maxscore_union_lookup.hpp"
 #include "v1/query.hpp"
 #include "v1/raw_cursor.hpp"
 #include "v1/scorer/bm25.hpp"
 #include "v1/scorer/runner.hpp"
 #include "v1/types.hpp"
+#include "v1/unigram_union_lookup.hpp"
 #include "v1/union_lookup.hpp"
 #include "v1/wand.hpp"
 
 using pisa::v1::daat_or;
-using pisa::v1::DaatOrInspector;
 using pisa::v1::DocumentBlockedReader;
 using pisa::v1::index_runner;
+using pisa::v1::InspectDaatOr;
+using pisa::v1::InspectLookupUnion;
+using pisa::v1::InspectLookupUnionEaat;
+using pisa::v1::InspectMaxScore;
+using pisa::v1::InspectMaxScoreUnionLookup;
+using pisa::v1::InspectUnigramUnionLookup;
+using pisa::v1::InspectUnionLookup;
+using pisa::v1::InspectUnionLookupPlus;
 using pisa::v1::lookup_union;
-using pisa::v1::LookupUnionInspect;
 using pisa::v1::maxscore_union_lookup;
-using pisa::v1::MaxscoreInspector;
-using pisa::v1::MaxscoreUnionLookupInspect;
 using pisa::v1::PayloadBlockedReader;
 using pisa::v1::Query;
 using pisa::v1::QueryInspector;
 using pisa::v1::RawReader;
 using pisa::v1::unigram_union_lookup;
-using pisa::v1::UnigramUnionLookupInspect;
 using pisa::v1::union_lookup;
 using pisa::v1::union_lookup_plus;
-using pisa::v1::UnionLookupInspect;
-using pisa::v1::UnionLookupPlusInspect;
 using pisa::v1::VoidScorer;
 using pisa::v1::wand;
 
@@ -59,6 +62,9 @@ struct RetrievalAlgorithm {
     {
         topk = m_retrieve(query, topk);
         if (m_safe && not topk.full()) {
+            spdlog::debug("Retrieved {} out of {} documents. Rerunning without threshold.",
+                          topk.topk().size(),
+                          topk.size());
             topk.clear();
             topk = m_fallback(query, topk);
         }
@@ -164,7 +170,7 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
                     return pisa::v1::unigram_union_lookup(
                         query, index, std::move(topk), std::forward<Scorer>(scorer));
                 }
-                if (query.get_term_ids().size() >= 8) {
+                if (query.get_term_ids().size() > 8) {
                     return pisa::v1::maxscore(
                         query, index, std::move(topk), std::forward<Scorer>(scorer));
                 }
@@ -191,6 +197,23 @@ auto resolve_algorithm(std::string const& name, Index const& index, Scorer&& sco
             fallback,
             safe);
     }
+    if (name == "lookup-union-eaat") {
+        return RetrievalAlgorithm(
+            [&](pisa::v1::Query const& query, ::pisa::topk_queue topk) {
+                if (query.selections()->bigrams.empty()) {
+                    if (query.selections()->unigrams.empty()) {
+                        return pisa::v1::maxscore(
+                            query, index, std::move(topk), std::forward<Scorer>(scorer));
+                    }
+                    return pisa::v1::unigram_union_lookup(
+                        query, index, std::move(topk), std::forward<Scorer>(scorer));
+                }
+                return pisa::v1::lookup_union_eaat(
+                    query, index, std::move(topk), std::forward<Scorer>(scorer));
+            },
+            fallback,
+            safe);
+    }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
 }
@@ -199,27 +222,30 @@ template <typename Index, typename Scorer>
 auto resolve_inspect(std::string const& name, Index const& index, Scorer&& scorer) -> QueryInspector
 {
     if (name == "daat_or") {
-        return QueryInspector(DaatOrInspector(index, std::forward<Scorer>(scorer)));
+        return QueryInspector(InspectDaatOr(index, std::forward<Scorer>(scorer)));
     }
     if (name == "maxscore") {
-        return QueryInspector(MaxscoreInspector(index, std::forward<Scorer>(scorer)));
+        return QueryInspector(InspectMaxScore(index, std::forward<Scorer>(scorer)));
     }
     if (name == "maxscore-union-lookup") {
         return QueryInspector(
-            MaxscoreUnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
+            InspectMaxScoreUnionLookup<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "unigram-union-lookup") {
         return QueryInspector(
-            UnigramUnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
+            InspectUnigramUnionLookup<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "union-lookup") {
-        return QueryInspector(UnionLookupInspect<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(InspectUnionLookup<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "lookup-union") {
-        return QueryInspector(LookupUnionInspect<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(InspectLookupUnion<Index, std::decay_t<Scorer>>(index, scorer));
+    }
+    if (name == "lookup-union-eaat") {
+        return QueryInspector(InspectLookupUnionEaat<Index, std::decay_t<Scorer>>(index, scorer));
     }
     if (name == "union-lookup-plus") {
-        return QueryInspector(UnionLookupPlusInspect<Index, std::decay_t<Scorer>>(index, scorer));
+        return QueryInspector(InspectUnionLookupPlus<Index, std::decay_t<Scorer>>(index, scorer));
     }
     spdlog::error("Unknown algorithm: {}", name);
     std::exit(1);
@@ -278,10 +304,19 @@ void benchmark(std::vector<Query> const& queries, RetrievalAlgorithm retrieve)
 
 void inspect_queries(std::vector<Query> const& queries, QueryInspector inspect)
 {
+    inspect.header(std::cout);
+    std::cout << '\n';
     for (auto query = 0; query < queries.size(); query += 1) {
-        inspect(queries[query]);
+        inspect(queries[query]).write(std::cout);
+        std::cout << '\n';
     }
-    std::move(inspect).summarize();
+
+    std::cerr << "========== Avg ==========\n";
+    inspect.header(std::cerr);
+    std::cerr << '\n';
+    inspect.mean().write(std::cerr);
+    std::cerr << '\n';
+    std::cerr << "=========================\n";
 }
 
 int main(int argc, char** argv)

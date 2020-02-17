@@ -31,6 +31,7 @@
 #include "v1/index.hpp"
 #include "v1/index_builder.hpp"
 #include "v1/maxscore.hpp"
+#include "v1/maxscore_union_lookup.hpp"
 #include "v1/posting_builder.hpp"
 #include "v1/posting_format_header.hpp"
 #include "v1/query.hpp"
@@ -40,6 +41,7 @@
 #include "v1/sequence/positive_sequence.hpp"
 #include "v1/taat_or.hpp"
 #include "v1/types.hpp"
+#include "v1/unigram_union_lookup.hpp"
 #include "v1/union_lookup.hpp"
 #include "v1/wand.hpp"
 
@@ -134,10 +136,11 @@ std::unique_ptr<IndexData<v0_Index, v1_Index, ScoredIndex>>
 
 TEMPLATE_TEST_CASE("Query",
                    "[v1][integration]",
-                   (IndexFixture<RawCursor<DocId>, RawCursor<Frequency>, RawCursor<std::uint8_t>>),
-                   (IndexFixture<DocumentBlockedCursor<::pisa::simdbp_block>,
-                                 PayloadBlockedCursor<::pisa::simdbp_block>,
-                                 RawCursor<std::uint8_t>>),
+                   //(IndexFixture<RawCursor<DocId>, RawCursor<Frequency>,
+                   // RawCursor<std::uint8_t>>),
+                   //(IndexFixture<DocumentBlockedCursor<::pisa::simdbp_block>,
+                   //              PayloadBlockedCursor<::pisa::simdbp_block>,
+                   //              RawCursor<std::uint8_t>>),
                    (IndexFixture<DocumentBitSequenceCursor<PartitionedSequence<>>,
                                  PayloadBitSequenceCursor<PositiveSequence<>>,
                                  RawCursor<std::uint8_t>>))
@@ -148,20 +151,21 @@ TEMPLATE_TEST_CASE("Query",
                           Index<RawCursor<DocId>, RawCursor<float>>>::get();
     TestType fixture;
     auto input_data = GENERATE(table<char const*, bool, bool>({
-        {"daat_or", false, false},
+        //{"daat_or", false, false},
         {"maxscore", false, false},
         {"maxscore", true, false},
-        {"wand", false, false},
-        {"wand", true, false},
-        {"bmw", false, false},
-        {"bmw", true, false},
-        {"bmw", false, true},
-        {"bmw", true, true},
+        //{"wand", false, false},
+        //{"wand", true, false},
+        //{"bmw", false, false},
+        //{"bmw", true, false},
+        //{"bmw", false, true},
+        //{"bmw", true, true},
         {"maxscore_union_lookup", true, false},
         {"unigram_union_lookup", true, false},
-        {"union_lookup", true, false},
-        {"union_lookup_plus", true, false},
+        //{"union_lookup", true, false},
+        //{"union_lookup_plus", true, false},
         {"lookup_union", true, false},
+        {"lookup_union_eaat", true, false},
     }));
     std::string algorithm = std::get<0>(input_data);
     bool with_threshold = std::get<1>(input_data);
@@ -210,6 +214,9 @@ TEMPLATE_TEST_CASE("Query",
         if (name == "lookup_union") {
             return lookup_union(query, index, ::pisa::topk_queue(10), scorer);
         }
+        if (name == "lookup_union_eaat") {
+            return lookup_union_eaat(query, index, ::pisa::topk_queue(10), scorer);
+        }
         std::abort();
     };
     int idx = 0;
@@ -218,7 +225,7 @@ TEMPLATE_TEST_CASE("Query",
     for (auto& query : test_queries()) {
         heap.clear();
         if (algorithm == "union_lookup" || algorithm == "union_lookup_plus"
-            || algorithm == "lookup_union") {
+            || algorithm == "lookup_union" || algorithm == "lookup_union_eaat") {
             query.selections(gsl::make_span(intersections[idx]));
         }
 

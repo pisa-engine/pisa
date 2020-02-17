@@ -14,7 +14,6 @@
 #include "v1/cursor/for_each.hpp"
 #include "v1/cursor_intersection.hpp"
 #include "v1/cursor_union.hpp"
-#include "v1/inspect_query.hpp"
 #include "v1/intersection.hpp"
 #include "v1/types.hpp"
 

@@ -3,397 +3,36 @@
 #include <algorithm>
 
 #include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
 #include <range/v3/view/set_algorithm.hpp>
+#include <range/v3/view/transform.hpp>
 
 #include "v1/algorithm.hpp"
 #include "v1/cursor/labeled_cursor.hpp"
+#include "v1/cursor/lookup_transform.hpp"
+#include "v1/cursor/reference.hpp"
 #include "v1/cursor/transform.hpp"
 #include "v1/cursor_accumulator.hpp"
+#include "v1/maxscore_union_lookup.hpp"
 #include "v1/query.hpp"
 #include "v1/runtime_assert.hpp"
+#include "v1/unigram_union_lookup.hpp"
+#include "v1/union_lookup_join.hpp"
 
 namespace pisa::v1 {
 
-/// This cursor operator takes a number of essential cursors (in an arbitrary order)
-/// and a list of lookup cursors. The documents traversed will be in the DaaT order,
-/// and the following documents will be skipped:
-///  - documents that do not appear in any of the essential cursors,
-///  - documents that at the moment of their traversal are irrelevant (see below).
-///
-/// # Threshold
-///
-/// This operator takes a callable object that returns `true` only if a given score
-/// has a chance to be in the final result set. It is used to decide whether or not
-/// to perform further lookups for the given document. The score passed to the function
-/// is such that when it returns `false`, we know that it will return `false` for the
-/// rest of the lookup cursors, and therefore we can skip that document.
-/// Note that such document will never be returned by this cursor. Instead, we will
-/// proceed to the next document to see if it can land in the final result set, and so on.
-///
-/// # Accumulating Scores
-///
-/// Another parameter taken by this operator is a callable that accumulates payloads
-/// for one document ID. The function is very similar to what you would pass to
-/// `std::accumulate`: it takes the accumulator (either by reference or value),
-/// and a reference to the cursor. It must return an updated accumulator.
-/// For example, a simple accumulator that simply sums all payloads for each document,
-/// can be: `[](float score, auto&& cursor) { return score + cursor.payload(); }`.
-/// Note that you can accumulate "heavier" objects by taking and returning a reference:
-/// ```
-/// [](auto& acc, auto&& cursor) {
-///     // Do something with acc
-///     return acc;
-/// }
-/// ```
-/// Before the first call to the accumulating function, the accumulated payload will be
-/// initialized to the value `init` passed in the constructor. This will also be the
-/// type of the payload returned by this cursor.
-///
-/// # Passing Cursors
-///
-/// Both essential and lookup cursors are passed by value and moved into a member.
-/// It is thus important to pass either a temporary, a view, or a moved object to the constructor.
-/// It is recommended to pass the ownership through an rvalue, as the cursors will be consumed
-/// either way. However, in rare cases when the cursors need to be read after use
-/// (for example to get their size or max score) or if essential and lookup cursors are in one
-/// container and you want to avoid moving them, you may pass a view such as `gsl::span`.
-/// However, it is discouraged in general case due to potential lifetime issues and dangling
-/// references.
-template <typename EssentialCursors,
-          typename LookupCursors,
-          typename Payload,
-          typename AccumulateFn,
-          typename ThresholdFn,
-          typename Inspect = void>
-struct UnionLookupJoin {
-
-    using essential_cursor_type = typename EssentialCursors::value_type;
-    using lookup_cursor_type = typename LookupCursors::value_type;
-
-    using payload_type = Payload;
-    using value_type = std::decay_t<decltype(*std::declval<essential_cursor_type>())>;
-
-    using essential_iterator_category =
-        typename std::iterator_traits<typename EssentialCursors::iterator>::iterator_category;
-    static_assert(std::is_base_of<std::random_access_iterator_tag, essential_iterator_category>(),
-                  "cursors must be stored in a random access container");
-
-    UnionLookupJoin(EssentialCursors essential_cursors,
-                    LookupCursors lookup_cursors,
-                    Payload init,
-                    AccumulateFn accumulate,
-                    ThresholdFn above_threshold,
-                    Inspect* inspect = nullptr)
-        : m_essential_cursors(std::move(essential_cursors)),
-          m_lookup_cursors(std::move(lookup_cursors)),
-          m_init(std::move(init)),
-          m_accumulate(std::move(accumulate)),
-          m_above_threshold(std::move(above_threshold)),
-          m_inspect(inspect)
-    {
-        if (m_essential_cursors.empty()) {
-            if (m_lookup_cursors.empty()) {
-                m_sentinel = std::numeric_limits<value_type>::max();
-            } else {
-                m_sentinel = min_sentinel(m_lookup_cursors);
-            }
-            m_current_value = m_sentinel;
-            m_current_payload = m_init;
-            return;
-        }
-        m_lookup_cumulative_upper_bound = std::accumulate(
-            m_lookup_cursors.begin(), m_lookup_cursors.end(), 0.0F, [](auto acc, auto&& cursor) {
-                return acc + cursor.max_score();
-            });
-        m_next_docid = min_value(m_essential_cursors);
-        m_sentinel = min_sentinel(m_essential_cursors);
-        advance();
-    }
-
-    [[nodiscard]] constexpr auto operator*() const noexcept -> value_type
-    {
-        return m_current_value;
-    }
-    [[nodiscard]] constexpr auto value() const noexcept -> value_type { return m_current_value; }
-    [[nodiscard]] constexpr auto payload() const noexcept -> Payload const&
-    {
-        return m_current_payload;
-    }
-    [[nodiscard]] constexpr auto sentinel() const noexcept -> std::uint32_t { return m_sentinel; }
-
-    constexpr void advance()
-    {
-        bool exit = false;
-        while (not exit) {
-            if (PISA_UNLIKELY(m_next_docid >= sentinel())) {
-                m_current_value = sentinel();
-                m_current_payload = m_init;
-                return;
-            }
-            m_current_payload = m_init;
-            m_current_value = std::exchange(m_next_docid, sentinel());
-
-            if constexpr (not std::is_void_v<Inspect>) {
-                m_inspect->document();
-            }
-
-            for (auto&& cursor : m_essential_cursors) {
-                if (cursor.value() == m_current_value) {
-                    if constexpr (not std::is_void_v<Inspect>) {
-                        m_inspect->posting();
-                    }
-                    m_current_payload = m_accumulate(m_current_payload, cursor);
-                    cursor.advance();
-                }
-                if (auto docid = cursor.value(); docid < m_next_docid) {
-                    m_next_docid = docid;
-                }
-            }
-
-            exit = true;
-            auto lookup_bound = m_lookup_cumulative_upper_bound;
-            for (auto&& cursor : m_lookup_cursors) {
-                if (not m_above_threshold(m_current_payload + lookup_bound)) {
-                    exit = false;
-                    break;
-                }
-                cursor.advance_to_geq(m_current_value);
-                if constexpr (not std::is_void_v<Inspect>) {
-                    m_inspect->lookup();
-                }
-                if (cursor.value() == m_current_value) {
-                    m_current_payload = m_accumulate(m_current_payload, cursor);
-                }
-                lookup_bound -= cursor.max_score();
-            }
-        }
-        m_position += 1;
-    }
-
-    [[nodiscard]] constexpr auto position() const noexcept -> std::size_t { return m_position; }
-    [[nodiscard]] constexpr auto empty() const noexcept -> bool
-    {
-        return m_current_value >= sentinel();
-    }
-
-   private:
-    EssentialCursors m_essential_cursors;
-    LookupCursors m_lookup_cursors;
-    payload_type m_init;
-    AccumulateFn m_accumulate;
-    ThresholdFn m_above_threshold;
-
-    value_type m_current_value{};
-    value_type m_sentinel{};
-    payload_type m_current_payload{};
-    std::uint32_t m_next_docid{};
-    payload_type m_previous_threshold{};
-    payload_type m_lookup_cumulative_upper_bound{};
-    std::size_t m_position = 0;
-
-    Inspect* m_inspect;
-};
-
-/// Convenience function to construct a `UnionLookupJoin` cursor operator.
-/// See the struct documentation for more information.
-template <typename EssentialCursors,
-          typename LookupCursors,
-          typename Payload,
-          typename AccumulateFn,
-          typename ThresholdFn,
-          typename Inspect = void>
-auto join_union_lookup(EssentialCursors essential_cursors,
-                       LookupCursors lookup_cursors,
-                       Payload init,
-                       AccumulateFn accumulate,
-                       ThresholdFn threshold,
-                       Inspect* inspect)
+template <typename Index, typename Scorer, typename LookupCursors>
+auto filter_bigram_lookup_cursors(
+    Index const& index, Scorer&& scorer, LookupCursors&& lookup_cursors, TermId left, TermId right)
 {
-    return UnionLookupJoin<EssentialCursors,
-                           LookupCursors,
-                           Payload,
-                           AccumulateFn,
-                           ThresholdFn,
-                           Inspect>(std::move(essential_cursors),
-                                    std::move(lookup_cursors),
-                                    std::move(init),
-                                    std::move(accumulate),
-                                    std::move(threshold),
-                                    inspect);
+    return ranges::views::filter(
+               lookup_cursors,
+               [&](auto&& cursor) { return cursor.label() != left && cursor.label() != right; })
+           //| ranges::views::transform([](auto&& cursor) { return ref(cursor); })
+           | ranges::views::transform(
+               [&](auto&& cursor) { return index.max_scored_cursor(cursor.label(), scorer); })
+           | ranges::to_vector;
 }
-
-/// Processes documents with the Union-Lookup method.
-///
-/// This is an optimized version that works **only on single-term posting lists**.
-/// It will throw an exception if bigram selections are passed to it.
-template <typename Index, typename Scorer, typename Inspect = void>
-auto unigram_union_lookup(Query const& query,
-                          Index const& index,
-                          topk_queue topk,
-                          Scorer&& scorer,
-                          [[maybe_unused]] Inspect* inspect = nullptr)
-{
-    using cursor_type = decltype(index.max_scored_cursor(0, scorer));
-    using payload_type = decltype(std::declval<cursor_type>().payload());
-
-    auto const& term_ids = query.get_term_ids();
-    if (term_ids.empty()) {
-        return topk;
-    }
-
-    auto const& selections = query.get_selections();
-    runtime_assert(selections.bigrams.empty()).or_exit("This algorithm only supports unigrams");
-
-    topk.set_threshold(query.get_threshold());
-
-    auto non_essential_terms =
-        ranges::views::set_difference(term_ids, selections.unigrams) | ranges::to_vector;
-
-    std::vector<cursor_type> lookup_cursors = index.max_scored_cursors(non_essential_terms, scorer);
-    ranges::sort(lookup_cursors, [](auto&& l, auto&& r) { return l.max_score() > r.max_score(); });
-    std::vector<cursor_type> essential_cursors =
-        index.max_scored_cursors(selections.unigrams, scorer);
-
-    if constexpr (not std::is_void_v<Inspect>) {
-        inspect->essential(essential_cursors.size());
-    }
-
-    auto joined = join_union_lookup(
-        std::move(essential_cursors),
-        std::move(lookup_cursors),
-        payload_type{},
-        accumulators::Add{},
-        [&](auto score) { return topk.would_enter(score); },
-        inspect);
-    v1::for_each(joined, [&](auto&& cursor) {
-        if constexpr (not std::is_void_v<Inspect>) {
-            if (topk.insert(cursor.payload(), cursor.value())) {
-                inspect->insert();
-            }
-        } else {
-            topk.insert(cursor.payload(), cursor.value());
-        }
-    });
-    return topk;
-}
-
-/// This is a special case of Union-Lookup algorithm that does not use user-defined selections,
-/// but rather uses the same way of determining essential list as Maxscore does.
-/// The difference is that this algorithm will never update the threshold whereas Maxscore will
-/// try to improve the estimate after each accumulated document.
-template <typename Index, typename Scorer, typename Inspect = void>
-auto maxscore_union_lookup(Query const& query,
-                           Index const& index,
-                           topk_queue topk,
-                           Scorer&& scorer,
-                           [[maybe_unused]] Inspect* inspect = nullptr)
-{
-    using cursor_type = decltype(index.max_scored_cursor(0, scorer));
-    using payload_type = decltype(std::declval<cursor_type>().payload());
-
-    auto const& term_ids = query.get_term_ids();
-    if (term_ids.empty()) {
-        return topk;
-    }
-    auto threshold = query.get_threshold();
-    topk.set_threshold(threshold);
-
-    auto cursors = index.max_scored_cursors(gsl::make_span(term_ids), scorer);
-    ranges::sort(cursors, [](auto&& lhs, auto&& rhs) { return lhs.max_score() < rhs.max_score(); });
-
-    std::vector<payload_type> upper_bounds(cursors.size());
-    upper_bounds[0] = cursors[0].max_score();
-    for (size_t i = 1; i < cursors.size(); ++i) {
-        upper_bounds[i] = upper_bounds[i - 1] + cursors[i].max_score();
-    }
-    std::size_t non_essential_count = 0;
-    while (non_essential_count < cursors.size() && upper_bounds[non_essential_count] <= threshold) {
-        non_essential_count += 1;
-    }
-    if constexpr (not std::is_void_v<Inspect>) {
-        inspect->essential(cursors.size() - non_essential_count);
-    }
-
-    std::vector<cursor_type> essential_cursors;
-    std::move(std::next(cursors.begin(), non_essential_count),
-              cursors.end(),
-              std::back_inserter(essential_cursors));
-    cursors.erase(std::next(cursors.begin(), non_essential_count), cursors.end());
-    std::reverse(cursors.begin(), cursors.end());
-
-    auto joined = join_union_lookup(
-        std::move(essential_cursors),
-        std::move(cursors),
-        payload_type{},
-        accumulators::Add{},
-        [&](auto score) { return topk.would_enter(score); },
-        inspect);
-    v1::for_each(joined, [&](auto&& cursor) {
-        if constexpr (not std::is_void_v<Inspect>) {
-            if (topk.insert(cursor.payload(), cursor.value())) {
-                inspect->insert();
-            }
-        } else {
-            topk.insert(cursor.payload(), cursor.value());
-        }
-    });
-    return topk;
-}
-
-/// This callable transforms a cursor by performing lookups to the current document
-/// in the given lookup cursors, and then adding the scores that were found.
-/// It uses the same short-circuiting rules before each lookup as `UnionLookupJoin`.
-template <typename Cursor,
-          typename LookupCursor,
-          typename AboveThresholdFn,
-          typename Inspector = void>
-struct LookupTransform {
-
-    LookupTransform(std::vector<LookupCursor> lookup_cursors,
-                    float lookup_cursors_upper_bound,
-                    AboveThresholdFn above_threshold,
-                    Inspector* inspect = nullptr)
-        : m_lookup_cursors(std::move(lookup_cursors)),
-          m_lookup_cursors_upper_bound(lookup_cursors_upper_bound),
-          m_above_threshold(std::move(above_threshold)),
-          m_inspect(inspect)
-    {
-    }
-
-    auto operator()(Cursor& cursor)
-    {
-        if constexpr (not std::is_void_v<Inspector>) {
-            m_inspect->document();
-            m_inspect->posting();
-        }
-        auto docid = cursor.value();
-        auto scores = cursor.payload();
-        float score = std::get<0>(scores) + std::get<1>(scores);
-        auto upper_bound = score + m_lookup_cursors_upper_bound;
-        for (auto& lookup_cursor : m_lookup_cursors) {
-            if (not m_above_threshold(upper_bound)) {
-                return score;
-            }
-            lookup_cursor.advance_to_geq(docid);
-            if constexpr (not std::is_void_v<Inspector>) {
-                m_inspect->lookup();
-            }
-            if (PISA_UNLIKELY(lookup_cursor.value() == docid)) {
-                auto partial_score = lookup_cursor.payload();
-                score += partial_score;
-                upper_bound += partial_score;
-            }
-            upper_bound -= lookup_cursor.max_score();
-        }
-        return score;
-    }
-
-   private:
-    std::vector<LookupCursor> m_lookup_cursors;
-    float m_lookup_cursors_upper_bound;
-    AboveThresholdFn m_above_threshold;
-    Inspector* m_inspect;
-};
 
 /// This algorithm...
 template <typename Index,
@@ -406,6 +45,135 @@ auto lookup_union(Query const& query,
                   Scorer&& scorer,
                   InspectUnigram* inspect_unigram = nullptr,
                   InspectBigram* inspect_bigram = nullptr)
+{
+    using bigram_cursor_type = std::decay_t<decltype(*index.scored_bigram_cursor(0, 0, scorer))>;
+
+    auto const& term_ids = query.get_term_ids();
+    if (term_ids.empty()) {
+        return topk;
+    }
+
+    auto threshold = query.get_threshold();
+    topk.set_threshold(threshold);
+    auto is_above_threshold = [&](auto score) { return topk.would_enter(score); };
+
+    auto const& selections = query.get_selections();
+    auto& essential_unigrams = selections.unigrams;
+    auto& essential_bigrams = selections.bigrams;
+
+    if constexpr (not std::is_void_v<InspectUnigram>) {
+        inspect_unigram->essential(essential_unigrams.size());
+    }
+    if constexpr (not std::is_void_v<InspectBigram>) {
+        inspect_bigram->essential(essential_bigrams.size());
+    }
+
+    auto non_essential_terms =
+        ranges::views::set_difference(term_ids, essential_unigrams) | ranges::to_vector;
+
+    auto lookup_cursors = index.cursors(non_essential_terms, [&](auto&& index, auto term) {
+        return label(index.max_scored_cursor(term, scorer), term);
+    });
+    ranges::sort(lookup_cursors, std::greater{}, func::max_score{});
+    auto unigram_cursor =
+        join_union_lookup(index.max_scored_cursors(gsl::make_span(essential_unigrams), scorer),
+                          gsl::make_span(lookup_cursors),
+                          0.0F,
+                          accumulators::Add{},
+                          is_above_threshold,
+                          inspect_unigram);
+
+    using lookup_transform_type =
+        LookupTransform<typename decltype(filter_bigram_lookup_cursors(
+                            index, scorer, lookup_cursors, 0, 1))::value_type,
+                        decltype(is_above_threshold),
+                        InspectBigram>;
+    using transform_payload_cursor_type =
+        TransformPayloadCursor<bigram_cursor_type, lookup_transform_type>;
+
+    std::vector<transform_payload_cursor_type> bigram_cursors;
+
+    for (auto [left, right] : essential_bigrams) {
+        auto cursor = index.scored_bigram_cursor(left, right, scorer);
+        if (not cursor) {
+            throw std::runtime_error(fmt::format("Bigram not found: <{}, {}>", left, right));
+        }
+        auto bigram_lookup_cursors =
+            filter_bigram_lookup_cursors(index, scorer, lookup_cursors, left, right);
+        auto lookup_cursors_upper_bound =
+            std::accumulate(bigram_lookup_cursors.begin(),
+                            bigram_lookup_cursors.end(),
+                            0.0F,
+                            [](auto acc, auto&& cursor) { return acc + cursor.max_score(); });
+        bigram_cursors.emplace_back(std::move(*cursor.take()),
+                                    LookupTransform(std::move(bigram_lookup_cursors),
+                                                    lookup_cursors_upper_bound,
+                                                    is_above_threshold,
+                                                    inspect_bigram));
+    }
+
+    auto accumulate = [&](float acc, auto& cursor, [[maybe_unused]] auto idx) {
+        return acc == 0 ? cursor.payload() : acc;
+    };
+    auto bigram_cursor = union_merge(
+        std::move(bigram_cursors), 0.0F, [&](float acc, auto& cursor, [[maybe_unused]] auto idx) {
+            if constexpr (not std::is_void_v<InspectUnigram>) {
+                inspect_bigram->posting();
+            }
+            return acc == 0 ? cursor.payload() : acc;
+        });
+    auto merged = v1::variadic_union_merge(
+        0.0F,
+        std::make_tuple(std::move(unigram_cursor), std::move(bigram_cursor)),
+        std::make_tuple(accumulate, accumulate));
+
+    v1::for_each(merged, [&](auto&& cursor) {
+        if constexpr (not std::is_void_v<InspectUnigram>) {
+            if (topk.insert(cursor.payload(), cursor.value())) {
+                inspect_unigram->insert();
+            }
+        } else {
+            topk.insert(cursor.payload(), cursor.value());
+        }
+    });
+    return topk;
+}
+
+template <typename Cursor, typename InspectInserts = void, typename InspectPostings = void>
+auto accumulate_cursor_to_heap(Cursor&& cursor,
+                               std::size_t k,
+                               float threshold = 0.0,
+                               InspectInserts* inspect_inserts = nullptr,
+                               InspectPostings* inspect_postings = nullptr)
+{
+    topk_queue heap(k);
+    heap.set_threshold(threshold);
+    v1::for_each(cursor, [&](auto&& cursor) {
+        if constexpr (not std::is_void_v<InspectPostings>) {
+            inspect_postings->posting();
+        }
+        if constexpr (not std::is_void_v<InspectInserts>) {
+            if (heap.insert(cursor.payload(), cursor.value())) {
+                inspect_inserts->insert();
+            }
+        } else {
+            heap.insert(cursor.payload(), cursor.value());
+        }
+    });
+    return heap;
+}
+
+/// This algorithm...
+template <typename Index,
+          typename Scorer,
+          typename InspectUnigram = void,
+          typename InspectBigram = void>
+auto lookup_union_eaat(Query const& query,
+                       Index const& index,
+                       topk_queue topk,
+                       Scorer&& scorer,
+                       InspectUnigram* inspect_unigram = nullptr,
+                       InspectBigram* inspect_bigram = nullptr)
 {
     using bigram_cursor_type = std::decay_t<decltype(*index.scored_bigram_cursor(0, 0, scorer))>;
     using lookup_cursor_type = std::decay_t<decltype(index.max_scored_cursor(0, scorer))>;
@@ -448,14 +216,17 @@ auto lookup_union(Query const& query,
                                  inspect_unigram);
     }();
 
-    using lookup_transform_type = LookupTransform<bigram_cursor_type,
-                                                  lookup_cursor_type,
-                                                  decltype(is_above_threshold),
-                                                  InspectBigram>;
+    auto unigram_heap =
+        accumulate_cursor_to_heap(unigram_cursor, topk.size(), threshold, inspect_unigram);
+
+    using lookup_transform_type =
+        LookupTransform<lookup_cursor_type, decltype(is_above_threshold), InspectBigram>;
     using transform_payload_cursor_type =
         TransformPayloadCursor<bigram_cursor_type, lookup_transform_type>;
 
-    std::vector<transform_payload_cursor_type> bigram_cursors;
+    std::vector<typename topk_queue::entry_type> entries(unigram_heap.topk().begin(),
+                                                         unigram_heap.topk().end());
+
     for (auto [left, right] : essential_bigrams) {
         auto cursor = index.scored_bigram_cursor(left, right, scorer);
         if (not cursor) {
@@ -474,31 +245,39 @@ auto lookup_union(Query const& query,
                 return acc + cursor.max_score();
             });
 
-        bigram_cursors.emplace_back(std::move(*cursor.take()),
-                                    lookup_transform_type(std::move(lookup_cursors),
-                                                          lookup_cursors_upper_bound,
-                                                          is_above_threshold,
-                                                          inspect_bigram));
+        auto heap = accumulate_cursor_to_heap(
+            transform_payload_cursor_type(std::move(*cursor.take()),
+                                          lookup_transform_type(std::move(lookup_cursors),
+                                                                lookup_cursors_upper_bound,
+                                                                is_above_threshold,
+                                                                inspect_bigram)),
+            topk.size(),
+            threshold,
+            inspect_bigram,
+            inspect_bigram);
+        std::copy(heap.topk().begin(), heap.topk().end(), std::back_inserter(entries));
+    }
+    std::sort(entries.begin(), entries.end(), [](auto&& lhs, auto&& rhs) {
+        if (lhs.second == rhs.second) {
+            return lhs.first > rhs.first;
+        }
+        return lhs.second < rhs.second;
+    });
+    auto end = std::unique(entries.begin(), entries.end(), [](auto&& lhs, auto&& rhs) {
+        return lhs.second == rhs.second;
+    });
+    entries.erase(end, entries.end());
+    std::sort(entries.begin(), entries.end(), [](auto&& lhs, auto&& rhs) {
+        return lhs.first > rhs.first;
+    });
+    if (entries.size() > topk.size()) {
+        entries.erase(std::next(entries.begin(), topk.size()), entries.end());
     }
 
-    auto accumulate = [&](float acc, auto& cursor, [[maybe_unused]] auto idx) {
-        return std::max(acc, cursor.payload());
-    };
-    auto bigram_cursor = union_merge(std::move(bigram_cursors), 0.0F, accumulate);
-    auto merged = v1::variadic_union_merge(
-        0.0F,
-        std::make_tuple(std::move(unigram_cursor), std::move(bigram_cursor)),
-        std::make_tuple(accumulate, accumulate));
+    for (auto entry : entries) {
+        topk.insert(entry.first, entry.second);
+    }
 
-    v1::for_each(merged, [&](auto&& cursor) {
-        if constexpr (not std::is_void_v<InspectUnigram>) {
-            if (topk.insert(cursor.payload(), cursor.value())) {
-                inspect_unigram->insert();
-            }
-        } else {
-            topk.insert(cursor.payload(), cursor.value());
-        }
-    });
     return topk;
 }
 
@@ -592,7 +371,7 @@ auto union_lookup(Query const& query,
     auto accumulate = [&](auto& acc, auto& cursor, auto /* union_idx */) {
         auto payload = cursor.payload();
         for (auto idx = 0; idx < acc.size(); idx += 1) {
-            if (acc[idx] == 0.0F) {
+            if (acc[idx] == 0) {
                 acc[idx] = payload[idx];
             }
         }
@@ -830,17 +609,21 @@ auto union_lookup_plus(Query const& query,
         return mus;
     }();
 
+    auto const state_mask = (1U << term_count) - 1;
+
     v1::for_each(merged, [&](auto& cursor) {
         if constexpr (not std::is_void_v<Inspect>) {
             inspect->document();
         }
         auto docid = cursor.value();
         auto scores = cursor.payload();
-        auto score = std::accumulate(scores.begin(), scores.end(), 0.0F, std::plus{});
 
+        // auto score = std::accumulate(scores.begin(), scores.end(), 0.0F, std::plus{});
+        float score = 0.0F;
         std::uint32_t state = essential_unigrams.size() << term_count;
         for (auto pos = 0U; pos < term_count; pos += 1) {
             if (scores[pos] > 0) {
+                score += scores[pos];
                 state |= 1U << pos;
             }
         }
@@ -855,11 +638,11 @@ auto union_lookup_plus(Query const& query,
             if constexpr (not std::is_void_v<Inspect>) {
                 inspect->lookup();
             }
-            if (PISA_UNLIKELY(lookup_cursor.value() == docid)) {
+            if (lookup_cursor.value() == docid) {
                 score += lookup_cursor.payload();
                 state |= (1U << next_idx);
             }
-            state = (state & ((1U << term_count) - 1)) + ((next_idx + 1) << term_count);
+            state = (state & state_mask) + ((next_idx + 1) << term_count);
             next_idx = next_lookup[state];
         }
         if constexpr (not std::is_void_v<Inspect>) {
@@ -874,115 +657,26 @@ auto union_lookup_plus(Query const& query,
 }
 
 template <typename Index, typename Scorer>
-struct BaseUnionLookupInspect {
-    BaseUnionLookupInspect(Index const& index, Scorer scorer)
-        : m_index(index), m_scorer(std::move(scorer))
-    {
-        std::cout << fmt::format("documents\tpostings\tinserts\tlookups\tessential_lists\n");
-    }
+struct InspectUnionLookup : Inspect<Index,
+                                    Scorer,
+                                    InspectPostings,
+                                    InspectDocuments,
+                                    InspectLookups,
+                                    InspectInserts,
+                                    InspectEssential> {
 
-    void reset_current()
-    {
-        m_current_documents = 0;
-        m_current_postings = 0;
-        m_current_lookups = 0;
-        m_current_inserts = 0;
-        m_essential_lists = 0;
-    }
-
-    virtual void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) = 0;
-
-    void operator()(Query const& query)
-    {
-        auto const& term_ids = query.get_term_ids();
-        if (term_ids.empty()) {
-            return;
-        }
-        using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
-        using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
-
-        reset_current();
-        run(query, m_index, m_scorer, topk_queue(query.k()));
-        std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\n",
-                                 m_current_documents,
-                                 m_current_postings,
-                                 m_current_inserts,
-                                 m_current_lookups,
-                                 m_current_essential_lists);
-        m_documents += m_current_documents;
-        m_postings += m_current_postings;
-        m_lookups += m_current_lookups;
-        m_inserts += m_current_inserts;
-        m_essential_lists += m_current_essential_lists;
-        m_count += 1;
-    }
-
-    void summarize() &&
-    {
-        std::cerr << fmt::format(
-            "=== SUMMARY ===\nAverage:\n- documents:\t{}\n"
-            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n- essential lists:\t{}\n",
-            static_cast<float>(m_documents) / m_count,
-            static_cast<float>(m_postings) / m_count,
-            static_cast<float>(m_inserts) / m_count,
-            static_cast<float>(m_lookups) / m_count,
-            static_cast<float>(m_essential_lists) / m_count);
-    }
-
-    void document() { m_current_documents += 1; }
-    void posting() { m_current_postings += 1; }
-    void lookup() { m_current_lookups += 1; }
-    void insert() { m_current_inserts += 1; }
-    void essential(std::size_t n) { m_current_essential_lists = n; }
-
-   private:
-    std::size_t m_current_documents = 0;
-    std::size_t m_current_postings = 0;
-    std::size_t m_current_lookups = 0;
-    std::size_t m_current_inserts = 0;
-    std::size_t m_current_essential_lists = 0;
-
-    std::size_t m_documents = 0;
-    std::size_t m_postings = 0;
-    std::size_t m_lookups = 0;
-    std::size_t m_inserts = 0;
-    std::size_t m_count = 0;
-    std::size_t m_essential_lists = 0;
-    Index const& m_index;
-    Scorer m_scorer;
-};
-
-template <typename Index, typename Scorer>
-struct MaxscoreUnionLookupInspect : public BaseUnionLookupInspect<Index, Scorer> {
-    MaxscoreUnionLookupInspect(Index const& index, Scorer scorer)
-        : BaseUnionLookupInspect<Index, Scorer>(index, std::move(scorer))
+    InspectUnionLookup(Index const& index, Scorer const& scorer)
+        : Inspect<Index,
+                  Scorer,
+                  InspectPostings,
+                  InspectDocuments,
+                  InspectLookups,
+                  InspectInserts,
+                  InspectEssential>(index, scorer)
     {
     }
-    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) override
-    {
-        maxscore_union_lookup(query, index, std::move(topk), scorer, this);
-    }
-};
 
-template <typename Index, typename Scorer>
-struct UnigramUnionLookupInspect : public BaseUnionLookupInspect<Index, Scorer> {
-    UnigramUnionLookupInspect(Index const& index, Scorer scorer)
-        : BaseUnionLookupInspect<Index, Scorer>(index, std::move(scorer))
-    {
-    }
-    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) override
-    {
-        unigram_union_lookup(query, index, std::move(topk), scorer, this);
-    }
-};
-
-template <typename Index, typename Scorer>
-struct UnionLookupInspect : public BaseUnionLookupInspect<Index, Scorer> {
-    UnionLookupInspect(Index const& index, Scorer scorer)
-        : BaseUnionLookupInspect<Index, Scorer>(index, std::move(scorer))
-    {
-    }
-    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) override
+    void run(Query const& query, Index const& index, Scorer const& scorer, topk_queue topk) override
     {
         if (query.selections()->bigrams.empty()) {
             unigram_union_lookup(query, index, std::move(topk), scorer, this);
@@ -995,12 +689,26 @@ struct UnionLookupInspect : public BaseUnionLookupInspect<Index, Scorer> {
 };
 
 template <typename Index, typename Scorer>
-struct UnionLookupPlusInspect : public BaseUnionLookupInspect<Index, Scorer> {
-    UnionLookupPlusInspect(Index const& index, Scorer scorer)
-        : BaseUnionLookupInspect<Index, Scorer>(index, std::move(scorer))
+struct InspectUnionLookupPlus : Inspect<Index,
+                                        Scorer,
+                                        InspectPostings,
+                                        InspectDocuments,
+                                        InspectLookups,
+                                        InspectInserts,
+                                        InspectEssential> {
+
+    InspectUnionLookupPlus(Index const& index, Scorer const& scorer)
+        : Inspect<Index,
+                  Scorer,
+                  InspectPostings,
+                  InspectDocuments,
+                  InspectLookups,
+                  InspectInserts,
+                  InspectEssential>(index, scorer)
     {
     }
-    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) override
+
+    void run(Query const& query, Index const& index, Scorer const& scorer, topk_queue topk) override
     {
         if (query.selections()->bigrams.empty()) {
             unigram_union_lookup(query, index, std::move(topk), scorer, this);
@@ -1012,158 +720,64 @@ struct UnionLookupPlusInspect : public BaseUnionLookupInspect<Index, Scorer> {
     }
 };
 
-struct ComponentInspect {
-    void reset_current()
-    {
-        m_documents += m_current_documents;
-        m_postings += m_current_postings;
-        m_lookups += m_current_lookups;
-        m_inserts += m_current_inserts;
-        m_essential_lists += m_current_essential_lists;
-        m_count += 1;
-
-        m_current_documents = 0;
-        m_current_postings = 0;
-        m_current_lookups = 0;
-        m_current_inserts = 0;
-        m_essential_lists = 0;
-    }
-
-    void document() { m_current_documents += 1; }
-    void posting() { m_current_postings += 1; }
-    void lookup() { m_current_lookups += 1; }
-    void insert() { m_current_inserts += 1; }
-    void essential(std::size_t n) { m_current_essential_lists = n; }
-
-    [[nodiscard]] auto current_documents() const { return m_current_documents; }
-    [[nodiscard]] auto current_postings() const { return m_current_postings; }
-    [[nodiscard]] auto current_lookups() const { return m_current_lookups; }
-    [[nodiscard]] auto current_inserts() const { return m_current_inserts; }
-    [[nodiscard]] auto current_essential_lists() const { return m_current_essential_lists; }
-
-    [[nodiscard]] auto documents() const { return m_documents; }
-    [[nodiscard]] auto postings() const { return m_postings; }
-    [[nodiscard]] auto lookups() const { return m_lookups; }
-    [[nodiscard]] auto inserts() const { return m_inserts; }
-    [[nodiscard]] auto essential_lists() const { return m_essential_lists; }
-
-   private:
-    std::size_t m_current_documents = 0;
-    std::size_t m_current_postings = 0;
-    std::size_t m_current_lookups = 0;
-    std::size_t m_current_inserts = 0;
-    std::size_t m_current_essential_lists = 0;
-
-    std::size_t m_documents = 0;
-    std::size_t m_postings = 0;
-    std::size_t m_lookups = 0;
-    std::size_t m_inserts = 0;
-    std::size_t m_count = 0;
-    std::size_t m_essential_lists = 0;
-};
+using LookupUnionComponent = InspectMany<InspectPostings,
+                                         InspectDocuments,
+                                         InspectLookups,
+                                         InspectInserts,
+                                         InspectEssential>;
 
 template <typename Index, typename Scorer>
-struct LookupUnionInspector : public BaseUnionLookupInspect<Index, Scorer> {
-    LookupUnionInspector(Index const& index, Scorer scorer)
-        : BaseUnionLookupInspect<Index, Scorer>(index, std::move(scorer))
+struct InspectLookupUnion : Inspect<Index, Scorer, InspectPartitioned<LookupUnionComponent>> {
+
+    InspectLookupUnion(Index const& index, Scorer scorer)
+        : Inspect<Index, Scorer, InspectPartitioned<LookupUnionComponent>>(index, scorer)
     {
     }
-    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk) override
+
+    void run(Query const& query, Index const& index, Scorer const& scorer, topk_queue topk) override
     {
         if (query.selections()->bigrams.empty()) {
-            unigram_union_lookup(query, index, std::move(topk), scorer, this);
+            unigram_union_lookup(query,
+                                 index,
+                                 std::move(topk),
+                                 scorer,
+                                 InspectPartitioned<LookupUnionComponent>::first());
         } else {
-            lookup_union(query, index, std::move(topk), scorer, this);
+            lookup_union(query,
+                         index,
+                         std::move(topk),
+                         scorer,
+                         InspectPartitioned<LookupUnionComponent>::first(),
+                         InspectPartitioned<LookupUnionComponent>::second());
         }
     }
 };
 
 template <typename Index, typename Scorer>
-struct LookupUnionInspect {
-    LookupUnionInspect(Index const& index, Scorer scorer)
-        : m_index(index), m_scorer(std::move(scorer))
+struct InspectLookupUnionEaat : Inspect<Index, Scorer, InspectPartitioned<LookupUnionComponent>> {
+
+    InspectLookupUnionEaat(Index const& index, Scorer scorer)
+        : Inspect<Index, Scorer, InspectPartitioned<LookupUnionComponent>>(index, scorer)
     {
-        std::cout << fmt::format(
-            "documents\tpostings\tinserts\tlookups\tessential_lists\t"
-            "postings-uni\tlookups-uni\tpostings-bi\tlookups-bi\n");
     }
 
-    void reset_current()
-    {
-        m_unigram_inspect.reset_current();
-        m_bigram_inspect.reset_current();
-        m_count += 1;
-    }
-
-    void run(Query const& query, Index const& index, Scorer& scorer, topk_queue topk)
+    void run(Query const& query, Index const& index, Scorer const& scorer, topk_queue topk) override
     {
         if (query.selections()->bigrams.empty()) {
-            unigram_union_lookup(query, index, std::move(topk), scorer, &m_unigram_inspect);
+            unigram_union_lookup(query,
+                                 index,
+                                 std::move(topk),
+                                 scorer,
+                                 InspectPartitioned<LookupUnionComponent>::first());
         } else {
-            lookup_union(
-                query, index, std::move(topk), scorer, &m_unigram_inspect, &m_bigram_inspect);
+            lookup_union_eaat(query,
+                              index,
+                              std::move(topk),
+                              scorer,
+                              InspectPartitioned<LookupUnionComponent>::first(),
+                              InspectPartitioned<LookupUnionComponent>::second());
         }
     }
-
-    void operator()(Query const& query)
-    {
-        auto const& term_ids = query.get_term_ids();
-        if (term_ids.empty()) {
-            return;
-        }
-        using cursor_type = decltype(m_index.max_scored_cursor(0, m_scorer));
-        using value_type = decltype(m_index.max_scored_cursor(0, m_scorer).value());
-
-        run(query, m_index, m_scorer, topk_queue(query.k()));
-        std::cout << fmt::format(
-            "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-            m_unigram_inspect.current_documents() + m_bigram_inspect.current_documents(),
-            m_unigram_inspect.current_postings() + m_bigram_inspect.current_postings(),
-            m_unigram_inspect.current_inserts() + m_bigram_inspect.current_inserts(),
-            m_unigram_inspect.current_lookups() + m_bigram_inspect.current_lookups(),
-            m_unigram_inspect.current_essential_lists()
-                + m_bigram_inspect.current_essential_lists(),
-            m_unigram_inspect.current_postings(),
-            m_unigram_inspect.current_lookups(),
-            m_bigram_inspect.current_postings(),
-            m_bigram_inspect.current_lookups());
-        reset_current();
-    }
-
-    void summarize() &&
-    {
-        auto documents = m_unigram_inspect.documents() + m_bigram_inspect.documents();
-        auto postings = m_unigram_inspect.postings() + m_bigram_inspect.postings();
-        auto inserts = m_unigram_inspect.inserts() + m_bigram_inspect.inserts();
-        auto lookups = m_unigram_inspect.lookups() + m_bigram_inspect.lookups();
-        auto essential_lists =
-            m_unigram_inspect.essential_lists() + m_bigram_inspect.essential_lists();
-        auto uni_postings = m_unigram_inspect.postings();
-        auto uni_lookups = m_unigram_inspect.lookups();
-        auto bi_postings = m_bigram_inspect.postings();
-        auto bi_lookups = m_bigram_inspect.lookups();
-        std::cerr << fmt::format(
-            "=== SUMMARY ===\nAverage:\n- documents:\t{}\n"
-            "- postings:\t{}\n- inserts:\t{}\n- lookups:\t{}\n- essential lists:\t{}\n"
-            "- uni-postings:\t{}\n- uni-lookups:\t{}\n"
-            "- bi-postings:\t{}\n- bi-lookups:\t{}\n",
-            static_cast<float>(documents) / m_count,
-            static_cast<float>(postings) / m_count,
-            static_cast<float>(inserts) / m_count,
-            static_cast<float>(lookups) / m_count,
-            static_cast<float>(essential_lists) / m_count,
-            static_cast<float>(uni_postings) / m_count,
-            static_cast<float>(uni_lookups) / m_count,
-            static_cast<float>(bi_postings) / m_count,
-            static_cast<float>(bi_lookups) / m_count);
-    }
-
-   private:
-    ComponentInspect m_unigram_inspect;
-    ComponentInspect m_bigram_inspect;
-    std::size_t m_count = 0;
-    Index const& m_index;
-    Scorer m_scorer;
 };
 
 } // namespace pisa::v1
