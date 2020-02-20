@@ -22,6 +22,7 @@
 #include "wand_data_raw.hpp"
 
 #include "scorer/scorer.hpp"
+#include "query/algorithm.hpp"
 
 #include "CLI/CLI.hpp"
 
@@ -62,14 +63,35 @@ int main(int argc, const char **argv)
         scores.push_back(std::stof(t));
     }
 
-    using Pair = std::pair<uint32_t, uint32_t>;
+    using Pair = std::set<uint32_t>;
     std::unordered_set<Pair, boost::hash<Pair>> pairs_set;
+
+    std::string index_filename = "";
+    block_simdbp_index index;
+    mio::mmap_source m(index_filename.c_str());
+    mapper::map(index, m);
+
+    using wand_raw_index = wand_data<wand_data_raw>;
+    std::string wand_data_filename = "";
+    wand_raw_index wdata;
+    mio::mmap_source md;
+    std::error_code error;
+    md.map(wand_data_filename, error);
+    if (error) {
+        spdlog::error("error mapping file: {}, exiting...", error.message());
+        std::abort();
+    }
+    mapper::map(wdata, md, mapper::map_flags::warmup);
+
+
+    auto scorer = scorer::from_name("bm25", wdata);
+
     if(pairs_filename){
         std::ifstream pin(*pairs_filename);
         while (std::getline(pin, t)) {
             std::vector<std::string> p;
             boost::algorithm::split(p, t, boost::is_any_of(" \t"));
-            pairs_set.emplace(std::stoi(p[0]), std::stoi(p[1]));
+            pairs_set.insert({(uint32_t)std::stoi(p[0]), (uint32_t)std::stoi(p[1])});
         }
         spdlog::info("Number of pairs loaded: {}", pairs_set.size());
     }
@@ -81,10 +103,24 @@ int main(int argc, const char **argv)
         }
 
         auto terms = query.terms;
+        auto k = 1000;
+        topk_queue topk(k);
+        wand_query wand_q(topk);
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 if(pairs_set.count({terms[i], terms[j]})){
-                    std::cout << terms[i] << " and " << terms[j] << std::endl;
+                    Query q;
+                    q.terms.push_back(terms[i]);
+                    q.terms.push_back(terms[j]);
+                    wand_q(make_max_scored_cursors(index, wdata, *scorer, q), index.num_docs());
+                    topk.finalize();
+                    auto results = topk.topk();
+                    topk.clear();
+                    float t = 0.0;
+                    if (results.size() == k) {
+                        t = results.back().first;
+                    }
+                    threshold = std::max(threshold, t);
                 }
             }
         }
