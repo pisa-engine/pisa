@@ -37,6 +37,7 @@ int main(int argc, const char **argv)
     std::string query_filename;
     std::string scores_filename;
     std::optional<std::string> pairs_filename;
+    std::optional<std::string> triples_filename;
 
     std::optional<std::string> terms_file;
     std::optional<std::string> stemmer = std::nullopt;
@@ -48,6 +49,7 @@ int main(int argc, const char **argv)
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_option("-p,--pairs", pairs_filename, "Pairs filename");
+    app.add_option("-t,--triples", triples_filename, "Triples filename");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -66,13 +68,17 @@ int main(int argc, const char **argv)
     using Pair = std::set<uint32_t>;
     std::unordered_set<Pair, boost::hash<Pair>> pairs_set;
 
-    std::string index_filename = "";
+    using Triple = std::set<uint32_t>;
+    std::unordered_set<Triple, boost::hash<Triple>> triples_set;
+
+
+    std::string index_filename = "/home/amallia/collections/CW09B/CW09B.url.block_simdbp";
     block_simdbp_index index;
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
 
     using wand_raw_index = wand_data<wand_data_raw>;
-    std::string wand_data_filename = "";
+    std::string wand_data_filename = "/home/amallia/collections/CW09B/CW09B.url.bm25.bmw";
     wand_raw_index wdata;
     mio::mmap_source md;
     std::error_code error;
@@ -96,10 +102,21 @@ int main(int argc, const char **argv)
         spdlog::info("Number of pairs loaded: {}", pairs_set.size());
     }
 
+    if(triples_filename){
+        std::ifstream trin(*triples_filename);
+        while (std::getline(trin, t)) {
+            std::vector<std::string> p;
+            boost::algorithm::split(p, t, boost::is_any_of(" \t"));
+            triples_set.insert({(uint32_t)std::stoi(p[0]), (uint32_t)std::stoi(p[1]), (uint32_t)std::stoi(p[2])});
+        }
+        spdlog::info("Number of triples loaded: {}", triples_set.size());
+    }
     for (auto const &query : queries) {
         float threshold = 0;
         for (auto &&t : query.terms){
             threshold = std::max(threshold, scores[t]);
+
+
         }
 
         auto terms = query.terms;
@@ -119,12 +136,35 @@ int main(int argc, const char **argv)
                     float t = 0.0;
                     if (results.size() == k) {
                         t = results.back().first;
+
                     }
                     threshold = std::max(threshold, t);
                 }
             }
         }
+        for (size_t i = 0; i < terms.size(); ++i) {
+            for (size_t j = i + 1; j < terms.size(); ++j) {
+                for (size_t s = j + 1; s < terms.size(); ++s) {
 
+                    if(triples_set.count({terms[i], terms[j], terms[s]})){
+                        Query q;
+                        q.terms.push_back(terms[i]);
+                        q.terms.push_back(terms[j]);
+                        q.terms.push_back(terms[s]);
+                        wand_q(make_max_scored_cursors(index, wdata, *scorer, q), index.num_docs());
+                        topk.finalize();
+                        auto results = topk.topk();
+                        topk.clear();
+                        float t = 0.0;
+                        if (results.size() == k) {
+                            t = results.back().first;
+
+                        }
+                        threshold = std::max(threshold, t);
+                    }
+                }
+            }
+        }
         std::cout << threshold << '\n';
     }
 }
