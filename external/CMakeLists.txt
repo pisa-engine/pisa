@@ -106,8 +106,9 @@ set(TRECPP_BUILD_TOOL OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/trecpp)
 
 # Add trecpp
+set(JSON_MultipleHeaders ON CACHE BOOL "")
 set(WAPOPP_ENABLE_TESTING OFF CACHE BOOL "skip wapopp testing")
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp EXCLUDE_FROM_ALL)
 
 # Add fmt
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
@@ -118,6 +119,22 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 # Add range-v3
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 
+# Add tl::optional
+set(OPTIONAL_ENABLE_TESTS OFF CACHE BOOL "skip tl::optional testing")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/optional EXCLUDE_FROM_ALL)
+
+# Add yaml-cpp
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "skip building YAML tools")
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "skip building YAML tests")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp EXCLUDE_FROM_ALL)
+
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
 target_compile_options(rapidcheck PRIVATE -Wno-error=all)
+
+# Add json
+# TODO(michal): I had to comment this out because `wapocpp` already adds this target.
+#               How should we deal with it?
+#set(JSON_MultipleHeaders ON CACHE BOOL "")
+#set(JSON_BuildTests OFF CACHE BOOL "skip building JSON tests")
+#add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/json)

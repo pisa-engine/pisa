@@ -1,0 +1,17 @@
+HeaderFilterRegex: '.*include/pisa.*\.hpp'
+Checks: |
+    *,
+    -clang-diagnostic-c++17-extensions,
+    -llvm-header-guard,
+    -cppcoreguidelines-pro-type-reinterpret-cast,
+    -google-runtime-references,
+    -fuchsia-*,
+    -google-readability-namespace-comments,
+    -llvm-namespace-comment,
+    -clang-diagnostic-error,
+    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -modernize-use-trailing-return-type,
+    -misc-non-private-member-variables-in-classes,
+    -readability-magic-numbers

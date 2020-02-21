@@ -25,17 +25,17 @@ struct mixed_block {
     static const size_t block_types = 3;
     static const uint64_t block_size = 128;
 
-    static void encode(uint32_t const *, uint32_t, size_t, std::vector<uint8_t> &)
+    static void encode(uint32_t const*, uint32_t, size_t, std::vector<uint8_t>&)
     {
         throw std::runtime_error("Mixed block indexes can only be created by transformation");
     }
 
     static void encode_type(block_type type,
                             compr_param_type param,
-                            uint32_t const *in,
+                            uint32_t const* in,
                             uint32_t sum_of_values,
                             size_t n,
-                            std::vector<uint8_t> &out)
+                            std::vector<uint8_t>& out)
     {
         assert(n <= block_size);
         if (n < block_size) {
@@ -65,11 +65,11 @@ struct mixed_block {
 
     static bool compression_stats(block_type type,
                                   compr_param_type param,
-                                  uint32_t const *in,
+                                  uint32_t const* in,
                                   uint32_t sum_of_values,
                                   size_t n,
-                                  std::vector<uint8_t> &buf,
-                                  time_prediction::feature_vector &fv)
+                                  std::vector<uint8_t>& buf,
+                                  time_prediction::feature_vector& fv)
     {
         assert(buf.empty());
         using namespace time_prediction;
@@ -83,7 +83,7 @@ struct mixed_block {
 
         // codec-specific stats
         if (type == block_type::pfor) {
-            auto const &possLogs = optpfor_block::codec_type::possLogs;
+            auto const& possLogs = optpfor_block::codec_type::possLogs;
             uint32_t b = possLogs[param];
             uint32_t max_b = (uint32_t)fv[feature_type::max_b]; // float is exact up to 2^24
             if (b > max_b && possLogs[param - 1] >= max_b)
@@ -112,16 +112,16 @@ struct mixed_block {
         block_type type;
         compr_param_type param;
 
-        bool operator<(space_time_point const &other) const
+        bool operator<(space_time_point const& other) const
         {
             return std::make_pair(space, time) < std::make_pair(other.space, other.time);
         }
     };
 
     static std::vector<space_time_point> compute_space_time(
-        std::vector<uint32_t> const &values,
+        std::vector<uint32_t> const& values,
         uint32_t sum_of_values,
-        std::vector<time_prediction::predictor> const &predictors,
+        std::vector<time_prediction::predictor> const& predictors,
         uint32_t access_count)
     {
         using namespace time_prediction;
@@ -175,14 +175,14 @@ struct mixed_block {
         uint32_t size;
         uint32_t doc_gaps_universe;
 
-        void append_docs_block(std::vector<uint8_t> &out) const
+        void append_docs_block(std::vector<uint8_t>& out) const
         {
             thread_local std::vector<uint32_t> buf;
             m_input_block.decode_doc_gaps(buf);
             encode_type(m_docs_type, m_docs_param, buf.data(), doc_gaps_universe, size, out);
         }
 
-        void append_freqs_block(std::vector<uint8_t> &out) const
+        void append_freqs_block(std::vector<uint8_t>& out) const
         {
             thread_local std::vector<uint32_t> buf;
             m_input_block.decode_freqs(buf);
@@ -195,7 +195,7 @@ struct mixed_block {
         compr_param_type m_docs_param, m_freqs_param;
     };
 
-    static uint8_t const *decode(uint8_t const *in, uint32_t *out, uint32_t sum_of_values, size_t n)
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
     {
         block_type type = block_type::interpolative;
         if (PISA_LIKELY(n == block_size)) {
@@ -218,7 +218,7 @@ struct mixed_block {
 
 using predictors_vec_type = std::vector<pisa::time_prediction::predictor>;
 
-inline predictors_vec_type load_predictors(const char *predictors_filename)
+inline predictors_vec_type load_predictors(const char* predictors_filename)
 {
     std::vector<time_prediction::predictor> predictors(mixed_block::block_types);
 

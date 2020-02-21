@@ -67,6 +67,21 @@
 [submodule "external/wapopp"]
 	path = external/wapopp
 	url = https://github.com/pisa-engine/wapopp.git
+[submodule "external/optional"]
+	path = external/optional
+	url = https://github.com/TartanLlama/optional.git
+[submodule "external/expected"]
+	path = external/expected
+	url = https://github.com/TartanLlama/expected.git
+[submodule "external/yaml-cpp"]
+	path = external/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "external/rapidcheck"]
 	path = external/rapidcheck
 	url = https://github.com/emil-e/rapidcheck.git
+[submodule "external/json"]
+	path = external/json
+	url = https://github.com/nlohmann/json.git
+[submodule "external/cereal"]
+	path = external/cereal
+	url = https://github.com/USCiLab/cereal.git

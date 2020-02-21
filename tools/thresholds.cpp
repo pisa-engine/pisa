@@ -25,12 +25,12 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void thresholds(const std::string &index_filename,
-                const std::optional<std::string> &wand_data_filename,
-                const std::vector<Query> &queries,
-                const std::optional<std::string> &thresholds_filename,
-                std::string const &type,
-                std::string const &scorer_name,
+void thresholds(const std::string& index_filename,
+                const std::optional<std::string>& wand_data_filename,
+                const std::vector<Query>& queries,
+                const std::optional<std::string>& thresholds_filename,
+                std::string const& type,
+                std::string const& scorer_name,
                 uint64_t k)
 {
     IndexType index;
@@ -51,15 +51,16 @@ void thresholds(const std::string &index_filename,
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
+
     topk_queue topk(k);
     wand_query wand_q(topk);
-    for (auto const &query : queries) {
+    for (auto const& query : queries) {
         wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
         topk.finalize();
         auto results = topk.topk();
         topk.clear();
         float threshold = 0.0;
-        if (results.size() == k) {
+        if (not results.empty()) {
             threshold = results.back().first;
         }
         std::cout << threshold << '\n';
@@ -69,7 +70,7 @@ void thresholds(const std::string &index_filename,
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed>;
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
@@ -95,7 +96,7 @@ int main(int argc, const char **argv)
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    auto *terms_opt =
+    auto* terms_opt =
         app.add_option("--terms", terms_file, "Text file with terms in separate lines");
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     CLI11_PARSE(app, argc, argv);
@@ -131,7 +132,7 @@ int main(int argc, const char **argv)
                                                                 type,                    \
                                                                 scorer_name,             \
                                                                 k);                      \
-        }                                                                                \
+        }
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

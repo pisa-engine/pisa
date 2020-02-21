@@ -25,3 +25,4 @@ docs/_build/
 node_modules
 
 .clangd/
+compile_commands.json

@@ -14,6 +14,7 @@
 #include "query/queries.hpp"
 #include "wand_data.hpp"
 #include "wand_data_range.hpp"
+#include "wand_data_raw.hpp"
 
 #include "scorer/scorer.hpp"
 
@@ -42,12 +43,12 @@ TEST_CASE("wand_data_range")
     SECTION("Precomputed block-max scores")
     {
         size_t term_id = 0;
-        for (auto const &seq : collection) {
+        for (auto const& seq : collection) {
             if (seq.docs.size() >= 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
                 auto w = wdata_range.getenum(term_id);
                 auto s = scorer->term_scorer(term_id);
-                for (auto &&[docid, freq] : ranges::views::zip(seq.docs, seq.freqs)) {
+                for (auto&& [docid, freq] : ranges::views::zip(seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
@@ -65,7 +66,7 @@ TEST_CASE("wand_data_range")
     index_type index;
     global_parameters params;
     index_type::builder builder(collection.num_docs(), params);
-    for (auto const &plist : collection) {
+    for (auto const& plist : collection) {
         uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
         builder.add_posting_list(
             plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
@@ -75,15 +76,15 @@ TEST_CASE("wand_data_range")
     SECTION("Compute at run time")
     {
         size_t term_id = 0;
-        for (auto const &seq : collection) {
+        for (auto const& seq : collection) {
             auto list = index[term_id];
             if (seq.docs.size() < 1024) {
                 auto max = wdata_range.max_term_weight(term_id);
-                auto &w = wdata_range.get_block_wand();
+                auto& w = wdata_range.get_block_wand();
                 auto s = scorer->term_scorer(term_id);
                 const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, s);
                 WandTypeRange::enumerator we(0, bm);
-                for (auto &&[pos, docid, freq] :
+                for (auto&& [pos, docid, freq] :
                      ranges::views::zip(ranges::views::iota(0), seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     we.next_geq(docid);
@@ -103,7 +104,7 @@ TEST_CASE("wand_data_range")
     {
         size_t i = 0;
         std::vector<WandTypeRange::enumerator> enums;
-        for (auto const &seq : collection) {
+        for (auto const& seq : collection) {
             if (seq.docs.size() >= 1024) {
                 enums.push_back(wdata_range.getenum(i));
             }
@@ -116,7 +117,7 @@ TEST_CASE("wand_data_range")
 
         for (int i = 0; i < live_blocks.size(); ++i) {
             if (live_blocks[i] == 0) {
-                for (auto &&e : enums) {
+                for (auto&& e : enums) {
                     e.next_geq(i * 64);
                     REQUIRE(e.score() == 0);
                 }

@@ -1,0 +1,15 @@
+PISA_BIN="/home/michal/pisa/build/bin"
+INTERSECT_BIN="/home/michal/intersect/target/release/intersect"
+BINARY_FREQ_COLL="/data/CW09B/CW09B.url.inv"
+FWD="/data/CW09B/CW09B.url.fwd"
+ENCODING="simdbp" # v1
+BASENAME="/data/michal/work/v1/cw09b-url/cw09b-${ENCODING}"
+THREADS=4
+QUERIES="/home/michal/05.clean.shuf.test"
+K=1000
+OUTPUT_DIR="/data/michal/intersect/cw09b-url-bi"
+FILTERED_QUERIES="${OUTPUT_DIR}/$(basename ${QUERIES}).filtered"
+PAIRS="/home/michal/real.aol.top100k.jl"
+PAIR_INDEX_BASENAME="/data/michal/work/v1/cw09b-url/cw09b-simdbp-pair"
+THRESHOLDS="/home/michal/biscorer/data/thresholds/cw09b/thresholds.cw09b.0_01.top20.bm25.05.clean.shuf.test"
+QUERY_LIMIT=5000

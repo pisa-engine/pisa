@@ -20,7 +20,7 @@ namespace time_prediction {
 
     enum class feature_type { BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end };
 
-    inline feature_type parse_feature_type(std::string const &name)
+    inline feature_type parse_feature_type(std::string const& name)
     {
         if (false) {
 #define LOOP_BODY(R, DATA, T)               \
@@ -55,10 +55,10 @@ namespace time_prediction {
        public:
         feature_vector() { std::fill(m_features.begin(), m_features.end(), 0); }
 
-        float &operator[](feature_type f) { return m_features[(size_t)f]; }
-        float const &operator[](feature_type f) const { return m_features[(size_t)f]; }
+        float& operator[](feature_type f) { return m_features[(size_t)f]; }
+        float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
 
-        stats_line &dump(stats_line &sl) const
+        stats_line& dump(stats_line& sl) const
         {
             for (size_t i = 0; i < num_features; ++i) {
                 feature_type ft = (feature_type)i;
@@ -75,9 +75,9 @@ namespace time_prediction {
        public:
         predictor() : m_bias(0) {}
 
-        predictor(std::vector<std::pair<std::string, float>> const &values)
+        predictor(std::vector<std::pair<std::string, float>> const& values)
         {
-            for (auto const &kv : values) {
+            for (auto const& kv : values) {
                 if (kv.first == "bias") {
                     bias() = kv.second;
                 } else {
@@ -86,10 +86,10 @@ namespace time_prediction {
             }
         }
 
-        float &bias() { return m_bias; }
-        float const &bias() const { return m_bias; }
+        float& bias() { return m_bias; }
+        float const& bias() const { return m_bias; }
 
-        float operator()(feature_vector const &f) const
+        float operator()(feature_vector const& f) const
         {
             float result = bias();
             for (size_t i = 0; i < num_features; ++i) {
@@ -103,7 +103,7 @@ namespace time_prediction {
         float m_bias;
     };
 
-    inline void values_statistics(std::vector<uint32_t> values, feature_vector &f)
+    inline void values_statistics(std::vector<uint32_t> values, feature_vector& f)
     {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
@@ -141,9 +141,9 @@ namespace time_prediction {
         f[feature_type::max_b] = max_b;
     }
 
-    inline bool read_block_stats(std::istream &is,
-                                 uint32_t &list_id,
-                                 std::vector<uint32_t> &block_counts)
+    inline bool read_block_stats(std::istream& is,
+                                 uint32_t& list_id,
+                                 std::vector<uint32_t>& block_counts)
     {
         thread_local std::string line;
         uint32_t count;

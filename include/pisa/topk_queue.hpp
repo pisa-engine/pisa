@@ -1,8 +1,8 @@
 #pragma once
 
-#include <algorithm>
-#include "util/util.hpp"
 #include "util/likely.hpp"
+#include "util/util.hpp"
+#include <algorithm>
 
 namespace pisa {
 
@@ -10,12 +10,16 @@ using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
-    explicit topk_queue(uint64_t k) : m_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
-    topk_queue(topk_queue const &q) = default;
-    topk_queue &operator=(topk_queue const &q) = default;
+    explicit topk_queue(uint64_t k) : m_threshold(std::numeric_limits<float>::lowest()), m_k(k)
+    {
+        m_q.reserve(m_k + 1);
+    }
+    topk_queue(topk_queue const& q) = default;
+    topk_queue& operator=(topk_queue const& q) = default;
 
-    [[nodiscard]] constexpr static auto min_heap_order(entry_type const &lhs,
-                                                       entry_type const &rhs) noexcept -> bool {
+    [[nodiscard]] constexpr static auto min_heap_order(entry_type const& lhs,
+                                                       entry_type const& rhs) noexcept -> bool
+    {
         return lhs.first > rhs.first;
     }
 
@@ -28,7 +32,7 @@ struct topk_queue {
         m_q.emplace_back(score, docid);
         if (PISA_UNLIKELY(m_q.size() <= m_k)) {
             std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
-            if(PISA_UNLIKELY(m_q.size() == m_k)) {
+            if (PISA_UNLIKELY(m_q.size() == m_k)) {
                 m_threshold = m_q.front().first;
             }
         } else {
@@ -39,35 +43,36 @@ struct topk_queue {
         return true;
     }
 
-    bool would_enter(float score) const { return score >= m_threshold; }
+    [[nodiscard]] bool would_enter(float score) const { return score >= m_threshold; }
 
-    void finalize() {
+    void finalize()
+    {
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
         size_t size =
             std::lower_bound(m_q.begin(),
                              m_q.end(),
                              0,
-                             [](std::pair<float, uint64_t> l, float r) { return l.first > r; }) -
-            m_q.begin();
+                             [](std::pair<float, uint64_t> l, float r) { return l.first > r; })
+            - m_q.begin();
         m_q.resize(size);
     }
 
-    [[nodiscard]] std::vector<entry_type> const &topk() const noexcept { return m_q; }
+    [[nodiscard]] std::vector<entry_type> const& topk() const noexcept { return m_q; }
 
-    void set_threshold(Threshold t) noexcept {
-        m_threshold = t;
-    }
-
-    void clear() noexcept {
+    void clear() noexcept
+    {
         m_q.clear();
         m_threshold = 0;
     }
 
     [[nodiscard]] uint64_t size() const noexcept { return m_k; }
+    [[nodiscard]] auto full() const noexcept -> bool { return m_q.size() == m_k; }
+
+    void set_threshold(float threshold) noexcept { m_threshold = threshold; }
 
    private:
-    float                   m_threshold;
-    uint64_t                m_k;
+    float m_threshold;
+    uint64_t m_k;
     std::vector<entry_type> m_q;
 };
 

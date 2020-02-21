@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 

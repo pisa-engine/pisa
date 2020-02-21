@@ -22,23 +22,23 @@ struct Query {
     std::vector<float> term_weights;
 };
 
-[[nodiscard]] auto split_query_at_colon(std::string const &query_string)
+[[nodiscard]] auto split_query_at_colon(std::string const& query_string)
     -> std::pair<std::optional<std::string>, std::string_view>;
 
-[[nodiscard]] auto parse_query_terms(std::string const &query_string, TermProcessor term_processor)
+[[nodiscard]] auto parse_query_terms(std::string const& query_string, TermProcessor term_processor)
     -> Query;
 
-[[nodiscard]] auto parse_query_ids(std::string const &query_string) -> Query;
+[[nodiscard]] auto parse_query_ids(std::string const& query_string) -> Query;
 
 [[nodiscard]] std::function<void(const std::string)> resolve_query_parser(
-    std::vector<Query> &queries,
-    std::optional<std::string> const &terms_file,
-    std::optional<std::string> const &stopwords_filename,
-    std::optional<std::string> const &stemmer_type);
+    std::vector<Query>& queries,
+    std::optional<std::string> const& terms_file,
+    std::optional<std::string> const& stopwords_filename,
+    std::optional<std::string> const& stemmer_type);
 
-bool read_query(term_id_vec &ret, std::istream &is = std::cin);
+bool read_query(term_id_vec& ret, std::istream& is = std::cin);
 
-void remove_duplicate_terms(term_id_vec &terms);
+void remove_duplicate_terms(term_id_vec& terms);
 
 term_freq_vec query_freqs(term_id_vec terms);
 

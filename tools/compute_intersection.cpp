@@ -20,10 +20,10 @@ using pisa::intersection::IntersectionType;
 using pisa::intersection::Mask;
 
 template <typename IndexType, typename WandType>
-void intersect(std::string const &index_filename,
-               std::optional<std::string> const &wand_data_filename,
-               std::vector<Query> const &queries,
-               std::string const &type,
+void intersect(std::string const& index_filename,
+               std::optional<std::string> const& wand_data_filename,
+               std::vector<Query> const& queries,
+               std::string const& type,
                IntersectionType intersection_type,
                std::optional<std::uint8_t> max_term_count = std::nullopt)
 {
@@ -44,18 +44,27 @@ void intersect(std::string const &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    std::size_t qid = 0u;
+    std::size_t qid = 0U;
 
-    auto print_intersection = [&](auto const &query, auto const &mask) {
+    auto print_intersection = [&](auto const& query, auto const& mask) {
+        // FIXME(michal): Quick workaround to not compute intersection (a, a)
+        auto filtered = intersection::filter(query, mask);
+        std::sort(filtered.terms.begin(), filtered.terms.end());
+        if (std::unique(filtered.terms.begin(), filtered.terms.end()) != filtered.terms.end()) {
+            // Do not compute: contains duplicates
+            return;
+        }
         auto intersection = Intersection::compute(index, wdata, query, mask);
-        std::cout << fmt::format("{}\t{}\t{}\t{}\n",
-                                 query.id ? *query.id : std::to_string(qid),
-                                 mask.to_ulong(),
-                                 intersection.length,
-                                 intersection.max_score);
+        if (intersection.length > 0) {
+            std::cout << fmt::format("{}\t{}\t{}\t{}\n",
+                                     query.id ? *query.id : std::to_string(qid),
+                                     mask.to_ulong(),
+                                     intersection.length,
+                                     intersection.max_score);
+        }
     };
 
-    for (auto const &query : queries) {
+    for (auto const& query : queries) {
         if (intersection_type == IntersectionType::Combinations) {
             for_all_subsets(query, max_term_count, print_intersection);
         } else {
@@ -72,7 +81,7 @@ void intersect(std::string const &index_filename,
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed>;
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
@@ -97,9 +106,9 @@ int main(int argc, const char **argv)
     app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
     app.add_option("-q,--query", query_filename, "Queries filename");
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
+    auto* terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
-    auto *combinations_flag = app.add_flag(
+    auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
     app.add_option("--max-term-count,--mtc",
                    max_term_count,
