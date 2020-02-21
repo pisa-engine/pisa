@@ -63,20 +63,20 @@
 #target_link_libraries(evaluate_collection_ordering
 #  pisa
 #  )
-#
-#add_executable(parse_collection parse_collection.cpp)
-#target_link_libraries(parse_collection
-#  pisa
-#  CLI11
-#  wapopp
-#)
-#
-#add_executable(invert invert.cpp)
-#target_link_libraries(invert
-#  CLI11
-#  pisa
-#)
-#
+
+add_executable(parse_collection parse_collection.cpp)
+target_link_libraries(parse_collection
+  pisa
+  CLI11
+  wapopp
+)
+
+add_executable(invert invert.cpp)
+target_link_libraries(invert
+  CLI11
+  pisa
+)
+
 #add_executable(read_collection read_collection.cpp)
 #target_link_libraries(read_collection
 #  pisa

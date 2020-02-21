@@ -37,30 +37,31 @@ mkdir -p ${OUTPUT_DIR}
 #${PISA_BIN}/bmscore -i "${BASENAME}.yml" -j ${THREADS} --variable-blocks 22.5 --clone ${BASENAME}-var
 
 # Filter out queries witout existing terms.
-#paste -d: ${QUERIES} ${THRESHOLDS} \
-#    | jq '{"id": split(":")[0], "query": split(":")[1], "threshold": split(":")[2] | tonumber}' -R -c \
-#    | head -${QUERY_LIMIT} \
-#    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml --min 2 --max 8 > ${FILTERED_QUERIES}
+paste -d: ${QUERIES} ${THRESHOLDS} \
+    | jq '{"id": split(":")[0], "query": split(":")[1], "threshold": split(":")[2] | tonumber}' -R -c \
+    | head -${QUERY_LIMIT} \
+    | ${PISA_BIN}/filter-queries -i ${BASENAME}.yml --min 2 --max 8 > ${FILTERED_QUERIES}
 
 # This will produce both quantized scores and max scores (both quantized and not).
-#${PISA_BIN}/bigram-index -i "${BASENAME}.yml" -q ${PAIRS} --clone ${PAIR_INDEX_BASENAME} -j 4
+${PISA_BIN}/bigram-index -i "${BASENAME}.yml" -q ${PAIRS} --clone ${PAIR_INDEX_BASENAME} -j 4
 
 # Extract intersections
-#${PISA_BIN}/intersection -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations --existing \
-#    | grep -v "\[warning\]" \
-#    > ${OUTPUT_DIR}/intersections.jl
+${PISA_BIN}/intersection -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations --existing \
+    | grep -v "\[warning\]" \
+    > ${OUTPUT_DIR}/intersections.jl
 #${PISA_BIN}/intersection -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --combinations \
 #    --in /home/michal/real.aol.top1m.tsv \
 #    | grep -v "\[warning\]" \
 #    > ${OUTPUT_DIR}/intersections.jl
 
 # Select unigrams
-#${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.1
-#${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.1.time
-#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.2
-#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.2.time
-#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
-#${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${OUTPUT_DIR}/selections.2.scaled-2.time
+${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.1
+${INTERSECT_BIN} -m unigram ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.1.time
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.1.5
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl > ${OUTPUT_DIR}/selections.2
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --time > ${OUTPUT_DIR}/selections.2.time
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.scaled-2
+${INTERSECT_BIN} -m greedy ${OUTPUT_DIR}/intersections.jl --scale 2 --time > ${OUTPUT_DIR}/selections.2.scaled-2.time
 #${INTERSECT_BIN} -m exact ${OUTPUT_DIR}/intersections.jl --scale 2 > ${OUTPUT_DIR}/selections.2.exact
 
 # Run benchmarks
@@ -72,31 +73,31 @@ mkdir -p ${OUTPUT_DIR}
 #${PISA_BIN}/query -i "${BASENAME}-var.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm bmw --safe \
 #    > ${OUTPUT_DIR}/bench.vbmw-threshold
 
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --benchmark --algorithm maxscore --safe -k ${K} > ${OUTPUT_DIR}/bench.maxscore
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore --safe -k ${K} \
-#    > ${OUTPUT_DIR}/bench.maxscore-threshold
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore-union-lookup --safe \
-#    > ${OUTPUT_DIR}/bench.maxscore-union-lookup
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --benchmark --algorithm unigram-union-lookup --safe -k ${K} \
-#    > ${OUTPUT_DIR}/bench.unigram-union-lookup
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm union-lookup --safe \
-#    > ${OUTPUT_DIR}/bench.union-lookup
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm lookup-union --safe \
-#    > ${OUTPUT_DIR}/bench.lookup-union
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm union-lookup-plus --safe \
-#    > ${OUTPUT_DIR}/bench.plus
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --safe \
-#    --benchmark --algorithm lookup-union \
-#    > ${OUTPUT_DIR}/bench.lookup-union.scaled-1.5
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
-#    --benchmark --algorithm union-lookup-plus -k ${K} \
-#    > ${OUTPUT_DIR}/bench.plus.scaled-2
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
-#    --benchmark --algorithm lookup-union -k ${K} \
-#    > ${OUTPUT_DIR}/bench.lookup-union.scaled-2
-#${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
-#    --benchmark --algorithm lookup-union-eaat -k ${K} \
-#    > ${OUTPUT_DIR}/bench.lookup-union-eaat.scaled-2
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --benchmark --algorithm maxscore --safe -k ${K} > ${OUTPUT_DIR}/bench.maxscore
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore --safe -k ${K} \
+    > ${OUTPUT_DIR}/bench.maxscore-threshold
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${FILTERED_QUERIES} --benchmark --algorithm maxscore-union-lookup --safe \
+    > ${OUTPUT_DIR}/bench.maxscore-union-lookup
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.1 --benchmark --algorithm unigram-union-lookup --safe -k ${K} \
+    > ${OUTPUT_DIR}/bench.unigram-union-lookup
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm union-lookup --safe \
+    > ${OUTPUT_DIR}/bench.union-lookup
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm lookup-union --safe \
+    > ${OUTPUT_DIR}/bench.lookup-union
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2 --benchmark --algorithm union-lookup-plus --safe \
+    > ${OUTPUT_DIR}/bench.plus
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-1.5 --safe \
+    --benchmark --algorithm lookup-union \
+    > ${OUTPUT_DIR}/bench.lookup-union.scaled-1.5
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
+    --benchmark --algorithm union-lookup-plus -k ${K} \
+    > ${OUTPUT_DIR}/bench.plus.scaled-2
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
+    --benchmark --algorithm lookup-union -k ${K} \
+    > ${OUTPUT_DIR}/bench.lookup-union.scaled-2
+${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q ${OUTPUT_DIR}/selections.2.scaled-2 --safe \
+    --benchmark --algorithm lookup-union-eaat -k ${K} \
+    > ${OUTPUT_DIR}/bench.lookup-union-eaat.scaled-2
 
 # Analyze
 ${PISA_BIN}/query -i "${PAIR_INDEX_BASENAME}.yml" -q <(jq 'del(.threshold)' ${FILTERED_QUERIES} -c) --inspect --algorithm maxscore -k ${K} > ${OUTPUT_DIR}/stats.maxscore
