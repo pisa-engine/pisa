@@ -17,9 +17,13 @@ int main(int argc, char** argv)
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     bool pair_index = false;
+    bool term_by_term = false;
 
     pisa::App<arg::Index> app("Simply counts all postings in the index");
-    app.add_flag("--pairs", pair_index, "Count postings in the pair index instead");
+    auto* pairs_opt =
+        app.add_flag("--pairs", pair_index, "Count postings in the pair index instead");
+    app.add_flag("-t,--terms", term_by_term, "Print posting counts for each term in the index")
+        ->excludes(pairs_opt);
     CLI11_PARSE(app, argc, argv);
 
     auto meta = app.index_metadata();
@@ -34,6 +38,10 @@ int main(int argc, char** argv)
                 count +=
                     index.bigram_cursor(std::get<0>(term_pair), std::get<1>(term_pair))->size();
                 status += 1;
+            }
+        } else if (term_by_term) {
+            for (pisa::v1::TermId id = 0; id < index.num_terms(); id += 1) {
+                std::cout << index.term_posting_count(id) << '\n';
             }
         } else {
             pisa::v1::ProgressStatus status(
