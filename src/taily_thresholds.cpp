@@ -137,7 +137,7 @@ void pairwise_thresholds(const std::string &taily_stats_filename,
 
 void disjunctive_taily(const std::string &taily_stats_filename,
                 const std::vector<Query> &queries,
-                uint64_t k)
+                uint64_t ntop)
 {
     std::ifstream ifs(taily_stats_filename);
     int64_t collection_size;
@@ -194,7 +194,7 @@ void disjunctive_taily(const std::string &taily_stats_filename,
             const double theta = variance / expected_value;
             auto const dist = boost::math::gamma_distribution<>(k, theta);
 
-            double const p_c = std::min(1.0, k / any);
+            double const p_c = std::min(1.0, ntop / any);
             threshold = boost::math::quantile(complement(dist, p_c));
         }
         std::cout << threshold << '\n';
