@@ -74,6 +74,9 @@ int main(int argc, const char **argv)
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
+    // set full precision for floats
+    std::cout.precision(std::numeric_limits<float>::max_digits10);
+
     std::string type;
     std::string index_filename;
     std::optional<std::string> terms_file;
