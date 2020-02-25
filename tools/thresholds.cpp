@@ -70,6 +70,9 @@ int main(int argc, const char **argv)
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
+    // set full precision for floats
+    std::cout.precision(std::numeric_limits<float>::max_digits10);
+
     App<arg::Index, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer> app{
         "Extracts query thresholds."};
     CLI11_PARSE(app, argc, argv);
