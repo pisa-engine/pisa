@@ -75,7 +75,6 @@ void op_perftest(Functor query_func,
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query, thresholds[idx]);
                 if (safe && result < k) {
-                    spdlog::warn("results ({}) < k ({})", result, k);
                     num_reruns += 1;
                     result = query_func(query, 0);
                 }
@@ -163,7 +162,7 @@ void perftest(const std::string &index_filename,
         std::ifstream tin(*thresholds_filename);
         size_t idx = 0;
         while (std::getline(tin, t)) {
-            thresholds[idx] = std::stof(t) - 0.0001;
+            thresholds[idx] = std::stof(t);
             idx += 1;
         }
         if (idx != queries.size()) {
