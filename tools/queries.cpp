@@ -293,11 +293,11 @@ int main(int argc, const char **argv)
     bool extract = false;
     bool silent = false;
 
-    App<arg::Index<arg::Encoding::Legacy>,
-        arg::Query<arg::QueryMode::Ranked, 1'000>,
+    App<arg::Index,
+        arg::Query<arg::QueryMode::Ranked>,
         arg::Algorithm,
-        arg::Scorer<>,
-        arg::Thresholds<>>
+        arg::Scorer,
+        arg::Thresholds>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");

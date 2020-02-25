@@ -15,23 +15,14 @@ namespace pisa {
 
 namespace arg {
 
-    enum class Encoding : bool { Legacy, New };
-
-    template <Encoding encoding = Encoding::New>
     struct Index {
         explicit Index(CLI::App *app)
         {
             app->add_option("-i,--index", m_basename, "Inverted index basename")->required();
-            if constexpr (encoding == Encoding::New) {
-                app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
-            } else {
-                app->add_option("-e,-t,--encoding,--type",
-                                m_encoding,
-                                "Index encoding\nDEPRECATED: -t/--type; USE: -e/--encoding")
-                    ->required();
-            }
-            app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-            app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file");
+            app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
+            auto *wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
+            app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
+                ->needs(wand);
         }
 
         [[nodiscard]] auto index_basename() const -> std::string const & { return m_basename; }
@@ -51,18 +42,19 @@ namespace arg {
 
     enum class QueryMode : bool { Ranked, Unranked };
 
-    template <QueryMode Mode = QueryMode::Ranked, int DefaultK = 1'000>
+    template <QueryMode Mode = QueryMode::Ranked>
     struct Query {
         explicit Query(CLI::App *app)
         {
             app->add_option("-q,--queries", m_query_file, "Path to file with queries", false);
+            auto *terms = app->add_option("--terms", m_term_lexicon, "Term lexicon");
             app->add_option(
-                "--stopwords", m_stop_words, "List of blacklisted stop words to filter out");
-            auto *terms_opt = app->add_option("--terms", m_term_lexicon, "Term lexicon");
-            app->add_option("--stemmer", m_stemmer, "Stemmer type")->needs(terms_opt);
+                   "--stopwords", m_stop_words, "List of blacklisted stop words to filter out")
+                ->needs(terms);
+            app->add_option("--stemmer", m_stemmer, "Stemmer type")->needs(terms);
 
             if constexpr (Mode == QueryMode::Ranked) {
-                app->add_option("-k", m_k, "The number of top results to return", true);
+                app->add_option("-k", m_k, "The number of top results to return")->required();
             }
         }
 
@@ -91,7 +83,7 @@ namespace arg {
 
        private:
         std::optional<std::string> m_query_file;
-        int m_k = DefaultK;
+        int m_k = 0;
         std::optional<std::string> m_stop_words{std::nullopt};
         std::optional<std::string> m_stemmer{std::nullopt};
         std::optional<std::string> m_term_lexicon{std::nullopt};
@@ -110,53 +102,31 @@ namespace arg {
         std::string m_algorithm;
     };
 
-    enum class Required : bool { Required, Optional };
-
-    template <Required required = Required::Required>
     struct Scorer {
         explicit Scorer(CLI::App *app)
         {
-            auto *opt = app->add_option("-s,--scorer", m_scorer, "Query processing algorithm");
-            if (required == Required::Required) {
-                opt->required();
-            }
+            auto *opt =
+                app->add_option("-s,--scorer", m_scorer, "Query processing algorithm")->required();
         }
 
-        [[nodiscard]] auto scorer() const
-        {
-            if constexpr (required == Required::Required) {
-                return *m_scorer;
-            } else {
-                return m_scorer;
-            }
-        }
+        [[nodiscard]] auto scorer() const { return m_scorer; }
 
        private:
-        std::optional<std::string> m_scorer;
+        std::string m_scorer;
     };
 
-    template <Required required = Required::Optional>
     struct Thresholds {
         explicit Thresholds(CLI::App *app)
         {
-            auto *opt = app->add_option(
-                "-T,--thresholds", m_thresholds_filename, "File containing query thresholds");
-            if (required == Required::Required) {
-                opt->required();
-            }
+            app->add_option(
+                   "-T,--thresholds", m_thresholds_filename, "File containing query thresholds")
+                ->required();
         }
 
-        [[nodiscard]] auto thresholds_file() const
-        {
-            if constexpr (required == Required::Required) {
-                return *m_thresholds_filename;
-            } else {
-                return m_thresholds_filename;
-            }
-        }
+        [[nodiscard]] auto thresholds_file() const { return m_thresholds_filename; }
 
        private:
-        std::optional<std::string> m_thresholds_filename;
+        std::string m_thresholds_filename;
     };
 
     struct Threads {

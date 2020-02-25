@@ -187,11 +187,11 @@ int main(int argc, const char **argv)
     std::string documents_file;
     std::string run_id = "R0";
 
-    App<arg::Index<arg::Encoding::Legacy>,
-        arg::Query<arg::QueryMode::Ranked, 1'000>,
+    App<arg::Index,
+        arg::Query<arg::QueryMode::Ranked>,
         arg::Algorithm,
-        arg::Scorer<>,
-        arg::Thresholds<>,
+        arg::Scorer,
+        arg::Thresholds,
         arg::Threads>
         app{"Retrieves query results in TREC format."};
     app.add_option("-r,--run", run_id, "Run identifier");
