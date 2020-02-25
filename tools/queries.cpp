@@ -324,14 +324,15 @@ int main(int argc, const char **argv)
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    app.add_option("-T,--thresholds", thresholds_filename, "k value");
+    auto *thresholds_option = app.add_option("-T,--thresholds", thresholds_filename, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
         ->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
-    app.add_flag("--safe", safe, "Rerun if not enough results with pruning.");
+    app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
+        ->needs(thresholds_option);
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
