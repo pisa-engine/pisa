@@ -1,26 +1,23 @@
 #include <iostream>
 #include <optional>
 
-#include "boost/algorithm/string/classification.hpp"
-#include "boost/algorithm/string/split.hpp"
+#include <CLI/CLI.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <mio/mmap.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-#include "mio/mmap.hpp"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
-
-#include "mappable/mapper.hpp"
-
+#include "app.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "mappable/mapper.hpp"
 #include "query/algorithm.hpp"
+#include "scorer/scorer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-
-#include "scorer/scorer.hpp"
-
-#include "CLI/CLI.hpp"
 
 using namespace pisa;
 
@@ -28,7 +25,6 @@ template <typename IndexType, typename WandType>
 void thresholds(const std::string &index_filename,
                 const std::optional<std::string> &wand_data_filename,
                 const std::vector<Query> &queries,
-                const std::optional<std::string> &thresholds_filename,
                 std::string const &type,
                 std::string const &scorer_name,
                 uint64_t k)
@@ -77,70 +73,37 @@ int main(int argc, const char **argv)
     // set full precision for floats
     std::cout.precision(std::numeric_limits<float>::max_digits10);
 
-    std::string type;
-    std::string index_filename;
-    std::optional<std::string> terms_file;
-    std::optional<std::string> wand_data_filename;
-    std::optional<std::string> query_filename;
-    std::string scorer_name;
-    std::optional<std::string> thresholds_filename;
-    std::optional<std::string> stemmer = std::nullopt;
-
-    uint64_t k = configuration::get().k;
-    bool compressed = false;
-
-    CLI::App app{"queries - a tool for performing queries on an index."};
-    app.set_config("--config", "", "Configuration .ini file", false);
-    app.add_option("-t,--type", type, "Index type")->required();
-    app.add_option("-i,--index", index_filename, "Collection basename")->required();
-    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
-    app.add_option("-q,--query", query_filename, "Queries filename");
-    app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
-    app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("-k", k, "k value");
-    auto *terms_opt =
-        app.add_option("--terms", terms_file, "Text file with terms in separate lines");
-    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
+    App<arg::Index, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer> app{
+        "Extracts query thresholds."};
     CLI11_PARSE(app, argc, argv);
-
-    std::vector<Query> queries;
-    auto parse_query = resolve_query_parser(queries, terms_file, std::nullopt, stemmer);
-    if (query_filename) {
-        std::ifstream is(*query_filename);
-        io::for_each_line(is, parse_query);
-    } else {
-        io::for_each_line(std::cin, parse_query);
-    }
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                            \
-    }                                                                                    \
-    else if (type == BOOST_PP_STRINGIZE(T))                                              \
-    {                                                                                    \
-        if (compressed) {                                                                \
-            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,      \
-                                                                    wand_data_filename,  \
-                                                                    queries,             \
-                                                                    thresholds_filename, \
-                                                                    type,                \
-                                                                    scorer_name,         \
-                                                                    k);                  \
-        } else {                                                                         \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
-                                                                wand_data_filename,      \
-                                                                queries,                 \
-                                                                thresholds_filename,     \
-                                                                type,                    \
-                                                                scorer_name,             \
-                                                                k);                      \
-        }                                                                                \
+#define LOOP_BODY(R, DATA, T)                                                             \
+    }                                                                                     \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                               \
+    {                                                                                     \
+        if (app.is_wand_compressed()) {                                                   \
+            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(), \
+                                                                    app.wand_data_path(), \
+                                                                    app.queries(),        \
+                                                                    app.index_encoding(), \
+                                                                    app.scorer(),         \
+                                                                    app.k());             \
+        } else {                                                                          \
+            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),     \
+                                                                app.wand_data_path(),     \
+                                                                app.queries(),            \
+                                                                app.index_encoding(),     \
+                                                                app.scorer(),             \
+                                                                app.k());                 \
+        }                                                                                 \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {
-        spdlog::error("Unknown type {}", type);
+        spdlog::error("Unknown type {}", app.index_encoding());
     }
 }

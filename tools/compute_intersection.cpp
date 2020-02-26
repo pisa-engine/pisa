@@ -3,11 +3,13 @@
 #include <string>
 #include <vector>
 
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+#include <CLI/CLI.hpp>
 #include <fmt/format.h>
+#include <range/v3/view/filter.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-#include "CLI/CLI.hpp"
+#include "app.hpp"
 #include "index_types.hpp"
 #include "intersection.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
@@ -19,11 +21,10 @@ using namespace pisa;
 using pisa::intersection::IntersectionType;
 using pisa::intersection::Mask;
 
-template <typename IndexType, typename WandType>
+template <typename IndexType, typename WandType, typename QueryRange>
 void intersect(std::string const &index_filename,
                std::optional<std::string> const &wand_data_filename,
-               std::vector<Query> const &queries,
-               std::string const &type,
+               QueryRange &&queries,
                IntersectionType intersection_type,
                std::optional<std::uint8_t> max_term_count = std::nullopt)
 {
@@ -44,7 +45,7 @@ void intersect(std::string const &index_filename,
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
 
-    std::size_t qid = 0u;
+    std::size_t qid = 0U;
 
     auto print_intersection = [&](auto const &query, auto const &mask) {
         auto intersection = Intersection::compute(index, wdata, query, mask);
@@ -55,7 +56,7 @@ void intersect(std::string const &index_filename,
                                  intersection.max_score);
     };
 
-    for (auto const &query : queries) {
+    for (auto &&query : queries) {
         if (intersection_type == IntersectionType::Combinations) {
             for_all_subsets(query, max_term_count, print_intersection);
         } else {
@@ -77,12 +78,6 @@ int main(int argc, const char **argv)
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
-    std::string type;
-    std::string index_filename;
-    std::optional<std::string> terms_file;
-    std::optional<std::string> wand_data_filename;
-    std::optional<std::string> query_filename;
-    std::optional<std::string> stemmer;
     std::optional<std::uint8_t> max_term_count;
     std::size_t min_query_len = 0;
     std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
@@ -90,15 +85,8 @@ int main(int argc, const char **argv)
     bool compressed = false;
     bool header = false;
 
-    CLI::App app{"compute_intersection - a tool for pre-computing intersections of terms."};
-    app.set_config("--config", "", "Configuration .ini file", false);
-    app.add_option("-t,--type", type, "Index type")->required();
-    app.add_option("-i,--index", index_filename, "Collection basename")->required();
-    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
-    app.add_option("-q,--query", query_filename, "Queries filename");
-    app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
-    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
+    App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app{
+        "Computes intersections of posting lists."};
     auto *combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
     app.add_option("--max-term-count,--mtc",
@@ -110,21 +98,11 @@ int main(int argc, const char **argv)
     app.add_flag("--header", header, "Write TSV header");
     CLI11_PARSE(app, argc, argv);
 
-    std::vector<Query> queries;
-    auto parse_query = resolve_query_parser(queries, terms_file, std::nullopt, stemmer);
-    auto parse_with_filter = [&](auto line) {
-        parse_query(line);
-        auto size = queries.back().terms.size();
-        if (size < min_query_len || size > max_query_len) {
-            queries.pop_back();
-        }
-    };
-    if (query_filename) {
-        std::ifstream is(*query_filename);
-        io::for_each_line(is, parse_with_filter);
-    } else {
-        io::for_each_line(std::cin, parse_with_filter);
-    }
+    auto queries = app.queries();
+    auto filtered_queries = ranges::views::filter(queries, [&](auto &&query) {
+        auto size = query.terms.size();
+        return size < min_query_len || size > max_query_len;
+    });
 
     if (header) {
         if (combinations) {
@@ -139,31 +117,29 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                          \
-    }                                                                                  \
-    else if (type == BOOST_PP_STRINGIZE(T))                                            \
-    {                                                                                  \
-        if (compressed) {                                                              \
-            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,     \
-                                                                   wand_data_filename, \
-                                                                   queries,            \
-                                                                   type,               \
-                                                                   intersection_type,  \
-                                                                   max_term_count);    \
-        } else {                                                                       \
-            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,         \
-                                                               wand_data_filename,     \
-                                                               queries,                \
-                                                               type,                   \
-                                                               intersection_type,      \
-                                                               max_term_count);        \
-        }                                                                              \
+#define LOOP_BODY(R, DATA, T)                                                            \
+    }                                                                                    \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                              \
+    {                                                                                    \
+        if (app.is_wand_compressed()) {                                                  \
+            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(), \
+                                                                   app.wand_data_path(), \
+                                                                   filtered_queries,     \
+                                                                   intersection_type,    \
+                                                                   max_term_count);      \
+        } else {                                                                         \
+            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),     \
+                                                               app.wand_data_path(),     \
+                                                               filtered_queries,         \
+                                                               intersection_type,        \
+                                                               max_term_count);          \
+        }                                                                                \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {
-        spdlog::error("Unknown type {}", type);
+        spdlog::error("Unknown type {}", app.index_encoding());
     }
 }
