@@ -60,16 +60,24 @@ void op_perftest(Functor query_func,
                  std::vector<Threshold> const &thresholds,
                  std::string const &index_type,
                  std::string const &query_type,
-                 size_t runs)
+                 size_t runs,
+                 std::uint64_t k,
+                 bool safe)
 {
 
     std::vector<double> query_times;
+    std::size_t num_reruns = 0;
+    spdlog::info("Safe: {}", safe);
 
     for (size_t run = 0; run <= runs; ++run) {
         size_t idx = 0;
         for (auto const &query : queries) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query, thresholds[idx]);
+                if (safe && result < k) {
+                    num_reruns += 1;
+                    result = query_func(query, 0);
+                }
                 do_not_optimize_away(result);
             });
             if (run != 0) { // first run is not timed
@@ -91,14 +99,15 @@ void op_perftest(Functor query_func,
         double q90 = query_times[90 * query_times.size() / 100];
         double q95 = query_times[95 * query_times.size() / 100];
         double q99 = query_times[99 * query_times.size() / 100];
-      
+
         spdlog::info("---- {} {}", index_type, query_type);
         spdlog::info("Mean: {}", avg);
         spdlog::info("50% quantile: {}", q50);
         spdlog::info("90% quantile: {}", q90);
         spdlog::info("95% quantile: {}", q95);
         spdlog::info("99% quantile: {}", q99);
-      
+        spdlog::info("Num. reruns: {}", num_reruns);
+
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
             "q95", q95)("q99", q99);
     }
@@ -113,7 +122,8 @@ void perftest(const std::string &index_filename,
               std::string const &query_type,
               uint64_t k,
               std::string const &scorer_name,
-              bool extract)
+              bool extract,
+              bool safe)
 {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
@@ -190,7 +200,7 @@ void perftest(const std::string &index_filename,
                 wand_query wand_q(topk);
                 wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
@@ -200,7 +210,7 @@ void perftest(const std::string &index_filename,
                 block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                                  index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
@@ -210,7 +220,7 @@ void perftest(const std::string &index_filename,
                 block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                                      index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
@@ -219,7 +229,7 @@ void perftest(const std::string &index_filename,
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
@@ -229,7 +239,7 @@ void perftest(const std::string &index_filename,
                 block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
                                        index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
@@ -238,7 +248,7 @@ void perftest(const std::string &index_filename,
                 ranked_or_query ranked_or_q(topk);
                 ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
@@ -247,7 +257,7 @@ void perftest(const std::string &index_filename,
                 maxscore_query maxscore_q(topk);
                 maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             Simple_Accumulator accumulator(index.num_docs());
@@ -258,7 +268,7 @@ void perftest(const std::string &index_filename,
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
             Lazy_Accumulator<4> accumulator(index.num_docs());
@@ -269,7 +279,7 @@ void perftest(const std::string &index_filename,
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
-                return topk.size();
+                return topk.topk().size();
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);
@@ -278,7 +288,7 @@ void perftest(const std::string &index_filename,
         if (extract) {
             extract_times(query_fun, queries, thresholds, type, t, 2, std::cout);
         } else {
-            op_perftest(query_fun, queries, thresholds, type, t, 2);
+            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe);
         }
     }
 }
@@ -302,6 +312,7 @@ int main(int argc, const char **argv)
     bool compressed = false;
     bool extract = false;
     bool silent = false;
+    bool safe = false;
 
     CLI::App app{"queries - a tool for performing queries on an index."};
     app.set_config("--config", "", "Configuration .ini file", false);
@@ -313,13 +324,15 @@ int main(int argc, const char **argv)
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
     app.add_option("-k", k, "k value");
-    app.add_option("-T,--thresholds", thresholds_filename, "k value");
+    auto *thresholds_option = app.add_option("-T,--thresholds", thresholds_filename, "k value");
     auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
     app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
         ->needs(terms_opt);
     app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
+    app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
+        ->needs(thresholds_option);
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -355,7 +368,8 @@ int main(int argc, const char **argv)
                                                                   query_type,          \
                                                                   k,                   \
                                                                   scorer_name,         \
-                                                                  extract);            \
+                                                                  extract,             \
+                                                                  safe);               \
         } else {                                                                       \
             perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,          \
                                                               wand_data_filename,      \
@@ -365,7 +379,8 @@ int main(int argc, const char **argv)
                                                               query_type,              \
                                                               k,                       \
                                                               scorer_name,             \
-                                                              extract);                \
+                                                              extract,                 \
+                                                              safe);                   \
         }                                                                              \
         /**/
 
