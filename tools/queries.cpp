@@ -299,39 +299,20 @@ using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, const char **argv)
 {
-    std::string scorer_name;
     bool extract = false;
     bool silent = false;
     bool safe = false;
 
-<<<<<<< HEAD
     App<arg::Index,
         arg::Query<arg::QueryMode::Ranked>,
         arg::Algorithm,
         arg::Scorer,
         arg::Thresholds>
         app{"Benchmarks queries on a given index."};
-=======
-    CLI::App app{"queries - a tool for performing queries on an index."};
-    app.set_config("--config", "", "Configuration .ini file", false);
-    app.add_option("-t,--type", type, "Index type")->required();
-    app.add_option("-a,--algorithm", query_type, "Query algorithm")->required();
-    app.add_option("-i,--index", index_filename, "Collection basename")->required();
-    app.add_option("-w,--wand", wand_data_filename, "Wand data filename");
-    app.add_option("-q,--query", query_filename, "Queries filename");
-    app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
-    app.add_flag("--compressed-wand", compressed, "Compressed wand input file");
-    app.add_option("-k", k, "k value");
-    auto *thresholds_option = app.add_option("-T,--thresholds", thresholds_filename, "k value");
-    auto *terms_opt = app.add_option("--terms", terms_file, "Term lexicon");
-    app.add_option("--stopwords", stopwords_filename, "File containing stopwords to ignore")
-        ->needs(terms_opt);
-    app.add_option("--stemmer", stemmer, "Stemmer type")->needs(terms_opt);
->>>>>>> origin/master
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
-        ->needs(thresholds_option);
+        ->needs(app.thresholds_option());
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -345,58 +326,33 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-<<<<<<< HEAD
-#define LOOP_BODY(R, DATA, T)
-    } else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {
-        if (app.is_wand_compressed()) {
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(),
-                                                                  app.wand_data_path(),
-                                                                  app.queries(),
-                                                                  app.thresholds_file(),
-                                                                  app.index_encoding(),
-                                                                  app.algorithm(),
-                                                                  app.k(),
-                                                                  app.scorer(),
-                                                                  extract);
-        } else {
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),
-                                                              app.wand_data_path(),
-                                                              app.queries(),
-                                                              app.thresholds_file(),
-                                                              app.index_encoding(),
-                                                              app.algorithm(),
-                                                              app.k(),
-                                                              app.scorer(),
-                                                              extract);
-        }                                                                                \
-=======
-#define LOOP_BODY(R, DATA, T)
-    } else if (type == BOOST_PP_STRINGIZE(T)) {
-        if (compressed) {
-            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(index_filename,
-                                                                  wand_data_filename,
-                                                                  queries,
-                                                                  thresholds_filename,
-                                                                  type,
-                                                                  query_type,
-                                                                  k,
-                                                                  scorer_name,
-                                                                  extract,
-                                                                  safe);
-        } else {
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(index_filename,
-                                                              wand_data_filename,
-                                                              queries,
-                                                              thresholds_filename,
-                                                              type,
-                                                              query_type,
-                                                              k,
-                                                              scorer_name,
-                                                              extract,
-                                                              safe);
-        }                                                                              \
->>>>>>> origin/master
-        /**/
+#define LOOP_BODY(R, DATA, T)                                                            \
+    }                                                                                    \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                              \
+    {                                                                                    \
+        if (app.is_wand_compressed()) {                                                  \
+            perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(),  \
+                                                                  app.wand_data_path(),  \
+                                                                  app.queries(),         \
+                                                                  app.thresholds_file(), \
+                                                                  app.index_encoding(),  \
+                                                                  app.algorithm(),       \
+                                                                  app.k(),               \
+                                                                  app.scorer(),          \
+                                                                  extract,               \
+                                                                  safe);                 \
+        } else {                                                                         \
+            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),      \
+                                                              app.wand_data_path(),      \
+                                                              app.queries(),             \
+                                                              app.thresholds_file(),     \
+                                                              app.index_encoding(),      \
+                                                              app.algorithm(),           \
+                                                              app.k(),                   \
+                                                              app.scorer(),              \
+                                                              extract,                   \
+                                                              safe);                     \
+        } /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

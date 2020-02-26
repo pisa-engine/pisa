@@ -118,15 +118,18 @@ namespace arg {
     struct Thresholds {
         explicit Thresholds(CLI::App *app)
         {
-            app->add_option(
-                   "-T,--thresholds", m_thresholds_filename, "File containing query thresholds")
-                ->required();
+            m_option = app->add_option("-T,--thresholds",
+                                       m_thresholds_filename,
+                                       "File containing query thresholds")
+                           ->required();
         }
 
         [[nodiscard]] auto thresholds_file() const { return m_thresholds_filename; }
+        [[nodiscard]] auto *thresholds_option() { return m_option; }
 
        private:
         std::string m_thresholds_filename;
+        CLI::Option *m_option;
     };
 
     struct Threads {
