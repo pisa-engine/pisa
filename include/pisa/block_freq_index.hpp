@@ -29,8 +29,18 @@ namespace pisa {
                                   FreqsIterator freqs_begin, uint64_t /* occurrences */)
             {
                 if (!n) throw std::invalid_argument("List must be nonempty");
+
+                std::vector<uint32_t> freqs_buf(n);
+                for (int i = 0; i < n; ++i)
+                {
+                    freqs_buf[i] = *(freqs_begin + i);
+                }
+                std::vector<uint32_t> encoded(n);
+                mln<8>::encode(freqs_buf.data(), n, encoded.data());
+
+
                 block_posting_list<BlockCodec, Profile>::write(m_lists, n,
-                                                               docs_begin, freqs_begin);
+                                                               docs_begin, encoded.begin());
                 m_endpoints.push_back(m_lists.size());
             }
 

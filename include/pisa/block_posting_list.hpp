@@ -4,6 +4,8 @@
 #include "util/util.hpp"
 #include "util/block_profiler.hpp"
 
+#include "mln.hpp"
+
 namespace pisa {
 
     template <typename BlockCodec, bool Profile=false>
