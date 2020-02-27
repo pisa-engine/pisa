@@ -85,7 +85,7 @@ int main(int argc, const char **argv)
     bool compressed = false;
     bool header = false;
 
-    App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app{
+    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Unranked>> app{
         "Computes intersections of posting lists."};
     auto *combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
@@ -122,13 +122,13 @@ int main(int argc, const char **argv)
     else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                              \
     {                                                                                    \
         if (app.is_wand_compressed()) {                                                  \
-            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(), \
+            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(), \
                                                                    app.wand_data_path(), \
                                                                    filtered_queries,     \
                                                                    intersection_type,    \
                                                                    max_term_count);      \
         } else {                                                                         \
-            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),     \
+            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),     \
                                                                app.wand_data_path(),     \
                                                                filtered_queries,         \
                                                                intersection_type,        \

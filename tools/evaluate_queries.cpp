@@ -188,6 +188,7 @@ int main(int argc, const char **argv)
     std::string run_id = "R0";
 
     App<arg::Index,
+        arg::WandData,
         arg::Query<arg::QueryMode::Ranked>,
         arg::Algorithm,
         arg::Scorer,
@@ -212,7 +213,7 @@ int main(int argc, const char **argv)
     else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                      \
     {                                                                                            \
         if (app.is_wand_compressed()) {                                                          \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(),  \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(),  \
                                                                           app.wand_data_path(),  \
                                                                           app.queries(),         \
                                                                           app.thresholds_file(), \
@@ -223,7 +224,7 @@ int main(int argc, const char **argv)
                                                                           app.scorer(),          \
                                                                           run_id);               \
         } else {                                                                                 \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),      \
+            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),      \
                                                                       app.wand_data_path(),      \
                                                                       app.queries(),             \
                                                                       app.thresholds_file(),     \

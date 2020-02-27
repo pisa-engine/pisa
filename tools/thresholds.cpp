@@ -73,8 +73,8 @@ int main(int argc, const char **argv)
     // set full precision for floats
     std::cout.precision(std::numeric_limits<float>::max_digits10);
 
-    App<arg::Index, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer> app{
-        "Extracts query thresholds."};
+    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer>
+        app{"Extracts query thresholds."};
     CLI11_PARSE(app, argc, argv);
 
     /**/
@@ -84,14 +84,14 @@ int main(int argc, const char **argv)
     else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                               \
     {                                                                                     \
         if (app.is_wand_compressed()) {                                                   \
-            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(), \
+            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(), \
                                                                     app.wand_data_path(), \
                                                                     app.queries(),        \
                                                                     app.index_encoding(), \
                                                                     app.scorer(),         \
                                                                     app.k());             \
         } else {                                                                          \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),     \
+            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),     \
                                                                 app.wand_data_path(),     \
                                                                 app.queries(),            \
                                                                 app.index_encoding(),     \

@@ -31,7 +31,8 @@ class wand_data {
               binary_freq_collection const &coll,
               std::string const &scorer_name,
               BlockSize block_size,
-              std::unordered_set<size_t> const &terms_to_drop) : m_num_docs(num_docs)
+              std::unordered_set<size_t> const &terms_to_drop)
+        : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
@@ -51,21 +52,22 @@ class wand_data {
         typename block_wand_type::builder builder(coll, params);
 
         {
-           pisa::progress progress("Storing terms statistics", coll.size());
-           size_t term_id = 0;
-           for (auto const &seq : coll) {
-               if(terms_to_drop.find(term_id) != terms_to_drop.end()){
-                 progress.update(1);
-                 term_id += 1;
-                 continue;
-               }
+            pisa::progress progress("Storing terms statistics", coll.size());
+            size_t term_id = 0;
+            for (auto const &seq : coll) {
+                if (terms_to_drop.find(term_id) != terms_to_drop.end()) {
+                    progress.update(1);
+                    term_id += 1;
+                    continue;
+                }
 
-               size_t term_occurrence_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
-               term_occurrence_counts.push_back(term_occurrence_count);
-               term_posting_counts.push_back(seq.docs.size());
-               term_id += 1;
-               progress.update(1);
-           }
+                size_t term_occurrence_count =
+                    std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
+                term_occurrence_counts.push_back(term_occurrence_count);
+                term_posting_counts.push_back(seq.docs.size());
+                term_id += 1;
+                progress.update(1);
+            }
         }
         m_doc_lens.steal(doc_lens);
         m_term_occurrence_counts.steal(term_occurrence_counts);
@@ -77,13 +79,15 @@ class wand_data {
             size_t term_id = 0;
             size_t new_term_id = 0;
             for (auto const &seq : coll) {
-                if(terms_to_drop.find(term_id) != terms_to_drop.end()){
+                if (terms_to_drop.find(term_id) != terms_to_drop.end()) {
                     progress.update(1);
                     term_id += 1;
                     continue;
                 }
-                auto v = builder.add_sequence(seq, coll, doc_lens, m_avg_len, scorer->term_scorer(new_term_id), block_size);
+                auto v = builder.add_sequence(
+                    seq, coll, doc_lens, m_avg_len, scorer->term_scorer(new_term_id), block_size);
                 max_term_weight.push_back(v);
+                m_index_max_term_weight = std::max(m_index_max_term_weight, v);
                 term_id += 1;
                 new_term_id += 1;
                 progress.update(1);
@@ -97,9 +101,14 @@ class wand_data {
 
     size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
 
-    size_t term_occurrence_count(uint64_t term_id) const { return m_term_occurrence_counts[term_id]; }
+    size_t term_occurrence_count(uint64_t term_id) const
+    {
+        return m_term_occurrence_counts[term_id];
+    }
 
     size_t term_posting_count(uint64_t term_id) const { return m_term_posting_counts[term_id]; }
+
+    float index_max_term_weight() const { return m_index_max_term_weight; }
 
     size_t num_docs() const { return m_num_docs; }
 
@@ -121,14 +130,18 @@ class wand_data {
     {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
 
-            m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_posting_counts, "m_term_posting_counts")(m_avg_len, "m_avg_len")(
-            m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(m_max_term_weight,"m_max_term_weight");
+            m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_posting_counts,
+                                                                  "m_term_posting_counts")(
+            m_avg_len, "m_avg_len")(m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(
+            m_max_term_weight, "m_max_term_weight")(m_index_max_term_weight,
+                                                    "m_index_max_term_weight");
     }
 
    private:
     uint64_t m_num_docs = 0;
     float m_avg_len = 0;
     uint64_t m_collection_len = 0;
+    float m_index_max_term_weight = 0;
     block_wand_type m_block_wand;
     mapper::mappable_vector<uint32_t> m_doc_lens;
     mapper::mappable_vector<uint32_t> m_term_occurrence_counts;
