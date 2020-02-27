@@ -15,6 +15,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "block_freq_index.hpp"
+#include "impact_ordered_index.hpp"
 
 #include "freq_index.hpp"
 #include "mixed_block.hpp"
@@ -27,30 +28,34 @@ using ef_index = freq_index<compact_elias_fano, positive_sequence<strict_elias_f
 
 using single_index = freq_index<indexed_sequence, positive_sequence<>>;
 
-using pefuniform_index = freq_index<uniform_partitioned_sequence<>,
-                                 positive_sequence<uniform_partitioned_sequence<strict_sequence>>>;
+using pefuniform_index =
+    freq_index<uniform_partitioned_sequence<>,
+               positive_sequence<uniform_partitioned_sequence<strict_sequence>>>;
 
 using pefopt_index =
     freq_index<partitioned_sequence<>, positive_sequence<partitioned_sequence<strict_sequence>>>;
 
-using block_optpfor_index       = block_freq_index<pisa::optpfor_block>;
-using block_varintg8iu_index    = block_freq_index<pisa::varint_G8IU_block>;
-using block_streamvbyte_index   = block_freq_index<pisa::streamvbyte_block>;
-using block_maskedvbyte_index   = block_freq_index<pisa::maskedvbyte_block>;
-using block_varintgb_index      = block_freq_index<pisa::varintgb_block>;
+using block_optpfor_index = block_freq_index<pisa::optpfor_block>;
+using block_varintg8iu_index = block_freq_index<pisa::varint_G8IU_block>;
+using block_streamvbyte_index = block_freq_index<pisa::streamvbyte_block>;
+using block_maskedvbyte_index = block_freq_index<pisa::maskedvbyte_block>;
+using block_varintgb_index = block_freq_index<pisa::varintgb_block>;
 using block_interpolative_index = block_freq_index<pisa::interpolative_block>;
-using block_qmx_index           = block_freq_index<pisa::qmx_block>;
-using block_simple8b_index      = block_freq_index<pisa::simple8b_block>;
-using block_simple16_index      = block_freq_index<pisa::simple16_block>;
-using block_simdbp_index        = block_freq_index<pisa::simdbp_block>;
-using block_mixed_index         = block_freq_index<pisa::mixed_block>;
+using block_qmx_index = block_freq_index<pisa::qmx_block>;
+using block_simple8b_index = block_freq_index<pisa::simple8b_block>;
+using block_simple16_index = block_freq_index<pisa::simple16_block>;
+using block_simdbp_index = block_freq_index<pisa::simdbp_block>;
+using block_mixed_index = block_freq_index<pisa::mixed_block>;
+
+using impact_simdbp_index = impact_ordered_index<pisa::simdbp_block>;
 
 } // namespace pisa
 
 #define PISA_INDEX_TYPES                                                                    \
-    (ef)(single)(pefuniform)(pefopt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(         \
+    (ef)(single)(pefuniform)(pefopt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(   \
         block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
-        block_simple16)(block_simdbp)(block_mixed)
+        block_simple16)(block_simdbp)(block_mixed)(impact_simdbp)
 #define PISA_BLOCK_INDEX_TYPES                                                                    \
     (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
-        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)(block_mixed)
+        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)(block_mixed)(    \
+        impact_simdbp)

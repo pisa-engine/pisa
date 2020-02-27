@@ -27,6 +27,22 @@ void get_size_stats(freq_index<DocsSequence, FreqsSequence> &coll,
     }
 }
 
+template <typename DocsSequence>
+void get_size_stats(impact_ordered_index<DocsSequence> &coll,
+                    uint64_t &docs_size,
+                    uint64_t &freqs_size)
+{
+    // auto size_tree = mapper::size_tree_of(coll);
+    // size_tree->dump();
+    // for (auto const &node : size_tree->children) {
+    //     if (node->name == "m_docs_sequences") {
+    //         docs_size = node->size;
+    //     } else if (node->name == "m_freqs_sequences") {
+    //         freqs_size = node->size;
+    //     }
+    // }
+}
+
 template <typename BlockCodec, bool Profile>
 void get_size_stats(block_freq_index<BlockCodec, Profile> &coll,
                     uint64_t &docs_size,

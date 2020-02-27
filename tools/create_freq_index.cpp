@@ -2,8 +2,8 @@
 #include <fstream>
 #include <iostream>
 #include <numeric>
-#include <thread>
 #include <optional>
+#include <thread>
 
 #include "boost/algorithm/string/predicate.hpp"
 #include "spdlog/spdlog.h"
@@ -11,21 +11,25 @@
 #include "mappable/mapper.hpp"
 
 #include "configuration.hpp"
-#include "util/index_build_utils.hpp"
 #include "index_types.hpp"
+#include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 #include "util/verify_collection.hpp" // XXX move to index_build_utils
 
 #include "CLI/CLI.hpp"
 
 template <typename Collection>
-void dump_index_specific_stats(Collection const &, std::string const &) {}
+void dump_index_specific_stats(Collection const &, std::string const &)
+{
+}
 
-void dump_index_specific_stats(pisa::pefuniform_index const &coll, std::string const &type) {
+void dump_index_specific_stats(pisa::pefuniform_index const &coll, std::string const &type)
+{
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
-void dump_index_specific_stats(pisa::pefopt_index const &coll, std::string const &type) {
+void dump_index_specific_stats(pisa::pefopt_index const &coll, std::string const &type)
+{
     auto const &conf = pisa::configuration::get();
 
     uint64_t length_threshold = 4096;
@@ -52,7 +56,8 @@ void create_collection(InputCollection const &input,
                        pisa::global_parameters const &params,
                        const std::optional<std::string> &output_filename,
                        bool check,
-                       std::string const &seq_type) {
+                       std::string const &seq_type)
+{
     using namespace pisa;
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
@@ -65,7 +70,8 @@ void create_collection(InputCollection const &input,
         for (auto const &plist : input) {
             uint64_t freqs_sum;
             size = plist.docs.size();
-            freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
+            freqs_sum =
+                std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
             builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
 
             progress.update(1);
@@ -84,16 +90,19 @@ void create_collection(InputCollection const &input,
     dump_stats(coll, seq_type, postings);
     dump_index_specific_stats(coll, seq_type);
 
-    if (output_filename) {
-        mapper::freeze(coll, (*output_filename).c_str());
-        if (check) {
-            verify_collection<InputCollection, CollectionType>(input,
-                                                               (*output_filename).c_str());
+    if constexpr (not is_impact_ordered_index<CollectionType>::value) {
+        if (output_filename) {
+            mapper::freeze(coll, (*output_filename).c_str());
+            if (check) {
+                verify_collection<InputCollection, CollectionType>(input,
+                                                                   (*output_filename).c_str());
+            }
         }
     }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     using namespace pisa;
     std::string type;
@@ -116,7 +125,8 @@ int main(int argc, char **argv) {
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                               \
     }                                                                       \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                               \
+    else if (type == BOOST_PP_STRINGIZE(T))                                 \
+    {                                                                       \
         create_collection<binary_freq_collection, BOOST_PP_CAT(T, _index)>( \
             input, params, output_filename, check, type);                   \
         /**/
