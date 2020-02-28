@@ -35,6 +35,7 @@ TEST_CASE("wand_data_range")
                          collection,
                          scorer_name,
                          BlockSize(FixedBlock()),
+                         false,
                          dropped_term_ids);
 
     auto scorer = scorer::from_name(scorer_name, wdata_range);
