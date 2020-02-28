@@ -121,6 +121,7 @@ void create_collection(binary_freq_collection const &input,
 
             progress.update(1);
             postings += size;
+            term_id += 1;
         }
     }
 
