@@ -89,6 +89,7 @@ class uniform_score_compressor {
     }
 };
 
+template<bool QuantizedIndex = false>
 class wand_data_compressed {
    public:
     class builder {
@@ -191,8 +192,11 @@ class wand_data_compressed {
 
         float PISA_FLATTEN_FUNC score()
         {
-            // fix: we need to check if we want the quantized version or not
-            return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;
+            if constexpr (QuantizedIndex){
+                return m_cur_score_index;
+            } else {
+                return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;
+            }
         }
 
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
