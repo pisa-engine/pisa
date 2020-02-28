@@ -14,6 +14,7 @@
 #include "wand_data_raw.hpp"
 
 #include "scorer/scorer.hpp"
+#include "quantizer.hpp"
 
 class enumerator;
 namespace pisa {
@@ -31,6 +32,7 @@ class wand_data {
               binary_freq_collection const &coll,
               std::string const &scorer_name,
               BlockSize block_size,
+              bool is_quantized,
               std::unordered_set<size_t> const &terms_to_drop)
         : m_num_docs(num_docs)
     {
@@ -91,6 +93,12 @@ class wand_data {
                 term_id += 1;
                 new_term_id += 1;
                 progress.update(1);
+            }
+            if (is_quantized) {
+                for (auto &&w : max_term_weight) {
+                    w = quantize(w / m_index_max_term_weight);
+                }
+                builder.quantize_block_max_term_weitghts(m_index_max_term_weight);
             }
         }
         builder.build(m_block_wand);

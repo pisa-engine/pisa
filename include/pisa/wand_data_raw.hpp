@@ -9,6 +9,7 @@
 #include "global_parameters.hpp"
 #include "util/compiler_attribute.hpp"
 #include "wand_utils.hpp"
+#include "quantizer.hpp"
 
 namespace pisa {
 
@@ -63,6 +64,13 @@ class wand_data_raw {
             }
 
             return max_term_weight.back();
+        }
+
+        void quantize_block_max_term_weitghts(float index_max_term_weight)
+        {
+            for (auto &&w : block_max_term_weight) {
+                w = quantize(w / index_max_term_weight);
+            }
         }
 
         void build(wand_data_raw &wdata)

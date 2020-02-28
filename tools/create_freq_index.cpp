@@ -21,6 +21,7 @@
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
+#include "quantizer.hpp"
 
 #include "CLI/CLI.hpp"
 

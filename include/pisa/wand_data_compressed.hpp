@@ -12,6 +12,7 @@
 #include "sequence/positive_sequence.hpp"
 #include "util/index_build_utils.hpp"
 #include "wand_utils.hpp"
+#include "quantizer.hpp"
 
 namespace pisa {
 namespace {
@@ -31,16 +32,13 @@ class uniform_score_compressor {
 
         std::vector<uint32_t> compress_data(std::vector<float> effective_scores)
         {
-            float quant = 1.f / configuration::get().reference_size;
 
             // Partition scores.
             std::vector<uint32_t> score_indexes;
             score_indexes.reserve(effective_scores.size());
             for (const auto &score : effective_scores) {
-                size_t pos = 1;
-                while (score > quant * pos)
-                    pos++;
-                score_indexes.push_back(pos - 1);
+                auto q = quantize(score);
+                score_indexes.push_back(q - 1);
             }
             return score_indexes;
         }
@@ -71,6 +69,8 @@ class uniform_score_compressor {
             Sequence::write(docs_bits, temp.begin(), m_num_docs, n, m_params);
             m_docs_sequences.append(docs_bits);
         }
+
+        void quantize_block_max_term_weitghts(float){}
 
         void build(bitvector_collection &docs_sequences) { m_docs_sequences.build(docs_sequences); }
 
