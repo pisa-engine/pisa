@@ -19,6 +19,8 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
+#include "quantizer.hpp"
+
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
@@ -27,7 +29,8 @@ void thresholds(const std::string &index_filename,
                 const std::vector<Query> &queries,
                 std::string const &type,
                 std::string const &scorer_name,
-                uint64_t k)
+                uint64_t k,
+                bool quantized)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -57,6 +60,9 @@ void thresholds(const std::string &index_filename,
         float threshold = 0.0;
         if (results.size() == k) {
             threshold = results.back().first;
+            if (quantized) {
+                threshold = dequantize(threshold) * wdata.index_max_term_weight();
+            }
         }
         std::cout << threshold << '\n';
     }
@@ -73,8 +79,12 @@ int main(int argc, const char **argv)
     // set full precision for floats
     std::cout.precision(std::numeric_limits<float>::max_digits10);
 
+    bool quantized = false;
+
     App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer>
         app{"Extracts query thresholds."};
+    app.add_flag("--quantized", quantized, "Quantizes the scores");
+
     CLI11_PARSE(app, argc, argv);
 
     /**/
@@ -89,14 +99,16 @@ int main(int argc, const char **argv)
                                                                     app.queries(),        \
                                                                     app.index_encoding(), \
                                                                     app.scorer(),         \
-                                                                    app.k());             \
+                                                                    app.k(),              \
+                                                                    quantized);           \
         } else {                                                                          \
             thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),     \
                                                                 app.wand_data_path(),     \
                                                                 app.queries(),            \
                                                                 app.index_encoding(),     \
                                                                 app.scorer(),             \
-                                                                app.k());                 \
+                                                                app.k(),                  \
+                                                                quantized);               \
         }                                                                                 \
         /**/
 

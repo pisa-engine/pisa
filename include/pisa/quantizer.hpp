@@ -3,6 +3,12 @@
 
 namespace pisa {
 
+float dequantize(uint64_t value)
+{
+    const float quant = 1.f / configuration::get().reference_size;
+    return quant * (value + 1);
+}
+
 uint64_t quantize(float value)
 {
     float quant = 1.f / configuration::get().reference_size;

@@ -191,6 +191,7 @@ class wand_data_compressed {
 
         float PISA_FLATTEN_FUNC score()
         {
+            // fix: we need to check if we want the quantized version or not
             return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;
         }
 
