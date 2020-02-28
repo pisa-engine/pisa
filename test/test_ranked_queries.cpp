@@ -21,7 +21,9 @@ struct IndexData {
 
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
-    IndexData(std::string const &scorer_name, std::unordered_set<size_t> const &dropped_term_ids)
+    IndexData(std::string const &scorer_name,
+              bool quantized,
+              std::unordered_set<size_t> const &dropped_term_ids)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
           wdata(document_sizes.begin()->begin(),
@@ -29,6 +31,7 @@ struct IndexData {
                 collection,
                 scorer_name,
                 BlockSize(FixedBlock()),
+                quantized,
                 dropped_term_ids)
 
     {
@@ -53,10 +56,11 @@ struct IndexData {
     }
 
     [[nodiscard]] static auto get(std::string const &s_name,
+                                  bool quantized,
                                   std::unordered_set<size_t> const &dropped_term_ids)
     {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
-            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, dropped_term_ids);
+            IndexData::data[s_name] = std::make_unique<IndexData<Index>>(s_name, quantized, dropped_term_ids);
         }
         return IndexData::data[s_name].get();
     }
@@ -112,28 +116,31 @@ TEMPLATE_TEST_CASE("Ranked query test",
                    range_query_128<block_max_wand_query>,
                    range_query_128<block_max_maxscore_query>)
 {
-    for (auto &&s_name : {"bm25", "qld"}) {
-        std::unordered_set<size_t> dropped_term_ids;
-        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
-        topk_queue topk_1(10);
-        TestType op_q(topk_1);
-        topk_queue topk_2(10);
-        ranked_or_query or_q(topk_2);
+    for (auto quantized : {false, true}) {
+        for (auto &&s_name : {"bm25", "qld"}) {
+            std::unordered_set<size_t> dropped_term_ids;
+            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+            topk_queue topk_1(10);
+            TestType op_q(topk_1);
+            topk_queue topk_2(10);
+            ranked_or_query or_q(topk_2);
 
-        auto scorer = scorer::from_name(s_name, data->wdata);
-        for (auto const &q : data->queries) {
-            or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
-                 data->index.num_docs());
-            topk_1.finalize();
-            topk_2.finalize();
-            REQUIRE(topk_2.topk().size() == topk_1.topk().size());
-            for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                REQUIRE(topk_2.topk()[i].first
-                        == Approx(topk_1.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            auto scorer = scorer::from_name(s_name, data->wdata);
+            for (auto const &q : data->queries) {
+                or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+                op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
+                     data->index.num_docs());
+                topk_1.finalize();
+                topk_2.finalize();
+                REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+                for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+                    REQUIRE(topk_2.topk()[i].first
+                            == Approx(topk_1.topk()[i].first).epsilon(0.1)); // tolerance is %
+                                                                             // relative
+                }
+                topk_1.clear();
+                topk_2.clear();
             }
-            topk_1.clear();
-            topk_2.clear();
         }
     }
 }
@@ -142,29 +149,32 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
                    "[query][ranked][integration]",
                    block_max_ranked_and_query)
 {
-    for (auto &&s_name : {"bm25", "qld"}) {
-        std::unordered_set<size_t> dropped_term_ids;
-        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
-        topk_queue topk_1(10);
-        TestType op_q(topk_1);
-        topk_queue topk_2(10);
-        ranked_and_query and_q(topk_2);
+    for (auto quantized : {false, true}) {
+        for (auto &&s_name : {"bm25", "qld"}) {
+            std::unordered_set<size_t> dropped_term_ids;
+            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+            topk_queue topk_1(10);
+            TestType op_q(topk_1);
+            topk_queue topk_2(10);
+            ranked_and_query and_q(topk_2);
 
-        auto scorer = scorer::from_name(s_name, data->wdata);
+            auto scorer = scorer::from_name(s_name, data->wdata);
 
-        for (auto const &q : data->queries) {
-            and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
-                 data->index.num_docs());
-            topk_1.finalize();
-            topk_2.finalize();
-            REQUIRE(topk_1.topk().size() == topk_2.topk().size());
-            for (size_t i = 0; i < and_q.topk().size(); ++i) {
-                REQUIRE(topk_1.topk()[i].first
-                        == Approx(topk_2.topk()[i].first).epsilon(0.1)); // tolerance is % relative
+            for (auto const &q : data->queries) {
+                and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+                op_q(make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
+                     data->index.num_docs());
+                topk_1.finalize();
+                topk_2.finalize();
+                REQUIRE(topk_1.topk().size() == topk_2.topk().size());
+                for (size_t i = 0; i < and_q.topk().size(); ++i) {
+                    REQUIRE(topk_1.topk()[i].first
+                            == Approx(topk_2.topk()[i].first).epsilon(0.1)); // tolerance is %
+                                                                             // relative
+                }
+                topk_1.clear();
+                topk_2.clear();
             }
-            topk_1.clear();
-            topk_2.clear();
         }
     }
 }
@@ -173,7 +183,7 @@ TEST_CASE("Top k")
 {
     for (auto &&s_name : {"bm25", "qld"}) {
         std::unordered_set<size_t> dropped_term_ids;
-        auto data = IndexData<single_index>::get(s_name, dropped_term_ids);
+        auto data = IndexData<single_index>::get(s_name, false, dropped_term_ids);
         topk_queue topk_1(10);
         ranked_or_query or_10(topk_1);
         topk_queue topk_2(1);

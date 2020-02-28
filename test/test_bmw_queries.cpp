@@ -16,7 +16,7 @@
 
 using namespace pisa;
 
-using WandTypeUniform = wand_data<wand_data_compressed>;
+using WandTypeUniform = wand_data<wand_data_compressed<>>;
 using WandTypePlain = wand_data<wand_data_raw>;
 
 template <typename Index>
