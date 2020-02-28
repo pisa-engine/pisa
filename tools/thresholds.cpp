@@ -69,7 +69,8 @@ void thresholds(const std::string &index_filename,
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
-using wand_uniform_index = wand_data<wand_data_compressed>;
+using wand_uniform_index = wand_data<wand_data_compressed<>>;
+using wand_uniform_index_quantized = wand_data<wand_data_compressed<true>>;
 
 int main(int argc, const char **argv)
 {
@@ -81,35 +82,46 @@ int main(int argc, const char **argv)
 
     bool quantized = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer>
-        app{"Extracts query thresholds."};
+    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Scorer> app{
+        "Extracts query thresholds."};
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
     CLI11_PARSE(app, argc, argv);
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                             \
-    }                                                                                     \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                               \
-    {                                                                                     \
-        if (app.is_wand_compressed()) {                                                   \
-            thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(), \
-                                                                    app.wand_data_path(), \
-                                                                    app.queries(),        \
-                                                                    app.index_encoding(), \
-                                                                    app.scorer(),         \
-                                                                    app.k(),              \
-                                                                    quantized);           \
-        } else {                                                                          \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),     \
-                                                                app.wand_data_path(),     \
-                                                                app.queries(),            \
-                                                                app.index_encoding(),     \
-                                                                app.scorer(),             \
-                                                                app.k(),                  \
-                                                                quantized);               \
-        }                                                                                 \
+#define LOOP_BODY(R, DATA, T)                                                                 \
+    }                                                                                         \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                   \
+    {                                                                                         \
+        if (app.is_wand_compressed()) {                                                       \
+            if (quantized) {                                                                  \
+                thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>(            \
+                    app.index_filename(),                                                     \
+                    app.wand_data_path(),                                                     \
+                    app.queries(),                                                            \
+                    app.index_encoding(),                                                     \
+                    app.scorer(),                                                             \
+                    app.k(),                                                                  \
+                    quantized);                                                               \
+            } else {                                                                          \
+                thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(), \
+                                                                        app.wand_data_path(), \
+                                                                        app.queries(),        \
+                                                                        app.index_encoding(), \
+                                                                        app.scorer(),         \
+                                                                        app.k(),              \
+                                                                        quantized);           \
+            }                                                                                 \
+        } else {                                                                              \
+            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),         \
+                                                                app.wand_data_path(),         \
+                                                                app.queries(),                \
+                                                                app.index_encoding(),         \
+                                                                app.scorer(),                 \
+                                                                app.k(),                      \
+                                                                quantized);                   \
+        }                                                                                     \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
