@@ -8,13 +8,13 @@
 #include <range/v3/view/filter.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include "mappable/mapper.hpp"
 
 #include "app.hpp"
 #include "index_types.hpp"
 #include "intersection.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
 #include "pisa/query/queries.hpp"
-#include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
 using namespace pisa;
@@ -71,7 +71,6 @@ void intersect(std::string const &index_filename,
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
-using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, const char **argv)
 {
@@ -82,7 +81,6 @@ int main(int argc, const char **argv)
     std::size_t min_query_len = 0;
     std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
     bool combinations = false;
-    bool compressed = false;
     bool header = false;
 
     App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Unranked>> app{
@@ -117,23 +115,15 @@ int main(int argc, const char **argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                            \
-    }                                                                                    \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                              \
-    {                                                                                    \
-        if (app.is_wand_compressed()) {                                                  \
-            intersect<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(), \
-                                                                   app.wand_data_path(), \
-                                                                   filtered_queries,     \
-                                                                   intersection_type,    \
-                                                                   max_term_count);      \
-        } else {                                                                         \
-            intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),     \
-                                                               app.wand_data_path(),     \
-                                                               filtered_queries,         \
-                                                               intersection_type,        \
-                                                               max_term_count);          \
-        }                                                                                \
+#define LOOP_BODY(R, DATA, T)                                                    \
+    }                                                                            \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                      \
+    {                                                                            \
+        intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(), \
+                                                           app.wand_data_path(), \
+                                                           filtered_queries,     \
+                                                           intersection_type,    \
+                                                           max_term_count);      \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

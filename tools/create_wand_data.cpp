@@ -76,7 +76,7 @@ int main(int argc, const char **argv)
     }();
 
     if (compress) {
-        wand_data<wand_data_compressed> wdata(sizes_coll.begin()->begin(),
+        wand_data<wand_data_compressed<>> wdata(sizes_coll.begin()->begin(),
                                               coll.num_docs(),
                                               coll,
                                               scorer_name,

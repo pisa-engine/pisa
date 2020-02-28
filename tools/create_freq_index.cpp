@@ -19,7 +19,6 @@
 
 #include "quantizer.hpp"
 #include "wand_data.hpp"
-#include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
 
@@ -146,7 +145,6 @@ void create_collection(binary_freq_collection const &input,
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
-using wand_uniform_index = wand_data<wand_data_compressed>;
 
 int main(int argc, char **argv)
 {
@@ -174,16 +172,6 @@ int main(int argc, char **argv)
     }                                                                                            \
     else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                      \
     {                                                                                            \
-        if (app.is_wand_compressed()) {                                                          \
-            create_collection<BOOST_PP_CAT(T, _index), wand_uniform_index>(input,                \
-                                                                           params,               \
-                                                                           output_filename,      \
-                                                                           check,                \
-                                                                           app.index_encoding(), \
-                                                                           app.wand_data_path(), \
-                                                                           app.scorer(),         \
-                                                                           quantized);           \
-        } else {                                                                                 \
             create_collection<BOOST_PP_CAT(T, _index), wand_raw_index>(input,                    \
                                                                        params,                   \
                                                                        output_filename,          \
@@ -192,7 +180,6 @@ int main(int argc, char **argv)
                                                                        app.wand_data_path(),     \
                                                                        app.scorer(),             \
                                                                        quantized);               \
-        }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
