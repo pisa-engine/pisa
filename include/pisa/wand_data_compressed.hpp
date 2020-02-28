@@ -70,8 +70,6 @@ class uniform_score_compressor {
             m_docs_sequences.append(docs_bits);
         }
 
-        void quantize_block_max_term_weitghts(float){}
-
         void build(bitvector_collection &docs_sequences) { m_docs_sequences.build(docs_sequences); }
 
         global_parameters params() { return m_params; }
@@ -142,6 +140,8 @@ class wand_data_compressed {
 
             return max_term_weight.back();
         }
+
+        void quantize_block_max_term_weitghts(float){}
 
         void build(wand_data_compressed &wdata)
         {
