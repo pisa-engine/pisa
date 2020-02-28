@@ -66,7 +66,8 @@ void create_collection(binary_freq_collection const &input,
                        bool check,
                        std::string const &seq_type,
                        std::optional<std::string> const &wand_data_filename,
-                       std::optional<std::string> const &scorer_name)
+                       std::optional<std::string> const &scorer_name,
+                       bool quantized)
 {
     using namespace pisa;
     spdlog::info("Processing {} documents", input.num_docs());
@@ -97,20 +98,21 @@ void create_collection(binary_freq_collection const &input,
         size_t term_id = 0;
         for (auto const &plist : input) {
             size_t size = plist.docs.size();
-            if (scorer_name) {
+            if (quantized) {
                 auto term_scorer = scorer->term_scorer(term_id);
                 std::vector<uint64_t> quants;
                 for (size_t pos = 0; pos < size; ++pos) {
                     uint64_t doc = *(plist.docs.begin() + pos);
                     uint64_t freq = *(plist.freqs.begin() + pos);
                     float score = term_scorer(doc, freq);
-                    uint64_t quant_score = quantize(score/wdata.index_max_term_weight());
+                    uint64_t quant_score = quantize(score / wdata.index_max_term_weight());
                     quants.push_back(quant_score);
                 }
                 assert(quants.size() == size);
-                uint64_t quants_sum = std::accumulate(quants.begin(), quants.begin() + quants.size(), uint64_t(0));
+                uint64_t quants_sum =
+                    std::accumulate(quants.begin(), quants.begin() + quants.size(), uint64_t(0));
                 builder.add_posting_list(size, plist.docs.begin(), quants.begin(), quants_sum);
-            } else{
+            } else {
                 uint64_t freqs_sum =
                     std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
                 builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
@@ -134,7 +136,7 @@ void create_collection(binary_freq_collection const &input,
 
     if (output_filename) {
         mapper::freeze(coll, (*output_filename).c_str());
-        if (check) {
+        if (check and not quantized) {
             verify_collection<binary_freq_collection, CollectionType>(input,
                                                                       (*output_filename).c_str());
         }
@@ -151,10 +153,12 @@ int main(int argc, char **argv)
     std::string input_basename;
     std::optional<std::string> output_filename;
     bool check = false;
+    bool quantized = false;
 
     App<arg::Encoding, arg::WandData, arg::Scorer> app{"Compresses an inverted index"};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
+    app.add_flag("--quantized", quantized, "Quantizes the scores");
     app.add_flag("--check", check, "Check the correctness of the index");
     CLI11_PARSE(app, argc, argv);
 
@@ -175,7 +179,8 @@ int main(int argc, char **argv)
                                                                            check,                \
                                                                            app.index_encoding(), \
                                                                            app.wand_data_path(), \
-                                                                           app.scorer());        \
+                                                                           app.scorer(),         \
+                                                                           quantized);           \
         } else {                                                                                 \
             create_collection<BOOST_PP_CAT(T, _index), wand_raw_index>(input,                    \
                                                                        params,                   \
@@ -183,7 +188,8 @@ int main(int argc, char **argv)
                                                                        check,                    \
                                                                        app.index_encoding(),     \
                                                                        app.wand_data_path(),     \
-                                                                       app.scorer());            \
+                                                                       app.scorer(),             \
+                                                                       quantized);               \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
