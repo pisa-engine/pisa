@@ -130,7 +130,7 @@ class wand_data {
 
     wand_data_enumerator getenum(size_t i) const
     {
-        return m_block_wand.get_enum(i, max_term_weight(i));
+        return m_block_wand.get_enum(i, index_max_term_weight());
     }
 
     const block_wand_type &get_block_wand() const { return m_block_wand; }

@@ -2,6 +2,7 @@
 
 #include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
+#include <range/v3/view/zip.hpp>
 
 #include "binary_freq_collection.hpp"
 #include "bitvector_collection.hpp"
@@ -16,7 +17,7 @@
 
 namespace pisa {
 namespace {
-    static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
+    static const size_t score_bits_size = configuration::get().quantization_bits;
 }
 
 class uniform_score_compressor {
@@ -85,7 +86,7 @@ class uniform_score_compressor {
 
     static float inline score(uint32_t index)
     {
-        const float quant = 1.f / configuration::get().reference_size;
+        const float quant = 1.f / (1u << configuration::get().quantization_bits);
         return quant * (index + 1);
     }
 };
@@ -122,13 +123,13 @@ class wand_data_compressed {
                                  coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
                 float max_score = *(std::max_element(t.second.begin(), t.second.end()));
-
-                docs = t.first;
-                scores = t.second;
-
                 max_term_weight.push_back(max_score);
                 total_elements += seq.docs.size();
                 total_blocks += t.first.size();
+
+                tmp_docs.push_back(std::move(t.first));
+                tmp_scores.push_back(std::move(t.second));
+
             } else {
                 max_term_weight.push_back(0.0f);
                 std::vector<uint32_t> temp = {0};
@@ -138,15 +139,18 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weitghts(float index_max_term_weight)
-        {
-            auto quantized_scores = compressor_builder.compress_data(scores, index_max_term_weight);
-            compressor_builder.add_posting_list(
-                quantized_scores.size(), docs.begin(), quantized_scores.begin());
-        }
+        void quantize_block_max_term_weitghts(float index_max_term_weight) {}
 
         void build(wand_data_compressed &wdata)
         {
+            auto index_max_term_weight =
+                *(std::max_element(max_term_weight.begin(), max_term_weight.end()));
+            for (auto &&[docs, scores] : ranges::views::zip(tmp_docs, tmp_scores)) {
+                auto quantized_scores =
+                    compressor_builder.compress_data(scores, index_max_term_weight);
+                compressor_builder.add_posting_list(
+                    quantized_scores.size(), docs.begin(), quantized_scores.begin());
+            }
             wdata.m_num_docs = compressor_builder.num_docs();
             wdata.m_params = compressor_builder.params();
             compressor_builder.build(wdata.m_docs_sequences);
@@ -156,8 +160,8 @@ class wand_data_compressed {
 
         uint64_t total_elements;
         uint64_t total_blocks;
-        std::vector<uint32_t> docs;
-        std::vector<float> scores;
+        std::vector<std::vector<uint32_t>> tmp_docs;
+        std::vector<std::vector<float>> tmp_scores;
         std::vector<float> max_term_weight;
         global_parameters const &params;
         typename uniform_score_compressor::builder compressor_builder;
@@ -177,7 +181,7 @@ class wand_data_compressed {
         {
             uint64_t val = m_docs_enum.move(0).second;
             m_cur_docid = val >> score_bits_size;
-            uint64_t mask = configuration::get().reference_size - 1;
+            uint64_t mask = (1u << configuration::get().quantization_bits) - 1;
             m_cur_score_index = (val & mask);
         }
 
@@ -187,7 +191,7 @@ class wand_data_compressed {
                 lower_bound = lower_bound << score_bits_size;
                 auto val = m_docs_enum.next_geq(lower_bound);
                 m_cur_docid = val.second >> score_bits_size;
-                uint64_t mask = configuration::get().reference_size - 1;
+                uint64_t mask = (1u << configuration::get().quantization_bits) - 1;
                 m_cur_score_index = (val.second & mask);
             }
         }
