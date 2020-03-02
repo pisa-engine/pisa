@@ -8,7 +8,7 @@
 #include "util/compiler_attribute.hpp"
 #include "util/util.hpp"
 #include "wand_utils.hpp"
-#include "quantizer.hpp"
+#include "linear_quantizer.hpp"
 
 namespace pisa {
 
@@ -88,8 +88,10 @@ class wand_data_range {
 
         void quantize_block_max_term_weitghts(float index_max_term_weight)
         {
+            LinearQuantizer quantizer(index_max_term_weight,
+                                      configuration::get().quantization_bits);
             for (auto &&w : block_max_term_weight) {
-                w = quantize(w / index_max_term_weight);
+                w = quantizer(w);
             }
         }
 

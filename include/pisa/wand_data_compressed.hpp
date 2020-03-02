@@ -122,9 +122,9 @@ class wand_data_compressed {
                                  coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
                 float max_score = *(std::max_element(t.second.begin(), t.second.end()));
-                auto ind = compressor_builder.compress_data(t.second, max_score);
 
-                compressor_builder.add_posting_list(t.first.size(), t.first.begin(), ind.begin());
+                docs = t.first;
+                scores = t.second;
 
                 max_term_weight.push_back(max_score);
                 total_elements += seq.docs.size();
@@ -138,7 +138,12 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weitghts(float) {}
+        void quantize_block_max_term_weitghts(float index_max_term_weight)
+        {
+            auto quantized_scores = compressor_builder.compress_data(scores, index_max_term_weight);
+            compressor_builder.add_posting_list(
+                quantized_scores.size(), docs.begin(), quantized_scores.begin());
+        }
 
         void build(wand_data_compressed &wdata)
         {
@@ -151,7 +156,8 @@ class wand_data_compressed {
 
         uint64_t total_elements;
         uint64_t total_blocks;
-        std::vector<float> score_references;
+        std::vector<uint32_t> docs;
+        std::vector<float> scores;
         std::vector<float> max_term_weight;
         global_parameters const &params;
         typename uniform_score_compressor::builder compressor_builder;
