@@ -338,11 +338,6 @@ int main(int argc, const char **argv)
                                   app.scorer(),
                                   extract,
                                   safe);
-    // ...
-    // if (a) { std::apply(f<A>, params); }
-    // else if (b) { std::apply(f<B>, params); }
-    // else if (c) { std::apply(f<C>, params); }
-
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                               \
