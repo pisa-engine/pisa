@@ -296,7 +296,7 @@ void perftest(const std::string &index_filename,
 
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
-using wand_uniform_index_quantized = wand_data<wand_data_compressed<true>>;
+using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
 int main(int argc, const char **argv)
 {
@@ -328,48 +328,36 @@ int main(int argc, const char **argv)
         std::cout << "qid\tusec\n";
     }
 
+    auto params = std::make_tuple(app.index_filename(),
+                                  app.wand_data_path(),
+                                  app.queries(),
+                                  app.thresholds_file(),
+                                  app.index_encoding(),
+                                  app.algorithm(),
+                                  app.k(),
+                                  app.scorer(),
+                                  extract,
+                                  safe);
+    // ...
+    // if (a) { std::apply(f<A>, params); }
+    // else if (b) { std::apply(f<B>, params); }
+    // else if (c) { std::apply(f<C>, params); }
+
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                \
-    }                                                                                        \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                  \
-    {                                                                                        \
-        if (app.is_wand_compressed()) {                                                      \
-            if (quantized) {                                                                 \
-                perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>(             \
-                    app.index_filename(),                                                    \
-                    app.wand_data_path(),                                                    \
-                    app.queries(),                                                           \
-                    app.thresholds_file(),                                                   \
-                    app.index_encoding(),                                                    \
-                    app.algorithm(),                                                         \
-                    app.k(),                                                                 \
-                    app.scorer(),                                                            \
-                    extract,                                                                 \
-                    safe);                                                                   \
-            } else {                                                                         \
-                perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(),  \
-                                                                      app.wand_data_path(),  \
-                                                                      app.queries(),         \
-                                                                      app.thresholds_file(), \
-                                                                      app.index_encoding(),  \
-                                                                      app.algorithm(),       \
-                                                                      app.k(),               \
-                                                                      app.scorer(),          \
-                                                                      extract,               \
-                                                                      safe);                 \
-            }                                                                                \
-        } else {                                                                             \
-            perftest<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),          \
-                                                              app.wand_data_path(),          \
-                                                              app.queries(),                 \
-                                                              app.thresholds_file(),         \
-                                                              app.index_encoding(),          \
-                                                              app.algorithm(),               \
-                                                              app.k(),                       \
-                                                              app.scorer(),                  \
-                                                              extract,                       \
-                                                              safe);                         \
+#define LOOP_BODY(R, DATA, T)                                                               \
+    }                                                                                       \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                 \
+    {                                                                                       \
+        if (app.is_wand_compressed()) {                                                     \
+            if (quantized) {                                                                \
+                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, \
+                           params);                                                         \
+            } else {                                                                        \
+                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
+            }                                                                               \
+        } else {                                                                            \
+            std::apply(perftest<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
         } /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

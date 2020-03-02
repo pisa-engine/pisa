@@ -17,10 +17,9 @@
 #include "util/util.hpp"
 #include "util/verify_collection.hpp" // XXX move to index_build_utils
 
-#include "quantizer.hpp"
+#include "linear_quantizer.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
-
 
 #include "CLI/CLI.hpp"
 
@@ -99,13 +98,15 @@ void create_collection(binary_freq_collection const &input,
         for (auto const &plist : input) {
             size_t size = plist.docs.size();
             if (quantized) {
+                LinearQuantizer quantizer(wdata.index_max_term_weight(),
+                                          configuration::get().quantization_bits);
                 auto term_scorer = scorer->term_scorer(term_id);
                 std::vector<uint64_t> quants;
                 for (size_t pos = 0; pos < size; ++pos) {
                     uint64_t doc = *(plist.docs.begin() + pos);
                     uint64_t freq = *(plist.freqs.begin() + pos);
                     float score = term_scorer(doc, freq);
-                    uint64_t quant_score = quantize(score / wdata.index_max_term_weight());
+                    uint64_t quant_score = quantizer(score);
                     quants.push_back(quant_score);
                 }
                 assert(quants.size() == size);
@@ -137,6 +138,9 @@ void create_collection(binary_freq_collection const &input,
 
     if (output_filename) {
         mapper::freeze(coll, (*output_filename).c_str());
+        if (check and quantized) {
+            spdlog::warn("Index construction cannot be verified for quantized indexes.");
+        }
         if (check and not quantized) {
             verify_collection<binary_freq_collection, CollectionType>(input,
                                                                       (*output_filename).c_str());
@@ -168,18 +172,18 @@ int main(int argc, char **argv)
     params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                    \
-    }                                                                                            \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                      \
-    {                                                                                            \
-            create_collection<BOOST_PP_CAT(T, _index), wand_raw_index>(input,                    \
-                                                                       params,                   \
-                                                                       output_filename,          \
-                                                                       check,                    \
-                                                                       app.index_encoding(),     \
-                                                                       app.wand_data_path(),     \
-                                                                       app.scorer(),             \
-                                                                       quantized);               \
+#define LOOP_BODY(R, DATA, T)                                                            \
+    }                                                                                    \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                              \
+    {                                                                                    \
+        create_collection<BOOST_PP_CAT(T, _index), wand_raw_index>(input,                \
+                                                                   params,               \
+                                                                   output_filename,      \
+                                                                   check,                \
+                                                                   app.index_encoding(), \
+                                                                   app.wand_data_path(), \
+                                                                   app.scorer(),         \
+                                                                   quantized);           \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

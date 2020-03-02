@@ -19,7 +19,6 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
-#include "quantizer.hpp"
 
 using namespace pisa;
 
@@ -60,9 +59,6 @@ void thresholds(const std::string &index_filename,
         float threshold = 0.0;
         if (results.size() == k) {
             threshold = results.back().first;
-            if (quantized) {
-                threshold = dequantize(threshold) * wdata.index_max_term_weight();
-            }
         }
         std::cout << threshold << '\n';
     }
@@ -70,7 +66,7 @@ void thresholds(const std::string &index_filename,
 
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
-using wand_uniform_index_quantized = wand_data<wand_data_compressed<true>>;
+using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
 int main(int argc, const char **argv)
 {

@@ -116,7 +116,7 @@ TEMPLATE_TEST_CASE("Ranked query test",
                    range_query_128<block_max_wand_query>,
                    range_query_128<block_max_maxscore_query>)
 {
-    for (auto quantized : {false, true}) {
+    for (auto quantized : {ScoreType::Float, ScoreType::Quantized}) {
         for (auto &&s_name : {"bm25", "qld"}) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
@@ -149,7 +149,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test",
                    "[query][ranked][integration]",
                    block_max_ranked_and_query)
 {
-    for (auto quantized : {false, true}) {
+    for (auto quantized : {ScoreType::Float, ScoreType::Quantized}) {
         for (auto &&s_name : {"bm25", "qld"}) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);

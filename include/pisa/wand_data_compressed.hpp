@@ -9,10 +9,10 @@
 #include "util/util.hpp"
 
 #include "global_parameters.hpp"
+#include "linear_quantizer.hpp"
 #include "sequence/positive_sequence.hpp"
 #include "util/index_build_utils.hpp"
 #include "wand_utils.hpp"
-#include "quantizer.hpp"
 
 namespace pisa {
 namespace {
@@ -30,14 +30,15 @@ class uniform_score_compressor {
         {
         }
 
-        std::vector<uint32_t> compress_data(std::vector<float> effective_scores)
+        std::vector<uint32_t> compress_data(std::vector<float> effective_scores, float max_score)
         {
 
             // Partition scores.
+            LinearQuantizer quantizer(max_score, configuration::get().quantization_bits);
             std::vector<uint32_t> score_indexes;
             score_indexes.reserve(effective_scores.size());
             for (const auto &score : effective_scores) {
-                auto q = quantize(score);
+                auto q = quantizer(score);
                 score_indexes.push_back(q - 1);
             }
             return score_indexes;
@@ -51,13 +52,13 @@ class uniform_score_compressor {
                 uint64_t elem = *(docs_begin + pos);
                 elem = elem << score_bits_size;
                 elem += *(score_begin + pos);
-                if(pos && elem < temp.back()){
+                if (pos && elem < temp.back()) {
                     throw std::runtime_error(
-                    fmt::format("Sequence is not sorted: value at index {} "
-                                "({}) lower than its predecessor ({})",
-                                pos,
-                                elem,
-                                temp.back()));
+                        fmt::format("Sequence is not sorted: value at index {} "
+                                    "({}) lower than its predecessor ({})",
+                                    pos,
+                                    elem,
+                                    temp.back()));
                 }
                 temp.push_back(elem);
             }
@@ -89,7 +90,9 @@ class uniform_score_compressor {
     }
 };
 
-template<bool QuantizedIndex = false>
+enum class PayloadType : bool { Float = false, Quantized = true };
+
+template <PayloadType IndexPayloadType = PayloadType::Float>
 class wand_data_compressed {
    public:
     class builder {
@@ -112,21 +115,14 @@ class wand_data_compressed {
                            BlockSize block_size)
         {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
-                auto t =
-                    block_size.type() == typeid(FixedBlock)
-                        ? static_block_partition(seq,
-                                                 scorer,
-                                                 boost::get<FixedBlock>(block_size).size)
-                        : variable_block_partition(coll,
-                                                   seq,
-                                                   scorer,
-                                                   boost::get<VariableBlock>(block_size).lambda);
+                auto t = block_size.type() == typeid(FixedBlock)
+                             ? static_block_partition(
+                                 seq, scorer, boost::get<FixedBlock>(block_size).size)
+                             : variable_block_partition(
+                                 coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
                 float max_score = *(std::max_element(t.second.begin(), t.second.end()));
-                for (auto &&s : t.second) {
-                    s /= max_score;
-                }
-                auto ind = compressor_builder.compress_data(t.second);
+                auto ind = compressor_builder.compress_data(t.second, max_score);
 
                 compressor_builder.add_posting_list(t.first.size(), t.first.begin(), ind.begin());
 
@@ -142,7 +138,7 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weitghts(float){}
+        void quantize_block_max_term_weitghts(float) {}
 
         void build(wand_data_compressed &wdata)
         {
@@ -192,7 +188,7 @@ class wand_data_compressed {
 
         float PISA_FLATTEN_FUNC score()
         {
-            if constexpr (QuantizedIndex){
+            if constexpr (IndexPayloadType == PayloadType::Quantized) {
                 return m_cur_score_index;
             } else {
                 return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;

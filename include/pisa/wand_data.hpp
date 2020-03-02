@@ -13,8 +13,8 @@
 #include "util/util.hpp"
 #include "wand_data_raw.hpp"
 
+#include "linear_quantizer.hpp"
 #include "scorer/scorer.hpp"
-#include "quantizer.hpp"
 
 class enumerator;
 namespace pisa {
@@ -95,8 +95,10 @@ class wand_data {
                 progress.update(1);
             }
             if (is_quantized) {
+                LinearQuantizer quantizer(m_index_max_term_weight,
+                                          configuration::get().quantization_bits);
                 for (auto &&w : max_term_weight) {
-                    w = quantize(w / m_index_max_term_weight);
+                    w = quantizer(w);
                 }
                 builder.quantize_block_max_term_weitghts(m_index_max_term_weight);
             }
