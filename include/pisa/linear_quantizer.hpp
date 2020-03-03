@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <gsl/gsl_assert>
+#include "spdlog/spdlog.h"
 
 namespace pisa {
 
