@@ -7,6 +7,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "global_parameters.hpp"
+#include "linear_quantizer.hpp"
 #include "util/compiler_attribute.hpp"
 #include "wand_utils.hpp"
 
@@ -38,15 +39,11 @@ class wand_data_raw {
                            BlockSize block_size)
         {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
-                auto t =
-                    block_size.type() == typeid(FixedBlock)
-                        ? static_block_partition(seq,
-                                                 scorer,
-                                                 boost::get<FixedBlock>(block_size).size)
-                        : variable_block_partition(coll,
-                                                   seq,
-                                                   scorer,
-                                                   boost::get<VariableBlock>(block_size).lambda);
+                auto t = block_size.type() == typeid(FixedBlock)
+                             ? static_block_partition(
+                                 seq, scorer, boost::get<FixedBlock>(block_size).size)
+                             : variable_block_partition(
+                                 coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
                 block_max_term_weight.insert(
                     block_max_term_weight.end(), t.second.begin(), t.second.end());
@@ -63,6 +60,15 @@ class wand_data_raw {
             }
 
             return max_term_weight.back();
+        }
+
+        void quantize_block_max_term_weitghts(float index_max_term_weight)
+        {
+            LinearQuantizer quantizer(index_max_term_weight,
+                                      configuration::get().quantization_bits);
+            for (auto &&w : block_max_term_weight) {
+                w = quantizer(w);
+            }
         }
 
         void build(wand_data_raw &wdata)

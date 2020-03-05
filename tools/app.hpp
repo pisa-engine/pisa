@@ -15,18 +15,24 @@ namespace pisa {
 
 namespace arg {
 
-    struct Index {
-        explicit Index(CLI::App *app)
+    struct Encoding {
+        explicit Encoding(CLI::App *app)
         {
-            app->add_option("-i,--index", m_basename, "Inverted index basename")->required();
             app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
+        }
+        [[nodiscard]] auto index_encoding() const -> std::string const & { return m_encoding; }
+
+       private:
+        std::string m_encoding;
+    };
+
+    struct WandData {
+        explicit WandData(CLI::App *app)
+        {
             auto *wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
                 ->needs(wand);
         }
-
-        [[nodiscard]] auto index_basename() const -> std::string const & { return m_basename; }
-        [[nodiscard]] auto index_encoding() const -> std::string const & { return m_encoding; }
         [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const &
         {
             return m_wand_data_path;
@@ -34,10 +40,20 @@ namespace arg {
         [[nodiscard]] auto is_wand_compressed() const -> bool { return m_wand_compressed; }
 
        private:
-        std::string m_basename;
-        std::string m_encoding;
         std::optional<std::string> m_wand_data_path;
         bool m_wand_compressed = false;
+    };
+
+    struct Index : public Encoding {
+        explicit Index(CLI::App *app) : Encoding(app)
+        {
+            app->add_option("-i,--index", m_index, "Inverted index filename")->required();
+        }
+
+        [[nodiscard]] auto index_filename() const -> std::string const & { return m_index; }
+
+       private:
+        std::string m_index;
     };
 
     enum class QueryMode : bool { Ranked, Unranked };
@@ -118,17 +134,15 @@ namespace arg {
     struct Thresholds {
         explicit Thresholds(CLI::App *app)
         {
-            m_option = app->add_option("-T,--thresholds",
-                                       m_thresholds_filename,
-                                       "File containing query thresholds")
-                           ->required();
+            m_option = app->add_option(
+                "-T,--thresholds", m_thresholds_filename, "File containing query thresholds");
         }
 
         [[nodiscard]] auto thresholds_file() const { return m_thresholds_filename; }
         [[nodiscard]] auto *thresholds_option() { return m_option; }
 
        private:
-        std::string m_thresholds_filename;
+        std::optional<std::string> m_thresholds_filename;
         CLI::Option *m_option;
     };
 

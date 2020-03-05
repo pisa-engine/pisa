@@ -40,8 +40,8 @@ void evaluate_queries(const std::string &index_filename,
                       uint64_t k,
                       std::string const &documents_filename,
                       std::string const &scorer_name,
-                      std::string const &run_id = "PISA",
-                      std::string const &iteration = "Q0")
+                      std::string const &run_id,
+                      std::string const &iteration)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -178,7 +178,8 @@ void evaluate_queries(const std::string &index_filename,
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
-using wand_uniform_index = wand_data<wand_data_compressed>;
+using wand_uniform_index = wand_data<wand_data_compressed<>>;
+using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
 int main(int argc, const char **argv)
 {
@@ -186,8 +187,10 @@ int main(int argc, const char **argv)
 
     std::string documents_file;
     std::string run_id = "R0";
+    bool quantized = false;
 
     App<arg::Index,
+        arg::WandData,
         arg::Query<arg::QueryMode::Ranked>,
         arg::Algorithm,
         arg::Scorer,
@@ -196,44 +199,48 @@ int main(int argc, const char **argv)
         app{"Retrieves query results in TREC format."};
     app.add_option("-r,--run", run_id, "Run identifier");
     app.add_option("--documents", documents_file, "Document lexicon")->required();
+    app.add_flag("--quantized", quantized, "Quantized scores");
+
     CLI11_PARSE(app, argc, argv);
 
     tbb::task_scheduler_init init(app.threads());
     spdlog::info("Number of threads: {}", app.threads());
 
     if (run_id.empty()) {
-        run_id = "R0";
+        run_id = "PISA";
     }
+
+    auto iteration = "Q0";
+
+    auto params = std::make_tuple(app.index_filename(),
+                                  app.wand_data_path(),
+                                  app.queries(),
+                                  app.thresholds_file(),
+                                  app.index_encoding(),
+                                  app.algorithm(),
+                                  app.k(),
+                                  documents_file,
+                                  app.scorer(),
+                                  run_id,
+                                  iteration);
 
     /**/
     if (false) { // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                    \
-    }                                                                                            \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                      \
-    {                                                                                            \
-        if (app.is_wand_compressed()) {                                                          \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_basename(),  \
-                                                                          app.wand_data_path(),  \
-                                                                          app.queries(),         \
-                                                                          app.thresholds_file(), \
-                                                                          app.index_encoding(),  \
-                                                                          app.algorithm(),       \
-                                                                          app.k(),               \
-                                                                          documents_file,        \
-                                                                          app.scorer(),          \
-                                                                          run_id);               \
-        } else {                                                                                 \
-            evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_basename(),      \
-                                                                      app.wand_data_path(),      \
-                                                                      app.queries(),             \
-                                                                      app.thresholds_file(),     \
-                                                                      app.index_encoding(),      \
-                                                                      app.algorithm(),           \
-                                                                      app.k(),                   \
-                                                                      documents_file,            \
-                                                                      app.scorer(),              \
-                                                                      run_id);                   \
-        }                                                                                        \
+#define LOOP_BODY(R, DATA, T)                                                                      \
+    }                                                                                              \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \
+    {                                                                                              \
+        if (app.is_wand_compressed()) {                                                            \
+            if (quantized) {                                                                       \
+                std::apply(                                                                        \
+                    evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,       \
+                    params);                                                                       \
+            } else {                                                                               \
+                std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>, params); \
+            }                                                                                      \
+        } else {                                                                                   \
+            std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>, params);         \
+        }                                                                                          \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

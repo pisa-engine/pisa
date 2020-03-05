@@ -2,6 +2,7 @@
 
 #include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
+#include <range/v3/view/zip.hpp>
 
 #include "binary_freq_collection.hpp"
 #include "bitvector_collection.hpp"
@@ -9,13 +10,14 @@
 #include "util/util.hpp"
 
 #include "global_parameters.hpp"
+#include "linear_quantizer.hpp"
 #include "sequence/positive_sequence.hpp"
 #include "util/index_build_utils.hpp"
 #include "wand_utils.hpp"
 
 namespace pisa {
 namespace {
-    static const size_t score_bits_size = broadword::msb(configuration::get().reference_size);
+    static const size_t score_bits_size = configuration::get().quantization_bits;
 }
 
 class uniform_score_compressor {
@@ -29,18 +31,15 @@ class uniform_score_compressor {
         {
         }
 
-        std::vector<uint32_t> compress_data(std::vector<float> effective_scores)
+        std::vector<uint32_t> compress_data(std::vector<float> effective_scores, float max_score)
         {
-            float quant = 1.f / configuration::get().reference_size;
 
             // Partition scores.
+            LinearQuantizer quantizer(max_score, configuration::get().quantization_bits);
             std::vector<uint32_t> score_indexes;
             score_indexes.reserve(effective_scores.size());
             for (const auto &score : effective_scores) {
-                size_t pos = 1;
-                while (score > quant * pos)
-                    pos++;
-                score_indexes.push_back(pos - 1);
+                score_indexes.push_back(quantizer(score) - 1);
             }
             return score_indexes;
         }
@@ -53,13 +52,13 @@ class uniform_score_compressor {
                 uint64_t elem = *(docs_begin + pos);
                 elem = elem << score_bits_size;
                 elem += *(score_begin + pos);
-                if(pos && elem < temp.back()){
+                if (pos && elem < temp.back()) {
                     throw std::runtime_error(
-                    fmt::format("Sequence is not sorted: value at index {} "
-                                "({}) lower than its predecessor ({})",
-                                pos,
-                                elem,
-                                temp.back()));
+                        fmt::format("Sequence is not sorted: value at index {} "
+                                    "({}) lower than its predecessor ({})",
+                                    pos,
+                                    elem,
+                                    temp.back()));
                 }
                 temp.push_back(elem);
             }
@@ -84,13 +83,16 @@ class uniform_score_compressor {
         bitvector_collection::builder m_docs_sequences;
     };
 
-    static float inline score(uint32_t index)
+    static float inline score(uint32_t quantized_score)
     {
-        const float quant = 1.f / configuration::get().reference_size;
-        return quant * (index + 1);
+        const float quant = 1.f / (1u << configuration::get().quantization_bits);
+        return quant * (quantized_score + 1);
     }
 };
 
+enum class PayloadType : bool { Float = false, Quantized = true };
+
+template <PayloadType IndexPayloadType = PayloadType::Float>
 class wand_data_compressed {
    public:
     class builder {
@@ -113,27 +115,20 @@ class wand_data_compressed {
                            BlockSize block_size)
         {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
-                auto t =
-                    block_size.type() == typeid(FixedBlock)
-                        ? static_block_partition(seq,
-                                                 scorer,
-                                                 boost::get<FixedBlock>(block_size).size)
-                        : variable_block_partition(coll,
-                                                   seq,
-                                                   scorer,
-                                                   boost::get<VariableBlock>(block_size).lambda);
+                auto t = block_size.type() == typeid(FixedBlock)
+                             ? static_block_partition(
+                                 seq, scorer, boost::get<FixedBlock>(block_size).size)
+                             : variable_block_partition(
+                                 coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
                 float max_score = *(std::max_element(t.second.begin(), t.second.end()));
-                for (auto &&s : t.second) {
-                    s /= max_score;
-                }
-                auto ind = compressor_builder.compress_data(t.second);
-
-                compressor_builder.add_posting_list(t.first.size(), t.first.begin(), ind.begin());
-
                 max_term_weight.push_back(max_score);
                 total_elements += seq.docs.size();
                 total_blocks += t.first.size();
+
+                block_max_documents.push_back(std::move(t.first));
+                unquantized_block_max_scores.push_back(std::move(t.second));
+
             } else {
                 max_term_weight.push_back(0.0f);
                 std::vector<uint32_t> temp = {0};
@@ -143,8 +138,18 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
+        void quantize_block_max_term_weitghts(float index_max_term_weight) {}
+
         void build(wand_data_compressed &wdata)
         {
+            auto index_max_term_weight =
+                *(std::max_element(max_term_weight.begin(), max_term_weight.end()));
+            for (auto &&[docs, scores] : ranges::views::zip(block_max_documents, unquantized_block_max_scores)) {
+                auto quantized_scores =
+                    compressor_builder.compress_data(scores, index_max_term_weight);
+                compressor_builder.add_posting_list(
+                    quantized_scores.size(), docs.begin(), quantized_scores.begin());
+            }
             wdata.m_num_docs = compressor_builder.num_docs();
             wdata.m_params = compressor_builder.params();
             compressor_builder.build(wdata.m_docs_sequences);
@@ -154,7 +159,8 @@ class wand_data_compressed {
 
         uint64_t total_elements;
         uint64_t total_blocks;
-        std::vector<float> score_references;
+        std::vector<std::vector<uint32_t>> block_max_documents;
+        std::vector<std::vector<float>> unquantized_block_max_scores;
         std::vector<float> max_term_weight;
         global_parameters const &params;
         typename uniform_score_compressor::builder compressor_builder;
@@ -174,7 +180,7 @@ class wand_data_compressed {
         {
             uint64_t val = m_docs_enum.move(0).second;
             m_cur_docid = val >> score_bits_size;
-            uint64_t mask = configuration::get().reference_size - 1;
+            uint64_t mask = (1u << configuration::get().quantization_bits) - 1;
             m_cur_score_index = (val & mask);
         }
 
@@ -184,14 +190,18 @@ class wand_data_compressed {
                 lower_bound = lower_bound << score_bits_size;
                 auto val = m_docs_enum.next_geq(lower_bound);
                 m_cur_docid = val.second >> score_bits_size;
-                uint64_t mask = configuration::get().reference_size - 1;
+                uint64_t mask = (1u << configuration::get().quantization_bits) - 1;
                 m_cur_score_index = (val.second & mask);
             }
         }
 
         float PISA_FLATTEN_FUNC score()
         {
-            return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;
+            if constexpr (IndexPayloadType == PayloadType::Quantized) {
+                return m_cur_score_index;
+            } else {
+                return uniform_score_compressor::score(m_cur_score_index) * m_max_term_weight;
+            }
         }
 
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
