@@ -126,8 +126,8 @@ class wand_data_compressed {
                 total_elements += seq.docs.size();
                 total_blocks += t.first.size();
 
-                tmp_docs.push_back(std::move(t.first));
-                tmp_scores.push_back(std::move(t.second));
+                block_max_documents.push_back(std::move(t.first));
+                unquantized_block_max_scores.push_back(std::move(t.second));
 
             } else {
                 max_term_weight.push_back(0.0f);
@@ -144,7 +144,7 @@ class wand_data_compressed {
         {
             auto index_max_term_weight =
                 *(std::max_element(max_term_weight.begin(), max_term_weight.end()));
-            for (auto &&[docs, scores] : ranges::views::zip(tmp_docs, tmp_scores)) {
+            for (auto &&[docs, scores] : ranges::views::zip(block_max_documents, unquantized_block_max_scores)) {
                 auto quantized_scores =
                     compressor_builder.compress_data(scores, index_max_term_weight);
                 compressor_builder.add_posting_list(
@@ -159,8 +159,8 @@ class wand_data_compressed {
 
         uint64_t total_elements;
         uint64_t total_blocks;
-        std::vector<std::vector<uint32_t>> tmp_docs;
-        std::vector<std::vector<float>> tmp_scores;
+        std::vector<std::vector<uint32_t>> block_max_documents;
+        std::vector<std::vector<float>> unquantized_block_max_scores;
         std::vector<float> max_term_weight;
         global_parameters const &params;
         typename uniform_score_compressor::builder compressor_builder;
