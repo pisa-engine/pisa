@@ -40,8 +40,8 @@ void evaluate_queries(const std::string &index_filename,
                       uint64_t k,
                       std::string const &documents_filename,
                       std::string const &scorer_name,
-                      std::string const &run_id = "PISA",
-                      std::string const &iteration = "Q0")
+                      std::string const &run_id,
+                      std::string const &iteration)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -207,8 +207,11 @@ int main(int argc, const char **argv)
     spdlog::info("Number of threads: {}", app.threads());
 
     if (run_id.empty()) {
-        run_id = "R0";
+        run_id = "PISA";
     }
+
+    auto iteration = "Q0";
+
     auto params = std::make_tuple(app.index_filename(),
                                   app.wand_data_path(),
                                   app.queries(),
@@ -218,7 +221,8 @@ int main(int argc, const char **argv)
                                   app.k(),
                                   documents_file,
                                   app.scorer(),
-                                  run_id);
+                                  run_id,
+                                  iteration);
 
     /**/
     if (false) { // NOLINT

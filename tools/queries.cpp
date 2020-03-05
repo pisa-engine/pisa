@@ -353,8 +353,8 @@ int main(int argc, const char **argv)
             }                                                                               \
         } else {                                                                            \
             std::apply(perftest<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
-        } /**/
-
+        }
+        /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 

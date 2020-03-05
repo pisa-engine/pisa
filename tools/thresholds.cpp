@@ -1,5 +1,6 @@
 #include <iostream>
 #include <optional>
+#include <tuple>
 
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -106,9 +107,8 @@ int main(int argc, const char **argv)
             }                                                                                 \
         } else {                                                                              \
             std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
-        }                                                                                     \
+        }
         /**/
-
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
