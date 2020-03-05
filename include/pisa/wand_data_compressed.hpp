@@ -39,8 +39,7 @@ class uniform_score_compressor {
             std::vector<uint32_t> score_indexes;
             score_indexes.reserve(effective_scores.size());
             for (const auto &score : effective_scores) {
-                auto q = quantizer(score);
-                score_indexes.push_back(q - 1);
+                score_indexes.push_back(quantizer(score) - 1);
             }
             return score_indexes;
         }
