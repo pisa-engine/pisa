@@ -19,7 +19,6 @@
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
-
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
@@ -84,6 +83,14 @@ int main(int argc, const char **argv)
 
     CLI11_PARSE(app, argc, argv);
 
+    auto params = std::make_tuple(app.index_filename(),
+                                  app.wand_data_path(),
+                                  app.queries(),
+                                  app.index_encoding(),
+                                  app.scorer(),
+                                  app.k(),
+                                  quantized);
+
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                 \
@@ -92,31 +99,13 @@ int main(int argc, const char **argv)
     {                                                                                         \
         if (app.is_wand_compressed()) {                                                       \
             if (quantized) {                                                                  \
-                thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>(            \
-                    app.index_filename(),                                                     \
-                    app.wand_data_path(),                                                     \
-                    app.queries(),                                                            \
-                    app.index_encoding(),                                                     \
-                    app.scorer(),                                                             \
-                    app.k(),                                                                  \
-                    quantized);                                                               \
+                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, \
+                           params);                                                           \
             } else {                                                                          \
-                thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>(app.index_filename(), \
-                                                                        app.wand_data_path(), \
-                                                                        app.queries(),        \
-                                                                        app.index_encoding(), \
-                                                                        app.scorer(),         \
-                                                                        app.k(),              \
-                                                                        quantized);           \
+                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
             }                                                                                 \
         } else {                                                                              \
-            thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(),         \
-                                                                app.wand_data_path(),         \
-                                                                app.queries(),                \
-                                                                app.index_encoding(),         \
-                                                                app.scorer(),                 \
-                                                                app.k(),                      \
-                                                                quantized);                   \
+            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
         }                                                                                     \
         /**/
 
