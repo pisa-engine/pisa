@@ -83,10 +83,10 @@ class uniform_score_compressor {
         bitvector_collection::builder m_docs_sequences;
     };
 
-    static float inline score(uint32_t index)
+    static float inline score(uint32_t quantized_score)
     {
         const float quant = 1.f / (1u << configuration::get().quantization_bits);
-        return quant * (index + 1);
+        return quant * (quantized_score + 1);
     }
 };
 
