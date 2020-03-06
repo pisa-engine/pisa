@@ -41,7 +41,6 @@ TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_singleton")
 
 TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
 {
-
     // test pointers and low-level values
     pisa::compact_elias_fano::offsets of(0, universe, seq.size(), params);
     uint64_t rank = 0;
@@ -50,8 +49,7 @@ TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
         uint64_t rank0 = pos - rank;
 
         if (b) {
-            uint64_t read_v =
-                ((pos - rank - 1) << of.lower_bits)
+            uint64_t read_v = ((pos - rank - 1) << of.lower_bits)
                 | bv.get_bits(of.lower_bits_offset + rank * of.lower_bits, of.lower_bits);
             MY_REQUIRE_EQUAL(seq[rank], read_v, "rank = " << rank);
         }

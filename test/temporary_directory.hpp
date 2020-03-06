@@ -24,6 +24,6 @@ struct Temporary_Directory {
 
     [[nodiscard]] auto path() -> boost::filesystem::path const& { return dir_; }
 
-   private:
+  private:
     boost::filesystem::path dir_;
 };

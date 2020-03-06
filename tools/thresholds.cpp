@@ -23,13 +23,14 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void thresholds(const std::string& index_filename,
-                const std::optional<std::string>& wand_data_filename,
-                const std::vector<Query>& queries,
-                std::string const& type,
-                std::string const& scorer_name,
-                uint64_t k,
-                bool quantized)
+void thresholds(
+    const std::string& index_filename,
+    const std::optional<std::string>& wand_data_filename,
+    const std::vector<Query>& queries,
+    std::string const& type,
+    std::string const& scorer_name,
+    uint64_t k,
+    bool quantized)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -84,29 +85,30 @@ int main(int argc, const char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    auto params = std::make_tuple(app.index_filename(),
-                                  app.wand_data_path(),
-                                  app.queries(),
-                                  app.index_encoding(),
-                                  app.scorer(),
-                                  app.k(),
-                                  quantized);
+    auto params = std::make_tuple(
+        app.index_filename(),
+        app.wand_data_path(),
+        app.queries(),
+        app.index_encoding(),
+        app.scorer(),
+        app.k(),
+        quantized);
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                 \
-    }                                                                                         \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                   \
-    {                                                                                         \
-        if (app.is_wand_compressed()) {                                                       \
-            if (quantized) {                                                                  \
-                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, \
-                           params);                                                           \
-            } else {                                                                          \
-                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
-            }                                                                                 \
-        } else {                                                                              \
-            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
+#define LOOP_BODY(R, DATA, T)                                                                   \
+    }                                                                                           \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                     \
+    {                                                                                           \
+        if (app.is_wand_compressed()) {                                                         \
+            if (quantized) {                                                                    \
+                std::apply(                                                                     \
+                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
+            } else {                                                                            \
+                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);    \
+            }                                                                                   \
+        } else {                                                                                \
+            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);            \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

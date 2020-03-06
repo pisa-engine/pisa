@@ -29,8 +29,7 @@ TEST_CASE("uniform_partitioned_sequence")
         uint64_t universe = uint64_t(n * avg_gap);
         auto seq = random_sequence(universe, n, true);
 
-        test_sequence(
-            pisa::uniform_partitioned_sequence<indexed_sequence>(), params, universe, seq);
+        test_sequence(pisa::uniform_partitioned_sequence<indexed_sequence>(), params, universe, seq);
         test_sequence(pisa::uniform_partitioned_sequence<strict_sequence>(), params, universe, seq);
     }
 }

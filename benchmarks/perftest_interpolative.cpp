@@ -23,8 +23,7 @@ int main()
 
         double tick = get_time_usecs();
         for (size_t run = 0; run < runs; ++run) {
-            interpolative_block::decode(
-                encoded.data(), values.data(), sum_of_values, values.size());
+            interpolative_block::decode(encoded.data(), values.data(), sum_of_values, values.size());
             do_not_optimize_away(values[0]);
         }
 

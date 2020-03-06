@@ -29,7 +29,6 @@ using ranges::views::zip;
 
 int main(int argc, char** argv)
 {
-
     std::string input_basename;
     std::string output_basename;
     std::vector<std::string> shard_files;
@@ -61,8 +60,8 @@ int main(int argc, char** argv)
         auto mapping = create_random_mapping(input_basename, shard_count);
         partition_fwd_index(input_basename, output_basename, mapping);
     } else if (*shard_files_option) {
-        auto mapping = mapping_from_files(fmt::format("{}.documents", input_basename),
-                                          gsl::make_span(shard_files));
+        auto mapping = mapping_from_files(
+            fmt::format("{}.documents", input_basename), gsl::make_span(shard_files));
         partition_fwd_index(input_basename, output_basename, mapping);
     } else {
         spdlog::error("You must define either --random-shards or --shard-files");

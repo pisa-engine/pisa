@@ -33,7 +33,6 @@ struct sequence_initialization {
 
 TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction")
 {
-
     // test pointers and rank samples
     pisa::compact_ranked_bitvector::offsets of(0, universe, seq.size(), params);
     uint64_t rank = 0;
@@ -52,9 +51,8 @@ TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction
 
         if (pos && (pos % (1 << of.log_rank1_sampling) == 0)) {
             uint64_t sample_offset = of.rank1_samples_offset
-                                     + ((pos >> of.log_rank1_sampling) - 1) * of.rank1_sample_size;
-            MY_REQUIRE_EQUAL(
-                rank, bv.get_bits(sample_offset, of.rank1_sample_size), "pos = " << pos);
+                + ((pos >> of.log_rank1_sampling) - 1) * of.rank1_sample_size;
+            MY_REQUIRE_EQUAL(rank, bv.get_bits(sample_offset, of.rank1_sample_size), "pos = " << pos);
         }
 
         rank += b;

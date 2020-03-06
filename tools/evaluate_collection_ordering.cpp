@@ -14,7 +14,6 @@
 
 int main(int argc, const char** argv)
 {
-
     using namespace pisa;
 
     if (argc != 2) {

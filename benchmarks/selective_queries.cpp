@@ -25,7 +25,6 @@ void selective_queries(const char* index_filename, std::string const& type)
     uint64_t count_taken = 0;
     uint64_t count = 0;
     while (read_query(query)) {
-
         bool insert = true;
         if (query.size() == 1)
             insert = false;

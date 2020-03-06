@@ -32,8 +32,8 @@ int main(int argc, char** argv)
     try {
         if (*build) {
             std::ifstream is(text_file);
-            encode_payload_vector(std::istream_iterator<io::Line>(is),
-                                  std::istream_iterator<io::Line>())
+            encode_payload_vector(
+                std::istream_iterator<io::Line>(is), std::istream_iterator<io::Line>())
                 .to_file(lexicon_file);
             return 0;
         }

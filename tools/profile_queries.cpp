@@ -32,7 +32,7 @@ void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries
 
     for (size_t tid = 0; tid < n_threads; ++tid) {
         threads[tid] = std::thread([&, tid]() {
-            auto query_op_copy = query_op; // copy one query_op per thread
+            auto query_op_copy = query_op;  // copy one query_op per thread
             for (size_t i = tid; i < queries.size(); i += n_threads) {
                 if (i % 10000 == 0) {
                     std::lock_guard<std::mutex> lock(io_mutex);
@@ -59,12 +59,13 @@ struct add_profiling<block_freq_index<BlockType, false>> {
 };
 
 template <typename IndexType>
-void profile(const std::string index_filename,
+void profile(
+    const std::string index_filename,
 
-             const std::optional<std::string>& wand_data_filename,
-             std::vector<Query> const& queries,
-             std::string const& type,
-             std::string const& query_type)
+    const std::optional<std::string>& wand_data_filename,
+    std::vector<Query> const& queries,
+    std::string const& type,
+    std::string const& query_type)
 {
     using namespace pisa;
 
@@ -99,17 +100,19 @@ void profile(const std::string index_filename,
         if (t == "and") {
             query_fun = [&](Query query) {
                 and_query and_q;
-                return and_q(make_cursors<typename add_profiling<IndexType>::type>(index, query),
-                             index.num_docs())
+                return and_q(
+                           make_cursors<typename add_profiling<IndexType>::type>(index, query),
+                           index.num_docs())
                     .size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query) {
                 topk_queue topk(10);
                 ranked_and_query ranked_and_q(topk);
-                ranked_and_q(make_scored_cursors<typename add_profiling<IndexType>::type>(
-                                 index, *scorer, query),
-                             index.num_docs());
+                ranked_and_q(
+                    make_scored_cursors<typename add_profiling<IndexType>::type>(
+                        index, *scorer, query),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -117,9 +120,10 @@ void profile(const std::string index_filename,
             query_fun = [&](Query query) {
                 topk_queue topk(10);
                 wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                           index, wdata, *scorer, query),
-                       index.num_docs());
+                wand_q(
+                    make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
+                        index, wdata, *scorer, query),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };

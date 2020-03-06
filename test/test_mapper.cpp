@@ -33,7 +33,7 @@ TEST_CASE("basic_map")
 }
 
 class complex_struct {
-   public:
+  public:
     complex_struct() : m_a(0) {}
 
     void init()

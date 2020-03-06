@@ -17,8 +17,8 @@ using iterator_type = std::vector<uint32_t>::iterator;
 using range_type = document_range<iterator_type>;
 using node_type = computation_node<iterator_type>;
 
-inline std::vector<node_type> read_node_config(const std::string& config_file,
-                                               const range_type& initial_range)
+inline std::vector<node_type>
+read_node_config(const std::string& config_file, const range_type& initial_range)
 {
     std::vector<node_type> nodes;
     std::ifstream is(config_file);
@@ -75,8 +75,7 @@ int main(int argc, char const* argv[])
            "--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")
         ->needs(docs_opt);
     app.add_option("-m,--min-len", min_len, "Minimum list threshold");
-    auto optdepth =
-        app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
+    auto optdepth = app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
     app.add_option("-t,--threads", threads, "Thread count");
     auto optconf = app.add_option("--config", config_file, "Node configuration file");
     app.add_flag("--nogb", nogb, "No VarIntGB compression in forward index");
@@ -96,8 +95,8 @@ int main(int argc, char const* argv[])
     spdlog::info("Number of threads: {}", threads);
 
     forward_index fwd = app.count("--fwdidx") > 0u
-                            ? forward_index::read(input_fwd)
-                            : forward_index::from_inverted_index(input_basename, min_len, not nogb);
+        ? forward_index::read(input_fwd)
+        : forward_index::from_inverted_index(input_basename, min_len, not nogb);
     if (app.count("--store-fwdidx") > 0u) {
         forward_index::write(fwd, output_fwd);
     }
@@ -111,9 +110,9 @@ int main(int argc, char const* argv[])
         if (config_provided) {
             run_with_config(config_file, initial_range);
         } else {
-            run_default_tree(depth_provided ? depth
-                                            : static_cast<size_t>(std::log2(fwd.size()) - 5),
-                             initial_range);
+            run_default_tree(
+                depth_provided ? depth : static_cast<size_t>(std::log2(fwd.size()) - 5),
+                initial_range);
         }
 
         if (print) {

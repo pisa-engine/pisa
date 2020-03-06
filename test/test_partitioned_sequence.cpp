@@ -15,11 +15,11 @@
 namespace pisa {
 
 class partitioned_sequence_test {
-   public:
+  public:
     template <typename Enumerator>
     static void test_construction(Enumerator& r, std::vector<uint64_t> const& seq)
     {
-        if (r.m_partitions == 1) { // nothing to test here
+        if (r.m_partitions == 1) {  // nothing to test here
             return;
         }
 
@@ -41,7 +41,7 @@ class partitioned_sequence_test {
         }
     }
 };
-} // namespace pisa
+}  // namespace pisa
 
 template <typename BaseSequence>
 void test_partitioned_sequence(uint64_t universe, std::vector<uint64_t> const& seq)

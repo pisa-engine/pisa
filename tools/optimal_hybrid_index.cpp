@@ -23,8 +23,8 @@
 #include "util/util.hpp"
 #include "util/verify_collection.hpp"
 
-typedef uint32_t block_id_type; // XXX for memory reasons, but would need size_t for very large
-                                // indexes
+typedef uint32_t block_id_type;  // XXX for memory reasons, but would need size_t for very large
+                                 // indexes
 
 struct lambda_point {
     block_id_type block_id;
@@ -56,12 +56,13 @@ struct lambda_point {
 typedef stxxl::vector<lambda_point> lambda_vector_type;
 
 template <typename InputCollectionType>
-struct lambdas_computer : pisa::semiasync_queue::job {
-    lambdas_computer(block_id_type block_id_base,
-                     typename InputCollectionType::document_enumerator e,
-                     pisa::predictors_vec_type const& predictors,
-                     std::vector<uint32_t>& counts,
-                     lambda_vector_type& lambda_points)
+struct lambdas_computer: pisa::semiasync_queue::job {
+    lambdas_computer(
+        block_id_type block_id_base,
+        typename InputCollectionType::document_enumerator e,
+        pisa::predictors_vec_type const& predictors,
+        std::vector<uint32_t>& counts,
+        lambda_vector_type& lambda_points)
         : m_block_id_base(block_id_base),
           m_e(e),
           m_predictors(predictors),
@@ -82,7 +83,7 @@ struct lambdas_computer : pisa::semiasync_queue::job {
 
         block_id_type cur_block_id = m_block_id_base;
         for (auto const& input_block : blocks) {
-            static const uint32_t smoothing = 1; // Laplace smoothing
+            static const uint32_t smoothing = 1;  // Laplace smoothing
             uint32_t docs_exp = smoothing, freqs_exp = smoothing;
             if (!m_counts.empty()) {
                 docs_exp += m_counts[2 * input_block.index];
@@ -146,11 +147,12 @@ struct lambdas_computer : pisa::semiasync_queue::job {
 };
 
 template <typename InputCollectionType>
-void compute_lambdas(InputCollectionType const& input_coll,
-                     size_t num_blocks,
-                     const char* predictors_filename,
-                     const char* block_stats_filename,
-                     const char* lambdas_filename)
+void compute_lambdas(
+    InputCollectionType const& input_coll,
+    size_t num_blocks,
+    const char* predictors_filename,
+    const char* block_stats_filename,
+    const char* lambdas_filename)
 
 {
     using namespace pisa;
@@ -171,8 +173,8 @@ void compute_lambdas(InputCollectionType const& input_coll,
     size_t freq_zero_lists = 0;
     size_t freq_zero_blocks = 0;
 
-    stxxl::syscall_file lpfile(lambdas_filename,
-                               stxxl::file::DIRECT | stxxl::file::CREAT | stxxl::file::RDWR);
+    stxxl::syscall_file lpfile(
+        lambdas_filename, stxxl::file::DIRECT | stxxl::file::CREAT | stxxl::file::RDWR);
     lambda_vector_type lambda_points(&lpfile);
 
     semiasync_queue queue(1 << 24);
@@ -189,11 +191,10 @@ void compute_lambdas(InputCollectionType const& input_coll,
         std::shared_ptr<job_type> job;
 
         if (l == block_counts_list) {
-            freq_zero_blocks +=
-                std::accumulate(block_counts.begin(),
-                                block_counts.end(),
-                                size_t(0),
-                                [](size_t accum, uint32_t freq) { return accum + (freq == 0); });
+            freq_zero_blocks += std::accumulate(
+                block_counts.begin(), block_counts.end(), size_t(0), [](size_t accum, uint32_t freq) {
+                    return accum + (freq == 0);
+                });
             block_counts_consumed = true;
             job.reset(new job_type(block_id_base, e, predictors, block_counts, lambda_points));
         } else {
@@ -219,13 +220,12 @@ void compute_lambdas(InputCollectionType const& input_coll,
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
 
     stats_line()("worker_threads", configuration::get().worker_threads)(
-        "lambda_computation_time", elapsed_secs)("is_heuristic",
-                                                 configuration::get().heuristic_greedy);
+        "lambda_computation_time", elapsed_secs)(
+        "is_heuristic", configuration::get().heuristic_greedy);
 
     tick = get_time_usecs();
-    static const size_t sort_memory = size_t(16) * 1024 * 1024 * 1024; // XXX
-    stxxl::sort(
-        lambda_points.begin(), lambda_points.end(), lambda_point::comparator(), sort_memory);
+    static const size_t sort_memory = size_t(16) * 1024 * 1024 * 1024;  // XXX
+    stxxl::sort(lambda_points.begin(), lambda_points.end(), lambda_point::comparator(), sort_memory);
 
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
     stats_line()("worker_threads", configuration::get().worker_threads)(
@@ -233,15 +233,14 @@ void compute_lambdas(InputCollectionType const& input_coll,
 }
 
 template <typename InputCollectionType, typename CollectionBuilder>
-struct list_transformer : pisa::semiasync_queue::job {
+struct list_transformer: pisa::semiasync_queue::job {
     list_transformer(
         CollectionBuilder& b,
         typename InputCollectionType::document_enumerator e,
         std::vector<pisa::mixed_block::block_type>::const_iterator block_type_begin,
         std::vector<pisa::mixed_block::compr_param_type>::const_iterator block_param_begin)
         : m_b(b), m_e(e), m_block_type(block_type_begin), m_block_param(block_param_begin)
-    {
-    }
+    {}
 
     virtual void prepare()
     {
@@ -274,13 +273,14 @@ struct list_transformer : pisa::semiasync_queue::job {
 };
 
 template <typename InputCollectionType>
-void optimal_hybrid_index(pisa::global_parameters const& params,
-                          const char* predictors_filename,
-                          const char* block_stats_filename,
-                          const char* input_filename,
-                          const char* output_filename,
-                          const char* lambdas_filename,
-                          size_t budget)
+void optimal_hybrid_index(
+    pisa::global_parameters const& params,
+    const char* predictors_filename,
+    const char* block_stats_filename,
+    const char* input_filename,
+    const char* output_filename,
+    const char* lambdas_filename,
+    size_t budget)
 {
     using namespace pisa;
 
@@ -291,14 +291,14 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
     spdlog::info("Processing {} posting lists", input_coll.size());
     size_t num_blocks = 0;
     size_t partial_blocks = 0;
-    size_t space_base = 8; // space overhead independent of block compression method
+    size_t space_base = 8;  // space overhead independent of block compression method
     for (size_t l = 0; l < input_coll.size(); ++l) {
         auto e = input_coll[l];
         num_blocks += 2 * e.num_blocks();
         // list length in vbyte
         space_base += ceil_div(broadword::msb(e.size()) + 1, 7);
-        space_base += e.num_blocks() * 4; // max docid
-        space_base += (e.num_blocks() - 1) * 4; // endpoint
+        space_base += e.num_blocks() * 4;  // max docid
+        space_base += (e.num_blocks() - 1) * 4;  // endpoint
         if (e.size() % mixed_block::block_size != 0) {
             partial_blocks += 2;
         }
@@ -347,7 +347,7 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
         cur_space += block_spaces[lpid.block_id];
         cur_time += block_times[lpid.block_id];
 
-        if (lpid.lambda > 0) { // we are past the initial frontier
+        if (lpid.lambda > 0) {  // we are past the initial frontier
             if (first_nonzero_lambda) {
                 spdlog::info("Minimum feasible space: {}", cur_space);
                 first_nonzero_lambda = false;
@@ -359,7 +359,7 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
                     lambdas_log << lpid.lambda << '\t' << cur_space << '\t' << cur_time << '\n';
                 }
                 seen_lambdas += 1;
-            } else if (cur_space > budget) { // XXX replace with >=
+            } else if (cur_space > budget) {  // XXX replace with >=
                 break;
             }
         }
@@ -370,12 +370,11 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
 
     if (budget == 0) {
         spdlog::info("Done");
-        return; // done, just reporting the trade-offs
+        return;  // done, just reporting the trade-offs
     }
 
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    stats_line()("worker_threads", configuration::get().worker_threads)("greedy_time",
-                                                                        elapsed_secs);
+    stats_line()("worker_threads", configuration::get().worker_threads)("greedy_time", elapsed_secs);
 
     spdlog::info("Found trade-off. Space: {} Time: {}", cur_space, cur_time);
 
@@ -396,8 +395,8 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
         }
     }
 
-    stats_line()("blocks", num_blocks)("partial_blocks", partial_blocks)("type_counts",
-                                                                         type_counts_vec);
+    stats_line()("blocks", num_blocks)("partial_blocks", partial_blocks)(
+        "type_counts", type_counts_vec);
 
     tick = get_time_usecs();
 
@@ -431,8 +430,8 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Collection built in {} seconds", elapsed_secs);
 
-    stats_line()("worker_threads", configuration::get().worker_threads)("construction_time",
-                                                                        elapsed_secs);
+    stats_line()("worker_threads", configuration::get().worker_threads)(
+        "construction_time", elapsed_secs);
     dump_stats(coll, "block_mixed", postings);
 
     if (output_filename) {
@@ -442,7 +441,6 @@ void optimal_hybrid_index(pisa::global_parameters const& params,
 
 int main(int argc, const char** argv)
 {
-
     using namespace pisa;
 
     if (argc < 5) {
@@ -478,13 +476,14 @@ int main(int argc, const char** argv)
     }                                                                                             \
     else if (type == BOOST_PP_STRINGIZE(T))                                                       \
     {                                                                                             \
-        optimal_hybrid_index<BOOST_PP_CAT(T, _index)>(params,                                     \
-                                                      predictors_filename,                        \
-                                                      block_stats_filename,                       \
-                                                      input_filename,                             \
-                                                      output_filename,                            \
-                                                      lambdas_filename,                           \
-                                                      budget);                                    \
+        optimal_hybrid_index<BOOST_PP_CAT(T, _index)>(                                            \
+            params,                                                                               \
+            predictors_filename,                                                                  \
+            block_stats_filename,                                                                 \
+            input_filename,                                                                       \
+            output_filename,                                                                      \
+            lambdas_filename,                                                                     \
+            budget);                                                                              \
         if (check) {                                                                              \
             binary_freq_collection input(collection_basename);                                    \
             verify_collection<binary_freq_collection, block_mixed_index>(input, output_filename); \

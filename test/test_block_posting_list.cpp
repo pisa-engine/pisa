@@ -20,11 +20,12 @@
 #include <vector>
 
 template <typename PostingList>
-void test_block_posting_list_ops(uint8_t const* data,
-                                 uint64_t n,
-                                 uint64_t universe,
-                                 std::vector<uint64_t> const& docs,
-                                 std::vector<uint64_t> const& freqs)
+void test_block_posting_list_ops(
+    uint8_t const* data,
+    uint64_t n,
+    uint64_t universe,
+    std::vector<uint64_t> const& docs,
+    std::vector<uint64_t> const& freqs)
 {
     typename PostingList::document_enumerator e(data, universe);
     REQUIRE(n == e.size());
@@ -47,10 +48,8 @@ void test_block_posting_list_ops(uint8_t const* data,
     REQUIRE(universe == e.docid());
 }
 
-void random_posting_data(uint64_t n,
-                         uint64_t universe,
-                         std::vector<uint64_t>& docs,
-                         std::vector<uint64_t>& freqs)
+void random_posting_data(
+    uint64_t n, uint64_t universe, std::vector<uint64_t>& docs, std::vector<uint64_t>& freqs)
 {
     docs = random_sequence(universe, n, true);
     freqs.resize(n);
@@ -92,9 +91,10 @@ void test_block_posting_list_reordering()
         // reorder blocks
         typename posting_list_type::document_enumerator e(data.data(), universe);
         auto blocks = e.get_blocks();
-        std::shuffle(blocks.begin() + 1,
-                     blocks.end(),
-                     std::mt19937(std::random_device()())); // leave first block in place
+        std::shuffle(
+            blocks.begin() + 1,
+            blocks.end(),
+            std::mt19937(std::random_device()()));  // leave first block in place
 
         std::vector<uint8_t> reordered_data;
         posting_list_type::write_blocks(reordered_data, n, blocks);

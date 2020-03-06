@@ -18,10 +18,11 @@ void perftest(IndexType const& index, std::string const& type)
         size_t max_length = 100000;
         size_t max_number_of_lists = 1000;
 
-        spdlog::info("Scanning {} posting lists with length between {} and {}",
-                     max_number_of_lists,
-                     min_length,
-                     max_length);
+        spdlog::info(
+            "Scanning {} posting lists with length between {} and {}",
+            max_number_of_lists,
+            min_length,
+            max_length);
 
         std::vector<size_t> long_lists;
         for (size_t i = 0; i < index.size() and long_lists.size() <= max_number_of_lists; ++i) {
@@ -47,11 +48,12 @@ void perftest(IndexType const& index, std::string const& type)
         }
         double elapsed = get_time_usecs() - tick;
         double next_ns = elapsed / postings * 1000;
-        spdlog::info("Performed {} next(){} in {} seconds, {:.1f} ns per posting",
-                     postings,
-                     freqs_log,
-                     uint64_t(elapsed / 1000000),
-                     next_ns);
+        spdlog::info(
+            "Performed {} next(){} in {} seconds, {:.1f} ns per posting",
+            postings,
+            freqs_log,
+            uint64_t(elapsed / 1000000),
+            next_ns);
         spdlog::info("{}\tnext{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), next_ns);
     }
 
@@ -89,11 +91,12 @@ void perftest(IndexType const& index, std::string const& type)
         double elapsed = get_time_usecs() - tick;
         double next_geq_ns = elapsed / calls * 1000;
 
-        spdlog::info("Performed {} calls next_geq(){} with skip={}: {:.1f} ns per call",
-                     calls,
-                     freqs_log,
-                     skip,
-                     next_geq_ns);
+        spdlog::info(
+            "Performed {} calls next_geq(){} with skip={}: {:.1f} ns per call",
+            calls,
+            freqs_log,
+            skip,
+            next_geq_ns);
         spdlog::info(
             "{}\tnext_geq{}\t{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), skip, next_geq_ns);
     }
@@ -113,7 +116,6 @@ void perftest(const char* index_filename, std::string const& type)
 
 int main(int argc, const char** argv)
 {
-
     using namespace pisa;
 
     if (argc != 3) {

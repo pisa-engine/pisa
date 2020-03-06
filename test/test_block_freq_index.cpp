@@ -36,8 +36,7 @@ void test_block_freq_index()
         uint64_t n = uint64_t(universe / avg_gap);
         plist.first = random_sequence(universe, n, true);
         plist.second.resize(n);
-        std::generate(
-            plist.second.begin(), plist.second.end(), []() { return (rand() % 256) + 1; });
+        std::generate(plist.second.begin(), plist.second.end(), []() { return (rand() % 256) + 1; });
 
         b.add_posting_list(n, plist.first.begin(), plist.second.begin(), 0);
     }

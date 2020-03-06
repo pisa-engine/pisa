@@ -57,7 +57,8 @@ TEST_CASE("Write header", "[parsing][forward_index]")
     }
 }
 
-[[nodiscard]] std::vector<std::string> load_lines(std::istream& is) {
+[[nodiscard]] std::vector<std::string> load_lines(std::istream& is)
+{
     std::string line;
     std::vector<std::string> vec;
     while (std::getline(is, line)) {
@@ -66,7 +67,7 @@ TEST_CASE("Write header", "[parsing][forward_index]")
     return vec;
 }
 
-    [[nodiscard]] std::vector<std::string> load_lines(std::string const& filename)
+[[nodiscard]] std::vector<std::string> load_lines(std::string const& filename)
 {
     std::ifstream is(filename);
     return load_lines(is);
@@ -147,10 +148,11 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
     }
 }
 
-void write_batch(std::string const& basename,
-                 std::vector<std::string> const& documents,
-                 std::vector<std::string> const& terms,
-                 std::vector<std::vector<uint32_t>> const& collection)
+void write_batch(
+    std::string const& basename,
+    std::vector<std::string> const& documents,
+    std::vector<std::string> const& terms,
+    std::vector<std::vector<uint32_t>> const& collection)
 {
     std::string document_file = basename + ".documents";
     std::string term_file = basename + ".terms";
@@ -170,56 +172,58 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
     auto dir = tmpdir.path();
     GIVEN("Three batches on disk")
     {
-        std::vector<path> batch_paths{
-            dir / "fwd.batch.0", dir / "fwd.batch.1", dir / "fwd.batch.2"};
-        write_batch(batch_paths[0].string(),
-                    {"Doc10", "Doc11"},
-                    {"lorem",
-                     "ipsum",
-                     "dolor",
-                     "sit",
-                     "amet",
-                     "consectetur",
-                     "adipiscing",
-                     "elit",
-                     "integer",
-                     "rutrum",
-                     "felis",
-                     "et",
-                     "sagittis",
-                     "dapibus"},
-                    {{0, 1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13}});
-        write_batch(batch_paths[1].string(),
-                    {"Doc12", "Doc13"},
-                    {"vivamus",
-                     "ac",
-                     "velit",
-                     "nec",
-                     "purus",
-                     "molestie",
-                     "tincidunt",
-                     "eu",
-                     "quam",
-                     "vitae",
-                     "lacus",
-                     "porta",
-                     "tempus",
-                     "quis",
-                     "metus"},
-                    {{0, 1, 2, 3, 4, 5, 6}, {0, 7, 8, 9, 10, 11, 12, 13, 7, 14}});
-        write_batch(batch_paths[2].string(),
-                    {"Doc14"},
-                    {"curabitur",
-                     "a",
-                     "justo",
-                     "vitae",
-                     "turpis",
-                     "feugiat",
-                     "molestie",
-                     "eu",
-                     "ac",
-                     "nunc"},
-                    {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}});
+        std::vector<path> batch_paths{dir / "fwd.batch.0", dir / "fwd.batch.1", dir / "fwd.batch.2"};
+        write_batch(
+            batch_paths[0].string(),
+            {"Doc10", "Doc11"},
+            {"lorem",
+             "ipsum",
+             "dolor",
+             "sit",
+             "amet",
+             "consectetur",
+             "adipiscing",
+             "elit",
+             "integer",
+             "rutrum",
+             "felis",
+             "et",
+             "sagittis",
+             "dapibus"},
+            {{0, 1, 2, 3, 4, 5, 6, 7}, {8, 9, 10, 11, 12, 13}});
+        write_batch(
+            batch_paths[1].string(),
+            {"Doc12", "Doc13"},
+            {"vivamus",
+             "ac",
+             "velit",
+             "nec",
+             "purus",
+             "molestie",
+             "tincidunt",
+             "eu",
+             "quam",
+             "vitae",
+             "lacus",
+             "porta",
+             "tempus",
+             "quis",
+             "metus"},
+            {{0, 1, 2, 3, 4, 5, 6}, {0, 7, 8, 9, 10, 11, 12, 13, 7, 14}});
+        write_batch(
+            batch_paths[2].string(),
+            {"Doc14"},
+            {"curabitur",
+             "a",
+             "justo",
+             "vitae",
+             "turpis",
+             "feugiat",
+             "molestie",
+             "eu",
+             "ac",
+             "nunc"},
+            {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}});
 
         WHEN("Merging function is called")
         {
@@ -349,8 +353,8 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 auto term_map = load_term_map(output);
                 auto term_lexicon_buffer = Payload_Vector_Buffer::from_file(output + ".termlex");
                 auto term_lexicon = Payload_Vector<std::string>(term_lexicon_buffer);
-                REQUIRE(std::vector<std::string>(term_lexicon.begin(), term_lexicon.end())
-                        == term_map);
+                REQUIRE(
+                    std::vector<std::string>(term_lexicon.begin(), term_lexicon.end()) == term_map);
                 binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();
                 REQUIRE(*seq_iter->begin() == 1000);
@@ -381,8 +385,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 auto documents = io::read_string_vector(output + ".documents");
                 auto doc_lexicon_buffer = Payload_Vector_Buffer::from_file(output + ".doclex");
                 auto doc_lexicon = Payload_Vector<std::string>(doc_lexicon_buffer);
-                REQUIRE(std::vector<std::string>(doc_lexicon.begin(), doc_lexicon.end())
-                        == documents);
+                REQUIRE(std::vector<std::string>(doc_lexicon.begin(), doc_lexicon.end()) == documents);
             }
         }
     }

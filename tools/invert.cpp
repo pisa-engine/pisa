@@ -19,7 +19,6 @@ using namespace pisa;
 
 int main(int argc, char** argv)
 {
-
     std::string input_basename;
     std::string output_basename;
     size_t threads = std::thread::hardware_concurrency();

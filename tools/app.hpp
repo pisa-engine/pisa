@@ -22,7 +22,7 @@ namespace arg {
         }
         [[nodiscard]] auto index_encoding() const -> std::string const& { return m_encoding; }
 
-       private:
+      private:
         std::string m_encoding;
     };
 
@@ -39,12 +39,12 @@ namespace arg {
         }
         [[nodiscard]] auto is_wand_compressed() const -> bool { return m_wand_compressed; }
 
-       private:
+      private:
         std::optional<std::string> m_wand_data_path;
         bool m_wand_compressed = false;
     };
 
-    struct Index : public Encoding {
+    struct Index: public Encoding {
         explicit Index(CLI::App* app) : Encoding(app)
         {
             app->add_option("-i,--index", m_index, "Inverted index filename")->required();
@@ -52,7 +52,7 @@ namespace arg {
 
         [[nodiscard]] auto index_filename() const -> std::string const& { return m_index; }
 
-       private:
+      private:
         std::string m_index;
     };
 
@@ -97,7 +97,7 @@ namespace arg {
 
         [[nodiscard]] auto k() const -> int { return m_k; }
 
-       private:
+      private:
         std::optional<std::string> m_query_file;
         int m_k = 0;
         std::optional<std::string> m_stop_words{std::nullopt};
@@ -108,13 +108,12 @@ namespace arg {
     struct Algorithm {
         explicit Algorithm(CLI::App* app)
         {
-            app->add_option("-a,--algorithm", m_algorithm, "Query processing algorithm")
-                ->required();
+            app->add_option("-a,--algorithm", m_algorithm, "Query processing algorithm")->required();
         }
 
         [[nodiscard]] auto algorithm() const -> std::string const& { return m_algorithm; }
 
-       private:
+      private:
         std::string m_algorithm;
     };
 
@@ -127,7 +126,7 @@ namespace arg {
 
         [[nodiscard]] auto scorer() const { return m_scorer; }
 
-       private:
+      private:
         std::string m_scorer;
     };
 
@@ -141,7 +140,7 @@ namespace arg {
         [[nodiscard]] auto thresholds_file() const { return m_thresholds_filename; }
         [[nodiscard]] auto* thresholds_option() { return m_option; }
 
-       private:
+      private:
         std::optional<std::string> m_thresholds_filename;
         CLI::Option* m_option;
     };
@@ -154,18 +153,18 @@ namespace arg {
 
         [[nodiscard]] auto threads() const -> std::size_t { return m_threads; }
 
-       private:
+      private:
         std::size_t m_threads = std::thread::hardware_concurrency();
     };
 
-} // namespace arg
+}  // namespace arg
 
 template <typename... Args>
-struct App : public CLI::App, public Args... {
+struct App: public CLI::App, public Args... {
     explicit App(std::string const& description) : CLI::App(description), Args(this)...
     {
         this->set_config("--config", "", "Configuration .ini file", false);
     }
 };
 
-} // namespace pisa
+}  // namespace pisa

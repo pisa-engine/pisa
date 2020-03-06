@@ -22,11 +22,12 @@ using pisa::intersection::IntersectionType;
 using pisa::intersection::Mask;
 
 template <typename IndexType, typename WandType, typename QueryRange>
-void intersect(std::string const& index_filename,
-               std::optional<std::string> const& wand_data_filename,
-               QueryRange&& queries,
-               IntersectionType intersection_type,
-               std::optional<std::uint8_t> max_term_count = std::nullopt)
+void intersect(
+    std::string const& index_filename,
+    std::optional<std::string> const& wand_data_filename,
+    QueryRange&& queries,
+    IntersectionType intersection_type,
+    std::optional<std::uint8_t> max_term_count = std::nullopt)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -49,11 +50,12 @@ void intersect(std::string const& index_filename,
 
     auto print_intersection = [&](auto const& query, auto const& mask) {
         auto intersection = Intersection::compute(index, wdata, query, mask);
-        std::cout << fmt::format("{}\t{}\t{}\t{}\n",
-                                 query.id ? *query.id : std::to_string(qid),
-                                 mask.to_ulong(),
-                                 intersection.length,
-                                 intersection.max_score);
+        std::cout << fmt::format(
+            "{}\t{}\t{}\t{}\n",
+            query.id ? *query.id : std::to_string(qid),
+            mask.to_ulong(),
+            intersection.length,
+            intersection.max_score);
     };
 
     for (auto&& query : queries) {
@@ -61,10 +63,11 @@ void intersect(std::string const& index_filename,
             for_all_subsets(query, max_term_count, print_intersection);
         } else {
             auto intersection = Intersection::compute(index, wdata, query);
-            std::cout << fmt::format("{}\t{}\t{}\n",
-                                     query.id ? *query.id : std::to_string(qid),
-                                     intersection.length,
-                                     intersection.max_score);
+            std::cout << fmt::format(
+                "{}\t{}\t{}\n",
+                query.id ? *query.id : std::to_string(qid),
+                intersection.length,
+                intersection.max_score);
         }
         qid += 1;
     }
@@ -87,9 +90,10 @@ int main(int argc, const char** argv)
         "Computes intersections of posting lists."};
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
-    app.add_option("--max-term-count,--mtc",
-                   max_term_count,
-                   "Max number of terms when computing combinations")
+    app.add_option(
+           "--max-term-count,--mtc",
+           max_term_count,
+           "Max number of terms when computing combinations")
         ->needs(combinations_flag);
     app.add_option("--min-query-len", min_query_len, "Minimum query length");
     app.add_option("--max-query-len", max_query_len, "Maximum query length");
@@ -115,15 +119,16 @@ int main(int argc, const char** argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                    \
-    }                                                                            \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                      \
-    {                                                                            \
-        intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(app.index_filename(), \
-                                                           app.wand_data_path(), \
-                                                           filtered_queries,     \
-                                                           intersection_type,    \
-                                                           max_term_count);      \
+#define LOOP_BODY(R, DATA, T)                               \
+    }                                                       \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) \
+    {                                                       \
+        intersect<BOOST_PP_CAT(T, _index), wand_raw_index>( \
+            app.index_filename(),                           \
+            app.wand_data_path(),                           \
+            filtered_queries,                               \
+            intersection_type,                              \
+            max_term_count);                                \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

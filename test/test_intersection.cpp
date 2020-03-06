@@ -15,9 +15,9 @@ TEST_CASE("filter query", "[intersection][unit]")
     GIVEN("Four-term query")
     {
         Query query{
-            "Q1", // query ID
-            {6, 1, 5}, // terms
-            {0.1, 0.4, 1.0} // weights
+            "Q1",  // query ID
+            {6, 1, 5},  // terms
+            {0.1, 0.4, 1.0}  // weights
         };
         auto [mask, expected] = GENERATE(table<Mask, Query>({
             {0b001, Query{"Q1", {6}, {0.1}}},
@@ -67,7 +67,7 @@ struct VectorCursor {
         }
     }
 
-   private:
+  private:
     void try_finish()
     {
         if (documents.empty()) {
@@ -178,30 +178,30 @@ TEST_CASE("compute intersection", "[intersection][unit]")
     GIVEN("Four-term query, index, and wand data object")
     {
         InMemoryIndex index{{
-                                {0}, // 0
-                                {0, 1, 2}, // 1
-                                {0}, // 2
-                                {0}, // 3
-                                {0}, // 4
-                                {0, 1, 4}, // 5
-                                {1, 4, 8}, // 6
+                                {0},  // 0
+                                {0, 1, 2},  // 1
+                                {0},  // 2
+                                {0},  // 3
+                                {0},  // 4
+                                {0, 1, 4},  // 5
+                                {1, 4, 8},  // 6
                             },
                             {
-                                {1}, // 0
-                                {1, 1, 1}, // 1
-                                {1}, // 2
-                                {1}, // 3
-                                {1}, // 4
-                                {1, 1, 1}, // 5
-                                {1, 1, 1}, // 6
+                                {1},  // 0
+                                {1, 1, 1},  // 1
+                                {1},  // 2
+                                {1},  // 3
+                                {1},  // 4
+                                {1, 1, 1},  // 5
+                                {1, 1, 1},  // 6
                             },
                             10};
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
 
         Query query{
-            "Q1", // query ID
-            {6, 1, 5}, // terms
-            {0.1, 0.4, 1.0} // weights
+            "Q1",  // query ID
+            {6, 1, 5},  // terms
+            {0.1, 0.4, 1.0}  // weights
         };
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
             {0b001, 3, 1.84583f},
@@ -228,9 +228,9 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
         std::vector<Mask> masks;
         auto accumulate = [&](Query const&, Mask const& mask) { masks.push_back(mask); };
         Query query{
-            "Q1", // query ID
-            {6, 1, 5}, // terms
-            {0.1, 0.4, 1.0} // weights
+            "Q1",  // query ID
+            {6, 1, 5},  // terms
+            {0.1, 0.4, 1.0}  // weights
         };
         WHEN("Executed with limit 0")
         {
@@ -250,13 +250,10 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
             for_all_subsets(query, 2, accumulate);
             THEN("Unigrams and bigrams accumulated")
             {
-                CHECK(masks
-                      == std::vector<Mask>{Mask(0b001),
-                                           Mask(0b010),
-                                           Mask(0b011),
-                                           Mask(0b100),
-                                           Mask(0b101),
-                                           Mask(0b110)});
+                CHECK(
+                    masks
+                    == std::vector<Mask>{
+                        Mask(0b001), Mask(0b010), Mask(0b011), Mask(0b100), Mask(0b101), Mask(0b110)});
             }
         }
         WHEN("Executed with limit 3")
@@ -264,14 +261,15 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
             for_all_subsets(query, 3, accumulate);
             THEN("All combinations accumulated")
             {
-                CHECK(masks
-                      == std::vector<Mask>{Mask(0b001),
-                                           Mask(0b010),
-                                           Mask(0b011),
-                                           Mask(0b100),
-                                           Mask(0b101),
-                                           Mask(0b110),
-                                           Mask(0b111)});
+                CHECK(
+                    masks
+                    == std::vector<Mask>{Mask(0b001),
+                                         Mask(0b010),
+                                         Mask(0b011),
+                                         Mask(0b100),
+                                         Mask(0b101),
+                                         Mask(0b110),
+                                         Mask(0b111)});
             }
         }
     }

@@ -30,13 +30,14 @@ TEST_CASE("wand_data_range")
     binary_freq_collection const collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
     binary_collection document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes");
     std::unordered_set<size_t> dropped_term_ids;
-    WandType wdata_range(document_sizes.begin()->begin(),
-                         collection.num_docs(),
-                         collection,
-                         scorer_name,
-                         BlockSize(FixedBlock()),
-                         false,
-                         dropped_term_ids);
+    WandType wdata_range(
+        document_sizes.begin()->begin(),
+        collection.num_docs(),
+        collection,
+        scorer_name,
+        BlockSize(FixedBlock()),
+        false,
+        dropped_term_ids);
 
     auto scorer = scorer::from_name(scorer_name, wdata_range);
 
@@ -53,8 +54,9 @@ TEST_CASE("wand_data_range")
                     w.next_geq(docid);
                     CHECKED_ELSE(w.score() >= score)
                     {
-                        FAIL("Term: " << term_id << " docid: " << docid
-                                      << ", block docid: " << w.docid());
+                        FAIL(
+                            "Term: " << term_id << " docid: " << docid
+                                     << ", block docid: " << w.docid());
                     }
                     REQUIRE(w.score() <= max);
                 }
@@ -90,8 +92,9 @@ TEST_CASE("wand_data_range")
                     we.next_geq(docid);
                     CHECKED_ELSE(we.score() >= score)
                     {
-                        FAIL("Term: " << term_id << " docid: " << docid << ", pos: " << pos
-                                      << ", block docid: " << we.docid());
+                        FAIL(
+                            "Term: " << term_id << " docid: " << docid << ", pos: " << pos
+                                     << ", block docid: " << we.docid());
                     }
                     REQUIRE(we.score() <= max);
                 }

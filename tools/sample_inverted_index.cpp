@@ -14,7 +14,6 @@ using namespace pisa;
 
 int main(int argc, char** argv)
 {
-
     std::string input_basename;
     std::string output_basename;
     std::string type;
@@ -28,9 +27,10 @@ int main(int argc, char** argv)
     app.add_option("-r,--rate", rate, "Sampling rate (proportional size of the output index)")
         ->required();
     app.add_option("-t,--type", type, "Sampling type")->required();
-    app.add_option("--terms-to-drop",
-                   terms_to_drop_filename,
-                   "A filename containing a list of term IDs that we want to drop");
+    app.add_option(
+        "--terms-to-drop",
+        terms_to_drop_filename,
+        "A filename containing a list of term IDs that we want to drop");
     app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
 
@@ -38,8 +38,7 @@ int main(int argc, char** argv)
         spdlog::error("Sampling rate should be greater than 0 and lower than or equal to 1.");
         std::abort();
     }
-    std::function<std::vector<std::uint32_t>(const binary_collection::const_sequence& docs)>
-        sampling_fn;
+    std::function<std::vector<std::uint32_t>(const binary_collection::const_sequence& docs)> sampling_fn;
 
     if (type == "random_postings") {
         sampling_fn = [&](const auto& docs) {
@@ -47,11 +46,12 @@ int main(int argc, char** argv)
             std::vector<std::uint32_t> indices(docs.size());
             std::vector<std::uint32_t> sample;
             std::iota(indices.begin(), indices.end(), 0);
-            std::sample(indices.begin(),
-                        indices.end(),
-                        std::back_inserter(sample),
-                        sample_size,
-                        std::mt19937{seed});
+            std::sample(
+                indices.begin(),
+                indices.end(),
+                std::back_inserter(sample),
+                sample_size,
+                std::mt19937{seed});
 
             return sample;
         };
@@ -63,11 +63,12 @@ int main(int argc, char** argv)
         std::vector<std::uint32_t> indices(num_docs);
         std::iota(indices.begin(), indices.end(), 0);
         std::vector<std::uint32_t> sampled_indices;
-        std::sample(indices.begin(),
-                    indices.end(),
-                    std::back_inserter(sampled_indices),
-                    sample_size,
-                    std::mt19937{seed});
+        std::sample(
+            indices.begin(),
+            indices.end(),
+            std::back_inserter(sampled_indices),
+            sample_size,
+            std::mt19937{seed});
         std::vector<bool> doc_ids(num_docs);
         for (auto&& p : sampled_indices) {
             doc_ids[p] = true;

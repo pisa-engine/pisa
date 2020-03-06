@@ -29,8 +29,7 @@ int main(int argc, const char** argv)
         if (query_id and q.id) {
             std::cout << *(q.id) << ":";
         }
-        std::cout
-            << join(q.terms | transformed([](auto d) { return std::to_string(d); }), separator)
-            << '\n';
+        std::cout << join(q.terms | transformed([](auto d) { return std::to_string(d); }), separator)
+                  << '\n';
     }
 }

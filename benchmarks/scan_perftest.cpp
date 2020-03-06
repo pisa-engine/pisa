@@ -35,10 +35,11 @@ void perftest(const char* index_filename)
             postings += calls;
         }
         double elapsed = get_time_usecs() - tick;
-        spdlog::info("Read {} postings in {} seconds, {:.1f} ns per posting",
-                     postings,
-                     uint64_t(elapsed / 1000000),
-                     (elapsed / postings * 1000));
+        spdlog::info(
+            "Read {} postings in {} seconds, {:.1f} ns per posting",
+            postings,
+            uint64_t(elapsed / 1000000),
+            (elapsed / postings * 1000));
     }
 
     {
@@ -64,10 +65,11 @@ void perftest(const char* index_filename)
             postings += calls;
         }
         double elapsed = get_time_usecs() - tick;
-        spdlog::info("Read {} postings in {} seconds, {:.1f} ns per posting",
-                     postings,
-                     uint64_t(elapsed / 1000000),
-                     (elapsed / postings * 1000));
+        spdlog::info(
+            "Read {} postings in {} seconds, {:.1f} ns per posting",
+            postings,
+            uint64_t(elapsed / 1000000),
+            (elapsed / postings * 1000));
     }
 
     uint64_t calls_per_list = 20000;
@@ -104,10 +106,11 @@ void perftest(const char* index_filename)
         }
         double elapsed = get_time_usecs() - tick;
 
-        spdlog::info("Performed {} next_geq() with skip={}: {:.1f} ns per call",
-                     calls,
-                     skip,
-                     (elapsed / calls * 1000));
+        spdlog::info(
+            "Performed {} next_geq() with skip={}: {:.1f} ns per call",
+            calls,
+            skip,
+            (elapsed / calls * 1000));
 
         tick = get_time_usecs();
         calls = 0;
@@ -120,15 +123,15 @@ void perftest(const char* index_filename)
         }
         elapsed = get_time_usecs() - tick;
 
-        spdlog::info("Performed {} move() with skip={}: {:.1f} ns per call",
-                     calls,
-                     skip,
-                     (elapsed / calls * 1000));
+        spdlog::info(
+            "Performed {} move() with skip={}: {:.1f} ns per call",
+            calls,
+            skip,
+            (elapsed / calls * 1000));
     }
 }
 int main(int argc, const char** argv)
 {
-
     using pisa::compact_elias_fano;
     using pisa::indexed_sequence;
     using pisa::partitioned_sequence;

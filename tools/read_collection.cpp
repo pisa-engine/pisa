@@ -10,7 +10,6 @@ using namespace pisa;
 
 int main(int argc, char** argv)
 {
-
     std::string collection_file;
     std::string map_file{};
     std::ptrdiff_t first, last;

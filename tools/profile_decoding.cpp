@@ -98,7 +98,7 @@ void profile_decoding(const char* index_filename, double p)
 
     spdlog::info("{} lists processed", index.size());
 }
-} // namespace pisa
+}  // namespace pisa
 
 int main(int /* argc */, const char** argv)
 {

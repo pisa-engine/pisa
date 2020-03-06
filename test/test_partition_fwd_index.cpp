@@ -50,8 +50,9 @@ TEST_CASE("mapping_from_files", "[invert][unit]")
     shards.push_back(std::make_unique<std::istringstream>("D06\nD07\nD08\nD09\nD010\nD11"));
     auto stream_pointers =
         ranges::views::transform(shards, [](auto const& s) { return s.get(); }) | ranges::to_vector;
-    REQUIRE(mapping_from_files(&full, gsl::span<std::istream*>(stream_pointers)).as_vector()
-            == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s});
+    REQUIRE(
+        mapping_from_files(&full, gsl::span<std::istream*>(stream_pointers)).as_vector()
+        == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s});
 }
 
 TEST_CASE("create_random_mapping", "[invert][unit]")
@@ -66,10 +67,11 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
     }
     std::sort(documents.begin(), documents.end());
 
-    REQUIRE(documents.as_vector()
-            == ranges::to_vector(ranges::views::iota(Document_Id{}, Document_Id{1000u})));
-    REQUIRE(counts.as_vector()
-            == std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
+    REQUIRE(
+        documents.as_vector()
+        == ranges::to_vector(ranges::views::iota(Document_Id{}, Document_Id{1000u})));
+    REQUIRE(
+        counts.as_vector() == std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
 }
 
 auto round_robin_mapping(int document_count, int shard_count)
@@ -91,13 +93,14 @@ void build_fwd_index(std::string const& output)
     std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
     std::ifstream is(input);
     pisa::Forward_Index_Builder builder;
-    builder.build(is,
-                  output,
-                  next_plaintext_record,
-                  [](std::string&& term) -> std::string { return std::forward<std::string>(term); },
-                  pisa::parse_plaintext_content,
-                  20'000,
-                  2);
+    builder.build(
+        is,
+        output,
+        next_plaintext_record,
+        [](std::string&& term) -> std::string { return std::forward<std::string>(term); },
+        pisa::parse_plaintext_content,
+        20'000,
+        2);
 }
 
 template <typename Container>
@@ -171,12 +174,12 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                 auto sorted_mapping = mapping.entries().collect();
                 ranges::stable_sort(sorted_mapping, [](auto const& lhs, auto const& rhs) {
                     return std::make_pair(lhs.second, lhs.first)
-                           < std::make_pair(rhs.second, rhs.first);
+                        < std::make_pair(rhs.second, rhs.first);
                 });
-                expected = ranges::views::transform(
-                               sorted_mapping,
-                               [&](auto&& entry) { return expected[entry.first.as_int()]; })
-                           | ranges::to_vector;
+                expected =
+                    ranges::views::transform(
+                        sorted_mapping, [&](auto&& entry) { return expected[entry.first.as_int()]; })
+                    | ranges::to_vector;
 
                 auto pos = expected.begin();
                 for (auto shard : shard_ids) {
@@ -188,8 +191,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     size_t doc = 0u;
                     CAPTURE(shard);
                     CAPTURE(doc);
-                    for (auto iter = ++shard_coll.begin(); iter != shard_coll.end();
-                         ++iter, ++pos) {
+                    for (auto iter = ++shard_coll.begin(); iter != shard_coll.end(); ++iter, ++pos) {
                         auto seq = *iter;
                         REQUIRE(*pos == std::vector<std::uint32_t>(seq.begin(), seq.end()));
                     }
@@ -254,14 +256,16 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     auto shard_seq = *shard_iterators[shard.as_int()];
                     std::vector<std::string> expected_documents(full_seq.size());
                     std::vector<std::string> actual_documents(shard_seq.size());
-                    std::transform(full_seq.begin(),
-                                   full_seq.end(),
-                                   expected_documents.begin(),
-                                   [&](auto const& id) { return full_terms[id]; });
-                    std::transform(shard_seq.begin(),
-                                   shard_seq.end(),
-                                   actual_documents.begin(),
-                                   [&](auto const& id) { return shard_terms[shard.as_int()][id]; });
+                    std::transform(
+                        full_seq.begin(),
+                        full_seq.end(),
+                        expected_documents.begin(),
+                        [&](auto const& id) { return full_terms[id]; });
+                    std::transform(
+                        shard_seq.begin(),
+                        shard_seq.end(),
+                        actual_documents.begin(),
+                        [&](auto const& id) { return shard_terms[shard.as_int()][id]; });
                     REQUIRE(actual_documents == expected_documents);
                     ++full_iter;
                     ++shard_iterators[shard.as_int()];

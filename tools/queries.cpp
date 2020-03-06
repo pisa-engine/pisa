@@ -33,13 +33,14 @@ using namespace pisa;
 using ranges::views::enumerate;
 
 template <typename Fn>
-void extract_times(Fn fn,
-                   std::vector<Query> const& queries,
-                   std::vector<Threshold> const& thresholds,
-                   std::string const& index_type,
-                   std::string const& query_type,
-                   size_t runs,
-                   std::ostream& os)
+void extract_times(
+    Fn fn,
+    std::vector<Query> const& queries,
+    std::vector<Threshold> const& thresholds,
+    std::string const& index_type,
+    std::string const& query_type,
+    size_t runs,
+    std::ostream& os)
 {
     std::vector<std::size_t> times(runs);
     for (auto&& [qid, query] : enumerate(queries)) {
@@ -49,23 +50,22 @@ void extract_times(Fn fn,
                        [&]() { do_not_optimize_away(fn(q, t)); })
                 .count();
         });
-        auto mean =
-            std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
+        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
         os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
     }
 }
 
 template <typename Functor>
-void op_perftest(Functor query_func,
-                 std::vector<Query> const& queries,
-                 std::vector<Threshold> const& thresholds,
-                 std::string const& index_type,
-                 std::string const& query_type,
-                 size_t runs,
-                 std::uint64_t k,
-                 bool safe)
+void op_perftest(
+    Functor query_func,
+    std::vector<Query> const& queries,
+    std::vector<Threshold> const& thresholds,
+    std::string const& index_type,
+    std::string const& query_type,
+    size_t runs,
+    std::uint64_t k,
+    bool safe)
 {
-
     std::vector<double> query_times;
     std::size_t num_reruns = 0;
     spdlog::info("Safe: {}", safe);
@@ -81,7 +81,7 @@ void op_perftest(Functor query_func,
                 }
                 do_not_optimize_away(result);
             });
-            if (run != 0) { // first run is not timed
+            if (run != 0) {  // first run is not timed
                 query_times.push_back(usecs.count());
             }
             idx += 1;
@@ -115,16 +115,17 @@ void op_perftest(Functor query_func,
 }
 
 template <typename IndexType, typename WandType>
-void perftest(const std::string& index_filename,
-              const std::optional<std::string>& wand_data_filename,
-              const std::vector<Query>& queries,
-              const std::optional<std::string>& thresholds_filename,
-              std::string const& type,
-              std::string const& query_type,
-              uint64_t k,
-              std::string const& scorer_name,
-              bool extract,
-              bool safe)
+void perftest(
+    const std::string& index_filename,
+    const std::optional<std::string>& wand_data_filename,
+    const std::vector<Query>& queries,
+    const std::optional<std::string>& thresholds_filename,
+    std::string const& type,
+    std::string const& query_type,
+    uint64_t k,
+    std::string const& scorer_name,
+    bool extract,
+    bool safe)
 {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
@@ -208,8 +209,8 @@ void perftest(const std::string& index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
-                block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                 index.num_docs());
+                block_max_wand_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -218,8 +219,8 @@ void perftest(const std::string& index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_maxscore_query block_max_maxscore_q(topk);
-                block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                     index.num_docs());
+                block_max_maxscore_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -237,8 +238,8 @@ void perftest(const std::string& index_filename,
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
-                block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                       index.num_docs());
+                block_max_ranked_and_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -305,12 +306,7 @@ int main(int argc, const char** argv)
     bool safe = false;
     bool quantized = false;
 
-    App<arg::Index,
-        arg::WandData,
-        arg::Query<arg::QueryMode::Ranked>,
-        arg::Algorithm,
-        arg::Scorer,
-        arg::Thresholds>
+    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--extract", extract, "Extract individual query times");
@@ -328,31 +324,31 @@ int main(int argc, const char** argv)
         std::cout << "qid\tusec\n";
     }
 
-    auto params = std::make_tuple(app.index_filename(),
-                                  app.wand_data_path(),
-                                  app.queries(),
-                                  app.thresholds_file(),
-                                  app.index_encoding(),
-                                  app.algorithm(),
-                                  app.k(),
-                                  app.scorer(),
-                                  extract,
-                                  safe);
+    auto params = std::make_tuple(
+        app.index_filename(),
+        app.wand_data_path(),
+        app.queries(),
+        app.thresholds_file(),
+        app.index_encoding(),
+        app.algorithm(),
+        app.k(),
+        app.scorer(),
+        extract,
+        safe);
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                               \
-    }                                                                                       \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                 \
-    {                                                                                       \
-        if (app.is_wand_compressed()) {                                                     \
-            if (quantized) {                                                                \
-                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, \
-                           params);                                                         \
-            } else {                                                                        \
-                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
-            }                                                                               \
-        } else {                                                                            \
-            std::apply(perftest<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
+#define LOOP_BODY(R, DATA, T)                                                                        \
+    }                                                                                                \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                          \
+    {                                                                                                \
+        if (app.is_wand_compressed()) {                                                              \
+            if (quantized) {                                                                         \
+                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
+            } else {                                                                                 \
+                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);           \
+            }                                                                                        \
+        } else {                                                                                     \
+            std::apply(perftest<BOOST_PP_CAT(T, _index), wand_raw_index>, params);                   \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

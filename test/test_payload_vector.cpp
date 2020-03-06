@@ -12,14 +12,21 @@
 using namespace pisa;
 using namespace std::literals::string_view_literals;
 
-inline std::byte operator"" _b(unsigned long long n) { return std::byte(n); }
-inline std::byte operator"" _b(char c) { return std::byte(c); }
+inline std::byte operator"" _b(unsigned long long n)
+{
+    return std::byte(n);
+}
+inline std::byte operator"" _b(char c)
+{
+    return std::byte(c);
+}
 
 TEST_CASE("Unpack head", "[payload_vector][unit]")
 {
     std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
-    REQUIRE(unpack_head<std::byte>(bytes)
-            == std::tuple(0_b, gsl::make_span(std::vector<std::byte>{1_b, 2_b, 3_b, 4_b, 5_b})));
+    REQUIRE(
+        unpack_head<std::byte>(bytes)
+        == std::tuple(0_b, gsl::make_span(std::vector<std::byte>{1_b, 2_b, 3_b, 4_b, 5_b})));
     auto [b, i, s] = unpack_head<std::byte, uint32_t>(bytes);
     CHECK(b == 0_b);
     CHECK(i == uint32_t(67305985));
@@ -29,22 +36,28 @@ TEST_CASE("Unpack head", "[payload_vector][unit]")
         std::runtime_error,
         Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
             return std::string(err.what())
-                   == "Cannot unpack span of size 6 into structure of size 7";
+                == "Cannot unpack span of size 6 into structure of size 7";
         }));
 }
 
 TEST_CASE("Split span", "[payload_vector][unit]")
 {
     std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
-    REQUIRE(split(bytes, 0)
-            == std::tuple(gsl::make_span(std::vector<std::byte>{}),
-                          gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})));
-    REQUIRE(split(bytes, 4)
-            == std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
-                          gsl::make_span(std::vector<std::byte>{4_b, 5_b})));
-    REQUIRE(split(bytes, 6)
-            == std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
-                          gsl::make_span(std::vector<std::byte>{})));
+    REQUIRE(
+        split(bytes, 0)
+        == std::tuple(
+            gsl::make_span(std::vector<std::byte>{}),
+            gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})));
+    REQUIRE(
+        split(bytes, 4)
+        == std::tuple(
+            gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
+            gsl::make_span(std::vector<std::byte>{4_b, 5_b})));
+    REQUIRE(
+        split(bytes, 6)
+        == std::tuple(
+            gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
+            gsl::make_span(std::vector<std::byte>{})));
     REQUIRE_THROWS_MATCHES(
         split(bytes, 7),
         std::runtime_error,
@@ -186,6 +199,7 @@ TEST_CASE("Test payload vector decoding", "[payload_vector][unit]")
     // clang-format on
     auto vec = Payload_Vector<std::string_view>::from(
         gsl::make_span(reinterpret_cast<std::byte const*>(data.data()), data.size()));
-    REQUIRE(std::vector<std::string>(vec.begin(), vec.end())
-            == std::vector<std::string>{"abc", "def", "ghij", "klm"});
+    REQUIRE(
+        std::vector<std::string>(vec.begin(), vec.end())
+        == std::vector<std::string>{"abc", "def", "ghij", "klm"});
 }

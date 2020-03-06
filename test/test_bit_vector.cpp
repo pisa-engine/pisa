@@ -125,11 +125,12 @@ TEST_CASE("bit_vector_unary_enumerator")
         std::vector<std::size_t> posv(v.size());
         std::vector<std::size_t> intervals;
         std::iota(posv.begin(), posv.end(), 0);
-        std::sample(posv.begin(),
-                    posv.end(),
-                    std::back_inserter(intervals),
-                    40,
-                    std::mt19937{std::random_device{}()});
+        std::sample(
+            posv.begin(),
+            posv.end(),
+            std::back_inserter(intervals),
+            40,
+            std::mt19937{std::random_device{}()});
         REQUIRE(intervals.size() % 2 == 0);
         for (auto left = intervals.begin(); left != intervals.end(); std::advance(left, 2)) {
             auto right = std::next(left);

@@ -100,14 +100,9 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
         for (size_t t = 0; t < 10; ++t) {
             uint64_t p = 0;
             switch (i) {
-            case 0:
-                p = last + 1;
-                break;
-            case 1:
-                p = seq[i];
-                break;
-            default:
-                p = last + 1 + (rand() % (seq[i] - last));
+            case 0: p = last + 1; break;
+            case 1: p = seq[i]; break;
+            default: p = last + 1 + (rand() % (seq[i] - last));
             }
 
             val = rr.next_geq(p);
@@ -144,10 +139,11 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
             auto rr = r;
             rr.move(i);
             val = rr.next_geq(seq[i + skip]);
-            MY_REQUIRE_EQUAL(exp_pos,
-                             val.first,
-                             "i = " << i << " skip = " << skip << " value expected = "
-                                    << seq[i + skip] << " got = " << val.second);
+            MY_REQUIRE_EQUAL(
+                exp_pos,
+                val.first,
+                "i = " << i << " skip = " << skip << " value expected = " << seq[i + skip]
+                       << " got = " << val.second);
             MY_REQUIRE_EQUAL(seq[i + skip], val.second, "i = " << i << " skip = " << skip);
         }
     }
@@ -156,7 +152,7 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
 // oh, C++
 struct no_next_geq_tag {
 };
-struct next_geq_tag : no_next_geq_tag {
+struct next_geq_tag: no_next_geq_tag {
 };
 
 template <typename SequenceReader>
@@ -166,9 +162,8 @@ void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq, no_next_g
 }
 
 template <typename SequenceReader>
-typename pisa::if_has_next_geq<SequenceReader> test_sequence(SequenceReader r,
-                                                             std::vector<uint64_t> const& seq,
-                                                             next_geq_tag const&)
+typename pisa::if_has_next_geq<SequenceReader>
+test_sequence(SequenceReader r, std::vector<uint64_t> const& seq, next_geq_tag const&)
 {
     test_move_next(r, seq);
     test_next_geq(r, seq);
@@ -181,10 +176,8 @@ void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq)
 }
 
 template <typename ParamsType, typename SequenceType>
-inline void test_sequence(SequenceType,
-                          ParamsType const& params,
-                          uint64_t universe,
-                          std::vector<uint64_t> const& seq)
+inline void test_sequence(
+    SequenceType, ParamsType const& params, uint64_t universe, std::vector<uint64_t> const& seq)
 {
     pisa::bit_vector_builder bvb;
     SequenceType::write(bvb, seq.begin(), universe, seq.size(), params);
