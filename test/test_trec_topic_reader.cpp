@@ -1,12 +1,13 @@
 #define CATCH_CONFIG_MAIN
-#include <optional>
 #include "catch2/catch.hpp"
+#include <optional>
 
 #include "pisa/query/trec_topic_reader.hpp"
 
 using namespace pisa;
 
-TEST_CASE("Read topic", "[unit]") {
+TEST_CASE("Read topic", "[unit]")
+{
     std::istringstream is(
         "<top>\n"
         "<num> Number: 301 \n"
@@ -18,7 +19,7 @@ TEST_CASE("Read topic", "[unit]") {
         "</top>\n");
 
     pisa::trec_topic_reader reader(is);
-    auto                    topic = reader.next_topic();
+    auto topic = reader.next_topic();
     REQUIRE(topic);
     REQUIRE((*topic).num == "301");
     REQUIRE((*topic).title == "title here.");
@@ -27,7 +28,8 @@ TEST_CASE("Read topic", "[unit]") {
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
-TEST_CASE("Read multiple topics", "[unit]") {
+TEST_CASE("Read multiple topics", "[unit]")
+{
     std::istringstream is(
         "<top>\n"
         "<num> Number: 301 \n"
@@ -50,7 +52,7 @@ TEST_CASE("Read multiple topics", "[unit]") {
         "</top>\n");
 
     pisa::trec_topic_reader reader(is);
-    auto                    topic = reader.next_topic();
+    auto topic = reader.next_topic();
     REQUIRE(topic);
     REQUIRE((*topic).num == "301");
     REQUIRE((*topic).title == "title here.");
@@ -65,7 +67,8 @@ TEST_CASE("Read multiple topics", "[unit]") {
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
-TEST_CASE("Read topic with closing tags", "[unit]") {
+TEST_CASE("Read topic with closing tags", "[unit]")
+{
     std::istringstream is(
         "<top>\n"
         "<num> Number: 301 \n"
@@ -79,7 +82,7 @@ TEST_CASE("Read topic with closing tags", "[unit]") {
         "</top>\n");
 
     pisa::trec_topic_reader reader(is);
-    auto                    topic = reader.next_topic();
+    auto topic = reader.next_topic();
     REQUIRE(topic);
     REQUIRE((*topic).num == "301");
     REQUIRE((*topic).title == "title here.");
@@ -88,7 +91,8 @@ TEST_CASE("Read topic with closing tags", "[unit]") {
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
-TEST_CASE("Invalid topic", "[unit]") {
+TEST_CASE("Invalid topic", "[unit]")
+{
     {
         std::istringstream is(
             "<top>\n"

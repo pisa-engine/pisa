@@ -4,8 +4,8 @@
 #include "test_generic_sequence.hpp"
 #include <algorithm>
 #include <cstdlib>
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 #include "binary_freq_collection.hpp"
 #include "pisa_config.hpp"
@@ -23,11 +23,15 @@ TEST_CASE("sample_inverted_index")
 
     // when
     std::unordered_set<size_t> terms_to_drop;
-    pisa::sample_inverted_index(input, output, [](const auto &docs) {
-        std::vector<std::uint32_t> sample(docs.size());
-        std::iota(sample.begin(), sample.end(), 0);
-        return sample;
-    }, terms_to_drop);
+    pisa::sample_inverted_index(
+        input,
+        output,
+        [](const auto& docs) {
+            std::vector<std::uint32_t> sample(docs.size());
+            std::iota(sample.begin(), sample.end(), 0);
+            return sample;
+        },
+        terms_to_drop);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -50,7 +54,7 @@ TEST_CASE("sample_inverted_index")
     auto ssit = sizes_sampled.begin()->begin();
 
     for (size_t i = 0; i < original.num_docs(); ++i) {
-            REQUIRE(*soit++ == *ssit++);
+        REQUIRE(*soit++ == *ssit++);
     }
 }
 
@@ -65,11 +69,15 @@ TEST_CASE("sample_inverted_index_one_sample")
 
     // when
     std::unordered_set<size_t> terms_to_drop;
-    pisa::sample_inverted_index(input, output, [](const auto &docs) {
-        std::vector<std::uint32_t> sample(1);
-        std::iota(sample.begin(), sample.end(), 0);
-        return sample;
-    }, terms_to_drop);
+    pisa::sample_inverted_index(
+        input,
+        output,
+        [](const auto& docs) {
+            std::vector<std::uint32_t> sample(1);
+            std::iota(sample.begin(), sample.end(), 0);
+            return sample;
+        },
+        terms_to_drop);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -94,10 +102,9 @@ TEST_CASE("sample_inverted_index_one_sample")
     auto ssit = sizes_sampled.begin()->begin();
 
     for (size_t i = 0; i < original.num_docs(); ++i) {
-            REQUIRE(*soit++ == *ssit++);
+        REQUIRE(*soit++ == *ssit++);
     }
 }
-
 
 TEST_CASE("sample_inverted_index_reverse")
 {
@@ -110,15 +117,19 @@ TEST_CASE("sample_inverted_index_reverse")
     float rate = 0.1;
     // when
     std::unordered_set<size_t> terms_to_drop;
-    pisa::sample_inverted_index(input, output, [&](const auto &docs) {
-        std::vector<std::uint32_t> sample(docs.size());
-        std::iota(sample.begin(), sample.end(), 0);
-        std::reverse(sample.begin(), sample.end());
-        size_t new_size = std::ceil(docs.size() * rate);
-        sample.resize(new_size);
-        std::sort(sample.begin(), sample.end());
-        return sample;
-    }, terms_to_drop);
+    pisa::sample_inverted_index(
+        input,
+        output,
+        [&](const auto& docs) {
+            std::vector<std::uint32_t> sample(docs.size());
+            std::iota(sample.begin(), sample.end(), 0);
+            std::reverse(sample.begin(), sample.end());
+            size_t new_size = std::ceil(docs.size() * rate);
+            sample.resize(new_size);
+            std::sort(sample.begin(), sample.end());
+            return sample;
+        },
+        terms_to_drop);
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -148,6 +159,6 @@ TEST_CASE("sample_inverted_index_reverse")
     auto ssit = sizes_sampled.begin()->begin();
 
     for (size_t i = 0; i < original.num_docs(); ++i) {
-            REQUIRE(*soit++ == *ssit++);
+        REQUIRE(*soit++ == *ssit++);
     }
 }
