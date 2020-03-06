@@ -82,7 +82,7 @@ struct lambdas_computer: pisa::semiasync_queue::job {
         bool heuristic_greedy = configuration::get().heuristic_greedy;
 
         block_id_type cur_block_id = m_block_id_base;
-        for (auto const& input_block : blocks) {
+        for (auto const& input_block: blocks) {
             static const uint32_t smoothing = 1;  // Laplace smoothing
             uint32_t docs_exp = smoothing, freqs_exp = smoothing;
             if (!m_counts.empty()) {
@@ -99,7 +99,7 @@ struct lambdas_computer: pisa::semiasync_queue::job {
 
                 // smallest point is always added with lambda=0
                 m_points_buf.push_back(lambda_point{block_id, 0, points.front()});
-                for (auto const& cur : points) {
+                for (auto const& cur: points) {
                     while (true) {
                         auto const& prev = m_points_buf.back();
                         // if this point is dominated we can skip it
@@ -252,7 +252,7 @@ struct list_transformer: pisa::semiasync_queue::job {
         auto blocks = m_e.get_blocks();
         std::vector<output_block_type> output_blocks;
 
-        for (auto const& input_block : blocks) {
+        for (auto const& input_block: blocks) {
             auto docs_type = *m_block_type++;
             auto freqs_type = *m_block_type++;
             auto docs_param = *m_block_param++;
@@ -334,7 +334,7 @@ void optimal_hybrid_index(
         lambdas_log.open(output_filename, std::ios::out);
     }
 
-    for (auto const& lpid : lambda_vector_type::bufreader_type(lambda_points)) {
+    for (auto const& lpid: lambda_vector_type::bufreader_type(lambda_points)) {
         assert(lpid.block_id < num_blocks);
         cur_space -= block_spaces[lpid.block_id];
         cur_time -= block_times[lpid.block_id];

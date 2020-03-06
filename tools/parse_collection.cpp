@@ -110,7 +110,7 @@ record_parser(std::string const& type, std::istream& is)
                 } else {
                     std::ostringstream os;
                     auto record = *std::get_if<wapopp::Record>(&result);
-                    for (auto content : record.contents) {
+                    for (auto content: record.contents) {
                         if (auto kicker = std::get_if<wapopp::Kicker>(&content); kicker != nullptr) {
                             os << " " << kicker->content;
                         } else if (auto title = std::get_if<wapopp::Title>(&content);

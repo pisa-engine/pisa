@@ -76,7 +76,7 @@ TEST_CASE("Write header", "[parsing][forward_index]")
 template <typename T>
 void write_lines(std::ostream& os, gsl::span<T>&& elements)
 {
-    for (auto const& element : elements) {
+    for (auto const& element: elements) {
         os << element << '\n';
     }
 }
@@ -160,7 +160,7 @@ void write_batch(
     write_lines(term_file, gsl::make_span(terms));
     std::ofstream os(basename);
     Forward_Index_Builder::write_header(os, collection.size());
-    for (auto const& seq : collection) {
+    for (auto const& seq: collection) {
         Forward_Index_Builder::write_document(os, seq.begin(), seq.end());
     }
 }
@@ -369,7 +369,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                         original_body.push_back(std::move(term));
                     }
                     std::vector<std::string> produced_body;
-                    for (auto term_id : *seq_iter) {
+                    for (auto term_id: *seq_iter) {
                         produced_body.push_back(term_map[term_id]);
                     }
                     REQUIRE(produced_body == original_body);

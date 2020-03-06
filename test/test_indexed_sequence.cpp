@@ -12,7 +12,7 @@ TEST_CASE("indexed_sequence")
     pisa::global_parameters params;
 
     std::vector<double> avg_gaps = {1.1, 1.9, 2.5, 3, 4, 5, 10};
-    for (auto avg_gap : avg_gaps) {
+    for (auto avg_gap: avg_gaps) {
         uint64_t n = 10000;
         uint64_t universe = uint64_t(n * avg_gap);
         auto seq = random_sequence(universe, n, true);

@@ -52,7 +52,7 @@ void thresholds(
     }
     topk_queue topk(k);
     wand_query wand_q(topk);
-    for (auto const& query : queries) {
+    for (auto const& query: queries) {
         wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
         topk.finalize();
         auto results = topk.topk();

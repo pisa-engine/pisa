@@ -76,7 +76,7 @@ TEST_CASE("partitioned_sequence")
     }
 
     std::vector<double> avg_gaps = {1.1, 1.9, 2.5, 3, 4, 5, 10};
-    for (auto avg_gap : avg_gaps) {
+    for (auto avg_gap: avg_gaps) {
         uint64_t n = 10000;
         uint64_t universe = uint64_t(n * avg_gap);
         auto seq = random_sequence(universe, n, true);
@@ -89,7 +89,7 @@ TEST_CASE("partitioned_sequence")
         uint64_t universe = 100000;
         uint64_t initial_gap = rand() % 50000;
         auto short_seq = random_sequence(universe - initial_gap, i, true);
-        for (auto& v : short_seq)
+        for (auto& v: short_seq)
             v += initial_gap;
         test_partitioned_sequence<indexed_sequence>(universe, short_seq);
         test_partitioned_sequence<strict_sequence>(universe, short_seq);

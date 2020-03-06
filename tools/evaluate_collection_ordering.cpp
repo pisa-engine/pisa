@@ -33,7 +33,7 @@ int main(int argc, const char** argv)
 
     double all_log_gaps = 0.0f;
     size_t no_gaps = 0;
-    for (const auto& seq : input) {
+    for (const auto& seq: input) {
         no_gaps += seq.docs.size();
         all_log_gaps += log2f(seq.docs.begin()[0] + 1);
         for (size_t i = 1; i < seq.docs.size(); ++i) {

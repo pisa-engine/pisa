@@ -40,7 +40,7 @@ int main(int argc, char** argv)
         mio::mmap_source m(lexicon_file.c_str());
         auto lexicon = Payload_Vector<>::from(m);
         if (*print) {
-            for (auto const& elem : lexicon) {
+            for (auto const& elem: lexicon) {
                 std::cout << elem << '\n';
             }
             return 0;

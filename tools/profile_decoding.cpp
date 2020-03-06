@@ -33,7 +33,7 @@ double measure_decoding_time(size_t sum_of_values, size_t n, std::vector<uint8_t
     }
 
     double tick = get_time_usecs();
-    for (auto position : positions) {
+    for (auto position: positions) {
         mixed_block::decode(position, out_buf.data(), sum_of_values, n);
         do_not_optimize_away(out_buf[0]);
     }
@@ -85,7 +85,7 @@ void profile_decoding(const char* index_filename, double p)
         }
 
         auto blocks = index[l].get_blocks();
-        for (auto const& block : blocks) {
+        for (auto const& block: blocks) {
             // only measure full blocks
             if (block.size == mixed_block::block_size && dist01(rng) < p) {
                 block.decode_doc_gaps(values);

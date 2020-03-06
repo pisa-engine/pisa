@@ -30,7 +30,7 @@ void selective_queries(const char* index_filename, std::string const& type)
             insert = false;
         else {
             count++;
-            for (term_id_type term : query) {
+            for (term_id_type term: query) {
                 auto t = index[term];
                 if (t.size() <= configuration::get().threshold_wand_list) {
                     insert = false;

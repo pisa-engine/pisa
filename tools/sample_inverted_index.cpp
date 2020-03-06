@@ -70,7 +70,7 @@ int main(int argc, char** argv)
             sample_size,
             std::mt19937{seed});
         std::vector<bool> doc_ids(num_docs);
-        for (auto&& p : sampled_indices) {
+        for (auto&& p: sampled_indices) {
             doc_ids[p] = true;
         }
 
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     std::unordered_set<size_t> terms_to_drop;
     sample_inverted_index(input_basename, output_basename, sampling_fn, terms_to_drop);
     std::ofstream dropped_terms_file(terms_to_drop_filename);
-    for (const auto& id : terms_to_drop) {
+    for (const auto& id: terms_to_drop) {
         dropped_terms_file << id << std::endl;
     }
 

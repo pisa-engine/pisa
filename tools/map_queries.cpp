@@ -25,7 +25,7 @@ int main(int argc, const char** argv)
 
     using boost::adaptors::transformed;
     using boost::algorithm::join;
-    for (auto&& q : app.queries()) {
+    for (auto&& q: app.queries()) {
         if (query_id and q.id) {
             std::cout << *(q.id) << ":";
         }

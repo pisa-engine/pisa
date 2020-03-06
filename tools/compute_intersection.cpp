@@ -58,7 +58,7 @@ void intersect(
             intersection.max_score);
     };
 
-    for (auto&& query : queries) {
+    for (auto&& query: queries) {
         if (intersection_type == IntersectionType::Combinations) {
             for_all_subsets(query, max_term_count, print_intersection);
         } else {

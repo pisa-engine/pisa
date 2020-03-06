@@ -61,7 +61,7 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
     auto mapping = pisa::create_random_mapping(1000u, 13u, seed);
     VecMap<Shard_Id, int> counts(13, 0);
     VecMap<Document_Id> documents;
-    for (auto&& [doc, shard] : mapping.entries()) {
+    for (auto&& [doc, shard]: mapping.entries()) {
         counts[shard] += 1;
         documents.push_back(doc);
     }
@@ -78,7 +78,7 @@ auto round_robin_mapping(int document_count, int shard_count)
 {
     VecMap<Document_Id, Shard_Id> mapping(document_count);
     Shard_Id shard = 0_s;
-    for (auto doc : ranges::views::iota(0_d, Document_Id{document_count})) {
+    for (auto doc: ranges::views::iota(0_d, Document_Id{document_count})) {
         mapping[doc] = shard++;
         if (shard == Shard_Id{shard_count}) {
             shard = 0_s;
@@ -107,7 +107,7 @@ template <typename Container>
 auto shard_elements(Container const& container, Shard_Id shard_id, int shard_count)
 {
     Container elems;
-    for (auto const& val :
+    for (auto const& val:
          ranges::views::drop(container, shard_id.as_int()) | ranges::views::stride(shard_count)) {
         elems.push_back(val);
     }
@@ -129,7 +129,7 @@ TEST_CASE("copy_sequence", "[invert][unit]")
             {
                 std::ifstream is(fwd_basename);
                 std::ofstream os(output);
-                for ([[maybe_unused]] auto _ : ranges::views::ints(0, document_count)) {
+                for ([[maybe_unused]] auto _: ranges::views::ints(0, document_count)) {
                     copy_sequence(is, os);
                 }
             }
@@ -182,7 +182,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     | ranges::to_vector;
 
                 auto pos = expected.begin();
-                for (auto shard : shard_ids) {
+                for (auto shard: shard_ids) {
                     // std::vector<std::vector<std::uint32_t>> actual;
                     spdlog::info("Testing shard {}", shard.as_int());
                     spdlog::default_logger()->flush();
@@ -223,7 +223,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
             {
                 auto original_titles =
                     io::read_string_vector(fmt::format("{}.documents", fwd_basename));
-                for (auto shard_id : shard_ids) {
+                for (auto shard_id: shard_ids) {
                     auto expected_titles = shard_elements(original_titles, shard_id, 13);
                     auto actual_titles = io::read_string_vector(
                         fmt::format("{}.{:03d}.documents", output_basename, shard_id.as_int()));
@@ -241,7 +241,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                 shards.reserve(13);
                 shard_iterators.reserve(13);
                 shard_terms.reserve(13);
-                for (auto shard : shard_ids) {
+                for (auto shard: shard_ids) {
                     shards.push_back(binary_collection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str()));
                     shard_terms.push_back(io::read_string_vector(
@@ -250,7 +250,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     shards.back();
                 }
                 Shard_Id shard = 0_s;
-                for (auto doc : ranges::views::iota(0_d, Document_Id{document_count})) {
+                for (auto doc: ranges::views::iota(0_d, Document_Id{document_count})) {
                     CAPTURE(doc);
                     auto full_seq = *full_iter;
                     auto shard_seq = *shard_iterators[shard.as_int()];

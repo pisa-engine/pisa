@@ -95,7 +95,7 @@ void create_collection(
         }
 
         size_t term_id = 0;
-        for (auto const& plist : input) {
+        for (auto const& plist: input) {
             size_t size = plist.docs.size();
             if (quantized) {
                 LinearQuantizer quantizer(

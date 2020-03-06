@@ -25,7 +25,7 @@ int main(int argc, char** argv)
     }
 
     std::size_t count = -1;  // Takes care of the first 'fake' sequence
-    for (auto&& p : coll) {
+    for (auto&& p: coll) {
         count += p.size();
     }
 

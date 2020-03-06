@@ -44,7 +44,7 @@ void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries
         });
     }
 
-    for (auto& thread : threads)
+    for (auto& thread: threads)
         thread.join();
 }
 
@@ -94,7 +94,7 @@ void profile(
 
     auto scorer = scorer::from_name("bm25", wdata);
 
-    for (auto const& t : query_types) {
+    for (auto const& t: query_types) {
         spdlog::info("Query type: {}", t);
         std::function<uint64_t(Query)> query_fun;
         if (t == "and") {

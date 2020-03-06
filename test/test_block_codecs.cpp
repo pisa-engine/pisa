@@ -19,7 +19,7 @@ template <typename BlockCodec>
 void test_block_codec()
 {
     std::vector<size_t> sizes = {1, 16, BlockCodec::block_size - 1, BlockCodec::block_size};
-    for (auto size : sizes) {
+    for (auto size: sizes) {
         std::vector<uint32_t> values(size);
         std::generate(values.begin(), values.end(), []() { return (uint32_t)rand() % (1 << 12); });
 

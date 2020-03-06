@@ -34,7 +34,7 @@ void perftest(IndexType const& index, std::string const& type)
         auto tick = get_time_usecs();
         uint64_t calls_per_list = 500000;
         size_t postings = 0;
-        for (auto i : long_lists) {
+        for (auto i: long_lists) {
             auto reader = index[i];
             auto calls = std::min(calls_per_list, reader.size());
             for (size_t i = 0; i < calls; ++i) {
@@ -77,9 +77,9 @@ void perftest(IndexType const& index, std::string const& type)
 
         auto tick = get_time_usecs();
         size_t calls = 0;
-        for (auto const& p : skip_values) {
+        for (auto const& p: skip_values) {
             auto reader = index[p.first];
-            for (auto const& val : p.second) {
+            for (auto const& val: p.second) {
                 reader.next_geq(val);
                 do_not_optimize_away(reader.docid());
                 if (with_freqs) {

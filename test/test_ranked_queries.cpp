@@ -35,7 +35,7 @@ struct IndexData {
     {
         tbb::task_scheduler_init init;
         typename Index::builder builder(collection.num_docs(), params);
-        for (auto const& plist : collection) {
+        for (auto const& plist: collection) {
             uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
             builder.add_posting_list(
                 plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
@@ -114,8 +114,8 @@ TEMPLATE_TEST_CASE(
     range_query_128<block_max_wand_query>,
     range_query_128<block_max_maxscore_query>)
 {
-    for (auto quantized : {false, true}) {
-        for (auto&& s_name : {"bm25", "qld"}) {
+    for (auto quantized: {false, true}) {
+        for (auto&& s_name: {"bm25", "qld"}) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
             topk_queue topk_1(10);
@@ -124,7 +124,7 @@ TEMPLATE_TEST_CASE(
             ranked_or_query or_q(topk_2);
 
             auto scorer = scorer::from_name(s_name, data->wdata);
-            for (auto const& q : data->queries) {
+            for (auto const& q: data->queries) {
                 or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
                 op_q(
                     make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
@@ -147,8 +147,8 @@ TEMPLATE_TEST_CASE(
 
 TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", block_max_ranked_and_query)
 {
-    for (auto quantized : {false, true}) {
-        for (auto&& s_name : {"bm25", "qld"}) {
+    for (auto quantized: {false, true}) {
+        for (auto&& s_name: {"bm25", "qld"}) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
             topk_queue topk_1(10);
@@ -158,7 +158,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", bloc
 
             auto scorer = scorer::from_name(s_name, data->wdata);
 
-            for (auto const& q : data->queries) {
+            for (auto const& q: data->queries) {
                 and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
                 op_q(
                     make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
@@ -181,7 +181,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", bloc
 
 TEST_CASE("Top k")
 {
-    for (auto&& s_name : {"bm25", "qld"}) {
+    for (auto&& s_name: {"bm25", "qld"}) {
         std::unordered_set<size_t> dropped_term_ids;
         auto data = IndexData<single_index>::get(s_name, false, dropped_term_ids);
         topk_queue topk_1(10);
@@ -191,7 +191,7 @@ TEST_CASE("Top k")
 
         auto scorer = scorer::from_name(s_name, data->wdata);
 
-        for (auto const& q : data->queries) {
+        for (auto const& q: data->queries) {
             or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             or_1(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             topk_1.finalize();

@@ -55,7 +55,7 @@ void perftest(const char* index_filename)
         auto tick = get_time_usecs();
         uint64_t calls_per_list = 500000;
         size_t postings = 0;
-        for (auto i : long_lists) {
+        for (auto i: long_lists) {
             auto reader = coll[i];
             auto calls = std::min(calls_per_list, reader.size());
             auto val = reader.move(0);
@@ -97,9 +97,9 @@ void perftest(const char* index_filename)
 
         auto tick = get_time_usecs();
         size_t calls = 0;
-        for (auto const& p : skip_values) {
+        for (auto const& p: skip_values) {
             auto reader = coll[p.first];
-            for (auto const& val : p.second) {
+            for (auto const& val: p.second) {
                 do_not_optimize_away(reader.next_geq(val).second);
             }
             calls += p.second.size();
@@ -114,9 +114,9 @@ void perftest(const char* index_filename)
 
         tick = get_time_usecs();
         calls = 0;
-        for (auto const& p : skip_positions) {
+        for (auto const& p: skip_positions) {
             auto reader = coll[p.first];
-            for (auto const& pos : p.second) {
+            for (auto const& pos: p.second) {
                 do_not_optimize_away(reader.move(pos).second);
             }
             calls += p.second.size();

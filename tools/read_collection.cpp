@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 
     binary_collection coll(collection_file.c_str());
     auto iter = coll.begin();
-    for ([[maybe_unused]] auto idx : ranges::views::iota(0, first)) {
+    for ([[maybe_unused]] auto idx: ranges::views::iota(0, first)) {
         ++iter;
     }
 
@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 
     for (; first < last; ++first) {
         auto sequence = *iter;
-        for (auto const& term : sequence) {
+        for (auto const& term: sequence) {
             print(term);
         }
         std::cout << '\n';

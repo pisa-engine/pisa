@@ -116,7 +116,7 @@ int main(int argc, char const* argv[])
         }
 
         if (print) {
-            for (const auto& document : documents) {
+            for (const auto& document: documents) {
                 std::cout << document << '\n';
             }
         }

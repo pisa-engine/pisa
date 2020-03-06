@@ -90,7 +90,7 @@ int main(int argc, const char** argv)
     emit(output_docs, num_docs);
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
-    for (const auto& seq : input) {
+    for (const auto& seq: input) {
         for (size_t i = 0; i < seq.docs.size(); ++i) {
             pl.emplace_back(mapping[seq.docs.begin()[i]], seq.freqs.begin()[i]);
         }
@@ -99,7 +99,7 @@ int main(int argc, const char** argv)
 
         emit(output_docs, pl.size());
         emit(output_freqs, pl.size());
-        for (const auto& posting : pl) {
+        for (const auto& posting: pl) {
             emit(output_docs, posting.first);
             emit(output_freqs, posting.second);
         }
