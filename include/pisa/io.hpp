@@ -8,12 +8,12 @@
 
 namespace pisa::io {
 
-class Line : public std::string {
-    friend std::istream &operator>>(std::istream &is, Line &line) { return std::getline(is, line); }
+class Line: public std::string {
+    friend std::istream& operator>>(std::istream& is, Line& line) { return std::getline(is, line); }
 };
 
 template <typename Integral>
-[[nodiscard]] inline auto read_string_map(std::string const &filename)
+[[nodiscard]] inline auto read_string_map(std::string const& filename)
     -> std::unordered_map<std::string, Integral>
 {
     std::unordered_map<std::string, Integral> mapping;
@@ -26,8 +26,7 @@ template <typename Integral>
     return mapping;
 }
 
-[[nodiscard]] inline auto read_string_vector(std::string const &filename)
-    -> std::vector<std::string>
+[[nodiscard]] inline auto read_string_vector(std::string const& filename) -> std::vector<std::string>
 {
     std::vector<std::string> vec;
     std::ifstream is(filename);
@@ -39,7 +38,7 @@ template <typename Integral>
 }
 
 template <typename Function>
-void for_each_line(std::istream &is, Function fn)
+void for_each_line(std::istream& is, Function fn)
 {
     std::string line;
     while (std::getline(is, line)) {
@@ -47,7 +46,7 @@ void for_each_line(std::istream &is, Function fn)
     }
 }
 
-[[nodiscard]] inline auto load_data(std::string const &data_file)
+[[nodiscard]] inline auto load_data(std::string const& data_file)
 {
     std::vector<char> data;
     std::ifstream in(data_file.c_str(), std::ios::binary);
@@ -61,4 +60,4 @@ void for_each_line(std::istream &is, Function fn)
     return data;
 }
 
-} // namespace pisa::io
+}  // namespace pisa::io

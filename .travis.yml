@@ -73,6 +73,14 @@ matrix:
               sources: *all_sources
               packages: ['clang-6.0', 'libstdc++-7-dev']
       env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+    - os: linux
+      dist: xenial
+      compiler: clang
+      addons:
+          apt:
+              sources: *all_sources
+              packages: ['clang-format-9', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && CLANG_FORMAT=On"
     - os: osx
       osx_image: xcode11.2
       compiler: clang
@@ -92,6 +100,9 @@ script:
     - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then
         make -j2;
         CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
+      fi
+    - if [[ "$CLANG_FORMAT" == "On" ]]; then
+        ./run-clang-format.py -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
       fi
 
 after_success:

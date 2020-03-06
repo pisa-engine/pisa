@@ -23,7 +23,7 @@ namespace intersection {
     using Mask = std::bitset<MAX_QUERY_LEN_EXP>;
 
     /// Returns a filtered copy of `query` containing only terms indicated by ones in the bit mask.
-    [[nodiscard]] inline auto filter(Query const &query, Mask mask) -> Query
+    [[nodiscard]] inline auto filter(Query const& query, Mask mask) -> Query
     {
         if (query.terms.size() > MAX_QUERY_LEN) {
             throw std::invalid_argument("Queries can be at most 2^32 terms long");
@@ -40,7 +40,7 @@ namespace intersection {
         }
         return Query{query.id, terms, weights};
     }
-} // namespace intersection
+}  // namespace intersection
 
 /// Represents information about an intersection of one or more terms of a query.
 struct Intersection {
@@ -50,27 +50,25 @@ struct Intersection {
     float max_score;
 
     template <typename Index, typename Wand>
-    inline static auto compute(Index const &index,
-                               Wand const &wand,
-                               Query const &query,
-                               std::optional<intersection::Mask> term_mask = std::nullopt)
-        -> Intersection;
+    inline static auto compute(
+        Index const& index,
+        Wand const& wand,
+        Query const& query,
+        std::optional<intersection::Mask> term_mask = std::nullopt) -> Intersection;
 };
 
 template <typename Index, typename Wand>
-inline auto Intersection::compute(Index const &index,
-                                  Wand const &wand,
-                                  Query const &query,
-                                  std::optional<intersection::Mask> term_mask) -> Intersection
+inline auto Intersection::compute(
+    Index const& index, Wand const& wand, Query const& query, std::optional<intersection::Mask> term_mask)
+    -> Intersection
 {
     auto filtered_query = term_mask ? intersection::filter(query, *term_mask) : query;
     scored_and_query retrieve{};
     auto scorer = scorer::from_name("bm25", wand);
     auto results = retrieve(make_scored_cursors(index, *scorer, filtered_query), index.num_docs());
-    auto max_element = [&](auto const &vec) -> float {
-        auto order = [](auto const &lhs, auto const &rhs) { return lhs.second < rhs.second; };
-        if (auto pos = std::max_element(results.begin(), results.end(), order);
-            pos != results.end()) {
+    auto max_element = [&](auto const& vec) -> float {
+        auto order = [](auto const& lhs, auto const& rhs) { return lhs.second < rhs.second; };
+        if (auto pos = std::max_element(results.begin(), results.end(), order); pos != results.end()) {
             return pos->second;
         } else {
             return 0.0;
@@ -83,7 +81,7 @@ inline auto Intersection::compute(Index const &index,
 /// Do `func` for all intersections in a query that have a given maximum number of terms.
 /// `Fn` takes `Query` and `Mask`.
 template <typename Fn>
-auto for_all_subsets(Query const &query, std::optional<std::uint8_t> max_term_count, Fn func)
+auto for_all_subsets(Query const& query, std::optional<std::uint8_t> max_term_count, Fn func)
 {
     auto subset_count = 1u << query.terms.size();
     for (auto subset = 1u; subset < subset_count; ++subset) {
@@ -94,4 +92,4 @@ auto for_all_subsets(Query const &query, std::optional<std::uint8_t> max_term_co
     }
 }
 
-} // namespace pisa
+}  // namespace pisa

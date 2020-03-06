@@ -11,11 +11,10 @@
 #include "quantized.hpp"
 #include "spdlog/spdlog.h"
 
-namespace pisa {
-namespace scorer {
+namespace pisa { namespace scorer {
     auto from_name =
-        [](std::string const &scorer_name,
-           auto const &wdata) -> std::unique_ptr<index_scorer<std::decay_t<decltype(wdata)>>> {
+        [](std::string const& scorer_name,
+           auto const& wdata) -> std::unique_ptr<index_scorer<std::decay_t<decltype(wdata)>>> {
         if (scorer_name == "bm25") {
             return std::make_unique<bm25<std::decay_t<decltype(wdata)>>>(wdata);
         } else if (scorer_name == "qld") {
@@ -31,5 +30,4 @@ namespace scorer {
             std::abort();
         }
     };
-}
-} // namespace pisa
+}}  // namespace pisa::scorer

@@ -17,16 +17,17 @@ namespace pisa {
 using term_id_type = uint32_t;
 
 class TermProcessor {
-   private:
+  private:
     std::unordered_set<term_id_type> stopwords;
 
     // Method implemented in constructor according to the specified stemmer.
     std::function<std::optional<term_id_type>(std::string)> _to_id;
 
-   public:
-    TermProcessor(std::optional<std::string> const &terms_file,
-                  std::optional<std::string> const &stopwords_filename,
-                  std::optional<std::string> const &stemmer_type)
+  public:
+    TermProcessor(
+        std::optional<std::string> const& terms_file,
+        std::optional<std::string> const& stopwords_filename,
+        std::optional<std::string> const& stemmer_type)
     {
         auto source = std::make_shared<mio::mmap_source>(terms_file->c_str());
         auto terms = Payload_Vector<>::from(*source);
@@ -66,7 +67,7 @@ class TermProcessor {
         // Loads stopwords.
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);
-            io::for_each_line(is, [&](auto &&word) {
+            io::for_each_line(is, [&](auto&& word) {
                 if (auto processed_term = _to_id(std::move(word)); processed_term.has_value()) {
                     stopwords.insert(*processed_term);
                 }
@@ -86,4 +87,4 @@ class TermProcessor {
         return v;
     }
 };
-} // namespace pisa
+}  // namespace pisa

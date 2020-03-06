@@ -8,26 +8,25 @@ namespace pisa {
 
 template <typename Index, typename Iterator>
 struct EnumerateIterator {
-   private:
+  private:
     using Value = typename std::iterator_traits<Iterator>::value_type;
 
-   public:
+  public:
     using difference_type = std::ptrdiff_t;
     using value_type = std::pair<Index, typename std::iterator_traits<Iterator>::value_type>;
-    using pointer = std::pair<Index *, typename std::iterator_traits<Iterator>::pointer>;
-    using reference = std::pair<Index const &, typename std::iterator_traits<Iterator>::reference>;
+    using pointer = std::pair<Index*, typename std::iterator_traits<Iterator>::pointer>;
+    using reference = std::pair<Index const&, typename std::iterator_traits<Iterator>::reference>;
     using iterator_category = std::forward_iterator_tag;
 
     constexpr EnumerateIterator(Iterator iter, Index init)
         : m_current_index(std::move(init)), m_value_iterator(std::move(iter))
-    {
-    }
+    {}
     ~EnumerateIterator() = default;
-    constexpr EnumerateIterator(EnumerateIterator const &) = default;
-    constexpr EnumerateIterator(EnumerateIterator &&) noexcept = default;
-    constexpr auto operator=(EnumerateIterator const &) -> EnumerateIterator & = default;
-    constexpr auto operator=(EnumerateIterator &&) noexcept -> EnumerateIterator & = default;
-    constexpr auto operator++() -> EnumerateIterator &
+    constexpr EnumerateIterator(EnumerateIterator const&) = default;
+    constexpr EnumerateIterator(EnumerateIterator&&) noexcept = default;
+    constexpr auto operator=(EnumerateIterator const&) -> EnumerateIterator& = default;
+    constexpr auto operator=(EnumerateIterator&&) noexcept -> EnumerateIterator& = default;
+    constexpr auto operator++() -> EnumerateIterator&
     {
         ++m_value_iterator;
         ++m_current_index;
@@ -52,7 +51,7 @@ struct EnumerateIterator {
         return reference(m_current_index, *m_value_iterator);
     }
 
-   private:
+  private:
     Index m_current_index;
     Iterator m_value_iterator;
 };
@@ -60,10 +59,9 @@ struct EnumerateIterator {
 template <typename Index, typename Iterator>
 struct Enumerate {
     template <typename Container>
-    constexpr explicit Enumerate(Container &&container, Index init = Index{})
+    constexpr explicit Enumerate(Container&& container, Index init = Index{})
         : m_init(std::move(init)), m_value_begin(container.begin()), m_value_end(container.end())
-    {
-    }
+    {}
 
     [[nodiscard]] constexpr auto begin() -> EnumerateIterator<Index, Iterator>
     {
@@ -108,13 +106,13 @@ struct Enumerate {
         return vec;
     }
 
-   private:
+  private:
     Index m_init;
     Iterator m_value_begin;
     Iterator m_value_end;
 };
 
-} // namespace pisa
+}  // namespace pisa
 
 namespace std {
 
@@ -124,11 +122,10 @@ struct iterator_traits<::pisa::EnumerateIterator<Index, Iterator>> {
     using value_type = typename ::pisa::EnumerateIterator<Index, Iterator>::value_type;
     using pointer = typename ::pisa::EnumerateIterator<Index, Iterator>::pointer;
     using reference = typename ::pisa::EnumerateIterator<Index, Iterator>::reference;
-    using iterator_category =
-        typename ::pisa::EnumerateIterator<Index, Iterator>::iterator_category;
+    using iterator_category = typename ::pisa::EnumerateIterator<Index, Iterator>::iterator_category;
 };
 
-} // namespace std
+}  // namespace std
 
 namespace pisa {
 
@@ -140,8 +137,8 @@ namespace pisa {
 /// being that if you use a strong type key, you can differentiate between
 /// `VecMap<IndexType_1, V>` and `VecMap<IndexType_2, V>`.
 template <typename K, typename V = K, typename Allocator = std::allocator<V>>
-class VecMap : protected std::vector<V> {
-   public:
+class VecMap: protected std::vector<V> {
+  public:
     using typename std::vector<V, Allocator>::value_type;
     using typename std::vector<V, Allocator>::reference;
     using typename std::vector<V, Allocator>::const_reference;
@@ -184,43 +181,39 @@ class VecMap : protected std::vector<V> {
     using std::vector<V, Allocator>::swap;
 
     VecMap() noexcept(noexcept(Allocator())) : std::vector<V, Allocator>() {}
-    explicit VecMap(Allocator const &alloc) noexcept : std::vector<V, Allocator>(alloc) {}
-    VecMap(size_type count, V const &value, Allocator const &alloc = Allocator())
+    explicit VecMap(Allocator const& alloc) noexcept : std::vector<V, Allocator>(alloc) {}
+    VecMap(size_type count, V const& value, Allocator const& alloc = Allocator())
         : std::vector<V, Allocator>(count, value, alloc)
-    {
-    }
-    explicit VecMap(size_type count, Allocator const &alloc = Allocator())
+    {}
+    explicit VecMap(size_type count, Allocator const& alloc = Allocator())
         : std::vector<V, Allocator>(count, alloc)
-    {
-    }
+    {}
     template <class InputIt>
-    VecMap(InputIt first, InputIt last, Allocator const &alloc = Allocator())
+    VecMap(InputIt first, InputIt last, Allocator const& alloc = Allocator())
         : std::vector<V, Allocator>(first, last, alloc)
-    {
-    }
-    VecMap(VecMap const &other) : std::vector<V, Allocator>(other) {}
-    VecMap(VecMap const &other, const Allocator &alloc) : std::vector<V, Allocator>(other, alloc) {}
-    VecMap(VecMap &&other) noexcept : std::vector<V, Allocator>(other) {}
-    VecMap(VecMap &&other, Allocator const &alloc) : std::vector<V, Allocator>(other, alloc) {}
-    VecMap(std::initializer_list<V> init, Allocator const &alloc = Allocator())
+    {}
+    VecMap(VecMap const& other) : std::vector<V, Allocator>(other) {}
+    VecMap(VecMap const& other, const Allocator& alloc) : std::vector<V, Allocator>(other, alloc) {}
+    VecMap(VecMap&& other) noexcept : std::vector<V, Allocator>(other) {}
+    VecMap(VecMap&& other, Allocator const& alloc) : std::vector<V, Allocator>(other, alloc) {}
+    VecMap(std::initializer_list<V> init, Allocator const& alloc = Allocator())
         : std::vector<V, Allocator>(init, alloc)
-    {
-    }
+    {}
     ~VecMap() = default;
 
-    auto operator=(VecMap const &other) -> VecMap &
+    auto operator=(VecMap const& other) -> VecMap&
     {
         if (this != &other) {
             std::vector<V, Allocator>::operator=(other);
         }
         return *this;
     };
-    auto operator=(VecMap &&other) noexcept -> VecMap &
+    auto operator=(VecMap&& other) noexcept -> VecMap&
     {
         std::vector<V, Allocator>::operator=(other);
         return *this;
     };
-    auto operator=(std::initializer_list<V> init) -> VecMap &
+    auto operator=(std::initializer_list<V> init) -> VecMap&
     {
         std::vector<V, Allocator>::operator=(init);
         return *this;
@@ -243,8 +236,8 @@ class VecMap : protected std::vector<V> {
         return std::vector<V, Allocator>::at(static_cast<size_type>(key));
     }
 
-    auto as_vector() const -> std::vector<V> const & { return *this; }
-    auto as_vector() -> std::vector<V> & { return *this; }
+    auto as_vector() const -> std::vector<V> const& { return *this; }
+    auto as_vector() -> std::vector<V>& { return *this; }
 
     [[nodiscard]] auto entries() const -> Enumerate<K, typename std::vector<V>::const_iterator>
     {
@@ -253,44 +246,44 @@ class VecMap : protected std::vector<V> {
 };
 
 template <class K, class V, class Alloc>
-void swap(VecMap<K, V, Alloc> &lhs, VecMap<K, V, Alloc> &rhs) noexcept(noexcept(lhs.swap(rhs)))
+void swap(VecMap<K, V, Alloc>& lhs, VecMap<K, V, Alloc>& rhs) noexcept(noexcept(lhs.swap(rhs)))
 {
     return lhs.swap(rhs);
 }
 
 template <class K, class V, class Alloc>
-auto operator==(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs) -> bool
+auto operator==(const VecMap<K, V, Alloc>& lhs, const VecMap<K, V, Alloc>& rhs) -> bool
 {
     return lhs.as_vector() == rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-auto operator!=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs) -> bool
+auto operator!=(const VecMap<K, V, Alloc>& lhs, const VecMap<K, V, Alloc>& rhs) -> bool
 {
     return lhs.as_vector() != rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-auto operator<(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs) -> bool
+auto operator<(const VecMap<K, V, Alloc>& lhs, const VecMap<K, V, Alloc>& rhs) -> bool
 {
     return lhs.as_vector() < rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-auto operator<=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs) -> bool
+auto operator<=(const VecMap<K, V, Alloc>& lhs, const VecMap<K, V, Alloc>& rhs) -> bool
 {
     return lhs.as_vector() <= rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-auto operator>(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs) -> bool
+auto operator>(const VecMap<K, V, Alloc>& lhs, const VecMap<K, V, Alloc>& rhs) -> bool
 {
     return lhs.as_vector() > rhs.as_vector();
 }
 template <class K, class V, class Alloc>
-auto operator>=(const VecMap<K, V, Alloc> &lhs, const VecMap<K, V, Alloc> &rhs) -> bool
+auto operator>=(const VecMap<K, V, Alloc>& lhs, const VecMap<K, V, Alloc>& rhs) -> bool
 {
     return lhs.as_vector() >= rhs.as_vector();
 }
 
 template <typename Key>
-[[nodiscard]] inline auto read_string_vec_map(std::string const &filename)
+[[nodiscard]] inline auto read_string_vec_map(std::string const& filename)
     -> VecMap<Key, std::string>
 {
     VecMap<Key, std::string> vec;
@@ -302,4 +295,4 @@ template <typename Key>
     return vec;
 }
 
-} // namespace pisa
+}  // namespace pisa
