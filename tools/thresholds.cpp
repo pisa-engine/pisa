@@ -23,11 +23,11 @@
 using namespace pisa;
 
 template <typename IndexType, typename WandType>
-void thresholds(const std::string &index_filename,
-                const std::optional<std::string> &wand_data_filename,
-                const std::vector<Query> &queries,
-                std::string const &type,
-                std::string const &scorer_name,
+void thresholds(const std::string& index_filename,
+                const std::optional<std::string>& wand_data_filename,
+                const std::vector<Query>& queries,
+                std::string const& type,
+                std::string const& scorer_name,
                 uint64_t k,
                 bool quantized)
 {
@@ -51,7 +51,7 @@ void thresholds(const std::string &index_filename,
     }
     topk_queue topk(k);
     wand_query wand_q(topk);
-    for (auto const &query : queries) {
+    for (auto const& query : queries) {
         wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
         topk.finalize();
         auto results = topk.topk();
@@ -68,7 +68,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));

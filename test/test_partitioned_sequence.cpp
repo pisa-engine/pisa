@@ -17,7 +17,7 @@ namespace pisa {
 class partitioned_sequence_test {
    public:
     template <typename Enumerator>
-    static void test_construction(Enumerator &r, std::vector<uint64_t> const &seq)
+    static void test_construction(Enumerator& r, std::vector<uint64_t> const& seq)
     {
         if (r.m_partitions == 1) { // nothing to test here
             return;
@@ -44,7 +44,7 @@ class partitioned_sequence_test {
 } // namespace pisa
 
 template <typename BaseSequence>
-void test_partitioned_sequence(uint64_t universe, std::vector<uint64_t> const &seq)
+void test_partitioned_sequence(uint64_t universe, std::vector<uint64_t> const& seq)
 {
     pisa::global_parameters params;
     typedef pisa::partitioned_sequence<BaseSequence> sequence_type;
@@ -89,7 +89,7 @@ TEST_CASE("partitioned_sequence")
         uint64_t universe = 100000;
         uint64_t initial_gap = rand() % 50000;
         auto short_seq = random_sequence(universe - initial_gap, i, true);
-        for (auto &v : short_seq)
+        for (auto& v : short_seq)
             v += initial_gap;
         test_partitioned_sequence<indexed_sequence>(universe, short_seq);
         test_partitioned_sequence<strict_sequence>(universe, short_seq);

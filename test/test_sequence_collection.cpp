@@ -1,30 +1,29 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
-#include "test_generic_sequence.hpp"
 #include "mio/mmap.hpp"
+#include "test_generic_sequence.hpp"
 
+#include "mappable/mapper.hpp"
 #include "sequence/indexed_sequence.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
 #include "sequence_collection.hpp"
-#include "mappable/mapper.hpp"
 #include "temporary_directory.hpp"
 
-#include <vector>
 #include <cstdlib>
+#include <vector>
 
 template <typename BaseSequence>
 void test_sequence_collection()
 {
     pisa::global_parameters params;
     uint64_t universe = 10000;
-    typedef pisa::sequence_collection<BaseSequence>
-        collection_type;
+    typedef pisa::sequence_collection<BaseSequence> collection_type;
     typename collection_type::builder b(params);
 
     std::vector<std::vector<uint64_t>> sequences(30);
-    for (auto& seq: sequences) {
+    for (auto& seq : sequences) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
         uint64_t n = uint64_t(universe / avg_gap);
         seq = random_sequence(universe, n, true);
@@ -50,7 +49,7 @@ void test_sequence_collection()
     }
 }
 
-TEST_CASE( "sequence_collection")
+TEST_CASE("sequence_collection")
 {
     test_sequence_collection<pisa::indexed_sequence>();
     test_sequence_collection<pisa::partitioned_sequence<>>();

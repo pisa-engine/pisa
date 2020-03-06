@@ -1,13 +1,13 @@
+#include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
-#include "mappable/mapper.hpp"
 
 #include "index_types.hpp"
-#include "util/util.hpp"
 #include "util/do_not_optimize_away.hpp"
+#include "util/util.hpp"
 
-using pisa::get_time_usecs;
 using pisa::do_not_optimize_away;
+using pisa::get_time_usecs;
 
 template <typename IndexType, bool with_freqs>
 void perftest(IndexType const& index, std::string const& type)
@@ -33,7 +33,7 @@ void perftest(IndexType const& index, std::string const& type)
         auto tick = get_time_usecs();
         uint64_t calls_per_list = 500000;
         size_t postings = 0;
-        for (auto i: long_lists) {
+        for (auto i : long_lists) {
             auto reader = index[i];
             auto calls = std::min(calls_per_list, reader.size());
             for (size_t i = 0; i < calls; ++i) {
@@ -63,11 +63,11 @@ void perftest(IndexType const& index, std::string const& type)
         for (size_t i = 0; i < index.size(); ++i) {
             auto reader = index[i];
             uint64_t size = reader.size();
-            if (size < min_length) continue;
+            if (size < min_length)
+                continue;
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
-            for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip),
-                                            max_calls_per_list); ++i) {
+            for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip), max_calls_per_list); ++i) {
                 reader.move(i * skip);
                 skip_values.back().second.push_back(reader.docid());
             }
@@ -75,9 +75,9 @@ void perftest(IndexType const& index, std::string const& type)
 
         auto tick = get_time_usecs();
         size_t calls = 0;
-        for (auto const& p: skip_values) {
+        for (auto const& p : skip_values) {
             auto reader = index[p.first];
-            for (auto const& val: p.second) {
+            for (auto const& val : p.second) {
                 reader.next_geq(val);
                 do_not_optimize_away(reader.docid());
                 if (with_freqs) {
@@ -111,15 +111,13 @@ void perftest(const char* index_filename, std::string const& type)
     perftest<IndexType, true>(index, type);
 }
 
-
-int main(int argc, const char** argv) {
+int main(int argc, const char** argv)
+{
 
     using namespace pisa;
 
     if (argc != 3) {
-        std::cerr << "Usage: " << argv[0]
-                  << " <index type> <index filename>"
-                  << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <index type> <index filename>" << std::endl;
         return 1;
     }
 
@@ -127,11 +125,12 @@ int main(int argc, const char** argv) {
     const char* index_filename = argv[2];
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                       \
-        } else if (type == BOOST_PP_STRINGIZE(T)) { \
-            perftest<BOOST_PP_CAT(T, _index)>       \
-                (index_filename, type);             \
-            /**/
+#define LOOP_BODY(R, DATA, T)                                    \
+    }                                                            \
+    else if (type == BOOST_PP_STRINGIZE(T))                      \
+    {                                                            \
+        perftest<BOOST_PP_CAT(T, _index)>(index_filename, type); \
+        /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

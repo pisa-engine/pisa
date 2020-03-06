@@ -5,21 +5,21 @@
 
 #include "codec/block_codecs.hpp"
 #include "codec/maskedvbyte.hpp"
-#include "codec/streamvbyte.hpp"
 #include "codec/qmx.hpp"
-#include "codec/varintgb.hpp"
-#include "codec/simple8b.hpp"
-#include "codec/simple16.hpp"
 #include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
+#include "codec/simple8b.hpp"
+#include "codec/streamvbyte.hpp"
+#include "codec/varintgb.hpp"
 #include "temporary_directory.hpp"
 
 #include "block_freq_index.hpp"
 #include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 
-#include <vector>
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
+#include <vector>
 
 template <typename BlockCodec>
 void test_block_freq_index()
@@ -31,17 +31,15 @@ void test_block_freq_index()
 
     typedef std::vector<uint64_t> vec_type;
     std::vector<std::pair<vec_type, vec_type>> posting_lists(30);
-    for (auto& plist: posting_lists) {
+    for (auto& plist : posting_lists) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
         uint64_t n = uint64_t(universe / avg_gap);
         plist.first = random_sequence(universe, n, true);
         plist.second.resize(n);
-        std::generate(plist.second.begin(), plist.second.end(),
-                      []() { return (rand() % 256) + 1; });
+        std::generate(
+            plist.second.begin(), plist.second.end(), []() { return (rand() % 256) + 1; });
 
-        b.add_posting_list(n, plist.first.begin(),
-                           plist.second.begin(), 0);
-
+        b.add_posting_list(n, plist.first.begin(), plist.second.begin(), 0);
     }
 
     Temporary_Directory tmpdir;
@@ -62,10 +60,8 @@ void test_block_freq_index()
             auto doc_enum = coll[i];
             REQUIRE(plist.first.size() == doc_enum.size());
             for (size_t p = 0; p < plist.first.size(); ++p, doc_enum.next()) {
-                MY_REQUIRE_EQUAL(plist.first[p], doc_enum.docid(),
-                                 "i = " << i << " p = " << p);
-                MY_REQUIRE_EQUAL(plist.second[p], doc_enum.freq(),
-                                 "i = " << i << " p = " << p);
+                MY_REQUIRE_EQUAL(plist.first[p], doc_enum.docid(), "i = " << i << " p = " << p);
+                MY_REQUIRE_EQUAL(plist.second[p], doc_enum.freq(), "i = " << i << " p = " << p);
             }
             REQUIRE(coll.num_docs() == doc_enum.docid());
         }

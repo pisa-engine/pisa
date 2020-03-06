@@ -1,12 +1,11 @@
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 #include "spdlog/spdlog.h"
 
-#include "util/util.hpp"
 #include "codec/block_codecs.hpp"
 #include "util/do_not_optimize_away.hpp"
-
+#include "util/util.hpp"
 
 int main()
 {
@@ -24,7 +23,8 @@ int main()
 
         double tick = get_time_usecs();
         for (size_t run = 0; run < runs; ++run) {
-            interpolative_block::decode(encoded.data(), values.data(), sum_of_values, values.size());
+            interpolative_block::decode(
+                encoded.data(), values.data(), sum_of_values, values.size());
             do_not_optimize_away(values[0]);
         }
 

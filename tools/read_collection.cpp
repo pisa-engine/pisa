@@ -8,7 +8,8 @@
 
 using namespace pisa;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv)
+{
 
     std::string collection_file;
     std::string map_file{};
@@ -21,7 +22,7 @@ int main(int argc, char **argv) {
     app.add_option("last", last, "Element number");
     CLI11_PARSE(app, argc, argv);
 
-    std::function<void(std::uint32_t const &)> print = [](auto const &term) {
+    std::function<void(std::uint32_t const&)> print = [](auto const& term) {
         std::cout << term << " ";
     };
 
@@ -32,7 +33,7 @@ int main(int argc, char **argv) {
         while (std::getline(is, str)) {
             map.push_back(str);
         }
-        print = [&](std::uint32_t const &term) { std::cout << map[term] << " "; };
+        print = [&](std::uint32_t const& term) { std::cout << map[term] << " "; };
     }
 
     binary_collection coll(collection_file.c_str());
@@ -47,7 +48,7 @@ int main(int argc, char **argv) {
 
     for (; first < last; ++first) {
         auto sequence = *iter;
-        for (auto const &term : sequence) {
+        for (auto const& term : sequence) {
             print(term);
         }
         std::cout << '\n';

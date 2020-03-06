@@ -16,7 +16,7 @@
 
 #include "CLI/CLI.hpp"
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     using namespace pisa;
 
@@ -77,12 +77,12 @@ int main(int argc, const char **argv)
 
     if (compress) {
         wand_data<wand_data_compressed<>> wdata(sizes_coll.begin()->begin(),
-                                              coll.num_docs(),
-                                              coll,
-                                              scorer_name,
-                                              block_size,
-                                              quantize,
-                                              dropped_term_ids);
+                                                coll.num_docs(),
+                                                coll,
+                                                scorer_name,
+                                                block_size,
+                                                quantize,
+                                                dropped_term_ids);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
         wand_data<wand_data_range<128, 1024>> wdata(sizes_coll.begin()->begin(),

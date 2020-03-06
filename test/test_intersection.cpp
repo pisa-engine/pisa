@@ -115,7 +115,6 @@ struct InMemoryWand {
     [[nodiscard]] auto avg_len() const noexcept { return 1.0; }
     [[nodiscard]] auto num_docs() const noexcept -> std::size_t { return num_documents; }
     [[nodiscard]] auto collection_len() const noexcept -> std::size_t { return 1; }
-
 };
 
 TEST_CASE("Vector cursor", "[intersection][unit]")
@@ -227,7 +226,7 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
     GIVEN("A query and a mock function that accumulates arguments")
     {
         std::vector<Mask> masks;
-        auto accumulate = [&](Query const &, Mask const &mask) { masks.push_back(mask); };
+        auto accumulate = [&](Query const&, Mask const& mask) { masks.push_back(mask); };
         Query query{
             "Q1", // query ID
             {6, 1, 5}, // terms

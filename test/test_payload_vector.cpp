@@ -18,8 +18,8 @@ inline std::byte operator"" _b(char c) { return std::byte(c); }
 TEST_CASE("Unpack head", "[payload_vector][unit]")
 {
     std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
-    REQUIRE(unpack_head<std::byte>(bytes) ==
-            std::tuple(0_b, gsl::make_span(std::vector<std::byte>{1_b, 2_b, 3_b, 4_b, 5_b})));
+    REQUIRE(unpack_head<std::byte>(bytes)
+            == std::tuple(0_b, gsl::make_span(std::vector<std::byte>{1_b, 2_b, 3_b, 4_b, 5_b})));
     auto [b, i, s] = unpack_head<std::byte, uint32_t>(bytes);
     CHECK(b == 0_b);
     CHECK(i == uint32_t(67305985));
@@ -27,27 +27,28 @@ TEST_CASE("Unpack head", "[payload_vector][unit]")
     REQUIRE_THROWS_MATCHES(
         (unpack_head<std::byte, uint32_t, uint16_t>(bytes)),
         std::runtime_error,
-        Catch::Predicate<std::runtime_error>([](std::runtime_error const &err) -> bool {
-            return std::string(err.what()) == "Cannot unpack span of size 6 into structure of size 7";
+        Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
+            return std::string(err.what())
+                   == "Cannot unpack span of size 6 into structure of size 7";
         }));
 }
 
 TEST_CASE("Split span", "[payload_vector][unit]")
 {
     std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
-    REQUIRE(split(bytes, 0) ==
-            std::tuple(gsl::make_span(std::vector<std::byte>{}),
-                       gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})));
-    REQUIRE(split(bytes, 4) ==
-            std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
-                       gsl::make_span(std::vector<std::byte>{4_b, 5_b})));
-    REQUIRE(split(bytes, 6) ==
-            std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
-                       gsl::make_span(std::vector<std::byte>{})));
+    REQUIRE(split(bytes, 0)
+            == std::tuple(gsl::make_span(std::vector<std::byte>{}),
+                          gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})));
+    REQUIRE(split(bytes, 4)
+            == std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
+                          gsl::make_span(std::vector<std::byte>{4_b, 5_b})));
+    REQUIRE(split(bytes, 6)
+            == std::tuple(gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
+                          gsl::make_span(std::vector<std::byte>{})));
     REQUIRE_THROWS_MATCHES(
         split(bytes, 7),
         std::runtime_error,
-        Catch::Predicate<std::runtime_error>([](std::runtime_error const &err) -> bool {
+        Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
             return std::string(err.what()) == "Cannot split span of size 6 at position 7";
         }));
 }
@@ -59,7 +60,7 @@ TEST_CASE("Cast span", "[payload_vector][unit]")
     REQUIRE_THROWS_MATCHES(
         cast_span<uint32_t>(bytes),
         std::runtime_error,
-        Catch::Predicate<std::runtime_error>([](std::runtime_error const &err) -> bool {
+        Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
             return std::string(err.what()) == "Failed to cast byte-span to span of T of size 4";
         }));
 }
@@ -89,7 +90,7 @@ TEST_CASE("Test string-payload vector", "[payload_vector][unit]")
         ++iter;
         REQUIRE(*iter == "klm"sv);
         ++iter;
-        REQUIRE(iter== vec.end());
+        REQUIRE(iter == vec.end());
     }
     SECTION("dereference with iter++")
     {
@@ -159,28 +160,135 @@ TEST_CASE("Test payload vector encoding", "[payload_vector][unit]")
     std::ostringstream str;
     encode_payload_vector(gsl::span<std::string const>(vec)).to_stream(str);
     auto encoded = str.str();
-    REQUIRE(std::vector<char>(encoded.begin(), encoded.end()) == std::vector<char>{
-            /* length */ 4, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 0 */ 0, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 1 */ 3, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 2 */ 6, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 3 */ 10, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 4 */ 13, 0, 0, 0, 0, 0, 0, 0,
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'});
+    REQUIRE(std::vector<char>(encoded.begin(), encoded.end())
+            == std::vector<char>{/* length */ 4,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 /* offset 0 */ 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 /* offset 1 */ 3,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 /* offset 2 */ 6,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 /* offset 3 */ 10,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 /* offset 4 */ 13,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 0,
+                                 'a',
+                                 'b',
+                                 'c',
+                                 'd',
+                                 'e',
+                                 'f',
+                                 'g',
+                                 'h',
+                                 'i',
+                                 'j',
+                                 'k',
+                                 'l',
+                                 'm'});
 }
 
 TEST_CASE("Test payload vector decoding", "[payload_vector][unit]")
 {
-    std::vector<char> data{
-            /* length */ 4, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 0 */ 0, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 1 */ 3, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 2 */ 6, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 3 */ 10, 0, 0, 0, 0, 0, 0, 0,
-            /* offset 4 */ 13, 0, 0, 0, 0, 0, 0, 0,
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'};
+    std::vector<char> data{/* length */ 4,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           /* offset 0 */ 0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           /* offset 1 */ 3,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           /* offset 2 */ 6,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           /* offset 3 */ 10,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           /* offset 4 */ 13,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           0,
+                           'a',
+                           'b',
+                           'c',
+                           'd',
+                           'e',
+                           'f',
+                           'g',
+                           'h',
+                           'i',
+                           'j',
+                           'k',
+                           'l',
+                           'm'};
     auto vec = Payload_Vector<std::string_view>::from(
-        gsl::make_span(reinterpret_cast<std::byte const *>(data.data()), data.size()));
-    REQUIRE(std::vector<std::string>(vec.begin(), vec.end()) ==
-            std::vector<std::string>{"abc", "def", "ghij", "klm"});
+        gsl::make_span(reinterpret_cast<std::byte const*>(data.data()), data.size()));
+    REQUIRE(std::vector<std::string>(vec.begin(), vec.end())
+            == std::vector<std::string>{"abc", "def", "ghij", "klm"});
 }

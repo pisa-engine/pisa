@@ -57,8 +57,7 @@ TEST_CASE("Write header", "[parsing][forward_index]")
     }
 }
 
-[[nodiscard]] std::vector<std::string> load_lines(std::istream &is)
-{
+[[nodiscard]] std::vector<std::string> load_lines(std::istream& is) {
     std::string line;
     std::vector<std::string> vec;
     while (std::getline(is, line)) {
@@ -67,22 +66,22 @@ TEST_CASE("Write header", "[parsing][forward_index]")
     return vec;
 }
 
-[[nodiscard]] std::vector<std::string> load_lines(std::string const &filename)
+    [[nodiscard]] std::vector<std::string> load_lines(std::string const& filename)
 {
     std::ifstream is(filename);
     return load_lines(is);
 }
 
 template <typename T>
-void write_lines(std::ostream &os, gsl::span<T> &&elements)
+void write_lines(std::ostream& os, gsl::span<T>&& elements)
 {
-    for (auto const &element : elements) {
+    for (auto const& element : elements) {
         os << element << '\n';
     }
 }
 
 template <typename T>
-void write_lines(std::string const &filename, gsl::span<T> &&elements)
+void write_lines(std::string const& filename, gsl::span<T>&& elements)
 {
     std::ofstream os(filename);
     write_lines<T>(os, std::forward<gsl::span<T>>(elements));
@@ -90,7 +89,7 @@ void write_lines(std::string const &filename, gsl::span<T> &&elements)
 
 TEST_CASE("Build forward index batch", "[parsing][forward_index]")
 {
-    auto identity = [](std::string const &term) -> std::string { return term; };
+    auto identity = [](std::string const& term) -> std::string { return term; };
 
     GIVEN("a few test records")
     {
@@ -148,10 +147,10 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
     }
 }
 
-void write_batch(std::string const &basename,
-                 std::vector<std::string> const &documents,
-                 std::vector<std::string> const &terms,
-                 std::vector<std::vector<uint32_t>> const &collection)
+void write_batch(std::string const& basename,
+                 std::vector<std::string> const& documents,
+                 std::vector<std::string> const& terms,
+                 std::vector<std::vector<uint32_t>> const& collection)
 {
     std::string document_file = basename + ".documents";
     std::string term_file = basename + ".terms";
@@ -159,7 +158,7 @@ void write_batch(std::string const &basename,
     write_lines(term_file, gsl::make_span(terms));
     std::ofstream os(basename);
     Forward_Index_Builder::write_header(os, collection.size());
-    for (auto const &seq : collection) {
+    for (auto const& seq : collection) {
         Forward_Index_Builder::write_document(os, seq.begin(), seq.end());
     }
 }
@@ -270,7 +269,7 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
 TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
 {
     std::vector<std::string> vec;
-    auto map_word = [&](std::string &&word) { vec.push_back(word); };
+    auto map_word = [&](std::string&& word) { vec.push_back(word); };
     SECTION("empty")
     {
         parse_html_content(
@@ -300,7 +299,7 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
     }
 }
 
-[[nodiscard]] auto load_term_map(std::string const &basename) -> std::vector<std::string>
+[[nodiscard]] auto load_term_map(std::string const& basename) -> std::vector<std::string>
 {
     std::vector<std::string> map;
     std::ifstream is(basename + ".terms");
@@ -314,7 +313,7 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
 TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
 {
     tbb::task_scheduler_init init;
-    auto next_record = [](std::istream &in) -> std::optional<Document_Record> {
+    auto next_record = [](std::istream& in) -> std::optional<Document_Record> {
         Plaintext_Record record;
         if (in >> record) {
             return Document_Record(record.trecid(), record.content(), record.url());
@@ -340,7 +339,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 is,
                 output,
                 next_record,
-                [](std::string &&term) -> std::string { return std::forward<std::string>(term); },
+                [](std::string&& term) -> std::string { return std::forward<std::string>(term); },
                 parse_plaintext_content,
                 batch_size,
                 thread_count);
@@ -372,7 +371,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     REQUIRE(produced_body == original_body);
                     ++seq_iter;
                 }
-                auto batch_files = ls(dir, [](auto const &filename) {
+                auto batch_files = ls(dir, [](auto const& filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());

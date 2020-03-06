@@ -29,7 +29,7 @@ void test_freq_index()
 
     typedef std::vector<uint64_t> vec_type;
     std::vector<std::pair<vec_type, vec_type>> posting_lists(30);
-    for (auto &plist : posting_lists) {
+    for (auto& plist : posting_lists) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
         uint64_t n = uint64_t(universe / avg_gap);
         plist.first = random_sequence(universe, n, true);
@@ -53,7 +53,7 @@ void test_freq_index()
         pisa::mapper::map(coll, m);
 
         for (size_t i = 0; i < posting_lists.size(); ++i) {
-            auto const &plist = posting_lists[i];
+            auto const& plist = posting_lists[i];
             auto doc_enum = coll[i];
             REQUIRE(plist.first.size() == doc_enum.size());
             for (size_t p = 0; p < plist.first.size(); ++p, doc_enum.next()) {

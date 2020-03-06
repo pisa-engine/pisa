@@ -31,17 +31,17 @@ using namespace pisa;
 using ranges::views::enumerate;
 
 template <typename IndexType, typename WandType>
-void evaluate_queries(const std::string &index_filename,
-                      const std::optional<std::string> &wand_data_filename,
-                      const std::vector<Query> &queries,
-                      const std::optional<std::string> &thresholds_filename,
-                      std::string const &type,
-                      std::string const &query_type,
+void evaluate_queries(const std::string& index_filename,
+                      const std::optional<std::string>& wand_data_filename,
+                      const std::vector<Query>& queries,
+                      const std::optional<std::string>& thresholds_filename,
+                      std::string const& type,
+                      std::string const& query_type,
                       uint64_t k,
-                      std::string const &documents_filename,
-                      std::string const &scorer_name,
-                      std::string const &run_id,
-                      std::string const &iteration)
+                      std::string const& documents_filename,
+                      std::string const& scorer_name,
+                      std::string const& run_id,
+                      std::string const& iteration)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -158,7 +158,7 @@ void evaluate_queries(const std::string &index_filename,
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id;
-        for (auto &&[rank, result] : enumerate(results)) {
+        for (auto&& [rank, result] : enumerate(results)) {
             std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
                                      qid.value_or(std::to_string(query_idx)),
                                      iteration,
@@ -181,7 +181,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
 

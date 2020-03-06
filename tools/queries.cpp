@@ -34,15 +34,15 @@ using ranges::views::enumerate;
 
 template <typename Fn>
 void extract_times(Fn fn,
-                   std::vector<Query> const &queries,
-                   std::vector<Threshold> const &thresholds,
-                   std::string const &index_type,
-                   std::string const &query_type,
+                   std::vector<Query> const& queries,
+                   std::vector<Threshold> const& thresholds,
+                   std::string const& index_type,
+                   std::string const& query_type,
                    size_t runs,
-                   std::ostream &os)
+                   std::ostream& os)
 {
     std::vector<std::size_t> times(runs);
-    for (auto &&[qid, query] : enumerate(queries)) {
+    for (auto&& [qid, query] : enumerate(queries)) {
         do_not_optimize_away(fn(query, thresholds[qid]));
         std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
             return run_with_timer<std::chrono::microseconds>(
@@ -57,10 +57,10 @@ void extract_times(Fn fn,
 
 template <typename Functor>
 void op_perftest(Functor query_func,
-                 std::vector<Query> const &queries,
-                 std::vector<Threshold> const &thresholds,
-                 std::string const &index_type,
-                 std::string const &query_type,
+                 std::vector<Query> const& queries,
+                 std::vector<Threshold> const& thresholds,
+                 std::string const& index_type,
+                 std::string const& query_type,
                  size_t runs,
                  std::uint64_t k,
                  bool safe)
@@ -72,7 +72,7 @@ void op_perftest(Functor query_func,
 
     for (size_t run = 0; run <= runs; ++run) {
         size_t idx = 0;
-        for (auto const &query : queries) {
+        for (auto const& query : queries) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query, thresholds[idx]);
                 if (safe && result < k) {
@@ -115,14 +115,14 @@ void op_perftest(Functor query_func,
 }
 
 template <typename IndexType, typename WandType>
-void perftest(const std::string &index_filename,
-              const std::optional<std::string> &wand_data_filename,
-              const std::vector<Query> &queries,
-              const std::optional<std::string> &thresholds_filename,
-              std::string const &type,
-              std::string const &query_type,
+void perftest(const std::string& index_filename,
+              const std::optional<std::string>& wand_data_filename,
+              const std::vector<Query>& queries,
+              const std::optional<std::string>& thresholds_filename,
+              std::string const& type,
+              std::string const& query_type,
               uint64_t k,
-              std::string const &scorer_name,
+              std::string const& scorer_name,
               bool extract,
               bool safe)
 {
@@ -133,7 +133,7 @@ void perftest(const std::string &index_filename,
 
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
-    for (auto const &q : queries) {
+    for (auto const& q : queries) {
         for (auto t : q.terms) {
             if (!warmed_up.count(t)) {
                 index.warmup(t);
@@ -176,7 +176,7 @@ void perftest(const std::string &index_filename,
     spdlog::info("Performing {} queries", type);
     spdlog::info("K: {}", k);
 
-    for (auto &&t : query_types) {
+    for (auto&& t : query_types) {
         spdlog::info("Query type: {}", t);
         std::function<uint64_t(Query, Threshold)> query_fun;
         if (t == "and") {
@@ -298,7 +298,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     bool extract = false;
     bool silent = false;

@@ -16,24 +16,24 @@ namespace pisa {
 namespace arg {
 
     struct Encoding {
-        explicit Encoding(CLI::App *app)
+        explicit Encoding(CLI::App* app)
         {
             app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
         }
-        [[nodiscard]] auto index_encoding() const -> std::string const & { return m_encoding; }
+        [[nodiscard]] auto index_encoding() const -> std::string const& { return m_encoding; }
 
        private:
         std::string m_encoding;
     };
 
     struct WandData {
-        explicit WandData(CLI::App *app)
+        explicit WandData(CLI::App* app)
         {
-            auto *wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
+            auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
                 ->needs(wand);
         }
-        [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const &
+        [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const&
         {
             return m_wand_data_path;
         }
@@ -45,12 +45,12 @@ namespace arg {
     };
 
     struct Index : public Encoding {
-        explicit Index(CLI::App *app) : Encoding(app)
+        explicit Index(CLI::App* app) : Encoding(app)
         {
             app->add_option("-i,--index", m_index, "Inverted index filename")->required();
         }
 
-        [[nodiscard]] auto index_filename() const -> std::string const & { return m_index; }
+        [[nodiscard]] auto index_filename() const -> std::string const& { return m_index; }
 
        private:
         std::string m_index;
@@ -60,10 +60,10 @@ namespace arg {
 
     template <QueryMode Mode = QueryMode::Ranked>
     struct Query {
-        explicit Query(CLI::App *app)
+        explicit Query(CLI::App* app)
         {
             app->add_option("-q,--queries", m_query_file, "Path to file with queries", false);
-            auto *terms = app->add_option("--terms", m_term_lexicon, "Term lexicon");
+            auto* terms = app->add_option("--terms", m_term_lexicon, "Term lexicon");
             app->add_option(
                    "--stopwords", m_stop_words, "List of blacklisted stop words to filter out")
                 ->needs(terms);
@@ -106,22 +106,22 @@ namespace arg {
     };
 
     struct Algorithm {
-        explicit Algorithm(CLI::App *app)
+        explicit Algorithm(CLI::App* app)
         {
             app->add_option("-a,--algorithm", m_algorithm, "Query processing algorithm")
                 ->required();
         }
 
-        [[nodiscard]] auto algorithm() const -> std::string const & { return m_algorithm; }
+        [[nodiscard]] auto algorithm() const -> std::string const& { return m_algorithm; }
 
        private:
         std::string m_algorithm;
     };
 
     struct Scorer {
-        explicit Scorer(CLI::App *app)
+        explicit Scorer(CLI::App* app)
         {
-            auto *opt =
+            auto* opt =
                 app->add_option("-s,--scorer", m_scorer, "Query processing algorithm")->required();
         }
 
@@ -132,22 +132,22 @@ namespace arg {
     };
 
     struct Thresholds {
-        explicit Thresholds(CLI::App *app)
+        explicit Thresholds(CLI::App* app)
         {
             m_option = app->add_option(
                 "-T,--thresholds", m_thresholds_filename, "File containing query thresholds");
         }
 
         [[nodiscard]] auto thresholds_file() const { return m_thresholds_filename; }
-        [[nodiscard]] auto *thresholds_option() { return m_option; }
+        [[nodiscard]] auto* thresholds_option() { return m_option; }
 
        private:
         std::optional<std::string> m_thresholds_filename;
-        CLI::Option *m_option;
+        CLI::Option* m_option;
     };
 
     struct Threads {
-        explicit Threads(CLI::App *app)
+        explicit Threads(CLI::App* app)
         {
             app->add_option("--threads", m_threads, "Number of threads");
         }
@@ -162,7 +162,7 @@ namespace arg {
 
 template <typename... Args>
 struct App : public CLI::App, public Args... {
-    explicit App(std::string const &description) : CLI::App(description), Args(this)...
+    explicit App(std::string const& description) : CLI::App(description), Args(this)...
     {
         this->set_config("--config", "", "Configuration .ini file", false);
     }

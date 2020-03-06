@@ -81,10 +81,10 @@ TEST_CASE("Accumulate postings to Inverted_Index", "[invert][unit]")
     index(tbb::blocked_range<iterator_type>(postings.begin(), postings.end()));
     REQUIRE(index.documents
             == std::unordered_map<Term_Id, std::vector<Document_Id>>{
-                {0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}});
+                   {0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}});
     REQUIRE(index.frequencies
             == std::unordered_map<Term_Id, std::vector<Frequency>>{
-                {0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}});
+                   {0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}});
 }
 
 TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
@@ -208,7 +208,7 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
     std::transform(collection.begin(),
                    collection.end(),
                    std::back_inserter(document_range),
-                   [](auto const &vec) { return gsl::span<Term_Id const>(vec); });
+                   [](auto const& vec) { return gsl::span<Term_Id const>(vec); });
     size_t threads = 1;
 
     auto index = invert::invert_range(document_range, 0_d, threads);
@@ -257,7 +257,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 /* size */ 3,  /* Doc 3 */ 8, 5, 9,
                 /* size */ 11, /* Doc 4 */ 8, 6, 9, 6, 6, 5, 4, 3, 1, 0, 6};
             std::ofstream os(collection_filename);
-            os.write(reinterpret_cast<char *>(collection_data.data()),
+            os.write(reinterpret_cast<char*>(collection_data.data()),
                      collection_data.size() * sizeof(uint32_t));
         }
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads")
@@ -296,22 +296,22 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 std::error_code error;
                 mm.map((index_basename + ".docs").c_str(), error);
                 std::vector<uint32_t> d(
-                    reinterpret_cast<uint32_t const *>(mm.data()),
-                    reinterpret_cast<uint32_t const *>(mm.data()) + mm.size() / sizeof(uint32_t));
+                    reinterpret_cast<uint32_t const*>(mm.data()),
+                    reinterpret_cast<uint32_t const*>(mm.data()) + mm.size() / sizeof(uint32_t));
                 mio::mmap_source mmf;
                 mmf.map((index_basename + ".freqs").c_str(), error);
                 std::vector<uint32_t> f(
-                    reinterpret_cast<uint32_t const *>(mmf.data()),
-                    reinterpret_cast<uint32_t const *>(mmf.data()) + mmf.size() / sizeof(uint32_t));
+                    reinterpret_cast<uint32_t const*>(mmf.data()),
+                    reinterpret_cast<uint32_t const*>(mmf.data()) + mmf.size() / sizeof(uint32_t));
                 mio::mmap_source mms;
                 mms.map((index_basename + ".sizes").c_str(), error);
                 std::vector<uint32_t> s(
-                    reinterpret_cast<uint32_t const *>(mms.data()),
-                    reinterpret_cast<uint32_t const *>(mms.data()) + mms.size() / sizeof(uint32_t));
+                    reinterpret_cast<uint32_t const*>(mms.data()),
+                    reinterpret_cast<uint32_t const*>(mms.data()) + mms.size() / sizeof(uint32_t));
                 REQUIRE(d == document_data);
                 REQUIRE(f == frequency_data);
                 REQUIRE(s == size_data);
-                auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const &filename) {
+                auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const& filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());

@@ -12,7 +12,7 @@
 
 using namespace pisa;
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 
     std::string input_basename;
@@ -38,11 +38,11 @@ int main(int argc, char **argv)
         spdlog::error("Sampling rate should be greater than 0 and lower than or equal to 1.");
         std::abort();
     }
-    std::function<std::vector<std::uint32_t>(const binary_collection::const_sequence &docs)>
+    std::function<std::vector<std::uint32_t>(const binary_collection::const_sequence& docs)>
         sampling_fn;
 
     if (type == "random_postings") {
-        sampling_fn = [&](const auto &docs) {
+        sampling_fn = [&](const auto& docs) {
             size_t sample_size = std::ceil(docs.size() * rate);
             std::vector<std::uint32_t> indices(docs.size());
             std::vector<std::uint32_t> sample;
@@ -69,11 +69,11 @@ int main(int argc, char **argv)
                     sample_size,
                     std::mt19937{seed});
         std::vector<bool> doc_ids(num_docs);
-        for (auto &&p : sampled_indices) {
+        for (auto&& p : sampled_indices) {
             doc_ids[p] = true;
         }
 
-        sampling_fn = [=](const auto &docs) {
+        sampling_fn = [=](const auto& docs) {
             std::vector<std::uint32_t> sample;
             for (int position = 0; position < docs.size(); ++position) {
                 if (doc_ids[*(docs.begin() + position)]) {
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     std::unordered_set<size_t> terms_to_drop;
     sample_inverted_index(input_basename, output_basename, sampling_fn, terms_to_drop);
     std::ofstream dropped_terms_file(terms_to_drop_filename);
-    for (const auto &id : terms_to_drop){
+    for (const auto& id : terms_to_drop) {
         dropped_terms_file << id << std::endl;
     }
 

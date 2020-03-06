@@ -14,7 +14,6 @@ TEST_CASE("Parse HTML", "[html][unit]")
                                                   {"<a>text</a>", "text"},
                                                   {"<a>text</a>text", "text text"},
                                                   {"<a><!-- comment --></a>", ""},
-                                                  {"<a><!-- comment --></a>", ""}
-                                                  }));
+                                                  {"<a><!-- comment --></a>", ""}}));
     GIVEN("Input: " << input) { CHECK(cleantext(input) == expected); }
 }

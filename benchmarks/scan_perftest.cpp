@@ -2,14 +2,14 @@
 #include "spdlog/spdlog.h"
 
 #include "mappable/mapper.hpp"
-#include "sequence_collection.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
-#include "util/util.hpp"
+#include "sequence_collection.hpp"
 #include "util/do_not_optimize_away.hpp"
+#include "util/util.hpp"
 
-using pisa::get_time_usecs;
 using pisa::do_not_optimize_away;
+using pisa::get_time_usecs;
 
 template <typename BaseSequence>
 void perftest(const char* index_filename)
@@ -54,7 +54,7 @@ void perftest(const char* index_filename)
         auto tick = get_time_usecs();
         uint64_t calls_per_list = 500000;
         size_t postings = 0;
-        for (auto i: long_lists) {
+        for (auto i : long_lists) {
             auto reader = coll[i];
             auto calls = std::min(calls_per_list, reader.size());
             auto val = reader.move(0);
@@ -80,7 +80,8 @@ void perftest(const char* index_filename)
             if (reader.size() >= min_length) {
                 uint64_t size = reader.size();
                 // make sure size is odd, so that it is coprime with skip
-                if (!(size & 1)) size -= 1;
+                if (!(size & 1))
+                    size -= 1;
 
                 skip_values.emplace_back(i, std::vector<uint64_t>());
                 skip_positions.emplace_back(i, std::vector<uint64_t>());
@@ -94,9 +95,9 @@ void perftest(const char* index_filename)
 
         auto tick = get_time_usecs();
         size_t calls = 0;
-        for (auto const& p: skip_values) {
+        for (auto const& p : skip_values) {
             auto reader = coll[p.first];
-            for (auto const& val: p.second) {
+            for (auto const& val : p.second) {
                 do_not_optimize_away(reader.next_geq(val).second);
             }
             calls += p.second.size();
@@ -110,9 +111,9 @@ void perftest(const char* index_filename)
 
         tick = get_time_usecs();
         calls = 0;
-        for (auto const& p: skip_positions) {
+        for (auto const& p : skip_positions) {
             auto reader = coll[p.first];
-            for (auto const& pos: p.second) {
+            for (auto const& pos : p.second) {
                 do_not_optimize_away(reader.move(pos).second);
             }
             calls += p.second.size();
@@ -125,7 +126,8 @@ void perftest(const char* index_filename)
                      (elapsed / calls * 1000));
     }
 }
-int main(int argc, const char** argv) {
+int main(int argc, const char** argv)
+{
 
     using pisa::compact_elias_fano;
     using pisa::indexed_sequence;
@@ -133,9 +135,7 @@ int main(int argc, const char** argv) {
     using pisa::uniform_partitioned_sequence;
 
     if (argc != 3) {
-        std::cerr << "Usage: " << argv[0]
-                  << " <collection type> <index filename>"
-                  << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <collection type> <index filename>" << std::endl;
         return 1;
     }
 

@@ -17,7 +17,7 @@
 
 using namespace pisa;
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 
     std::string input_basename;
