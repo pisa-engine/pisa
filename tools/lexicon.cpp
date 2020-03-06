@@ -2,12 +2,12 @@
 #include <mio/mmap.hpp>
 #include <spdlog/spdlog.h>
 
-#include "payload_vector.hpp"
 #include "io.hpp"
+#include "payload_vector.hpp"
 
 using namespace pisa;
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     std::string text_file;
     std::string lexicon_file;
@@ -32,15 +32,15 @@ int main(int argc, char **argv)
     try {
         if (*build) {
             std::ifstream is(text_file);
-            encode_payload_vector(std::istream_iterator<io::Line>(is),
-                                  std::istream_iterator<io::Line>())
+            encode_payload_vector(
+                std::istream_iterator<io::Line>(is), std::istream_iterator<io::Line>())
                 .to_file(lexicon_file);
             return 0;
         }
         mio::mmap_source m(lexicon_file.c_str());
         auto lexicon = Payload_Vector<>::from(m);
         if (*print) {
-            for (auto const &elem : lexicon) {
+            for (auto const& elem: lexicon) {
                 std::cout << elem << '\n';
             }
             return 0;
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
             }
         }
         return 1;
-    } catch (std::runtime_error const &err) {
+    } catch (std::runtime_error const& err) {
         spdlog::error("{}", err.what());
         return 0;
     }

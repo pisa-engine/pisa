@@ -1,24 +1,24 @@
 #include <numeric>
-#include <thread>
 #include <optional>
+#include <thread>
 
 #include <CLI/CLI.hpp>
 #include <pstl/execution>
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
 
-#include "recursive_graph_bisection.hpp"
-#include "util/progress.hpp"
-#include "util/inverted_index_utils.hpp"
 #include "payload_vector.hpp"
+#include "recursive_graph_bisection.hpp"
+#include "util/inverted_index_utils.hpp"
+#include "util/progress.hpp"
 
 using namespace pisa;
 using iterator_type = std::vector<uint32_t>::iterator;
 using range_type = document_range<iterator_type>;
 using node_type = computation_node<iterator_type>;
 
-inline std::vector<node_type> read_node_config(const std::string &config_file,
-                                               const range_type &initial_range)
+inline std::vector<node_type>
+read_node_config(const std::string& config_file, const range_type& initial_range)
 {
     std::vector<node_type> nodes;
     std::ifstream is(config_file);
@@ -30,11 +30,11 @@ inline std::vector<node_type> read_node_config(const std::string &config_file,
     return nodes;
 }
 
-inline void run_with_config(const std::string &config_file, const range_type &initial_range)
+inline void run_with_config(const std::string& config_file, const range_type& initial_range)
 {
     auto nodes = read_node_config(config_file, initial_range);
     auto total_count = std::accumulate(
-        nodes.begin(), nodes.end(), std::ptrdiff_t(0), [](auto acc, const auto &node) {
+        nodes.begin(), nodes.end(), std::ptrdiff_t(0), [](auto acc, const auto& node) {
             return acc + node.partition.size();
         });
     pisa::progress bp_progress("Graph bisection", total_count);
@@ -42,7 +42,7 @@ inline void run_with_config(const std::string &config_file, const range_type &in
     recursive_graph_bisection(std::move(nodes), bp_progress);
 }
 
-inline void run_default_tree(size_t depth, const range_type &initial_range)
+inline void run_default_tree(size_t depth, const range_type& initial_range)
 {
     spdlog::info("Default tree with depth {}", depth);
     pisa::progress bp_progress("Graph bisection", initial_range.size() * depth);
@@ -50,7 +50,7 @@ inline void run_default_tree(size_t depth, const range_type &initial_range)
     recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
 }
 
-int main(int argc, char const *argv[])
+int main(int argc, char const* argv[])
 {
     std::string input_basename;
     std::string output_basename;
@@ -71,10 +71,11 @@ int main(int argc, char const *argv[])
     app.add_option("--store-fwdidx", output_fwd, "Output basename (forward index)");
     app.add_option("--fwdidx", input_fwd, "Use this forward index");
     auto docs_opt = app.add_option("--documents", documents_filename, "Documents lexicon");
-    app.add_option("--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")->needs(docs_opt);
+    app.add_option(
+           "--reordered-documents", reordered_documents_filename, "Reordered documents lexicon")
+        ->needs(docs_opt);
     app.add_option("-m,--min-len", min_len, "Minimum list threshold");
-    auto optdepth =
-        app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
+    auto optdepth = app.add_option("-d,--depth", depth, "Recursion depth")->check(CLI::Range(1, 64));
     app.add_option("-t,--threads", threads, "Thread count");
     auto optconf = app.add_option("--config", config_file, "Node configuration file");
     app.add_flag("--nogb", nogb, "No VarIntGB compression in forward index");
@@ -83,8 +84,8 @@ int main(int argc, char const *argv[])
     CLI11_PARSE(app, argc, argv);
 
     bool config_provided = app.count("--config") > 0u;
-    bool depth_provided  = app.count("--depth") > 0u;
-    bool output_provided  = app.count("--output") > 0u;
+    bool depth_provided = app.count("--depth") > 0u;
+    bool output_provided = app.count("--output") > 0u;
     if (app.count("--output") + app.count("--store-fwdidx") == 0u) {
         spdlog::error("Must define at least one output parameter.");
         return 1;
@@ -94,8 +95,8 @@ int main(int argc, char const *argv[])
     spdlog::info("Number of threads: {}", threads);
 
     forward_index fwd = app.count("--fwdidx") > 0u
-                            ? forward_index::read(input_fwd)
-                            : forward_index::from_inverted_index(input_basename, min_len, not nogb);
+        ? forward_index::read(input_fwd)
+        : forward_index::from_inverted_index(input_basename, min_len, not nogb);
     if (app.count("--store-fwdidx") > 0u) {
         forward_index::write(fwd, output_fwd);
     }
@@ -109,13 +110,13 @@ int main(int argc, char const *argv[])
         if (config_provided) {
             run_with_config(config_file, initial_range);
         } else {
-            run_default_tree(depth_provided ? depth
-                                            : static_cast<size_t>(std::log2(fwd.size()) - 5),
-                             initial_range);
+            run_default_tree(
+                depth_provided ? depth : static_cast<size_t>(std::log2(fwd.size()) - 5),
+                initial_range);
         }
 
         if (print) {
-            for (const auto &document : documents) {
+            for (const auto& document: documents) {
                 std::cout << document << '\n';
             }
         }
@@ -124,16 +125,17 @@ int main(int argc, char const *argv[])
         documents.clear();
         reorder_inverted_index(input_basename, output_basename, mapping);
 
-        if(documents_filename) {
-           auto doc_buffer = Payload_Vector_Buffer::from_file(*documents_filename);
-	   auto documents = Payload_Vector<std::string>(doc_buffer);
-	   std::vector<std::string> reordered_documents(documents.size());
-   	   pisa::progress doc_reorder("Reordering documents vector", documents.size());
-	   for (size_t i = 0; i < documents.size(); ++i) {
-              reordered_documents[mapping[i]] = documents[i];
-	      doc_reorder.update(1);
-           }
-           encode_payload_vector(reordered_documents.begin(), reordered_documents.end()).to_file(*reordered_documents_filename);
+        if (documents_filename) {
+            auto doc_buffer = Payload_Vector_Buffer::from_file(*documents_filename);
+            auto documents = Payload_Vector<std::string>(doc_buffer);
+            std::vector<std::string> reordered_documents(documents.size());
+            pisa::progress doc_reorder("Reordering documents vector", documents.size());
+            for (size_t i = 0; i < documents.size(); ++i) {
+                reordered_documents[mapping[i]] = documents[i];
+                doc_reorder.update(1);
+            }
+            encode_payload_vector(reordered_documents.begin(), reordered_documents.end())
+                .to_file(*reordered_documents_filename);
         }
     }
     return 0;

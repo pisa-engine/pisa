@@ -1,12 +1,11 @@
 #pragma once
 #include "catch2/catch.hpp"
 
-#include "test_common.hpp"
 #include "bit_vector.hpp"
+#include "test_common.hpp"
 #include "util/util.hpp"
 
-std::vector<uint64_t> random_sequence(size_t universe, size_t n,
-                                      bool strict = true)
+std::vector<uint64_t> random_sequence(size_t universe, size_t n, bool strict = true)
 {
     srand(42);
     std::vector<uint64_t> seq;
@@ -41,17 +40,13 @@ void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
     // test random access and enumeration
     for (uint64_t i = 0; i < seq.size(); ++i) {
         val = r.move(i);
-        MY_REQUIRE_EQUAL(i, val.first,
-                         "i = " << i);
-        MY_REQUIRE_EQUAL(seq[i], val.second,
-                         "i = " << i);
+        MY_REQUIRE_EQUAL(i, val.first, "i = " << i);
+        MY_REQUIRE_EQUAL(seq[i], val.second, "i = " << i);
 
         if (i) {
-            MY_REQUIRE_EQUAL(seq[i - 1], r.prev_value(),
-                             "i = " << i);
+            MY_REQUIRE_EQUAL(seq[i - 1], r.prev_value(), "i = " << i);
         } else {
-            MY_REQUIRE_EQUAL(0, r.prev_value(),
-                             "i = " << i);
+            MY_REQUIRE_EQUAL(0, r.prev_value(), "i = " << i);
         }
     }
     r.move(seq.size());
@@ -59,15 +54,12 @@ void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
 
     val = r.move(0);
     for (uint64_t i = 0; i < seq.size(); ++i) {
-        MY_REQUIRE_EQUAL(seq[i], val.second,
-                         "i = " << i);
+        MY_REQUIRE_EQUAL(seq[i], val.second, "i = " << i);
 
         if (i) {
-            MY_REQUIRE_EQUAL(seq[i - 1], r.prev_value(),
-                             "i = " << i);
+            MY_REQUIRE_EQUAL(seq[i - 1], r.prev_value(), "i = " << i);
         } else {
-            MY_REQUIRE_EQUAL(0, r.prev_value(),
-                             "i = " << i);
+            MY_REQUIRE_EQUAL(0, r.prev_value(), "i = " << i);
         }
         val = r.next();
     }
@@ -80,10 +72,8 @@ void test_move_next(SequenceReader r, std::vector<uint64_t> const& seq)
             auto rr = r;
             rr.move(i);
             auto val = rr.move(i + skip);
-            MY_REQUIRE_EQUAL(i + skip, val.first,
-                             "i = " << i << " skip = " << skip);
-            MY_REQUIRE_EQUAL(seq[i + skip], val.second,
-                             "i = " << i << " skip = " << skip);
+            MY_REQUIRE_EQUAL(i + skip, val.first, "i = " << i << " skip = " << skip);
+            MY_REQUIRE_EQUAL(seq[i + skip], val.second, "i = " << i << " skip = " << skip);
         }
     }
 }
@@ -103,31 +93,26 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
     // test successor
     uint64_t last = 0;
     for (size_t i = 0; i < seq.size(); ++i) {
-        if (seq[i] == last) continue;
+        if (seq[i] == last)
+            continue;
 
         auto rr = r;
         for (size_t t = 0; t < 10; ++t) {
             uint64_t p = 0;
             switch (i) {
-            case 0:
-                p = last + 1; break;
-            case 1:
-                p = seq[i]; break;
-            default:
-                p = last + 1 + (rand() % (seq[i] - last));
+            case 0: p = last + 1; break;
+            case 1: p = seq[i]; break;
+            default: p = last + 1 + (rand() % (seq[i] - last));
             }
 
             val = rr.next_geq(p);
             REQUIRE(i == val.first);
-            MY_REQUIRE_EQUAL(seq[i], val.second,
-                             "p = " << p);
+            MY_REQUIRE_EQUAL(seq[i], val.second, "p = " << p);
 
             if (val.first) {
-                MY_REQUIRE_EQUAL(seq[val.first - 1], rr.prev_value(),
-                                 "i = " << i);
+                MY_REQUIRE_EQUAL(seq[val.first - 1], rr.prev_value(), "i = " << i);
             } else {
-                MY_REQUIRE_EQUAL(0, rr.prev_value(),
-                                 "i = " << i);
+                MY_REQUIRE_EQUAL(0, rr.prev_value(), "i = " << i);
             }
         }
         last = seq[i];
@@ -154,31 +139,31 @@ void test_next_geq(SequenceReader r, std::vector<uint64_t> const& seq)
             auto rr = r;
             rr.move(i);
             val = rr.next_geq(seq[i + skip]);
-            MY_REQUIRE_EQUAL(exp_pos, val.first,
-                             "i = " << i << " skip = " << skip
-                             << " value expected = " << seq[i + skip]
-                             << " got = " << val.second);
-            MY_REQUIRE_EQUAL(seq[i + skip], val.second,
-                             "i = " << i << " skip = " << skip);
+            MY_REQUIRE_EQUAL(
+                exp_pos,
+                val.first,
+                "i = " << i << " skip = " << skip << " value expected = " << seq[i + skip]
+                       << " got = " << val.second);
+            MY_REQUIRE_EQUAL(seq[i + skip], val.second, "i = " << i << " skip = " << skip);
         }
     }
 }
 
 // oh, C++
-struct no_next_geq_tag {};
-struct next_geq_tag : no_next_geq_tag {};
+struct no_next_geq_tag {
+};
+struct next_geq_tag: no_next_geq_tag {
+};
 
 template <typename SequenceReader>
-void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq,
-                   no_next_geq_tag const&)
+void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq, no_next_geq_tag const&)
 {
     test_move_next(r, seq);
 }
 
 template <typename SequenceReader>
 typename pisa::if_has_next_geq<SequenceReader>
-test_sequence(SequenceReader r, std::vector<uint64_t> const& seq,
-              next_geq_tag const&)
+test_sequence(SequenceReader r, std::vector<uint64_t> const& seq, next_geq_tag const&)
 {
     test_move_next(r, seq);
     test_next_geq(r, seq);
@@ -191,10 +176,8 @@ void test_sequence(SequenceReader r, std::vector<uint64_t> const& seq)
 }
 
 template <typename ParamsType, typename SequenceType>
-inline void test_sequence(SequenceType,
-                          ParamsType const& params,
-                          uint64_t universe,
-                          std::vector<uint64_t> const& seq)
+inline void test_sequence(
+    SequenceType, ParamsType const& params, uint64_t universe, std::vector<uint64_t> const& seq)
 {
     pisa::bit_vector_builder bvb;
     SequenceType::write(bvb, seq.begin(), universe, seq.size(), params);
@@ -202,4 +185,3 @@ inline void test_sequence(SequenceType,
     typename SequenceType::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
 }
-

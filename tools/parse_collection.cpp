@@ -18,15 +18,15 @@ using namespace pisa;
 template <typename ReadSubsequentRecordFn>
 [[nodiscard]] auto trec_record_parser(ReadSubsequentRecordFn read_subsequent_record)
 {
-    return [=](std::istream &in) -> std::optional<Document_Record> {
+    return [=](std::istream& in) -> std::optional<Document_Record> {
         while (not in.eof()) {
             auto record = trecpp::match(
                 read_subsequent_record(in),
-                [](trecpp::Record const &rec) {
+                [](trecpp::Record const& rec) {
                     return std::make_optional<Document_Record>(
                         std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
                 },
-                [](trecpp::Error const &error) {
+                [](trecpp::Error const& error) {
                     spdlog::warn("Skipped invalid record: {}", error);
                     return std::optional<Document_Record>{};
                 });
@@ -38,16 +38,15 @@ template <typename ReadSubsequentRecordFn>
     };
 }
 
-std::function<std::optional<Document_Record>(std::istream &)> record_parser(std::string const &type,
-                                                                            std::istream &is)
+std::function<std::optional<Document_Record>(std::istream&)>
+record_parser(std::string const& type, std::istream& is)
 {
     if (type == "plaintext") {
-        return [](std::istream &in) -> std::optional<Document_Record> {
+        return [](std::istream& in) -> std::optional<Document_Record> {
             Plaintext_Record record;
             if (in >> record) {
-                return std::make_optional<Document_Record>(std::move(record.trecid()),
-                                                           std::move(record.content()),
-                                                           std::move(record.url()));
+                return std::make_optional<Document_Record>(
+                    std::move(record.trecid()), std::move(record.content()), std::move(record.url()));
             }
             return std::nullopt;
         };
@@ -57,16 +56,15 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
     }
     if (type == "trecweb") {
         return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](
-                   std::istream &in) -> std::optional<Document_Record> {
+                   std::istream& in) -> std::optional<Document_Record> {
             while (not in.eof()) {
                 auto record = trecpp::match(
                     parser->read_record(),
-                    [](trecpp::Record const &rec) {
-                        return std::make_optional<Document_Record>(std::move(rec.trecid()),
-                                                                   std::move(rec.content()),
-                                                                   std::move(rec.url()));
+                    [](trecpp::Record const& rec) {
+                        return std::make_optional<Document_Record>(
+                            std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
                     },
-                    [](trecpp::Error const &error) {
+                    [](trecpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", error);
                         return std::optional<Document_Record>{};
                     });
@@ -78,19 +76,18 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
         };
     }
     if (type == "warc") {
-        return [](std::istream &in) -> std::optional<Document_Record> {
+        return [](std::istream& in) -> std::optional<Document_Record> {
             while (not in.eof()) {
                 auto record = warcpp::match(
                     warcpp::read_subsequent_record(in),
-                    [](warcpp::Record const &rec) {
+                    [](warcpp::Record const& rec) {
                         if (not rec.valid_response()) {
                             return std::optional<Document_Record>{};
                         }
-                        return std::make_optional<Document_Record>(std::move(rec.trecid()),
-                                                                   std::move(rec.content()),
-                                                                   std::move(rec.url()));
+                        return std::make_optional<Document_Record>(
+                            std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
                     },
-                    [](warcpp::Error const &error) {
+                    [](warcpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", error);
                         return std::optional<Document_Record>{};
                     });
@@ -102,19 +99,19 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
         };
     }
     if (type == "wapo") {
-        return [](std::istream &in) -> std::optional<Document_Record> {
+        return [](std::istream& in) -> std::optional<Document_Record> {
             while (not in.eof()) {
                 auto result = wapopp::Record::read(in);
                 if (std::get_if<wapopp::Error>(&result) != nullptr) {
-                    spdlog::warn("Skpped invalid record. Reason: {}",
-                                 std::get_if<wapopp::Error>(&result)->msg);
+                    spdlog::warn(
+                        "Skpped invalid record. Reason: {}",
+                        std::get_if<wapopp::Error>(&result)->msg);
                     spdlog::debug("Invalid record: {}", std::get_if<wapopp::Error>(&result)->json);
                 } else {
                     std::ostringstream os;
                     auto record = *std::get_if<wapopp::Record>(&result);
-                    for (auto content : record.contents) {
-                        if (auto kicker = std::get_if<wapopp::Kicker>(&content);
-                            kicker != nullptr) {
+                    for (auto content: record.contents) {
+                        if (auto kicker = std::get_if<wapopp::Kicker>(&content); kicker != nullptr) {
                             os << " " << kicker->content;
                         } else if (auto title = std::get_if<wapopp::Title>(&content);
                                    title != nullptr) {
@@ -122,8 +119,7 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
                         } else if (auto byline = std::get_if<wapopp::Byline>(&content);
                                    byline != nullptr) {
                             os << " " << byline->content;
-                        } else if (auto text = std::get_if<wapopp::Text>(&content);
-                                   text != nullptr) {
+                        } else if (auto text = std::get_if<wapopp::Text>(&content); text != nullptr) {
                             os << " " << text->content;
                         } else if (auto author = std::get_if<wapopp::AuthorInfo>(&content);
                                    author != nullptr) {
@@ -143,23 +139,23 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(std:
     std::abort();
 }
 
-std::function<std::string(std::string &&)> term_processor(std::optional<std::string> const &type)
+std::function<std::string(std::string&&)> term_processor(std::optional<std::string> const& type)
 {
     if (not type) {
-        return [](std::string &&term) -> std::string {
+        return [](std::string&& term) -> std::string {
             boost::algorithm::to_lower(term);
             return std::move(term);
         };
     }
     if (*type == "porter2") {
-        return [](std::string &&term) -> std::string {
+        return [](std::string&& term) -> std::string {
             boost::algorithm::to_lower(term);
             return porter2::Stemmer{}.stem(term);
         };
     }
     if (*type == "krovetz") {
         static stem::KrovetzStemmer kstemmer;
-        return [](std::string &&term) -> std::string {
+        return [](std::string&& term) -> std::string {
             boost::algorithm::to_lower(term);
             return kstemmer.kstem_stemmer(term);
         };
@@ -168,8 +164,8 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
     std::abort();
 }
 
-std::function<void(std::string &&constent, std::function<void(std::string &&)>)> content_parser(
-    std::optional<std::string> const &type)
+std::function<void(std::string&& constent, std::function<void(std::string&&)>)>
+content_parser(std::optional<std::string> const& type)
 {
     if (not type) {
         return parse_plaintext_content;
@@ -181,16 +177,16 @@ std::function<void(std::string &&constent, std::function<void(std::string &&)>)>
     std::abort();
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-
-    auto valid_basename = [](std::string const &basename) {
+    auto valid_basename = [](std::string const& basename) {
         boost::filesystem::path p(basename);
         auto parent = p.parent_path();
         if (not boost::filesystem::exists(parent) or not boost::filesystem::is_directory(parent)) {
-            return fmt::format("Basename {} invalid: path {} is not an existing directory",
-                               basename,
-                               parent.string());
+            return fmt::format(
+                "Basename {} invalid: path {} is not an existing directory",
+                basename,
+                parent.string());
         }
         return std::string();
     };
@@ -217,11 +213,12 @@ int main(int argc, char **argv)
     app.add_flag("--debug", debug, "Print debug messages");
 
     size_t batch_count, document_count;
-    CLI::App *merge_cmd = app.add_subcommand("merge",
-                                             "Merge previously produced batch files. "
-                                             "When parsing process was killed during merging, "
-                                             "use this command to finish merging without "
-                                             "having to restart building batches.");
+    CLI::App* merge_cmd = app.add_subcommand(
+        "merge",
+        "Merge previously produced batch files. "
+        "When parsing process was killed during merging, "
+        "use this command to finish merging without "
+        "having to restart building batches.");
     merge_cmd->add_option("--batch-count", batch_count, "Number of batches")->required();
     merge_cmd->add_option("--document-count", document_count, "Number of documents")->required();
 
@@ -238,13 +235,14 @@ int main(int argc, char **argv)
     if (*merge_cmd) {
         builder.merge(output_filename, document_count, batch_count);
     } else {
-        builder.build(std::cin,
-                      output_filename,
-                      record_parser(format, std::cin),
-                      term_processor(stemmer),
-                      content_parser(content_parser_type),
-                      batch_size,
-                      threads);
+        builder.build(
+            std::cin,
+            output_filename,
+            record_parser(format, std::cin),
+            term_processor(stemmer),
+            content_parser(content_parser_type),
+            batch_size,
+            threads);
     }
 
     return 0;

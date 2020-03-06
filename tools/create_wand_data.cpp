@@ -16,7 +16,7 @@
 
 #include "CLI/CLI.hpp"
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     using namespace pisa;
 
@@ -45,9 +45,10 @@ int main(int argc, const char **argv)
     app.add_flag("--quantize", quantize, "Quantize scores");
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
     app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
-    app.add_option("--terms-to-drop",
-                   terms_to_drop_filename,
-                   "A filename containing a list of term IDs that we want to drop");
+    app.add_option(
+        "--terms-to-drop",
+        terms_to_drop_filename,
+        "A filename containing a list of term IDs that we want to drop");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -59,9 +60,10 @@ int main(int argc, const char **argv)
 
     std::ifstream dropped_terms_file(terms_to_drop_filename);
     std::unordered_set<size_t> dropped_term_ids;
-    copy(istream_iterator<size_t>(dropped_terms_file),
-         istream_iterator<size_t>(),
-         inserter(dropped_term_ids, dropped_term_ids.end()));
+    copy(
+        istream_iterator<size_t>(dropped_terms_file),
+        istream_iterator<size_t>(),
+        inserter(dropped_term_ids, dropped_term_ids.end()));
 
     spdlog::info("Dropping {} terms", dropped_term_ids.size());
 
@@ -76,31 +78,34 @@ int main(int argc, const char **argv)
     }();
 
     if (compress) {
-        wand_data<wand_data_compressed<>> wdata(sizes_coll.begin()->begin(),
-                                              coll.num_docs(),
-                                              coll,
-                                              scorer_name,
-                                              block_size,
-                                              quantize,
-                                              dropped_term_ids);
+        wand_data<wand_data_compressed<>> wdata(
+            sizes_coll.begin()->begin(),
+            coll.num_docs(),
+            coll,
+            scorer_name,
+            block_size,
+            quantize,
+            dropped_term_ids);
         mapper::freeze(wdata, output_filename.c_str());
     } else if (range) {
-        wand_data<wand_data_range<128, 1024>> wdata(sizes_coll.begin()->begin(),
-                                                    coll.num_docs(),
-                                                    coll,
-                                                    scorer_name,
-                                                    block_size,
-                                                    quantize,
-                                                    dropped_term_ids);
+        wand_data<wand_data_range<128, 1024>> wdata(
+            sizes_coll.begin()->begin(),
+            coll.num_docs(),
+            coll,
+            scorer_name,
+            block_size,
+            quantize,
+            dropped_term_ids);
         mapper::freeze(wdata, output_filename.c_str());
     } else {
-        wand_data<wand_data_raw> wdata(sizes_coll.begin()->begin(),
-                                       coll.num_docs(),
-                                       coll,
-                                       scorer_name,
-                                       block_size,
-                                       quantize,
-                                       dropped_term_ids);
+        wand_data<wand_data_raw> wdata(
+            sizes_coll.begin()->begin(),
+            coll.num_docs(),
+            coll,
+            scorer_name,
+            block_size,
+            quantize,
+            dropped_term_ids);
         mapper::freeze(wdata, output_filename.c_str());
     }
 }

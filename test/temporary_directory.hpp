@@ -14,15 +14,16 @@ struct Temporary_Directory {
         boost::filesystem::create_directory(dir_);
         std::cerr << "Created a tmp dir " << dir_.c_str() << '\n';
     }
-    ~Temporary_Directory() {
+    ~Temporary_Directory()
+    {
         if (boost::filesystem::exists(dir_)) {
             boost::filesystem::remove_all(dir_);
         }
         std::cerr << "Removed a tmp dir " << dir_.c_str() << '\n';
     }
 
-    [[nodiscard]] auto path() -> boost::filesystem::path const & { return dir_; }
+    [[nodiscard]] auto path() -> boost::filesystem::path const& { return dir_; }
 
-   private:
+  private:
     boost::filesystem::path dir_;
 };

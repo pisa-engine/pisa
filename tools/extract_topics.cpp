@@ -5,7 +5,8 @@
 
 #include "CLI/CLI.hpp"
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const* argv[])
+{
     std::string input_filename;
     std::string output_basename;
 
@@ -21,7 +22,7 @@ int main(int argc, char const *argv[]) {
     std::ofstream narr_file;
     narr_file.open(output_basename + ".narr");
 
-    auto                    input_file = std::ifstream(input_filename);
+    auto input_file = std::ifstream(input_filename);
     pisa::trec_topic_reader reader(input_file);
 
     while (auto topic = reader.next_topic()) {

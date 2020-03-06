@@ -6,8 +6,8 @@
 #include <random>
 #include <thread>
 
-#include <spdlog/spdlog.h>
 #include <CLI/CLI.hpp>
+#include <spdlog/spdlog.h>
 
 #include "mappable/mapper.hpp"
 #include "payload_vector.hpp"
@@ -18,9 +18,8 @@
 #include "util/progress.hpp"
 #include "util/util.hpp"
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
-
     using namespace pisa;
     std::string input_basename;
     std::string output_basename;
@@ -32,9 +31,10 @@ int main(int argc, const char **argv)
     CLI::App app{"Shuffle document IDs."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_basename, "Output basename");
-    auto mapping_opt = app.add_option("--mapping-filename",
-                                      mapping_filename,
-                                      "Ordering file is of the form <current ID> <new ID>");
+    auto mapping_opt = app.add_option(
+        "--mapping-filename",
+        mapping_filename,
+        "Ordering file is of the form <current ID> <new ID>");
     app.add_option("--seed", seed, "Seed state")->excludes(mapping_opt);
     auto docs_opt = app.add_option("--documents", documents_filename, "Documents lexicon");
     app.add_option(
@@ -90,8 +90,7 @@ int main(int argc, const char **argv)
     emit(output_docs, num_docs);
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
-    for (const auto &seq : input) {
-
+    for (const auto& seq: input) {
         for (size_t i = 0; i < seq.docs.size(); ++i) {
             pl.emplace_back(mapping[seq.docs.begin()[i]], seq.freqs.begin()[i]);
         }
@@ -100,7 +99,7 @@ int main(int argc, const char **argv)
 
         emit(output_docs, pl.size());
         emit(output_freqs, pl.size());
-        for (const auto &posting : pl) {
+        for (const auto& posting: pl) {
             emit(output_docs, posting.first);
             emit(output_freqs, posting.second);
         }
