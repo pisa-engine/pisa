@@ -8,7 +8,6 @@ branches:
 common_sources: &all_sources
   - ubuntu-toolchain-r-test
   - llvm-toolchain-xenial-6.0
-  - llvm-toolchain-xenial-9
 
 env:
   global:
@@ -80,7 +79,6 @@ matrix:
       addons:
           apt:
               sources: *all_sources
-              packages: ['clang-format-9']
       env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && CLANG_FORMAT=On"
     - os: osx
       osx_image: xcode11.2
@@ -94,6 +92,12 @@ before_install:
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
     fi
   - eval "${MATRIX_EVAL}"
+  - if [[ "$CLANG_FORMAT" == "On" ]]; then
+      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+      echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main" | sudo tee -a /etc/apt/sources.list
+      sudo apt-get -qq update
+      sudo apt-get -y install clang-format-9
+    fi
 
 script:
     - cd build
@@ -104,7 +108,7 @@ script:
       fi
     - if [[ "$CLANG_FORMAT" == "On" ]]; then
         wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py
-        python run-clang-format.py -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
+        python run-clang-format.py --clang-format-executable clang-format-9 -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
       fi
 
 after_success:
