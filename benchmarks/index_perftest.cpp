@@ -1,13 +1,13 @@
+#include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
-#include "mappable/mapper.hpp"
 
 #include "index_types.hpp"
-#include "util/util.hpp"
 #include "util/do_not_optimize_away.hpp"
+#include "util/util.hpp"
 
-using pisa::get_time_usecs;
 using pisa::do_not_optimize_away;
+using pisa::get_time_usecs;
 
 template <typename IndexType, bool with_freqs>
 void perftest(IndexType const& index, std::string const& type)
@@ -18,10 +18,11 @@ void perftest(IndexType const& index, std::string const& type)
         size_t max_length = 100000;
         size_t max_number_of_lists = 1000;
 
-        spdlog::info("Scanning {} posting lists with length between {} and {}",
-                     max_number_of_lists,
-                     min_length,
-                     max_length);
+        spdlog::info(
+            "Scanning {} posting lists with length between {} and {}",
+            max_number_of_lists,
+            min_length,
+            max_length);
 
         std::vector<size_t> long_lists;
         for (size_t i = 0; i < index.size() and long_lists.size() <= max_number_of_lists; ++i) {
@@ -47,11 +48,12 @@ void perftest(IndexType const& index, std::string const& type)
         }
         double elapsed = get_time_usecs() - tick;
         double next_ns = elapsed / postings * 1000;
-        spdlog::info("Performed {} next(){} in {} seconds, {:.1f} ns per posting",
-                     postings,
-                     freqs_log,
-                     uint64_t(elapsed / 1000000),
-                     next_ns);
+        spdlog::info(
+            "Performed {} next(){} in {} seconds, {:.1f} ns per posting",
+            postings,
+            freqs_log,
+            uint64_t(elapsed / 1000000),
+            next_ns);
         spdlog::info("{}\tnext{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), next_ns);
     }
 
@@ -63,11 +65,11 @@ void perftest(IndexType const& index, std::string const& type)
         for (size_t i = 0; i < index.size(); ++i) {
             auto reader = index[i];
             uint64_t size = reader.size();
-            if (size < min_length) continue;
+            if (size < min_length)
+                continue;
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
-            for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip),
-                                            max_calls_per_list); ++i) {
+            for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip), max_calls_per_list); ++i) {
                 reader.move(i * skip);
                 skip_values.back().second.push_back(reader.docid());
             }
@@ -89,11 +91,12 @@ void perftest(IndexType const& index, std::string const& type)
         double elapsed = get_time_usecs() - tick;
         double next_geq_ns = elapsed / calls * 1000;
 
-        spdlog::info("Performed {} calls next_geq(){} with skip={}: {:.1f} ns per call",
-                     calls,
-                     freqs_log,
-                     skip,
-                     next_geq_ns);
+        spdlog::info(
+            "Performed {} calls next_geq(){} with skip={}: {:.1f} ns per call",
+            calls,
+            freqs_log,
+            skip,
+            next_geq_ns);
         spdlog::info(
             "{}\tnext_geq{}\t{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), skip, next_geq_ns);
     }
@@ -111,15 +114,12 @@ void perftest(const char* index_filename, std::string const& type)
     perftest<IndexType, true>(index, type);
 }
 
-
-int main(int argc, const char** argv) {
-
+int main(int argc, const char** argv)
+{
     using namespace pisa;
 
     if (argc != 3) {
-        std::cerr << "Usage: " << argv[0]
-                  << " <index type> <index filename>"
-                  << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <index type> <index filename>" << std::endl;
         return 1;
     }
 
@@ -127,11 +127,12 @@ int main(int argc, const char** argv) {
     const char* index_filename = argv[2];
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                       \
-        } else if (type == BOOST_PP_STRINGIZE(T)) { \
-            perftest<BOOST_PP_CAT(T, _index)>       \
-                (index_filename, type);             \
-            /**/
+#define LOOP_BODY(R, DATA, T)                                    \
+    }                                                            \
+    else if (type == BOOST_PP_STRINGIZE(T))                      \
+    {                                                            \
+        perftest<BOOST_PP_CAT(T, _index)>(index_filename, type); \
+        /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

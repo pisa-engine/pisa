@@ -26,19 +26,14 @@ using index_type = invert::Inverted_Index<iterator_type>;
 TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][unit]")
 {
     std::vector<std::vector<Term_Id>> documents = {{0_t, 1_t, 2_t, 3_t}, {1_t, 2_t, 3_t, 8_t}};
-    std::vector<gsl::span<Term_Id const>> spans = {gsl::make_span(documents[0]),
-                                                   gsl::make_span(documents[1])};
+    std::vector<gsl::span<Term_Id const>> spans = {
+        gsl::make_span(documents[0]), gsl::make_span(documents[1])};
 
     auto postings = invert::map_to_postings(invert::Batch{spans, ranges::views::iota(0_d, 2_d)});
-    REQUIRE(postings
-            == std::vector<std::pair<Term_Id, Document_Id>>{{0_t, 0_d},
-                                                            {1_t, 0_d},
-                                                            {2_t, 0_d},
-                                                            {3_t, 0_d},
-                                                            {1_t, 1_d},
-                                                            {2_t, 1_d},
-                                                            {3_t, 1_d},
-                                                            {8_t, 1_d}});
+    REQUIRE(
+        postings
+        == std::vector<std::pair<Term_Id, Document_Id>>{
+            {0_t, 0_d}, {1_t, 0_d}, {2_t, 0_d}, {3_t, 0_d}, {1_t, 1_d}, {2_t, 1_d}, {3_t, 1_d}, {8_t, 1_d}});
 }
 
 TEST_CASE("Join term from one index to the same term from another", "[invert][unit]")
@@ -79,12 +74,14 @@ TEST_CASE("Accumulate postings to Inverted_Index", "[invert][unit]")
     using iterator_type = decltype(postings.begin());
     invert::Inverted_Index<iterator_type> index;
     index(tbb::blocked_range<iterator_type>(postings.begin(), postings.end()));
-    REQUIRE(index.documents
-            == std::unordered_map<Term_Id, std::vector<Document_Id>>{
-                {0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}});
-    REQUIRE(index.frequencies
-            == std::unordered_map<Term_Id, std::vector<Frequency>>{
-                {0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}});
+    REQUIRE(
+        index.documents
+        == std::unordered_map<Term_Id, std::vector<Document_Id>>{
+            {0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}});
+    REQUIRE(
+        index.frequencies
+        == std::unordered_map<Term_Id, std::vector<Frequency>>{
+            {0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}});
 }
 
 TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
@@ -100,28 +97,30 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
     for (auto iter = postings.begin(); iter != postings.end(); ++iter) {
         index(tbb::blocked_range<iterator_type>(iter, std::next(iter)));
     }
-    REQUIRE(index.documents
-            == std::unordered_map<Term_Id, std::vector<Document_Id>>{{0_t, {0_d, 1_d, 4_d}},
-                                                                     {1_t, {2_d, 4_d}},
-                                                                     {2_t, {0_d, 1_d}},
-                                                                     {3_t, {0_d, 1_d, 4_d}},
-                                                                     {4_t, {1_d, 4_d}},
-                                                                     {5_t, {1_d, 2_d, 3_d, 4_d}},
-                                                                     {6_t, {1_d, 4_d}},
-                                                                     {7_t, {1_d}},
-                                                                     {8_t, {2_d, 3_d, 4_d}},
-                                                                     {9_t, {0_d, 2_d, 3_d, 4_d}}});
-    REQUIRE(index.frequencies
-            == std::unordered_map<Term_Id, std::vector<Frequency>>{{0_t, {2_f, 1_f, 1_f}},
-                                                                   {1_t, {1_f, 1_f}},
-                                                                   {2_t, {1_f, 1_f}},
-                                                                   {3_t, {1_f, 1_f, 1_f}},
-                                                                   {4_t, {2_f, 1_f}},
-                                                                   {5_t, {2_f, 1_f, 1_f, 1_f}},
-                                                                   {6_t, {1_f, 4_f}},
-                                                                   {7_t, {1_f}},
-                                                                   {8_t, {3_f, 1_f, 1_f}},
-                                                                   {9_t, {1_f, 1_f, 1_f, 1_f}}});
+    REQUIRE(
+        index.documents
+        == std::unordered_map<Term_Id, std::vector<Document_Id>>{{0_t, {0_d, 1_d, 4_d}},
+                                                                 {1_t, {2_d, 4_d}},
+                                                                 {2_t, {0_d, 1_d}},
+                                                                 {3_t, {0_d, 1_d, 4_d}},
+                                                                 {4_t, {1_d, 4_d}},
+                                                                 {5_t, {1_d, 2_d, 3_d, 4_d}},
+                                                                 {6_t, {1_d, 4_d}},
+                                                                 {7_t, {1_d}},
+                                                                 {8_t, {2_d, 3_d, 4_d}},
+                                                                 {9_t, {0_d, 2_d, 3_d, 4_d}}});
+    REQUIRE(
+        index.frequencies
+        == std::unordered_map<Term_Id, std::vector<Frequency>>{{0_t, {2_f, 1_f, 1_f}},
+                                                               {1_t, {1_f, 1_f}},
+                                                               {2_t, {1_f, 1_f}},
+                                                               {3_t, {1_f, 1_f, 1_f}},
+                                                               {4_t, {2_f, 1_f}},
+                                                               {5_t, {2_f, 1_f, 1_f, 1_f}},
+                                                               {6_t, {1_f, 4_f}},
+                                                               {7_t, {1_f}},
+                                                               {8_t, {3_f, 1_f, 1_f}},
+                                                               {9_t, {1_f, 1_f, 1_f, 1_f}}});
 }
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
@@ -129,52 +128,61 @@ TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
     tbb::task_scheduler_init init;
     auto [lhs, rhs, expected_joined, message] =
         GENERATE(table<index_type, index_type, index_type, std::string>(
-            {{index_type({{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
-                         {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}),
-              index_type({{3_t, {0_d, 1_d, 2_d}}, {4_t, {0_d, 1_d}}, {5_t, {5_d}}},
-                         {{3_t, {1_f, 1_f, 1_f}}, {4_t, {4_f, 1_f}}, {5_t, {1_f}}}),
-              index_type({{0_t, {0_d, 1_d, 2_d}},
-                          {1_t, {0_d, 1_d}},
-                          {2_t, {5_d}},
-                          {3_t, {0_d, 1_d, 2_d}},
-                          {4_t, {0_d, 1_d}},
-                          {5_t, {5_d}}},
-                         {{0_t, {1_f, 1_f, 1_f}},
-                          {1_t, {4_f, 1_f}},
-                          {2_t, {1_f}},
-                          {3_t, {1_f, 1_f, 1_f}},
-                          {4_t, {4_f, 1_f}},
-                          {5_t, {1_f}}}),
+            {{index_type(
+                  {{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
+                  {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}),
+              index_type(
+                  {{3_t, {0_d, 1_d, 2_d}}, {4_t, {0_d, 1_d}}, {5_t, {5_d}}},
+                  {{3_t, {1_f, 1_f, 1_f}}, {4_t, {4_f, 1_f}}, {5_t, {1_f}}}),
+              index_type(
+                  {{0_t, {0_d, 1_d, 2_d}},
+                   {1_t, {0_d, 1_d}},
+                   {2_t, {5_d}},
+                   {3_t, {0_d, 1_d, 2_d}},
+                   {4_t, {0_d, 1_d}},
+                   {5_t, {5_d}}},
+                  {{0_t, {1_f, 1_f, 1_f}},
+                   {1_t, {4_f, 1_f}},
+                   {2_t, {1_f}},
+                   {3_t, {1_f, 1_f, 1_f}},
+                   {4_t, {4_f, 1_f}},
+                   {5_t, {1_f}}}),
               "disjoint terms"},
-             {index_type({{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
-                         {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}),
-              index_type({{2_t, {6_d, 7_d, 8_d}}, {3_t, {0_d, 1_d}}, {4_t, {5_d}}},
-                         {{2_t, {1_f, 1_f, 1_f}}, {3_t, {4_f, 1_f}}, {4_t, {1_f}}}),
-              index_type({{0_t, {0_d, 1_d, 2_d}},
-                          {1_t, {0_d, 1_d}},
-                          {2_t, {5_d, 6_d, 7_d, 8_d}},
-                          {3_t, {0_d, 1_d}},
-                          {4_t, {5_d}}},
-                         {{0_t, {1_f, 1_f, 1_f}},
-                          {1_t, {4_f, 1_f}},
-                          {2_t, {1_f, 1_f, 1_f, 1_f}},
-                          {3_t, {4_f, 1_f}},
-                          {4_t, {1_f}}}),
+             {index_type(
+                  {{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
+                  {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}),
+              index_type(
+                  {{2_t, {6_d, 7_d, 8_d}}, {3_t, {0_d, 1_d}}, {4_t, {5_d}}},
+                  {{2_t, {1_f, 1_f, 1_f}}, {3_t, {4_f, 1_f}}, {4_t, {1_f}}}),
+              index_type(
+                  {{0_t, {0_d, 1_d, 2_d}},
+                   {1_t, {0_d, 1_d}},
+                   {2_t, {5_d, 6_d, 7_d, 8_d}},
+                   {3_t, {0_d, 1_d}},
+                   {4_t, {5_d}}},
+                  {{0_t, {1_f, 1_f, 1_f}},
+                   {1_t, {4_f, 1_f}},
+                   {2_t, {1_f, 1_f, 1_f, 1_f}},
+                   {3_t, {4_f, 1_f}},
+                   {4_t, {1_f}}}),
               "disjoint documents"},
-             {index_type({{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
-                         {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}),
-              index_type({{2_t, {5_d, 7_d, 8_d}}, {3_t, {0_d, 1_d}}, {4_t, {5_d}}},
-                         {{2_t, {1_f, 1_f, 1_f}}, {3_t, {4_f, 1_f}}, {4_t, {1_f}}}),
-              index_type({{0_t, {0_d, 1_d, 2_d}},
-                          {1_t, {0_d, 1_d}},
-                          {2_t, {5_d, 7_d, 8_d}},
-                          {3_t, {0_d, 1_d}},
-                          {4_t, {5_d}}},
-                         {{0_t, {1_f, 1_f, 1_f}},
-                          {1_t, {4_f, 1_f}},
-                          {2_t, {2_f, 1_f, 1_f}},
-                          {3_t, {4_f, 1_f}},
-                          {4_t, {1_f}}}),
+             {index_type(
+                  {{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
+                  {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}),
+              index_type(
+                  {{2_t, {5_d, 7_d, 8_d}}, {3_t, {0_d, 1_d}}, {4_t, {5_d}}},
+                  {{2_t, {1_f, 1_f, 1_f}}, {3_t, {4_f, 1_f}}, {4_t, {1_f}}}),
+              index_type(
+                  {{0_t, {0_d, 1_d, 2_d}},
+                   {1_t, {0_d, 1_d}},
+                   {2_t, {5_d, 7_d, 8_d}},
+                   {3_t, {0_d, 1_d}},
+                   {4_t, {5_d}}},
+                  {{0_t, {1_f, 1_f, 1_f}},
+                   {1_t, {4_f, 1_f}},
+                   {2_t, {2_f, 1_f, 1_f}},
+                   {3_t, {4_f, 1_f}},
+                   {4_t, {1_f}}}),
               "overlapping term and document"},
              {index_type({{0_t, {0_d}}}, {{0_t, {1_f}}}),
               index_type({{0_t, {0_d}}}, {{0_t, {1_f}}}),
@@ -205,35 +213,36 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
         /* Doc 4 */ {8_t, 6_t, 9_t, 6_t, 6_t, 5_t, 4_t, 3_t, 1_t, 0_t, 6_t}};
 
     std::vector<gsl::span<Term_Id const>> document_range;
-    std::transform(collection.begin(),
-                   collection.end(),
-                   std::back_inserter(document_range),
-                   [](auto const &vec) { return gsl::span<Term_Id const>(vec); });
+    std::transform(
+        collection.begin(), collection.end(), std::back_inserter(document_range), [](auto const& vec) {
+            return gsl::span<Term_Id const>(vec);
+        });
     size_t threads = 1;
 
     auto index = invert::invert_range(document_range, 0_d, threads);
 
-    index_type expected({{0_t, {0_d, 1_d, 4_d}},
-                         {1_t, {2_d, 4_d}},
-                         {2_t, {0_d, 1_d}},
-                         {3_t, {0_d, 1_d, 4_d}},
-                         {4_t, {1_d, 4_d}},
-                         {5_t, {1_d, 2_d, 3_d, 4_d}},
-                         {6_t, {1_d, 4_d}},
-                         {7_t, {1_d}},
-                         {8_t, {2_d, 3_d, 4_d}},
-                         {9_t, {0_d, 2_d, 3_d, 4_d}}},
-                        {{0_t, {2_f, 1_f, 1_f}},
-                         {1_t, {1_f, 1_f}},
-                         {2_t, {1_f, 1_f}},
-                         {3_t, {1_f, 1_f, 1_f}},
-                         {4_t, {2_f, 1_f}},
-                         {5_t, {2_f, 1_f, 1_f, 1_f}},
-                         {6_t, {1_f, 4_f}},
-                         {7_t, {1_f}},
-                         {8_t, {3_f, 1_f, 1_f}},
-                         {9_t, {1_f, 1_f, 1_f, 1_f}}},
-                        {5, 9, 6, 3, 11});
+    index_type expected(
+        {{0_t, {0_d, 1_d, 4_d}},
+         {1_t, {2_d, 4_d}},
+         {2_t, {0_d, 1_d}},
+         {3_t, {0_d, 1_d, 4_d}},
+         {4_t, {1_d, 4_d}},
+         {5_t, {1_d, 2_d, 3_d, 4_d}},
+         {6_t, {1_d, 4_d}},
+         {7_t, {1_d}},
+         {8_t, {2_d, 3_d, 4_d}},
+         {9_t, {0_d, 2_d, 3_d, 4_d}}},
+        {{0_t, {2_f, 1_f, 1_f}},
+         {1_t, {1_f, 1_f}},
+         {2_t, {1_f, 1_f}},
+         {3_t, {1_f, 1_f, 1_f}},
+         {4_t, {2_f, 1_f}},
+         {5_t, {2_f, 1_f, 1_f, 1_f}},
+         {6_t, {1_f, 4_f}},
+         {7_t, {1_f}},
+         {8_t, {3_f, 1_f, 1_f}},
+         {9_t, {1_f, 1_f, 1_f, 1_f}}},
+        {5, 9, 6, 3, 11});
     REQUIRE(index.documents == expected.documents);
     REQUIRE(index.frequencies == expected.frequencies);
     REQUIRE(index.document_sizes == expected.document_sizes);
@@ -257,8 +266,9 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 /* size */ 3,  /* Doc 3 */ 8, 5, 9,
                 /* size */ 11, /* Doc 4 */ 8, 6, 9, 6, 6, 5, 4, 3, 1, 0, 6};
             std::ofstream os(collection_filename);
-            os.write(reinterpret_cast<char *>(collection_data.data()),
-                     collection_data.size() * sizeof(uint32_t));
+            os.write(
+                reinterpret_cast<char*>(collection_data.data()),
+                collection_data.size() * sizeof(uint32_t));
         }
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads")
         {
@@ -296,22 +306,22 @@ TEST_CASE("Invert collection", "[invert][unit]")
                 std::error_code error;
                 mm.map((index_basename + ".docs").c_str(), error);
                 std::vector<uint32_t> d(
-                    reinterpret_cast<uint32_t const *>(mm.data()),
-                    reinterpret_cast<uint32_t const *>(mm.data()) + mm.size() / sizeof(uint32_t));
+                    reinterpret_cast<uint32_t const*>(mm.data()),
+                    reinterpret_cast<uint32_t const*>(mm.data()) + mm.size() / sizeof(uint32_t));
                 mio::mmap_source mmf;
                 mmf.map((index_basename + ".freqs").c_str(), error);
                 std::vector<uint32_t> f(
-                    reinterpret_cast<uint32_t const *>(mmf.data()),
-                    reinterpret_cast<uint32_t const *>(mmf.data()) + mmf.size() / sizeof(uint32_t));
+                    reinterpret_cast<uint32_t const*>(mmf.data()),
+                    reinterpret_cast<uint32_t const*>(mmf.data()) + mmf.size() / sizeof(uint32_t));
                 mio::mmap_source mms;
                 mms.map((index_basename + ".sizes").c_str(), error);
                 std::vector<uint32_t> s(
-                    reinterpret_cast<uint32_t const *>(mms.data()),
-                    reinterpret_cast<uint32_t const *>(mms.data()) + mms.size() / sizeof(uint32_t));
+                    reinterpret_cast<uint32_t const*>(mms.data()),
+                    reinterpret_cast<uint32_t const*>(mms.data()) + mms.size() / sizeof(uint32_t));
                 REQUIRE(d == document_data);
                 REQUIRE(f == frequency_data);
                 REQUIRE(s == size_data);
-                auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const &filename) {
+                auto batch_files = pisa::ls(tmpdir.path().string(), [](auto const& filename) {
                     return filename.find("batch") != std::string::npos;
                 });
                 REQUIRE(batch_files.empty());

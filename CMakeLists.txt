@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
+option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 
 configure_file(
   ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp.in
@@ -73,6 +74,15 @@ find_package(Threads REQUIRED)
 
 file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
 list(SORT PISA_SRC_FILES)
+
+if (PISA_ENABLE_CLANG_TIDY)
+    find_program(CLANGTIDY clang-tidy)
+    if(CLANGTIDY)
+        set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY})
+    else()
+        message(SEND_ERROR "clang-tidy requested but executable not found")
+    endif()
+endif()
 
 include_directories(include)
 add_library(pisa ${PISA_SRC_FILES})

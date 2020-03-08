@@ -4,11 +4,10 @@
 #include "test_generic_sequence.hpp"
 
 #include "codec/strict_elias_fano.hpp"
-#include <vector>
 #include <cstdlib>
+#include <vector>
 
-
-TEST_CASE( "strict_elias_fano")
+TEST_CASE("strict_elias_fano")
 {
     pisa::global_parameters params;
 

@@ -1,12 +1,12 @@
+#include <algorithm>
 #include <fstream>
 #include <iostream>
-#include <algorithm>
-#include <thread>
 #include <numeric>
 #include <random>
+#include <thread>
 
-#include "spdlog/spdlog.h"
 #include "mappable/mapper.hpp"
+#include "spdlog/spdlog.h"
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
@@ -14,13 +14,10 @@
 
 int main(int argc, const char** argv)
 {
-
     using namespace pisa;
 
     if (argc != 2) {
-        std::cerr << "Usage: " << argv[0]
-                  << " <collection basename>"
-                  << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <collection basename>" << std::endl;
         return 1;
     }
 
@@ -31,7 +28,7 @@ int main(int argc, const char** argv)
 
     std::vector<float> log2_data(256);
     for (size_t i = 0; i < 256; ++i) {
-      log2_data[i] = log2f(i);
+        log2_data[i] = log2f(i);
     }
 
     double all_log_gaps = 0.0f;
@@ -47,6 +44,6 @@ int main(int argc, const char** argv)
                 all_log_gaps += log2f(gap);
         }
     }
-    double average_log_gap = all_log_gaps/no_gaps;
+    double average_log_gap = all_log_gaps / no_gaps;
     spdlog::info("Average LogGap of documents: {}", average_log_gap);
 }

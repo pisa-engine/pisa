@@ -1,0 +1,19 @@
+---
+WarningsAsErrors: '1'
+HeaderFilterRegex: '.*include/pisa.*\.hpp'
+FormatStyle: none
+Checks: |
+    *,
+    -llvm-*,
+    -google-*,
+    -fuchsia-*,
+    -zircon-*,
+    -abseil-*,
+    -clang-diagnostic-c++17-extensions,
+    -cppcoreguidelines-pro-type-reinterpret-cast,
+    -clang-diagnostic-error,
+    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+    -modernize-use-trailing-return-type,
+    -readability-magic-numbers

@@ -1,12 +1,11 @@
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 #include "spdlog/spdlog.h"
 
-#include "util/util.hpp"
 #include "codec/block_codecs.hpp"
 #include "util/do_not_optimize_away.hpp"
-
+#include "util/util.hpp"
 
 int main()
 {

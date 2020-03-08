@@ -15,7 +15,7 @@
 #include "index_types.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
-#include "util/verify_collection.hpp" // XXX move to index_build_utils
+#include "util/verify_collection.hpp"  // XXX move to index_build_utils
 
 #include "linear_quantizer.hpp"
 #include "wand_data.hpp"
@@ -26,18 +26,17 @@
 using namespace pisa;
 
 template <typename Collection>
-void dump_index_specific_stats(Collection const &, std::string const &)
-{
-}
+void dump_index_specific_stats(Collection const&, std::string const&)
+{}
 
-void dump_index_specific_stats(pisa::pefuniform_index const &coll, std::string const &type)
+void dump_index_specific_stats(pisa::pefuniform_index const& coll, std::string const& type)
 {
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
-void dump_index_specific_stats(pisa::pefopt_index const &coll, std::string const &type)
+void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const& type)
 {
-    auto const &conf = pisa::configuration::get();
+    auto const& conf = pisa::configuration::get();
 
     uint64_t length_threshold = 4096;
     double long_postings = 0;
@@ -45,7 +44,7 @@ void dump_index_specific_stats(pisa::pefopt_index const &coll, std::string const
     double freqs_partitions = 0;
 
     for (size_t s = 0; s < coll.size(); ++s) {
-        auto const &list = coll[s];
+        auto const& list = coll[s];
         if (list.size() >= length_threshold) {
             long_postings += list.size();
             docs_partitions += list.docs_enum().num_partitions();
@@ -59,14 +58,15 @@ void dump_index_specific_stats(pisa::pefopt_index const &coll, std::string const
 }
 
 template <typename CollectionType, typename WandType>
-void create_collection(binary_freq_collection const &input,
-                       pisa::global_parameters const &params,
-                       const std::optional<std::string> &output_filename,
-                       bool check,
-                       std::string const &seq_type,
-                       std::optional<std::string> const &wand_data_filename,
-                       std::optional<std::string> const &scorer_name,
-                       bool quantized)
+void create_collection(
+    binary_freq_collection const& input,
+    pisa::global_parameters const& params,
+    const std::optional<std::string>& output_filename,
+    bool check,
+    std::string const& seq_type,
+    std::optional<std::string> const& wand_data_filename,
+    std::optional<std::string> const& scorer_name,
+    bool quantized)
 {
     using namespace pisa;
     spdlog::info("Processing {} documents", input.num_docs());
@@ -95,11 +95,11 @@ void create_collection(binary_freq_collection const &input,
         }
 
         size_t term_id = 0;
-        for (auto const &plist : input) {
+        for (auto const& plist: input) {
             size_t size = plist.docs.size();
             if (quantized) {
-                LinearQuantizer quantizer(wdata.index_max_term_weight(),
-                                          configuration::get().quantization_bits);
+                LinearQuantizer quantizer(
+                    wdata.index_max_term_weight(), configuration::get().quantization_bits);
                 auto term_scorer = scorer->term_scorer(term_id);
                 std::vector<uint64_t> quants;
                 for (size_t pos = 0; pos < size; ++pos) {
@@ -142,17 +142,16 @@ void create_collection(binary_freq_collection const &input,
             spdlog::warn("Index construction cannot be verified for quantized indexes.");
         }
         if (check and not quantized) {
-            verify_collection<binary_freq_collection, CollectionType>(input,
-                                                                      (*output_filename).c_str());
+            verify_collection<binary_freq_collection, CollectionType>(
+                input, (*output_filename).c_str());
         }
     }
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
-
     std::string type;
     std::string input_basename;
     std::optional<std::string> output_filename;
@@ -172,18 +171,19 @@ int main(int argc, char **argv)
     params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                            \
-    }                                                                                    \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                              \
-    {                                                                                    \
-        create_collection<BOOST_PP_CAT(T, _index), wand_raw_index>(input,                \
-                                                                   params,               \
-                                                                   output_filename,      \
-                                                                   check,                \
-                                                                   app.index_encoding(), \
-                                                                   app.wand_data_path(), \
-                                                                   app.scorer(),         \
-                                                                   quantized);           \
+#define LOOP_BODY(R, DATA, T)                                       \
+    }                                                               \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))         \
+    {                                                               \
+        create_collection<BOOST_PP_CAT(T, _index), wand_raw_index>( \
+            input,                                                  \
+            params,                                                 \
+            output_filename,                                        \
+            check,                                                  \
+            app.index_encoding(),                                   \
+            app.wand_data_path(),                                   \
+            app.scorer(),                                           \
+            quantized);                                             \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

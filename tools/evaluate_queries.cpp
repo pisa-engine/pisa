@@ -31,17 +31,18 @@ using namespace pisa;
 using ranges::views::enumerate;
 
 template <typename IndexType, typename WandType>
-void evaluate_queries(const std::string &index_filename,
-                      const std::optional<std::string> &wand_data_filename,
-                      const std::vector<Query> &queries,
-                      const std::optional<std::string> &thresholds_filename,
-                      std::string const &type,
-                      std::string const &query_type,
-                      uint64_t k,
-                      std::string const &documents_filename,
-                      std::string const &scorer_name,
-                      std::string const &run_id,
-                      std::string const &iteration)
+void evaluate_queries(
+    const std::string& index_filename,
+    const std::optional<std::string>& wand_data_filename,
+    const std::vector<Query>& queries,
+    const std::optional<std::string>& thresholds_filename,
+    std::string const& type,
+    std::string const& query_type,
+    uint64_t k,
+    std::string const& documents_filename,
+    std::string const& scorer_name,
+    std::string const& run_id,
+    std::string const& iteration)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -76,8 +77,8 @@ void evaluate_queries(const std::string &index_filename,
         query_fun = [&](Query query) {
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
-            block_max_wand_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                             index.num_docs());
+            block_max_wand_q(
+                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -85,8 +86,8 @@ void evaluate_queries(const std::string &index_filename,
         query_fun = [&](Query query) {
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
-            block_max_maxscore_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                 index.num_docs());
+            block_max_maxscore_q(
+                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -94,8 +95,8 @@ void evaluate_queries(const std::string &index_filename,
         query_fun = [&](Query query) {
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
-            block_max_ranked_and_q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                                   index.num_docs());
+            block_max_ranked_and_q(
+                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -158,14 +159,15 @@ void evaluate_queries(const std::string &index_filename,
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id;
-        for (auto &&[rank, result] : enumerate(results)) {
-            std::cout << fmt::format("{}\t{}\t{}\t{}\t{}\t{}\n",
-                                     qid.value_or(std::to_string(query_idx)),
-                                     iteration,
-                                     docmap[result.second],
-                                     rank,
-                                     result.first,
-                                     run_id);
+        for (auto&& [rank, result]: enumerate(results)) {
+            std::cout << fmt::format(
+                "{}\t{}\t{}\t{}\t{}\t{}\n",
+                qid.value_or(std::to_string(query_idx)),
+                iteration,
+                docmap[result.second],
+                rank,
+                result.first,
+                run_id);
         }
     }
     auto end_print = std::chrono::steady_clock::now();
@@ -181,7 +183,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char **argv)
+int main(int argc, const char** argv)
 {
     spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
 
@@ -189,13 +191,7 @@ int main(int argc, const char **argv)
     std::string run_id = "R0";
     bool quantized = false;
 
-    App<arg::Index,
-        arg::WandData,
-        arg::Query<arg::QueryMode::Ranked>,
-        arg::Algorithm,
-        arg::Scorer,
-        arg::Thresholds,
-        arg::Threads>
+    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds, arg::Threads>
         app{"Retrieves query results in TREC format."};
     app.add_option("-r,--run", run_id, "Run identifier");
     app.add_option("--documents", documents_file, "Document lexicon")->required();
@@ -212,20 +208,21 @@ int main(int argc, const char **argv)
 
     auto iteration = "Q0";
 
-    auto params = std::make_tuple(app.index_filename(),
-                                  app.wand_data_path(),
-                                  app.queries(),
-                                  app.thresholds_file(),
-                                  app.index_encoding(),
-                                  app.algorithm(),
-                                  app.k(),
-                                  documents_file,
-                                  app.scorer(),
-                                  run_id,
-                                  iteration);
+    auto params = std::make_tuple(
+        app.index_filename(),
+        app.wand_data_path(),
+        app.queries(),
+        app.thresholds_file(),
+        app.index_encoding(),
+        app.algorithm(),
+        app.k(),
+        documents_file,
+        app.scorer(),
+        run_id,
+        iteration);
 
     /**/
-    if (false) { // NOLINT
+    if (false) {  // NOLINT
 #define LOOP_BODY(R, DATA, T)                                                                      \
     }                                                                                              \
     else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \

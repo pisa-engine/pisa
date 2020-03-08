@@ -33,23 +33,20 @@ TEST_CASE("basic_map")
 }
 
 class complex_struct {
-public:
-    complex_struct()
-        : m_a(0)
-    {}
+  public:
+    complex_struct() : m_a(0) {}
 
-    void init() {
+    void init()
+    {
         m_a = 42;
         uint32_t b[] = {1, 2};
         m_b.assign(b);
     }
 
     template <typename Visitor>
-    void map(Visitor& visit) {
-        visit
-            (m_a, "m_a")
-            (m_b, "m_b")
-            ;
+    void map(Visitor& visit)
+    {
+        visit(m_a, "m_a")(m_b, "m_b");
     }
 
     uint64_t m_a;

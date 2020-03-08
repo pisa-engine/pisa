@@ -2,14 +2,14 @@
 #include "spdlog/spdlog.h"
 
 #include "mappable/mapper.hpp"
-#include "sequence_collection.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
-#include "util/util.hpp"
+#include "sequence_collection.hpp"
 #include "util/do_not_optimize_away.hpp"
+#include "util/util.hpp"
 
-using pisa::get_time_usecs;
 using pisa::do_not_optimize_away;
+using pisa::get_time_usecs;
 
 template <typename BaseSequence>
 void perftest(const char* index_filename)
@@ -35,10 +35,11 @@ void perftest(const char* index_filename)
             postings += calls;
         }
         double elapsed = get_time_usecs() - tick;
-        spdlog::info("Read {} postings in {} seconds, {:.1f} ns per posting",
-                     postings,
-                     uint64_t(elapsed / 1000000),
-                     (elapsed / postings * 1000));
+        spdlog::info(
+            "Read {} postings in {} seconds, {:.1f} ns per posting",
+            postings,
+            uint64_t(elapsed / 1000000),
+            (elapsed / postings * 1000));
     }
 
     {
@@ -64,10 +65,11 @@ void perftest(const char* index_filename)
             postings += calls;
         }
         double elapsed = get_time_usecs() - tick;
-        spdlog::info("Read {} postings in {} seconds, {:.1f} ns per posting",
-                     postings,
-                     uint64_t(elapsed / 1000000),
-                     (elapsed / postings * 1000));
+        spdlog::info(
+            "Read {} postings in {} seconds, {:.1f} ns per posting",
+            postings,
+            uint64_t(elapsed / 1000000),
+            (elapsed / postings * 1000));
     }
 
     uint64_t calls_per_list = 20000;
@@ -80,7 +82,8 @@ void perftest(const char* index_filename)
             if (reader.size() >= min_length) {
                 uint64_t size = reader.size();
                 // make sure size is odd, so that it is coprime with skip
-                if (!(size & 1)) size -= 1;
+                if (!(size & 1))
+                    size -= 1;
 
                 skip_values.emplace_back(i, std::vector<uint64_t>());
                 skip_positions.emplace_back(i, std::vector<uint64_t>());
@@ -103,10 +106,11 @@ void perftest(const char* index_filename)
         }
         double elapsed = get_time_usecs() - tick;
 
-        spdlog::info("Performed {} next_geq() with skip={}: {:.1f} ns per call",
-                     calls,
-                     skip,
-                     (elapsed / calls * 1000));
+        spdlog::info(
+            "Performed {} next_geq() with skip={}: {:.1f} ns per call",
+            calls,
+            skip,
+            (elapsed / calls * 1000));
 
         tick = get_time_usecs();
         calls = 0;
@@ -119,23 +123,22 @@ void perftest(const char* index_filename)
         }
         elapsed = get_time_usecs() - tick;
 
-        spdlog::info("Performed {} move() with skip={}: {:.1f} ns per call",
-                     calls,
-                     skip,
-                     (elapsed / calls * 1000));
+        spdlog::info(
+            "Performed {} move() with skip={}: {:.1f} ns per call",
+            calls,
+            skip,
+            (elapsed / calls * 1000));
     }
 }
-int main(int argc, const char** argv) {
-
+int main(int argc, const char** argv)
+{
     using pisa::compact_elias_fano;
     using pisa::indexed_sequence;
     using pisa::partitioned_sequence;
     using pisa::uniform_partitioned_sequence;
 
     if (argc != 3) {
-        std::cerr << "Usage: " << argv[0]
-                  << " <collection type> <index filename>"
-                  << std::endl;
+        std::cerr << "Usage: " << argv[0] << " <collection type> <index filename>" << std::endl;
         return 1;
     }
 

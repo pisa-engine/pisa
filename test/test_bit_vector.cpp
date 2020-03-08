@@ -15,7 +15,7 @@ TEST_CASE("bit_vector")
     rc::check([](std::vector<bool> v) {
         {
             pisa::bit_vector_builder bvb;
-            for (auto elem : v) {
+            for (auto elem: v) {
                 bvb.push_back(elem);
             }
 
@@ -54,13 +54,13 @@ TEST_CASE("bit_vector")
                                              uint64_t(-1)};
         {
             pisa::bit_vector_builder bvb;
-            for (uint64_t i : ints) {
+            for (uint64_t i: ints) {
                 uint64_t len = pisa::broadword::msb(i) + 1;
                 bvb.append_bits(i, len);
             }
             pisa::bit_vector bitmap(&bvb);
             uint64_t pos = 0;
-            for (uint64_t i : ints) {
+            for (uint64_t i: ints) {
                 uint64_t len = pisa::broadword::msb(i) + 1;
                 REQUIRE(i == bitmap.get_bits(pos, len));
                 pos += len;
@@ -70,7 +70,7 @@ TEST_CASE("bit_vector")
         {
             using pisa::broadword::msb;
             std::vector<size_t> positions(1);
-            for (uint64_t i : ints) {
+            for (uint64_t i: ints) {
                 positions.push_back(positions.back() + msb(i) + 1);
             }
 
@@ -125,11 +125,12 @@ TEST_CASE("bit_vector_unary_enumerator")
         std::vector<std::size_t> posv(v.size());
         std::vector<std::size_t> intervals;
         std::iota(posv.begin(), posv.end(), 0);
-        std::sample(posv.begin(),
-                    posv.end(),
-                    std::back_inserter(intervals),
-                    40,
-                    std::mt19937{std::random_device{}()});
+        std::sample(
+            posv.begin(),
+            posv.end(),
+            std::back_inserter(intervals),
+            40,
+            std::mt19937{std::random_device{}()});
         REQUIRE(intervals.size() % 2 == 0);
         for (auto left = intervals.begin(); left != intervals.end(); std::advance(left, 2)) {
             auto right = std::next(left);
@@ -214,7 +215,7 @@ TEST_CASE("bvb_reverse")
 {
     rc::check([](std::vector<bool> v) {
         pisa::bit_vector_builder bvb;
-        for (auto elem : v) {
+        for (auto elem: v) {
             bvb.push_back(elem);
         }
 
