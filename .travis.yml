@@ -78,8 +78,12 @@ matrix:
       compiler: clang
       addons:
           apt:
-              sources: *all_sources
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && CLANG_FORMAT=On"
+              sources:
+                - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+                  key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+              packages:
+                - clang-format-9
+      env: MATRIX_EVAL="COVERAGE=Off && CLANG_FORMAT=On"
     - os: osx
       osx_image: xcode11.2
       compiler: clang
@@ -92,23 +96,18 @@ before_install:
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
     fi
   - eval "${MATRIX_EVAL}"
-  - if [[ "$CLANG_FORMAT" == "On" ]]; then
-      wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
-      echo "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main" | sudo tee -a /etc/apt/sources.list
-      sudo apt-get -qq update
-      sudo apt-get -y install clang-format-9
-    fi
-
+  
 script:
     - cd build
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
-    - if [[ "$PISA_COMPILE_HEADERS" != "On" ]]; then
+    - if [[ "$PISA_COMPILE_HEADERS" != "On" && "$CLANG_FORMAT" != "On" ]]; then
         make -j2;
         CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
       fi
     - if [[ "$CLANG_FORMAT" == "On" ]]; then
-        wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py
-        python run-clang-format.py --clang-format-executable clang-format-9 -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
+        cd ..;
+        wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py;
+        python run-clang-format.py --clang-format-executable clang-format-9 -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp;
       fi
 
 after_success:
