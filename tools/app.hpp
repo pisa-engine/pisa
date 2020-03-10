@@ -121,7 +121,8 @@ namespace arg {
         explicit Quantize(CLI::App* app)
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-            auto* scorer = app->add_option("-s,--scorer", m_scorer, "Query processing algorithm")->needs(wand);
+            auto* scorer =
+                app->add_option("-s,--scorer", m_scorer, "Query processing algorithm")->needs(wand);
             app->add_flag("--quantize", m_quantize, "Quantizes the scores")->needs(scorer);
         }
 
