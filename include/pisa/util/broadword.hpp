@@ -1,20 +1,22 @@
 #pragma once
 
-#include <cstdint>
-#include <cassert>
 #include "util/intrinsics.hpp"
 #include "util/tables.hpp"
-
+#include <cassert>
+#include <cstdint>
 
 namespace pisa { namespace broadword {
 
-    static const uint64_t ones_step_4  = 0x1111111111111111ULL;
-    static const uint64_t ones_step_8  = 0x0101010101010101ULL;
-    static const uint64_t ones_step_9  = 1ULL << 0 | 1ULL << 9 | 1ULL << 18 | 1ULL << 27 | 1ULL << 36 | 1ULL << 45 | 1ULL << 54;
-    static const uint64_t msbs_step_8  = 0x80ULL * ones_step_8;
-    static const uint64_t msbs_step_9  = 0x100ULL * ones_step_9;
-    static const uint64_t incr_step_8  = 0x80ULL << 56 | 0x40ULL << 48 | 0x20ULL << 40 | 0x10ULL << 32 | 0x8ULL << 24 | 0x4ULL << 16 | 0x2ULL << 8 | 0x1;
-    static const uint64_t inv_count_step_9 = 1ULL << 54 | 2ULL << 45 | 3ULL << 36 | 4ULL << 27 | 5ULL << 18 | 6ULL << 9 | 7ULL;
+    static const uint64_t ones_step_4 = 0x1111111111111111ULL;
+    static const uint64_t ones_step_8 = 0x0101010101010101ULL;
+    static const uint64_t ones_step_9 =
+        1ULL << 0 | 1ULL << 9 | 1ULL << 18 | 1ULL << 27 | 1ULL << 36 | 1ULL << 45 | 1ULL << 54;
+    static const uint64_t msbs_step_8 = 0x80ULL * ones_step_8;
+    static const uint64_t msbs_step_9 = 0x100ULL * ones_step_9;
+    static const uint64_t incr_step_8 = 0x80ULL << 56 | 0x40ULL << 48 | 0x20ULL << 40
+        | 0x10ULL << 32 | 0x8ULL << 24 | 0x4ULL << 16 | 0x2ULL << 8 | 0x1;
+    static const uint64_t inv_count_step_9 =
+        1ULL << 54 | 2ULL << 45 | 3ULL << 36 | 4ULL << 27 | 5ULL << 18 | 6ULL << 9 | 7ULL;
 
     static const uint64_t magic_mask_1 = 0x5555555555555555ULL;
     static const uint64_t magic_mask_2 = 0x3333333333333333ULL;
@@ -40,7 +42,7 @@ namespace pisa { namespace broadword {
 
     inline uint64_t uleq_step_9(uint64_t x, uint64_t y)
     {
-        return (((((y | msbs_step_9) - (x & ~msbs_step_9)) | (x ^ y)) ^ (x & ~y)) & msbs_step_9 ) >> 8;
+        return (((((y | msbs_step_9) - (x & ~msbs_step_9)) | (x ^ y)) ^ (x & ~y)) & msbs_step_9) >> 8;
     }
 
     inline uint64_t byte_counts(uint64_t x)
@@ -51,10 +53,7 @@ namespace pisa { namespace broadword {
         return x;
     }
 
-    inline uint64_t bytes_sum(uint64_t x)
-    {
-        return x * ones_step_8 >> 56;
-    }
+    inline uint64_t bytes_sum(uint64_t x) { return x * ones_step_8 >> 56; }
 
     inline uint64_t popcount(uint64_t x)
     {
@@ -65,10 +64,7 @@ namespace pisa { namespace broadword {
 #endif
     }
 
-    inline uint64_t reverse_bytes(uint64_t x)
-    {
-        return intrinsics::byteswap64(x);
-    }
+    inline uint64_t reverse_bytes(uint64_t x) { return intrinsics::byteswap64(x); }
 
     inline uint64_t reverse_bits(uint64_t x)
     {
@@ -91,42 +87,29 @@ namespace pisa { namespace broadword {
 #else
         const uint64_t place = ((geq_k_step_8 >> 7) * ones_step_8 >> 53) & ~uint64_t(0x7);
 #endif
-        const uint64_t byte_rank = k - (((byte_sums << 8 ) >> place) & uint64_t(0xFF));
-        return place + tables::select_in_byte[((x >> place) & 0xFF ) | (byte_rank << 8)];
+        const uint64_t byte_rank = k - (((byte_sums << 8) >> place) & uint64_t(0xFF));
+        return place + tables::select_in_byte[((x >> place) & 0xFF) | (byte_rank << 8)];
     }
 
-    inline uint64_t same_msb(uint64_t x, uint64_t y)
-    {
-        return (x ^ y) <= (x & y);
-    }
+    inline uint64_t same_msb(uint64_t x, uint64_t y) { return (x ^ y) <= (x & y); }
 
     namespace detail {
         // Adapted from LSB of Chess Programming Wiki
         static const uint8_t debruijn64_mapping[64] = {
-            63,  0, 58,  1, 59, 47, 53,  2,
-            60, 39, 48, 27, 54, 33, 42,  3,
-            61, 51, 37, 40, 49, 18, 28, 20,
-            55, 30, 34, 11, 43, 14, 22,  4,
-            62, 57, 46, 52, 38, 26, 32, 41,
-            50, 36, 17, 19, 29, 10, 13, 21,
-            56, 45, 25, 31, 35, 16,  9, 12,
-            44, 24, 15,  8, 23,  7,  6,  5
-        };
+            63, 0,  58, 1,  59, 47, 53, 2,  60, 39, 48, 27, 54, 33, 42, 3,  61, 51, 37, 40, 49, 18,
+            28, 20, 55, 30, 34, 11, 43, 14, 22, 4,  62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19,
+            29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5};
         static const uint64_t debruijn64 = 0x07EDD5E59A4E28C2ULL;
-    }
+    }  // namespace detail
 
     // return the position of the single bit set in the word x
     inline uint8_t bit_position(uint64_t x)
     {
         assert(popcount(x) == 1);
-        return detail::debruijn64_mapping
-            [(x * detail::debruijn64) >> 58];
+        return detail::debruijn64_mapping[(x * detail::debruijn64) >> 58];
     }
 
-    inline uint8_t msb(uint64_t x, unsigned long& ret)
-    {
-        return intrinsics::bsr64(&ret, x);
-    }
+    inline uint8_t msb(uint64_t x, unsigned long& ret) { return intrinsics::bsr64(&ret, x); }
 
     inline uint8_t msb(uint64_t x)
     {
@@ -136,10 +119,7 @@ namespace pisa { namespace broadword {
         return (uint8_t)ret;
     }
 
-    inline uint8_t lsb(uint64_t x, unsigned long& ret)
-    {
-        return intrinsics::bsf64(&ret, x);
-    }
+    inline uint8_t lsb(uint64_t x, unsigned long& ret) { return intrinsics::bsf64(&ret, x); }
 
     inline uint8_t lsb(uint64_t x)
     {
@@ -149,4 +129,4 @@ namespace pisa { namespace broadword {
         return (uint8_t)ret;
     }
 
-}}
+}}  // namespace pisa::broadword

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <array>
-#include <vector>
 #include <algorithm>
+#include <array>
 #include <cstddef>
+#include <vector>
 
 #include "topk_queue.hpp"
 
@@ -11,22 +11,23 @@ namespace pisa {
 
 template <int counter_bit_size, typename Descriptor = std::uint64_t>
 struct Lazy_Accumulator {
-    using reference = float &;
+    using reference = float&;
 
-    static_assert(std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>,
-                  "must be unsigned number");
+    static_assert(
+        std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>, "must be unsigned number");
     constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
     constexpr static auto counters_in_descriptor = descriptor_size_in_bits / counter_bit_size;
     constexpr static auto cycle = (1u << counter_bit_size);
     constexpr static Descriptor mask = (1u << counter_bit_size) - 1;
 
     struct Block {
-        Descriptor                                descriptor{};
+        Descriptor descriptor{};
         std::array<float, counters_in_descriptor> accumulators{};
 
-        [[nodiscard]] auto counter(int pos) const noexcept -> int {
+        [[nodiscard]] auto counter(int pos) const noexcept -> int
+        {
             if constexpr (counter_bit_size == 8) {
-                return static_cast<int>(*(reinterpret_cast<uint8_t const *>(&descriptor) + pos));
+                return static_cast<int>(*(reinterpret_cast<uint8_t const*>(&descriptor) + pos));
             } else {
                 return (descriptor >> (pos * counter_bit_size)) & mask;
             }
@@ -35,7 +36,7 @@ struct Lazy_Accumulator {
         void reset_counter(int pos, int counter)
         {
             if constexpr (counter_bit_size == 8) {
-                *(reinterpret_cast<uint8_t *>(&descriptor) + pos) = static_cast<uint8_t>(counter);
+                *(reinterpret_cast<uint8_t*>(&descriptor) + pos) = static_cast<uint8_t>(counter);
             } else {
                 auto const shift = pos * counter_bit_size;
                 descriptor &= ~(mask << shift);
@@ -52,9 +53,9 @@ struct Lazy_Accumulator {
     void init()
     {
         if (m_counter == 0) {
-            auto first = reinterpret_cast<std::byte *>(&m_accumulators.front());
+            auto first = reinterpret_cast<std::byte*>(&m_accumulators.front());
             auto last =
-                std::next(reinterpret_cast<std::byte *>(&m_accumulators.back()), sizeof(Block));
+                std::next(reinterpret_cast<std::byte*>(&m_accumulators.back()), sizeof(Block));
             std::fill(first, last, std::byte{0});
         }
     }
@@ -69,11 +70,12 @@ struct Lazy_Accumulator {
         m_accumulators[block].accumulators[pos_in_block] += score;
     }
 
-    void aggregate(topk_queue &topk) {
+    void aggregate(topk_queue& topk)
+    {
         uint64_t docid = 0u;
-        for (auto const &block : m_accumulators) {
+        for (auto const& block: m_accumulators) {
             int pos = 0;
-            for (auto const &score : block.accumulators) {
+            for (auto const& score: block.accumulators) {
                 if (block.counter(pos++) == m_counter && topk.would_enter(score)) {
                     topk.insert(score, docid);
                 }
@@ -84,13 +86,13 @@ struct Lazy_Accumulator {
     }
 
     [[nodiscard]] auto size() const noexcept -> std::size_t { return m_size; }
-    [[nodiscard]] auto blocks() noexcept -> std::vector<Block> & { return m_accumulators; }
+    [[nodiscard]] auto blocks() noexcept -> std::vector<Block>& { return m_accumulators; }
     [[nodiscard]] auto counter() const noexcept -> int { return m_counter; }
 
-   private:
-    std::size_t        m_size;
+  private:
+    std::size_t m_size;
     std::vector<Block> m_accumulators;
-    int                m_counter{};
+    int m_counter{};
 };
 
-}
+}  // namespace pisa

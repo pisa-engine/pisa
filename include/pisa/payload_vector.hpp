@@ -26,7 +26,7 @@ namespace detail {
         typename gsl::span<size_type const>::iterator offset_iter;
         typename gsl::span<std::byte const>::iterator payload_iter;
 
-        constexpr auto operator++() -> Payload_Vector_Iterator &
+        constexpr auto operator++() -> Payload_Vector_Iterator&
         {
             ++offset_iter;
             std::advance(payload_iter, *offset_iter - *std::prev(offset_iter));
@@ -40,7 +40,7 @@ namespace detail {
             return next_iter;
         }
 
-        constexpr auto operator--() -> Payload_Vector_Iterator & { return *this -= 1; }
+        constexpr auto operator--() -> Payload_Vector_Iterator& { return *this -= 1; }
 
         [[nodiscard]] constexpr auto operator--(int) -> Payload_Vector_Iterator
         {
@@ -55,7 +55,7 @@ namespace detail {
                     std::next(payload_iter, *std::next(offset_iter, n) - *offset_iter)};
         }
 
-        [[nodiscard]] constexpr auto operator+=(size_type n) -> Payload_Vector_Iterator &
+        [[nodiscard]] constexpr auto operator+=(size_type n) -> Payload_Vector_Iterator&
         {
             std::advance(payload_iter, *std::next(offset_iter, n) - *offset_iter);
             std::advance(offset_iter, n);
@@ -68,29 +68,29 @@ namespace detail {
                     std::prev(payload_iter, *offset_iter - *std::prev(offset_iter, n))};
         }
 
-        [[nodiscard]] constexpr auto operator-=(size_type n) -> Payload_Vector_Iterator &
+        [[nodiscard]] constexpr auto operator-=(size_type n) -> Payload_Vector_Iterator&
         {
             return *this = *this - n;
         }
 
-        [[nodiscard]] constexpr auto operator-(Payload_Vector_Iterator const &other)
-            -> difference_type
+        [[nodiscard]] constexpr auto operator-(Payload_Vector_Iterator const& other) -> difference_type
         {
             return offset_iter - other.offset_iter;
         }
 
         [[nodiscard]] constexpr auto operator*() -> value_type
         {
-            return value_type(reinterpret_cast<char const *>(&*payload_iter),
-                              *std::next(offset_iter) - *offset_iter);
+            return value_type(
+                reinterpret_cast<char const*>(&*payload_iter),
+                *std::next(offset_iter) - *offset_iter);
         }
 
-        [[nodiscard]] constexpr auto operator==(Payload_Vector_Iterator const &other) const -> bool
+        [[nodiscard]] constexpr auto operator==(Payload_Vector_Iterator const& other) const -> bool
         {
             return offset_iter == other.offset_iter;
         }
 
-        [[nodiscard]] constexpr auto operator!=(Payload_Vector_Iterator const &other) const -> bool
+        [[nodiscard]] constexpr auto operator!=(Payload_Vector_Iterator const& other) const -> bool
         {
             return offset_iter != other.offset_iter;
         }
@@ -129,17 +129,17 @@ namespace detail {
     };
 
     template <typename T, typename... Ts>
-    [[nodiscard]] static constexpr auto unpack(std::byte const *ptr) -> std::tuple<T, Ts...>
+    [[nodiscard]] static constexpr auto unpack(std::byte const* ptr) -> std::tuple<T, Ts...>
     {
         if constexpr (sizeof...(Ts) == 0u) {
-            return std::tuple<T>(*reinterpret_cast<const T *>(ptr));
+            return std::tuple<T>(*reinterpret_cast<const T*>(ptr));
         } else {
-            return std::tuple_cat(std::tuple<T>(*reinterpret_cast<const T *>(ptr)),
-                                  unpack<Ts...>(ptr + sizeof(T)));
+            return std::tuple_cat(
+                std::tuple<T>(*reinterpret_cast<const T*>(ptr)), unpack<Ts...>(ptr + sizeof(T)));
         }
     }
 
-} // namespace detail
+}  // namespace detail
 
 struct Payload_Vector_Buffer {
     using size_type = detail::size_type;
@@ -147,45 +147,44 @@ struct Payload_Vector_Buffer {
     std::vector<size_type> const offsets;
     std::vector<std::byte> const payloads;
 
-    [[nodiscard]] static auto from_file(std::string const &filename) -> Payload_Vector_Buffer
+    [[nodiscard]] static auto from_file(std::string const& filename) -> Payload_Vector_Buffer
     {
         boost::system::error_code ec;
         auto file_size = boost::filesystem::file_size(boost::filesystem::path(filename));
         std::ifstream is(filename);
 
         size_type len;
-        is.read(reinterpret_cast<char *>(&len), sizeof(size_type));
+        is.read(reinterpret_cast<char*>(&len), sizeof(size_type));
 
         auto offsets_bytes = (len + 1) * sizeof(size_type);
         std::vector<size_type> offsets(len + 1);
-        is.read(reinterpret_cast<char *>(offsets.data()), offsets_bytes);
+        is.read(reinterpret_cast<char*>(offsets.data()), offsets_bytes);
 
         auto payloads_bytes = file_size - offsets_bytes - sizeof(size_type);
         std::vector<std::byte> payloads(payloads_bytes);
-        is.read(reinterpret_cast<char *>(payloads.data()), payloads_bytes);
+        is.read(reinterpret_cast<char*>(payloads.data()), payloads_bytes);
 
         return Payload_Vector_Buffer{std::move(offsets), std::move(payloads)};
     }
 
-    void to_file(std::string const &filename) const
+    void to_file(std::string const& filename) const
     {
         std::ofstream is(filename);
         to_stream(is);
     }
 
-    void to_stream(std::ostream &is) const
+    void to_stream(std::ostream& is) const
     {
         size_type length = offsets.size() - 1u;
-        is.write(reinterpret_cast<char const *>(&length), sizeof(length));
-        is.write(reinterpret_cast<char const *>(offsets.data()),
-                 offsets.size() * sizeof(offsets[0]));
-        is.write(reinterpret_cast<char const *>(payloads.data()), payloads.size());
+        is.write(reinterpret_cast<char const*>(&length), sizeof(length));
+        is.write(reinterpret_cast<char const*>(offsets.data()), offsets.size() * sizeof(offsets[0]));
+        is.write(reinterpret_cast<char const*>(payloads.data()), payloads.size());
     }
 
     template <typename InputIterator, typename PayloadEncodingFn>
-    [[nodiscard]] static auto make(InputIterator first,
-                                   InputIterator last,
-                                   PayloadEncodingFn encoding_fn) -> Payload_Vector_Buffer
+    [[nodiscard]] static auto
+    make(InputIterator first, InputIterator last, PayloadEncodingFn encoding_fn)
+        -> Payload_Vector_Buffer
     {
         std::vector<size_type> offsets;
         offsets.push_back(0u);
@@ -256,31 +255,29 @@ template <typename T>
         throw std::runtime_error(
             fmt::format("Failed to cast byte-span to span of T of size {}", type_size));
     }
-    return gsl::make_span(reinterpret_cast<T const *>(mem.data()), mem.size() / type_size);
+    return gsl::make_span(reinterpret_cast<T const*>(mem.data()), mem.size() / type_size);
 }
 
 template <typename Payload_View = std::string_view>
 class Payload_Vector {
-   public:
+  public:
     using size_type = detail::size_type;
     using difference_type = std::make_signed_t<size_type>;
     using payload_type = Payload_View;
     using iterator = detail::Payload_Vector_Iterator<Payload_View>;
 
-    Payload_Vector(Payload_Vector_Buffer const &container)
+    Payload_Vector(Payload_Vector_Buffer const& container)
         : offsets_(container.offsets), payloads_(container.payloads)
-    {
-    }
+    {}
 
     Payload_Vector(gsl::span<size_type const> offsets, gsl::span<std::byte const> payloads)
         : offsets_(std::move(offsets)), payloads_(std::move(payloads))
-    {
-    }
+    {}
 
     template <typename ContiguousContainer>
-    [[nodiscard]] constexpr static auto from(ContiguousContainer &&mem) -> Payload_Vector
+    [[nodiscard]] constexpr static auto from(ContiguousContainer&& mem) -> Payload_Vector
     {
-        return from(gsl::make_span(reinterpret_cast<std::byte const *>(mem.data()), mem.size()));
+        return from(gsl::make_span(reinterpret_cast<std::byte const*>(mem.data()), mem.size()));
     }
 
     [[nodiscard]] static auto from(gsl::span<std::byte const> mem) -> Payload_Vector
@@ -289,17 +286,17 @@ class Payload_Vector {
         gsl::span<std::byte const> tail;
         try {
             std::tie(length, tail) = unpack_head<size_type>(mem);
-        } catch (std::runtime_error const &err) {
-            throw std::runtime_error(std::string("Failed to parse payload vector length: ")
-                                     + err.what());
+        } catch (std::runtime_error const& err) {
+            throw std::runtime_error(
+                std::string("Failed to parse payload vector length: ") + err.what());
         }
 
         gsl::span<std::byte const> offsets, payloads;
         try {
             std::tie(offsets, payloads) = split(tail, (length + 1u) * sizeof(size_type));
-        } catch (std::runtime_error const &err) {
-            throw std::runtime_error(std::string("Failed to parse payload vector offset table: ")
-                                     + err.what());
+        } catch (std::runtime_error const& err) {
+            throw std::runtime_error(
+                std::string("Failed to parse payload vector offset table: ") + err.what());
         }
         return Payload_Vector<Payload_View>(cast_span<size_type>(offsets), payloads);
     }
@@ -311,10 +308,8 @@ class Payload_Vector {
                 "Index {} too large for payload vector of size {}", idx, offsets_.size()));
         }
         if (offsets_[idx] >= payloads_.size()) {
-            throw std::runtime_error(
-                fmt::format("Offset {} too large for payload array of {} bytes",
-                            offsets_[idx],
-                            payloads_.size()));
+            throw std::runtime_error(fmt::format(
+                "Offset {} too large for payload array of {} bytes", offsets_[idx], payloads_.size()));
         }
         return *(begin() + idx);
     }
@@ -334,12 +329,12 @@ class Payload_Vector {
         return offsets_.size() - size_type{1};
     }
 
-   private:
+  private:
     gsl::span<size_type const> offsets_;
     gsl::span<std::byte const> payloads_;
 };
 
-} // namespace pisa
+}  // namespace pisa
 
 namespace std {
 
@@ -353,4 +348,4 @@ struct iterator_traits<pisa::detail::Payload_Vector_Iterator<Payload_View>> {
     using iterator_category = std::random_access_iterator_tag;
 };
 
-} // namespace std
+}  // namespace std

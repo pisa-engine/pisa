@@ -1,8 +1,8 @@
 #pragma once
 
+#include "query/queries.hpp"
 #include "scorer/index_scorer.hpp"
 #include "wand_data.hpp"
-#include "query/queries.hpp"
 #include <vector>
 
 namespace pisa {
@@ -16,7 +16,7 @@ struct scored_cursor {
 };
 
 template <typename Index, typename Scorer>
-[[nodiscard]] auto make_scored_cursors(Index const &index, Scorer const &scorer, Query query)
+[[nodiscard]] auto make_scored_cursors(Index const& index, Scorer const& scorer, Query query)
 {
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
@@ -24,10 +24,7 @@ template <typename Index, typename Scorer>
     std::vector<scored_cursor<Index>> cursors;
     cursors.reserve(query_term_freqs.size());
     std::transform(
-        query_term_freqs.begin(),
-        query_term_freqs.end(),
-        std::back_inserter(cursors),
-        [&](auto &&term) {
+        query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
             auto list = index[term.first];
             float q_weight = term.second;
             return scored_cursor<Index>{std::move(list), q_weight, scorer.term_scorer(term.first)};
@@ -35,4 +32,4 @@ template <typename Index, typename Scorer>
     return cursors;
 }
 
-} // namespace pisa
+}  // namespace pisa

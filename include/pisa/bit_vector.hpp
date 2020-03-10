@@ -13,10 +13,10 @@ namespace pisa {
 
 namespace detail {
     inline size_t words_for(uint64_t n) { return ceil_div(n, 64); }
-} // namespace detail
+}  // namespace detail
 
 class bit_vector_builder {
-   public:
+  public:
     using bits_type = std::vector<uint64_t>;
 
     bit_vector_builder(uint64_t size = 0, bool init = 0) : m_size(size)
@@ -30,8 +30,8 @@ class bit_vector_builder {
             }
         }
     }
-    bit_vector_builder(const bit_vector_builder &) = delete;
-    bit_vector_builder &operator=(const bit_vector_builder &) = delete;
+    bit_vector_builder(const bit_vector_builder&) = delete;
+    bit_vector_builder& operator=(const bit_vector_builder&) = delete;
 
     void reserve(uint64_t size) { m_bits.reserve(detail::words_for(size)); }
 
@@ -116,7 +116,7 @@ class bit_vector_builder {
         }
     }
 
-    void append(bit_vector_builder const &rhs)
+    void append(bit_vector_builder const& rhs)
     {
         if (!rhs.size())
             return;
@@ -126,10 +126,10 @@ class bit_vector_builder {
         m_size = size() + rhs.size();
         m_bits.resize(detail::words_for(m_size));
 
-        if (shift == 0) { // word-aligned, easy case
+        if (shift == 0) {  // word-aligned, easy case
             std::copy(rhs.m_bits.begin(), rhs.m_bits.end(), m_bits.begin() + ptrdiff_t(pos));
         } else {
-            uint64_t *cur_word = &m_bits.front() + pos - 1;
+            uint64_t* cur_word = &m_bits.front() + pos - 1;
             for (size_t i = 0; i < rhs.m_bits.size() - 1; ++i) {
                 uint64_t w = rhs.m_bits[i];
                 *cur_word |= w << shift;
@@ -151,7 +151,7 @@ class bit_vector_builder {
         uint64_t remainder = 0;
         for (size_t i = 0; i < m_bits.size(); ++i) {
             uint64_t cur_word;
-            if (shift != 64) { // this should be hoisted out
+            if (shift != 64) {  // this should be hoisted out
                 cur_word = remainder | (m_bits[i] << shift);
                 remainder = m_bits[i] >> (64 - shift);
             } else {
@@ -163,7 +163,7 @@ class bit_vector_builder {
         std::reverse(m_bits.begin(), m_bits.end());
     }
 
-    bits_type &move_bits()
+    bits_type& move_bits()
     {
         assert(detail::words_for(m_size) == m_bits.size());
         return m_bits;
@@ -171,25 +171,25 @@ class bit_vector_builder {
 
     uint64_t size() const { return m_size; }
 
-    void swap(bit_vector_builder &other)
+    void swap(bit_vector_builder& other)
     {
         m_bits.swap(other.m_bits);
         std::swap(m_size, other.m_size);
         std::swap(m_cur_word, other.m_cur_word);
     }
 
-   private:
+  private:
     bits_type m_bits;
     uint64_t m_size;
-    uint64_t *m_cur_word;
+    uint64_t* m_cur_word;
 };
 
 class bit_vector {
-   public:
+  public:
     bit_vector() = default;
 
     template <class Range>
-    bit_vector(Range const &from)
+    bit_vector(Range const& from)
     {
         std::vector<uint64_t> bits;
         const uint64_t first_mask = uint64_t(1);
@@ -216,19 +216,19 @@ class bit_vector {
         m_bits.steal(bits);
     }
 
-    bit_vector(bit_vector_builder *from)
+    bit_vector(bit_vector_builder* from)
     {
         m_size = from->size();
         m_bits.steal(from->move_bits());
     }
 
     template <typename Visitor>
-    void map(Visitor &visit)
+    void map(Visitor& visit)
     {
         visit(m_size, "m_size")(m_bits, "m_bits");
     }
 
-    void swap(bit_vector &other)
+    void swap(bit_vector& other)
     {
         std::swap(other.m_size, m_size);
         other.m_bits.swap(m_bits);
@@ -255,7 +255,7 @@ class bit_vector {
         uint64_t block = pos / 64;
         uint64_t shift = pos % 64;
         uint64_t mask = std::numeric_limits<std::uint64_t>::max()
-                        >> (std::numeric_limits<std::uint64_t>::digits - len);
+            >> (std::numeric_limits<std::uint64_t>::digits - len);
         if (shift + len <= 64) {
             return m_bits[block] >> shift & mask;
         } else {
@@ -280,8 +280,8 @@ class bit_vector {
     inline uint64_t get_word56(uint64_t pos) const
     {
         // XXX check endianness?
-        const char *ptr = reinterpret_cast<const char *>(m_bits.data());
-        return *(reinterpret_cast<uint64_t const *>(ptr + pos / 8)) >> (pos % 8);
+        const char* ptr = reinterpret_cast<const char*>(m_bits.data());
+        return *(reinterpret_cast<uint64_t const*>(ptr + pos / 8)) >> (pos % 8);
     }
 
     inline uint64_t predecessor0(uint64_t pos) const
@@ -348,12 +348,12 @@ class bit_vector {
         return block * 64 + ret;
     }
 
-    mapper::mappable_vector<uint64_t> const &data() const { return m_bits; }
+    mapper::mappable_vector<uint64_t> const& data() const { return m_bits; }
 
     struct enumerator {
         enumerator() : m_bv(0), m_pos(uint64_t(-1)) {}
 
-        enumerator(bit_vector const &bv, size_t pos) : m_bv(&bv), m_pos(pos), m_buf(0), m_avail(0)
+        enumerator(bit_vector const& bv, size_t pos) : m_bv(&bv), m_pos(pos), m_buf(0), m_avail(0)
         {
             m_bv->data().prefetch(m_pos / 64);
         }
@@ -406,14 +406,14 @@ class bit_vector {
 
         inline uint64_t position() const { return m_pos; }
 
-       private:
+      private:
         inline void fill_buf()
         {
             m_buf = m_bv->get_word(m_pos);
             m_avail = 64;
         }
 
-        bit_vector const *m_bv;
+        bit_vector const* m_bv;
         size_t m_pos;
         uint64_t m_buf;
         size_t m_avail;
@@ -422,7 +422,7 @@ class bit_vector {
     struct unary_enumerator {
         unary_enumerator() : m_data(0), m_position(0), m_buf(0) {}
 
-        unary_enumerator(bit_vector const &bv, uint64_t pos)
+        unary_enumerator(bit_vector const& bv, uint64_t pos)
         {
             m_data = bv.data().data();
             m_position = pos;
@@ -442,7 +442,7 @@ class bit_vector {
                 buf = m_data[m_position / 64];
             }
 
-            m_buf = buf & (buf - 1); // clear LSB
+            m_buf = buf & (buf - 1);  // clear LSB
             m_position = (m_position & ~uint64_t(63)) + pos_in_word;
             return m_position;
         }
@@ -500,15 +500,15 @@ class bit_vector {
             m_position = (m_position & ~uint64_t(63)) + pos_in_word;
         }
 
-       private:
-        uint64_t const *m_data;
+      private:
+        uint64_t const* m_data;
         uint64_t m_position;
         uint64_t m_buf;
     };
 
-   protected:
+  protected:
     size_t m_size;
     mapper::mappable_vector<uint64_t> m_bits;
 };
 
-} // namespace pisa
+}  // namespace pisa

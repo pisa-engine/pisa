@@ -6,12 +6,13 @@
 #include "mappable/mapper.hpp"
 #include "util/util.hpp"
 
-template<typename InputCollection, typename Collection>
-void verify_collection(InputCollection const &input, const char *filename) {
+template <typename InputCollection, typename Collection>
+void verify_collection(InputCollection const& input, const char* filename)
+{
     Collection coll;
     mio::mmap_source m(filename);
     pisa::mapper::map(coll, m);
-    size_t size=0;
+    size_t size = 0;
     spdlog::info("Checking the written data, just to be extra safe...");
     size_t s = 0;
     for (auto seq: input) {
@@ -45,4 +46,3 @@ void verify_collection(InputCollection const &input, const char *filename) {
     }
     spdlog::info("Everything is OK!");
 }
-
