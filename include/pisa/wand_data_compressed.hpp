@@ -138,7 +138,7 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weitghts(float index_max_term_weight) {}
+        void quantize_block_max_term_weights(float index_max_term_weight) {}
 
         void build(wand_data_compressed &wdata)
         {

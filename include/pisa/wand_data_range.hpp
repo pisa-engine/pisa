@@ -86,7 +86,7 @@ class wand_data_range {
             return max_score;
         }
 
-        void quantize_block_max_term_weitghts(float index_max_term_weight)
+        void quantize_block_max_term_weights(float index_max_term_weight)
         {
             LinearQuantizer quantizer(index_max_term_weight,
                                       configuration::get().quantization_bits);

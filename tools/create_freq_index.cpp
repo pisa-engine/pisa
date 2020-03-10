@@ -161,7 +161,7 @@ int main(int argc, char** argv)
     App<arg::Encoding, arg::WandData, arg::Scorer> app{"Compresses an inverted index"};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
-    app.add_flag("--quantized", quantized, "Quantizes the scores");
+    app.add_flag("--quantize", quantized, "Quantizes the scores");
     app.add_flag("--check", check, "Check the correctness of the index");
     CLI11_PARSE(app, argc, argv);
 
