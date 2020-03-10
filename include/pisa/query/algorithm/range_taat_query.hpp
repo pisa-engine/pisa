@@ -7,16 +7,11 @@ namespace pisa {
 
 template <typename QueryAlg>
 struct range_taat_query {
-
-    range_taat_query(topk_queue &topk) : m_topk(topk) {}
+    range_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
-    void operator()(CursorRange &&cursors,
-                        uint64_t max_docid,
-                        size_t range_size,
-                        Acc &&accumulator)
+    void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator)
     {
-
         if (cursors.empty()) {
             return;
         }
@@ -29,18 +24,17 @@ struct range_taat_query {
         process_range(cursors, max_docid, accumulator);
     }
 
-    std::vector<std::pair<float, uint64_t>> const &topk() const { return m_topk.topk(); }
+    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
     template <typename CursorRange, typename Acc>
-    void process_range(CursorRange &&cursors, size_t end, Acc &&accumulator)
+    void process_range(CursorRange&& cursors, size_t end, Acc&& accumulator)
     {
-
         QueryAlg query_alg(m_topk);
         query_alg(cursors, end, accumulator);
     }
 
-   private:
-    topk_queue &m_topk;
+  private:
+    topk_queue& m_topk;
 };
 
-} // namespace pisa
+}  // namespace pisa

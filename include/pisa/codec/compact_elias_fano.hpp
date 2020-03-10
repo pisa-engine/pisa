@@ -20,14 +20,10 @@ namespace pisa {
 }
 
 struct compact_elias_fano {
-
     struct offsets {
         offsets() {}
 
-        offsets(uint64_t base_offset,
-                uint64_t universe,
-                uint64_t n,
-                global_parameters const &params)
+        offsets(uint64_t base_offset, uint64_t universe, uint64_t n, global_parameters const& params)
             : universe(universe),
               n(positive(n)),
               log_sampling0(params.ef_log_sampling0),
@@ -37,15 +33,14 @@ struct compact_elias_fano {
               // pad with a zero on both sides as sentinels
               higher_bits_length(n + (universe >> lower_bits) + 2),
               pointer_size(ceil_log2(higher_bits_length)),
-              pointers0((higher_bits_length - n) >> log_sampling0), // XXX
+              pointers0((higher_bits_length - n) >> log_sampling0),  // XXX
               pointers1(n >> log_sampling1),
               pointers0_offset(base_offset),
               pointers1_offset(pointers0_offset + pointers0 * pointer_size),
               higher_bits_offset(pointers1_offset + pointers1 * pointer_size),
               lower_bits_offset(higher_bits_offset + higher_bits_length),
               end(lower_bits_offset + n * lower_bits)
-        {
-        }
+        {}
 
         uint64_t universe;
         uint64_t n;
@@ -66,19 +61,19 @@ struct compact_elias_fano {
         uint64_t end;
     };
 
-    static PISA_FLATTEN_FUNC uint64_t bitsize(global_parameters const &params,
-                                              uint64_t universe,
-                                              uint64_t n)
+    static PISA_FLATTEN_FUNC uint64_t
+    bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
     {
         return offsets(0, universe, n, params).end;
     }
 
     template <typename Iterator>
-    static void write(bit_vector_builder &bvb,
-                      Iterator begin,
-                      uint64_t universe,
-                      uint64_t n,
-                      global_parameters const &params)
+    static void write(
+        bit_vector_builder& bvb,
+        Iterator begin,
+        uint64_t universe,
+        uint64_t n,
+        global_parameters const& params)
     {
         uint64_t base_offset = bvb.size();
         offsets of(base_offset, universe, n, params);
@@ -140,26 +135,23 @@ struct compact_elias_fano {
         }
 
         // pointers to zeros after the last 1
-        set_ptr0s(last_high + 1, of.higher_bits_length, n); // XXX
+        set_ptr0s(last_high + 1, of.higher_bits_length, n);  // XXX
     }
 
     class enumerator {
-       public:
-        typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
+      public:
+        typedef std::pair<uint64_t, uint64_t> value_type;  // (position, value)
 
         enumerator() {}
 
-        enumerator(bit_vector const &bv,
-                   uint64_t offset,
-                   uint64_t universe,
-                   uint64_t n,
-                   global_parameters const &params)
-            : m_bv(&bv),
-              m_of(offset, universe, n, params),
-              m_position(size()),
-              m_value(m_of.universe)
-        {
-        }
+        enumerator(
+            bit_vector const& bv,
+            uint64_t offset,
+            uint64_t universe,
+            uint64_t n,
+            global_parameters const& params)
+            : m_bv(&bv), m_of(offset, universe, n, params), m_position(size()), m_value(m_of.universe)
+        {}
 
         value_type move(uint64_t position)
         {
@@ -182,7 +174,7 @@ struct compact_elias_fano {
                     }
                     m_value = ((he.position() - m_of.higher_bits_offset - m_position - 1)
                                << m_of.lower_bits)
-                              | read_low();
+                        | read_low();
                     m_high_enumerator = he;
                 }
                 return value();
@@ -262,7 +254,7 @@ struct compact_elias_fano {
 
         inline value_type value() const { return value_type(m_position, m_value); }
 
-       private:
+      private:
         value_type PISA_NOINLINE slow_move(uint64_t position)
         {
             if (PISA_UNLIKELY(position == size())) {
@@ -340,7 +332,7 @@ struct compact_elias_fano {
         inline uint64_t read_low()
         {
             return m_bv->get_word56(m_of.lower_bits_offset + m_position * m_of.lower_bits)
-                   & m_of.mask;
+                & m_of.mask;
         }
 
         inline uint64_t read_next()
@@ -351,7 +343,7 @@ struct compact_elias_fano {
         }
 
         struct next_reader {
-            next_reader(enumerator &e, uint64_t position)
+            next_reader(enumerator& e, uint64_t position)
                 : e(e),
                   high_enumerator(e.m_high_enumerator),
                   high_base(e.m_of.higher_bits_offset + position + 1),
@@ -359,8 +351,7 @@ struct compact_elias_fano {
                   lower_base(e.m_of.lower_bits_offset + position * lower_bits),
                   mask(e.m_of.mask),
                   bv(*e.m_bv)
-            {
-            }
+            {}
 
             ~next_reader() { e.m_high_enumerator = high_enumerator; }
 
@@ -373,10 +364,10 @@ struct compact_elias_fano {
                 return (high << lower_bits) | low;
             }
 
-            enumerator &e;
+            enumerator& e;
             bit_vector::unary_enumerator high_enumerator;
             uint64_t high_base, lower_bits, lower_base, mask;
-            bit_vector const &bv;
+            bit_vector const& bv;
         };
 
         inline uint64_t pointer(uint64_t offset, uint64_t i) const
@@ -385,7 +376,7 @@ struct compact_elias_fano {
                 return 0;
             } else {
                 return m_bv->get_word56(offset + (i - 1) * m_of.pointer_size)
-                       & ((uint64_t(1) << m_of.pointer_size) - 1);
+                    & ((uint64_t(1) << m_of.pointer_size) - 1);
             }
         }
 
@@ -393,7 +384,7 @@ struct compact_elias_fano {
 
         inline uint64_t pointer1(uint64_t i) const { return pointer(m_of.pointers1_offset, i); }
 
-        bit_vector const *m_bv;
+        bit_vector const* m_bv;
         offsets m_of;
 
         uint64_t m_position;
@@ -401,4 +392,4 @@ struct compact_elias_fano {
         bit_vector::unary_enumerator m_high_enumerator;
     };
 };
-} // namespace pisa
+}  // namespace pisa

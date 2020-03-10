@@ -10,8 +10,8 @@
 namespace pisa {
 
 class configuration {
-   public:
-    static configuration const &get()
+  public:
+    static configuration const& get()
     {
         static configuration instance;
         return instance;
@@ -37,7 +37,7 @@ class configuration {
 
     bool heuristic_greedy;
 
-   private:
+  private:
     configuration()
     {
         fillvar("PISA_K", k, 10);
@@ -58,9 +58,9 @@ class configuration {
     }
 
     template <typename T, typename T2>
-    void fillvar(const char *envvar, T &var, T2 def)
+    void fillvar(const char* envvar, T& var, T2 def)
     {
-        const char *val = std::getenv(envvar);
+        const char* val = std::getenv(envvar);
         if (!val || !strlen(val)) {
             var = def;
         } else {
@@ -69,4 +69,4 @@ class configuration {
     }
 };
 
-} // namespace pisa
+}  // namespace pisa

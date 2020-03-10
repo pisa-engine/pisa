@@ -11,7 +11,7 @@
 
 namespace pisa {
 
-auto split_query_at_colon(std::string const &query_string)
+auto split_query_at_colon(std::string const& query_string)
     -> std::pair<std::optional<std::string>, std::string_view>
 {
     // query id : terms (or ids)
@@ -25,7 +25,7 @@ auto split_query_at_colon(std::string const &query_string)
     return {std::move(id), std::move(raw_query)};
 }
 
-auto parse_query_terms(std::string const &query_string, TermProcessor term_processor) -> Query
+auto parse_query_terms(std::string const& query_string, TermProcessor term_processor) -> Query
 {
     auto [id, raw_query] = split_query_at_colon(query_string);
     TermTokenizer tokenizer(raw_query);
@@ -46,21 +46,21 @@ auto parse_query_terms(std::string const &query_string, TermProcessor term_proce
     return {std::move(id), std::move(parsed_query), {}};
 }
 
-auto parse_query_ids(std::string const &query_string) -> Query
+auto parse_query_ids(std::string const& query_string) -> Query
 {
     auto [id, raw_query] = split_query_at_colon(query_string);
     std::vector<term_id_type> parsed_query;
     std::vector<std::string> term_ids;
     boost::split(term_ids, raw_query, boost::is_any_of("\t, ,\v,\f,\r,\n"));
 
-    auto is_empty = [](const std::string &val) { return val.empty(); };
+    auto is_empty = [](const std::string& val) { return val.empty(); };
     // remove_if move matching elements to the end, preparing them for erase.
     term_ids.erase(std::remove_if(term_ids.begin(), term_ids.end(), is_empty), term_ids.end());
 
     try {
-        auto to_int = [](const std::string &val) { return std::stoi(val); };
+        auto to_int = [](const std::string& val) { return std::stoi(val); };
         std::transform(term_ids.begin(), term_ids.end(), std::back_inserter(parsed_query), to_int);
-    } catch (std::invalid_argument &err) {
+    } catch (std::invalid_argument& err) {
         spdlog::error("Could not parse term identifiers of query `{}`", raw_query);
         exit(1);
     }
@@ -68,25 +68,24 @@ auto parse_query_ids(std::string const &query_string) -> Query
 }
 
 std::function<void(const std::string)> resolve_query_parser(
-    std::vector<Query> &queries,
-    std::optional<std::string> const &terms_file,
-    std::optional<std::string> const &stopwords_filename,
-    std::optional<std::string> const &stemmer_type)
+    std::vector<Query>& queries,
+    std::optional<std::string> const& terms_file,
+    std::optional<std::string> const& stopwords_filename,
+    std::optional<std::string> const& stemmer_type)
 {
     if (terms_file) {
         auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
-        return
-            [&queries, term_processor = std::move(term_processor)](std::string const &query_line) {
-                queries.push_back(parse_query_terms(query_line, term_processor));
-            };
+        return [&queries, term_processor = std::move(term_processor)](std::string const& query_line) {
+            queries.push_back(parse_query_terms(query_line, term_processor));
+        };
     } else {
-        return [&queries](std::string const &query_line) {
+        return [&queries](std::string const& query_line) {
             queries.push_back(parse_query_ids(query_line));
         };
     }
 }
 
-bool read_query(term_id_vec &ret, std::istream &is)
+bool read_query(term_id_vec& ret, std::istream& is)
 {
     ret.clear();
     std::string line;
@@ -97,7 +96,7 @@ bool read_query(term_id_vec &ret, std::istream &is)
     return true;
 }
 
-void remove_duplicate_terms(term_id_vec &terms)
+void remove_duplicate_terms(term_id_vec& terms)
 {
     std::sort(terms.begin(), terms.end());
     terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
@@ -118,4 +117,4 @@ term_freq_vec query_freqs(term_id_vec terms)
     return query_term_freqs;
 }
 
-} // namespace pisa
+}  // namespace pisa

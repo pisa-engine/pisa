@@ -1,31 +1,35 @@
 #pragma once
-#include <unordered_set>
 #include "binary_freq_collection.hpp"
 #include "invert.hpp"
 #include "util/progress.hpp"
+#include <unordered_set>
 
 namespace pisa {
 
-void emit(std::ostream &os, const uint32_t *vals, size_t n)
+void emit(std::ostream& os, const uint32_t* vals, size_t n)
 {
-    os.write(reinterpret_cast<const char *>(vals), sizeof(*vals) * n);
+    os.write(reinterpret_cast<const char*>(vals), sizeof(*vals) * n);
 }
 
-void emit(std::ostream &os, uint32_t val) { emit(os, &val, 1); }
+void emit(std::ostream& os, uint32_t val)
+{
+    emit(os, &val, 1);
+}
 
 // sample_fn must be stable, it must return a sorted vector
 template <typename SampleFn>
-void sample_inverted_index(std::string const &input_basename,
-                           std::string const &output_basename,
-                           SampleFn &&sample_fn,
-                           std::unordered_set<size_t> &terms_to_drop)
+void sample_inverted_index(
+    std::string const& input_basename,
+    std::string const& output_basename,
+    SampleFn&& sample_fn,
+    std::unordered_set<size_t>& terms_to_drop)
 {
-
     binary_freq_collection input(input_basename.c_str());
 
-    boost::filesystem::copy_file(fmt::format("{}.sizes", input_basename),
-                                 fmt::format("{}.sizes", output_basename),
-                                 boost::filesystem::copy_option::overwrite_if_exists);
+    boost::filesystem::copy_file(
+        fmt::format("{}.sizes", input_basename),
+        fmt::format("{}.sizes", output_basename),
+        boost::filesystem::copy_option::overwrite_if_exists);
 
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");
@@ -34,7 +38,7 @@ void sample_inverted_index(std::string const &input_basename,
     write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
     pisa::progress progress("Sampling inverted index", input.size());
     size_t term = 0;
-    for (auto const &plist : input) {
+    for (auto const& plist: input) {
         auto sample = sample_fn(plist.docs);
         if (sample.size() == 0) {
             terms_to_drop.insert(term);
@@ -47,7 +51,7 @@ void sample_inverted_index(std::string const &input_basename,
 
         std::vector<std::uint32_t> sampled_docs;
         std::vector<std::uint32_t> sampled_freqs;
-        for (auto index : sample) {
+        for (auto index: sample) {
             sampled_docs.push_back(plist.docs[index]);
             sampled_freqs.push_back(plist.freqs[index]);
         }
@@ -59,9 +63,10 @@ void sample_inverted_index(std::string const &input_basename,
     }
 }
 
-void reorder_inverted_index(const std::string &input_basename,
-                            const std::string &output_basename,
-                            const std::vector<uint32_t> &mapping)
+void reorder_inverted_index(
+    const std::string& input_basename,
+    const std::string& output_basename,
+    const std::vector<uint32_t>& mapping)
 {
     std::ofstream output_mapping(output_basename + ".mapping");
     emit(output_mapping, mapping.data(), mapping.size());
@@ -87,11 +92,10 @@ void reorder_inverted_index(const std::string &input_basename,
     binary_freq_collection input(input_basename.c_str());
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
-    pisa::progress reorder_progress("Reorder inverted index",
-                                    std::distance(input.begin(), input.end()));
+    pisa::progress reorder_progress(
+        "Reorder inverted index", std::distance(input.begin(), input.end()));
 
-    for (const auto &seq : input) {
-
+    for (const auto& seq: input) {
         for (size_t i = 0; i < seq.docs.size(); ++i) {
             pl.emplace_back(mapping[seq.docs.begin()[i]], seq.freqs.begin()[i]);
         }
@@ -101,7 +105,7 @@ void reorder_inverted_index(const std::string &input_basename,
         emit(output_docs, pl.size());
         emit(output_freqs, pl.size());
 
-        for (const auto &posting : pl) {
+        for (const auto& posting: pl) {
             emit(output_docs, posting.first);
             emit(output_freqs, posting.second);
         }
@@ -109,4 +113,4 @@ void reorder_inverted_index(const std::string &input_basename,
         reorder_progress.update(1);
     }
 }
-} // namespace pisa
+}  // namespace pisa
