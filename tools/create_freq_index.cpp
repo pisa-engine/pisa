@@ -151,16 +151,13 @@ using wand_raw_index = wand_data<wand_data_raw>;
 
 int main(int argc, char** argv)
 {
-    std::string type;
     std::string input_basename;
     std::optional<std::string> output_filename;
     bool check = false;
-    bool quantized = false;
 
-    App<arg::Encoding, arg::WandData, arg::Scorer> app{"Compresses an inverted index"};
+    App<arg::Encoding, arg::Quantize> app{"Compresses an inverted index"};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
-    app.add_flag("--quantized", quantized, "Quantizes the scores");
     app.add_flag("--check", check, "Check the correctness of the index");
     CLI11_PARSE(app, argc, argv);
 
@@ -181,7 +178,7 @@ int main(int argc, char** argv)
             app.index_encoding(),                                   \
             app.wand_data_path(),                                   \
             app.scorer(),                                           \
-            quantized);                                             \
+            app.quantize());                                        \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
