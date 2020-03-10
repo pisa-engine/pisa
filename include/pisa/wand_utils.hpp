@@ -10,23 +10,19 @@ namespace pisa {
 
 struct FixedBlock {
     uint64_t size;
-    FixedBlock() : size(configuration::get().block_size) {}
-    FixedBlock(const uint64_t in_size) : size(in_size) {}
+    explicit FixedBlock(const uint64_t in_size) : size(in_size) {}
 };
 
 struct VariableBlock {
     float lambda;
-    VariableBlock() : lambda(configuration::get().fixed_cost_wand_partition) {}
-    VariableBlock(const float in_lambda) : lambda(in_lambda) {}
+    explicit VariableBlock(const float in_lambda) : lambda(in_lambda) {}
 };
 
 using BlockSize = boost::variant<FixedBlock, VariableBlock>;
 
 template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
-    binary_freq_collection::sequence const &seq,
-    Scorer scorer,
-    const uint64_t block_size)
+    binary_freq_collection::sequence const& seq, Scorer scorer, const uint64_t block_size)
 {
     std::vector<uint32_t> block_docid;
     std::vector<float> block_max_term_weight;
@@ -59,30 +55,29 @@ std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
 
 template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
-    binary_freq_collection const &coll,
-    binary_freq_collection::sequence const &seq,
+    binary_freq_collection const& coll,
+    binary_freq_collection::sequence const& seq,
     Scorer scorer,
-    const float lambda)
+    const float lambda,
+    double eps1 = 0.01,
+    double eps2 = 0.4)
 {
-
-    auto eps1 = configuration::get().eps1_wand;
-    auto eps2 = configuration::get().eps2_wand;
-
     // Auxiliary vector
     using doc_score_t = std::pair<uint64_t, float>;
     std::vector<doc_score_t> doc_score;
 
-    std::transform(seq.docs.begin(),
-                   seq.docs.end(),
-                   seq.freqs.begin(),
-                   std::back_inserter(doc_score),
-                   [&](const uint64_t &doc, const uint64_t &freq) -> doc_score_t {
-                       return {doc, scorer(doc, freq)};
-                   });
+    std::transform(
+        seq.docs.begin(),
+        seq.docs.end(),
+        seq.freqs.begin(),
+        std::back_inserter(doc_score),
+        [&](const uint64_t& doc, const uint64_t& freq) -> doc_score_t {
+            return {doc, scorer(doc, freq)};
+        });
 
     auto p = score_opt_partition(doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda);
 
     return std::make_pair(p.docids, p.max_values);
 }
 
-} // namespace pisa
+}  // namespace pisa
