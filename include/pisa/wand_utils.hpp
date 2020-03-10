@@ -59,6 +59,8 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
     binary_freq_collection::sequence const& seq,
     Scorer scorer,
     const float lambda,
+    // Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, and Rossano Venturini.
+    // 2017. Faster BlockMax WAND with Variable-sized Blocks. In Proc. SIGIR
     double eps1 = 0.01,
     double eps2 = 0.4)
 {
