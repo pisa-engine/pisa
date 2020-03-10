@@ -125,3 +125,9 @@ target_link_libraries(count_postings
   pisa
   CLI11
 )
+
+add_executable(document_viewer document_viewer.cpp)
+target_link_libraries(document_viewer
+  pisa
+  CLI11
+)
