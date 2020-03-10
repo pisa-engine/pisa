@@ -35,7 +35,7 @@ TEST_CASE("wand_data_range")
         collection.num_docs(),
         collection,
         scorer_name,
-        BlockSize(FixedBlock()),
+        BlockSize(FixedBlock(5)),
         false,
         dropped_term_ids);
 
