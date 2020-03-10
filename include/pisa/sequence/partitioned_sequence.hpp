@@ -334,6 +334,8 @@ struct partitioned_sequence {
         uint64_t universe,
         uint64_t n,
         global_parameters const& params,
+        // Follwing Giuseppe Ottaviano and Rossano Venturini. 
+        // 2014. Partitioned Elias-Fano indexes. In Proc. SIGIR
         uint64_t fix_cost = 64,
         double eps1 = 0.03,
         double eps2 = 0.3,
