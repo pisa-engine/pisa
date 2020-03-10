@@ -12,13 +12,12 @@
 namespace pisa {
 
 template <typename DocsSequence, typename FreqsSequence>
-void get_size_stats(freq_index<DocsSequence, FreqsSequence> &coll,
-                    uint64_t &docs_size,
-                    uint64_t &freqs_size)
+void get_size_stats(
+    freq_index<DocsSequence, FreqsSequence>& coll, uint64_t& docs_size, uint64_t& freqs_size)
 {
     auto size_tree = mapper::size_tree_of(coll);
     size_tree->dump();
-    for (auto const &node : size_tree->children) {
+    for (auto const& node: size_tree->children) {
         if (node->name == "m_docs_sequences") {
             docs_size = node->size;
         } else if (node->name == "m_freqs_sequences") {
@@ -28,14 +27,12 @@ void get_size_stats(freq_index<DocsSequence, FreqsSequence> &coll,
 }
 
 template <typename BlockCodec, bool Profile>
-void get_size_stats(block_freq_index<BlockCodec, Profile> &coll,
-                    uint64_t &docs_size,
-                    uint64_t &freqs_size)
+void get_size_stats(block_freq_index<BlockCodec, Profile>& coll, uint64_t& docs_size, uint64_t& freqs_size)
 {
     auto size_tree = mapper::size_tree_of(coll);
     size_tree->dump();
     uint64_t total_size = 0;
-    for (auto const &node : size_tree->children) {
+    for (auto const& node: size_tree->children) {
         if (node->name == "m_lists") {
             total_size = node->size;
         }
@@ -49,9 +46,8 @@ void get_size_stats(block_freq_index<BlockCodec, Profile> &coll,
 }
 
 template <typename Collection>
-void dump_stats(Collection &coll, std::string const &type, uint64_t postings)
+void dump_stats(Collection& coll, std::string const& type, uint64_t postings)
 {
-
     uint64_t docs_size = 0, freqs_size = 0;
     get_size_stats(coll, docs_size, freqs_size);
 
@@ -64,4 +60,4 @@ void dump_stats(Collection &coll, std::string const &type, uint64_t postings)
         "freqs_size", freqs_size)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
 }
 
-} // namespace pisa
+}  // namespace pisa

@@ -2,17 +2,14 @@
 
 #include "boost/filesystem.hpp"
 
-
 namespace pisa {
 
-[[nodiscard]] auto ls(boost::filesystem::path                  dir,
-                      std::function<bool(std::string const &)> predicate)
+[[nodiscard]] auto ls(boost::filesystem::path dir, std::function<bool(std::string const&)> predicate)
 {
     std::vector<boost::filesystem::path> files;
     for (auto it = boost::filesystem::directory_iterator(dir);
          it != boost::filesystem::directory_iterator{};
-         ++it)
-    {
+         ++it) {
         if (predicate(it->path().string())) {
             files.push_back(*it);
         }
@@ -20,4 +17,4 @@ namespace pisa {
     return files;
 }
 
-} // namespace pisa
+}  // namespace pisa

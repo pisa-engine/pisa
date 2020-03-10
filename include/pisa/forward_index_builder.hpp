@@ -39,26 +39,25 @@ using namespace std::string_view_literals;
 struct Document_Record {
     Document_Record(std::string title, std::string content, std::string url)
         : title_(std::move(title)), content_(std::move(content)), url_(std::move(url))
-    {
-    }
-    [[nodiscard]] auto title() noexcept -> std::string & { return title_; }
-    [[nodiscard]] auto title() const noexcept -> std::string const & { return title_; }
-    [[nodiscard]] auto content() noexcept -> std::string & { return content_; }
-    [[nodiscard]] auto content() const noexcept -> std::string const & { return content_; }
-    [[nodiscard]] auto url() noexcept -> std::string & { return url_; }
-    [[nodiscard]] auto url() const noexcept -> std::string const & { return url_; }
+    {}
+    [[nodiscard]] auto title() noexcept -> std::string& { return title_; }
+    [[nodiscard]] auto title() const noexcept -> std::string const& { return title_; }
+    [[nodiscard]] auto content() noexcept -> std::string& { return content_; }
+    [[nodiscard]] auto content() const noexcept -> std::string const& { return content_; }
+    [[nodiscard]] auto url() noexcept -> std::string& { return url_; }
+    [[nodiscard]] auto url() const noexcept -> std::string const& { return url_; }
 
-   private:
+  private:
     std::string title_;
     std::string content_;
     std::string url_;
 };
 
-using process_term_function_type = std::function<std::string(std::string &&)>;
+using process_term_function_type = std::function<std::string(std::string&&)>;
 using process_content_function_type =
-    std::function<void(std::string &&, std::function<void(std::string &&)>)>;
+    std::function<void(std::string&&, std::function<void(std::string&&)>)>;
 
-void parse_plaintext_content(std::string &&content, std::function<void(std::string &&)> process)
+void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process)
 {
     std::istringstream content_stream(content);
     std::string term;
@@ -77,7 +76,7 @@ void parse_plaintext_content(std::string &&content, std::function<void(std::stri
     return std::string_view(&*start, 4) == "HTTP"sv;
 }
 
-void parse_html_content(std::string &&content, std::function<void(std::string &&)> process)
+void parse_html_content(std::string&& content, std::function<void(std::string&&)> process)
 {
     content = parsing::html::cleantext([&]() {
         auto pos = content.begin();
@@ -103,25 +102,25 @@ void parse_html_content(std::string &&content, std::function<void(std::string &&
 }
 
 class Forward_Index_Builder {
-   public:
-    using read_record_function_type = std::function<std::optional<Document_Record>(std::istream &)>;
+  public:
+    using read_record_function_type = std::function<std::optional<Document_Record>(std::istream&)>;
 
     template <typename Iterator>
-    static std::ostream &write_document(std::ostream &os, Iterator first, Iterator last)
+    static std::ostream& write_document(std::ostream& os, Iterator first, Iterator last)
     {
         std::uint32_t length = std::distance(first, last);
-        os.write(reinterpret_cast<const char *>(&length), sizeof(length));
-        os.write(reinterpret_cast<const char *>(&(*first)), length * sizeof(*first));
+        os.write(reinterpret_cast<const char*>(&length), sizeof(length));
+        os.write(reinterpret_cast<const char*>(&(*first)), length * sizeof(*first));
         return os;
     }
 
-    static std::ostream &write_header(std::ostream &os, uint32_t document_count)
+    static std::ostream& write_header(std::ostream& os, uint32_t document_count)
     {
         return write_document(os, &document_count, std::next(&document_count));
     }
 
-    [[nodiscard]] static auto batch_file(std::string const &output_file,
-                                         std::ptrdiff_t batch_number) noexcept -> std::string
+    [[nodiscard]] static auto
+    batch_file(std::string const& output_file, std::ptrdiff_t batch_number) noexcept -> std::string
     {
         std::ostringstream os;
         os << output_file << ".batch." << batch_number;
@@ -132,17 +131,19 @@ class Forward_Index_Builder {
         std::ptrdiff_t batch_number;
         std::vector<Document_Record> records;
         Document_Id first_document;
-        std::string const &output_file;
+        std::string const& output_file;
     };
 
-    void run(Batch_Process bp,
-             process_term_function_type process_term,
-             process_content_function_type process_content) const
+    void
+    run(Batch_Process bp,
+        process_term_function_type process_term,
+        process_content_function_type process_content) const
     {
-        spdlog::debug("[Batch {}] Processing documents [{}, {})",
-                      bp.batch_number,
-                      bp.first_document,
-                      bp.first_document + bp.records.size());
+        spdlog::debug(
+            "[Batch {}] Processing documents [{}, {})",
+            bp.batch_number,
+            bp.first_document,
+            bp.first_document + bp.records.size());
         auto basename = batch_file(bp.output_file, bp.batch_number);
 
         std::ofstream os(basename);
@@ -153,13 +154,13 @@ class Forward_Index_Builder {
 
         std::map<std::string, uint32_t> map;
 
-        for (auto &&record : bp.records) {
+        for (auto&& record: bp.records) {
             title_os << record.title() << '\n';
             url_os << record.url() << '\n';
 
             std::vector<uint32_t> term_ids;
 
-            auto process = [&](auto &&term) {
+            auto process = [&](auto&& term) {
                 term = process_term(std::move(term));
                 uint32_t id = 0;
                 if (auto pos = map.find(term); pos != map.end()) {
@@ -174,25 +175,26 @@ class Forward_Index_Builder {
             process_content(std::move(record.content()), process);
             write_document(os, term_ids.begin(), term_ids.end());
         }
-        spdlog::info("[Batch {}] Processed documents [{}, {})",
-                     bp.batch_number,
-                     bp.first_document,
-                     bp.first_document + bp.records.size());
+        spdlog::info(
+            "[Batch {}] Processed documents [{}, {})",
+            bp.batch_number,
+            bp.first_document,
+            bp.first_document + bp.records.size());
     }
 
-    [[nodiscard]] static auto reverse_mapping(std::vector<std::string> &&terms)
+    [[nodiscard]] static auto reverse_mapping(std::vector<std::string>&& terms)
         -> std::unordered_map<std::string, Term_Id>
     {
         std::unordered_map<std::string, Term_Id> mapping;
         Term_Id term_id{0};
-        for (std::string &term : terms) {
+        for (std::string& term: terms) {
             mapping.emplace(std::move(term), term_id);
             ++term_id;
         }
         return mapping;
     }
 
-    [[nodiscard]] static auto collect_terms(std::string const &basename, std::ptrdiff_t batch_count)
+    [[nodiscard]] static auto collect_terms(std::string const& basename, std::ptrdiff_t batch_count)
     {
         struct Term_Span {
             size_t first;
@@ -219,7 +221,7 @@ class Forward_Index_Builder {
         };
 
         spdlog::info("Collecting terms");
-        for (auto batch : ranges::views::iota(0, batch_count)) {
+        for (auto batch: ranges::views::iota(0, batch_count)) {
             spdlog::debug("[Collecting terms] Batch {}/{}", batch, batch_count);
             auto mid = terms.size();
             std::ifstream terms_is(batch_file(basename, batch) + ".terms");
@@ -241,16 +243,14 @@ class Forward_Index_Builder {
         return terms;
     }
 
-    void merge(std::string const &basename,
-               std::ptrdiff_t document_count,
-               std::ptrdiff_t batch_count) const
+    void merge(std::string const& basename, std::ptrdiff_t document_count, std::ptrdiff_t batch_count) const
     {
         std::ofstream term_os(basename + ".terms");
 
         {
             spdlog::info("Merging titles");
             std::ofstream title_os(basename + ".documents");
-            for (auto batch : ranges::views::iota(0, batch_count)) {
+            for (auto batch: ranges::views::iota(0, batch_count)) {
                 spdlog::debug("[Merging titles] Batch {}/{}", batch, batch_count);
                 std::ifstream title_is(batch_file(basename, batch) + ".documents");
                 title_os << title_is.rdbuf();
@@ -259,14 +259,14 @@ class Forward_Index_Builder {
         {
             spdlog::info("Creating document lexicon");
             std::ifstream title_is(basename + ".documents");
-            encode_payload_vector(std::istream_iterator<io::Line>(title_is),
-                                  std::istream_iterator<io::Line>())
+            encode_payload_vector(
+                std::istream_iterator<io::Line>(title_is), std::istream_iterator<io::Line>())
                 .to_file(basename + ".doclex");
         }
         {
             spdlog::info("Merging URLs");
             std::ofstream url_os(basename + ".urls");
-            for (auto batch : ranges::views::iota(0, batch_count)) {
+            for (auto batch: ranges::views::iota(0, batch_count)) {
                 spdlog::debug("[Merging URLs] Batch {}/{}", batch, batch_count);
                 std::ifstream url_is(batch_file(basename, batch) + ".urls");
                 url_os << url_is.rdbuf();
@@ -276,7 +276,7 @@ class Forward_Index_Builder {
         auto terms = collect_terms(basename, batch_count);
 
         spdlog::info("Writing terms");
-        for (auto const &term : terms) {
+        for (auto const& term: terms) {
             term_os << term << '\n';
         }
         encode_payload_vector(terms.begin(), terms.end()).to_file(basename + ".termlex");
@@ -285,17 +285,17 @@ class Forward_Index_Builder {
         auto term_mapping = reverse_mapping(std::move(terms));
 
         spdlog::info("Remapping IDs");
-        for (auto batch : ranges::views::iota(0, batch_count)) {
+        for (auto batch: ranges::views::iota(0, batch_count)) {
             spdlog::debug("[Remapping IDs] Batch {}/{}", batch, batch_count);
             auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
             std::vector<Term_Id> mapping(batch_terms.size());
-            std::transform(batch_terms.begin(),
-                           batch_terms.end(),
-                           mapping.begin(),
-                           [&](auto const &bterm) { return term_mapping[bterm]; });
+            std::transform(
+                batch_terms.begin(), batch_terms.end(), mapping.begin(), [&](auto const& bterm) {
+                    return term_mapping[bterm];
+                });
             writable_binary_collection coll(batch_file(basename, batch).c_str());
             for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
-                for (auto &term_id : *doc_iter) {
+                for (auto& term_id: *doc_iter) {
                     term_id = mapping[term_id].as_int();
                 }
             }
@@ -305,7 +305,7 @@ class Forward_Index_Builder {
         spdlog::info("Concatenating batches");
         std::ofstream os(basename);
         write_header(os, document_count);
-        for (auto batch : ranges::views::iota(0, batch_count)) {
+        for (auto batch: ranges::views::iota(0, batch_count)) {
             spdlog::debug("[Concatenating batches] Batch {}/{}", batch, batch_count);
             std::ifstream is(batch_file(basename, batch));
             is.ignore(8);
@@ -315,13 +315,14 @@ class Forward_Index_Builder {
         spdlog::info("Success.");
     }
 
-    void build(std::istream &is,
-               std::string const &output_file,
-               read_record_function_type next_record,
-               process_term_function_type process_term,
-               process_content_function_type process_content,
-               std::ptrdiff_t batch_size,
-               std::size_t threads) const
+    void build(
+        std::istream& is,
+        std::string const& output_file,
+        read_record_function_type next_record,
+        process_term_function_type process_term,
+        process_content_function_type process_content,
+        std::ptrdiff_t batch_size,
+        std::size_t threads) const
     {
         if (threads < 2) {
             spdlog::error("Building forward index requires at least 2 threads");
@@ -338,31 +339,28 @@ class Forward_Index_Builder {
             std::optional<Document_Record> record = std::nullopt;
             if (not(record = next_record(is))) {
                 auto last_batch_size = record_batch.size();
-                Batch_Process bp{
-                    batch_number, std::move(record_batch), first_document, output_file};
+                Batch_Process bp{batch_number, std::move(record_batch), first_document, output_file};
                 queue.push(0);
-                batch_group.run(
-                    [bp = std::move(bp), process_term, this, &queue, &process_content]() {
-                        run(std::move(bp), process_term, process_content);
-                        int x;
-                        queue.try_pop(x);
-                    });
+                batch_group.run([bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                    run(std::move(bp), process_term, process_content);
+                    int x;
+                    queue.try_pop(x);
+                });
                 ++batch_number;
                 first_document += last_batch_size;
                 break;
             }
             spdlog::debug("Parsed document {}", record->title());
-            record_batch.push_back(std::move(*record)); // AppleClang is missing value() in Optional
+            record_batch.push_back(std::move(*record));  // AppleClang is missing value() in
+                                                         // Optional
             if (record_batch.size() == batch_size) {
-                Batch_Process bp{
-                    batch_number, std::move(record_batch), first_document, output_file};
+                Batch_Process bp{batch_number, std::move(record_batch), first_document, output_file};
                 queue.push(0);
-                batch_group.run(
-                    [bp = std::move(bp), process_term, this, &queue, &process_content]() {
-                        run(std::move(bp), process_term, process_content);
-                        int x;
-                        queue.try_pop(x);
-                    });
+                batch_group.run([bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                    run(std::move(bp), process_term, process_content);
+                    int x;
+                    queue.try_pop(x);
+                });
                 ++batch_number;
                 first_document += batch_size;
                 record_batch = std::vector<Document_Record>();
@@ -373,11 +371,11 @@ class Forward_Index_Builder {
         remove_batches(output_file, batch_number);
     }
 
-    void remove_batches(std::string const &basename, std::ptrdiff_t batch_count) const
+    void remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const
     {
         using boost::filesystem::path;
         using boost::filesystem::remove;
-        for (auto batch : ranges::views::iota(0, batch_count)) {
+        for (auto batch: ranges::views::iota(0, batch_count)) {
             auto batch_basename = batch_file(basename, batch);
             remove(path{batch_basename + ".documents"});
             remove(path{batch_basename + ".terms"});
@@ -388,30 +386,29 @@ class Forward_Index_Builder {
 };
 
 class Plaintext_Record {
-   public:
+  public:
     Plaintext_Record() = default;
     Plaintext_Record(std::string trecid, std::string content)
         : m_trecid(std::move(trecid)), m_content(std::move(content))
-    {
-    }
-    [[nodiscard]] auto content() -> std::string & { return m_content; }
-    [[nodiscard]] auto content() const -> std::string const & { return m_content; }
-    [[nodiscard]] auto trecid() -> std::string & { return m_trecid; }
-    [[nodiscard]] auto trecid() const -> std::string const & { return m_trecid; }
-    [[nodiscard]] auto url() -> std::string & { return m_url; }
-    [[nodiscard]] auto url() const -> std::string const & { return m_url; }
+    {}
+    [[nodiscard]] auto content() -> std::string& { return m_content; }
+    [[nodiscard]] auto content() const -> std::string const& { return m_content; }
+    [[nodiscard]] auto trecid() -> std::string& { return m_trecid; }
+    [[nodiscard]] auto trecid() const -> std::string const& { return m_trecid; }
+    [[nodiscard]] auto url() -> std::string& { return m_url; }
+    [[nodiscard]] auto url() const -> std::string const& { return m_url; }
     [[nodiscard]] auto valid() const noexcept -> bool { return true; }
-    [[nodiscard]] static auto read(std::istream &is) {}
+    [[nodiscard]] static auto read(std::istream& is) {}
 
-   private:
+  private:
     std::string m_trecid;
     std::string m_content;
     std::string m_url;
 };
 
-} // namespace pisa
+}  // namespace pisa
 
-auto operator>>(std::istream &is, pisa::Plaintext_Record &record) -> std::istream &
+auto operator>>(std::istream& is, pisa::Plaintext_Record& record) -> std::istream&
 {
     is >> record.trecid();
     std::getline(is, record.content());

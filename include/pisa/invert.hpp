@@ -27,15 +27,15 @@
 namespace pisa {
 
 template <typename T>
-std::vector<T> concatenate(std::vector<std::vector<T>> const &containers)
+std::vector<T> concatenate(std::vector<std::vector<T>> const& containers)
 {
     auto full_size = std::accumulate(
-        containers.begin(), containers.end(), 0, [](auto const &acc, auto const &container) {
+        containers.begin(), containers.end(), 0, [](auto const& acc, auto const& container) {
             return acc + container.size();
         });
     std::vector<T> vec(full_size);
     auto next_begin = std::begin(vec);
-    for (auto const &container : containers) {
+    for (auto const& container: containers) {
         std::copy(container.begin(), container.end(), next_begin);
         next_begin = std::next(next_begin, container.size());
     }
@@ -43,22 +43,22 @@ std::vector<T> concatenate(std::vector<std::vector<T>> const &containers)
 }
 
 template <typename T>
-std::ostream &write_sequence(std::ostream &os, gsl::span<T> sequence)
+std::ostream& write_sequence(std::ostream& os, gsl::span<T> sequence)
 {
     auto length = static_cast<uint32_t>(sequence.size());
-    os.write(reinterpret_cast<const char *>(&length), sizeof(length));
-    os.write(reinterpret_cast<const char *>(sequence.data()), length * sizeof(T));
+    os.write(reinterpret_cast<const char*>(&length), sizeof(length));
+    os.write(reinterpret_cast<const char*>(sequence.data()), length * sizeof(T));
     return os;
 }
 
 template <typename T>
-std::istream &read_sequence(std::istream &is, std::vector<T> &out)
+std::istream& read_sequence(std::istream& is, std::vector<T>& out)
 {
     uint32_t length;
-    is.read(reinterpret_cast<char *>(&length), sizeof(length));
+    is.read(reinterpret_cast<char*>(&length), sizeof(length));
     auto size = out.size();
     out.resize(size + length);
-    is.read(reinterpret_cast<char *>(&out[size]), length * sizeof(T));
+    is.read(reinterpret_cast<char*>(&out[size]), length * sizeof(T));
     return is;
 }
 
@@ -73,8 +73,8 @@ namespace invert {
     {
         auto docid = batch.document_ids.begin();
         std::vector<std::pair<Term_Id, Document_Id>> postings;
-        for (auto const &document : batch.documents) {
-            for (auto const &term : document) {
+        for (auto const& document: batch.documents) {
+            for (auto const& term: document) {
                 postings.emplace_back(term, *docid);
             }
             ++docid;
@@ -82,10 +82,11 @@ namespace invert {
         return postings;
     }
 
-    void join_term(std::vector<Document_Id> &lower_doc,
-                   std::vector<Frequency> &lower_freq,
-                   std::vector<Document_Id> &higher_doc,
-                   std::vector<Frequency> &higher_freq)
+    void join_term(
+        std::vector<Document_Id>& lower_doc,
+        std::vector<Frequency>& lower_freq,
+        std::vector<Document_Id>& higher_doc,
+        std::vector<Frequency>& higher_freq)
     {
         if (lower_doc.back() == higher_doc.front()) {
             lower_freq.back() += higher_freq.front();
@@ -105,23 +106,23 @@ namespace invert {
         std::vector<std::uint32_t> document_sizes{};
 
         Inverted_Index() = default;
-        Inverted_Index(Inverted_Index &, tbb::split) {}
-        Inverted_Index(std::unordered_map<Term_Id, std::vector<Document_Id>> documents,
-                       std::unordered_map<Term_Id, std::vector<Frequency>> frequencies,
-                       std::vector<std::uint32_t> document_sizes = {})
+        Inverted_Index(Inverted_Index&, tbb::split) {}
+        Inverted_Index(
+            std::unordered_map<Term_Id, std::vector<Document_Id>> documents,
+            std::unordered_map<Term_Id, std::vector<Frequency>> frequencies,
+            std::vector<std::uint32_t> document_sizes = {})
             : documents(std::move(documents)),
               frequencies(std::move(frequencies)),
               document_sizes(std::move(document_sizes))
-        {
-        }
+        {}
 
-        void operator()(tbb::blocked_range<iterator_type> const &r)
+        void operator()(tbb::blocked_range<iterator_type> const& r)
         {
             if (auto first = r.begin(); first != r.end()) {
                 if (auto current_term = first->first; not documents[current_term].empty()) {
                     auto current_doc = documents[current_term].back();
-                    auto &freq = frequencies[current_term].back();
-                    auto last = std::find_if(first, r.end(), [&](auto const &posting) {
+                    auto& freq = frequencies[current_term].back();
+                    auto last = std::find_if(first, r.end(), [&](auto const& posting) {
                         return posting.first != current_term || posting.second != current_doc;
                     });
                     freq += Frequency(std::distance(first, last));
@@ -133,7 +134,7 @@ namespace invert {
                         first,
                         r.end(),
                         [&, current_term = current_term, current_doc = current_doc](
-                            auto const &posting) {
+                            auto const& posting) {
                             return posting.first != current_term || posting.second != current_doc;
                         });
                     auto freq = Frequency(std::distance(first, last));
@@ -144,11 +145,11 @@ namespace invert {
             }
         }
 
-        void join(Inverted_Index &rhs)
+        void join(Inverted_Index& rhs)
         {
             document_sizes.insert(
                 document_sizes.end(), rhs.document_sizes.begin(), rhs.document_sizes.end());
-            for (auto &&[term_id, document_ids] : rhs.documents) {
+            for (auto&& [term_id, document_ids]: rhs.documents) {
                 if (auto pos = documents.find(term_id); pos == documents.end()) {
                     std::swap(documents[term_id], document_ids);
                     std::swap(frequencies[term_id], rhs.frequencies[term_id]);
@@ -166,19 +167,20 @@ namespace invert {
     };
 
     template <typename Iterator>
-    void write(std::string const &basename,
-               invert::Inverted_Index<Iterator> const &index,
-               std::uint32_t term_count)
+    void write(
+        std::string const& basename,
+        invert::Inverted_Index<Iterator> const& index,
+        std::uint32_t term_count)
     {
         std::ofstream dstream(basename + ".docs");
         std::ofstream fstream(basename + ".freqs");
         std::ofstream sstream(basename + ".sizes");
         std::uint32_t count = index.document_sizes.size();
         write_sequence(dstream, gsl::make_span<uint32_t const>(&count, 1));
-        for (auto term : ranges::views::iota(Term_Id(0), Term_Id(term_count))) {
+        for (auto term: ranges::views::iota(Term_Id(0), Term_Id(term_count))) {
             if (auto pos = index.documents.find(term); pos != index.documents.end()) {
-                auto const &documents = pos->second;
-                auto const &frequencies = index.frequencies.at(term);
+                auto const& documents = pos->second;
+                auto const& frequencies = index.frequencies.at(term);
                 write_sequence(dstream, gsl::span<Document_Id const>(documents));
                 write_sequence(fstream, gsl::span<Frequency const>(frequencies));
             } else {
@@ -189,16 +191,16 @@ namespace invert {
         write_sequence(sstream, gsl::span<uint32_t const>(index.document_sizes));
     }
 
-    auto invert_range(gsl::span<gsl::span<Term_Id const>> documents,
-                      Document_Id first_document_id,
-                      size_t threads)
+    auto invert_range(
+        gsl::span<gsl::span<Term_Id const>> documents, Document_Id first_document_id, size_t threads)
     {
         std::vector<uint32_t> document_sizes(documents.size());
-        std::transform(std::execution::par_unseq,
-                       documents.begin(),
-                       documents.end(),
-                       document_sizes.begin(),
-                       [](auto const &terms) { return terms.size(); });
+        std::transform(
+            std::execution::par_unseq,
+            documents.begin(),
+            documents.end(),
+            document_sizes.begin(),
+            [](auto const& terms) { return terms.size(); });
         gsl::index batch_size = (documents.size() + threads - 1) / threads;
         std::vector<Batch> batches;
         for (gsl::index first_idx_in_batch = 0; first_idx_in_batch < documents.size();
@@ -212,11 +214,12 @@ namespace invert {
                       ranges::views::iota(first_document_in_batch, last_document_in_batch)});
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
-        std::transform(std::execution::par_unseq,
-                       batches.begin(),
-                       batches.end(),
-                       std::begin(posting_vectors),
-                       map_to_postings);
+        std::transform(
+            std::execution::par_unseq,
+            batches.begin(),
+            batches.end(),
+            std::begin(posting_vectors),
+            map_to_postings);
         auto postings = concatenate(posting_vectors);
         posting_vectors.clear();
         posting_vectors.shrink_to_fit();
@@ -230,11 +233,12 @@ namespace invert {
         return index;
     }
 
-    [[nodiscard]] auto build_batches(std::string const &input_basename,
-                                     std::string const &output_basename,
-                                     uint32_t term_count,
-                                     size_t batch_size,
-                                     size_t threads) -> uint32_t
+    [[nodiscard]] auto build_batches(
+        std::string const& input_basename,
+        std::string const& output_basename,
+        uint32_t term_count,
+        size_t batch_size,
+        size_t threads) -> uint32_t
     {
         uint32_t batch = 0;
         binary_collection coll(input_basename.c_str());
@@ -244,8 +248,9 @@ namespace invert {
             std::vector<gsl::span<Term_Id const>> documents;
             for (; doc_iter != coll.end() && documents.size() < batch_size; ++doc_iter) {
                 auto document_sequence = *doc_iter;
-                documents.emplace_back(reinterpret_cast<Term_Id const *>(document_sequence.begin()),
-                                       document_sequence.size());
+                documents.emplace_back(
+                    reinterpret_cast<Term_Id const*>(document_sequence.begin()),
+                    document_sequence.size());
             }
             spdlog::info(
                 "Inverting [{}, {})", documents_processed, documents_processed + documents.size());
@@ -257,14 +262,12 @@ namespace invert {
         return batch;
     }
 
-    void merge_batches(std::string const &output_basename,
-                       uint32_t batch_count,
-                       uint32_t term_count)
+    void merge_batches(std::string const& output_basename, uint32_t batch_count, uint32_t term_count)
     {
         std::vector<binary_collection> doc_collections;
         std::vector<binary_collection> freq_collections;
         std::vector<uint32_t> document_sizes;
-        for (auto batch : ranges::views::iota(uint32_t(0), batch_count)) {
+        for (auto batch: ranges::views::iota(uint32_t(0), batch_count)) {
             std::ostringstream batch_name_stream;
             batch_name_stream << output_basename << ".batch." << batch;
             doc_collections.emplace_back((batch_name_stream.str() + ".docs").c_str());
@@ -278,29 +281,31 @@ namespace invert {
 
         std::vector<binary_collection::const_iterator> doc_iterators;
         std::vector<binary_collection::const_iterator> freq_iterators;
-        std::transform(doc_collections.begin(),
-                       doc_collections.end(),
-                       std::back_inserter(doc_iterators),
-                       [](auto const &coll) { return ++coll.begin(); });
-        std::transform(freq_collections.begin(),
-                       freq_collections.end(),
-                       std::back_inserter(freq_iterators),
-                       [](auto const &coll) { return coll.begin(); });
+        std::transform(
+            doc_collections.begin(),
+            doc_collections.end(),
+            std::back_inserter(doc_iterators),
+            [](auto const& coll) { return ++coll.begin(); });
+        std::transform(
+            freq_collections.begin(),
+            freq_collections.end(),
+            std::back_inserter(freq_iterators),
+            [](auto const& coll) { return coll.begin(); });
 
         std::ofstream dos(output_basename + ".docs");
         std::ofstream fos(output_basename + ".freqs");
         auto document_count = static_cast<uint32_t>(document_sizes.size());
         write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
         size_t postings_count = 0;
-        for (auto term_id : ranges::views::iota(uint32_t(0), term_count)) {
+        for (auto term_id: ranges::views::iota(uint32_t(0), term_count)) {
             std::vector<uint32_t> dlist;
-            for (auto &iter : doc_iterators) {
+            for (auto& iter: doc_iterators) {
                 auto seq = *iter;
                 dlist.insert(dlist.end(), seq.begin(), seq.end());
                 ++iter;
             }
             std::vector<uint32_t> flist;
-            for (auto &iter : freq_iterators) {
+            for (auto& iter: freq_iterators) {
                 auto seq = *iter;
                 flist.insert(flist.end(), seq.begin(), seq.end());
                 ++iter;
@@ -330,17 +335,18 @@ namespace invert {
         spdlog::info("Number of postings: {}", postings_count);
     }
 
-    void invert_forward_index(std::string const &input_basename,
-                              std::string const &output_basename,
-                              uint32_t term_count,
-                              size_t batch_size,
-                              size_t threads)
+    void invert_forward_index(
+        std::string const& input_basename,
+        std::string const& output_basename,
+        uint32_t term_count,
+        size_t batch_size,
+        size_t threads)
     {
         uint32_t batch_count =
             invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
         invert::merge_batches(output_basename, batch_count, term_count);
 
-        for (auto batch : ranges::views::iota(uint32_t(0), batch_count)) {
+        for (auto batch: ranges::views::iota(uint32_t(0), batch_count)) {
             std::ostringstream batch_name_stream;
             batch_name_stream << output_basename << ".batch." << batch;
             auto batch_basename = batch_name_stream.str();
@@ -350,6 +356,6 @@ namespace invert {
         }
     }
 
-} // namespace invert
+}  // namespace invert
 
-} // namespace pisa
+}  // namespace pisa

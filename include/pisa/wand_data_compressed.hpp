@@ -21,24 +21,22 @@ namespace {
 }
 
 class uniform_score_compressor {
-   public:
+  public:
     class builder {
-       public:
-        builder(uint64_t num_docs, global_parameters const &params)
+      public:
+        builder(uint64_t num_docs, global_parameters const& params)
             : m_params(params),
               m_num_docs((num_docs + 1) << score_bits_size),
               m_docs_sequences(params)
-        {
-        }
+        {}
 
         std::vector<uint32_t> compress_data(std::vector<float> effective_scores, float max_score)
         {
-
             // Partition scores.
             LinearQuantizer quantizer(max_score, configuration::get().quantization_bits);
             std::vector<uint32_t> score_indexes;
             score_indexes.reserve(effective_scores.size());
-            for (const auto &score : effective_scores) {
+            for (const auto& score: effective_scores) {
                 score_indexes.push_back(quantizer(score) - 1);
             }
             return score_indexes;
@@ -53,12 +51,12 @@ class uniform_score_compressor {
                 elem = elem << score_bits_size;
                 elem += *(score_begin + pos);
                 if (pos && elem < temp.back()) {
-                    throw std::runtime_error(
-                        fmt::format("Sequence is not sorted: value at index {} "
-                                    "({}) lower than its predecessor ({})",
-                                    pos,
-                                    elem,
-                                    temp.back()));
+                    throw std::runtime_error(fmt::format(
+                        "Sequence is not sorted: value at index {} "
+                        "({}) lower than its predecessor ({})",
+                        pos,
+                        elem,
+                        temp.back()));
                 }
                 temp.push_back(elem);
             }
@@ -71,13 +69,13 @@ class uniform_score_compressor {
             m_docs_sequences.append(docs_bits);
         }
 
-        void build(bitvector_collection &docs_sequences) { m_docs_sequences.build(docs_sequences); }
+        void build(bitvector_collection& docs_sequences) { m_docs_sequences.build(docs_sequences); }
 
         global_parameters params() { return m_params; }
 
         uint64_t num_docs() { return m_num_docs; }
 
-       private:
+      private:
         global_parameters m_params;
         uint64_t m_num_docs;
         bitvector_collection::builder m_docs_sequences;
@@ -94,10 +92,10 @@ enum class PayloadType : bool { Float = false, Quantized = true };
 
 template <PayloadType IndexPayloadType = PayloadType::Float>
 class wand_data_compressed {
-   public:
+  public:
     class builder {
-       public:
-        builder(binary_freq_collection const &coll, global_parameters const &params)
+      public:
+        builder(binary_freq_collection const& coll, global_parameters const& params)
             : total_elements(0),
               total_blocks(0),
               params(params),
@@ -107,19 +105,19 @@ class wand_data_compressed {
         }
 
         template <typename Scorer>
-        float add_sequence(binary_freq_collection::sequence const &seq,
-                           binary_freq_collection const &coll,
-                           std::vector<uint32_t> const &doc_lens,
-                           float avg_len,
-                           Scorer scorer,
-                           BlockSize block_size)
+        float add_sequence(
+            binary_freq_collection::sequence const& seq,
+            binary_freq_collection const& coll,
+            std::vector<uint32_t> const& doc_lens,
+            float avg_len,
+            Scorer scorer,
+            BlockSize block_size)
         {
             if (seq.docs.size() > configuration::get().threshold_wand_list) {
                 auto t = block_size.type() == typeid(FixedBlock)
-                             ? static_block_partition(
-                                 seq, scorer, boost::get<FixedBlock>(block_size).size)
-                             : variable_block_partition(
-                                 coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
+                    ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
+                    : variable_block_partition(
+                        coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
                 float max_score = *(std::max_element(t.second.begin(), t.second.end()));
                 max_term_weight.push_back(max_score);
@@ -140,11 +138,12 @@ class wand_data_compressed {
 
         void quantize_block_max_term_weitghts(float index_max_term_weight) {}
 
-        void build(wand_data_compressed &wdata)
+        void build(wand_data_compressed& wdata)
         {
             auto index_max_term_weight =
                 *(std::max_element(max_term_weight.begin(), max_term_weight.end()));
-            for (auto &&[docs, scores] : ranges::views::zip(block_max_documents, unquantized_block_max_scores)) {
+            for (auto&& [docs, scores]:
+                 ranges::views::zip(block_max_documents, unquantized_block_max_scores)) {
                 auto quantized_scores =
                     compressor_builder.compress_data(scores, index_max_term_weight);
                 compressor_builder.add_posting_list(
@@ -153,8 +152,9 @@ class wand_data_compressed {
             wdata.m_num_docs = compressor_builder.num_docs();
             wdata.m_params = compressor_builder.params();
             compressor_builder.build(wdata.m_docs_sequences);
-            spdlog::info("number of elements / number of blocks: {}",
-                         (float)total_elements / (float)total_blocks);
+            spdlog::info(
+                "number of elements / number of blocks: {}",
+                (float)total_elements / (float)total_blocks);
         }
 
         uint64_t total_elements;
@@ -162,14 +162,14 @@ class wand_data_compressed {
         std::vector<std::vector<uint32_t>> block_max_documents;
         std::vector<std::vector<float>> unquantized_block_max_scores;
         std::vector<float> max_term_weight;
-        global_parameters const &params;
+        global_parameters const& params;
         typename uniform_score_compressor::builder compressor_builder;
     };
 
     class enumerator {
         friend class wand_data_compressed;
 
-       public:
+      public:
         enumerator(compact_elias_fano::enumerator docs_enum, float max_term_weight)
             : m_docs_enum(docs_enum), m_max_term_weight(max_term_weight)
         {
@@ -206,7 +206,7 @@ class wand_data_compressed {
 
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
 
-       private:
+      private:
         uint64_t m_cur_docid;
         uint64_t m_cur_score_index;
         float m_max_term_weight;
@@ -230,15 +230,15 @@ class wand_data_compressed {
     }
 
     template <typename Visitor>
-    void map(Visitor &visit)
+    void map(Visitor& visit)
     {
         visit(m_params, "m_params")(m_num_docs, "m_num_docs")(m_docs_sequences, "m_docs_sequences");
     }
 
-   private:
+  private:
     global_parameters m_params;
     uint64_t m_num_docs;
     bitvector_collection m_docs_sequences;
 };
 
-} // namespace pisa
+}  // namespace pisa
