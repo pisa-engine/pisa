@@ -126,10 +126,7 @@ namespace arg {
             app->add_flag("--quantize", m_quantize, "Quantizes the scores")->needs(scorer);
         }
 
-        [[nodiscard]] auto scorer() const -> std::optional<std::string> const & 
-        { 
-            return m_scorer; 
-        }
+        [[nodiscard]] auto scorer() const -> std::optional<std::string> const& { return m_scorer; }
         [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const&
         {
             return m_wand_data_path;
