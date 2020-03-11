@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdexcept>
 #include "boost/variant.hpp"
+#include <stdexcept>
 
 #include "codec/all_ones_sequence.hpp"
 #include "codec/compact_ranked_bitvector.hpp"
@@ -11,7 +11,6 @@
 namespace pisa {
 
 struct strict_sequence {
-
     enum index_type {
         elias_fano = 0,
         ranked_bitvector = 1,
@@ -20,18 +19,19 @@ struct strict_sequence {
         index_types = 3
     };
 
-    static const uint64_t type_bits = 1; // all_ones is implicit
+    static const uint64_t type_bits = 1;  // all_ones is implicit
 
-    static global_parameters strict_params(global_parameters params) {
+    static global_parameters strict_params(global_parameters params)
+    {
         // we do not need to index the zeros
         params.ef_log_sampling0 = 63;
         params.rb_log_rank1_sampling = 63;
         return params;
     }
 
-    static PISA_FLATTEN_FUNC uint64_t bitsize(global_parameters const &params,
-                                              uint64_t universe,
-                                              uint64_t n) {
+    static PISA_FLATTEN_FUNC uint64_t
+    bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
+    {
         uint64_t best_cost = all_ones_sequence::bitsize(params, universe, n);
         auto sparams = strict_params(params);
 
@@ -49,11 +49,13 @@ struct strict_sequence {
     }
 
     template <typename Iterator>
-    static void write(bit_vector_builder &bvb,
-                      Iterator begin,
-                      uint64_t universe,
-                      uint64_t n,
-                      global_parameters const &params) {
+    static void write(
+        bit_vector_builder& bvb,
+        Iterator begin,
+        uint64_t universe,
+        uint64_t n,
+        global_parameters const& params)
+    {
         auto sparams = strict_params(params);
         uint64_t best_cost = all_ones_sequence::bitsize(params, universe, n);
         int best_type = all_ones;
@@ -75,32 +77,28 @@ struct strict_sequence {
         }
 
         switch (best_type) {
-        case elias_fano:
-            strict_elias_fano::write(bvb, begin, universe, n, sparams);
-            break;
+        case elias_fano: strict_elias_fano::write(bvb, begin, universe, n, sparams); break;
         case ranked_bitvector:
             compact_ranked_bitvector::write(bvb, begin, universe, n, sparams);
             break;
-        case all_ones:
-            all_ones_sequence::write(bvb, begin, universe, n, sparams);
-            break;
-        default:
-            assert(false);
+        case all_ones: all_ones_sequence::write(bvb, begin, universe, n, sparams); break;
+        default: assert(false);
         }
     }
 
     class enumerator {
-       public:
-        typedef std::pair<uint64_t, uint64_t> value_type; // (position, value)
+      public:
+        typedef std::pair<uint64_t, uint64_t> value_type;  // (position, value)
 
         enumerator() {}
 
-        enumerator(bit_vector const &bv,
-                   uint64_t offset,
-                   uint64_t universe,
-                   uint64_t n,
-                   global_parameters const &params) {
-
+        enumerator(
+            bit_vector const& bv,
+            uint64_t offset,
+            uint64_t universe,
+            uint64_t n,
+            global_parameters const& params)
+        {
             auto sparams = strict_params(params);
 
             if (all_ones_sequence::bitsize(params, universe, n) == 0) {
@@ -122,34 +120,35 @@ struct strict_sequence {
                 m_enumerator =
                     all_ones_sequence::enumerator(bv, offset + type_bits, universe, n, sparams);
                 break;
-            default:
-                throw std::invalid_argument("Unsupported type");
+            default: throw std::invalid_argument("Unsupported type");
             }
         }
 
-        value_type move(uint64_t position) {
-            return boost::apply_visitor([&position](auto &&e) { return e.move(position); },
-                                        m_enumerator);
+        value_type move(uint64_t position)
+        {
+            return boost::apply_visitor(
+                [&position](auto&& e) { return e.move(position); }, m_enumerator);
         }
 
-        value_type next() {
-            return boost::apply_visitor([](auto &&e) { return e.next(); }, m_enumerator);
+        value_type next()
+        {
+            return boost::apply_visitor([](auto&& e) { return e.next(); }, m_enumerator);
         }
 
-        uint64_t size() const {
-            return boost::apply_visitor([](auto &&e) { return e.size(); }, m_enumerator);
+        uint64_t size() const
+        {
+            return boost::apply_visitor([](auto&& e) { return e.size(); }, m_enumerator);
         }
 
-        uint64_t prev_value() const {
-            return boost::apply_visitor([](auto &&e) { return e.prev_value(); }, m_enumerator);
+        uint64_t prev_value() const
+        {
+            return boost::apply_visitor([](auto&& e) { return e.prev_value(); }, m_enumerator);
         }
 
-       private:
+      private:
         index_type m_type;
-        boost::variant<strict_elias_fano::enumerator,
-                       compact_ranked_bitvector::enumerator,
-                       all_ones_sequence::enumerator>
+        boost::variant<strict_elias_fano::enumerator, compact_ranked_bitvector::enumerator, all_ones_sequence::enumerator>
             m_enumerator;
     };
 };
-} // namespace pisa
+}  // namespace pisa

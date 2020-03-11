@@ -53,11 +53,10 @@ class wand_data_raw {
             total_elements += seq.docs.size();
             total_blocks += t.first.size();
             effective_list++;
-
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weitghts(float index_max_term_weight)
+        void quantize_block_max_term_weights(float index_max_term_weight)
         {
             LinearQuantizer quantizer(index_max_term_weight, configuration::get().quantization_bits);
             for (auto&& w: block_max_term_weight) {

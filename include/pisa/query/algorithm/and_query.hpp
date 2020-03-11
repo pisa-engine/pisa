@@ -10,9 +10,8 @@
 namespace pisa {
 
 struct and_query {
-
     template <typename CursorRange>
-    auto operator()(CursorRange &&cursors, uint32_t max_docid) const
+    auto operator()(CursorRange&& cursors, uint32_t max_docid) const
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
@@ -23,14 +22,14 @@ struct and_query {
             return results;
         }
 
-        std::vector<Cursor *> ordered_cursors;
+        std::vector<Cursor*> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
-        for (auto &en : cursors) {
+        for (auto& en: cursors) {
             ordered_cursors.push_back(&en);
         }
 
         // sort by increasing frequency
-        std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
+        std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor* lhs, Cursor* rhs) {
             return lhs->size() < rhs->size();
         });
 
@@ -48,7 +47,6 @@ struct and_query {
             }
 
             if (i == ordered_cursors.size()) {
-
                 results.push_back(candidate);
 
                 ordered_cursors[0]->next();
@@ -61,9 +59,8 @@ struct and_query {
 };
 
 struct scored_and_query {
-
     template <typename CursorRange>
-    auto operator()(CursorRange &&cursors, uint32_t max_docid) const
+    auto operator()(CursorRange&& cursors, uint32_t max_docid) const
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
@@ -76,14 +73,14 @@ struct scored_and_query {
             return results;
         }
 
-        std::vector<Cursor *> ordered_cursors;
+        std::vector<Cursor*> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
-        for (auto &en : cursors) {
+        for (auto& en: cursors) {
             ordered_cursors.push_back(&en);
         }
 
         // sort by increasing frequency
-        std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor *lhs, Cursor *rhs) {
+        std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor* lhs, Cursor* rhs) {
             return lhs->docs_enum.size() < rhs->docs_enum.size();
         });
 
@@ -103,8 +100,8 @@ struct scored_and_query {
             if (i == ordered_cursors.size()) {
                 auto score = 0.0F;
                 for (i = 0; i < ordered_cursors.size(); ++i) {
-                    score += ordered_cursors[i]->scorer(ordered_cursors[i]->docs_enum.docid(),
-                                                        ordered_cursors[i]->docs_enum.freq());
+                    score += ordered_cursors[i]->scorer(
+                        ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
                 }
                 results.emplace_back(candidate, score);
 
@@ -117,4 +114,4 @@ struct scored_and_query {
     }
 };
 
-} // namespace pisa
+}  // namespace pisa

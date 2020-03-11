@@ -13,7 +13,7 @@
 namespace pisa {
 
 template <typename Wand>
-struct pl2 : public index_scorer<Wand> {
+struct pl2: public index_scorer<Wand> {
     using index_scorer<Wand>::index_scorer;
 
     static constexpr float c = 1;
@@ -25,15 +25,14 @@ struct pl2 : public index_scorer<Wand> {
                 freq * std::log2(1.f + (c * this->m_wdata.avg_len()) / this->m_wdata.doc_len(doc));
             float norm = 1.f / (tfn + 1.f);
             float f = (1.f * this->m_wdata.term_occurrence_count(term_id))
-                      / (1.f * this->m_wdata.num_docs());
+                / (1.f * this->m_wdata.num_docs());
             float e = std::log(1 / 2.f);
             return norm
-                   * (tfn * std::log2(1.f / f) + f * e + 0.5f * std::log2(2 * M_PI * tfn)
-                      + tfn * (std::log2(tfn) - e));
-
+                * (tfn * std::log2(1.f / f) + f * e + 0.5f * std::log2(2 * M_PI * tfn)
+                   + tfn * (std::log2(tfn) - e));
         };
         return s;
     }
 };
 
-} // namespace pisa
+}  // namespace pisa

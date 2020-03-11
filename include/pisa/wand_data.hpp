@@ -21,19 +21,20 @@ namespace pisa {
 
 template <typename block_wand_type = wand_data_raw>
 class wand_data {
-   public:
+  public:
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
     wand_data() {}
 
     template <typename LengthsIterator>
-    wand_data(LengthsIterator len_it,
-              uint64_t num_docs,
-              binary_freq_collection const &coll,
-              std::string const &scorer_name,
-              BlockSize block_size,
-              bool is_quantized,
-              std::unordered_set<size_t> const &terms_to_drop)
+    wand_data(
+        LengthsIterator len_it,
+        uint64_t num_docs,
+        binary_freq_collection const& coll,
+        std::string const& scorer_name,
+        BlockSize block_size,
+        bool is_quantized,
+        std::unordered_set<size_t> const& terms_to_drop)
         : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
@@ -56,15 +57,14 @@ class wand_data {
         {
             pisa::progress progress("Storing terms statistics", coll.size());
             size_t term_id = 0;
-            for (auto const &seq : coll) {
+            for (auto const& seq: coll) {
                 if (terms_to_drop.find(term_id) != terms_to_drop.end()) {
                     progress.update(1);
                     term_id += 1;
                     continue;
                 }
 
-                size_t term_occurrence_count =
-                    std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
+                size_t term_occurrence_count = std::accumulate(seq.freqs.begin(), seq.freqs.end(), 0);
                 term_occurrence_counts.push_back(term_occurrence_count);
                 term_posting_counts.push_back(seq.docs.size());
                 term_id += 1;
@@ -80,7 +80,7 @@ class wand_data {
             pisa::progress progress("Storing score upper bounds", coll.size());
             size_t term_id = 0;
             size_t new_term_id = 0;
-            for (auto const &seq : coll) {
+            for (auto const& seq: coll) {
                 if (terms_to_drop.find(term_id) != terms_to_drop.end()) {
                     progress.update(1);
                     term_id += 1;
@@ -95,12 +95,12 @@ class wand_data {
                 progress.update(1);
             }
             if (is_quantized) {
-                LinearQuantizer quantizer(m_index_max_term_weight,
-                                          configuration::get().quantization_bits);
-                for (auto &&w : max_term_weight) {
+                LinearQuantizer quantizer(
+                    m_index_max_term_weight, configuration::get().quantization_bits);
+                for (auto&& w: max_term_weight) {
                     w = quantizer(w);
                 }
-                builder.quantize_block_max_term_weitghts(m_index_max_term_weight);
+                builder.quantize_block_max_term_weights(m_index_max_term_weight);
             }
         }
         builder.build(m_block_wand);
@@ -133,21 +133,21 @@ class wand_data {
         return m_block_wand.get_enum(i, index_max_term_weight());
     }
 
-    const block_wand_type &get_block_wand() const { return m_block_wand; }
+    const block_wand_type& get_block_wand() const { return m_block_wand; }
 
     template <typename Visitor>
-    void map(Visitor &visit)
+    void map(Visitor& visit)
     {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
 
-            m_term_occurrence_counts, "m_term_occurrence_counts")(m_term_posting_counts,
-                                                                  "m_term_posting_counts")(
-            m_avg_len, "m_avg_len")(m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(
-            m_max_term_weight, "m_max_term_weight")(m_index_max_term_weight,
-                                                    "m_index_max_term_weight");
+            m_term_occurrence_counts, "m_term_occurrence_counts")(
+            m_term_posting_counts, "m_term_posting_counts")(m_avg_len, "m_avg_len")(
+            m_collection_len, "m_collection_len")(m_num_docs, "m_num_docs")(
+            m_max_term_weight, "m_max_term_weight")(
+            m_index_max_term_weight, "m_index_max_term_weight");
     }
 
-   private:
+  private:
     uint64_t m_num_docs = 0;
     float m_avg_len = 0;
     uint64_t m_collection_len = 0;
@@ -158,4 +158,4 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_term_posting_counts;
     mapper::mappable_vector<float> m_max_term_weight;
 };
-} // namespace pisa
+}  // namespace pisa

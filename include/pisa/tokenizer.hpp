@@ -20,22 +20,21 @@ namespace lex = boost::spirit::lex;
 enum TokenType { Abbreviature = 1, Possessive = 2, Term = 3, NotValid = 4 };
 
 template <typename Lexer>
-struct tokens : lex::lexer<Lexer> {
+struct tokens: lex::lexer<Lexer> {
     tokens()
     {
         // Note: parsing process takes the first match from left to right.
-        this->self = lex::token_def<>("([a-zA-Z]+\\.){2,}", TokenType::Abbreviature) |
-                     lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", TokenType::Possessive) |
-                     lex::token_def<>("[a-zA-Z0-9]+", TokenType::Term) |
-                     lex::token_def<>(".", TokenType::NotValid)
-                     ;
+        this->self = lex::token_def<>("([a-zA-Z]+\\.){2,}", TokenType::Abbreviature)
+            | lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", TokenType::Possessive)
+            | lex::token_def<>("[a-zA-Z0-9]+", TokenType::Term)
+            | lex::token_def<>(".", TokenType::NotValid);
     }
 };
 
 class TermTokenizer {
-   public:
-    using token_type = lex::lexertl::
-        token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
+  public:
+    using token_type =
+        lex::lexertl::token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
     using lexer_type = lex::lexertl::actor_lexer<token_type>;
 
     TermTokenizer(std::string_view text)
@@ -52,27 +51,25 @@ class TermTokenizer {
 
     [[nodiscard]] auto end()
     {
-        return boost::make_transform_iterator(boost::make_filter_iterator(is_valid, lexer_.end()),
-                                              transform);
+        return boost::make_transform_iterator(
+            boost::make_filter_iterator(is_valid, lexer_.end()), transform);
     }
 
-   private:
-    static bool is_valid(token_type const &tok) { return tok.id() != TokenType::NotValid; }
-    static std::string transform(token_type const &tok)
+  private:
+    static bool is_valid(token_type const& tok) { return tok.id() != TokenType::NotValid; }
+    static std::string transform(token_type const& tok)
     {
-        auto &val = tok.value();
+        auto& val = tok.value();
         switch (tok.id()) {
         case TokenType::Abbreviature: {
             std::string term;
-            std::copy_if(val.begin(), val.end(), std::back_inserter(term), [](char ch) {
-                return ch != '.';
-            });
+            std::copy_if(
+                val.begin(), val.end(), std::back_inserter(term), [](char ch) { return ch != '.'; });
             return term;
         }
         case TokenType::Possessive:
             return std::string(val.begin(), std::find(val.begin(), val.end(), '\''));
-        default:
-            return std::string(val.begin(), val.end());
+        default: return std::string(val.begin(), val.end());
         }
     }
 
@@ -82,4 +79,4 @@ class TermTokenizer {
     tokens<lexer_type> lexer_{};
 };
 
-}
+}  // namespace pisa
