@@ -233,7 +233,6 @@ struct partitioned_sequence {
                 (void)val;
                 return value_type(m_position, m_universe);
             }
-        }
 
             switch_partition(m_cur_partition + 1);
             uint64_t val = m_cur_base + m_partition_enum.move(0).second;
