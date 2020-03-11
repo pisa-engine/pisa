@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "boost/range.hpp"
 
 #include "util/broadword.hpp"
 #include "util/util.hpp"
@@ -196,8 +195,8 @@ class bit_vector {
         uint64_t mask = first_mask;
         uint64_t cur_val = 0;
         m_size = 0;
-        for (typename boost::range_const_iterator<Range>::type iter = boost::begin(from);
-             iter != boost::end(from);
+        for (auto iter = std::begin(from);
+             iter != std::end(from);
              ++iter) {
             if (*iter) {
                 cur_val |= mask;
