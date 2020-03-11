@@ -6,6 +6,7 @@
 #include <thread>
 
 #include "boost/algorithm/string/predicate.hpp"
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include "spdlog/spdlog.h"
 
 #include "app.hpp"
