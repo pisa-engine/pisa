@@ -52,8 +52,7 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
         }
     }
 
-    pisa::stats_line()("type", type)("eps1", conf.eps1)("eps2", conf.eps2)(
-        "fix_cost", conf.fix_cost)("docs_avg_part", long_postings / docs_partitions)(
+    pisa::stats_line()("type", type)("docs_avg_part", long_postings / docs_partitions)(
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
@@ -130,7 +129,7 @@ void create_collection(
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("{} collection built in {} seconds", seq_type, elapsed_secs);
 
-    stats_line()("type", seq_type)("worker_threads", configuration::get().worker_threads)(
+    stats_line()("type", seq_type)("worker_threads", std::thread::hardware_concurrency())(
         "construction_time", elapsed_secs);
 
     dump_stats(coll, seq_type, postings);
@@ -165,7 +164,6 @@ int main(int argc, char** argv)
     binary_freq_collection input(input_basename.c_str());
 
     pisa::global_parameters params;
-    params.log_partition_size = configuration::get().log_partition_size;
 
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                       \
