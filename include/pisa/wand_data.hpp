@@ -100,7 +100,7 @@ class wand_data {
                 for (auto&& w: max_term_weight) {
                     w = quantizer(w);
                 }
-                builder.quantize_block_max_term_weitghts(m_index_max_term_weight);
+                builder.quantize_block_max_term_weights(m_index_max_term_weight);
             }
         }
         builder.build(m_block_wand);
