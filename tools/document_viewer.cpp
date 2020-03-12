@@ -35,9 +35,8 @@ int main(int argc, char** argv)
         }
         return std::nullopt;
     };
-
     auto doc_id = doc_to_id(document_name);
-    if (doc_id) {
+    if (doc_id and document_name == documents[*doc_id]) {
         spdlog::info("Document {} has id equal to {}.", document_name, *doc_id);
     } else {
         spdlog::info("Document {} not found.", document_name);
@@ -46,11 +45,10 @@ int main(int argc, char** argv)
 
     binary_collection fwd(fwd_filename.c_str());
     auto doc_iter = ++fwd.begin();
-    for (int i = 0; i < (*doc_id); ++i)
-    {
-        ++doc_iter;
+    for(auto i = 0; doc_iter != fwd.end(); ++doc_iter, ++i){
+    	if(i == *doc_id) break;
     }
-    auto document_sequence = *(doc_iter);
+    auto document_sequence = *doc_iter;
     for(auto&& term_id : document_sequence) {
         std::cout << lexicon[term_id] << " ";
     }
