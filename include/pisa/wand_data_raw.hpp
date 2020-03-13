@@ -39,26 +39,20 @@ class wand_data_raw {
             Scorer scorer,
             BlockSize block_size)
         {
-            if (seq.docs.size() > configuration::get().threshold_wand_list) {
-                auto t = block_size.type() == typeid(FixedBlock)
-                    ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
-                    : variable_block_partition(
-                        coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
+            auto t = block_size.type() == typeid(FixedBlock)
+                ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
+                : variable_block_partition(
+                    coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
-                block_max_term_weight.insert(
-                    block_max_term_weight.end(), t.second.begin(), t.second.end());
-                block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
-                max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
-                blocks_start.push_back(t.first.size() + blocks_start.back());
+            block_max_term_weight.insert(
+                block_max_term_weight.end(), t.second.begin(), t.second.end());
+            block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
+            max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
+            blocks_start.push_back(t.first.size() + blocks_start.back());
 
-                total_elements += seq.docs.size();
-                total_blocks += t.first.size();
-                effective_list++;
-            } else {
-                max_term_weight.push_back(0.0f);
-                blocks_start.push_back(blocks_start.back());
-            }
-
+            total_elements += seq.docs.size();
+            total_blocks += t.first.size();
+            effective_list++;
             return max_term_weight.back();
         }
 

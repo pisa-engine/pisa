@@ -219,7 +219,7 @@ void compute_lambdas(
     spdlog::info("Sorting lambda points");
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
 
-    stats_line()("worker_threads", configuration::get().worker_threads)(
+    stats_line()("worker_threads", std::thread::hardware_concurrency())(
         "lambda_computation_time", elapsed_secs)(
         "is_heuristic", configuration::get().heuristic_greedy);
 
@@ -228,7 +228,7 @@ void compute_lambdas(
     stxxl::sort(lambda_points.begin(), lambda_points.end(), lambda_point::comparator(), sort_memory);
 
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    stats_line()("worker_threads", configuration::get().worker_threads)(
+    stats_line()("worker_threads", std::thread::hardware_concurrency())(
         "lambda_sorting_time", elapsed_secs)("is_heuristic", configuration::get().heuristic_greedy);
 }
 
@@ -374,7 +374,7 @@ void optimal_hybrid_index(
     }
 
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
-    stats_line()("worker_threads", configuration::get().worker_threads)("greedy_time", elapsed_secs);
+    stats_line()("worker_threads", std::thread::hardware_concurrency())("greedy_time", elapsed_secs);
 
     spdlog::info("Found trade-off. Space: {} Time: {}", cur_space, cur_time);
 
@@ -430,7 +430,7 @@ void optimal_hybrid_index(
     elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Collection built in {} seconds", elapsed_secs);
 
-    stats_line()("worker_threads", configuration::get().worker_threads)(
+    stats_line()("worker_threads", std::thread::hardware_concurrency())(
         "construction_time", elapsed_secs);
     dump_stats(coll, "block_mixed", postings);
 

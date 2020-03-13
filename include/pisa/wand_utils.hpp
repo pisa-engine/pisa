@@ -10,14 +10,12 @@ namespace pisa {
 
 struct FixedBlock {
     uint64_t size;
-    FixedBlock() : size(configuration::get().block_size) {}
-    FixedBlock(const uint64_t in_size) : size(in_size) {}
+    explicit FixedBlock(const uint64_t in_size) : size(in_size) {}
 };
 
 struct VariableBlock {
     float lambda;
-    VariableBlock() : lambda(configuration::get().fixed_cost_wand_partition) {}
-    VariableBlock(const float in_lambda) : lambda(in_lambda) {}
+    explicit VariableBlock(const float in_lambda) : lambda(in_lambda) {}
 };
 
 using BlockSize = boost::variant<FixedBlock, VariableBlock>;
@@ -60,11 +58,12 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
     binary_freq_collection const& coll,
     binary_freq_collection::sequence const& seq,
     Scorer scorer,
-    const float lambda)
+    const float lambda,
+    // Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, and Rossano Venturini.
+    // 2017. Faster BlockMax WAND with Variable-sized Blocks. In Proc. SIGIR
+    double eps1 = 0.01,
+    double eps2 = 0.4)
 {
-    auto eps1 = configuration::get().eps1_wand;
-    auto eps2 = configuration::get().eps2_wand;
-
     // Auxiliary vector
     using doc_score_t = std::pair<uint64_t, float>;
     std::vector<doc_score_t> doc_score;

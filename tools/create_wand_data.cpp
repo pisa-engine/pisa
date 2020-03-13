@@ -25,7 +25,6 @@ int main(int argc, const char** argv)
     std::string input_basename;
     std::string output_filename;
     std::string scorer_name;
-    bool variable_block = false;
     bool compress = false;
     bool range = false;
     bool quantize = false;
@@ -34,17 +33,20 @@ int main(int argc, const char** argv)
     CLI::App app{"create_wand_data - a tool for creating additional data for query processing."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
     app.add_option("-o,--output", output_filename, "Output filename")->required();
-    auto var_block_opt = app.add_flag("--variable-block", variable_block, "Variable length blocks");
-    auto var_block_param_opt =
-        app.add_option("-b,--block-size", fixed_block_size, "Block size for fixed-length blocks")
-            ->excludes(var_block_opt);
-    app.add_option("-l,--lambda", lambda, "Lambda parameter for variable blocks")
-        ->excludes(var_block_param_opt)
-        ->needs(var_block_opt);
+    auto block_group = app.add_option_group("blocks");
+    auto block_size_opt = block_group->add_option(
+        "-b,--block-size", fixed_block_size, "Block size for fixed-length blocks");
+    auto block_lambda_opt =
+        block_group->add_option("-l,--lambda", lambda, "Lambda parameter for variable blocks")
+            ->excludes(block_size_opt);
+    block_group->require_option();
+
     app.add_flag("--compress", compress, "Compress additional data");
     app.add_flag("--quantize", quantize, "Quantize scores");
     app.add_option("-s,--scorer", scorer_name, "Scorer function")->required();
-    app.add_flag("--range", range, "Create docid-range based data")->excludes(var_block_opt);
+    app.add_flag("--range", range, "Create docid-range based data")
+        ->excludes(block_size_opt)
+        ->excludes(block_lambda_opt);
     app.add_option(
         "--terms-to-drop",
         terms_to_drop_filename,
@@ -68,12 +70,12 @@ int main(int argc, const char** argv)
     spdlog::info("Dropping {} terms", dropped_term_ids.size());
 
     auto const block_size = [&]() -> BlockSize {
-        if (variable_block) {
+        if (lambda) {
             spdlog::info("Lambda {}", *lambda);
-            return lambda ? VariableBlock(*lambda) : VariableBlock();
+            return VariableBlock(*lambda);
         } else {
             spdlog::info("Fixed block size: {}", *fixed_block_size);
-            return fixed_block_size ? FixedBlock(*fixed_block_size) : FixedBlock();
+            return FixedBlock(*fixed_block_size);
         }
     }();
 

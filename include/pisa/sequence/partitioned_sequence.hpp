@@ -329,23 +329,32 @@ struct partitioned_sequence {
 
   private:
     template <typename Iterator>
-    static std::vector<uint32_t>
-    compute_partition(Iterator begin, uint64_t universe, uint64_t n, global_parameters const& params)
+    static std::vector<uint32_t> compute_partition(
+        Iterator begin,
+        uint64_t universe,
+        uint64_t n,
+        global_parameters const& params,
+        // Follwing Giuseppe Ottaviano and Rossano Venturini.
+        // 2014. Partitioned Elias-Fano indexes. In Proc. SIGIR
+        uint64_t fix_cost = 64,
+        double eps1 = 0.03,
+        double eps2 = 0.3,
+        double eps3 = 0.01)
     {
         std::vector<uint32_t> partition;
 
         auto const& conf = configuration::get();
 
-        if (base_sequence_type::bitsize(params, universe, n) < 2 * conf.fix_cost) {
+        if (base_sequence_type::bitsize(params, universe, n) < 2 * fix_cost) {
             partition.push_back(n);
             return partition;
         }
 
         auto cost_fun = [&](uint64_t universe, uint64_t n) {
-            return base_sequence_type::bitsize(params, universe, n) + conf.fix_cost;
+            return base_sequence_type::bitsize(params, universe, n) + fix_cost;
         };
 
-        const size_t superblock_bound = conf.eps3 != 0 ? size_t(conf.fix_cost / conf.eps3) : n;
+        const size_t superblock_bound = eps3 != 0 ? size_t(fix_cost / eps3) : n;
 
         std::deque<std::vector<uint32_t>> superblock_partitions;
         tbb::task_group tg;
@@ -372,15 +381,15 @@ struct partitioned_sequence {
             superblock_partitions.emplace_back();
             auto& superblock_partition = superblock_partitions.back();
 
-            tg.run([=, &cost_fun, &conf, &superblock_partition] {
+            tg.run([=, &cost_fun, &superblock_partition] {
                 optimal_partition opt(
                     superblock_begin,
                     superblock_base,
                     superblock_universe,
                     superblock_size,
                     cost_fun,
-                    conf.eps1,
-                    conf.eps2);
+                    eps1,
+                    eps2);
 
                 superblock_partition.reserve(opt.partition.size());
                 for (auto& endpoint: opt.partition) {

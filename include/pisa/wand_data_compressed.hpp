@@ -113,25 +113,18 @@ class wand_data_compressed {
             Scorer scorer,
             BlockSize block_size)
         {
-            if (seq.docs.size() > configuration::get().threshold_wand_list) {
-                auto t = block_size.type() == typeid(FixedBlock)
-                    ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
-                    : variable_block_partition(
-                        coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
+            auto t = block_size.type() == typeid(FixedBlock)
+                ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
+                : variable_block_partition(
+                    coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
 
-                float max_score = *(std::max_element(t.second.begin(), t.second.end()));
-                max_term_weight.push_back(max_score);
-                total_elements += seq.docs.size();
-                total_blocks += t.first.size();
+            float max_score = *(std::max_element(t.second.begin(), t.second.end()));
+            max_term_weight.push_back(max_score);
+            total_elements += seq.docs.size();
+            total_blocks += t.first.size();
 
-                block_max_documents.push_back(std::move(t.first));
-                unquantized_block_max_scores.push_back(std::move(t.second));
-
-            } else {
-                max_term_weight.push_back(0.0f);
-                std::vector<uint32_t> temp = {0};
-                compressor_builder.add_posting_list(temp.size(), temp.begin(), temp.begin());
-            }
+            block_max_documents.push_back(std::move(t.first));
+            unquantized_block_max_scores.push_back(std::move(t.second));
 
             return max_term_weight.back();
         }

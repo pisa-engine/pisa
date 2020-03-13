@@ -31,7 +31,7 @@ struct IndexData {
               collection.num_docs(),
               collection,
               scorer_name,
-              BlockSize(VariableBlock()),
+              BlockSize(VariableBlock(12.0)),
               false,
               dropped_term_ids)
 
@@ -116,7 +116,7 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                 data->collection.num_docs(),
                 data->collection,
                 s_name,
-                BlockSize(FixedBlock()),
+                BlockSize(FixedBlock(5)),
                 false,
                 dropped_term_ids);
             test(wdata_fixed, s_name);
@@ -129,7 +129,7 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                 data->collection.num_docs(),
                 data->collection,
                 s_name,
-                BlockSize(VariableBlock()),
+                BlockSize(VariableBlock(12.0)),
                 false,
                 dropped_term_ids);
             test(wdata_uniform, s_name);
