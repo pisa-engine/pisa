@@ -125,3 +125,10 @@ target_link_libraries(count_postings
   pisa
   CLI11
 )
+
+add_executable(selective_queries selective_queries.cpp)
+target_link_libraries(selective_queries
+  pisa
+  CLI11
+)
+
