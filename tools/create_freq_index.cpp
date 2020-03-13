@@ -7,6 +7,7 @@
 
 #include "boost/algorithm/string/predicate.hpp"
 #include "spdlog/spdlog.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "app.hpp"
 #include "mappable/mapper.hpp"
@@ -151,6 +152,9 @@ using wand_raw_index = wand_data<wand_data_raw>;
 
 int main(int argc, char** argv)
 {
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     std::string input_basename;
     std::optional<std::string> output_filename;
     bool check = false;
