@@ -27,16 +27,15 @@ void selective_queries(
 
     using boost::adaptors::transformed;
     using boost::algorithm::join;
-
     for (auto const& query: queries) {
         size_t and_results = and_query()(make_cursors(index, query), index.num_docs()).size();
         size_t or_results = or_query<false>()(make_cursors(index, query), index.num_docs());
 
         double selectiveness = double(and_results) / double(or_results);
         if (selectiveness < 0.005) {
-            std::cout << join(
-                query.terms | transformed([](auto d) { return std::to_string(d); }), " ")
-                      << '\n';
+            std::cout
+                << join(query.terms | transformed([](auto d) { return std::to_string(d); }), " ")
+                << '\n';
         }
     }
 }
