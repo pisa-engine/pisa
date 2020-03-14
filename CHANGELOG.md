@@ -1,3 +1,24 @@
+### Version 0.8.0
+- Binary lib (#312)
+- Change default run name from "R0" to "PISA" (#314)
+- 99% quantile in queries tool (#315)
+- QLD fix (#316)
+- Fix maskedvbyte and varintgb buffer initialization when encoding (#318)
+- Thresholds (#320)
+- Add support for rerunning unsafe queries (#319)
+- Common CLI arguments (#313)
+- Quantized index (#321)
+- Clang format (#324)
+- Support for clang-tidy (#326)
+- Fix CLI in create_freq_index (#329)
+- Finish clang-format and add Travis check (#327)
+- Some minor fixes to quantization (#331)
+- Small tweak to app (#333)
+- Update bit_vector.hpp (#335)
+- Removed almost all config (#330)
+- drop default logger in create_freq_index (#334)
+- Fix 336 (#337)
+
 ### Version 0.7.0
 - Create FUNDING.yml
 - Update README.md
