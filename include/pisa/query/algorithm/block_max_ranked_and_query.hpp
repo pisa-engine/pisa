@@ -14,8 +14,9 @@ struct block_max_ranked_and_query {
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
-        if (cursors.empty())
+        if (cursors.empty()) {
             return;
+        }
 
         std::vector<Cursor*> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -68,12 +69,13 @@ struct block_max_ranked_and_query {
                 for (size_t block = 0; block < ordered_cursors.size(); ++block) {
                     next_jump = std::min(next_jump, ordered_cursors[block]->w.docid());
                 }
-                // We have exhausted a list, so we are done
-                if (candidate == next_jump + 1)
+                if (candidate == next_jump + 1) {
+                    // We have exhausted a list, so we are done
                     candidate = max_docid;
-                // Otherwise, exit the current block configuration
-                else
+                } else {
+                    // Otherwise, exit the current block configuration
                     candidate = next_jump + 1;
+                }
             }
         }
     }

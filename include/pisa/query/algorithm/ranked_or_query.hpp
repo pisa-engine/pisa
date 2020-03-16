@@ -14,8 +14,9 @@ struct ranked_or_query {
     void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        if (cursors.empty())
+        if (cursors.empty()) {
             return;
+        }
         uint64_t cur_doc =
             std::min_element(cursors.begin(), cursors.end(), [](Cursor const& lhs, Cursor const& rhs) {
                 return lhs.docs_enum.docid() < rhs.docs_enum.docid();

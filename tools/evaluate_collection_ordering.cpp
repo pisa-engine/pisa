@@ -38,10 +38,11 @@ int main(int argc, const char** argv)
         all_log_gaps += log2f(seq.docs.begin()[0] + 1);
         for (size_t i = 1; i < seq.docs.size(); ++i) {
             auto gap = seq.docs.begin()[i] - seq.docs.begin()[i - 1];
-            if (gap < 256)
+            if (gap < 256) {
                 all_log_gaps += log2_data[gap];
-            else
+            } else {
                 all_log_gaps += log2f(gap);
+            }
         }
     }
     double average_log_gap = all_log_gaps / no_gaps;

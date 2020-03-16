@@ -60,14 +60,16 @@ struct score_opt_partition {
         void advance_start()
         {
             float v = std::get<1>(*start_it);
-            if (std::get<1>(*start_it) == max_queue.front())
+            if (std::get<1>(*start_it) == max_queue.front()) {
                 max_queue.pop_front();
+            }
 
             sum -= v;
             ++start;
             ++start_it;
-            if (std::get<1>(*start_it) != 0)
+            if (std::get<1>(*start_it) != 0) {
                 ++element_count;
+            }
         }
 
         void advance_end()
@@ -83,16 +85,18 @@ struct score_opt_partition {
             // max_p = *end_it;
             ++end;
             ++end_it;
-            if (std::get<1>(*end_it) != 0)
+            if (std::get<1>(*end_it) != 0) {
                 --element_count;
+            }
         }
 
         float cost()
         {
-            if (size() < 2)
+            if (size() < 2) {
                 return m_fixed_cost;
-            else
+            } else {
                 return size() * max_queue.front() - sum + m_fixed_cost;
+            }
         }
 
         float max() { return max_queue.front(); }
@@ -122,8 +126,9 @@ struct score_opt_partition {
         wand_cost_t cost_bound = cost_lb;
         while (eps1 == 0 || cost_bound < cost_lb / eps1) {
             windows.emplace_back(begin, base, cost_bound, fixed_cost, size);
-            if (cost_bound >= single_block_cost)
+            if (cost_bound >= single_block_cost) {
                 break;
+            }
             cost_bound = cost_bound * (1 + eps2);
         }
 
@@ -154,10 +159,12 @@ struct score_opt_partition {
                         maxs[window.end] = window.max();
                     }
                     last_end = window.end;
-                    if (window.end == size)
+                    if (window.end == size) {
                         break;
-                    if (window_cost >= window.cost_upper_bound)
+                    }
+                    if (window_cost >= window.cost_upper_bound) {
                         break;
+                    }
                     window.advance_end();
                 }
 

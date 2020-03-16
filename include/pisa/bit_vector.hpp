@@ -59,8 +59,9 @@ class bit_vector_builder {
         assert(pos + len <= size());
         // check there are no spurious bits
         assert(len == 64 || (bits >> len) == 0);
-        if (!len)
+        if (!len) {
             return;
+        }
         uint64_t mask = (len == 64) ? uint64_t(-1) : ((uint64_t(1) << len) - 1);
         uint64_t word = pos / 64;
         uint64_t pos_in_word = pos % 64;
@@ -79,8 +80,9 @@ class bit_vector_builder {
     {
         // check there are no spurious bits
         assert(len == 64 || (bits >> len) == 0);
-        if (!len)
+        if (!len) {
             return;
+        }
         uint64_t pos_in_word = m_size % 64;
         m_size += len;
         if (pos_in_word == 0) {
@@ -117,8 +119,9 @@ class bit_vector_builder {
 
     void append(bit_vector_builder const& rhs)
     {
-        if (!rhs.size())
+        if (!rhs.size()) {
             return;
+        }
 
         uint64_t pos = m_bits.size();
         uint64_t shift = size() % 64;
@@ -359,8 +362,9 @@ class bit_vector {
 
         inline bool next()
         {
-            if (!m_avail)
+            if (!m_avail) {
                 fill_buf();
+            }
             bool b = m_buf & 1;
             m_buf >>= 1;
             m_avail -= 1;
@@ -370,8 +374,9 @@ class bit_vector {
 
         inline uint64_t take(size_t l)
         {
-            if (m_avail < l)
+            if (m_avail < l) {
                 fill_buf();
+            }
             uint64_t val;
             if (l != 64) {
                 val = m_buf & ((uint64_t(1) << l) - 1);

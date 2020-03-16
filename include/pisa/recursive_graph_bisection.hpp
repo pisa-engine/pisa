@@ -159,7 +159,7 @@ void compute_move_gains_caching(
         double gain = 0.0;
         auto terms = range.terms(d);
         for (const auto& t: terms) {
-            if constexpr (isLikelyCached) {
+            if constexpr (isLikelyCached) {  // NOLINT(readability-braces-around-statements)
                 if (PISA_UNLIKELY(not gain_cache.has_value(t))) {
                     const auto& from_deg = from_lex[t];
                     const auto& to_deg = to_lex[t];

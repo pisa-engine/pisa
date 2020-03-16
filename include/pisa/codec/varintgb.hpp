@@ -22,8 +22,9 @@ class VarIntGB {
             *keyp = 0;
             {
                 const uint32_t val = delta ? in[k] - prev : in[k];
-                if (delta)
+                if (delta) {
                     prev = in[k];
+                }
                 if (val < (1U << 8)) {
                     *out++ = static_cast<uint8_t>(val);
                 } else if (val < (1U << 16)) {
@@ -44,8 +45,9 @@ class VarIntGB {
             }
             {
                 const uint32_t val = delta ? in[k + 1] - prev : in[k + 1];
-                if (delta)
+                if (delta) {
                     prev = in[k + 1];
+                }
                 if (val < (1U << 8)) {
                     *out++ = static_cast<uint8_t>(val);
                 } else if (val < (1U << 16)) {
@@ -66,8 +68,9 @@ class VarIntGB {
             }
             {
                 const uint32_t val = delta ? in[k + 2] - prev : in[k + 2];
-                if (delta)
+                if (delta) {
                     prev = in[k + 2];
+                }
                 if (val < (1U << 8)) {
                     *out++ = static_cast<uint8_t>(val);
                 } else if (val < (1U << 16)) {
@@ -88,8 +91,9 @@ class VarIntGB {
             }
             {
                 const uint32_t val = delta ? in[k + 3] - prev : in[k + 3];
-                if (delta)
+                if (delta) {
                     prev = in[k + 3];
+                }
                 if (val < (1U << 8)) {
                     *out++ = static_cast<uint8_t>(val);
                 } else if (val < (1U << 16)) {
@@ -115,8 +119,9 @@ class VarIntGB {
             *keyp = 0;
             for (int j = 0; k < length && j < 8; j += 2, ++k) {
                 const uint32_t val = delta ? in[k] - prev : in[k];
-                if (delta)
+                if (delta) {
                     prev = in[k];
+                }
                 if (val < (1U << 8)) {
                     *out++ = static_cast<uint8_t>(val);
                 } else if (val < (1U << 16)) {

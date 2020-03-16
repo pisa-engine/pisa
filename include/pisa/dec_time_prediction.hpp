@@ -105,8 +105,9 @@ namespace pisa { namespace time_prediction {
     {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
-        if (values.empty())
+        if (values.empty()) {
             return;
+        }
 
         uint32_t last_value = values.front();
         size_t group_begin = 0;
@@ -145,13 +146,15 @@ namespace pisa { namespace time_prediction {
         thread_local std::string line;
         uint32_t count;
         block_counts.clear();
-        if (!std::getline(is, line))
+        if (!std::getline(is, line)) {
             return false;
+        }
 
         std::istringstream iss(line);
         iss >> list_id;
-        while (iss >> count)
+        while (iss >> count) {
             block_counts.push_back(count);
+        }
 
         return true;
     }

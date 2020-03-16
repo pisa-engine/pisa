@@ -70,8 +70,9 @@ class trec_topic_reader {
     std::optional<trec_topic> next_topic()
     {
         m_is >> std::ws;
-        if (m_is.eof())
+        if (m_is.eof()) {
             return std::nullopt;
+        }
 
         trec_topic topic;
         std::ostringstream os;

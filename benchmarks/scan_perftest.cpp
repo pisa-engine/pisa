@@ -82,8 +82,9 @@ void perftest(const char* index_filename)
             if (reader.size() >= min_length) {
                 uint64_t size = reader.size();
                 // make sure size is odd, so that it is coprime with skip
-                if (!(size & 1))
+                if (!(size & 1)) {
                     size -= 1;
+                }
 
                 skip_values.emplace_back(i, std::vector<uint64_t>());
                 skip_positions.emplace_back(i, std::vector<uint64_t>());

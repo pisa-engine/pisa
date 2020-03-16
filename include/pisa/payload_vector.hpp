@@ -131,7 +131,7 @@ namespace detail {
     template <typename T, typename... Ts>
     [[nodiscard]] static constexpr auto unpack(std::byte const* ptr) -> std::tuple<T, Ts...>
     {
-        if constexpr (sizeof...(Ts) == 0u) {
+        if constexpr (sizeof...(Ts) == 0u) {  // NOLINT(readability-braces-around-statements)
             return std::tuple<T>(*reinterpret_cast<const T*>(ptr));
         } else {
             return std::tuple_cat(

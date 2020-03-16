@@ -74,8 +74,9 @@ struct compact_ranked_bitvector {
             for (uint64_t sample = ceil_div(begin, uint64_t(1) << of.log_rank1_sampling);
                  (sample << of.log_rank1_sampling) < end;
                  ++sample) {
-                if (!sample)
+                if (!sample) {
                     continue;
+                }
                 offset = of.rank1_samples_offset + (sample - 1) * of.rank1_sample_size;
                 assert(offset + of.rank1_sample_size <= of.pointers1_offset);
                 bvb.set_bits(offset, rank, of.rank1_sample_size);

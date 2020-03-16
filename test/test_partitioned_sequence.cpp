@@ -89,8 +89,9 @@ TEST_CASE("partitioned_sequence")
         uint64_t universe = 100000;
         uint64_t initial_gap = rand() % 50000;
         auto short_seq = random_sequence(universe - initial_gap, i, true);
-        for (auto& v: short_seq)
+        for (auto& v: short_seq) {
             v += initial_gap;
+        }
         test_partitioned_sequence<indexed_sequence>(universe, short_seq);
         test_partitioned_sequence<strict_sequence>(universe, short_seq);
     }

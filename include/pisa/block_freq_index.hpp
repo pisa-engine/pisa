@@ -28,8 +28,9 @@ class block_freq_index {
             FreqsIterator freqs_begin,
             uint64_t /* occurrences */)
         {
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("List must be nonempty");
+            }
             block_posting_list<BlockCodec, Profile>::write(m_lists, n, docs_begin, freqs_begin);
             m_endpoints.push_back(m_lists.size());
         }
@@ -37,8 +38,9 @@ class block_freq_index {
         template <typename BlockDataRange>
         void add_posting_list(uint64_t n, BlockDataRange const& blocks)
         {
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("List must be nonempty");
+            }
             block_posting_list<BlockCodec>::write_blocks(m_lists, n, blocks);
             m_endpoints.push_back(m_lists.size());
         }

@@ -72,8 +72,9 @@ struct optimal_partition {
         cost_t cost_bound = cost_lb;
         while (eps1 == 0 || cost_bound < cost_lb / eps1) {
             windows.emplace_back(begin, base, cost_bound);
-            if (cost_bound >= single_block_cost)
+            if (cost_bound >= single_block_cost) {
                 break;
+            }
             cost_bound = cost_bound * (1 + eps2);
         }
 
@@ -94,10 +95,12 @@ struct optimal_partition {
                         path[window.end] = i;
                     }
                     last_end = window.end;
-                    if (window.end == size)
+                    if (window.end == size) {
                         break;
-                    if (window_cost >= window.cost_upper_bound)
+                    }
+                    if (window_cost >= window.cost_upper_bound) {
                         break;
+                    }
                     window.advance_end();
                 }
 

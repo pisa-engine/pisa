@@ -16,8 +16,9 @@ class bit_writer {
 
     void write(uint32_t bits, uint32_t len)
     {
-        if (!len)
+        if (!len) {
             return;
+        }
         uint32_t pos_in_word = m_size % 32;
         m_size += len;
         if (pos_in_word == 0) {
@@ -52,8 +53,9 @@ class bit_writer {
 
     void write_interpolative(uint32_t const* in, size_t n, uint32_t low, uint32_t high)
     {
-        if (!n)
+        if (!n) {
             return;
+        }
         assert(low <= high);
 
         size_t h = n / 2;
@@ -77,8 +79,9 @@ class bit_reader {
 
     uint32_t read(uint32_t len)
     {
-        if (!len)
+        if (!len) {
             return 0;
+        }
 
         if (m_avail < len) {
             m_buf |= uint64_t(*m_in++) << m_avail;

@@ -44,8 +44,9 @@ void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries
         });
     }
 
-    for (auto& thread: threads)
+    for (auto& thread: threads) {
         thread.join();
+    }
 }
 
 template <typename IndexType>
@@ -169,12 +170,14 @@ int main(int argc, const char** argv)
         std::filebuf fb;
         if (fb.open(argv[args], std::ios::in)) {
             std::istream is(&fb);
-            while (read_query(q, is))
+            while (read_query(q, is)) {
                 queries.push_back({std::nullopt, q, {}});
+            }
         }
     } else {
-        while (read_query(q))
+        while (read_query(q)) {
             queries.push_back({std::nullopt, q, {}});
+        }
     }
 
     if (false) {
