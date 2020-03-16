@@ -148,15 +148,15 @@ class bit_vector_builder {
         uint64_t shift = 64 - (size() % 64);
 
         uint64_t remainder = 0;
-        for (size_t i = 0; i < m_bits.size(); ++i) {
+        for (auto& word: m_bits) {
             uint64_t cur_word;
             if (shift != 64) {  // this should be hoisted out
-                cur_word = remainder | (m_bits[i] << shift);
-                remainder = m_bits[i] >> (64 - shift);
+                cur_word = remainder | (word << shift);
+                remainder = word >> (64 - shift);
             } else {
-                cur_word = m_bits[i];
+                cur_word = word;
             }
-            m_bits[i] = broadword::reverse_bits(cur_word);
+            word = broadword::reverse_bits(cur_word);
         }
         assert(remainder == 0);
         std::reverse(m_bits.begin(), m_bits.end());
