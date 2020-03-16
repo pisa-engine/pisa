@@ -26,8 +26,8 @@ namespace pisa { namespace mapper {
         void dump(std::ostream& os = std::cerr, size_t depth = 0)
         {
             os << std::string(depth * 4, ' ') << name << ": " << size << '\n';
-            for (size_t i = 0; i < children.size(); ++i) {
-                children[i]->dump(os, depth + 1);
+            for (auto&& child: children) {
+                child->dump(os, depth + 1);
             }
         }
     };
