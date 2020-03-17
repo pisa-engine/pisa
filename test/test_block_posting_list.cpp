@@ -63,7 +63,7 @@ void test_block_posting_list()
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
-        uint64_t n = uint64_t(universe / avg_gap);
+        auto n = uint64_t(universe / avg_gap);
 
         std::vector<uint64_t> docs, freqs;
         random_posting_data(n, universe, docs, freqs);
@@ -81,7 +81,7 @@ void test_block_posting_list_reordering()
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
-        uint64_t n = uint64_t(universe / avg_gap);
+        auto n = uint64_t(universe / avg_gap);
 
         std::vector<uint64_t> docs, freqs;
         random_posting_data(n, universe, docs, freqs);
