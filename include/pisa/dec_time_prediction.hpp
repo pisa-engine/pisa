@@ -59,7 +59,7 @@ namespace pisa { namespace time_prediction {
         stats_line& dump(stats_line& sl) const
         {
             for (size_t i = 0; i < num_features; ++i) {
-                auto ft = static_cast<feature_type>(i);
+                feature_type ft = (feature_type)i;
                 sl(feature_name(ft), (*this)[ft]);
             }
             return sl;
@@ -91,7 +91,7 @@ namespace pisa { namespace time_prediction {
         {
             float result = bias();
             for (size_t i = 0; i < num_features; ++i) {
-                auto ft = static_cast<feature_type>(i);
+                feature_type ft = (feature_type)i;
                 result += (*this)[ft] * f[ft];
             }
             return result;

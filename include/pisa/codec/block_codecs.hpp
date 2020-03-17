@@ -140,7 +140,7 @@ struct interpolative_block {
 
         bit_writer bw(outbuf);
         bw.write_interpolative(inbuf.data(), n - 1, 0, sum_of_values);
-        auto const* bufptr = reinterpret_cast<uint8_t const*>(outbuf.data());
+        uint8_t const* bufptr = (uint8_t const*)outbuf.data();
         out.insert(out.end(), bufptr, bufptr + ceil_div(bw.size(), 8));
     }
 

@@ -13,7 +13,7 @@ struct maskedvbyte_block {
     static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
     {
         assert(n <= block_size);
-        auto* src = const_cast<uint32_t*>(in);
+        uint32_t* src = const_cast<uint32_t*>(in);
         if (n < block_size) {
             interpolative_block::encode(src, sum_of_values, n, out);
             return;

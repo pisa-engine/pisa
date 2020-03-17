@@ -19,7 +19,7 @@ template <typename IntType1, typename IntType2>
 inline IntType1 ceil_div(IntType1 dividend, IntType2 divisor)
 {
     // XXX(ot): put some static check that IntType1 >= IntType2
-    auto d = IntType1(divisor);
+    IntType1 d = IntType1(divisor);
     return IntType1(dividend + d - 1) / d;
 }
 
