@@ -66,7 +66,7 @@ namespace pisa { namespace mapper {
             clear();
             m_size = vec.size();
             if (m_size) {
-                auto* new_vec = new std::vector<T>;
+                std::vector<T>* new_vec = new std::vector<T>;
                 new_vec->swap(vec);
                 m_deleter = boost::lambda::bind(boost::lambda::delete_ptr(), new_vec);
                 m_data = &(*new_vec)[0];

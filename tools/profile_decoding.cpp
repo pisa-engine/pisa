@@ -50,7 +50,7 @@ void profile_block(std::vector<uint32_t> const& values, uint32_t sum_of_values)
     values_statistics(values, fv);
 
     for (uint8_t t = 0; t < mixed_block::block_types; ++t) {
-        auto type = static_cast<mixed_block::block_type>(t);
+        mixed_block::block_type type = (mixed_block::block_type)t;
         for (mixed_block::compr_param_type param = 0; param < mixed_block::compr_params(type);
              ++param) {
             buf.clear();
@@ -106,7 +106,7 @@ int main(int /* argc */, const char** argv)
 
     std::string type = argv[1];
     const char* index_filename = argv[2];
-    auto p = boost::lexical_cast<double>(argv[3]);
+    double p = boost::lexical_cast<double>(argv[3]);
 
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                         \
