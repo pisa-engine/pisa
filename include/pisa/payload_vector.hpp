@@ -271,7 +271,7 @@ class Payload_Vector {
     {}
 
     Payload_Vector(gsl::span<size_type const> offsets, gsl::span<std::byte const> payloads)
-        : offsets_(std::move(offsets)), payloads_(std::move(payloads))
+        : offsets_(offsets), payloads_(payloads)
     {}
 
     template <typename ContiguousContainer>

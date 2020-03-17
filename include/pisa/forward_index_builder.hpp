@@ -341,7 +341,7 @@ class Forward_Index_Builder {
                 auto last_batch_size = record_batch.size();
                 Batch_Process bp{batch_number, std::move(record_batch), first_document, output_file};
                 queue.push(0);
-                batch_group.run([bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                batch_group.run([&bp, process_term, this, &queue, &process_content]() {
                     run(std::move(bp), process_term, process_content);
                     int x;
                     queue.try_pop(x);
@@ -356,7 +356,7 @@ class Forward_Index_Builder {
             if (record_batch.size() == batch_size) {
                 Batch_Process bp{batch_number, std::move(record_batch), first_document, output_file};
                 queue.push(0);
-                batch_group.run([bp = std::move(bp), process_term, this, &queue, &process_content]() {
+                batch_group.run([&bp, process_term, this, &queue, &process_content]() {
                     run(std::move(bp), process_term, process_content);
                     int x;
                     queue.try_pop(x);

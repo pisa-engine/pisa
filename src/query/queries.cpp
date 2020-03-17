@@ -22,7 +22,7 @@ auto split_query_at_colon(std::string const& query_string)
     }
     auto pos = colon == query_string.end() ? query_string.begin() : std::next(colon);
     auto raw_query = std::string_view(&*pos, std::distance(pos, query_string.end()));
-    return {std::move(id), std::move(raw_query)};
+    return {std::move(id), raw_query};
 }
 
 auto parse_query_terms(std::string const& query_string, TermProcessor term_processor) -> Query
@@ -35,7 +35,7 @@ auto parse_query_terms(std::string const& query_string, TermProcessor term_proce
         auto term = term_processor(raw_term);
         if (term) {
             if (!term_processor.is_stopword(*term)) {
-                parsed_query.push_back(std::move(*term));
+                parsed_query.push_back(*term);
             } else {
                 spdlog::warn("Term `{}` is a stopword and will be ignored", raw_term);
             }
