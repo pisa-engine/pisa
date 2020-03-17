@@ -61,8 +61,9 @@ class uniform_score_compressor {
                 temp.push_back(elem);
             }
 
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("List must be nonempty");
+            }
             bit_vector_builder docs_bits;
             write_gamma_nonzero(docs_bits, n);
             Sequence::write(docs_bits, temp.begin(), m_num_docs, n, m_params);
@@ -190,6 +191,7 @@ class wand_data_compressed {
 
         float PISA_FLATTEN_FUNC score()
         {
+            // NOLINTNEXTLINE(readability-braces-around-statements)
             if constexpr (IndexPayloadType == PayloadType::Quantized) {
                 return m_cur_score_index;
             } else {

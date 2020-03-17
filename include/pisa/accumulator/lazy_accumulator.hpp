@@ -26,7 +26,7 @@ struct Lazy_Accumulator {
 
         [[nodiscard]] auto counter(int pos) const noexcept -> int
         {
-            if constexpr (counter_bit_size == 8) {
+            if constexpr (counter_bit_size == 8) {  // NOLINT(readability-braces-around-statements)
                 return static_cast<int>(*(reinterpret_cast<uint8_t const*>(&descriptor) + pos));
             } else {
                 return (descriptor >> (pos * counter_bit_size)) & mask;
@@ -35,7 +35,7 @@ struct Lazy_Accumulator {
 
         void reset_counter(int pos, int counter)
         {
-            if constexpr (counter_bit_size == 8) {
+            if constexpr (counter_bit_size == 8) {  // NOLINT(readability-braces-around-statements)
                 *(reinterpret_cast<uint8_t*>(&descriptor) + pos) = static_cast<uint8_t>(counter);
             } else {
                 auto const shift = pos * counter_bit_size;

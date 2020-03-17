@@ -12,8 +12,9 @@ struct block_max_wand_query {
     void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        if (cursors.empty())
+        if (cursors.empty()) {
             return;
+        }
 
         std::vector<Cursor*> ordered_cursors;
         ordered_cursors.reserve(cursors.size());
@@ -48,8 +49,8 @@ struct block_max_wand_query {
                     pivot_id = ordered_cursors[pivot]->docs_enum.docid();
                     for (; pivot + 1 < ordered_cursors.size()
                          && ordered_cursors[pivot + 1]->docs_enum.docid() == pivot_id;
-                         ++pivot)
-                        ;
+                         ++pivot) {
+                    }
                     break;
                 }
             }
@@ -97,8 +98,8 @@ struct block_max_wand_query {
 
                 } else {
                     uint64_t next_list = pivot;
-                    for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list)
-                        ;
+                    for (; ordered_cursors[next_list]->docs_enum.docid() == pivot_id; --next_list) {
+                    }
                     ordered_cursors[next_list]->docs_enum.next_geq(pivot_id);
 
                     // bubble down the advanced list
@@ -128,8 +129,9 @@ struct block_max_wand_query {
                 next = max_docid;
 
                 for (size_t i = 0; i <= pivot; ++i) {
-                    if (ordered_cursors[i]->w.docid() < next)
+                    if (ordered_cursors[i]->w.docid() < next) {
                         next = ordered_cursors[i]->w.docid();
+                    }
                 }
 
                 next = next + 1;

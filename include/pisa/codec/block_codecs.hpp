@@ -185,12 +185,14 @@ struct optpfor_block {
             uint32_t bsize = std::numeric_limits<uint32_t>::max();
             const uint32_t mb = FastPForLib::maxbits(in, in + len);
             uint32_t i = 0;
-            while (mb > 28 + possLogs[i])
+            while (mb > 28 + possLogs[i]) {
                 ++i;  // some schemes such as Simple16 don't code numbers greater than 28
+            }
 
             for (; i < possLogs.size(); i++) {
-                if (possLogs[i] > mb && possLogs[i] >= mb)
+                if (possLogs[i] > mb && possLogs[i] >= mb) {
                     break;
+                }
                 const uint32_t csize = tryB(possLogs[i], in, len);
 
                 if (csize <= bsize) {

@@ -14,8 +14,9 @@ struct wand_query {
     void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        if (cursors.empty())
+        if (cursors.empty()) {
             return;
+        }
 
         std::vector<Cursor*> ordered_cursors;
         ordered_cursors.reserve(cursors.size());

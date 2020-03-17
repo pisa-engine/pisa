@@ -11,8 +11,9 @@ struct or_query {
     uint64_t operator()(CursorRange&& cursors, uint64_t max_docid) const
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
-        if (cursors.empty())
+        if (cursors.empty()) {
             return 0;
+        }
 
         uint64_t results = 0;
         uint64_t cur_doc =
@@ -25,7 +26,7 @@ struct or_query {
             uint64_t next_doc = max_docid;
             for (size_t i = 0; i < cursors.size(); ++i) {
                 if (cursors[i].docid() == cur_doc) {
-                    if constexpr (with_freqs) {
+                    if constexpr (with_freqs) {  // NOLINT(readability-braces-around-statements)
                         do_not_optimize_away(cursors[i].freq());
                     }
                     cursors[i].next();

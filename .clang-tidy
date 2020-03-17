@@ -16,4 +16,5 @@ Checks: |
     -cppcoreguidelines-avoid-magic-numbers,
     -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
     -modernize-use-trailing-return-type,
-    -readability-magic-numbers
+    -readability-magic-numbers,
+    google-global-names-in-headers

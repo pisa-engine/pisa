@@ -91,8 +91,9 @@ struct compact_elias_fano {
             for (uint64_t ptr0 = ceil_div(begin_zeros, uint64_t(1) << of.log_sampling0);
                  (ptr0 << of.log_sampling0) < end_zeros;
                  ++ptr0) {
-                if (!ptr0)
+                if (!ptr0) {
                     continue;
+                }
                 offset = of.pointers0_offset + (ptr0 - 1) * of.pointer_size;
                 assert(offset + of.pointer_size <= of.pointers1_offset);
                 bvb.set_bits(offset, (ptr0 << of.log_sampling0) + rank_end, of.pointer_size);

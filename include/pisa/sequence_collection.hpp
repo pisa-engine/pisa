@@ -24,8 +24,9 @@ class sequence_collection {
         template <typename Iterator>
         void add_sequence(Iterator begin, uint64_t last_element, uint64_t n)
         {
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("Sequence must be nonempty");
+            }
 
             // make_shared does not seem to work
             std::shared_ptr<sequence_adder<Iterator>> ptr(

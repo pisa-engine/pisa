@@ -39,8 +39,9 @@ class base_binary_collection {
         // Indicates that the application expects to access this address range in a sequential
         // manner
         auto ret = posix_madvise((void*)m_data, m_data_size, POSIX_MADV_SEQUENTIAL);
-        if (ret)
+        if (ret) {
             spdlog::error("Error calling madvice: {}", errno);
+        }
 #endif
     }
 
@@ -121,8 +122,9 @@ class base_binary_collection {
         void read()
         {
             assert(m_pos <= m_data_size);
-            if (m_pos == m_data_size)
+            if (m_pos == m_data_size) {
                 return;
+            }
 
             size_t n = 0;
             size_t pos = m_pos;

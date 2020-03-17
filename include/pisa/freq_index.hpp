@@ -27,8 +27,9 @@ class freq_index {
         void add_posting_list(
             uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, uint64_t occurrences)
         {
-            if (!n)
+            if (!n) {
                 throw std::invalid_argument("List must be nonempty");
+            }
 
             tbb::parallel_invoke(
                 [&] {

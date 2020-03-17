@@ -103,8 +103,9 @@ struct lambdas_computer: pisa::semiasync_queue::job {
                     while (true) {
                         auto const& prev = m_points_buf.back();
                         // if this point is dominated we can skip it
-                        if (cur.time >= prev.st.time)
+                        if (cur.time >= prev.st.time) {
                             break;
+                        }
                         auto lambda = (cur.space - prev.st.space) / (prev.st.time - cur.time);
                         if (!heuristic_greedy && lambda < prev.lambda) {
                             m_points_buf.pop_back();

@@ -82,10 +82,12 @@ struct mixed_block {
             auto const& possLogs = optpfor_block::codec_type::possLogs;
             uint32_t b = possLogs[param];
             uint32_t max_b = (uint32_t)fv[feature_type::max_b];  // float is exact up to 2^24
-            if (b > max_b && possLogs[param - 1] >= max_b)
+            if (b > max_b && possLogs[param - 1] >= max_b) {
                 return false;  // useless
-            if (max_b - b > 28)
+            }
+            if (max_b - b > 28) {
                 return false;  // exception coder can't handle this
+            }
             uint32_t exceptions = 0;
             for (size_t i = 0; i < n; ++i) {
                 if (in[i] >= (uint32_t(1) << b)) {
@@ -232,8 +234,9 @@ inline predictors_vec_type load_predictors(const char* predictors_filename)
         std::vector<std::pair<std::string, float>> values;
         while (true) {
             float value;
-            if (!(is >> field >> value))
+            if (!(is >> field >> value)) {
                 break;
+            }
             values.emplace_back(field, value);
         }
 

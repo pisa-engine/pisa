@@ -65,8 +65,9 @@ void perftest(IndexType const& index, std::string const& type)
         for (size_t i = 0; i < index.size(); ++i) {
             auto reader = index[i];
             uint64_t size = reader.size();
-            if (size < min_length)
+            if (size < min_length) {
                 continue;
+            }
 
             skip_values.emplace_back(i, std::vector<uint64_t>());
             for (size_t i = 0; i < std::min(pisa::ceil_div(size, skip), max_calls_per_list); ++i) {
