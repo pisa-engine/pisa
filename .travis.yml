@@ -115,7 +115,7 @@ script:
         make -j2;
         if [[ "$PISA_ENABLE_CLANG_TIDY" != "On"]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
-        fi;
+        fi
       fi
     - if [[ "$CLANG_FORMAT" == "On" ]]; then
         cd ..;
