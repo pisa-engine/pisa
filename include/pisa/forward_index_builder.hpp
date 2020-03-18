@@ -339,10 +339,13 @@ class Forward_Index_Builder {
             std::optional<Document_Record> record = std::nullopt;
             if (not(record = next_record(is))) {
                 auto last_batch_size = record_batch.size();
-                Batch_Process bp{batch_number, std::move(record_batch), first_document, output_file};
+                auto batch_process = [&] {
+                    return Batch_Process{
+                        batch_number, std::move(record_batch), first_document, output_file};
+                };
                 queue.push(0);
-                batch_group.run([&bp, process_term, this, &queue, &process_content]() {
-                    run(std::move(bp), process_term, process_content);
+                batch_group.run([bp = batch_process(), process_term, this, &queue, &process_content]() {
+                    run(bp, process_term, process_content);
                     int x;
                     queue.try_pop(x);
                 });
@@ -354,10 +357,13 @@ class Forward_Index_Builder {
             record_batch.push_back(std::move(*record));  // AppleClang is missing value() in
                                                          // Optional
             if (record_batch.size() == batch_size) {
-                Batch_Process bp{batch_number, std::move(record_batch), first_document, output_file};
+                auto batch_process = [&] {
+                    return Batch_Process{
+                        batch_number, std::move(record_batch), first_document, output_file};
+                };
                 queue.push(0);
-                batch_group.run([&bp, process_term, this, &queue, &process_content]() {
-                    run(std::move(bp), process_term, process_content);
+                batch_group.run([bp = batch_process(), process_term, this, &queue, &process_content]() {
+                    run(bp, process_term, process_content);
                     int x;
                     queue.try_pop(x);
                 });
