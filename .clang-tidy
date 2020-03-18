@@ -1,20 +1,10 @@
 ---
-WarningsAsErrors: '1'
+WarningsAsErrors: '*'
 HeaderFilterRegex: '.*include/pisa.*\.hpp'
 FormatStyle: none
 Checks: |
-    *,
-    -llvm-*,
-    -google-*,
-    -fuchsia-*,
-    -zircon-*,
-    -abseil-*,
-    -clang-diagnostic-c++17-extensions,
-    -cppcoreguidelines-pro-type-reinterpret-cast,
-    -clang-diagnostic-error,
-    -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-    -cppcoreguidelines-avoid-magic-numbers,
-    -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
-    -modernize-use-trailing-return-type,
-    -readability-magic-numbers,
-    google-global-names-in-headers
+    -*,
+    hicpp-use-auto,
+    hicpp-move-const-arg,
+    modernize-loop-convert,
+    readability-braces-around-statements
