@@ -77,14 +77,14 @@ file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
 list(SORT PISA_SRC_FILES)
 
 if (PISA_ENABLE_CLANG_TIDY)
-    find_program(CLANGTIDY ${PISA_CLANG_TIDY_EXECUTABLE})
+    find_program(CLANGTIDY "${PISA_CLANG_TIDY_EXECUTABLE}")
     if(CLANGTIDY)
         set(
             CMAKE_CXX_CLANG_TIDY
             ${CLANGTIDY}
             -checks=-*,hicpp-use-auto,hicpp-move-const-arg,modernize-loop-convert,readability-braces-around-statements)
     else()
-        message(SEND_ERROR "clang-tidy requested but executable not found")
+        message(SEND_ERROR "${PISA_CLANG_TIDY_EXECUTABLE} requested but executable not found")
     endif()
 endif()
 
