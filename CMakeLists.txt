@@ -81,8 +81,7 @@ if (PISA_ENABLE_CLANG_TIDY)
     if(CLANGTIDY)
         set(
             CMAKE_CXX_CLANG_TIDY
-            ${CLANGTIDY}
-            -checks=-*,hicpp-use-auto,hicpp-move-const-arg,modernize-loop-convert,readability-braces-around-statements)
+            ${CLANGTIDY} --checks=-*,hicpp-use-auto,hicpp-move-const-arg,modernize-loop-convert,readability-braces-around-statements --warnings-as-errors=*)
     else()
         message(SEND_ERROR "${PISA_CLANG_TIDY_EXECUTABLE} requested but executable not found")
     endif()
