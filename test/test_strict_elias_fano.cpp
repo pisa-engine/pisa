@@ -12,7 +12,7 @@ TEST_CASE("strict_elias_fano")
     pisa::global_parameters params;
 
     uint64_t n = 10000;
-    uint64_t universe = uint64_t(2 * n);
+    auto universe = uint64_t(2 * n);
     auto seq = random_sequence(universe, n, true);
 
     test_sequence(pisa::strict_elias_fano(), params, universe, seq);
