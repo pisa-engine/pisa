@@ -67,8 +67,13 @@ struct indexed_sequence {
         }
 
         switch (best_type) {
-        case elias_fano: compact_elias_fano::write(bvb, begin, universe, n, params); break;
+        case elias_fano: 
+		compact_elias_fano::write(bvb, begin, universe, n, params); break;
         case ranked_bitvector:
+		for(size_t i = 0; i < n; ++i){
+                	std::cout << *(begin+i) << " ";
+                }
+		std::cout << std::endl;
             compact_ranked_bitvector::write(bvb, begin, universe, n, params);
             break;
         case all_ones: all_ones_sequence::write(bvb, begin, universe, n, params); break;

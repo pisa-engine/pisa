@@ -7,6 +7,7 @@
 
 #include "boost/algorithm/string/predicate.hpp"
 #include "spdlog/spdlog.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 
 #include "app.hpp"
 #include "mappable/mapper.hpp"
@@ -97,6 +98,7 @@ void create_collection(
         size_t term_id = 0;
         for (auto const& plist: input) {
             size_t size = plist.docs.size();
+	    if(size < 14182) continue; 
             if (quantized) {
                 LinearQuantizer quantizer(
                     wdata.index_max_term_weight(), configuration::get().quantization_bits);
