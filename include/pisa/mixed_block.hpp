@@ -81,7 +81,8 @@ struct mixed_block {
         if (type == block_type::pfor) {
             auto const& possLogs = optpfor_block::codec_type::possLogs;
             uint32_t b = possLogs[param];
-            uint32_t max_b = (uint32_t)fv[feature_type::max_b];  // float is exact up to 2^24
+            auto max_b = static_cast<uint32_t>(fv[feature_type::max_b]);  // float is exact up to
+                                                                          // 2^24
             if (b > max_b && possLogs[param - 1] >= max_b) {
                 return false;  // useless
             }
@@ -129,7 +130,7 @@ struct mixed_block {
         values_statistics(values, fv);
 
         for (uint8_t t = 0; t < block_types; ++t) {
-            block_type type = (block_type)t;
+            auto type = static_cast<block_type>(t);
             for (compr_param_type param = 0; param < compr_params(type); ++param) {
                 buf.clear();
                 if (!compression_stats(
@@ -137,7 +138,7 @@ struct mixed_block {
                     continue;
                 }
 
-                uint16_t space = (uint16_t)buf.size();
+                auto space = static_cast<uint16_t>(buf.size());
                 float time = 0;
                 if (values.size() == block_size) {  // only predict time for full blocks
                     time = predictors[t](fv) * access_count;
