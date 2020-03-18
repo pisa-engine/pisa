@@ -31,7 +31,7 @@ void test_freq_index()
     std::vector<std::pair<vec_type, vec_type>> posting_lists(30);
     for (auto& plist: posting_lists) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
-        uint64_t n = uint64_t(universe / avg_gap);
+        auto n = uint64_t(universe / avg_gap);
         plist.first = random_sequence(universe, n, true);
         plist.second.resize(n);
         std::generate(plist.second.begin(), plist.second.end(), []() { return (rand() % 256) + 1; });

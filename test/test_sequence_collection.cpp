@@ -25,7 +25,7 @@ void test_sequence_collection()
     std::vector<std::vector<uint64_t>> sequences(30);
     for (auto& seq: sequences) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
-        uint64_t n = uint64_t(universe / avg_gap);
+        auto n = uint64_t(universe / avg_gap);
         seq = random_sequence(universe, n, true);
         b.add_sequence(seq.begin(), seq.back() + 1, n);
     }
