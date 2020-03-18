@@ -90,6 +90,8 @@ matrix:
       addons:
           apt:
               sources:
+                - ubuntu-toolchain-r-test
+                - llvm-toolchain-xenial-6.0
                 - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
                   key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
               packages:
