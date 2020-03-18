@@ -115,7 +115,7 @@ script:
     - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} -DPISA_ENABLE_CLANG_TIDY=${TIDY} -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-9 ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" && "$CLANG_FORMAT" != "On" ]]; then
         make -j2;
-        if [[ "$PISA_ENABLE_CLANG_TIDY" != "On" ]]; then
+        if [[ "$TIDY" != "On" ]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
         fi
       fi
