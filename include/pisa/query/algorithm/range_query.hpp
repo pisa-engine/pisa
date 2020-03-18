@@ -17,7 +17,7 @@ struct range_query {
             return;
         }
 
-        for (size_t end = range_size; end + range_size < max_docid; end += range_size) {
+        for (size_t end = range_size; end < max_docid; end += range_size) {
             process_range(cursors, end);
         }
         process_range(cursors, max_docid);
