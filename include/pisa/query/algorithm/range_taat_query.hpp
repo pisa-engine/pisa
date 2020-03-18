@@ -16,8 +16,6 @@ struct range_taat_query {
             return;
         }
 
-        accumulator.init();
-
         for (size_t end = range_size; end + range_size < max_docid; end += range_size) {
             process_range(cursors, end, accumulator);
         }

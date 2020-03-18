@@ -12,7 +12,7 @@ namespace pisa {
 
 class ranked_or_taat_query {
   public:
-    ranked_or_taat_query(topk_queue& topk) : m_topk(topk) {}
+    explicit ranked_or_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
     void operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator)
@@ -21,7 +21,6 @@ class ranked_or_taat_query {
         if (cursors.empty()) {
             return;
         }
-        accumulator.init();
 
         for (auto&& cursor: cursors) {
             while (cursor.docs_enum.docid() < max_docid) {
@@ -31,7 +30,6 @@ class ranked_or_taat_query {
                 cursor.docs_enum.next();
             }
         }
-        accumulator.aggregate(m_topk);
     }
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }

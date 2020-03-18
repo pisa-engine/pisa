@@ -142,6 +142,28 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
+    } else if (query_type == "range_maxscore" && wand_data_filename) {
+            query_fun = [&](Query query) mutable {
+                topk_queue topk(k);
+                range_query<maxscore_query> range_maxscore_q(topk);
+                range_maxscore_q(
+                    make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs(), 1024);
+                topk.finalize();
+                return topk.topk();
+            };
+    } else if (query_type == "range_ranked_or_taat_lazy" && wand_data_filename) {
+            query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](
+                            Query query) mutable {
+                accumulator.init();
+                topk_queue topk(k);
+                range_taat_query<ranked_or_taat_query> range_ranked_or_taat_q(topk);
+                range_ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), 1024, accumulator);
+                accumulator.aggregate(topk);
+                topk.finalize();
+                return topk.topk();
+            };
+
     } else {
         spdlog::error("Unsupported query type: {}", query_type);
     }
