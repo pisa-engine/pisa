@@ -24,10 +24,10 @@ void test_freq_index()
     tbb::task_scheduler_init init;
     pisa::global_parameters params;
     uint64_t universe = 20000;
-    typedef pisa::freq_index<DocsSequence, FreqsSequence> collection_type;
+    using collection_type = pisa::freq_index<DocsSequence, FreqsSequence>;
     typename collection_type::builder b(universe, params);
 
-    typedef std::vector<uint64_t> vec_type;
+    using vec_type = std::vector<uint64_t>;
     std::vector<std::pair<vec_type, vec_type>> posting_lists(30);
     for (auto& plist: posting_lists) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;

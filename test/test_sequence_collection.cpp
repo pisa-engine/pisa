@@ -19,7 +19,7 @@ void test_sequence_collection()
 {
     pisa::global_parameters params;
     uint64_t universe = 10000;
-    typedef pisa::sequence_collection<BaseSequence> collection_type;
+    using collection_type = pisa::sequence_collection<BaseSequence>;
     typename collection_type::builder b(params);
 
     std::vector<std::vector<uint64_t>> sequences(30);

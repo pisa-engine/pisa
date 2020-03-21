@@ -23,7 +23,7 @@
 #include "util/util.hpp"
 #include "util/verify_collection.hpp"
 
-typedef uint32_t block_id_type;  // XXX for memory reasons, but would need size_t for very large
+using block_id_type = uint32_t;  // XXX for memory reasons, but would need size_t for very large
                                  // indexes
 
 struct lambda_point {
@@ -53,7 +53,7 @@ struct lambda_point {
     };
 };
 
-typedef stxxl::vector<lambda_point> lambda_vector_type;
+using lambda_vector_type = stxxl::vector<lambda_point>;
 
 template <typename InputCollectionType>
 struct lambdas_computer: pisa::semiasync_queue::job {
@@ -188,7 +188,7 @@ void compute_lambdas(
 
         auto e = input_coll[l];
 
-        typedef lambdas_computer<InputCollectionType> job_type;
+        using job_type = lambdas_computer<InputCollectionType>;
         std::shared_ptr<job_type> job;
 
         if (l == block_counts_list) {
@@ -247,8 +247,8 @@ struct list_transformer: pisa::semiasync_queue::job {
     {
         using namespace pisa;
 
-        typedef typename InputCollectionType::document_enumerator::block_data input_block_type;
-        typedef mixed_block::block_transformer<input_block_type> output_block_type;
+        using input_block_type = typename InputCollectionType::document_enumerator::block_data;
+        using output_block_type = mixed_block::block_transformer<input_block_type>;
 
         auto blocks = m_e.get_blocks();
         std::vector<output_block_type> output_blocks;
@@ -381,7 +381,7 @@ void optimal_hybrid_index(
 
     stats_line()("found_space", cur_space)("found_time", cur_time);
 
-    typedef std::tuple<uint32_t, uint32_t> type_param_pair;
+    using type_param_pair = std::tuple<uint32_t, uint32_t>;
     std::map<type_param_pair, size_t> type_counts;
     for (size_t i = 0; i < num_blocks; ++i) {
         type_counts[type_param_pair((uint8_t)block_types[i], block_params[i])] += 1;
@@ -401,7 +401,7 @@ void optimal_hybrid_index(
 
     tick = get_time_usecs();
 
-    typedef typename block_mixed_index::builder builder_type;
+    using builder_type = typename block_mixed_index::builder;
     builder_type builder(input_coll.num_docs(), params);
     pisa::progress progress("Building collection", input_coll.size());
 
@@ -412,7 +412,7 @@ void optimal_hybrid_index(
     for (size_t l = 0; l < input_coll.size(); ++l) {
         auto e = input_coll[l];
 
-        typedef list_transformer<InputCollectionType, builder_type> job_type;
+        using job_type = list_transformer<InputCollectionType, builder_type>;
         std::shared_ptr<job_type> job(new job_type(builder, e, block_types_it, block_params_it));
 
         progress.update(1);

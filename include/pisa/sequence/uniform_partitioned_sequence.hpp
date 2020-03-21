@@ -12,8 +12,8 @@ namespace pisa {
 
 template <typename BaseSequence = indexed_sequence>
 struct uniform_partitioned_sequence {
-    typedef BaseSequence base_sequence_type;
-    typedef typename base_sequence_type::enumerator base_sequence_enumerator;
+    using base_sequence_type = BaseSequence;
+    using base_sequence_enumerator = typename base_sequence_type::enumerator;
 
     template <typename Iterator>
     static void write(
@@ -103,9 +103,9 @@ struct uniform_partitioned_sequence {
 
     class enumerator {
       public:
-        typedef std::pair<uint64_t, uint64_t> value_type;  // (position, value)
+        using value_type = std::pair<uint64_t, uint64_t>;  // (position, value)
 
-        enumerator() {}
+        enumerator() = default;
 
         enumerator(
             bit_vector const& bv,

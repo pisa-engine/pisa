@@ -17,7 +17,7 @@ class block_profiler {
         }
     }
 
-    typedef std::atomic_uint_fast32_t counter_type;
+    using counter_type = std::atomic_uint_fast32_t;
 
     static block_profiler& get()
     {
@@ -55,7 +55,7 @@ class block_profiler {
     }
 
   private:
-    block_profiler() {}
+    block_profiler() = default;
 
     // XXX can't do vector of atomics ARGHH
     std::map<uint32_t, std::pair<size_t, counter_type*>> m_block_freqs;

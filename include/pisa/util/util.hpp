@@ -65,7 +65,7 @@ template <typename State, typename AdvanceFunctor, typename ValueFunctor>
 class function_iterator
     : public std::iterator<std::forward_iterator_tag, typename std::result_of<ValueFunctor(State)>::type> {
   public:
-    function_iterator() {}
+    function_iterator() = default;
 
     function_iterator(State initial_state) : m_state(initial_state) {}
 
@@ -76,7 +76,7 @@ class function_iterator
     }
 
     // XXX why isn't this inherited from std::iterator?
-    typedef typename std::result_of<ValueFunctor(State)>::type value_type;
+    using value_type = typename std::result_of<ValueFunctor(State)>::type;
 
     value_type operator*() const
     {

@@ -11,9 +11,9 @@ namespace pisa {
 template <typename IndexedSequence>
 class sequence_collection {
   public:
-    typedef typename IndexedSequence::enumerator enumerator_type;
+    using enumerator_type = typename IndexedSequence::enumerator;
 
-    sequence_collection() {}
+    sequence_collection() = default;
 
     class builder {
       public:

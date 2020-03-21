@@ -21,7 +21,7 @@ namespace pisa {
 
 struct compact_elias_fano {
     struct offsets {
-        offsets() {}
+        offsets() = default;
 
         offsets(uint64_t base_offset, uint64_t universe, uint64_t n, global_parameters const& params)
             : universe(universe),
@@ -141,9 +141,9 @@ struct compact_elias_fano {
 
     class enumerator {
       public:
-        typedef std::pair<uint64_t, uint64_t> value_type;  // (position, value)
+        using value_type = std::pair<uint64_t, uint64_t>;  // (position, value)
 
-        enumerator() {}
+        enumerator() = default;
 
         enumerator(
             bit_vector const& bv,

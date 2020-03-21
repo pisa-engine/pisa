@@ -51,12 +51,12 @@ void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries
 
 template <typename IndexType>
 struct add_profiling {
-    typedef IndexType type;
+    using type = IndexType;
 };
 
 template <typename BlockType>
 struct add_profiling<block_freq_index<BlockType, false>> {
-    typedef block_freq_index<BlockType, true> type;
+    using type = block_freq_index<BlockType, true>;
 };
 
 template <typename IndexType>
@@ -71,7 +71,7 @@ void profile(
     using namespace pisa;
 
     typename add_profiling<IndexType>::type index;
-    typedef wand_data<wand_data_raw> WandType;
+    using WandType = wand_data<wand_data_raw>;
     spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename);
     mapper::map(index, m);
