@@ -457,7 +457,7 @@ int main(int argc, const char** argv)
     const char* block_stats_filename = argv[3];
     const char* input_filename = argv[4];
     const char* lambdas_filename = argv[5];
-    size_t budget = boost::lexical_cast<size_t>(argv[6]);
+    auto budget = boost::lexical_cast<size_t>(argv[6]);
     const char* output_filename = nullptr;
     if (argc > 7) {
         output_filename = argv[7];

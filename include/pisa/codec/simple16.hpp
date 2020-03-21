@@ -25,7 +25,7 @@ struct simple16_block {
         FastPForLib::Simple16<false> codec;
         std::vector<uint32_t> buf(2 * block_size);
 
-        uint8_t const* ret = reinterpret_cast<uint8_t const*>(
+        auto const* ret = reinterpret_cast<uint8_t const*>(
             codec.decodeArray(reinterpret_cast<uint32_t const*>(in), 8 * n, buf.data(), n));
         for (size_t i = 0; i < n; ++i) {
             *out++ = buf[i];

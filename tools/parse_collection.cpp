@@ -22,7 +22,7 @@ template <typename ReadSubsequentRecordFn>
         while (not in.eof()) {
             auto record = trecpp::match(
                 read_subsequent_record(in),
-                [](trecpp::Record const& rec) {
+                [](trecpp::Record rec) {
                     return std::make_optional<Document_Record>(
                         std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
                 },
@@ -60,7 +60,7 @@ record_parser(std::string const& type, std::istream& is)
             while (not in.eof()) {
                 auto record = trecpp::match(
                     parser->read_record(),
-                    [](trecpp::Record const& rec) {
+                    [](trecpp::Record rec) {
                         return std::make_optional<Document_Record>(
                             std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
                     },
@@ -80,7 +80,7 @@ record_parser(std::string const& type, std::istream& is)
             while (not in.eof()) {
                 auto record = warcpp::match(
                     warcpp::read_subsequent_record(in),
-                    [](warcpp::Record const& rec) {
+                    [](warcpp::Record rec) {
                         if (not rec.valid_response()) {
                             return std::optional<Document_Record>{};
                         }

@@ -2,7 +2,6 @@
 
 #include <vector>
 
-
 #include "util/broadword.hpp"
 #include "util/util.hpp"
 
@@ -194,13 +193,11 @@ class bit_vector {
     bit_vector(Range const& from)
     {
         std::vector<uint64_t> bits;
-        const uint64_t first_mask = uint64_t(1);
+        auto const first_mask = uint64_t(1);
         uint64_t mask = first_mask;
         uint64_t cur_val = 0;
         m_size = 0;
-        for (auto iter = std::begin(from);
-             iter != std::end(from);
-             ++iter) {
+        for (auto iter = std::begin(from); iter != std::end(from); ++iter) {
             if (*iter) {
                 cur_val |= mask;
             }

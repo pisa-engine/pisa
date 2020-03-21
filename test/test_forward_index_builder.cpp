@@ -7,7 +7,6 @@
 #include <catch2/catch.hpp>
 #include <gsl/span>
 #include <tbb/task_scheduler_init.h>
-#include <warcpp/warcpp.hpp>
 
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"

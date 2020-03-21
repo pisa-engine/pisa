@@ -84,6 +84,19 @@ matrix:
               packages:
                 - clang-format-9
       env: MATRIX_EVAL="COVERAGE=Off && CLANG_FORMAT=On"
+    - os: linux
+      dist: xenial
+      compiler: clang
+      addons:
+          apt:
+              sources:
+                - ubuntu-toolchain-r-test
+                - llvm-toolchain-xenial-6.0
+                - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
+                  key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+              packages:
+                - ['clang-tidy-9', 'clang-9', 'libstdc++-7-dev']
+      env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9 && COVERAGE=Off && TIDY=On"
     - os: osx
       osx_image: xcode11.2
       compiler: clang
@@ -99,10 +112,12 @@ before_install:
   
 script:
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} ${CMAKE_OPTIONS} ..
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} -DPISA_ENABLE_CLANG_TIDY=${TIDY} -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-9 ${CMAKE_OPTIONS} ..
     - if [[ "$PISA_COMPILE_HEADERS" != "On" && "$CLANG_FORMAT" != "On" ]]; then
         make -j2;
-        CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
+        if [[ "$TIDY" != "On" ]]; then
+            CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
+        fi
       fi
     - if [[ "$CLANG_FORMAT" == "On" ]]; then
         cd ..;

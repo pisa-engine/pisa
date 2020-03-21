@@ -10,6 +10,7 @@ option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
+option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
 
 configure_file(
   ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp.in
@@ -76,11 +77,11 @@ file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
 list(SORT PISA_SRC_FILES)
 
 if (PISA_ENABLE_CLANG_TIDY)
-    find_program(CLANGTIDY clang-tidy)
+    find_program(CLANGTIDY "${PISA_CLANG_TIDY_EXECUTABLE}")
     if(CLANGTIDY)
         set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY})
     else()
-        message(SEND_ERROR "clang-tidy requested but executable not found")
+        message(SEND_ERROR "${PISA_CLANG_TIDY_EXECUTABLE} requested but executable not found")
     endif()
 endif()
 
