@@ -381,7 +381,7 @@ void optimal_hybrid_index(
 
     stats_line()("found_space", cur_space)("found_time", cur_time);
 
-    typedef std::tuple<uint32_t, uint32_t> type_param_pair;
+    using type_param_pair = std::tuple<uint32_t, uint32_t>;
     std::map<type_param_pair, size_t> type_counts;
     for (size_t i = 0; i < num_blocks; ++i) {
         type_counts[type_param_pair((uint8_t)block_types[i], block_params[i])] += 1;
@@ -412,7 +412,7 @@ void optimal_hybrid_index(
     for (size_t l = 0; l < input_coll.size(); ++l) {
         auto e = input_coll[l];
 
-        typedef list_transformer<InputCollectionType, builder_type> job_type;
+        using job_type = list_transformer<InputCollectionType, builder_type>;
         std::shared_ptr<job_type> job(new job_type(builder, e, block_types_it, block_params_it));
 
         progress.update(1);

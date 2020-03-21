@@ -23,7 +23,7 @@ struct all_ones_sequence {
 
     class enumerator {
       public:
-        typedef std::pair<uint64_t, uint64_t> value_type;  // (position, value)
+        using value_type = std::pair<uint64_t, uint64_t>;  // (position, value)
 
         enumerator(bit_vector const&, uint64_t, uint64_t universe, uint64_t n, global_parameters const&)
             : m_universe(universe), m_position(size())

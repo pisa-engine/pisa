@@ -80,7 +80,7 @@ class block_freq_index {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    typedef typename block_posting_list<BlockCodec, Profile>::document_enumerator document_enumerator;
+    using document_enumerator = typename block_posting_list<BlockCodec, Profile>::document_enumerator;
 
     document_enumerator operator[](size_t i) const
     {

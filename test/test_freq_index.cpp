@@ -24,7 +24,7 @@ void test_freq_index()
     tbb::task_scheduler_init init;
     pisa::global_parameters params;
     uint64_t universe = 20000;
-    typedef pisa::freq_index<DocsSequence, FreqsSequence> collection_type;
+    using collection_type = pisa::freq_index<DocsSequence, FreqsSequence>;
     typename collection_type::builder b(universe, params);
 
     using vec_type = std::vector<uint64_t>;

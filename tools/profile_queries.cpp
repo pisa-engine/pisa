@@ -56,7 +56,7 @@ struct add_profiling {
 
 template <typename BlockType>
 struct add_profiling<block_freq_index<BlockType, false>> {
-    typedef block_freq_index<BlockType, true> type;
+    using type = block_freq_index<BlockType, true>;
 };
 
 template <typename IndexType>

@@ -1,4 +1,5 @@
 ---
+WarningsAsErrors: '*'
 HeaderFilterRegex: '.*include/pisa.*\.hpp'
 FormatStyle: none
 Checks: |

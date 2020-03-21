@@ -82,7 +82,7 @@ class semiasync_queue {
         m_running_threads.pop_front();
     }
 
-    typedef std::pair<std::vector<job_ptr_type>, std::thread> thread_t;
+    using thread_t = std::pair<std::vector<job_ptr_type>, std::thread>;
     thread_t m_next_thread;
     std::deque<thread_t> m_running_threads;
 
