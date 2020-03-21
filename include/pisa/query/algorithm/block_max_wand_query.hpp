@@ -6,7 +6,7 @@
 namespace pisa {
 
 struct block_max_wand_query {
-    block_max_wand_query(topk_queue& topk) : m_topk(topk) {}
+    explicit block_max_wand_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)

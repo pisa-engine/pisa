@@ -8,7 +8,7 @@
 namespace pisa {
 
 struct ranked_or_query {
-    ranked_or_query(topk_queue& topk) : m_topk(topk) {}
+    explicit ranked_or_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)

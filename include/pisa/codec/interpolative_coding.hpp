@@ -9,7 +9,7 @@ namespace pisa {
 
 class bit_writer {
   public:
-    bit_writer(std::vector<uint32_t>& buf) : m_buf(buf), m_size(0), m_cur_word(nullptr)
+    explicit bit_writer(std::vector<uint32_t>& buf) : m_buf(buf), m_size(0), m_cur_word(nullptr)
     {
         m_buf.clear();
     }
@@ -73,7 +73,7 @@ class bit_writer {
 
 class bit_reader {
   public:
-    bit_reader(uint32_t const* in) : m_in(in), m_avail(0), m_buf(0), m_pos(0) {}
+    explicit bit_reader(uint32_t const* in) : m_in(in), m_avail(0), m_buf(0), m_pos(0) {}
 
     size_t position() const { return m_pos; }
 

@@ -33,7 +33,7 @@ namespace pisa { namespace mapper {
         mappable_vector& operator=(const mappable_vector&) = delete;
 
         template <typename Range>
-        mappable_vector(Range const& from) : m_data(0), m_size(0)
+        explicit mappable_vector(Range const& from) : m_data(0), m_size(0)
         {
             size_t size = boost::size(from);
             T* data = new T[size];

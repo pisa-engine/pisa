@@ -10,7 +10,7 @@ namespace pisa {
 
 class binary_freq_collection {
   public:
-    binary_freq_collection(const char* basename)
+    explicit binary_freq_collection(const char* basename)
         : m_docs((std::string(basename) + ".docs").c_str()),
           m_freqs((std::string(basename) + ".freqs").c_str())
     {

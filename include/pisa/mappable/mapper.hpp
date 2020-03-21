@@ -144,7 +144,7 @@ namespace pisa { namespace mapper {
 
         class sizeof_visitor {
           public:
-            sizeof_visitor(bool with_tree = false) : m_size(0)
+            explicit sizeof_visitor(bool with_tree = false) : m_size(0)
             {
                 if (with_tree) {
                     m_cur_size_node = std::make_shared<size_node>();

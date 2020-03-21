@@ -7,7 +7,7 @@ namespace pisa {
 
 template <typename QueryAlg>
 struct range_taat_query {
-    range_taat_query(topk_queue& topk) : m_topk(topk) {}
+    explicit range_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
     void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator)

@@ -12,7 +12,7 @@ namespace pisa {
 
 class ranked_or_taat_query {
   public:
-    ranked_or_taat_query(topk_queue& topk) : m_topk(topk) {}
+    explicit ranked_or_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
     void operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator)

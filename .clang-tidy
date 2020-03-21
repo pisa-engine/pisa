@@ -10,5 +10,8 @@ Checks: |
     readability-braces-around-statements,
     modernize-use-equals-default,
     modernize-use-using,
+    hicpp-explicit-conversions,
     -modernize-use-trailing-return-type,
-    -fuchsia-overloaded-operator
+    -fuchsia-overloaded-operator,
+    -fuchsia-trailing-return,
+    -fuchsia-default-arguments-calls

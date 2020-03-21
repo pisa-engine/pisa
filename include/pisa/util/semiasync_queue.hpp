@@ -11,7 +11,8 @@ namespace pisa {
 
 class semiasync_queue {
   public:
-    semiasync_queue(double work_per_thread) : m_expected_work(0), m_work_per_thread(work_per_thread)
+    explicit semiasync_queue(double work_per_thread)
+        : m_expected_work(0), m_work_per_thread(work_per_thread)
     {
         m_max_threads = std::thread::hardware_concurrency();
         spdlog::info("semiasync_queue using {} worker threads", m_max_threads);

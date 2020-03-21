@@ -46,7 +46,7 @@ struct Lazy_Accumulator {
         }
     };
 
-    Lazy_Accumulator(std::size_t size)
+    explicit Lazy_Accumulator(std::size_t size)
         : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor)
     {}
 
