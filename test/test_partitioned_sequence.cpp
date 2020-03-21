@@ -47,7 +47,7 @@ template <typename BaseSequence>
 void test_partitioned_sequence(uint64_t universe, std::vector<uint64_t> const& seq)
 {
     pisa::global_parameters params;
-    typedef pisa::partitioned_sequence<BaseSequence> sequence_type;
+    using sequence_type = pisa::partitioned_sequence<BaseSequence>;
 
     pisa::bit_vector_builder bvb;
     sequence_type::write(bvb, seq.begin(), universe, seq.size(), params);

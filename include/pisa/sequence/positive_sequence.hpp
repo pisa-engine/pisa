@@ -8,8 +8,8 @@ namespace pisa {
 
 template <typename BaseSequence = strict_sequence>
 struct positive_sequence {
-    typedef BaseSequence base_sequence_type;
-    typedef typename base_sequence_type::enumerator base_sequence_enumerator;
+    using base_sequence_type = BaseSequence;
+    using base_sequence_enumerator = typename base_sequence_type::enumerator;
 
     template <typename Iterator>
     static void write(

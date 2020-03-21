@@ -24,7 +24,7 @@ class wand_data {
   public:
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
-    wand_data() {}
+    wand_data() = default;
 
     template <typename LengthsIterator>
     wand_data(

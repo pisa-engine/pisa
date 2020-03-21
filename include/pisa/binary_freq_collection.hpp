@@ -42,7 +42,7 @@ class binary_freq_collection {
 
     class iterator: public std::iterator<std::forward_iterator_tag, sequence> {
       public:
-        iterator() {}
+        iterator() = default;
 
         sequence const& operator*() const { return m_cur_seq; }
 

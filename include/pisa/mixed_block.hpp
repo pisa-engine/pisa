@@ -10,7 +10,7 @@ namespace pisa {
 struct mixed_block {
     enum class block_type : uint8_t { pfor = 0, varint = 1, interpolative = 2 };
 
-    typedef uint8_t compr_param_type;
+    using compr_param_type = uint8_t;
     static compr_param_type compr_params(block_type t)
     {
         switch (t) {

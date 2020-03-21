@@ -7,8 +7,8 @@
 
 namespace pisa {
 
-typedef uint32_t posting_t;
-typedef uint64_t cost_t;
+using posting_t = uint32_t;
+using cost_t = uint64_t;
 
 struct optimal_partition {
     std::vector<posting_t> partition;
@@ -50,7 +50,7 @@ struct optimal_partition {
         }
     };
 
-    optimal_partition() {}
+    optimal_partition() = default;
 
     template <typename ForwardIterator, typename CostFunction>
     optimal_partition(

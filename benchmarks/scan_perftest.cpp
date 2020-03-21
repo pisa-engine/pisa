@@ -14,7 +14,7 @@ using pisa::get_time_usecs;
 template <typename BaseSequence>
 void perftest(const char* index_filename)
 {
-    typedef pisa::sequence_collection<BaseSequence> collection_type;
+    using collection_type = pisa::sequence_collection<BaseSequence>;
     spdlog::info("Loading collection from {}", index_filename);
     collection_type coll;
     mio::mmap_source m(index_filename);

@@ -8,8 +8,8 @@
 
 namespace pisa {
 
-typedef uint32_t posting_t;
-typedef float wand_cost_t;
+using posting_t = uint32_t;
+using wand_cost_t = float;
 
 struct score_opt_partition {
     std::vector<uint32_t> partition;
@@ -102,7 +102,7 @@ struct score_opt_partition {
         float max() { return max_queue.front(); }
     };
 
-    score_opt_partition() {}
+    score_opt_partition() = default;
 
     template <typename ForwardIterator>
     score_opt_partition(

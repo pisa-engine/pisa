@@ -24,7 +24,7 @@ class semiasync_queue {
         virtual ~job() = default;
     };
 
-    typedef std::shared_ptr<job> job_ptr_type;
+    using job_ptr_type = std::shared_ptr<job>;
 
     void add_job(job_ptr_type j, double expected_work)
     {

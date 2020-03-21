@@ -19,14 +19,14 @@ namespace pisa { namespace mapper {
         class sizeof_visitor;
     }  // namespace detail
 
-    typedef boost::function<void()> deleter_t;
+    using deleter_t = boost::function<void ()>;
 
     template <typename T>  // T must be a POD
     class mappable_vector {
       public:
-        typedef T value_type;
-        typedef const T* iterator;
-        typedef const T* const_iterator;
+        using value_type = T;
+        using iterator = const T *;
+        using const_iterator = const T *;
 
         mappable_vector() : m_data(0), m_size(0), m_deleter() {}
         mappable_vector(const mappable_vector&) = delete;

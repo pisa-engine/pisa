@@ -90,7 +90,7 @@ struct strict_sequence {
       public:
         typedef std::pair<uint64_t, uint64_t> value_type;  // (position, value)
 
-        enumerator() {}
+        enumerator() = default;
 
         enumerator(
             bit_vector const& bv,

@@ -15,7 +15,7 @@ namespace pisa {
 
 class wand_data_raw {
   public:
-    wand_data_raw() {}
+    wand_data_raw() = default;
 
     class builder {
       public:

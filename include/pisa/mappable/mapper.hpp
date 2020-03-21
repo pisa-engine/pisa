@@ -14,7 +14,7 @@ namespace pisa { namespace mapper {
     };
 
     struct size_node;
-    typedef std::shared_ptr<size_node> size_node_ptr;
+    using size_node_ptr = std::shared_ptr<size_node>;
 
     struct size_node {
         size_node() : size(0) {}

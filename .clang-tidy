@@ -1,5 +1,4 @@
 ---
-WarningsAsErrors: '*'
 HeaderFilterRegex: '.*include/pisa.*\.hpp'
 FormatStyle: none
 Checks: |
@@ -7,4 +6,8 @@ Checks: |
     hicpp-use-auto,
     hicpp-move-const-arg,
     modernize-loop-convert,
-    readability-braces-around-statements
+    readability-braces-around-statements,
+    modernize-use-equals-default,
+    modernize-use-using,
+    -modernize-use-trailing-return-type,
+    -fuchsia-overloaded-operator

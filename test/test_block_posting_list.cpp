@@ -59,7 +59,7 @@ void random_posting_data(
 template <typename BlockCodec>
 void test_block_posting_list()
 {
-    typedef pisa::block_posting_list<BlockCodec> posting_list_type;
+    using posting_list_type = pisa::block_posting_list<BlockCodec>;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;
@@ -77,7 +77,7 @@ void test_block_posting_list()
 template <typename BlockCodec>
 void test_block_posting_list_reordering()
 {
-    typedef pisa::block_posting_list<BlockCodec> posting_list_type;
+    using posting_list_type = pisa::block_posting_list<BlockCodec>;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
         double avg_gap = 1.1 + double(rand()) / RAND_MAX * 10;

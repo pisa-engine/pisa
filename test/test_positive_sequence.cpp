@@ -24,7 +24,7 @@ void test_positive_sequence()
     std::generate(values.begin(), values.end(), []() { return (rand() % 256) + 1; });
     uint64_t universe = std::accumulate(values.begin(), values.end(), 0) + 1;
 
-    typedef pisa::positive_sequence<BaseSequence> sequence_type;
+    using sequence_type = pisa::positive_sequence<BaseSequence>;
     pisa::bit_vector_builder bvb;
     sequence_type::write(bvb, values.begin(), universe, values.size(), params);
     pisa::bit_vector bv(&bvb);
