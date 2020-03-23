@@ -65,7 +65,7 @@ TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
                 of.pointers0_offset + ((rank0 >> of.log_sampling0) - 1) * of.pointer_size;
             MY_REQUIRE_EQUAL(pos, bv.get_bits(ptr_offset, of.pointer_size), "rank0 = " << rank0);
         }
-        rank += static_cast<unsigned long>(b);
+        rank += static_cast<uint64_t>(b);
     }
 }
 

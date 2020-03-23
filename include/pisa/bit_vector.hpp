@@ -19,7 +19,7 @@ class bit_vector_builder {
 
     bit_vector_builder(uint64_t size = 0, bool init = false) : m_size(size)
     {
-        m_bits.resize(detail::words_for(size), uint64_t(-static_cast<int>(init)));
+        m_bits.resize(detail::words_for(size), init ? std::numeric_limits<std::uint64_t>::max() : 0U);
         if (size != 0u) {
             m_cur_word = &m_bits.back();
             // clear padding bits
