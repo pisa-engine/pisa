@@ -182,9 +182,8 @@ struct compact_ranked_bitvector {
                 m_value = val;
                 m_enumerator = he;
                 return value();
-            } 
-                return slow_next_geq(lower_bound);
-            
+            }
+            return slow_next_geq(lower_bound);
         }
 
         value_type next()
@@ -301,9 +300,8 @@ struct compact_ranked_bitvector {
         {
             if (i == 0) {
                 return 0;
-            } 
-                return m_bv->get_word56(offset + (i - 1) * size) & ((uint64_t(1) << size) - 1);
-            
+            }
+            return m_bv->get_word56(offset + (i - 1) * size) & ((uint64_t(1) << size) - 1);
         }
 
         inline uint64_t pointer1(uint64_t i) const

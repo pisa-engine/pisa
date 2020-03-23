@@ -44,24 +44,23 @@ int main(int argc, char** argv)
                 std::cout << elem << '\n';
             }
             return 0;
-        } if (*lookup) {
+        }
+        if (*lookup) {
             if (idx < lexicon.size()) {
                 std::cout << lexicon[idx] << '\n';
                 return 0;
-            } 
-                spdlog::error(
-                    "Requested index {} too large for vector of size {}", idx, lexicon.size());
-                return 1;
-            
-        } else if (*rlookup) {
+            }
+            spdlog::error("Requested index {} too large for vector of size {}", idx, lexicon.size());
+            return 1;
+        }
+        if (*rlookup) {
             auto pos = std::lower_bound(lexicon.begin(), lexicon.end(), std::string_view(value));
             if (pos != lexicon.end() and *pos == std::string_view(value)) {
                 std::cout << std::distance(lexicon.begin(), pos) << '\n';
                 return 0;
-            } 
-                spdlog::error("Requested term {} was not found", value);
-                return 1;
-            
+            }
+            spdlog::error("Requested term {} was not found", value);
+            return 1;
         }
         return 1;
     } catch (std::runtime_error const& err) {

@@ -257,9 +257,8 @@ class bit_vector {
             >> (std::numeric_limits<std::uint64_t>::digits - len);
         if (shift + len <= 64) {
             return m_bits[block] >> shift & mask;
-        } 
-            return (m_bits[block] >> shift) | (m_bits[block + 1] << (64 - shift) & mask);
-        
+        }
+        return (m_bits[block] >> shift) | (m_bits[block + 1] << (64 - shift) & mask);
     }
 
     // same as get_bits(pos, 64) but it can extend further size(), padding with zeros

@@ -68,9 +68,8 @@ struct strict_elias_fano {
         {
             if (m_ef_enum.position() != 0u) {
                 return m_ef_enum.prev_value() + m_ef_enum.position() - 1;
-            } 
-                return 0;
-            
+            }
+            return 0;
         }
 
       private:

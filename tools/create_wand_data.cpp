@@ -73,10 +73,9 @@ int main(int argc, const char** argv)
         if (lambda) {
             spdlog::info("Lambda {}", *lambda);
             return VariableBlock(*lambda);
-        } 
-            spdlog::info("Fixed block size: {}", *fixed_block_size);
-            return FixedBlock(*fixed_block_size);
-        
+        }
+        spdlog::info("Fixed block size: {}", *fixed_block_size);
+        return FixedBlock(*fixed_block_size);
     }();
 
     if (compress) {

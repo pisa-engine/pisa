@@ -35,9 +35,9 @@ namespace pisa { namespace intrinsics {
         if (mask != 0u) {
             *index = (unsigned long)__builtin_ctzll(mask);
             return true;
-        } 
-            return false;
-        
+        }
+        return false;
+
 #elif defined(_MSC_VER)
         return _BitScanForward64(index, mask) != 0;
 #else

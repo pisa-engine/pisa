@@ -209,9 +209,8 @@ struct partitioned_sequence {
         {
             if (PISA_UNLIKELY(m_position == m_cur_begin)) {
                 return m_cur_partition ? m_cur_base - 1 : 0;
-            } 
-                return m_cur_base + m_partition_enum.prev_value();
-            
+            }
+            return m_cur_base + m_partition_enum.prev_value();
         }
 
         uint64_t num_partitions() const { return m_partitions; }
@@ -259,9 +258,8 @@ struct partitioned_sequence {
             if (m_partitions == 1) {
                 if (lower_bound < m_cur_base) {
                     return move(0);
-                } 
-                    return move(size());
-                
+                }
+                return move(size());
             }
 
             auto ub_it = m_upper_bounds.next_geq(lower_bound);

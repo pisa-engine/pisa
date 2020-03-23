@@ -91,7 +91,10 @@ namespace pisa { namespace broadword {
         return place + tables::select_in_byte[((x >> place) & 0xFF) | (byte_rank << 8)];
     }
 
-    inline uint64_t same_msb(uint64_t x, uint64_t y) { return static_cast<uint64_t>((x ^ y) <= (x & y)); }
+    inline uint64_t same_msb(uint64_t x, uint64_t y)
+    {
+        return static_cast<uint64_t>((x ^ y) <= (x & y));
+    }
 
     namespace detail {
         // Adapted from LSB of Chess Programming Wiki
@@ -109,7 +112,10 @@ namespace pisa { namespace broadword {
         return detail::debruijn64_mapping[(x * detail::debruijn64) >> 58];
     }
 
-    inline uint8_t msb(uint64_t x, unsigned long& ret) { return static_cast<uint8_t>(intrinsics::bsr64(&ret, x)); }
+    inline uint8_t msb(uint64_t x, unsigned long& ret)
+    {
+        return static_cast<uint8_t>(intrinsics::bsr64(&ret, x));
+    }
 
     inline uint8_t msb(uint64_t x)
     {
@@ -119,7 +125,10 @@ namespace pisa { namespace broadword {
         return (uint8_t)ret;
     }
 
-    inline uint8_t lsb(uint64_t x, unsigned long& ret) { return static_cast<uint8_t>(intrinsics::bsf64(&ret, x)); }
+    inline uint8_t lsb(uint64_t x, unsigned long& ret)
+    {
+        return static_cast<uint8_t>(intrinsics::bsf64(&ret, x));
+    }
 
     inline uint8_t lsb(uint64_t x)
     {

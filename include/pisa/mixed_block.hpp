@@ -204,14 +204,15 @@ struct mixed_block {
         // use ifs instead of a switch to enable PISA_LIKELY
         if (PISA_LIKELY(type == block_type::varint)) {  // optimize for the fastest codec
             return varint_G8IU_block::decode(in, out, sum_of_values, n);
-        } if (type == block_type::pfor) {
+        }
+        if (type == block_type::pfor) {
             return optpfor_block::decode(in, out, sum_of_values, n);
-        } if (type == block_type::interpolative) {
+        }
+        if (type == block_type::interpolative) {
             return interpolative_block::decode(in, out, sum_of_values, n);
-        } 
-            assert(false);
-            __builtin_unreachable();
-        
+        }
+        assert(false);
+        __builtin_unreachable();
     }
 };
 
