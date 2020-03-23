@@ -182,9 +182,9 @@ struct compact_ranked_bitvector {
                 m_value = val;
                 m_enumerator = he;
                 return value();
-            } else {
+            } 
                 return slow_next_geq(lower_bound);
-            }
+            
         }
 
         value_type next()
@@ -278,7 +278,7 @@ struct compact_ranked_bitvector {
                 m_position += popcount(word);
                 word = m_bv->data()[++begin_word];
             }
-            if (end_shift) {
+            if (end_shift != 0u) {
                 m_position += popcount(word << (64 - end_shift));
             }
 
@@ -301,9 +301,9 @@ struct compact_ranked_bitvector {
         {
             if (i == 0) {
                 return 0;
-            } else {
+            } 
                 return m_bv->get_word56(offset + (i - 1) * size) & ((uint64_t(1) << size) - 1);
-            }
+            
         }
 
         inline uint64_t pointer1(uint64_t i) const

@@ -94,9 +94,9 @@ struct score_opt_partition {
         {
             if (size() < 2) {
                 return m_fixed_cost;
-            } else {
+            } 
                 return size() * max_queue.front() - sum + m_fixed_cost;
-            }
+            
         }
 
         float max() { return max_queue.front(); }

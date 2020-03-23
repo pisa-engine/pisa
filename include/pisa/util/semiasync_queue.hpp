@@ -28,7 +28,7 @@ class semiasync_queue {
 
     void add_job(job_ptr_type j, double expected_work)
     {
-        if (m_max_threads) {
+        if (m_max_threads != 0u) {
             m_next_thread.first.push_back(j);
             m_expected_work += expected_work;
             if (m_expected_work >= m_work_per_thread) {

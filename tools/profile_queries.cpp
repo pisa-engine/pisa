@@ -168,7 +168,7 @@ int main(int argc, const char** argv)
         args++;
         args++;
         std::filebuf fb;
-        if (fb.open(argv[args], std::ios::in)) {
+        if (fb.open(argv[args], std::ios::in) != nullptr) {
             std::istream is(&fb);
             while (read_query(q, is)) {
                 queries.push_back({std::nullopt, q, {}});

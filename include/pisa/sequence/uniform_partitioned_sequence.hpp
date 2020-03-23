@@ -127,7 +127,7 @@ struct uniform_partitioned_sequence {
                 auto ub = 0;
                 if (n > 1) {
                     uint64_t universe_delta = read_delta(it);
-                    ub = universe_delta ? universe_delta : (universe - m_cur_base - 1);
+                    ub = universe_delta != 0u ? universe_delta : (universe - m_cur_base - 1);
                 }
 
                 m_partition_enum =
@@ -195,9 +195,9 @@ struct uniform_partitioned_sequence {
         {
             if (PISA_UNLIKELY(m_position == m_cur_begin)) {
                 return m_cur_partition ? m_cur_base - 1 : 0;
-            } else {
+            } 
                 return m_cur_base + m_partition_enum.prev_value();
-            }
+            
         }
 
       private:
@@ -241,9 +241,9 @@ struct uniform_partitioned_sequence {
             if (m_partitions == 1) {
                 if (lower_bound < m_cur_base) {
                     return move(0);
-                } else {
+                } 
                     return move(size());
-                }
+                
             }
 
             auto ub_it = m_upper_bounds.next_geq(lower_bound);
@@ -263,7 +263,7 @@ struct uniform_partitioned_sequence {
         {
             assert(m_partitions > 1);
 
-            uint64_t endpoint = partition
+            uint64_t endpoint = partition != 0u
                 ? m_bv->get_bits(
                     m_endpoints_offset + (partition - 1) * m_endpoint_bits, m_endpoint_bits)
                 : 0;
@@ -275,7 +275,7 @@ struct uniform_partitioned_sequence {
 
             auto ub_it = m_upper_bounds.move(partition + 1);
             m_cur_upper_bound = ub_it.second;
-            m_cur_base = m_upper_bounds.prev_value() + (partition ? 1 : 0);
+            m_cur_base = m_upper_bounds.prev_value() + (partition != 0u ? 1 : 0);
 
             m_partition_enum = base_sequence_enumerator(
                 *m_bv,

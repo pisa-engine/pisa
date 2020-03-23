@@ -54,18 +54,18 @@ TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
             MY_REQUIRE_EQUAL(seq[rank], read_v, "rank = " << rank);
         }
 
-        if (b && rank && (rank % (1 << of.log_sampling1)) == 0) {
+        if (b && (rank != 0u) && (rank % (1 << of.log_sampling1)) == 0) {
             uint64_t ptr_offset =
                 of.pointers1_offset + ((rank >> of.log_sampling1) - 1) * of.pointer_size;
             MY_REQUIRE_EQUAL(pos, bv.get_bits(ptr_offset, of.pointer_size), "rank = " << rank);
         }
 
-        if (!b && rank0 && (rank0 % (1 << of.log_sampling0)) == 0) {
+        if (!b && (rank0 != 0u) && (rank0 % (1 << of.log_sampling0)) == 0) {
             uint64_t ptr_offset =
                 of.pointers0_offset + ((rank0 >> of.log_sampling0) - 1) * of.pointer_size;
             MY_REQUIRE_EQUAL(pos, bv.get_bits(ptr_offset, of.pointer_size), "rank0 = " << rank0);
         }
-        rank += b;
+        rank += static_cast<unsigned long>(b);
     }
 }
 

@@ -186,7 +186,7 @@ auto process_shard(
     spdlog::debug("[Shard {}] Writing terms", shard_id.as_int());
     std::ofstream tos(fmt::format("{}.terms", basename));
     for (auto&& [term, occurs]: ranges::views::zip(terms.as_vector(), has_term)) {
-        if (occurs) {
+        if (occurs != 0u) {
             tos << term << '\n';
         }
     }
