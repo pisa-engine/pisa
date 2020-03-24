@@ -119,7 +119,7 @@ TEST_CASE("wand_data_range")
         REQUIRE(live_blocks.size() == ceil_div(collection.num_docs(), 64));
 
         for (int i = 0; i < live_blocks.size(); ++i) {
-            if (live_blocks[i] == 0) {
+            if (not live_blocks[i]) {
                 for (auto&& e: enums) {
                     e.next_geq(i * 64);
                     REQUIRE(e.score() == 0);

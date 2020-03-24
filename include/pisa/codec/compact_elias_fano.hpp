@@ -211,9 +211,8 @@ struct compact_elias_fano {
 
                 m_value = val;
                 return value();
-            } else {
-                return slow_next_geq(lower_bound);
             }
+            return slow_next_geq(lower_bound);
         }
 
         uint64_t size() const { return m_of.n; }
@@ -375,10 +374,9 @@ struct compact_elias_fano {
         {
             if (i == 0) {
                 return 0;
-            } else {
-                return m_bv->get_word56(offset + (i - 1) * m_of.pointer_size)
-                    & ((uint64_t(1) << m_of.pointer_size) - 1);
             }
+            return m_bv->get_word56(offset + (i - 1) * m_of.pointer_size)
+                & ((uint64_t(1) << m_of.pointer_size) - 1);
         }
 
         inline uint64_t pointer0(uint64_t i) const { return pointer(m_of.pointers0_offset, i); }

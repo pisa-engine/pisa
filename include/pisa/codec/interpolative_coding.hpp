@@ -16,7 +16,7 @@ class bit_writer {
 
     void write(uint32_t bits, uint32_t len)
     {
-        if (!len) {
+        if (len == 0u) {
             return;
         }
         uint32_t pos_in_word = m_size % 32;
@@ -53,7 +53,7 @@ class bit_writer {
 
     void write_interpolative(uint32_t const* in, size_t n, uint32_t low, uint32_t high)
     {
-        if (!n) {
+        if (n == 0u) {
             return;
         }
         assert(low <= high);
@@ -79,7 +79,7 @@ class bit_reader {
 
     uint32_t read(uint32_t len)
     {
-        if (!len) {
+        if (len == 0u) {
             return 0;
         }
 
@@ -123,10 +123,10 @@ class bit_reader {
             return;
         }
         // the two ifs are a bit ugly but it is faster than postponing them
-        if (h) {
+        if (h != 0u) {
             read_interpolative(out, h, low, val);
         }
-        if (n - h - 1) {
+        if ((n - h - 1) != 0u) {
             read_interpolative(out + h + 1, n - h - 1, val, high);
         }
     }

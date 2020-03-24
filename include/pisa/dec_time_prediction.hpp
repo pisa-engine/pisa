@@ -124,7 +124,7 @@ namespace pisa { namespace time_prediction {
                 if (last_value != 0) {
                     nonzeros += group_size;
                 }
-                uint32_t b = last_value ? broadword::msb(last_value) + 1 : 0;
+                uint32_t b = last_value != 0u ? broadword::msb(last_value) + 1 : 0;
                 max_b = std::max(max_b, b);
 
                 if (i < values.size()) {

@@ -70,9 +70,8 @@ inline auto Intersection::compute(
         auto order = [](auto const& lhs, auto const& rhs) { return lhs.second < rhs.second; };
         if (auto pos = std::max_element(results.begin(), results.end(), order); pos != results.end()) {
             return pos->second;
-        } else {
-            return 0.0;
         }
+        return 0.0;
     };
     float max_score = max_element(results);
     return Intersection{results.size(), max_score};

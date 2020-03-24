@@ -69,7 +69,7 @@ void parse_plaintext_content(std::string&& content, std::function<void(std::stri
 [[nodiscard]] auto is_http(std::string_view content) -> bool
 {
     auto start = std::find_if(
-        content.begin(), content.end(), [](unsigned char c) { return not std::isspace(c); });
+        content.begin(), content.end(), [](unsigned char c) { return std::isspace(c) == 0; });
     if (start == content.end()) {
         return false;
     }
@@ -84,7 +84,7 @@ void parse_html_content(std::string&& content, std::function<void(std::string&&)
             while (pos != content.end()) {
                 pos = std::find(pos, content.end(), '\n');
                 pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
-                    return c == '\n' or not std::isspace(c);
+                    return c == '\n' or (std::isspace(c) == 0);
                 });
                 if (pos != content.end() and *pos == '\n') {
                     return std::string_view(&*pos, std::distance(pos, content.end()));

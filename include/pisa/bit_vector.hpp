@@ -17,13 +17,13 @@ class bit_vector_builder {
   public:
     using bits_type = std::vector<uint64_t>;
 
-    bit_vector_builder(uint64_t size = 0, bool init = 0) : m_size(size)
+    bit_vector_builder(uint64_t size = 0, bool init = false) : m_size(size)
     {
-        m_bits.resize(detail::words_for(size), uint64_t(-init));
-        if (size) {
+        m_bits.resize(detail::words_for(size), init ? std::numeric_limits<std::uint64_t>::max() : 0U);
+        if (size != 0u) {
             m_cur_word = &m_bits.back();
             // clear padding bits
-            if (init && size % 64) {
+            if (init && ((size % 64) != 0u)) {
                 *m_cur_word >>= 64 - (size % 64);
             }
         }
@@ -58,7 +58,7 @@ class bit_vector_builder {
         assert(pos + len <= size());
         // check there are no spurious bits
         assert(len == 64 || (bits >> len) == 0);
-        if (!len) {
+        if (len == 0u) {
             return;
         }
         uint64_t mask = (len == 64) ? uint64_t(-1) : ((uint64_t(1) << len) - 1);
@@ -79,7 +79,7 @@ class bit_vector_builder {
     {
         // check there are no spurious bits
         assert(len == 64 || (bits >> len) == 0);
-        if (!len) {
+        if (len == 0u) {
             return;
         }
         uint64_t pos_in_word = m_size % 64;
@@ -99,7 +99,7 @@ class bit_vector_builder {
     {
         m_size += n;
         uint64_t needed = detail::words_for(m_size) - m_bits.size();
-        if (needed) {
+        if (needed != 0u) {
             m_bits.insert(m_bits.end(), needed, 0);
             m_cur_word = &m_bits.back();
         }
@@ -111,14 +111,14 @@ class bit_vector_builder {
             append_bits(uint64_t(-1), 64);
             n -= 64;
         }
-        if (n) {
+        if (n != 0u) {
             append_bits(uint64_t(-1) >> (64 - n), n);
         }
     }
 
     void append(bit_vector_builder const& rhs)
     {
-        if (!rhs.size()) {
+        if (rhs.size() == 0u) {
             return;
         }
 
@@ -241,7 +241,7 @@ class bit_vector {
         uint64_t block = pos / 64;
         assert(block < m_bits.size());
         uint64_t shift = pos % 64;
-        return (m_bits[block] >> shift) & 1;
+        return ((m_bits[block] >> shift) & 1) != 0u;
     }
 
     inline uint64_t get_bits(uint64_t pos, uint64_t len) const
@@ -257,9 +257,8 @@ class bit_vector {
             >> (std::numeric_limits<std::uint64_t>::digits - len);
         if (shift + len <= 64) {
             return m_bits[block] >> shift & mask;
-        } else {
-            return (m_bits[block] >> shift) | (m_bits[block + 1] << (64 - shift) & mask);
         }
+        return (m_bits[block] >> shift) | (m_bits[block + 1] << (64 - shift) & mask);
     }
 
     // same as get_bits(pos, 64) but it can extend further size(), padding with zeros
@@ -269,7 +268,7 @@ class bit_vector {
         uint64_t block = pos / 64;
         uint64_t shift = pos % 64;
         uint64_t word = m_bits[block] >> shift;
-        if (shift && block + 1 < m_bits.size()) {
+        if ((shift != 0u) && block + 1 < m_bits.size()) {
             word |= m_bits[block + 1] << (64 - shift);
         }
         return word;
@@ -292,7 +291,7 @@ class bit_vector {
         word = (word << shift) >> shift;
 
         unsigned long ret;
-        while (!broadword::msb(word, ret)) {
+        while (broadword::msb(word, ret) == 0u) {
             assert(block);
             word = ~m_bits[--block];
         };
@@ -307,7 +306,7 @@ class bit_vector {
         uint64_t word = (~m_bits[block] >> shift) << shift;
 
         unsigned long ret;
-        while (!broadword::lsb(word, ret)) {
+        while (broadword::lsb(word, ret) == 0u) {
             ++block;
             assert(block < m_bits.size());
             word = ~m_bits[block];
@@ -324,7 +323,7 @@ class bit_vector {
         word = (word << shift) >> shift;
 
         unsigned long ret;
-        while (!broadword::msb(word, ret)) {
+        while (broadword::msb(word, ret) == 0u) {
             assert(block);
             word = m_bits[--block];
         };
@@ -339,7 +338,7 @@ class bit_vector {
         uint64_t word = (m_bits[block] >> shift) << shift;
 
         unsigned long ret;
-        while (!broadword::lsb(word, ret)) {
+        while (broadword::lsb(word, ret) == 0u) {
             ++block;
             assert(block < m_bits.size());
             word = m_bits[block];
@@ -359,10 +358,10 @@ class bit_vector {
 
         inline bool next()
         {
-            if (!m_avail) {
+            if (m_avail == 0u) {
                 fill_buf();
             }
-            bool b = m_buf & 1;
+            bool b = (m_buf & 1) != 0u;
             m_buf >>= 1;
             m_avail -= 1;
             m_pos += 1;
@@ -390,7 +389,7 @@ class bit_vector {
         {
             uint64_t zs = 0;
             // XXX the loop may be optimized by aligning access
-            while (!m_buf) {
+            while (m_buf == 0u) {
                 m_pos += m_avail;
                 zs += m_avail;
                 m_avail = 0;
@@ -438,7 +437,7 @@ class bit_vector {
         {
             unsigned long pos_in_word;
             uint64_t buf = m_buf;
-            while (!broadword::lsb(buf, pos_in_word)) {
+            while (broadword::lsb(buf, pos_in_word) == 0u) {
                 m_position += 64;
                 buf = m_data[m_position / 64];
             }

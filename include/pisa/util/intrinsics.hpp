@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <x86intrin.h>
 #if defined(__SSE4_2__)
     #define USE_POPCNT 1
@@ -32,12 +32,12 @@ namespace pisa { namespace intrinsics {
     __INTRIN_INLINE bool bsf64(unsigned long* const index, const uint64_t mask)
     {
 #if defined(__GNUC__) || defined(__clang__)
-        if (mask) {
+        if (mask != 0u) {
             *index = (unsigned long)__builtin_ctzll(mask);
             return true;
-        } else {
-            return false;
         }
+        return false;
+
 #elif defined(_MSC_VER)
         return _BitScanForward64(index, mask) != 0;
 #else
@@ -48,12 +48,11 @@ namespace pisa { namespace intrinsics {
     __INTRIN_INLINE bool bsr64(unsigned long* const index, const uint64_t mask)
     {
 #if defined(__GNUC__) || defined(__clang__)
-        if (mask) {
+        if (mask != 0u) {
             *index = (unsigned long)(63 - __builtin_clzll(mask));
             return true;
-        } else {
-            return false;
         }
+        return false;
 #elif defined(_MSC_VER)
         return _BitScanReverse64(index, mask) != 0;
 #else

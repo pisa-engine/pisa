@@ -180,7 +180,7 @@ struct block_posting_list {
                 uint32_t cur_block_size =
                     ((b + 1) * block_size <= size()) ? block_size : (size() % block_size);
 
-                uint32_t cur_base = (b ? block_max(b - 1) : uint32_t(-1)) + 1;
+                uint32_t cur_base = (b != 0u ? block_max(b - 1) : uint32_t(-1)) + 1;
                 uint8_t const* freq_ptr = BlockCodec::decode(
                     ptr, buf.data(), block_max(b) - cur_base - (cur_block_size - 1), cur_block_size);
                 ptr = BlockCodec::decode(freq_ptr, buf.data(), uint32_t(-1), cur_block_size);
@@ -238,7 +238,7 @@ struct block_posting_list {
                 uint32_t cur_block_size =
                     ((b + 1) * block_size <= size()) ? block_size : (size() % block_size);
 
-                uint32_t cur_base = (b ? block_max(b - 1) : uint32_t(-1)) + 1;
+                uint32_t cur_base = (b != 0u ? block_max(b - 1) : uint32_t(-1)) + 1;
                 uint32_t gaps_universe = block_max(b) - cur_base - (cur_block_size - 1);
 
                 blocks.back().index = b;
@@ -264,11 +264,11 @@ struct block_posting_list {
         void PISA_NOINLINE decode_docs_block(uint64_t block)
         {
             static const uint64_t block_size = BlockCodec::block_size;
-            uint32_t endpoint = block ? ((uint32_t const*)m_block_endpoints)[block - 1] : 0;
+            uint32_t endpoint = block != 0u ? ((uint32_t const*)m_block_endpoints)[block - 1] : 0;
             uint8_t const* block_data = m_blocks_data + endpoint;
             m_cur_block_size =
                 ((block + 1) * block_size <= size()) ? block_size : (size() % block_size);
-            uint32_t cur_base = (block ? block_max(block - 1) : uint32_t(-1)) + 1;
+            uint32_t cur_base = (block != 0u ? block_max(block - 1) : uint32_t(-1)) + 1;
             m_cur_block_max = block_max(block);
             m_freqs_block_data = BlockCodec::decode(
                 block_data,

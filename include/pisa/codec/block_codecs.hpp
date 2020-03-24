@@ -93,7 +93,7 @@ class TightVariableByte {
             for (uint32_t v = 0;; shift += 7) {
                 uint8_t c = *inbyte++;
                 v += ((c & 127) << shift);
-                if ((c & 128)) {
+                if ((c & 128) != 0) {
                     *out++ = v;
                     break;
                 }
@@ -110,7 +110,7 @@ class TightVariableByte {
             for (uint32_t v = 0;; shift += 7) {
                 uint8_t c = *inbyte++;
                 v += ((c & 127) << shift);
-                if ((c & 128)) {
+                if ((c & 128) != 0) {
                     *out++ = v;
                     n += 1;
                     break;
@@ -175,7 +175,7 @@ struct optpfor_block {
         uint32_t findBestB(const uint32_t* in, uint32_t len)
         {
             // trick to force the choice of b from a parameter
-            if (force_b) {
+            if (force_b != nullptr) {
                 return *force_b;
             }
 

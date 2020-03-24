@@ -78,11 +78,10 @@ std::function<void(const std::string)> resolve_query_parser(
         return [&queries, term_processor = std::move(term_processor)](std::string const& query_line) {
             queries.push_back(parse_query_terms(query_line, term_processor));
         };
-    } else {
-        return [&queries](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
-        };
     }
+    return [&queries](std::string const& query_line) {
+        queries.push_back(parse_query_ids(query_line));
+    };
 }
 
 bool read_query(term_id_vec& ret, std::istream& is)

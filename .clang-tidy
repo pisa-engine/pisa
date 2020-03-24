@@ -6,9 +6,14 @@ Checks: |
     -*,
     hicpp-use-auto,
     hicpp-move-const-arg,
+    hicpp-deprecated-headers,
     modernize-loop-convert,
     readability-braces-around-statements,
+    readability-else-after-return,
+    readability-implicit-bool-conversion,
     modernize-use-equals-default,
     modernize-use-using,
+    -hicpp-signed-bitwise,
     -modernize-use-trailing-return-type,
-    -fuchsia-overloaded-operator
+    -fuchsia-overloaded-operator,
+    -fuchsia-default-arguments-calls
