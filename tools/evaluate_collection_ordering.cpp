@@ -31,7 +31,7 @@ int main(int argc, const char** argv)
         log2_data[i] = log2f(i);
     }
 
-    double all_log_gaps = 0.0f;
+    double all_log_gaps = 0.0F;
     size_t no_gaps = 0;
     for (const auto& seq: input) {
         no_gaps += seq.docs.size();

@@ -31,7 +31,7 @@ namespace intersection {
         std::vector<std::uint32_t> terms;
         std::vector<float> weights;
         for (std::size_t bitpos = 0; bitpos < query.terms.size(); ++bitpos) {
-            if (((1u << bitpos) & mask.to_ulong()) > 0) {
+            if (((1U << bitpos) & mask.to_ulong()) > 0) {
                 terms.push_back(query.terms.at(bitpos));
                 if (bitpos < query.term_weights.size()) {
                     weights.push_back(query.term_weights[bitpos]);
@@ -82,8 +82,8 @@ inline auto Intersection::compute(
 template <typename Fn>
 auto for_all_subsets(Query const& query, std::optional<std::uint8_t> max_term_count, Fn func)
 {
-    auto subset_count = 1u << query.terms.size();
-    for (auto subset = 1u; subset < subset_count; ++subset) {
+    auto subset_count = 1U << query.terms.size();
+    for (auto subset = 1U; subset < subset_count; ++subset) {
         auto mask = intersection::Mask(subset);
         if (!max_term_count || mask.count() <= *max_term_count) {
             func(query, mask);

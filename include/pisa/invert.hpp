@@ -320,7 +320,7 @@ namespace invert {
                 spdlog::error(msg);
                 throw std::runtime_error(msg);
             }
-            if (dlist.size() == 0u) {
+            if (dlist.size() == 0U) {
                 auto msg = fmt::format("Posting list must be non-empty (term {})", term_id);
                 spdlog::error(msg);
                 throw std::runtime_error(msg);

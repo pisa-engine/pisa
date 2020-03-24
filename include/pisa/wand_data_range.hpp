@@ -27,7 +27,7 @@ class wand_data_range {
     template <typename List, typename Fn>
     auto compute_block_max_scores(List& list, Fn scorer) const
     {
-        std::vector<float> block_max_scores(m_blocks_num, 0.0f);
+        std::vector<float> block_max_scores(m_blocks_num, 0.0F);
         for_each_posting(list, [&](auto docid, auto freq) {
             float& current_max = block_max_scores[docid / range_size];
             current_max = std::max(current_max, scorer(docid, freq));
@@ -63,9 +63,9 @@ class wand_data_range {
             Scorer scorer,
             [[maybe_unused]] BlockSize block_size)
         {
-            float max_score = 0.0f;
+            float max_score = 0.0F;
 
-            std::vector<float> b_max(blocks_num, 0.0f);
+            std::vector<float> b_max(blocks_num, 0.0F);
             for (auto i = 0; i < term_seq.docs.size(); ++i) {
                 uint64_t docid = *(term_seq.docs.begin() + i);
                 uint64_t freq = *(term_seq.freqs.begin() + i);
@@ -146,7 +146,7 @@ class wand_data_range {
             e.next_geq(document_range.first);
         }
         for (size_t i = 0; i < len; ++i) {
-            float score = 0.0f;
+            float score = 0.0F;
             for (auto&& e: enums) {
                 score += e.score();
                 e.next_block();

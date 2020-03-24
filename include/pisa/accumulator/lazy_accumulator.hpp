@@ -17,8 +17,8 @@ struct Lazy_Accumulator {
         std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>, "must be unsigned number");
     constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
     constexpr static auto counters_in_descriptor = descriptor_size_in_bits / counter_bit_size;
-    constexpr static auto cycle = (1u << counter_bit_size);
-    constexpr static Descriptor mask = (1u << counter_bit_size) - 1;
+    constexpr static auto cycle = (1U << counter_bit_size);
+    constexpr static Descriptor mask = (1U << counter_bit_size) - 1;
 
     struct Block {
         Descriptor descriptor{};
@@ -72,7 +72,7 @@ struct Lazy_Accumulator {
 
     void aggregate(topk_queue& topk)
     {
-        uint64_t docid = 0u;
+        uint64_t docid = 0U;
         for (auto const& block: m_accumulators) {
             int pos = 0;
             for (auto const& score: block.accumulators) {

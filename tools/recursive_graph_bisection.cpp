@@ -83,10 +83,10 @@ int main(int argc, char const* argv[])
     optconf->excludes(optdepth);
     CLI11_PARSE(app, argc, argv);
 
-    bool config_provided = app.count("--config") > 0u;
-    bool depth_provided = app.count("--depth") > 0u;
-    bool output_provided = app.count("--output") > 0u;
-    if (app.count("--output") + app.count("--store-fwdidx") == 0u) {
+    bool config_provided = app.count("--config") > 0U;
+    bool depth_provided = app.count("--depth") > 0U;
+    bool output_provided = app.count("--output") > 0U;
+    if (app.count("--output") + app.count("--store-fwdidx") == 0U) {
         spdlog::error("Must define at least one output parameter.");
         return 1;
     }
@@ -94,16 +94,16 @@ int main(int argc, char const* argv[])
     tbb::task_scheduler_init init(threads);
     spdlog::info("Number of threads: {}", threads);
 
-    forward_index fwd = app.count("--fwdidx") > 0u
+    forward_index fwd = app.count("--fwdidx") > 0U
         ? forward_index::read(input_fwd)
         : forward_index::from_inverted_index(input_basename, min_len, not nogb);
-    if (app.count("--store-fwdidx") > 0u) {
+    if (app.count("--store-fwdidx") > 0U) {
         forward_index::write(fwd, output_fwd);
     }
 
     if (output_provided) {
         std::vector<uint32_t> documents(fwd.size());
-        std::iota(documents.begin(), documents.end(), 0u);
+        std::iota(documents.begin(), documents.end(), 0U);
         std::vector<double> gains(fwd.size(), 0.0);
         range_type initial_range(documents.begin(), documents.end(), fwd, gains);
 

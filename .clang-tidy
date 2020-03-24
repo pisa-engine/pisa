@@ -13,7 +13,11 @@ Checks: |
     readability-implicit-bool-conversion,
     modernize-use-equals-default,
     modernize-use-using,
+    readability-uppercase-literal-suffix,
+    cppcoreguidelines-special-member-functions,
     -hicpp-signed-bitwise,
     -modernize-use-trailing-return-type,
     -fuchsia-overloaded-operator,
-    -fuchsia-default-arguments-calls
+    -fuchsia-default-arguments-calls,
+    -fuchsia-trailing-return,
+    -llvm-header-guard

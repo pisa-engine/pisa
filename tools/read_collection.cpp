@@ -41,7 +41,7 @@ int main(int argc, char** argv)
         ++iter;
     }
 
-    if (app.count("last") == 0u) {
+    if (app.count("last") == 0U) {
         last = first + 1;
     }
 

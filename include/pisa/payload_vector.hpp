@@ -131,7 +131,7 @@ namespace detail {
     template <typename T, typename... Ts>
     [[nodiscard]] static constexpr auto unpack(std::byte const* ptr) -> std::tuple<T, Ts...>
     {
-        if constexpr (sizeof...(Ts) == 0u) {  // NOLINT(readability-braces-around-statements)
+        if constexpr (sizeof...(Ts) == 0U) {  // NOLINT(readability-braces-around-statements)
             return std::tuple<T>(*reinterpret_cast<const T*>(ptr));
         } else {
             return std::tuple_cat(
@@ -175,7 +175,7 @@ struct Payload_Vector_Buffer {
 
     void to_stream(std::ostream& is) const
     {
-        size_type length = offsets.size() - 1u;
+        size_type length = offsets.size() - 1U;
         is.write(reinterpret_cast<char const*>(&length), sizeof(length));
         is.write(reinterpret_cast<char const*>(offsets.data()), offsets.size() * sizeof(offsets[0]));
         is.write(reinterpret_cast<char const*>(payloads.data()), payloads.size());
@@ -187,7 +187,7 @@ struct Payload_Vector_Buffer {
         -> Payload_Vector_Buffer
     {
         std::vector<size_type> offsets;
-        offsets.push_back(0u);
+        offsets.push_back(0U);
         std::vector<std::byte> payloads;
         for (; first != last; ++first) {
             encoding_fn(*first, std::back_inserter(payloads));
@@ -293,7 +293,7 @@ class Payload_Vector {
 
         gsl::span<std::byte const> offsets, payloads;
         try {
-            std::tie(offsets, payloads) = split(tail, (length + 1u) * sizeof(size_type));
+            std::tie(offsets, payloads) = split(tail, (length + 1U) * sizeof(size_type));
         } catch (std::runtime_error const& err) {
             throw std::runtime_error(
                 std::string("Failed to parse payload vector offset table: ") + err.what());

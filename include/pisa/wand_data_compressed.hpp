@@ -84,7 +84,7 @@ class uniform_score_compressor {
 
     static float inline score(uint32_t quantized_score)
     {
-        const float quant = 1.f / (1u << configuration::get().quantization_bits);
+        const float quant = 1.F / (1U << configuration::get().quantization_bits);
         return quant * (quantized_score + 1);
     }
 };
@@ -174,7 +174,7 @@ class wand_data_compressed {
         {
             uint64_t val = m_docs_enum.move(0).second;
             m_cur_docid = val >> score_bits_size;
-            uint64_t mask = (1u << configuration::get().quantization_bits) - 1;
+            uint64_t mask = (1U << configuration::get().quantization_bits) - 1;
             m_cur_score_index = (val & mask);
         }
 
@@ -184,7 +184,7 @@ class wand_data_compressed {
                 lower_bound = lower_bound << score_bits_size;
                 auto val = m_docs_enum.next_geq(lower_bound);
                 m_cur_docid = val.second >> score_bits_size;
-                uint64_t mask = (1u << configuration::get().quantization_bits) - 1;
+                uint64_t mask = (1U << configuration::get().quantization_bits) - 1;
                 m_cur_score_index = (val.second & mask);
             }
         }
