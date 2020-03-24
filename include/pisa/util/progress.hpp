@@ -16,6 +16,10 @@ class progress {
         }
         m_goal = goal;
     }
+    progress(progress const&) = delete;
+    progress(progress&&) = delete;
+    progress& operator=(progress const&) = delete;
+    progress& operator=(progress&&) = delete;
     ~progress()
     {
         m_status.notify_one();

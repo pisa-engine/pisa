@@ -43,8 +43,11 @@ namespace pisa { namespace mapper {
                 m_written += sizeof(m_flags);
             }
 
-            freeze_visitor(const freeze_visitor&) = delete;
-            freeze_visitor& operator=(const freeze_visitor&) = delete;
+            freeze_visitor(freeze_visitor const&) = delete;
+            freeze_visitor(freeze_visitor&&) = delete;
+            freeze_visitor& operator=(freeze_visitor&&) = delete;
+            freeze_visitor& operator=(freeze_visitor const&) = delete;
+            ~freeze_visitor() = default;
 
             template <typename T>
             typename std::enable_if<!std::is_pod<T>::value, freeze_visitor&>::type
@@ -92,8 +95,11 @@ namespace pisa { namespace mapper {
                 m_cur += sizeof(m_freeze_flags);
             }
 
-            map_visitor(const map_visitor&) = delete;
-            map_visitor& operator=(const map_visitor&) = delete;
+            map_visitor(map_visitor const&) = delete;
+            map_visitor(map_visitor&&) = delete;
+            map_visitor& operator=(map_visitor const&) = delete;
+            map_visitor& operator=(map_visitor&&) = delete;
+            ~map_visitor() = default;
 
             template <typename T>
             typename std::enable_if<!std::is_pod<T>::value, map_visitor&>::type
@@ -144,15 +150,18 @@ namespace pisa { namespace mapper {
 
         class sizeof_visitor {
           public:
-            sizeof_visitor(bool with_tree = false) : m_size(0)
+            explicit sizeof_visitor(bool with_tree = false) : m_size(0)
             {
                 if (with_tree) {
                     m_cur_size_node = std::make_shared<size_node>();
                 }
             }
 
-            sizeof_visitor(const sizeof_visitor&) = delete;
-            sizeof_visitor& operator=(const sizeof_visitor&) = delete;
+            sizeof_visitor(sizeof_visitor const&) = delete;
+            sizeof_visitor(sizeof_visitor&&) = delete;
+            sizeof_visitor& operator=(sizeof_visitor const&) = delete;
+            sizeof_visitor& operator=(sizeof_visitor&&) = delete;
+            ~sizeof_visitor() = default;
 
             template <typename T>
             typename std::enable_if<!std::is_pod<T>::value, sizeof_visitor&>::type

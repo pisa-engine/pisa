@@ -16,6 +16,7 @@ class Integer {
     Integer(Integer&&) noexcept = default;
     Integer& operator=(Integer const&) = default;
     Integer& operator=(Integer&&) noexcept = default;
+    ~Integer() = default;
 
     explicit operator T() const { return m_val; }
     explicit operator std::size_t() const { return static_cast<std::size_t>(m_val); }

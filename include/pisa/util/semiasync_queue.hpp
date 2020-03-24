@@ -19,9 +19,14 @@ class semiasync_queue {
 
     class job {
       public:
+        job() = default;
+        job(job const&) = default;
+        job(job&&) noexcept = default;
+        job& operator=(job const&) = default;
+        job& operator=(job&&) noexcept = default;
+        virtual ~job() = default;
         virtual void prepare() = 0;
         virtual void commit() = 0;
-        virtual ~job() = default;
     };
 
     using job_ptr_type = std::shared_ptr<job>;

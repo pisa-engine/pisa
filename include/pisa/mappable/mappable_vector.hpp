@@ -29,11 +29,13 @@ namespace pisa { namespace mapper {
         using const_iterator = const T*;
 
         mappable_vector() : m_data(0), m_size(0), m_deleter() {}
-        mappable_vector(const mappable_vector&) = delete;
-        mappable_vector& operator=(const mappable_vector&) = delete;
+        mappable_vector(mappable_vector const&) = delete;
+        mappable_vector(mappable_vector&&) = delete;
+        mappable_vector& operator=(mappable_vector const&) = delete;
+        mappable_vector& operator=(mappable_vector&&) = delete;
 
         template <typename Range>
-        mappable_vector(Range const& from) : m_data(0), m_size(0)
+        explicit mappable_vector(Range const& from) : m_data(0), m_size(0)
         {
             size_t size = boost::size(from);
             T* data = new T[size];

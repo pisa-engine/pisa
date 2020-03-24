@@ -17,7 +17,7 @@ class bit_vector_builder {
   public:
     using bits_type = std::vector<uint64_t>;
 
-    bit_vector_builder(uint64_t size = 0, bool init = false) : m_size(size)
+    explicit bit_vector_builder(uint64_t size = 0, bool init = false) : m_size(size)
     {
         m_bits.resize(detail::words_for(size), init ? std::numeric_limits<std::uint64_t>::max() : 0U);
         if (size != 0U) {
@@ -28,8 +28,11 @@ class bit_vector_builder {
             }
         }
     }
-    bit_vector_builder(const bit_vector_builder&) = delete;
-    bit_vector_builder& operator=(const bit_vector_builder&) = delete;
+    bit_vector_builder(bit_vector_builder const&) = delete;
+    bit_vector_builder(bit_vector_builder&&) = delete;
+    bit_vector_builder& operator=(bit_vector_builder const&) = delete;
+    bit_vector_builder& operator=(bit_vector_builder&&) = delete;
+    ~bit_vector_builder() = default;
 
     void reserve(uint64_t size) { m_bits.reserve(detail::words_for(size)); }
 
