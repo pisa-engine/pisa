@@ -37,7 +37,9 @@ class TermTokenizer {
         lex::lexertl::token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
     using lexer_type = lex::lexertl::actor_lexer<token_type>;
 
-    TermTokenizer(std::string_view text) : text_(text), first_(text_.begin()), last_(text_.end()) {}
+    explicit TermTokenizer(std::string_view text)
+        : text_(text), first_(text_.begin()), last_(text_.end())
+    {}
 
     [[nodiscard]] auto begin()
     {

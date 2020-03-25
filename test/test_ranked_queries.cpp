@@ -98,6 +98,7 @@ class range_query_128: public range_query<T> {
     }
 };
 
+// NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE(
     "Ranked query test",
     "[query][ranked][integration]",
@@ -145,6 +146,7 @@ TEMPLATE_TEST_CASE(
     }
 }
 
+// NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", block_max_ranked_and_query)
 {
     for (auto quantized: {false, true}) {

@@ -12,7 +12,10 @@ class bitvector_collection {
 
     class builder {
       public:
-        builder(global_parameters const& params) : m_params(params) { m_endpoints.push_back(0); }
+        explicit builder(global_parameters const& params) : m_params(params)
+        {
+            m_endpoints.push_back(0);
+        }
 
         void append(bit_vector_builder& bvb)
         {

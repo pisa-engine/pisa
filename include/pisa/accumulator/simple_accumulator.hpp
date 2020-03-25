@@ -8,7 +8,7 @@
 namespace pisa {
 
 struct Simple_Accumulator: public std::vector<float> {
-    Simple_Accumulator(std::ptrdiff_t size) : std::vector<float>(size) {}
+    explicit Simple_Accumulator(std::ptrdiff_t size) : std::vector<float>(size) {}
     void init() { std::fill(begin(), end(), 0.0); }
     void accumulate(uint32_t doc, float score) { operator[](doc) += score; }
     void aggregate(topk_queue& topk)
