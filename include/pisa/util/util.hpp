@@ -116,9 +116,9 @@ make_function_iterator(State initial_state, AdvanceFunctor, ValueFunctor)
 struct stats_line {
     stats_line() { std::cout << "{"; }
     stats_line(stats_line const&) = default;
-    stats_line(stats_line &&) noexcept = default;
+    stats_line(stats_line&&) noexcept = default;
     stats_line& operator=(stats_line const&) = default;
-    stats_line& operator=(stats_line &&) noexcept = default;
+    stats_line& operator=(stats_line&&) noexcept = default;
     ~stats_line() { std::cout << "}" << std::endl; }
 
     template <typename K, typename T>

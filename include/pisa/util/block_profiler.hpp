@@ -10,9 +10,9 @@ namespace pisa {
 class block_profiler {
   public:
     block_profiler(block_profiler const&) = delete;
-    block_profiler(block_profiler &&) = delete;
+    block_profiler(block_profiler&&) = delete;
     block_profiler operator=(block_profiler const&) = delete;
-    block_profiler operator=(block_profiler &&) = delete;
+    block_profiler operator=(block_profiler&&) = delete;
     ~block_profiler()
     {
         std::lock_guard<std::mutex> lock(m_mutex);
