@@ -43,13 +43,6 @@ set_property(TARGET gumbo::gumbo APPEND PROPERTY IMPORTED_LOCATION
     ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a)
 add_dependencies( gumbo::gumbo gumbo-external )
 
-
-# Add code coverage
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
-find_package(codecov)
-list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
-
-
 if (UNIX)
    # For hardware popcount and other special instructions
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -119,6 +112,11 @@ if (PISA_BUILD_TOOLS)
 endif()
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
+    # Add code coverage
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
+    find_package(codecov)
+    list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
+
     enable_testing()
     add_subdirectory(test)
 endif()
