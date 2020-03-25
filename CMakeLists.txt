@@ -112,11 +112,13 @@ if (PISA_BUILD_TOOLS)
 endif()
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
-    # Add code coverage
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
-    find_package(codecov)
-    list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
-
+    if (ENABLE_COVERAGE)
+	# Add code coverage
+	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
+	find_package(codecov)
+	list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
+    endif()
+    
     enable_testing()
     add_subdirectory(test)
 endif()
