@@ -73,7 +73,7 @@ namespace pisa { namespace time_prediction {
       public:
         predictor() : m_bias(0) {}
 
-        predictor(std::vector<std::pair<std::string, float>> const& values)
+        explicit predictor(std::vector<std::pair<std::string, float>> const& values)
         {
             for (auto const& kv: values) {
                 if (kv.first == "bias") {

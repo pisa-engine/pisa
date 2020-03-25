@@ -8,7 +8,7 @@
 namespace pisa {
 
 struct wand_query {
-    wand_query(topk_queue& topk) : m_topk(topk) {}
+    explicit wand_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)

@@ -193,7 +193,7 @@ class bit_vector {
     bit_vector() = default;
 
     template <class Range>
-    bit_vector(Range const& from)
+    explicit bit_vector(Range const& from)
     {
         std::vector<uint64_t> bits;
         auto const first_mask = uint64_t(1);
@@ -218,7 +218,7 @@ class bit_vector {
         m_bits.steal(bits);
     }
 
-    bit_vector(bit_vector_builder* from)
+    explicit bit_vector(bit_vector_builder* from)
     {
         m_size = from->size();
         m_bits.steal(from->move_bits());

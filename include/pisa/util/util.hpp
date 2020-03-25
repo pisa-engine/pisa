@@ -67,7 +67,7 @@ class function_iterator
   public:
     function_iterator() = default;
 
-    function_iterator(State initial_state) : m_state(initial_state) {}
+    explicit function_iterator(State initial_state) : m_state(initial_state) {}
 
     friend inline void swap(function_iterator& lhs, function_iterator& rhs)
     {

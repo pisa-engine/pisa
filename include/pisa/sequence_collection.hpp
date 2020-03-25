@@ -17,7 +17,7 @@ class sequence_collection {
 
     class builder {
       public:
-        builder(global_parameters const& params)
+        explicit builder(global_parameters const& params)
             : m_queue(1 << 24), m_params(params), m_sequences(params)
         {}
 

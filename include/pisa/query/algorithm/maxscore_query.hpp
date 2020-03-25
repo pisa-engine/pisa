@@ -7,7 +7,7 @@
 namespace pisa {
 
 struct maxscore_query {
-    maxscore_query(topk_queue& topk) : m_topk(topk) {}
+    explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)

@@ -24,7 +24,7 @@ class base_binary_collection {
     using pointer = typename std::
         conditional<std::is_same<Source, mio::mmap_source>::value, posting_type const, posting_type>::type*;
 
-    base_binary_collection(const char* filename)
+    explicit base_binary_collection(const char* filename)
     {
         std::error_code error;
         m_file.map(filename, error);
