@@ -12,6 +12,8 @@ struct block_max_scored_cursor {
     using enum_type = typename Index::document_enumerator;
     using wdata_enum = typename WandType::wand_data_enumerator;
 
+    block_max_scored_cursor() = delete;
+
     enum_type docs_enum;
     wdata_enum w;
     float q_weight;

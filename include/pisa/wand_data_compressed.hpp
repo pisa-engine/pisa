@@ -202,9 +202,9 @@ class wand_data_compressed {
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
 
       private:
-        uint64_t m_cur_docid;
-        uint64_t m_cur_score_index;
-        float m_max_term_weight;
+        uint64_t m_cur_docid{0};
+        uint64_t m_cur_score_index{0};
+        float m_max_term_weight{0};
         compact_elias_fano::enumerator m_docs_enum;
     };
 
@@ -232,7 +232,7 @@ class wand_data_compressed {
 
   private:
     global_parameters m_params;
-    uint64_t m_num_docs;
+    uint64_t m_num_docs{0};
     bitvector_collection m_docs_sequences;
 };
 

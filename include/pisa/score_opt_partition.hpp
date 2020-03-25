@@ -77,7 +77,7 @@ struct score_opt_partition {
             float v = std::get<1>(*end_it);
             sum += v;
 
-            while (max_queue.size() > 0 && max_queue.back() < std::get<1>(*end_it)) {
+            while (not max_queue.empty() && max_queue.back() < std::get<1>(*end_it)) {
                 max_queue.pop_back();
             }
 

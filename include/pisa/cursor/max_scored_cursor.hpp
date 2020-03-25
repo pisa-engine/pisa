@@ -10,6 +10,7 @@ namespace pisa {
 template <typename Index>
 struct max_scored_cursor {
     using enum_type = typename Index::document_enumerator;
+    max_scored_cursor() = delete;
     enum_type docs_enum;
     float q_weight;
     term_scorer_t scorer;

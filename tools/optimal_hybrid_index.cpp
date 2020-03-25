@@ -39,14 +39,14 @@ struct lambda_point {
 
         static lambda_point min_value()
         {
-            lambda_point val;
+            lambda_point val{};
             val.lambda = std::numeric_limits<float>::min();
             return val;
         }
 
         static lambda_point max_value()
         {
-            lambda_point val;
+            lambda_point val{};
             val.lambda = std::numeric_limits<float>::max();
             return val;
         }
@@ -142,7 +142,6 @@ struct lambdas_computer: pisa::semiasync_queue::job {
     typename InputCollectionType::document_enumerator m_e;
     pisa::predictors_vec_type const& m_predictors;
     std::vector<uint32_t> m_counts;
-    double m_lambda;
     std::vector<lambda_point> m_points_buf;
     lambda_vector_type& m_lambda_points;
 };

@@ -164,7 +164,7 @@ class wand_data_range {
     }
 
   private:
-    uint64_t m_blocks_num;
+    uint64_t m_blocks_num{0};
     mapper::mappable_vector<uint64_t> m_blocks_start;
     mapper::mappable_vector<float> m_block_max_term_weight;
 };
