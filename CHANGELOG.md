@@ -1,3 +1,16 @@
+### Version 0.8.1
+- Replace unnecessary raw loops (#338)
+- Fix readability-braces-around-statements warnings (#340)
+- Fix hicpp-use-auto warnings
+- Revert "Fix hicpp-use-auto warnings"
+- Fix hicpp-use-auto warnings (#341)
+- [clang-tidy] hicpp-move-const-arg (#342)
+- modernize-use-equals-default + modernize-use-using (#344)
+- Readability implicit bool conversion (#345)
+- Readability uppercase literal suffix (#346)
+- hicpp-explicit-conversions (#347)
+- Update CMakeLists.txt (#348)
+
 ### Version 0.8.0
 - Binary lib (#312)
 - Change default run name from "R0" to "PISA" (#314)
