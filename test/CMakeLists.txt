@@ -14,9 +14,10 @@ foreach(TEST_SRC ${TEST_SOURCES})
     rapidcheck
     )
   catch_discover_tests(${TEST_SRC_NAME} TEST_PREFIX "${TEST_SRC_NAME}:")
-
-  # enable code coverage
-  add_coverage(${TEST_SRC_NAME})
+  if (ENABLE_COVERAGE)
+    # enable code coverage
+    add_coverage(${TEST_SRC_NAME})
+  endif()
 endforeach(TEST_SRC)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/test_data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
