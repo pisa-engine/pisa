@@ -146,7 +146,7 @@ auto rearrange_sequences(
         dos.emplace_back(fmt::format("{}.documents", filename));
     }
     is.ignore(8);
-    VecMap<Shard_Id, std::uint32_t> shard_sizes(shard_count->as_int(), 0u);
+    VecMap<Shard_Id, std::uint32_t> shard_sizes(shard_count->as_int(), 0U);
     spdlog::info("Copying sequences and titles");
     int idx = 0;
     for (auto shard: mapping) {
@@ -176,24 +176,24 @@ auto process_shard(
     auto shard = writable_binary_collection(basename.c_str());
 
     spdlog::debug("[Shard {}] Calculating term occurrences", shard_id.as_int());
-    std::vector<uint32_t> has_term(terms.size(), 0u);
+    std::vector<uint32_t> has_term(terms.size(), 0U);
     for (auto iter = ++shard.begin(); iter != shard.end(); ++iter) {
         for (auto term: *iter) {
-            has_term[term] = 1u;
+            has_term[term] = 1U;
         }
     }
 
     spdlog::debug("[Shard {}] Writing terms", shard_id.as_int());
     std::ofstream tos(fmt::format("{}.terms", basename));
     for (auto&& [term, occurs]: ranges::views::zip(terms.as_vector(), has_term)) {
-        if (occurs != 0u) {
+        if (occurs != 0U) {
             tos << term << '\n';
         }
     }
 
     spdlog::debug("[Shard {}] Remapping term IDs", shard_id.as_int());
-    if (auto pos = std::find(has_term.begin(), has_term.end(), 1u); pos != has_term.end()) {
-        *pos = 0u;
+    if (auto pos = std::find(has_term.begin(), has_term.end(), 1U); pos != has_term.end()) {
+        *pos = 0U;
     }
     std::partial_sum(has_term.begin(), has_term.end(), has_term.begin());
     auto remapped_term_id = [&](auto term) { return has_term[term]; };

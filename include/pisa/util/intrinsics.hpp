@@ -32,7 +32,7 @@ namespace pisa { namespace intrinsics {
     __INTRIN_INLINE bool bsf64(unsigned long* const index, const uint64_t mask)
     {
 #if defined(__GNUC__) || defined(__clang__)
-        if (mask != 0u) {
+        if (mask != 0U) {
             *index = (unsigned long)__builtin_ctzll(mask);
             return true;
         }
@@ -48,7 +48,7 @@ namespace pisa { namespace intrinsics {
     __INTRIN_INLINE bool bsr64(unsigned long* const index, const uint64_t mask)
     {
 #if defined(__GNUC__) || defined(__clang__)
-        if (mask != 0u) {
+        if (mask != 0U) {
             *index = (unsigned long)(63 - __builtin_clzll(mask));
             return true;
         }

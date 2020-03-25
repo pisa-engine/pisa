@@ -66,7 +66,7 @@ struct strict_elias_fano {
 
         uint64_t prev_value() const
         {
-            if (m_ef_enum.position() != 0u) {
+            if (m_ef_enum.position() != 0U) {
                 return m_ef_enum.prev_value() + m_ef_enum.position() - 1;
             }
             return 0;

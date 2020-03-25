@@ -352,7 +352,10 @@ struct compact_elias_fano {
                   mask(e.m_of.mask),
                   bv(*e.m_bv)
             {}
-
+            next_reader(next_reader const&) = delete;
+            next_reader(next_reader&&) = delete;
+            next_reader& operator=(next_reader const&) = delete;
+            next_reader& operator=(next_reader&&) = delete;
             ~next_reader() { e.m_high_enumerator = high_enumerator; }
 
             uint64_t operator()()

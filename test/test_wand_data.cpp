@@ -84,7 +84,7 @@ TEST_CASE("wand_data_range")
                 auto max = wdata_range.max_term_weight(term_id);
                 auto& w = wdata_range.get_block_wand();
                 auto s = scorer->term_scorer(term_id);
-                const mapper::mappable_vector<float> bm = w.compute_block_max_scores(list, s);
+                const mapper::mappable_vector<float> bm(w.compute_block_max_scores(list, s));
                 WandTypeRange::enumerator we(0, bm);
                 for (auto&& [pos, docid, freq]:
                      ranges::views::zip(ranges::views::iota(0), seq.docs, seq.freqs)) {

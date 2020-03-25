@@ -17,16 +17,16 @@ struct bm25: public index_scorer<Wand> {
     static float doc_term_weight(uint64_t freq, float norm_len)
     {
         auto f = static_cast<float>(freq);
-        return f / (f + k1 * (1.0f - b + b * norm_len));
+        return f / (f + k1 * (1.0F - b + b * norm_len));
     }
 
     // IDF (inverse document frequency)
     static float query_term_weight(uint64_t df, uint64_t num_docs)
     {
         auto fdf = static_cast<float>(df);
-        float idf = std::log((float(num_docs) - fdf + 0.5f) / (fdf + 0.5f));
+        float idf = std::log((float(num_docs) - fdf + 0.5F) / (fdf + 0.5F));
         static const float epsilon_score = 1.0E-6;
-        return std::max(epsilon_score, idf) * (1.0f + k1);
+        return std::max(epsilon_score, idf) * (1.0F + k1);
     }
 
     term_scorer_t term_scorer(uint64_t term_id) const override

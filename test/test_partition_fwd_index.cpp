@@ -58,7 +58,7 @@ TEST_CASE("mapping_from_files", "[invert][unit]")
 TEST_CASE("create_random_mapping", "[invert][unit]")
 {
     uint64_t seed = 88887;
-    auto mapping = pisa::create_random_mapping(1000u, 13u, seed);
+    auto mapping = pisa::create_random_mapping(1000U, 13U, seed);
     VecMap<Shard_Id, int> counts(13, 0);
     VecMap<Document_Id> documents;
     for (auto&& [doc, shard]: mapping.entries()) {
@@ -69,7 +69,7 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
 
     REQUIRE(
         documents.as_vector()
-        == ranges::to_vector(ranges::views::iota(Document_Id{}, Document_Id{1000u})));
+        == ranges::to_vector(ranges::views::iota(Document_Id{}, Document_Id{1000U})));
     REQUIRE(
         counts.as_vector() == std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
 }
@@ -188,7 +188,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                     spdlog::default_logger()->flush();
                     auto shard_coll = binary_collection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str());
-                    size_t doc = 0u;
+                    size_t doc = 0U;
                     CAPTURE(shard);
                     CAPTURE(doc);
                     for (auto iter = ++shard_coll.begin(); iter != shard_coll.end(); ++iter, ++pos) {

@@ -33,7 +33,7 @@ struct block_max_wand_query {
 
         while (true) {
             // find pivot
-            float upper_bound = 0.f;
+            float upper_bound = 0.F;
             size_t pivot;
             bool found_pivot = false;
             uint64_t pivot_id = max_docid;

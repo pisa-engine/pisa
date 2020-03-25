@@ -43,13 +43,13 @@ TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction
             MY_REQUIRE_EQUAL(seq[rank], pos, "rank = " << rank);
         }
 
-        if (b && (rank != 0u) && (rank % (1 << of.log_sampling1)) == 0) {
+        if (b && (rank != 0U) && (rank % (1 << of.log_sampling1)) == 0) {
             uint64_t ptr_offset =
                 of.pointers1_offset + ((rank >> of.log_sampling1) - 1) * of.pointer_size;
             MY_REQUIRE_EQUAL(pos, bv.get_bits(ptr_offset, of.pointer_size), "rank = " << rank);
         }
 
-        if ((pos != 0u) && (pos % (1 << of.log_rank1_sampling) == 0)) {
+        if ((pos != 0U) && (pos % (1 << of.log_rank1_sampling) == 0)) {
             uint64_t sample_offset = of.rank1_samples_offset
                 + ((pos >> of.log_rank1_sampling) - 1) * of.rank1_sample_size;
             MY_REQUIRE_EQUAL(rank, bv.get_bits(sample_offset, of.rank1_sample_size), "pos = " << pos);

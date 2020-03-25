@@ -230,7 +230,7 @@ class Forward_Index_Builder {
                 terms.push_back(term);
             }
             std::sort(std::next(terms.begin(), mid), terms.end());
-            push_span(Term_Span{mid, terms.size(), 0u});
+            push_span(Term_Span{mid, terms.size(), 0U});
         }
         while (spans.size() > 1) {
             auto rhs = spans.top();

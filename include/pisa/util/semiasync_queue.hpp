@@ -19,16 +19,21 @@ class semiasync_queue {
 
     class job {
       public:
+        job() = default;
+        job(job const&) = default;
+        job(job&&) noexcept = default;
+        job& operator=(job const&) = default;
+        job& operator=(job&&) noexcept = default;
+        virtual ~job() = default;
         virtual void prepare() = 0;
         virtual void commit() = 0;
-        virtual ~job() = default;
     };
 
     using job_ptr_type = std::shared_ptr<job>;
 
     void add_job(job_ptr_type j, double expected_work)
     {
-        if (m_max_threads != 0u) {
+        if (m_max_threads != 0U) {
             m_next_thread.first.push_back(j);
             m_expected_work += expected_work;
             if (m_expected_work >= m_work_per_thread) {

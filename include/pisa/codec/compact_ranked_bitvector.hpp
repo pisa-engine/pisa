@@ -277,7 +277,7 @@ struct compact_ranked_bitvector {
                 m_position += popcount(word);
                 word = m_bv->data()[++begin_word];
             }
-            if (end_shift != 0u) {
+            if (end_shift != 0U) {
                 m_position += popcount(word << (64 - end_shift));
             }
 

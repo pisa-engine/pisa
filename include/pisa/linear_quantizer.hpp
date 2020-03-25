@@ -7,7 +7,7 @@ namespace pisa {
 
 struct LinearQuantizer {
     explicit LinearQuantizer(float max, uint8_t bits)
-        : m_max(max), m_scale(static_cast<float>(1u << (bits)) / max)
+        : m_max(max), m_scale(static_cast<float>(1U << (bits)) / max)
     {
         if (bits > 32 or bits == 0) {
             throw std::runtime_error(fmt::format(

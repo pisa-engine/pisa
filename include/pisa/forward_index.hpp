@@ -57,7 +57,7 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
     static forward_index& compress(forward_index& fwd)
     {
         progress p("Compressing forward index", fwd.size());
-        for (id_type doc = 0u; doc < fwd.size(); ++doc) {
+        for (id_type doc = 0U; doc < fwd.size(); ++doc) {
             auto& encoded_terms = fwd[doc];
             std::vector<id_type> terms(encoded_terms.size() * 5);
             std::size_t n = 0;
@@ -90,7 +90,7 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
         {
             progress p("Building forward index", num_terms);
             id_type tid = 0;
-            std::vector<id_type> prev(num_docs, 0u);
+            std::vector<id_type> prev(num_docs, 0U);
             for (auto it = ++coll.begin(); it != coll.end(); ++it) {
                 for (const auto& d: *it) {
                     if (it->size() >= min_len) {

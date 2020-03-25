@@ -114,8 +114,11 @@ make_function_iterator(State initial_state, AdvanceFunctor, ValueFunctor)
 }
 
 struct stats_line {
-    stats_line() : first(true) { std::cout << "{"; }
-
+    stats_line() { std::cout << "{"; }
+    stats_line(stats_line const&) = default;
+    stats_line(stats_line&&) noexcept = default;
+    stats_line& operator=(stats_line const&) = default;
+    stats_line& operator=(stats_line&&) noexcept = default;
     ~stats_line() { std::cout << "}" << std::endl; }
 
     template <typename K, typename T>
@@ -202,7 +205,7 @@ struct stats_line {
         emit(std::make_tuple(p.first, p.second));
     }
 
-    bool first;
+    bool first{true};
 };
 
 }  // namespace pisa
