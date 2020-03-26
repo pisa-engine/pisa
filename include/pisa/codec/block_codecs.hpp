@@ -170,7 +170,7 @@ struct interpolative_block {
 
 struct optpfor_block {
     struct codec_type: FastPForLib::OPTPFor<4, FastPForLib::Simple16<false>> {
-        uint8_t const* force_b;
+        uint8_t const* force_b{nullptr};
 
         uint32_t findBestB(const uint32_t* in, uint32_t len)
         {

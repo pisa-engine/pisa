@@ -11,7 +11,7 @@ namespace pisa {
 template <typename BlockCodec, bool Profile = false>
 class block_freq_index {
   public:
-    block_freq_index() : m_size(0) {}
+    block_freq_index() = default;
 
     class builder {
       public:
@@ -126,8 +126,8 @@ class block_freq_index {
 
   private:
     global_parameters m_params;
-    size_t m_size;
-    size_t m_num_docs;
+    size_t m_size{0};
+    size_t m_num_docs{0};
     bit_vector m_endpoints;
     mapper::mappable_vector<uint8_t> m_lists;
 };
