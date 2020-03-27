@@ -47,7 +47,7 @@ TEST_CASE("Compute parsing function")
             parse("1:0 2 4");
             REQUIRE(queries[0].id == std::optional<std::string>("1"));
             REQUIRE(queries[0].terms == std::vector<term_id_type>{0, 2, 4});
-            REQUIRE(queries[0].term_weights == std::vector<float>{});
+            REQUIRE(queries[0].term_weights.empty());
         }
     }
     WHEN("With terms and stopwords. No stemmer")
@@ -59,7 +59,7 @@ TEST_CASE("Compute parsing function")
             parse("1:a he usa");
             REQUIRE(queries[0].id == std::optional<std::string>("1"));
             REQUIRE(queries[0].terms == std::vector<term_id_type>{2, 4});
-            REQUIRE(queries[0].term_weights == std::vector<float>{});
+            REQUIRE(queries[0].term_weights.empty());
         }
     }
     WHEN("With terms, stopwords, and stemmer")
@@ -71,7 +71,7 @@ TEST_CASE("Compute parsing function")
             parse("1:a he usa");
             REQUIRE(queries[0].id == std::optional<std::string>("1"));
             REQUIRE(queries[0].terms == std::vector<term_id_type>{2, 4});
-            REQUIRE(queries[0].term_weights == std::vector<float>{});
+            REQUIRE(queries[0].term_weights.empty());
         }
     }
 }

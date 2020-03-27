@@ -79,7 +79,7 @@ struct partitioned_sequence {
                 }
 
                 uint64_t upper_bound = value;
-                assert(cur_partition.size() > 0);
+                assert(not cur_partition.empty());
                 base_sequence_type::write(
                     bv_sequences,
                     cur_partition.begin(),
@@ -305,21 +305,21 @@ struct partitioned_sequence {
         }
 
         global_parameters m_params;
-        uint64_t m_partitions;
-        uint64_t m_endpoints_offset;
-        uint64_t m_endpoint_bits;
-        uint64_t m_sequences_offset;
-        uint64_t m_size;
-        uint64_t m_universe;
+        uint64_t m_partitions{0};
+        uint64_t m_endpoints_offset{0};
+        uint64_t m_endpoint_bits{0};
+        uint64_t m_sequences_offset{0};
+        uint64_t m_size{0};
+        uint64_t m_universe{0};
 
-        uint64_t m_position;
-        uint64_t m_cur_partition;
-        uint64_t m_cur_begin;
-        uint64_t m_cur_end;
-        uint64_t m_cur_base;
-        uint64_t m_cur_upper_bound;
+        uint64_t m_position{0};
+        uint64_t m_cur_partition{0};
+        uint64_t m_cur_begin{0};
+        uint64_t m_cur_end{0};
+        uint64_t m_cur_base{0};
+        uint64_t m_cur_upper_bound{0};
 
-        bit_vector const* m_bv;
+        bit_vector const* m_bv{nullptr};
         compact_elias_fano::enumerator m_sizes;
         compact_elias_fano::enumerator m_upper_bounds;
         base_sequence_enumerator m_partition_enum;

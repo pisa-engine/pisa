@@ -280,7 +280,7 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
             "Content-Length: 16254\n\n"
             "<a/>",
             map_word);
-        REQUIRE(vec == std::vector<std::string>{});
+        REQUIRE(vec.empty());
     }
     SECTION("non-empty")
     {

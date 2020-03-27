@@ -352,7 +352,7 @@ class bit_vector {
     mapper::mappable_vector<uint64_t> const& data() const { return m_bits; }
 
     struct enumerator {
-        enumerator() : m_bv(0), m_pos(uint64_t(-1)) {}
+        enumerator() = default;
 
         enumerator(bit_vector const& bv, size_t pos) : m_bv(&bv), m_pos(pos), m_buf(0), m_avail(0)
         {
@@ -416,10 +416,10 @@ class bit_vector {
             m_avail = 64;
         }
 
-        bit_vector const* m_bv;
-        size_t m_pos;
-        uint64_t m_buf;
-        size_t m_avail;
+        bit_vector const* m_bv{0};
+        std::uint64_t m_pos{std::numeric_limits<std::uint64_t>::max()};
+        std::uint64_t m_buf{0};
+        std::uint64_t m_avail{0};
     };
 
     struct unary_enumerator {
@@ -510,7 +510,7 @@ class bit_vector {
     };
 
   protected:
-    size_t m_size;
+    size_t m_size{0};
     mapper::mappable_vector<uint64_t> m_bits;
 };
 

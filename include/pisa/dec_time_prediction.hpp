@@ -51,7 +51,7 @@ namespace pisa { namespace time_prediction {
 
     class feature_vector {
       public:
-        feature_vector() { std::fill(m_features.begin(), m_features.end(), 0); }
+        feature_vector() = default;
 
         float& operator[](feature_type f) { return m_features[(size_t)f]; }
         float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
@@ -66,12 +66,12 @@ namespace pisa { namespace time_prediction {
         }
 
       protected:
-        std::array<float, num_features> m_features;
+        std::array<float, num_features> m_features{};
     };
 
     class predictor: public feature_vector {
       public:
-        predictor() : m_bias(0) {}
+        predictor() = default;
 
         explicit predictor(std::vector<std::pair<std::string, float>> const& values)
         {
@@ -98,7 +98,7 @@ namespace pisa { namespace time_prediction {
         }
 
       protected:
-        float m_bias;
+        float m_bias{0.0};
     };
 
     inline void values_statistics(std::vector<uint32_t> values, feature_vector& f)

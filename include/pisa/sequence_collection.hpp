@@ -101,7 +101,7 @@ class sequence_collection {
 
   private:
     global_parameters m_params;
-    size_t m_size;
+    size_t m_size{0};
     bitvector_collection m_sequences;
 };
 }  // namespace pisa

@@ -119,8 +119,8 @@ class freq_index {
             reset();
         }
 
-        uint64_t m_cur_pos;
-        uint64_t m_cur_docid;
+        uint64_t m_cur_pos{0};
+        uint64_t m_cur_docid{0};
         typename DocsSequence::enumerator m_docs_enum;
         typename FreqsSequence::enumerator m_freqs_enum;
     };
