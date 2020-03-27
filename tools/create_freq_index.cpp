@@ -41,19 +41,19 @@ int main(int argc, char** argv)
     pisa::global_parameters params;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                   \
-    }                                                                           \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                     \
-    {                                                                           \
-        pisa::create_collection<pisa::BOOST_PP_CAT(T, _index), wand_raw_index>( \
-            input,                                                              \
-            params,                                                             \
-            output_filename,                                                    \
-            check,                                                              \
-            app.index_encoding(),                                               \
-            app.wand_data_path(),                                               \
-            app.scorer(),                                                       \
-            app.quantize());                                                    \
+#define LOOP_BODY(R, DATA, T)                                                \
+    }                                                                        \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                  \
+    {                                                                        \
+        pisa::compress_index<pisa::BOOST_PP_CAT(T, _index), wand_raw_index>( \
+            input,                                                           \
+            params,                                                          \
+            output_filename,                                                 \
+            check,                                                           \
+            app.index_encoding(),                                            \
+            app.wand_data_path(),                                            \
+            app.scorer(),                                                    \
+            app.quantize());                                                 \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

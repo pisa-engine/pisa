@@ -6,16 +6,16 @@
 #include <thread>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-#include "mappable/mapper.hpp"
 #include "configuration.hpp"
 #include "index_types.hpp"
+#include "linear_quantizer.hpp"
+#include "mappable/mapper.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 #include "util/verify_collection.hpp"  // XXX move to index_build_utils
-#include "linear_quantizer.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 
@@ -53,7 +53,7 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
 }
 
 template <typename CollectionType, typename WandType>
-void create_collection(
+void compress_index(
     binary_freq_collection const& input,
     pisa::global_parameters const& params,
     const std::optional<std::string>& output_filename,
