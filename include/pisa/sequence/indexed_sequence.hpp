@@ -138,7 +138,7 @@ struct indexed_sequence {
         }
 
       private:
-        index_type m_type;
+        index_type m_type{};
         boost::variant<compact_elias_fano::enumerator, compact_ranked_bitvector::enumerator, all_ones_sequence::enumerator>
             m_enumerator;
     };

@@ -40,14 +40,14 @@ void sample_inverted_index(
     size_t term = 0;
     for (auto const& plist: input) {
         auto sample = sample_fn(plist.docs);
-        if (sample.size() == 0) {
+        if (sample.empty()) {
             terms_to_drop.insert(term);
             term += 1;
             progress.update(1);
             continue;
         }
         assert(std::is_sorted(std::begin(sample), std::end(sample)));
-        assert(sample.size() > 0);
+        assert(not sample.empty());
 
         std::vector<std::uint32_t> sampled_docs;
         std::vector<std::uint32_t> sampled_freqs;

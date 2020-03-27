@@ -12,13 +12,16 @@ Checks: |
     readability-else-after-return,
     readability-implicit-bool-conversion,
     readability-uppercase-literal-suffix,
+    readability-container-size-empty,
     modernize-loop-convert,
     modernize-use-equals-default,
     modernize-use-using,
     cppcoreguidelines-special-member-functions,
+    cppcoreguidelines-pro-type-member-init,
     -hicpp-signed-bitwise,
     -modernize-use-trailing-return-type,
     -fuchsia-overloaded-operator,
     -fuchsia-default-arguments-calls,
     -fuchsia-trailing-return,
-    -llvm-header-guard
+    -llvm-header-guard,
+    -google-runtime-references

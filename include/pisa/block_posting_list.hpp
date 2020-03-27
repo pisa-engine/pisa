@@ -79,13 +79,8 @@ struct block_posting_list {
 
     class document_enumerator {
       public:
-        document_enumerator(
-            uint8_t const* data,
-            uint64_t universe,
-            size_t term_id = 0)
-            : m_n(0)  // just to silence warnings
-              ,
-              m_base(TightVariableByte::decode(data, &m_n, 1)),
+        document_enumerator(uint8_t const* data, uint64_t universe, size_t term_id = 0)
+            : m_base(TightVariableByte::decode(data, &m_n, 1)),
               m_blocks(ceil_div(m_n, BlockCodec::block_size)),
               m_block_maxs(m_base),
               m_block_endpoints(m_block_maxs + 4 * m_blocks),
@@ -300,7 +295,7 @@ struct block_posting_list {
             }
         }
 
-        uint32_t m_n;
+        uint32_t m_n{0};
         uint8_t const* m_base;
         uint32_t m_blocks;
         uint8_t const* m_block_maxs;
@@ -308,14 +303,14 @@ struct block_posting_list {
         uint8_t const* m_blocks_data;
         uint64_t m_universe;
 
-        uint32_t m_cur_block;
-        uint32_t m_pos_in_block;
-        uint32_t m_cur_block_max;
-        uint32_t m_cur_block_size;
-        uint32_t m_cur_docid;
+        uint32_t m_cur_block{0};
+        uint32_t m_pos_in_block{0};
+        uint32_t m_cur_block_max{0};
+        uint32_t m_cur_block_size{0};
+        uint32_t m_cur_docid{0};
 
-        uint8_t const* m_freqs_block_data;
-        bool m_freqs_decoded;
+        uint8_t const* m_freqs_block_data{nullptr};
+        bool m_freqs_decoded{false};
 
         std::vector<uint32_t> m_docs_buf;
         std::vector<uint32_t> m_freqs_buf;

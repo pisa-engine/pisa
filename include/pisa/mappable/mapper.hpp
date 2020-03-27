@@ -275,7 +275,7 @@ namespace pisa { namespace mapper {
     {
         detail::sizeof_visitor sizer(true);
         sizer(val, friendly_name);
-        assert(sizer.size_tree()->children.size());
+        assert(not sizer.size_tree()->children.empty());
         return sizer.size_tree()->children[0];
     }
 

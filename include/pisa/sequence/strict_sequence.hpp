@@ -146,7 +146,7 @@ struct strict_sequence {
         }
 
       private:
-        index_type m_type;
+        index_type m_type{};
         boost::variant<strict_elias_fano::enumerator, compact_ranked_bitvector::enumerator, all_ones_sequence::enumerator>
             m_enumerator;
     };

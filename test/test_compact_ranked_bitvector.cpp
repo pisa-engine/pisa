@@ -8,12 +8,8 @@
 #include <vector>
 
 struct sequence_initialization {
-    sequence_initialization()
+    sequence_initialization() : seq(random_sequence(universe, n, true))
     {
-        n = 100000;
-        universe = n * 3;
-        seq = random_sequence(universe, n, true);
-
         // high granularity to test more corner cases
         params.rb_log_rank1_sampling = 6;
         params.rb_log_sampling1 = 5;
@@ -23,10 +19,8 @@ struct sequence_initialization {
     }
 
     pisa::global_parameters params;
-    size_t n;
-    size_t universe;
-    uint64_t log_rank1_sampling;
-    uint64_t log_sampling1;
+    size_t n = 100000;
+    size_t universe = 300000;
     std::vector<uint64_t> seq;
     pisa::bit_vector bv;
 };

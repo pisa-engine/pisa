@@ -386,11 +386,11 @@ struct compact_elias_fano {
 
         inline uint64_t pointer1(uint64_t i) const { return pointer(m_of.pointers1_offset, i); }
 
-        bit_vector const* m_bv;
-        offsets m_of;
+        bit_vector const* m_bv{nullptr};
+        offsets m_of{};
 
-        uint64_t m_position;
-        uint64_t m_value;
+        uint64_t m_position{0};
+        uint64_t m_value{0};
         bit_vector::unary_enumerator m_high_enumerator;
     };
 };
