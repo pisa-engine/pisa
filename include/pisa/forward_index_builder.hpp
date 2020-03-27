@@ -59,11 +59,8 @@ using process_content_function_type =
 
 void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process)
 {
-    std::istringstream content_stream(content);
-    std::string term;
-    while (content_stream >> term) {
-        process(std::move(term));
-    }
+    TermTokenizer tokenizer(content);
+    std::for_each(tokenizer.begin(), tokenizer.end(), process);
 }
 
 [[nodiscard]] auto is_http(std::string_view content) -> bool
