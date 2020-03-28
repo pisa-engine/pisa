@@ -31,11 +31,13 @@ struct tokens: lex::lexer<Lexer> {
     }
 };
 
+using token_type =
+    lex::lexertl::token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
+using lexer_type = lex::lexertl::actor_lexer<token_type>;
+
 class TermTokenizer {
   public:
-    using token_type =
-        lex::lexertl::token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
-    using lexer_type = lex::lexertl::actor_lexer<token_type>;
+    static tokens<lexer_type> const LEXER;
 
     explicit TermTokenizer(std::string_view text)
         : text_(text), first_(text_.begin()), last_(text_.end())
@@ -46,17 +48,18 @@ class TermTokenizer {
         first_ = text_.begin();
         last_ = text_.end();
         return boost::make_transform_iterator(
-            boost::make_filter_iterator(is_valid, lexer_.begin(first_, last_)), transform);
+            boost::make_filter_iterator(is_valid, LEXER.begin(first_, last_)), transform);
     }
 
     [[nodiscard]] auto end()
     {
         return boost::make_transform_iterator(
-            boost::make_filter_iterator(is_valid, lexer_.end()), transform);
+            boost::make_filter_iterator(is_valid, LEXER.end()), transform);
     }
 
   private:
     static bool is_valid(token_type const& tok) { return tok.id() != TokenType::NotValid; }
+
     static std::string transform(token_type const& tok)
     {
         auto& val = tok.value();
@@ -76,7 +79,6 @@ class TermTokenizer {
     std::string_view text_;
     std::string_view::const_iterator first_;
     std::string_view::const_iterator last_;
-    tokens<lexer_type> lexer_{};
 };
 
 }  // namespace pisa
