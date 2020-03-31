@@ -1,3 +1,8 @@
+### Version 0.8.2
+- cppcoreguidelines-pro-type-member-init (#349)
+- Extract compression to headers (#350)
+- Plaintext tokenizer (#351)
+
 ### Version 0.8.1
 - Replace unnecessary raw loops (#338)
 - Fix readability-braces-around-statements warnings (#340)
