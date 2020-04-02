@@ -13,7 +13,7 @@
 [![DOI](https://zenodo.org/badge/150449350.svg)](https://zenodo.org/badge/latestdoi/150449350)
 
 ## Join us on Slack
-Get in touch via Slack: [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
+Get in touch via Slack: [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
 
 
 ## Description
