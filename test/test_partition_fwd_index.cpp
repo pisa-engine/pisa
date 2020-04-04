@@ -19,6 +19,7 @@
 #include "binary_freq_collection.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "payload_vector.hpp"
 #include "pisa_config.hpp"
 #include "sharding.hpp"
 #include "temporary_directory.hpp"
@@ -230,7 +231,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     REQUIRE(actual_titles == expected_titles);
                 }
             }
-            AND_THEN("Documents are identical wrt terms")
+            AND_THEN("Document contents are identical wrt terms")
             {
                 auto full = binary_collection(fwd_basename.c_str());
                 auto full_iter = ++full.begin();
@@ -238,9 +239,6 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                 std::vector<binary_collection> shards;
                 std::vector<typename binary_collection::const_iterator> shard_iterators;
                 std::vector<std::vector<std::string>> shard_terms;
-                shards.reserve(13);
-                shard_iterators.reserve(13);
-                shard_terms.reserve(13);
                 for (auto shard: shard_ids) {
                     shards.push_back(binary_collection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str()));
@@ -273,6 +271,28 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     if (shard == 13_s) {
                         shard = 0_s;
                     }
+                }
+            }
+            AND_THEN("Terms and term lexicon match")
+            {
+                for (auto shard: shard_ids) {
+                    auto terms = io::read_string_vector(
+                        fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str());
+                    mio::mmap_source m(
+                        fmt::format("{}.{:03d}.termlex", output_basename, shard.as_int()).c_str());
+                    auto lexicon = Payload_Vector<>::from(m);
+                    REQUIRE(terms == std::vector<std::string>(lexicon.begin(), lexicon.end()));
+                }
+            }
+            AND_THEN("Documents and document lexicon match")
+            {
+                for (auto shard: shard_ids) {
+                    auto documents = io::read_string_vector(
+                        fmt::format("{}.{:03d}.documents", output_basename, shard.as_int()).c_str());
+                    mio::mmap_source m(
+                        fmt::format("{}.{:03d}.doclex", output_basename, shard.as_int()).c_str());
+                    auto lexicon = Payload_Vector<>::from(m);
+                    REQUIRE(documents == std::vector<std::string>(lexicon.begin(), lexicon.end()));
                 }
             }
         }
