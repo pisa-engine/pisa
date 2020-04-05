@@ -13,6 +13,7 @@
 
 #include "boost/filesystem.hpp"
 #include "gsl/span"
+#include "payload_vector.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
 #include "range/v3/view/iota.hpp"
@@ -209,9 +210,9 @@ namespace invert {
             auto first_document_in_batch = first_document_id + first_idx_in_batch;
             auto last_document_in_batch = first_document_id + last_idx_in_batch;
             auto current_batch_size = last_idx_in_batch - first_idx_in_batch;
-            batches.push_back(
-                Batch{documents.subspan(first_idx_in_batch, current_batch_size),
-                      ranges::views::iota(first_document_in_batch, last_document_in_batch)});
+            batches.push_back(Batch{
+                documents.subspan(first_idx_in_batch, current_batch_size),
+                ranges::views::iota(first_document_in_batch, last_document_in_batch)});
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
         std::transform(
@@ -338,10 +339,15 @@ namespace invert {
     void invert_forward_index(
         std::string const& input_basename,
         std::string const& output_basename,
-        uint32_t term_count,
         size_t batch_size,
         size_t threads)
     {
+        auto term_count = [&] {
+            mio::mmap_source m(fmt::format("{}.termlex", input_basename).c_str());
+            auto terms = Payload_Vector<>::from(m);
+            return terms.size();
+        }();
+
         uint32_t batch_count =
             invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
         invert::merge_batches(output_basename, batch_count, term_count);

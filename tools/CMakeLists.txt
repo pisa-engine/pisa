@@ -132,3 +132,8 @@ target_link_libraries(selective_queries
   CLI11
 )
 
+add_executable(shards shards.cpp)
+target_link_libraries(shards
+  pisa
+  CLI11
+)

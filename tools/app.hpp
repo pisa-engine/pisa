@@ -179,6 +179,113 @@ namespace arg {
         std::size_t m_threads = std::thread::hardware_concurrency();
     };
 
+    template <std::size_t Default = 100'000>
+    struct BatchSize {
+        explicit BatchSize(CLI::App* app)
+        {
+            app->add_option(
+                "--batch-size", m_batch_size, "Number of documents to process at a time", true);
+        }
+
+        [[nodiscard]] auto batch_size() const -> std::size_t { return m_batch_size; }
+
+      private:
+        std::size_t m_batch_size = Default;
+    };
+
+    struct InvertRequired {
+        explicit InvertRequired(CLI::App* app)
+        {
+            app->add_option("-i,--input", m_input_basename, "Forward index basename")->required();
+            app->add_option("-o,--output", m_output_basename, "Output inverted index basename")
+                ->required();
+        }
+
+        [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
+        [[nodiscard]] auto output_basename() const -> std::string { return m_output_basename; }
+
+      private:
+        std::string m_input_basename{};
+        std::string m_output_basename{};
+    };
+
+    struct Compress {
+        explicit Compress(CLI::App* app)
+        {
+            app->add_option("-c,--collection", m_input_basename, "Forward index basename")->required();
+            app->add_option("-o,--output", m_output, "Output inverted index")->required();
+            app->add_flag("--check", m_check, "Check the correctness of the index");
+        }
+
+        [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
+        [[nodiscard]] auto output() const -> std::string { return m_output; }
+        [[nodiscard]] auto check() const -> bool { return m_check; }
+
+      private:
+        std::string m_input_basename{};
+        std::string m_output{};
+        bool m_check = false;
+    };
+
+    struct RecursiveGraphBisection {
+        explicit RecursiveGraphBisection(CLI::App* app)
+        {
+            app->add_option("-c,--collection", m_input_basename, "Collection basename")->required();
+            app->add_option("-o,--output", m_output_basename, "Output basename");
+            app->add_option("--store-fwdidx", m_output_fwd, "Output basename (forward index)");
+            app->add_option("--fwdidx", m_input_fwd, "Use this forward index");
+            auto docs_opt = app->add_option("--documents", m_doclex, "Documents lexicon");
+            app->add_option(
+                   "--reordered-documents", m_reordered_doclex, "Reordered documents lexicon")
+                ->needs(docs_opt);
+            app->add_option("-m,--min-len", m_min_len, "Minimum list threshold");
+            auto optdepth =
+                app->add_option("-d,--depth", m_depth, "Recursion depth")->check(CLI::Range(1, 64));
+            auto optconf =
+                app->add_option("--node-config", m_node_config, "Node configuration file");
+            app->add_flag("--nogb", m_nogb, "No VarIntGB compression in forward index");
+            app->add_flag("-p,--print", m_print, "Print ordering to standard output");
+            optconf->excludes(optdepth);
+        }
+
+        [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
+        [[nodiscard]] auto output_basename() const -> std::optional<std::string>
+        {
+            return m_output_basename;
+        }
+        [[nodiscard]] auto input_fwd() const -> std::optional<std::string> { return m_input_fwd; }
+        [[nodiscard]] auto output_fwd() const -> std::optional<std::string> { return m_output_fwd; }
+        [[nodiscard]] auto document_lexicon() const -> std::optional<std::string>
+        {
+            return m_doclex;
+        }
+        [[nodiscard]] auto reordered_document_lexicon() const -> std::optional<std::string>
+        {
+            return m_reordered_doclex;
+        }
+        [[nodiscard]] auto min_length() const -> std::size_t { return m_min_len; }
+        [[nodiscard]] auto depth() const -> std::optional<std::size_t> { return m_depth; }
+        [[nodiscard]] auto nogb() const -> bool { return m_nogb; }
+        [[nodiscard]] auto print() const -> bool { return m_print; }
+        [[nodiscard]] auto node_config() const -> std::optional<std::string>
+        {
+            return m_node_config;
+        }
+
+      private:
+        std::string m_input_basename{};
+        std::optional<std::string> m_output_basename{};
+        std::optional<std::string> m_output_fwd{};
+        std::optional<std::string> m_input_fwd{};
+        std::optional<std::string> m_doclex{};
+        std::optional<std::string> m_reordered_doclex{};
+        std::size_t m_min_len = 0;
+        std::optional<std::size_t> m_depth{};
+        bool m_nogb = false;
+        bool m_print = false;
+        std::string m_node_config{};
+    };
+
 }  // namespace arg
 
 template <typename... Args>
@@ -188,5 +295,17 @@ struct App: public CLI::App, public Args... {
         this->set_config("--config", "", "Configuration .ini file", false);
     }
 };
+
+template <typename... T>
+struct Args: public T... {
+    explicit Args(CLI::App* app) : T(app)...
+    {
+        app->set_config("--config", "", "Configuration .ini file", false);
+    }
+};
+
+using InvertArgs = Args<arg::InvertRequired, arg::Threads, arg::BatchSize<100'000>>;
+using RecursiveGraphBisectionArgs = Args<arg::RecursiveGraphBisection, arg::Threads>;
+using CompressArgs = pisa::Args<arg::Compress, arg::Encoding, arg::Quantize>;
 
 }  // namespace pisa
