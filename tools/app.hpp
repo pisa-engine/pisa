@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fstream>
+#include <iostream>
 #include <optional>
 #include <string>
 #include <thread>
@@ -7,9 +9,13 @@
 #include <CLI/CLI.hpp>
 #include <range/v3/view/getlines.hpp>
 #include <range/v3/view/transform.hpp>
+#include <spdlog/spdlog.h>
 
 #include "io.hpp"
 #include "query/queries.hpp"
+#include "sharding.hpp"
+#include "type_safe.hpp"
+#include "wand_utils.hpp"
 
 namespace pisa {
 
@@ -193,20 +199,34 @@ namespace arg {
         std::size_t m_batch_size = Default;
     };
 
-    struct InvertRequired {
-        explicit InvertRequired(CLI::App* app)
+    struct Invert {
+        explicit Invert(CLI::App* app)
         {
             app->add_option("-i,--input", m_input_basename, "Forward index basename")->required();
             app->add_option("-o,--output", m_output_basename, "Output inverted index basename")
                 ->required();
+            app->add_option(
+                "--term-count", m_term_count, "Number of distinct terms in the forward index");
         }
 
         [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
         [[nodiscard]] auto output_basename() const -> std::string { return m_output_basename; }
+        [[nodiscard]] auto term_count() const -> std::optional<std::uint32_t>
+        {
+            return m_term_count;
+        }
+
+        /// Transform paths for `shard`.
+        void apply_shard(Shard_Id shard)
+        {
+            m_input_basename = format_shard(m_input_basename, shard);
+            m_output_basename = format_shard(m_output_basename, shard);
+        }
 
       private:
         std::string m_input_basename{};
         std::string m_output_basename{};
+        std::optional<std::uint32_t> m_term_count{};
     };
 
     struct Compress {
@@ -221,10 +241,89 @@ namespace arg {
         [[nodiscard]] auto output() const -> std::string { return m_output; }
         [[nodiscard]] auto check() const -> bool { return m_check; }
 
+        /// Transform paths for `shard`.
+        void apply_shard(Shard_Id shard)
+        {
+            m_input_basename = format_shard(m_input_basename, shard);
+            m_output = format_shard(m_output, shard);
+        }
+
       private:
         std::string m_input_basename{};
         std::string m_output{};
         bool m_check = false;
+    };
+
+    struct CreateWandData {
+        explicit CreateWandData(CLI::App* app)
+        {
+            app->add_option("-c,--collection", m_input_basename, "Collection basename")->required();
+            app->add_option("-o,--output", m_output, "Output filename")->required();
+            auto block_group = app->add_option_group("blocks");
+            auto block_size_opt = block_group->add_option(
+                "-b,--block-size", m_fixed_block_size, "Block size for fixed-length blocks");
+            auto block_lambda_opt =
+                block_group
+                    ->add_option("-l,--lambda", m_lambda, "Lambda parameter for variable blocks")
+                    ->excludes(block_size_opt);
+            block_group->require_option();
+
+            app->add_flag("--compress", m_compress, "Compress additional data");
+            app->add_flag("--quantize", m_quantize, "Quantize scores");
+            app->add_option("-s,--scorer", m_scorer_name, "Scorer function")->required();
+            app->add_flag("--range", m_range, "Create docid-range based data")
+                ->excludes(block_size_opt)
+                ->excludes(block_lambda_opt);
+            app->add_option(
+                "--terms-to-drop",
+                m_terms_to_drop_filename,
+                "A filename containing a list of term IDs that we want to drop");
+        }
+
+        [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
+        [[nodiscard]] auto output() const -> std::string { return m_output; }
+        [[nodiscard]] auto block_size() const -> BlockSize
+        {
+            if (m_lambda) {
+                spdlog::info("Lambda {}", *m_lambda);
+                return VariableBlock(*m_lambda);
+            }
+            spdlog::info("Fixed block size: {}", *m_fixed_block_size);
+            return FixedBlock(*m_fixed_block_size);
+        }
+        [[nodiscard]] auto dropped_term_ids() const
+        {
+            std::ifstream dropped_terms_file(m_terms_to_drop_filename);
+            std::unordered_set<size_t> dropped_term_ids;
+            copy(
+                std::istream_iterator<size_t>(dropped_terms_file),
+                std::istream_iterator<size_t>(),
+                std::inserter(dropped_term_ids, dropped_term_ids.end()));
+            return dropped_term_ids;
+        }
+        [[nodiscard]] auto lambda() const -> std::optional<float> { return m_lambda; }
+        [[nodiscard]] auto compress() const -> bool { return m_compress; }
+        [[nodiscard]] auto range() const -> bool { return m_range; }
+        [[nodiscard]] auto quantize() const -> bool { return m_quantize; }
+        [[nodiscard]] auto scorer() const -> std::string { return m_scorer_name; }
+
+        /// Transform paths for `shard`.
+        void apply_shard(Shard_Id shard)
+        {
+            m_input_basename = format_shard(m_input_basename, shard);
+            m_output = format_shard(m_output, shard);
+        }
+
+      private:
+        std::optional<float> m_lambda{};
+        std::optional<uint64_t> m_fixed_block_size{};
+        std::string m_input_basename;
+        std::string m_output;
+        std::string m_scorer_name;
+        bool m_compress = false;
+        bool m_range = false;
+        bool m_quantize = false;
+        std::string m_terms_to_drop_filename;
     };
 
     struct RecursiveGraphBisection {
@@ -272,6 +371,21 @@ namespace arg {
             return m_node_config;
         }
 
+        /// Transform paths for `shard`.
+        void apply_shard(Shard_Id shard)
+        {
+            m_input_basename = format_shard(m_input_basename, shard);
+            if (m_output_basename) {
+                m_output_basename = format_shard(*m_output_basename, shard);
+            }
+            if (m_output_fwd) {
+                m_output_fwd = format_shard(*m_output_fwd, shard);
+            }
+            if (m_input_fwd) {
+                m_input_fwd = format_shard(*m_input_fwd, shard);
+            }
+        }
+
       private:
         std::string m_input_basename{};
         std::optional<std::string> m_output_basename{};
@@ -304,8 +418,9 @@ struct Args: public T... {
     }
 };
 
-using InvertArgs = Args<arg::InvertRequired, arg::Threads, arg::BatchSize<100'000>>;
+using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
 using RecursiveGraphBisectionArgs = Args<arg::RecursiveGraphBisection, arg::Threads>;
 using CompressArgs = pisa::Args<arg::Compress, arg::Encoding, arg::Quantize>;
+using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
 
 }  // namespace pisa

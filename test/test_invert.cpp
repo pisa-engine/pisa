@@ -62,15 +62,16 @@ TEST_CASE("Join term from one index to the same term from another", "[invert][un
 
 TEST_CASE("Accumulate postings to Inverted_Index", "[invert][unit]")
 {
-    std::vector<std::pair<Term_Id, Document_Id>> postings = {{0_t, 0_d},
-                                                             {0_t, 1_d},
-                                                             {0_t, 2_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 1_d},
-                                                             {2_t, 5_d}};
+    std::vector<std::pair<Term_Id, Document_Id>> postings = {
+        {0_t, 0_d},
+        {0_t, 1_d},
+        {0_t, 2_d},
+        {1_t, 0_d},
+        {1_t, 0_d},
+        {1_t, 0_d},
+        {1_t, 0_d},
+        {1_t, 1_d},
+        {2_t, 5_d}};
     using iterator_type = decltype(postings.begin());
     invert::Inverted_Index<iterator_type> index;
     index(tbb::blocked_range<iterator_type>(postings.begin(), postings.end()));
@@ -99,28 +100,30 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
     }
     REQUIRE(
         index.documents
-        == std::unordered_map<Term_Id, std::vector<Document_Id>>{{0_t, {0_d, 1_d, 4_d}},
-                                                                 {1_t, {2_d, 4_d}},
-                                                                 {2_t, {0_d, 1_d}},
-                                                                 {3_t, {0_d, 1_d, 4_d}},
-                                                                 {4_t, {1_d, 4_d}},
-                                                                 {5_t, {1_d, 2_d, 3_d, 4_d}},
-                                                                 {6_t, {1_d, 4_d}},
-                                                                 {7_t, {1_d}},
-                                                                 {8_t, {2_d, 3_d, 4_d}},
-                                                                 {9_t, {0_d, 2_d, 3_d, 4_d}}});
+        == std::unordered_map<Term_Id, std::vector<Document_Id>>{
+            {0_t, {0_d, 1_d, 4_d}},
+            {1_t, {2_d, 4_d}},
+            {2_t, {0_d, 1_d}},
+            {3_t, {0_d, 1_d, 4_d}},
+            {4_t, {1_d, 4_d}},
+            {5_t, {1_d, 2_d, 3_d, 4_d}},
+            {6_t, {1_d, 4_d}},
+            {7_t, {1_d}},
+            {8_t, {2_d, 3_d, 4_d}},
+            {9_t, {0_d, 2_d, 3_d, 4_d}}});
     REQUIRE(
         index.frequencies
-        == std::unordered_map<Term_Id, std::vector<Frequency>>{{0_t, {2_f, 1_f, 1_f}},
-                                                               {1_t, {1_f, 1_f}},
-                                                               {2_t, {1_f, 1_f}},
-                                                               {3_t, {1_f, 1_f, 1_f}},
-                                                               {4_t, {2_f, 1_f}},
-                                                               {5_t, {2_f, 1_f, 1_f, 1_f}},
-                                                               {6_t, {1_f, 4_f}},
-                                                               {7_t, {1_f}},
-                                                               {8_t, {3_f, 1_f, 1_f}},
-                                                               {9_t, {1_f, 1_f, 1_f, 1_f}}});
+        == std::unordered_map<Term_Id, std::vector<Frequency>>{
+            {0_t, {2_f, 1_f, 1_f}},
+            {1_t, {1_f, 1_f}},
+            {2_t, {1_f, 1_f}},
+            {3_t, {1_f, 1_f, 1_f}},
+            {4_t, {2_f, 1_f}},
+            {5_t, {2_f, 1_f, 1_f, 1_f}},
+            {6_t, {1_f, 4_f}},
+            {7_t, {1_f}},
+            {8_t, {3_f, 1_f, 1_f}},
+            {9_t, {1_f, 1_f, 1_f, 1_f}}});
 }
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
@@ -256,7 +259,8 @@ TEST_CASE("Invert collection", "[invert][unit]")
         Temporary_Directory tmpdir;
         uint32_t batch_size = GENERATE(1, 2, 3, 4, 5);
         uint32_t threads = GENERATE(1, 2, 3, 4, 5);
-        auto collection_filename = (tmpdir.path() / "collection.plaintext").string();
+        bool with_lex = GENERATE(false, true);
+        auto collection_filename = (tmpdir.path() / "fwd").string();
         {
             std::vector<uint32_t> collection_data{
                 /* size */ 1,  /* count */ 5,
@@ -269,13 +273,21 @@ TEST_CASE("Invert collection", "[invert][unit]")
             os.write(
                 reinterpret_cast<char*>(collection_data.data()),
                 collection_data.size() * sizeof(uint32_t));
+            if (with_lex) {
+                std::vector<std::string> terms{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+                encode_payload_vector(terms.begin(), terms.end())
+                    .to_file((tmpdir.path() / "fwd.termlex").string());
+            }
         }
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads")
         {
-            uint32_t term_count = 10;
             auto index_basename = (tmpdir.path() / "idx").string();
+            std::optional<std::uint32_t> term_count{};
+            if (not with_lex) {
+                term_count = 10;
+            }
             invert::invert_forward_index(
-                collection_filename, index_basename, term_count, batch_size, threads);
+                collection_filename, index_basename, batch_size, threads, term_count);
             THEN("Index is stored in binary_freq_collection format")
             {
                 std::vector<uint32_t> document_data{

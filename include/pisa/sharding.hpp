@@ -1,12 +1,12 @@
 #pragma once
 
 #include <algorithm>
+#include <filesystem>
 #include <random>
 #include <string>
 #include <unordered_map>
 
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <gsl/span>
 #include <mio/mmap.hpp>
 #include <pstl/algorithm>
@@ -35,6 +35,27 @@ namespace pisa {
 using pisa::literals::operator""_d;
 using pisa::literals::operator""_s;
 
+[[nodiscard]] auto format_shard(std::string_view basename, Shard_Id shard) -> std::string
+{
+    return fmt::format("{}.{:03d}", basename, shard.as_int());
+}
+
+auto resolve_shards(std::string_view basename) -> std::vector<Shard_Id>
+{
+    Shard_Id shard{0};
+    std::vector<Shard_Id> shards;
+    while (true) {
+        std::filesystem::path p(format_shard(basename, shard));
+        if (std::filesystem::exists(p)) {
+            shards.push_back(shard);
+            shard += 1;
+        } else {
+            break;
+        }
+    }
+    return shards;
+}
+
 template <typename StreamRange>
 auto mapping_from_files(std::istream* full_titles, StreamRange&& shard_titles)
     -> VecMap<Document_Id, Shard_Id>
@@ -50,7 +71,7 @@ auto mapping_from_files(std::istream* full_titles, StreamRange&& shard_titles)
                     "Document {} already belongs to shard {}: mapping for shard {} ignored",
                     title,
                     pos->second.as_int(),
-                    shard_id);
+                    shard_id.as_int());
             }
         });
         shard_id += 1;

@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -140,34 +142,6 @@ void compress_index(
             verify_collection<binary_freq_collection, CollectionType>(
                 input, (*output_filename).c_str());
         }
-    }
-}
-
-template <typename Args>
-void compress_index(Args args)
-{
-    binary_freq_collection input(args.input_basename().c_str());
-    global_parameters params;
-
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                    \
-    }                                                                            \
-    else if (args.index_encoding() == BOOST_PP_STRINGIZE(T))                     \
-    {                                                                            \
-        compress_index<pisa::BOOST_PP_CAT(T, _index), wand_data<wand_data_raw>>( \
-            input,                                                               \
-            params,                                                              \
-            args.output(),                                                       \
-            args.check(),                                                        \
-            args.index_encoding(),                                               \
-            args.wand_data_path(),                                               \
-            args.scorer(),                                                       \
-            args.quantize());                                                    \
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", args.index_encoding());
     }
 }
 

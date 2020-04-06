@@ -9,6 +9,7 @@
 
 #include "app.hpp"
 #include "payload_vector.hpp"
+#include "pisa/recursive_graph_bisection.hpp"
 #include "recursive_graph_bisection.hpp"
 #include "util/inverted_index_utils.hpp"
 #include "util/progress.hpp"
@@ -26,6 +27,5 @@ int main(int argc, char const* argv[])
 
     tbb::task_scheduler_init init(args.threads());
     spdlog::info("Number of threads: {}", args.threads());
-    pisa::bp::run(args);
-    return 0;
+    return pisa::bp::run(args);
 }

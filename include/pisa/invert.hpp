@@ -340,17 +340,18 @@ namespace invert {
         std::string const& input_basename,
         std::string const& output_basename,
         size_t batch_size,
-        size_t threads)
+        size_t threads,
+        std::optional<std::uint32_t> term_count = std::nullopt)
     {
-        auto term_count = [&] {
+        if (not term_count) {
             mio::mmap_source m(fmt::format("{}.termlex", input_basename).c_str());
             auto terms = Payload_Vector<>::from(m);
-            return terms.size();
-        }();
+            term_count = static_cast<std::uint32_t>(terms.size());
+        }
 
         uint32_t batch_count =
-            invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
-        invert::merge_batches(output_basename, batch_count, term_count);
+            invert::build_batches(input_basename, output_basename, *term_count, batch_size, threads);
+        invert::merge_batches(output_basename, batch_count, *term_count);
 
         for (auto batch: ranges::views::iota(uint32_t(0), batch_count)) {
             std::ostringstream batch_name_stream;

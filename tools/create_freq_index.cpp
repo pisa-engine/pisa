@@ -10,7 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
-#include "compress.hpp"
+#include "create_freq_index.hpp"
 #include "index_types.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
@@ -19,9 +19,6 @@
 
 #include "CLI/CLI.hpp"
 
-using wand_raw_index = pisa::wand_data<pisa::wand_data_raw>;
-namespace arg = pisa::arg;
-
 int main(int argc, char** argv)
 {
     spdlog::drop("");
@@ -29,6 +26,5 @@ int main(int argc, char** argv)
     CLI::App app{"Compresses an inverted index"};
     pisa::CompressArgs args(&app);
     CLI11_PARSE(app, argc, argv);
-    pisa::compress_index(args);
-    return 0;
+    return pisa::compress_index(args);
 }
