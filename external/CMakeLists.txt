@@ -108,6 +108,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/trecpp)
 # Add trecpp
 set(WAPOPP_ENABLE_TESTING OFF CACHE BOOL "skip wapopp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp)
+target_compile_options(wapopp PRIVATE -Wno-error=all -Wno-missing-braces)
 
 # Add fmt
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
