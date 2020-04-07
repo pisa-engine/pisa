@@ -54,7 +54,7 @@ suitable for use as a simple general purpose indexing and search system.
 
 ### What sort of scale can PISA handle?
 PISA can handle large text collections. For example, PISA can easily index the
-ClueWeb09B or ClueWeb12B corpora, which each contain over $50$ million web
+ClueWeb09B or ClueWeb12B corpora, which each contain over 50 million web
 documents and close to 500 GiB of *compressed* textual data, resulting in 
 indexes that are in the range of 10-40 GiB, depending on the compression
 codec used. These indexes, depending on some details, can be built from scratch
