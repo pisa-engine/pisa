@@ -58,10 +58,9 @@ class document_range {
     PISA_ALWAYSINLINE document_partition<Iterator> split() const
     {
         Iterator mid = std::next(m_first, size() / 2);
-        return {
-            document_range(m_first, mid, m_fwdidx, m_gains),
-            document_range(mid, m_last, m_fwdidx, m_gains),
-            term_count()};
+        return {document_range(m_first, mid, m_fwdidx, m_gains),
+                document_range(mid, m_last, m_fwdidx, m_gains),
+                term_count()};
     }
 
     PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const
