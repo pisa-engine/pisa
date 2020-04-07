@@ -24,7 +24,6 @@ using pisa::CreateWandDataArgs;
 using pisa::format_shard;
 using pisa::InvertArgs;
 using pisa::RecursiveGraphBisectionArgs;
-using pisa::resolve_shard_basenames;
 using pisa::resolve_shards;
 using pisa::Shard_Id;
 

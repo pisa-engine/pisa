@@ -1,11 +1,11 @@
 #pragma once
 
 #include <algorithm>
-#include <filesystem>
 #include <random>
 #include <string>
 #include <unordered_map>
 
+#include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <gsl/span>
 #include <mio/mmap.hpp>
@@ -45,8 +45,8 @@ auto resolve_shards(std::string_view basename) -> std::vector<Shard_Id>
     Shard_Id shard{0};
     std::vector<Shard_Id> shards;
     while (true) {
-        std::filesystem::path p(format_shard(basename, shard));
-        if (std::filesystem::exists(p)) {
+        boost::filesystem::path p(format_shard(basename, shard));
+        if (boost::filesystem::exists(p)) {
             shards.push_back(shard);
             shard += 1;
         } else {
