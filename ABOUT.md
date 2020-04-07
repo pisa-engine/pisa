@@ -5,9 +5,11 @@
 ## What is PISA?
 PISA is a text search engine, though the "PISA Project" is a
 set of tools that help experiment with indexing and query processing.
-Given a text collection, PISA can build an inverted index over this corpus,
-allowing the corpus to be searched. At query time, PISA stores its index in
-main memory for rapid retrieval.
+Given a text collection, PISA can build an *inverted index* over this corpus,
+allowing the corpus to be searched. The inverted index, put simply, is an efficient
+data structure that represents the document corpus by storing a list of documents
+for each unique term (see [here](https://en.wikipedia.org/wiki/Search_engine_indexing#Inverted_indices)).
+At query time, PISA stores its index in main memory for rapid retrieval.
 
 ### What does that all mean?
 In very simple terms, PISA is a text search engine. Starting with a corpus of
