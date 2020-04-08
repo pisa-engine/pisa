@@ -15,28 +15,28 @@
 ## Join us on Slack
 Get in touch via Slack: [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
 
-
-## Description
+## Overview
 
 PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
 
 Some features of PISA are listed below:
 
 * Written in C++ for performance;
-* Indexing & Parsing & Sharding capabilities;
+* Parsing, Indexing, and Sharding capabilities;
 * Many index compression methods implemented;
 * Many query processing algorithms implemented;
 * Implementation of document reordering;
 * Free and open-source with permissive license;
 
-The best way to get started is by reading the [official documentation](http://pisa.readthedocs.io).
+## Getting Started
+The best way to get started is by reading the [about page](https://github.com/pisa-engine/pisa/blob/master/ABOUT.md) and the [official documentation](http://pisa.readthedocs.io).
 
 If you want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/.github/CONTRIBUTING.md) page.
 
+
 ## Reference
 
-Reference to cite when you use PISA in a research paper:
-
+If you use PISA in a research paper, please cite the following reference:
 ```
 @inproceedings{MSMS2019,
   author    = {Antonio Mallia and Michal Siedlaczek and Joel Mackenzie and Torsten Suel},
