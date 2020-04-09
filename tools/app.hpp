@@ -219,8 +219,8 @@ namespace arg {
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
         {
-            m_input_basename = format_shard(m_input_basename, shard);
-            m_output_basename = format_shard(m_output_basename, shard);
+            m_input_basename = expand_shard(m_input_basename, shard);
+            m_output_basename = expand_shard(m_output_basename, shard);
         }
 
       private:
@@ -244,8 +244,8 @@ namespace arg {
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
         {
-            m_input_basename = format_shard(m_input_basename, shard);
-            m_output = format_shard(m_output, shard);
+            m_input_basename = expand_shard(m_input_basename, shard);
+            m_output = expand_shard(m_output, shard);
         }
 
       private:
@@ -310,8 +310,8 @@ namespace arg {
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
         {
-            m_input_basename = format_shard(m_input_basename, shard);
-            m_output = format_shard(m_output, shard);
+            m_input_basename = expand_shard(m_input_basename, shard);
+            m_output = expand_shard(m_output, shard);
         }
 
       private:
@@ -374,15 +374,19 @@ namespace arg {
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
         {
-            m_input_basename = format_shard(m_input_basename, shard);
+            m_input_basename = expand_shard(m_input_basename, shard);
             if (m_output_basename) {
-                m_output_basename = format_shard(*m_output_basename, shard);
+                m_output_basename = expand_shard(*m_output_basename, shard);
             }
             if (m_output_fwd) {
-                m_output_fwd = format_shard(*m_output_fwd, shard);
+                m_output_fwd = expand_shard(*m_output_fwd, shard);
             }
             if (m_input_fwd) {
-                m_input_fwd = format_shard(*m_input_fwd, shard);
+                m_input_fwd = expand_shard(*m_input_fwd, shard);
+            }
+            if (m_doclex) {
+                m_doclex = expand_shard(*m_doclex, shard);
+                m_reordered_doclex = expand_shard(*m_reordered_doclex, shard);
             }
         }
 

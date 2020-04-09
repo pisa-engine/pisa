@@ -61,7 +61,9 @@ int main(int argc, char** argv)
         }
     }
     if (bp->parsed()) {
-        for (auto shard: resolve_shards(bp_args.input_basename())) {
+        auto shards = resolve_shards(bp_args.input_basename(), ".docs");
+        spdlog::info("Processing {} shards", shards.size());
+        for (auto shard: shards) {
             auto shard_args = bp_args;
             shard_args.apply_shard(shard);
             if (auto ret = pisa::bp::run(shard_args); ret != 0) {
@@ -71,7 +73,9 @@ int main(int argc, char** argv)
         return 0;
     }
     if (compress->parsed()) {
-        for (auto shard: resolve_shards(compress_args.input_basename())) {
+        auto shards = resolve_shards(compress_args.input_basename(), ".docs");
+        spdlog::info("Processing {} shards", shards.size());
+        for (auto shard: shards) {
             auto shard_args = compress_args;
             shard_args.apply_shard(shard);
             if (auto ret = pisa::compress_index(shard_args); ret != 0) {
@@ -81,7 +85,9 @@ int main(int argc, char** argv)
         return 0;
     }
     if (wand->parsed()) {
-        for (auto shard: resolve_shards(wand_args.input_basename())) {
+        auto shards = resolve_shards(wand_args.input_basename(), ".docs");
+        spdlog::info("Processing {} shards", shards.size());
+        for (auto shard: shards) {
             auto shard_args = wand_args;
             shard_args.apply_shard(shard);
             pisa::create_wand_data(shard_args);

@@ -42,6 +42,39 @@ using index_type = invert::Inverted_Index<iterator_type>;
     return std::nullopt;
 }
 
+TEST_CASE("Expand shard", "[sharding]")
+{
+    REQUIRE(pisa::expand_shard("path", 17_s) == "path.017");
+    REQUIRE(pisa::expand_shard("path.{}", 17_s) == "path.017");
+    REQUIRE(pisa::expand_shard("path.{}.ext", 17_s) == "path.017.ext");
+}
+
+TEST_CASE("Resolve shards", "[sharding]")
+{
+    Temporary_Directory dir;
+    SECTION("No suffix")
+    {
+        for (auto f: std::vector<std::string>{"shard.000", "shard.001", "shard.002"}) {
+            std::ofstream os((dir.path() / f).string());
+            os << ".";
+        }
+        REQUIRE(
+            pisa::resolve_shards((dir.path() / "shard.{}").string())
+            == std::vector<Shard_Id>{Shard_Id(0), Shard_Id(1), Shard_Id(2)});
+    }
+    SECTION("With suffix")
+    {
+        for (auto f:
+             std::vector<std::string>{"shard.000.docs", "shard.001.docs", "shard.002.docs"}) {
+            std::ofstream os((dir.path() / f).string());
+            os << ".";
+        }
+        REQUIRE(
+            pisa::resolve_shards((dir.path() / "shard.{}").string(), ".docs")
+            == std::vector<Shard_Id>{Shard_Id(0), Shard_Id(1), Shard_Id(2)});
+    }
+}
+
 TEST_CASE("mapping_from_files", "[invert][unit]")
 {
     std::istringstream full("D00\nD01\nD02\nD03\nD04\nD05\nD06\nD07\nD08\nD09\nD010\nD11");

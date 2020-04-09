@@ -35,21 +35,34 @@ namespace pisa {
 using pisa::literals::operator""_d;
 using pisa::literals::operator""_s;
 
-[[nodiscard]] auto format_shard(std::string_view basename, Shard_Id shard) -> std::string
+[[nodiscard]] auto
+format_shard(std::string_view basename, Shard_Id shard, std::string_view suffix = {}) -> std::string
 {
-    return fmt::format("{}.{:03d}", basename, shard.as_int());
+    return fmt::format("{}.{:03d}{}", basename, shard.as_int(), suffix);
 }
 
-auto resolve_shards(std::string_view basename) -> std::vector<Shard_Id>
+[[nodiscard]] auto expand_shard(std::string_view basename, Shard_Id shard) -> std::string
+{
+    if (auto pos = basename.find("{}"); pos != std::string_view::npos) {
+        return fmt::format(
+            "{}{:03d}{}", basename.substr(0, pos), shard.as_int(), basename.substr(pos + 2));
+    }
+    return format_shard(basename, shard);
+}
+
+auto resolve_shards(std::string_view basename, std::string_view suffix = {}) -> std::vector<Shard_Id>
 {
     Shard_Id shard{0};
     std::vector<Shard_Id> shards;
     while (true) {
-        boost::filesystem::path p(format_shard(basename, shard));
+        boost::filesystem::path p(fmt::format("{}{}", expand_shard(basename, shard), suffix));
         if (boost::filesystem::exists(p)) {
             shards.push_back(shard);
             shard += 1;
         } else {
+            if (shards.empty()) {
+                spdlog::error("No shards found (failed at finding: {})", p.string());
+            }
             break;
         }
     }
