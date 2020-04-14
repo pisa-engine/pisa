@@ -24,8 +24,5 @@ int main(int argc, char const* argv[])
         spdlog::error("Must define at least one output parameter.");
         return 1;
     }
-
-    tbb::task_scheduler_init init(args.threads());
-    spdlog::info("Number of threads: {}", args.threads());
     return pisa::bp::run(args);
 }

@@ -401,7 +401,7 @@ namespace arg {
         std::optional<std::size_t> m_depth{};
         bool m_nogb = false;
         bool m_print = false;
-        std::string m_node_config{};
+        std::optional<std::string> m_node_config{};
     };
 
 }  // namespace arg
