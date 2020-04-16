@@ -7,10 +7,15 @@
 #include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
 
+#include "binary_collection.hpp"
 #include "binary_freq_collection.hpp"
 #include "mappable/mappable_vector.hpp"
+#include "mappable/mapper.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
+#include "wand_data.hpp"
+#include "wand_data_compressed.hpp"
+#include "wand_data_range.hpp"
 #include "wand_data_raw.hpp"
 
 #include "linear_quantizer.hpp"
@@ -158,4 +163,51 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_term_posting_counts;
     mapper::mappable_vector<float> m_max_term_weight;
 };
+
+void create_wand_data(
+    std::string const& output,
+    std::string const& input_basename,
+    BlockSize block_size,
+    std::string const& scorer,
+    bool range,
+    bool compress,
+    bool quantize,
+    std::unordered_set<size_t> const& dropped_term_ids)
+{
+    spdlog::info("Dropping {} terms", dropped_term_ids.size());
+    binary_collection sizes_coll((input_basename + ".sizes").c_str());
+    binary_freq_collection coll(input_basename.c_str());
+
+    if (compress) {
+        wand_data<wand_data_compressed<>> wdata(
+            sizes_coll.begin()->begin(),
+            coll.num_docs(),
+            coll,
+            scorer,
+            block_size,
+            quantize,
+            dropped_term_ids);
+        mapper::freeze(wdata, output.c_str());
+    } else if (range) {
+        wand_data<wand_data_range<128, 1024>> wdata(
+            sizes_coll.begin()->begin(),
+            coll.num_docs(),
+            coll,
+            scorer,
+            block_size,
+            quantize,
+            dropped_term_ids);
+        mapper::freeze(wdata, output.c_str());
+    } else {
+        wand_data<wand_data_raw> wdata(
+            sizes_coll.begin()->begin(),
+            coll.num_docs(),
+            coll,
+            scorer,
+            block_size,
+            quantize,
+            dropped_term_ids);
+        mapper::freeze(wdata, output.c_str());
+    }
+}
 }  // namespace pisa

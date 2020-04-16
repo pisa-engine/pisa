@@ -1,5 +1,5 @@
-add_executable(create_freq_index create_freq_index.cpp)
-target_link_libraries(create_freq_index
+add_executable(compress compress.cpp)
+target_link_libraries(compress
   pisa
   CLI11
 )
@@ -69,7 +69,6 @@ add_executable(parse_collection parse_collection.cpp)
 target_link_libraries(parse_collection
   pisa
   CLI11
-  wapopp
 )
 
 add_executable(invert invert.cpp)

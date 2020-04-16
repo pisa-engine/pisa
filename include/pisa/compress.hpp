@@ -145,4 +145,39 @@ void compress_index(
     }
 }
 
+void compress(
+    std::string const& input_basename,
+    std::optional<std::string> const& wand_data_filename,
+    std::string const& index_encoding,
+    std::string const& output_filename,
+    std::optional<std::string> const& scorer_name,
+    bool quantize,
+    bool check)
+{
+    binary_freq_collection input(input_basename.c_str());
+    global_parameters params;
+
+    if (false) {
+#define LOOP_BODY(R, DATA, T)                                                    \
+    }                                                                            \
+    else if (index_encoding == BOOST_PP_STRINGIZE(T))                            \
+    {                                                                            \
+        compress_index<pisa::BOOST_PP_CAT(T, _index), wand_data<wand_data_raw>>( \
+            input,                                                               \
+            params,                                                              \
+            output_filename,                                                     \
+            check,                                                               \
+            index_encoding,                                                      \
+            wand_data_filename,                                                  \
+            scorer_name,                                                         \
+            quantize);                                                           \
+        /**/
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
+#undef LOOP_BODY
+    } else {
+        spdlog::error("Unknown type {}", index_encoding);
+        std::abort();
+    }
+}
+
 }  // namespace pisa

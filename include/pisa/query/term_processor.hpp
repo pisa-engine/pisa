@@ -1,7 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <optional>
+#include <spdlog/spdlog.h>
 #include <unordered_set>
 
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
@@ -15,6 +17,31 @@
 namespace pisa {
 
 using term_id_type = uint32_t;
+
+std::function<std::string(std::string&&)> term_processor(std::optional<std::string> const& type)
+{
+    if (not type) {
+        return [](std::string&& term) -> std::string {
+            boost::algorithm::to_lower(term);
+            return std::move(term);
+        };
+    }
+    if (*type == "porter2") {
+        return [](std::string&& term) -> std::string {
+            boost::algorithm::to_lower(term);
+            return porter2::Stemmer{}.stem(term);
+        };
+    }
+    if (*type == "krovetz") {
+        static stem::KrovetzStemmer kstemmer;
+        return [](std::string&& term) -> std::string {
+            boost::algorithm::to_lower(term);
+            return kstemmer.kstem_stemmer(term);
+        };
+    }
+    spdlog::error("Unknown stemmer type: {}", *type);
+    std::abort();
+}
 
 class TermProcessor {
   private:
