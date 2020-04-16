@@ -11,7 +11,9 @@
 #include "tbb/task_group.h"
 
 #include "forward_index.hpp"
+#include "payload_vector.hpp"
 #include "util/index_build_utils.hpp"
+#include "util/inverted_index_utils.hpp"
 #include "util/log.hpp"
 #include "util/progress.hpp"
 #include "util/single_init_vector.hpp"

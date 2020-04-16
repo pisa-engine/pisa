@@ -256,7 +256,8 @@ TEST_CASE("Invert collection", "[invert][unit]")
         Temporary_Directory tmpdir;
         uint32_t batch_size = GENERATE(1, 2, 3, 4, 5);
         uint32_t threads = GENERATE(1, 2, 3, 4, 5);
-        auto collection_filename = (tmpdir.path() / "collection.plaintext").string();
+        bool with_lex = GENERATE(false, true);
+        auto collection_filename = (tmpdir.path() / "fwd").string();
         {
             std::vector<uint32_t> collection_data{
                 /* size */ 1,  /* count */ 5,
@@ -269,13 +270,21 @@ TEST_CASE("Invert collection", "[invert][unit]")
             os.write(
                 reinterpret_cast<char*>(collection_data.data()),
                 collection_data.size() * sizeof(uint32_t));
+            if (with_lex) {
+                std::vector<std::string> terms{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+                encode_payload_vector(terms.begin(), terms.end())
+                    .to_file((tmpdir.path() / "fwd.termlex").string());
+            }
         }
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads")
         {
-            uint32_t term_count = 10;
             auto index_basename = (tmpdir.path() / "idx").string();
+            std::optional<std::uint32_t> term_count{};
+            if (not with_lex) {
+                term_count = 10;
+            }
             invert::invert_forward_index(
-                collection_filename, index_basename, term_count, batch_size, threads);
+                collection_filename, index_basename, batch_size, threads, term_count);
             THEN("Index is stored in binary_freq_collection format")
             {
                 std::vector<uint32_t> document_data{

@@ -13,6 +13,7 @@
 
 #include "boost/filesystem.hpp"
 #include "gsl/span"
+#include "payload_vector.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
 #include "range/v3/view/iota.hpp"
@@ -338,13 +339,19 @@ namespace invert {
     void invert_forward_index(
         std::string const& input_basename,
         std::string const& output_basename,
-        uint32_t term_count,
         size_t batch_size,
-        size_t threads)
+        size_t threads,
+        std::optional<std::uint32_t> term_count = std::nullopt)
     {
+        if (not term_count) {
+            mio::mmap_source m(fmt::format("{}.termlex", input_basename).c_str());
+            auto terms = Payload_Vector<>::from(m);
+            term_count = static_cast<std::uint32_t>(terms.size());
+        }
+
         uint32_t batch_count =
-            invert::build_batches(input_basename, output_basename, term_count, batch_size, threads);
-        invert::merge_batches(output_basename, batch_count, term_count);
+            invert::build_batches(input_basename, output_basename, *term_count, batch_size, threads);
+        invert::merge_batches(output_basename, batch_count, *term_count);
 
         for (auto batch: ranges::views::iota(uint32_t(0), batch_count)) {
             std::ostringstream batch_name_stream;
