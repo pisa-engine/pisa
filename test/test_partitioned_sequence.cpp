@@ -6,8 +6,6 @@
 #include <iostream>
 #include <vector>
 
-#include <tbb/task_scheduler_init.h>
-
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/strict_sequence.hpp"
 #include "test_generic_sequence.hpp"
@@ -60,7 +58,6 @@ void test_partitioned_sequence(uint64_t universe, std::vector<uint64_t> const& s
 
 TEST_CASE("partitioned_sequence")
 {
-    tbb::task_scheduler_init init;
     using pisa::indexed_sequence;
     using pisa::strict_sequence;
 

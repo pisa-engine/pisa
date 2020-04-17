@@ -3,8 +3,6 @@
 #include <catch2/catch.hpp>
 #include <functional>
 
-#include <tbb/task_scheduler_init.h>
-
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
@@ -33,7 +31,6 @@ struct IndexData {
               dropped_term_ids)
 
     {
-        tbb::task_scheduler_init init;
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const& plist: collection) {
             uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));

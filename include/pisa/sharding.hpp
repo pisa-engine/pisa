@@ -21,7 +21,6 @@
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
 #include <spdlog/spdlog.h>
-#include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
 #include "invert.hpp"

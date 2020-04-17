@@ -100,6 +100,7 @@ target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can 
     Porter2
     KrovetzStemmer
     warcpp
+    wapopp
     trecpp
     spdlog
     fmt::fmt
@@ -118,7 +119,7 @@ if (PISA_ENABLE_TESTING AND BUILD_TESTING)
 	find_package(codecov)
 	list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
     endif()
-    
+
     enable_testing()
     add_subdirectory(test)
 endif()
