@@ -14,7 +14,6 @@
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/stride.hpp>
-#include <tbb/task_scheduler_init.h>
 
 #include "binary_freq_collection.hpp"
 #include "filesystem.hpp"
@@ -123,7 +122,6 @@ auto round_robin_mapping(int document_count, int shard_count)
 
 void build_fwd_index(std::string const& output)
 {
-    tbb::task_scheduler_init init;
     std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
     std::ifstream is(input);
     pisa::Forward_Index_Builder builder;
@@ -237,7 +235,6 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
 
 TEST_CASE("partition_fwd_index", "[invert][integration]")
 {
-    tbb::task_scheduler_init init;
     GIVEN("A test forward index")
     {
         Temporary_Directory dir;

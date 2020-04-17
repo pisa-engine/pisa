@@ -6,7 +6,6 @@
 #include <numeric>
 #include <vector>
 
-#include <tbb/task_scheduler_init.h>
 
 #include "test_generic_sequence.hpp"
 
@@ -39,7 +38,6 @@ void test_positive_sequence()
 
 TEST_CASE("positive_sequence")
 {
-    tbb::task_scheduler_init init;
     test_positive_sequence<pisa::strict_sequence>();
     test_positive_sequence<pisa::partitioned_sequence<pisa::strict_sequence>>();
     test_positive_sequence<pisa::uniform_partitioned_sequence<pisa::strict_sequence>>();
