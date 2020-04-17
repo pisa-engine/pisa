@@ -6,8 +6,8 @@
 #include <tbb/task_scheduler_init.h>
 
 #include "forward_index_builder.hpp"
-#include "query/term_processor.hpp"
 #include "parser.hpp"
+#include "query/term_processor.hpp"
 
 using namespace pisa;
 

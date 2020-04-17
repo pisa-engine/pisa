@@ -6,7 +6,6 @@
 #include <numeric>
 #include <vector>
 
-
 #include "test_generic_sequence.hpp"
 
 #include "sequence/partitioned_sequence.hpp"

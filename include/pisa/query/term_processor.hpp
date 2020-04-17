@@ -18,8 +18,8 @@ namespace pisa {
 
 using term_id_type = uint32_t;
 
-auto  term_processor = [](std::optional<std::string> const& type) -> std::function<std::string(std::string)>
-{
+auto term_processor =
+    [](std::optional<std::string> const& type) -> std::function<std::string(std::string)> {
     if (not type) {
         return [](std::string&& term) -> std::string {
             boost::algorithm::to_lower(term);
@@ -67,9 +67,7 @@ class TermProcessor {
         };
 
         // Implements '_to_id' method.
-        _to_id = [=](auto str) {
-            return to_id(term_processor(stemmer_type)(str));
-        };
+        _to_id = [=](auto str) { return to_id(term_processor(stemmer_type)(str)); };
         // Loads stopwords.
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);
