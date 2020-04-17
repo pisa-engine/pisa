@@ -7,7 +7,7 @@
 
 #include "forward_index_builder.hpp"
 #include "query/term_processor.hpp"
-#include "record_parser.hpp"
+#include "parser.hpp"
 
 using namespace pisa;
 
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
             std::cin,
             output_filename,
             record_parser(format, std::cin),
-            get_term_processor(stemmer),
+            term_processor(stemmer),
             content_parser(content_parser_type),
             batch_size,
             threads);
