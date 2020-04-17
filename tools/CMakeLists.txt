@@ -1,5 +1,5 @@
-add_executable(compress compress.cpp)
-target_link_libraries(compress
+add_executable(compress_inverted_index compress_inverted_index.cpp)
+target_link_libraries(compress_inverted_index
   pisa
   CLI11
 )

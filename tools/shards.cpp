@@ -11,12 +11,11 @@
 #include "app.hpp"
 #include "binary_collection.hpp"
 #include "compress.hpp"
-#include "create_freq_index.hpp"
-#include "create_wand_data.hpp"
 #include "invert.hpp"
 #include "recursive_graph_bisection.hpp"
 #include "sharding.hpp"
 #include "util/util.hpp"
+#include "wand_data.hpp"
 
 namespace invert = pisa::invert;
 using pisa::CompressArgs;
@@ -78,9 +77,14 @@ int main(int argc, char** argv)
         for (auto shard: shards) {
             auto shard_args = compress_args;
             shard_args.apply_shard(shard);
-            if (auto ret = pisa::compress_index(shard_args); ret != 0) {
-                return ret;
-            }
+            pisa::compress(
+                shard_args.input_basename(),
+                shard_args.wand_data_path(),
+                shard_args.index_encoding(),
+                shard_args.output(),
+                shard_args.scorer(),
+                shard_args.quantize(),
+                shard_args.check());
         }
         return 0;
     }
@@ -90,7 +94,15 @@ int main(int argc, char** argv)
         for (auto shard: shards) {
             auto shard_args = wand_args;
             shard_args.apply_shard(shard);
-            pisa::create_wand_data(shard_args);
+            pisa::create_wand_data(
+                shard_args.output(),
+                shard_args.input_basename(),
+                shard_args.block_size(),
+                shard_args.scorer(),
+                shard_args.range(),
+                shard_args.compress(),
+                shard_args.quantize(),
+                shard_args.dropped_term_ids());
         }
     }
     return 0;
