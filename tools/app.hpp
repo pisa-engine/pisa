@@ -454,21 +454,24 @@ namespace arg {
         explicit ReorderDocuments(CLI::App* app)
         {
             app->add_option("-c,--collection", m_input_basename, "Collection basename")->required();
-            app->add_option("-o,--output", m_output_basename, "Output basename");
+            auto output = app->add_option("-o,--output", m_output_basename, "Output basename");
             auto docs_opt = app->add_option("--documents", m_doclex, "Document lexicon");
             app->add_option(
                    "--reordered-documents", m_reordered_doclex, "Reordered document lexicon")
                 ->needs(docs_opt);
             auto methods = app->add_option_group("methods");
-            auto random = methods->add_flag(
-                "--random",
-                m_random,
-                "Assign IDs randomly. You can use --seed for deterministic results.");
+            auto random = methods
+                              ->add_flag(
+                                  "--random",
+                                  m_random,
+                                  "Assign IDs randomly. You can use --seed for deterministic "
+                                  "results.")
+                              ->needs(output);
             auto order = methods->add_flag(
                 "--from-order",
                 m_order,
                 "Use the order defined in this new-line delimited text file");
-            auto url = methods->add_flag("--by-url", m_url, "Order by URL");
+            auto url = methods->add_option("--by-url", m_url, "Order by URLs from this file");
             auto bp = methods->add_flag(
                 "--recursive-graph-bisection,--bp", m_bp, "Use recursive graph bisection algorithm");
             methods->require_option(1);
@@ -505,11 +508,27 @@ namespace arg {
         }
 
         [[nodiscard]] auto random() const -> bool { return m_random; }
-        [[nodiscard]] auto url() const -> bool { return m_url; }
+        [[nodiscard]] auto url_file() const -> std::optional<std::string> { return m_url; }
         [[nodiscard]] auto bp() const -> bool { return m_bp; }
         [[nodiscard]] auto order_file() const -> std::optional<std::string> { return m_order; }
 
         [[nodiscard]] auto seed() const -> std::uint64_t { return m_seed; }
+
+        [[nodiscard]] auto input_collection() const -> binary_freq_collection
+        {
+            return binary_freq_collection(input_basename().c_str());
+        }
+
+        [[nodiscard]] auto input_fwd() const -> std::optional<std::string> { return m_input_fwd; }
+        [[nodiscard]] auto output_fwd() const -> std::optional<std::string> { return m_output_fwd; }
+        [[nodiscard]] auto min_length() const -> std::size_t { return m_min_len; }
+        [[nodiscard]] auto depth() const -> std::optional<std::size_t> { return m_depth; }
+        [[nodiscard]] auto nogb() const -> bool { return m_nogb; }
+        [[nodiscard]] auto print() const -> bool { return m_print; }
+        [[nodiscard]] auto node_config() const -> std::optional<std::string>
+        {
+            return m_node_config;
+        }
 
         void apply_shard(Shard_Id shard)
         {
@@ -530,6 +549,9 @@ namespace arg {
             if (m_order) {
                 m_order = expand_shard(*m_order, shard);
             }
+            if (m_url) {
+                m_url = expand_shard(*m_url, shard);
+            }
         }
 
       private:
@@ -540,7 +562,7 @@ namespace arg {
 
         bool m_random = false;
         bool m_bp = false;
-        bool m_url = false;
+        std::optional<std::string> m_url{};
         std::optional<std::string> m_order{};
 
         // --random

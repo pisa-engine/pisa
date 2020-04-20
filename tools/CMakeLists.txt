@@ -48,18 +48,6 @@ target_link_libraries(profile_decoding
   pisa
 )
 
-add_executable(shuffle_docids shuffle_docids.cpp)
-target_link_libraries(shuffle_docids
-  pisa
-  CLI11
-)
-
-add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
-target_link_libraries(recursive_graph_bisection
-  pisa
-  CLI11
-)
-
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
   pisa
