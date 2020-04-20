@@ -52,6 +52,9 @@ inline void run_default_tree(size_t depth, const range_type& initial_range)
 
 [[nodiscard]] auto run(RecursiveGraphBisectionArgs const& args) -> int
 {
+    if (args.verbose()) {
+        args.print_args(std::cerr);
+    }
     if (not args.output_basename() && not args.output_fwd()) {
         spdlog::error("Must define at least one output parameter.");
         return 1;

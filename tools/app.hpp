@@ -173,6 +173,24 @@ namespace arg {
         CLI::Option* m_option;
     };
 
+    struct Verbose {
+        explicit Verbose(CLI::App* app)
+        {
+            app->add_flag("-v,--verbose", m_verbose, "Print additional information");
+        }
+
+        [[nodiscard]] auto verbose() const -> bool { return m_verbose; }
+
+        auto print_args(std::ostream& os) const -> std::ostream&
+        {
+            os << fmt::format("verbose: {}\n", verbose());
+            return os;
+        }
+
+      private:
+        bool m_verbose{false};
+    };
+
     struct Threads {
         explicit Threads(CLI::App* app)
         {
@@ -180,6 +198,12 @@ namespace arg {
         }
 
         [[nodiscard]] auto threads() const -> std::size_t { return m_threads; }
+
+        auto print_args(std::ostream& os) const -> std::ostream&
+        {
+            os << fmt::format("threads: {}\n", threads());
+            return os;
+        }
 
       private:
         std::size_t m_threads = std::thread::hardware_concurrency();
@@ -371,6 +395,28 @@ namespace arg {
             return m_node_config;
         }
 
+        auto print_args(std::ostream& os) const -> std::ostream&
+        {
+            os << fmt::format("input basename: {}\n", input_basename());
+            os << fmt::format("output basename: {}\n", output_basename().value_or("-"));
+            os << fmt::format("input fwd index: {}\n", input_fwd().value_or("-"));
+            os << fmt::format("output fwd index: {}\n", output_fwd().value_or("-"));
+            os << fmt::format("document lexicon: {}\n", document_lexicon().value_or("-"));
+            os << fmt::format(
+                "reordered document lexicon: {}\n", reordered_document_lexicon().value_or("-"));
+            os << fmt::format("min. list length: {}\n", min_length());
+            os << fmt::format("depth: {}\n", [this] {
+                if (auto depth = this->depth(); depth) {
+                    return fmt::format("{}", *depth);
+                }
+                return std::string("-");
+            }());
+            os << fmt::format("No compression: {}\n", nogb());
+            os << fmt::format("Print: {}\n", print());
+            os << fmt::format("Node config: {}\n", node_config().value_or("-"));
+            return os;
+        }
+
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
         {
@@ -420,10 +466,16 @@ struct Args: public T... {
     {
         app->set_config("--config", "", "Configuration .ini file", false);
     }
+
+    auto print_args(std::ostream& os) const -> std::ostream&
+    {
+        (T::print_args(os), ...);
+        return os;
+    }
 };
 
 using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
-using RecursiveGraphBisectionArgs = Args<arg::RecursiveGraphBisection, arg::Threads>;
+using RecursiveGraphBisectionArgs = Args<arg::RecursiveGraphBisection, arg::Threads, arg::Verbose>;
 using CompressArgs = pisa::Args<arg::Compress, arg::Encoding, arg::Quantize>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
 
