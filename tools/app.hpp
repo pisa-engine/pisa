@@ -404,6 +404,112 @@ namespace arg {
         std::optional<std::string> m_node_config{};
     };
 
+    struct ReorderDocuments {
+        explicit ReorderDocuments(CLI::App* app)
+        {
+            app->add_option("-c,--collection", m_input_basename, "Collection basename")->required();
+            app->add_option("-o,--output", m_output_basename, "Output basename");
+            auto docs_opt = app->add_option("--documents", m_doclex, "Document lexicon");
+            app->add_option(
+                   "--reordered-documents", m_reordered_doclex, "Reordered document lexicon")
+                ->needs(docs_opt);
+            auto methods = app->add_option_group("methods");
+            auto random = methods->add_flag(
+                "--random",
+                m_random,
+                "Assign IDs randomly. You can use --seed for deterministic results.");
+            auto order = methods->add_flag(
+                "--from-order",
+                m_order,
+                "Use the order defined in this new-line delimited text file");
+            auto url = methods->add_flag("--by-url", m_url, "Order by URL");
+            auto bp = methods->add_flag(
+                "--recursive-graph-bisection,--bp", m_bp, "Use recursive graph bisection algorithm");
+            methods->require_option(1);
+
+            // --random
+            app->add_option("--seed", m_seed, "Random seed.")->needs(random);
+
+            // --bp
+            app->add_option("--store-fwdidx", m_output_fwd, "Output basename (forward index)")->needs(bp);
+            app->add_option("--fwdidx", m_input_fwd, "Use this forward index")->needs(bp);
+            app->add_option("-m,--min-len", m_min_len, "Minimum list threshold")->needs(bp);
+            auto optdepth = app->add_option("-d,--depth", m_depth, "Recursion depth")
+                                ->check(CLI::Range(1, 64))
+                                ->needs(bp);
+            auto optconf =
+                app->add_option("--node-config", m_node_config, "Node configuration file")->needs(bp);
+            app->add_flag("--nogb", m_nogb, "No VarIntGB compression in forward index")->needs(bp);
+            app->add_flag("-p,--print", m_print, "Print ordering to standard output")->needs(bp);
+            optconf->excludes(optdepth);
+        }
+
+        [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
+        [[nodiscard]] auto output_basename() const -> std::optional<std::string>
+        {
+            return m_output_basename;
+        }
+        [[nodiscard]] auto document_lexicon() const -> std::optional<std::string>
+        {
+            return m_doclex;
+        }
+        [[nodiscard]] auto reordered_document_lexicon() const -> std::optional<std::string>
+        {
+            return m_reordered_doclex;
+        }
+
+        [[nodiscard]] auto random() const -> bool { return m_random; }
+        [[nodiscard]] auto url() const -> bool { return m_url; }
+        [[nodiscard]] auto bp() const -> bool { return m_bp; }
+        [[nodiscard]] auto order_file() const -> std::optional<std::string> { return m_order; }
+
+        [[nodiscard]] auto seed() const -> std::uint64_t { return m_seed; }
+
+        void apply_shard(Shard_Id shard)
+        {
+            m_input_basename = expand_shard(m_input_basename, shard);
+            if (m_output_basename) {
+                m_output_basename = expand_shard(*m_output_basename, shard);
+            }
+            if (m_output_fwd) {
+                m_output_fwd = expand_shard(*m_output_fwd, shard);
+            }
+            if (m_input_fwd) {
+                m_input_fwd = expand_shard(*m_input_fwd, shard);
+            }
+            if (m_doclex) {
+                m_doclex = expand_shard(*m_doclex, shard);
+                m_reordered_doclex = expand_shard(*m_reordered_doclex, shard);
+            }
+            if (m_order) {
+                m_order = expand_shard(*m_order, shard);
+            }
+        }
+
+      private:
+        std::string m_input_basename{};
+        std::optional<std::string> m_output_basename{};
+        std::optional<std::string> m_doclex{};
+        std::optional<std::string> m_reordered_doclex{};
+
+        bool m_random = false;
+        bool m_bp = false;
+        bool m_url = false;
+        std::optional<std::string> m_order{};
+
+        // --random
+        std::uint64_t m_seed = std::random_device{}();
+
+        // --bp
+        std::optional<std::string> m_output_fwd{};
+        std::optional<std::string> m_input_fwd{};
+        std::size_t m_min_len = 0;
+        std::optional<std::size_t> m_depth{};
+        bool m_nogb = false;
+        bool m_print = false;
+        std::optional<std::string> m_node_config{};
+    };
+
 }  // namespace arg
 
 template <typename... Args>
@@ -424,6 +530,7 @@ struct Args: public T... {
 
 using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
 using RecursiveGraphBisectionArgs = Args<arg::RecursiveGraphBisection, arg::Threads>;
+using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
 using CompressArgs = pisa::Args<arg::Compress, arg::Encoding, arg::Quantize>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
 

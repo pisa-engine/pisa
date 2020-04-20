@@ -136,3 +136,9 @@ target_link_libraries(shards
   pisa
   CLI11
 )
+
+add_executable(reorder-docids reorder_docids.cpp)
+target_link_libraries(reorder-docids
+  pisa
+  CLI11
+)
