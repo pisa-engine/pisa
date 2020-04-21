@@ -119,6 +119,12 @@ target_link_libraries(map_queries
   CLI11
 )
 
+add_executable(stem_queries stem_queries.cpp)
+target_link_libraries(stem_queries
+  pisa
+  CLI11
+)
+
 add_executable(count_postings count_postings.cpp)
 target_link_libraries(count_postings
   pisa
