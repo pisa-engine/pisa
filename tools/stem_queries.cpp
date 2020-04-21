@@ -1,14 +1,9 @@
 #include <fstream>
 #include <string>
 
-#include "pisa/query/queries.hpp"
-#include "pisa/query/term_processor.hpp"
-#include "pisa/tokenizer.hpp"
-#include <boost/algorithm/string/join.hpp>
-
 #include "CLI/CLI.hpp"
 #include "io.hpp"
-
+#include "pisa/query/query_stemmer.hpp"
 int main(int argc, char const* argv[])
 {
     std::string input_filename;
@@ -26,18 +21,14 @@ int main(int argc, char const* argv[])
     output_file.open(output_filename);
 
     auto input_file = std::ifstream(input_filename);
-    pisa::io::for_each_line(input_file, [&](std::string const& query_string) {
-        auto [id, raw_query] = pisa::split_query_at_colon(query_string);
-        std::vector<std::string> stemmed_terms;
-        auto stem = pisa::term_processor(stemmer);
-        pisa::TermTokenizer tokenizer(raw_query);
-        for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
-            stemmed_terms.push_back(std::move(stem(*term_iter)));
-        }
-        if (id) {
-            output_file << *(id) << ":";
-        }
-        using boost::algorithm::join;
-        output_file << join(stemmed_terms, " ") << "\n";
-    });
+
+    try {
+        pisa::QueryStemmer query_stemmer(stemmer);
+        pisa::io::for_each_line(input_file, [&](std::string const& line) {
+            output_file << query_stemmer(line) << "\n";
+        });
+    } catch (const std::invalid_argument& ex) {
+        spdlog::error(ex.what());
+        std::exit(1);
+    }
 }
