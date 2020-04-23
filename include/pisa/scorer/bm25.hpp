@@ -10,7 +10,7 @@ namespace pisa {
 template <typename Wand>
 struct bm25: public index_scorer<Wand> {
     static constexpr float b = 0.4;
-    static constexpr float k1 = 0.9;
+    static constexpr float k1 = 0.99;
 
     using index_scorer<Wand>::index_scorer;
 
