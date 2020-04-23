@@ -17,9 +17,8 @@
 namespace pisa {
 
 using term_id_type = uint32_t;
-
-auto term_processor =
-    [](std::optional<std::string> const& type) -> std::function<std::string(std::string)> {
+using Stemmer_t = std::function<std::string(std::string)>;
+auto term_processor = [](std::optional<std::string> const& type) -> Stemmer_t {
     if (not type) {
         return [](std::string&& term) -> std::string {
             boost::algorithm::to_lower(term);
