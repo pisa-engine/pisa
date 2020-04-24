@@ -12,12 +12,13 @@ auto reorder_docids(ReorderDocuments args) -> int
             return recursive_graph_bisection(RecursiveGraphBisectionOptions{
                 .input_basename = args.input_basename(),
                 .output_basename = args.output_basename(),
+                .output_fwd = args.output_fwd(),
+                .input_fwd = args.input_fwd(),
                 .document_lexicon = args.document_lexicon(),
                 .reordered_document_lexicon = args.reordered_document_lexicon(),
-                .input_fwd = args.input_fwd(),
-                .output_fwd = args.output_fwd(),
-                .node_config = args.node_config(),
                 .depth = args.depth(),
+                .node_config = args.node_config(),
+                .min_length = args.min_length(),
                 .compress_fwd = not args.nogb(),
                 .print_args = not args.print(),
             });
