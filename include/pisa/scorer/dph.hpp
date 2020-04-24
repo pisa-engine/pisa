@@ -16,8 +16,6 @@ template <typename Wand>
 struct dph: public index_scorer<Wand> {
     using index_scorer<Wand>::index_scorer;
 
-    static constexpr float c = 1;
-
     term_scorer_t term_scorer(uint64_t term_id) const override
     {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {

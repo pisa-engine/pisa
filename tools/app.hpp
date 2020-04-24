@@ -13,6 +13,7 @@
 
 #include "io.hpp"
 #include "query/queries.hpp"
+#include "scorer/scorer.hpp"
 #include "sharding.hpp"
 #include "type_safe.hpp"
 #include "wand_utils.hpp"
@@ -148,14 +149,17 @@ namespace arg {
     struct Scorer {
         explicit Scorer(CLI::App* app)
         {
-            auto* opt =
-                app->add_option("-s,--scorer", m_scorer, "Query processing algorithm")->required();
+            app->add_option("-s,--scorer", m_params.m_name, "Query processing algorithm")->required();
+            app->add_option("--bm25-k1", m_params.m_bm25_k1, "BM25 k1 parameter.");
+            app->add_option("--bm25-b", m_params.m_bm25_b, "BM25 b parameter.");
+            app->add_option("--pl2-c", m_params.m_pl2_c, "PL2 c parameter.");
+            app->add_option("--qld-mu", m_params.m_qld_mu, "QLD mu parameter.");
         }
 
-        [[nodiscard]] auto scorer() const { return m_scorer; }
+        [[nodiscard]] auto scorer_params() const { return m_params; }
 
       private:
-        std::string m_scorer;
+        ScorerParams m_params;
     };
 
     struct Thresholds {
