@@ -20,126 +20,25 @@
 
 namespace pisa {
 
-class RecursiveGraphBisection {
-  public:
+struct RecursiveGraphBisectionOptions {
+    std::string input_basename;
+    std::optional<std::string> output_basename;
+    std::optional<std::string> output_fwd;
+    std::optional<std::string> input_fwd;
+    std::optional<std::string> document_lexicon;
+    std::optional<std::string> reordered_document_lexicon;
+    std::optional<std::size_t> depth;
+    std::optional<std::string> node_config;
+    std::size_t min_length;
+    bool compress_fwd;
+    bool print_args;
+};
+
+namespace detail {
     using iterator_type = std::vector<uint32_t>::iterator;
     using range_type = document_range<iterator_type>;
     using node_type = computation_node<iterator_type>;
 
-    explicit RecursiveGraphBisection(std::string input_basename)
-        : m_input_basename(std::move(input_basename))
-    {}
-
-    auto output_basename(std::optional<std::string> output_basename) -> RecursiveGraphBisection&
-    {
-        m_output_basename = std::move(output_basename);
-        return (*this);
-    }
-
-    auto output_fwd(std::optional<std::string> output_fwd) -> RecursiveGraphBisection&
-    {
-        m_output_basename = std::move(output_fwd);
-        return (*this);
-    }
-
-    auto input_fwd(std::optional<std::string> input_fwd) -> RecursiveGraphBisection&
-    {
-        m_input_fwd = std::move(input_fwd);
-        return (*this);
-    }
-
-    auto document_lexicon(std::optional<std::string> document_lexicon) -> RecursiveGraphBisection&
-    {
-        m_document_lexicon = std::move(document_lexicon);
-        return (*this);
-    }
-
-    auto reordered_document_lexicon(std::optional<std::string> reordered_document_lexicon)
-        -> RecursiveGraphBisection&
-    {
-        m_reordered_document_lexicon = std::move(reordered_document_lexicon);
-        return (*this);
-    }
-
-    auto depth(std::optional<std::size_t> depth) -> RecursiveGraphBisection&
-    {
-        m_depth = depth;
-        return (*this);
-    }
-
-    auto compress_fwd(bool compress) -> RecursiveGraphBisection&
-    {
-        m_nogb = !compress;
-        return (*this);
-    }
-
-    auto print_args(bool print) -> RecursiveGraphBisection&
-    {
-        m_print = print;
-        return (*this);
-    }
-
-    auto node_config(std::optional<std::string> node_config) -> RecursiveGraphBisection&
-    {
-        m_node_config = std::move(node_config);
-        return (*this);
-    }
-
-    [[nodiscard]] auto run() -> int
-    {
-        if (not m_output_basename && not m_output_fwd) {
-            spdlog::error("Must define at least one output parameter.");
-            return 1;
-        }
-
-        forward_index fwd = m_input_fwd
-            ? forward_index::read(*m_input_fwd)
-            : forward_index::from_inverted_index(m_input_basename, m_min_length, not m_nogb);
-
-        if (m_output_fwd) {
-            forward_index::write(fwd, *m_output_fwd);
-        }
-
-        if (m_output_basename) {
-            std::vector<uint32_t> documents(fwd.size());
-            std::iota(documents.begin(), documents.end(), 0U);
-            std::vector<double> gains(fwd.size(), 0.0);
-            range_type initial_range(documents.begin(), documents.end(), fwd, gains);
-
-            if (m_node_config) {
-                run_with_config(*m_node_config, initial_range);
-            } else {
-                run_default_tree(
-                    m_depth.value_or(static_cast<size_t>(std::log2(fwd.size()) - 5)), initial_range);
-            }
-
-            if (m_print) {
-                for (const auto& document: documents) {
-                    std::cout << document << '\n';
-                }
-            }
-            auto mapping = get_mapping(documents);
-            fwd.clear();
-            documents.clear();
-            reorder_inverted_index(m_input_basename, *m_output_basename, mapping);
-
-            if (m_document_lexicon) {
-                auto doc_buffer = Payload_Vector_Buffer::from_file(*m_document_lexicon);
-                auto documents = Payload_Vector<std::string>(doc_buffer);
-                std::vector<std::string> reordered_documents(documents.size());
-                pisa::progress doc_reorder("Reordering documents vector", documents.size());
-                for (size_t i = 0; i < documents.size(); ++i) {
-                    reordered_documents[mapping[i]] = documents[i];
-                    doc_reorder.update(1);
-                }
-                encode_payload_vector(reordered_documents.begin(), reordered_documents.end())
-                    .to_file(*m_reordered_document_lexicon);
-            }
-        }
-        return 0;
-    }
-
-  private:
     inline std::vector<node_type>
     read_node_config(const std::string& config_file, const range_type& initial_range)
     {
@@ -172,18 +71,64 @@ class RecursiveGraphBisection {
         bp_progress.update(0);
         recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
     }
-    std::string m_input_basename{};
-    std::optional<std::string> m_output_basename{};
-    std::optional<std::string> m_output_fwd{};
-    std::optional<std::string> m_input_fwd{};
-    std::optional<std::string> m_document_lexicon{};
-    std::optional<std::string> m_reordered_document_lexicon{};
-    std::size_t m_min_length = 0;
-    std::optional<std::size_t> m_depth{};
-    bool m_nogb = false;
-    bool m_print = false;
-    std::optional<std::string> m_node_config{};
-};
+
+}  // namespace detail
+
+[[nodiscard]] auto recursive_graph_bisection(RecursiveGraphBisectionOptions const& options) -> int
+{
+    if (not options.output_basename && not options.output_fwd) {
+        spdlog::error("Must define at least one output parameter.");
+        return 1;
+    }
+
+    forward_index fwd = options.input_fwd
+        ? forward_index::read(*options.input_fwd)
+        : forward_index::from_inverted_index(
+            options.input_basename, options.min_length, options.compress_fwd);
+
+    if (options.output_fwd) {
+        forward_index::write(fwd, *options.output_fwd);
+    }
+
+    if (options.output_basename) {
+        std::vector<uint32_t> documents(fwd.size());
+        std::iota(documents.begin(), documents.end(), 0U);
+        std::vector<double> gains(fwd.size(), 0.0);
+        detail::range_type initial_range(documents.begin(), documents.end(), fwd, gains);
+
+        if (options.node_config) {
+            detail::run_with_config(*options.node_config, initial_range);
+        } else {
+            detail::run_default_tree(
+                options.depth.value_or(static_cast<size_t>(std::log2(fwd.size()) - 5)),
+                initial_range);
+        }
+
+        if (options.print_args) {
+            for (const auto& document: documents) {
+                std::cout << document << '\n';
+            }
+        }
+        auto mapping = get_mapping(documents);
+        fwd.clear();
+        documents.clear();
+        reorder_inverted_index(options.input_basename, *options.output_basename, mapping);
+
+        if (options.document_lexicon) {
+            auto doc_buffer = Payload_Vector_Buffer::from_file(*options.document_lexicon);
+            auto documents = Payload_Vector<std::string>(doc_buffer);
+            std::vector<std::string> reordered_documents(documents.size());
+            pisa::progress doc_reorder("Reordering documents vector", documents.size());
+            for (size_t i = 0; i < documents.size(); ++i) {
+                reordered_documents[mapping[i]] = documents[i];
+                doc_reorder.update(1);
+            }
+            encode_payload_vector(reordered_documents.begin(), reordered_documents.end())
+                .to_file(*options.reordered_document_lexicon);
+        }
+    }
+    return 0;
+}
 
 struct ReorderOptions {
     std::string input_basename;
