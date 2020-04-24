@@ -129,11 +129,19 @@ namespace arg {
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             auto* scorer =
-                app->add_option("-s,--scorer", m_scorer, "Query processing algorithm")->needs(wand);
+                app->add_option("-s,--scorer", m_params.m_name, "Query processing algorithm")->needs(wand);
             app->add_flag("--quantize", m_quantize, "Quantizes the scores")->needs(scorer);
+            app->add_option("--bm25-k1", m_params.m_bm25_k1, "BM25 k1 parameter.");
+            app->add_option("--bm25-b", m_params.m_bm25_b, "BM25 b parameter.");
+            app->add_option("--pl2-c", m_params.m_pl2_c, "PL2 c parameter.");
+            app->add_option("--qld-mu", m_params.m_qld_mu, "QLD mu parameter.");
         }
 
-        [[nodiscard]] auto scorer() const -> std::optional<std::string> const& { return m_scorer; }
+        [[nodiscard]] auto scorer_params() const -> std::optional<ScorerParams> const& 
+        { 
+            return m_params; 
+        }
+
         [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const&
         {
             return m_wand_data_path;
@@ -141,7 +149,7 @@ namespace arg {
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
       private:
-        std::optional<std::string> m_scorer;
+        std::optional<ScorerParams> m_params;
         std::optional<std::string> m_wand_data_path;
         bool m_quantize = false;
     };
