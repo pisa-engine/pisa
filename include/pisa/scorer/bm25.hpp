@@ -9,10 +9,11 @@ namespace pisa {
 
 template <typename Wand>
 struct bm25: public index_scorer<Wand> {
- 
     using index_scorer<Wand>::index_scorer;
-    
-    bm25 (const Wand& wdata, const float b, const float k1) : index_scorer<Wand>(wdata), m_b(b), m_k1(k1) {}
+
+    bm25(const Wand& wdata, const float b, const float k1)
+        : index_scorer<Wand>(wdata), m_b(b), m_k1(k1)
+    {}
 
     float doc_term_weight(uint64_t freq, float norm_len) const
     {
@@ -39,9 +40,8 @@ struct bm25: public index_scorer<Wand> {
         return s;
     }
 
-    private:
-      float m_b;
-      float m_k1;
-
+  private:
+    float m_b;
+    float m_k1;
 };
 }  // namespace pisa

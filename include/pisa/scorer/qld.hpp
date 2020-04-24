@@ -10,10 +10,9 @@ namespace pisa {
 
 template <typename Wand>
 struct qld: public index_scorer<Wand> {
-
     using index_scorer<Wand>::index_scorer;
-    
-    qld(const Wand& wdata, const float mu) : index_scorer<Wand>(wdata), m_mu(mu) {} 
+
+    qld(const Wand& wdata, const float mu) : index_scorer<Wand>(wdata), m_mu(mu) {}
 
     term_scorer_t term_scorer(uint64_t term_id) const override
     {
@@ -29,9 +28,8 @@ struct qld: public index_scorer<Wand> {
         return s;
     }
 
-    private:
-      float m_mu;
-
+  private:
+    float m_mu;
 };
 
 }  // namespace pisa

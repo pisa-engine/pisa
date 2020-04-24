@@ -18,7 +18,6 @@ struct pl2: public index_scorer<Wand> {
 
     pl2(const Wand& wdata, const float c) : index_scorer<Wand>(wdata), m_c(c) {}
 
-
     term_scorer_t term_scorer(uint64_t term_id) const override
     {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
@@ -35,9 +34,8 @@ struct pl2: public index_scorer<Wand> {
         return s;
     }
 
-    private:
-      float m_c;
-
+  private:
+    float m_c;
 };
 
 }  // namespace pisa
