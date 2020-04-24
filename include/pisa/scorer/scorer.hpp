@@ -12,37 +12,36 @@
 #include "spdlog/spdlog.h"
 
 struct ScorerParams {
+    ScorerParams(std::string s_name = "default") : name(s_name) {}
 
-    ScorerParams(std::string name) : m_name(name) {}
-
-    std::string m_name = "default";
-    float m_bm25_b = 0.4;
-    float m_bm25_k1 = 0.9;
-    float m_pl2_c = 1;
-    float m_qld_mu = 1000;
+    std::string name;
+    float bm25_b = 0.4;
+    float bm25_k1 = 0.9;
+    float pl2_c = 1;
+    float qld_mu = 1000;
 };
 
 namespace pisa { namespace scorer {
     auto from_params =
         [](const ScorerParams& params,
            auto const& wdata) -> std::unique_ptr<index_scorer<std::decay_t<decltype(wdata)>>> {
-        if (params.m_name == "bm25") {
+        if (params.name == "bm25") {
             return std::make_unique<bm25<std::decay_t<decltype(wdata)>>>(
-                wdata, params.m_bm25_b, params.m_bm25_k1);
+                wdata, params.bm25_b, params.bm25_k1);
         }
-        if (params.m_name == "qld") {
-            return std::make_unique<qld<std::decay_t<decltype(wdata)>>>(wdata, params.m_qld_mu);
+        if (params.name == "qld") {
+            return std::make_unique<qld<std::decay_t<decltype(wdata)>>>(wdata, params.qld_mu);
         }
-        if (params.m_name == "pl2") {
-            return std::make_unique<pl2<std::decay_t<decltype(wdata)>>>(wdata, params.m_pl2_c);
+        if (params.name == "pl2") {
+            return std::make_unique<pl2<std::decay_t<decltype(wdata)>>>(wdata, params.pl2_c);
         }
-        if (params.m_name == "dph") {
+        if (params.name == "dph") {
             return std::make_unique<dph<std::decay_t<decltype(wdata)>>>(wdata);
         }
-        if (params.m_name == "quantized") {
+        if (params.name == "quantized") {
             return std::make_unique<quantized<std::decay_t<decltype(wdata)>>>(wdata);
         }
-        spdlog::error("Unknown scorer {}", params.m_name);
+        spdlog::error("Unknown scorer {}", params.name);
         std::abort();
     };
 }}  // namespace pisa::scorer

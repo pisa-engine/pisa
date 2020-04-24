@@ -64,7 +64,7 @@ inline auto Intersection::compute(
 {
     auto filtered_query = term_mask ? intersection::filter(query, *term_mask) : query;
     scored_and_query retrieve{};
-    auto scorer = scorer::from_param(ScorerParams("bm25"), wand);
+    auto scorer = scorer::from_params(ScorerParams("bm25"), wand);
     auto results = retrieve(make_scored_cursors(index, *scorer, filtered_query), index.num_docs());
     auto max_element = [&](auto const& vec) -> float {
         auto order = [](auto const& lhs, auto const& rhs) { return lhs.second < rhs.second; };

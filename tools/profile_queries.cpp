@@ -93,7 +93,7 @@ void profile(
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
-    auto scorer = scorer::from_name("bm25", wdata);
+    auto scorer = scorer::from_params(ScorerParams("bm25"), wdata);
 
     for (auto const& t: query_types) {
         spdlog::info("Query type: {}", t);

@@ -129,27 +129,25 @@ namespace arg {
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             auto* scorer =
-                app->add_option("-s,--scorer", m_params.m_name, "Query processing algorithm")->needs(wand);
+                app->add_option("-s,--scorer", m_params.name, "Query processing algorithm")->needs(wand);
             app->add_flag("--quantize", m_quantize, "Quantizes the scores")->needs(scorer);
-            app->add_option("--bm25-k1", m_params.m_bm25_k1, "BM25 k1 parameter.");
-            app->add_option("--bm25-b", m_params.m_bm25_b, "BM25 b parameter.");
-            app->add_option("--pl2-c", m_params.m_pl2_c, "PL2 c parameter.");
-            app->add_option("--qld-mu", m_params.m_qld_mu, "QLD mu parameter.");
+            app->add_option("--bm25-k1", m_params.bm25_k1, "BM25 k1 parameter.");
+            app->add_option("--bm25-b", m_params.bm25_b, "BM25 b parameter.");
+            app->add_option("--pl2-c", m_params.pl2_c, "PL2 c parameter.");
+            app->add_option("--qld-mu", m_params.qld_mu, "QLD mu parameter.");
         }
 
-        [[nodiscard]] auto scorer_params() const -> std::optional<ScorerParams> const& 
-        { 
-            return m_params; 
-        }
+        [[nodiscard]] auto scorer_params() const { return m_params; }
 
         [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const&
         {
             return m_wand_data_path;
         }
+
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
       private:
-        std::optional<ScorerParams> m_params;
+        ScorerParams m_params;
         std::optional<std::string> m_wand_data_path;
         bool m_quantize = false;
     };
@@ -157,11 +155,11 @@ namespace arg {
     struct Scorer {
         explicit Scorer(CLI::App* app)
         {
-            app->add_option("-s,--scorer", m_params.m_name, "Query processing algorithm")->required();
-            app->add_option("--bm25-k1", m_params.m_bm25_k1, "BM25 k1 parameter.");
-            app->add_option("--bm25-b", m_params.m_bm25_b, "BM25 b parameter.");
-            app->add_option("--pl2-c", m_params.m_pl2_c, "PL2 c parameter.");
-            app->add_option("--qld-mu", m_params.m_qld_mu, "QLD mu parameter.");
+            app->add_option("-s,--scorer", m_params.name, "Query processing algorithm")->required();
+            app->add_option("--bm25-k1", m_params.bm25_k1, "BM25 k1 parameter.");
+            app->add_option("--bm25-b", m_params.bm25_b, "BM25 b parameter.");
+            app->add_option("--pl2-c", m_params.pl2_c, "PL2 c parameter.");
+            app->add_option("--qld-mu", m_params.qld_mu, "QLD mu parameter.");
         }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
@@ -306,7 +304,11 @@ namespace arg {
 
             app->add_flag("--compress", m_compress, "Compress additional data");
             app->add_flag("--quantize", m_quantize, "Quantize scores");
-            app->add_option("-s,--scorer", m_scorer_name, "Scorer function")->required();
+            app->add_option("-s,--scorer", m_params.name, "Scorer function")->required();
+            app->add_option("--bm25-k1", m_params.bm25_k1, "BM25 k1 parameter.");
+            app->add_option("--bm25-b", m_params.bm25_b, "BM25 b parameter.");
+            app->add_option("--pl2-c", m_params.pl2_c, "PL2 c parameter.");
+            app->add_option("--qld-mu", m_params.qld_mu, "QLD mu parameter.");
             app->add_flag("--range", m_range, "Create docid-range based data")
                 ->excludes(block_size_opt)
                 ->excludes(block_lambda_opt);
@@ -318,6 +320,7 @@ namespace arg {
 
         [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
         [[nodiscard]] auto output() const -> std::string { return m_output; }
+        [[nodiscard]] auto scorer_params() const { return m_params; }
         [[nodiscard]] auto block_size() const -> BlockSize
         {
             if (m_lambda) {
@@ -341,7 +344,6 @@ namespace arg {
         [[nodiscard]] auto compress() const -> bool { return m_compress; }
         [[nodiscard]] auto range() const -> bool { return m_range; }
         [[nodiscard]] auto quantize() const -> bool { return m_quantize; }
-        [[nodiscard]] auto scorer() const -> std::string { return m_scorer_name; }
 
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
@@ -355,7 +357,7 @@ namespace arg {
         std::optional<uint64_t> m_fixed_block_size{};
         std::string m_input_basename;
         std::string m_output;
-        std::string m_scorer_name;
+        ScorerParams m_params;
         bool m_compress = false;
         bool m_range = false;
         bool m_quantize = false;

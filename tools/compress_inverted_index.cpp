@@ -30,7 +30,7 @@ int main(int argc, char** argv)
         args.wand_data_path(),
         args.index_encoding(),
         args.output(),
-        args.scorer_param(),
+        args.scorer_params(),
         args.quantize(),
         args.check());
 }

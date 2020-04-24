@@ -82,7 +82,7 @@ int main(int argc, char** argv)
                 shard_args.wand_data_path(),
                 shard_args.index_encoding(),
                 shard_args.output(),
-                shard_args.scorer(),
+                shard_args.scorer_params(),
                 shard_args.quantize(),
                 shard_args.check());
         }
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
                 shard_args.output(),
                 shard_args.input_basename(),
                 shard_args.block_size(),
-                shard_args.scorer(),
+                shard_args.scorer_params(),
                 shard_args.range(),
                 shard_args.compress(),
                 shard_args.quantize(),
