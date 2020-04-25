@@ -7,7 +7,6 @@
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -21,6 +20,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "timer.hpp"
@@ -129,8 +129,9 @@ void perftest(
 {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+
+    auto index_source = MemorySource::mapped_file(index_filename);
+    mapper::map(index, index_source.data());
 
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
@@ -145,18 +146,14 @@ void perftest(
 
     WandType wdata;
 
-    std::vector<std::string> query_types;
-    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
-            throw std::runtime_error("Error opening file");
+    auto wdata_source = [&] {
+        if (wand_data_filename) {
+            auto source = MemorySource::mapped_file(*wand_data_filename);
+            mapper::map(wdata, source.data(), mapper::map_flags::warmup);
+            return source;
         }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
+        return MemorySource();
+    }();
 
     std::vector<Threshold> thresholds(queries.size(), 0.0);
     if (thresholds_filename) {
@@ -176,6 +173,9 @@ void perftest(
 
     spdlog::info("Performing {} queries", type);
     spdlog::info("K: {}", k);
+
+    std::vector<std::string> query_types;
+    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
     for (auto&& t: query_types) {
         spdlog::info("Query type: {}", t);

@@ -20,6 +20,7 @@
 #include "util/verify_collection.hpp"  // XXX move to index_build_utils
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
+#include "memory_source.hpp"
 
 namespace pisa {
 
@@ -74,16 +75,14 @@ void compress_index(
     {
         pisa::progress progress("Create index", input.size());
         WandType wdata;
-        mio::mmap_source md;
-        if (wand_data_filename) {
-            std::error_code error;
-            md.map(*wand_data_filename, error);
-            if (error) {
-                spdlog::error("error mapping file: {}, exiting...", error.message());
-                std::abort();
+        auto wdata_source = [&] {
+            if (wand_data_filename) {
+                auto source = MemorySource::mapped_file(*wand_data_filename);
+                mapper::map(wdata, source.data(), mapper::map_flags::warmup);
+                return source;
             }
-            mapper::map(wdata, md, mapper::map_flags::warmup);
-        }
+            return MemorySource();
+        }();
 
         std::unique_ptr<index_scorer<WandType>> scorer;
 
