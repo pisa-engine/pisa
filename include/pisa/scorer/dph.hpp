@@ -12,6 +12,12 @@
 
 namespace pisa {
 
+// Implements the DPH model. This model is parameter free.
+// See the following resource for further information - G. Amati, E. Ambrosi,
+// M Bianchi, C Gaibisso, and G Gambosi: "FUB, IASI-CNR and University of Tor
+// Vergata at TREC 2007 Blog Track," in Proceedings of the 16th Text REtrieval
+// Conference (TREC), 2007.
+
 template <typename Wand>
 struct dph: public index_scorer<Wand> {
     using index_scorer<Wand>::index_scorer;

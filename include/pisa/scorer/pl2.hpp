@@ -12,6 +12,11 @@
 
 namespace pisa {
 
+// Implements the PL2 model. c is a free parameter.
+// See the following resource for further information - G. Amati: "Probabalistic
+// models for information retrieval based on divergence from randomness." PhD
+// Thesis, University of Glasgow, 2003.
+
 template <typename Wand>
 struct pl2: public index_scorer<Wand> {
     using index_scorer<Wand>::index_scorer;

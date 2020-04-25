@@ -125,16 +125,10 @@ namespace arg {
     };
 
     struct Quantize {
-        explicit Quantize(CLI::App* app)
+        explicit Quantize(CLI::App* app) : m_params("")
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-            auto* scorer =
-                app->add_option("-s,--scorer", m_params.name, "Query processing algorithm")->needs(wand);
-            app->add_flag("--quantize", m_quantize, "Quantizes the scores")->needs(scorer);
-            app->add_option("--bm25-k1", m_params.bm25_k1, "BM25 k1 parameter.");
-            app->add_option("--bm25-b", m_params.bm25_b, "BM25 b parameter.");
-            app->add_option("--pl2-c", m_params.pl2_c, "PL2 c parameter.");
-            app->add_option("--qld-mu", m_params.qld_mu, "QLD mu parameter.");
+            add_scorer_options(app, *this);
         }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
@@ -146,23 +140,32 @@ namespace arg {
 
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
+        template <typename T>
+        friend void add_scorer_options(CLI::App* app, T& args);
+
       private:
         ScorerParams m_params;
         std::optional<std::string> m_wand_data_path;
         bool m_quantize = false;
     };
 
+    template <typename T>
+    void add_scorer_options(CLI::App* app, T& args)
+    {
+        app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
+        app->add_option("--bm25-k1", args.m_params.bm25_k1, "BM25 k1 parameter.");
+        app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.");
+        app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.");
+        app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.");
+    }
+
     struct Scorer {
-        explicit Scorer(CLI::App* app)
-        {
-            app->add_option("-s,--scorer", m_params.name, "Query processing algorithm")->required();
-            app->add_option("--bm25-k1", m_params.bm25_k1, "BM25 k1 parameter.");
-            app->add_option("--bm25-b", m_params.bm25_b, "BM25 b parameter.");
-            app->add_option("--pl2-c", m_params.pl2_c, "PL2 c parameter.");
-            app->add_option("--qld-mu", m_params.qld_mu, "QLD mu parameter.");
-        }
+        explicit Scorer(CLI::App* app) : m_params("") { add_scorer_options(app, *this); }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
+
+        template <typename T>
+        friend void add_scorer_options(CLI::App* app, T& args);
 
       private:
         ScorerParams m_params;
@@ -289,7 +292,7 @@ namespace arg {
     };
 
     struct CreateWandData {
-        explicit CreateWandData(CLI::App* app)
+        explicit CreateWandData(CLI::App* app) : m_params("")
         {
             app->add_option("-c,--collection", m_input_basename, "Collection basename")->required();
             app->add_option("-o,--output", m_output, "Output filename")->required();
@@ -304,11 +307,7 @@ namespace arg {
 
             app->add_flag("--compress", m_compress, "Compress additional data");
             app->add_flag("--quantize", m_quantize, "Quantize scores");
-            app->add_option("-s,--scorer", m_params.name, "Scorer function")->required();
-            app->add_option("--bm25-k1", m_params.bm25_k1, "BM25 k1 parameter.");
-            app->add_option("--bm25-b", m_params.bm25_b, "BM25 b parameter.");
-            app->add_option("--pl2-c", m_params.pl2_c, "PL2 c parameter.");
-            app->add_option("--qld-mu", m_params.qld_mu, "QLD mu parameter.");
+            add_scorer_options(app, *this);
             app->add_flag("--range", m_range, "Create docid-range based data")
                 ->excludes(block_size_opt)
                 ->excludes(block_lambda_opt);
@@ -351,6 +350,9 @@ namespace arg {
             m_input_basename = expand_shard(m_input_basename, shard);
             m_output = expand_shard(m_output, shard);
         }
+
+        template <typename T>
+        friend void add_scorer_options(CLI::App* app, T& args);
 
       private:
         std::optional<float> m_lambda{};

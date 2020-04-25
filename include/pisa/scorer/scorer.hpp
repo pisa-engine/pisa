@@ -12,7 +12,7 @@
 #include "spdlog/spdlog.h"
 
 struct ScorerParams {
-    ScorerParams(std::string s_name = "default") : name(s_name) {}
+    explicit ScorerParams(std::string scorer_name) : name(std::move(scorer_name)) {}
 
     std::string name;
     float bm25_b = 0.4;

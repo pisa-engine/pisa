@@ -25,7 +25,7 @@ struct IndexData {
               document_sizes.begin()->begin(),
               collection.num_docs(),
               collection,
-              scorer_name,
+              ScorerParams(scorer_name),
               BlockSize(FixedBlock(5)),
               quantized,
               dropped_term_ids)
