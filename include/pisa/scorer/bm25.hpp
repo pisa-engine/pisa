@@ -7,13 +7,12 @@
 #include "index_scorer.hpp"
 namespace pisa {
 
-// Implements the Okapi BM25 model. k1 and b are both free parameters which
-// alter the weight given to different aspects of the calculation.
-// We adopt the defaults recommended by the following resource - A. Trotman,
-// X-F. Jia, and M. Crane: "Towards an Efficient and Effective Search Engine,"
-// in Proceedings of the SIGIR 2012 Workshop on Open Source Information
-// Retrieval (OSIR), 2012.
-
+/// Implements the Okapi BM25 model. k1 and b are both free parameters which
+/// alter the weight given to different aspects of the calculation.
+/// We adopt the defaults recommended by the following resource - A. Trotman,
+/// X-F. Jia, and M. Crane: "Towards an Efficient and Effective Search Engine,"
+/// in Proceedings of the SIGIR 2012 Workshop on Open Source Information
+/// Retrieval (OSIR), 2012.
 template <typename Wand>
 struct bm25: public index_scorer<Wand> {
     using index_scorer<Wand>::index_scorer;
