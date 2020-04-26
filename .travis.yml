@@ -98,6 +98,10 @@ matrix:
                 - ['clang-tidy-9', 'clang-9', 'libstdc++-7-dev']
       env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9 && COVERAGE=Off && TIDY=On"
     - os: osx
+      osx_image: xcode10.3
+      compiler: clang
+      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
+    - os: osx
       osx_image: xcode11.2
       compiler: clang
       env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
