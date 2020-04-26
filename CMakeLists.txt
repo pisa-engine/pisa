@@ -105,6 +105,7 @@ target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can 
     spdlog
     fmt::fmt
     range-v3
+    nlohmann_json::nlohmann_json
 )
 target_include_directories(pisa PUBLIC external)
 

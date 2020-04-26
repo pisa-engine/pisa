@@ -42,16 +42,6 @@ TEST_CASE("Construct from term IDs")
     REQUIRE(*query.term_ids() == std::vector<std::uint32_t>{1, 0, 3});
 }
 
-TEST_CASE("Set processed terms")
-{
-    std::vector<std::uint32_t> term_ids{1, 0, 3};
-    auto query = QueryContainer::from_term_ids(term_ids);
-    query.processed_terms(std::vector<std::string>{"brooklyn", "tea", "house"});
-    REQUIRE(*query.terms() == std::vector<std::string>{"brooklyn", "tea", "house"});
-    REQUIRE_THROWS_AS(
-        query.processed_terms(std::vector<std::string>{"tea", "house"}), std::domain_error);
-}
-
 TEST_CASE("Parse query")
 {
     auto raw_query = "brooklyn tea house brooklyn";
@@ -81,4 +71,73 @@ TEST_CASE("Parsing throws without raw query")
     auto query = QueryContainer::from_term_ids(term_ids);
     REQUIRE_THROWS_AS(
         query.parse([](auto&& str) { return std::vector<pisa::ParsedTerm>{}; }), std::domain_error);
+}
+
+TEST_CASE("Parse query container from colon-delimited format")
+{
+    auto query = QueryContainer::from_colon_format("");
+    REQUIRE(query.string()->empty());
+    REQUIRE_FALSE(query.id());
+
+    query = QueryContainer::from_colon_format("brooklyn tea house");
+    REQUIRE(*query.string() == "brooklyn tea house");
+    REQUIRE_FALSE(query.id());
+
+    query = QueryContainer::from_colon_format("BTH:brooklyn tea house");
+    REQUIRE(*query.string() == "brooklyn tea house");
+    REQUIRE(*query.id() == "BTH");
+
+    query = QueryContainer::from_colon_format("BTH:");
+    REQUIRE(query.string()->empty());
+    REQUIRE(*query.id() == "BTH");
+}
+
+TEST_CASE("Parse query container from JSON")
+{
+    REQUIRE_THROWS_AS(QueryContainer::from_json(""), std::runtime_error);
+    REQUIRE_THROWS_AS(QueryContainer::from_json(R"({"id":"ID"})"), std::invalid_argument);
+
+    auto query = QueryContainer::from_json(R"(
+    {
+        "id": "ID",
+        "query": "brooklyn tea house"
+    }
+    )");
+    REQUIRE(*query.id() == "ID");
+    REQUIRE(*query.string() == "brooklyn tea house");
+    REQUIRE_FALSE(query.terms());
+    REQUIRE_FALSE(query.term_ids());
+    REQUIRE_FALSE(query.threshold());
+
+    query = QueryContainer::from_json(R"(
+    {
+        "term_ids": [1, 0, 3],
+        "terms": ["brooklyn", "tea", "house"],
+        "threshold": 10.8
+    }
+    )");
+    REQUIRE(*query.terms() == std::vector<std::string>{"brooklyn", "tea", "house"});
+    REQUIRE(*query.term_ids() == std::vector<std::uint32_t>{1, 0, 3});
+    REQUIRE(*query.threshold() == Approx(10.8));
+    REQUIRE_FALSE(query.id());
+    REQUIRE_FALSE(query.string());
+
+    REQUIRE_THROWS_AS(QueryContainer::from_json(R"({"terms":[1, 2]})"), std::runtime_error);
+}
+
+TEST_CASE("Serialize query container to JSON")
+{
+    auto query = QueryContainer::from_json(R"(
+    {
+        "id": "ID",
+        "query": "brooklyn tea house",
+        "terms": ["brooklyn", "tea", "house"],
+        "term_ids": [1, 0, 3],
+        "threshold": 10.0
+    }
+    )");
+    auto serialized = query.to_json();
+    REQUIRE(
+        serialized
+        == R"({"id":"ID","query":"brooklyn tea house","term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"threshold":10.0})");
 }

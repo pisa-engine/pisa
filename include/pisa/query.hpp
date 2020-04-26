@@ -24,9 +24,9 @@ class QueryContainer;
 
 /// Query is a special container that maintains important invariants, such as sorted term IDs,
 /// and also has some additional data, like term weights, etc.
-class Query {
+class QueryRequest {
   public:
-    explicit Query(QueryContainer const& data);
+    explicit QueryRequest(QueryContainer const& data);
 
     [[nodiscard]] auto term_ids() const -> gsl::span<std::uint32_t const>;
     [[nodiscard]] auto threshold() const -> std::optional<float>;
@@ -61,8 +61,25 @@ class QueryContainer {
     /// Constructs a query from a list of term IDs.
     [[nodiscard]] static auto from_term_ids(std::vector<std::uint32_t> term_ids) -> QueryContainer;
 
+    /// Constructs a query from a JSON object.
+    [[nodiscard]] static auto from_json(std::string_view json_string) -> QueryContainer;
+
+    [[nodiscard]] auto to_json() const -> std::string;
+
+    /// Constructs a query from a colon-separated format:
+    ///
+    /// ```
+    /// id:raw query string
+    /// ```
+    /// or
+    /// ```
+    /// raw query string
+    /// ```
+    [[nodiscard]] static auto from_colon_format(std::string_view line) -> QueryContainer;
+
     // Accessors
 
+    [[nodiscard]] auto id() const noexcept -> std::optional<std::string> const&;
     [[nodiscard]] auto string() const noexcept -> std::optional<std::string> const&;
     [[nodiscard]] auto terms() const noexcept -> std::optional<std::vector<std::string>> const&;
     [[nodiscard]] auto term_ids() const noexcept -> std::optional<std::vector<std::uint32_t>> const&;
@@ -70,15 +87,6 @@ class QueryContainer {
 
     /// Sets the raw string.
     [[nodiscard]] auto string(std::string) -> QueryContainer&;
-
-    /// Sets processed terms.
-    ///
-    /// NOTE: If the intent is to parse the query, use `parse` method instead.
-    /// This method is intended to be used when loading a query from JSON or another
-    /// external representation.
-    ///
-    /// \throws std::domain_error   when term IDs are set but the lengths don't match
-    auto processed_terms(std::vector<std::string> terms) -> QueryContainer&;
 
     /// Parses the raw query with the given parser.
     ///
@@ -89,7 +97,7 @@ class QueryContainer {
     auto threshold(float score) -> QueryContainer&;
 
     /// Returns a query ready to be used for retrieval.
-    [[nodiscard]] auto query() const -> Query;
+    [[nodiscard]] auto query() const -> QueryRequest;
 
   private:
     QueryContainer();

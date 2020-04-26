@@ -101,6 +101,21 @@ namespace arg {
             return q;
         }
 
+        [[nodiscard]] auto term_lexicon() const -> std::optional<std::string> const&
+        {
+            return m_term_lexicon;
+        }
+
+        [[nodiscard]] auto stemmer() const -> std::optional<std::string> const&
+        {
+            return m_stemmer;
+        }
+
+        [[nodiscard]] auto stop_words() const -> std::optional<std::string> const&
+        {
+            return m_stop_words;
+        }
+
         [[nodiscard]] auto k() const -> int { return m_k; }
 
       private:
