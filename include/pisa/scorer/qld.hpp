@@ -13,8 +13,8 @@ namespace pisa {
 /// See the following resources for further information - J. M. Ponte, and
 /// W. B. Croft: "A Language Modeling Approach to Information Retrieval," in
 /// Proceedings of SIGIR, 1998.
-/// Also see: C. Zhai and J. Lafferty: "A Study of Smoothing Methods for 
-/// Language Models Applied to Ad Hoc Information Retrieval," in Proceedings of 
+/// Also see: C. Zhai and J. Lafferty: "A Study of Smoothing Methods for
+/// Language Models Applied to Ad Hoc Information Retrieval," in Proceedings of
 /// SIGIR, 2001.
 template <typename Wand>
 struct qld: public index_scorer<Wand> {
