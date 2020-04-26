@@ -3,26 +3,11 @@ Sharding
 
 We support partitioning a collection into a number of smaller subsets called _shards_.
 Right now, only a forward index can be partitioned by running `partition_fwd_index` command.
-Then, the resulting shards must be inverted individually with `invert` command.
-For convenience, we provide `script/invert-shards` that takes a file prefix
-to shard forward indexes and inverts them all.
+For convenience, we provide `shards` command that supports certain bulk operations on all shards.
 
-## `partition_fwd_index`
+## Partitioning collection
 
-    Partition a forward index
-    Usage: ./bin/partition_fwd_index [OPTIONS]
-    
-    Options:
-      -h,--help                   Print this help message and exit
-      -i,--input TEXT REQUIRED    Forward index filename
-      -o,--output TEXT REQUIRED   Basename of partitioned shards
-      -j,--threads INT            Thread count
-      -r,--random-shards INT Excludes: --shard-files
-                                  Number of random shards
-      -s,--shard-files TEXT ... Excludes: --random-shards
-                                  List of files with shard titles
-      --debug                     Print debug messages
-
+We support two methods of partitioning: random, and by a defined mapping.
 For example, one can partition collection randomly:
 
     $ partition_fwd_index \
@@ -48,47 +33,33 @@ in which they are passed in the command line.
 Then, each resulting forward index will have appended `.ID` to its name prefix:
 `shard_prefix.000`, `shard_prefix.001`, and so on.
 
-## `invert-shards.sh`
+## Working with shards
 
-This script inverts all shards with a common prefix.
+The `shards` tool allows to perform some index operations in bulk on all shards at once.
+At the moment, the following subcommands are supported:
+- invert,
+- compress,
+- wand-data, and
+- reorder-docids.
 
-    USAGE:
-        invert-shards <PROGRAM> <INPUT_BASENAME> <OUTPUT_BASENAME> [program flags] 
+All input and output paths passed to the subcommands will be expanded for each individual shards
+by extending it with `.<shard-id>` (e.g., `.000`) or, if substring `{}` is present, then
+the shard number will be substituted there. For example:
 
-For example, if the following command was used to partition a collection:
+```bash
+shards reorder-docids --by-url \
+    -c inv \
+    -o inv.url \
+    --documents fwd.{}.doclex \
+    --reordered-documents fwd.url.{}.doclex
+```
 
-    $ partition_fwd_index \
-        -j 8 \                          # use up to 8 threads at a time
-        -i full_index_prefix \
-        -o shard_prefix \
-        -r 123                          # partition randomly into 123 shards
+is equivalent to running the following command for every shard `XYZ`:
 
-Then, one can invert the shards by executing the following script:
-
-    $ invert-shards.sh \
-        /path/to/invert \               # provide path to program
-        shard_prefix \                  # basename to shard collections
-        shard_prefix_inverted \         # basename to shard inverted indexes
-        -j 8 -b 1000                    # any arguments to be appended to each program execution
-
-## `compress-shards.sh`
-
-Next, you can compress the inverted shards with `compress-shards.sh`:
-
-    USAGE:
-        compress-shards <PROGRAM> <INPUT_BASENAME> <OUTPUT_BASENAME> [program flags] 
-
-For example, following the above example:
-
-    $ compress-shards.sh \
-        /path/to/create_freq_index \    # provide path to program
-        shard_prefix_inverted \         # basename to shard inverted indexes
-        shard_prefix_inverted_simdbp \  # basename to shard compressed indexes
-        -t block_simdbp --check         # any arguments to be appended to each program execution
-
-Note that this script can be also used for creating WAND data by replacing the program:
-
-    $ compress-shards.sh \
-        /path/to/create_wand_data \     # provide path to program
-        shard_prefix_inverted \         # basename to shard inverted indexes
-        shard_prefix_inverted_wand      # basename to shard compressed indexes
+```bash
+reorder-docids --by-url \
+    -c inv.XYZ \
+    -o inv.url.XYZ \
+    --documents fwd.XYZ.doclex \
+    --reordered-documents fwd.url.XYZ.doclex
+```
