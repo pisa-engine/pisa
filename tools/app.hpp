@@ -366,24 +366,47 @@ namespace arg {
         std::string m_terms_to_drop_filename;
     };
 
-    struct RecursiveGraphBisection {
-        explicit RecursiveGraphBisection(CLI::App* app)
+    struct ReorderDocuments {
+        explicit ReorderDocuments(CLI::App* app)
         {
             app->add_option("-c,--collection", m_input_basename, "Collection basename")->required();
-            app->add_option("-o,--output", m_output_basename, "Output basename");
-            app->add_option("--store-fwdidx", m_output_fwd, "Output basename (forward index)");
-            app->add_option("--fwdidx", m_input_fwd, "Use this forward index");
-            auto docs_opt = app->add_option("--documents", m_doclex, "Documents lexicon");
+            auto output = app->add_option("-o,--output", m_output_basename, "Output basename");
+            auto docs_opt = app->add_option("--documents", m_doclex, "Document lexicon");
             app->add_option(
-                   "--reordered-documents", m_reordered_doclex, "Reordered documents lexicon")
+                   "--reordered-documents", m_reordered_doclex, "Reordered document lexicon")
                 ->needs(docs_opt);
-            app->add_option("-m,--min-len", m_min_len, "Minimum list threshold");
-            auto optdepth =
-                app->add_option("-d,--depth", m_depth, "Recursion depth")->check(CLI::Range(1, 64));
+            auto methods = app->add_option_group("methods");
+            auto random = methods
+                              ->add_flag(
+                                  "--random",
+                                  m_random,
+                                  "Assign IDs randomly. You can use --seed for deterministic "
+                                  "results.")
+                              ->needs(output);
+            auto mapping = methods->add_flag(
+                "--from-mapping",
+                m_mapping,
+                "Use the mapping defined in this new-line delimited text file");
+            auto feature =
+                methods->add_option("--by-feature", m_feature, "Order by URLs from this file");
+            auto bp = methods->add_flag(
+                "--recursive-graph-bisection,--bp", m_bp, "Use recursive graph bisection algorithm");
+            methods->require_option(1);
+
+            // --random
+            app->add_option("--seed", m_seed, "Random seed.")->needs(random);
+
+            // --bp
+            app->add_option("--store-fwdidx", m_output_fwd, "Output basename (forward index)")->needs(bp);
+            app->add_option("--fwdidx", m_input_fwd, "Use this forward index")->needs(bp);
+            app->add_option("-m,--min-len", m_min_len, "Minimum list threshold")->needs(bp);
+            auto optdepth = app->add_option("-d,--depth", m_depth, "Recursion depth")
+                                ->check(CLI::Range(1, 64))
+                                ->needs(bp);
             auto optconf =
-                app->add_option("--node-config", m_node_config, "Node configuration file");
-            app->add_flag("--nogb", m_nogb, "No VarIntGB compression in forward index");
-            app->add_flag("-p,--print", m_print, "Print ordering to standard output");
+                app->add_option("--node-config", m_node_config, "Node configuration file")->needs(bp);
+            app->add_flag("--nogb", m_nogb, "No VarIntGB compression in forward index")->needs(bp);
+            app->add_flag("-p,--print", m_print, "Print ordering to standard output")->needs(bp);
             optconf->excludes(optdepth);
         }
 
@@ -392,8 +415,6 @@ namespace arg {
         {
             return m_output_basename;
         }
-        [[nodiscard]] auto input_fwd() const -> std::optional<std::string> { return m_input_fwd; }
-        [[nodiscard]] auto output_fwd() const -> std::optional<std::string> { return m_output_fwd; }
         [[nodiscard]] auto document_lexicon() const -> std::optional<std::string>
         {
             return m_doclex;
@@ -402,6 +423,21 @@ namespace arg {
         {
             return m_reordered_doclex;
         }
+
+        [[nodiscard]] auto random() const -> bool { return m_random; }
+        [[nodiscard]] auto feature_file() const -> std::optional<std::string> { return m_feature; }
+        [[nodiscard]] auto bp() const -> bool { return m_bp; }
+        [[nodiscard]] auto mapping_file() const -> std::optional<std::string> { return m_mapping; }
+
+        [[nodiscard]] auto seed() const -> std::uint64_t { return m_seed; }
+
+        [[nodiscard]] auto input_collection() const -> binary_freq_collection
+        {
+            return binary_freq_collection(input_basename().c_str());
+        }
+
+        [[nodiscard]] auto input_fwd() const -> std::optional<std::string> { return m_input_fwd; }
+        [[nodiscard]] auto output_fwd() const -> std::optional<std::string> { return m_output_fwd; }
         [[nodiscard]] auto min_length() const -> std::size_t { return m_min_len; }
         [[nodiscard]] auto depth() const -> std::optional<std::size_t> { return m_depth; }
         [[nodiscard]] auto nogb() const -> bool { return m_nogb; }
@@ -411,29 +447,6 @@ namespace arg {
             return m_node_config;
         }
 
-        auto print_args(std::ostream& os) const -> std::ostream&
-        {
-            os << fmt::format("input basename: {}\n", input_basename());
-            os << fmt::format("output basename: {}\n", output_basename().value_or("-"));
-            os << fmt::format("input fwd index: {}\n", input_fwd().value_or("-"));
-            os << fmt::format("output fwd index: {}\n", output_fwd().value_or("-"));
-            os << fmt::format("document lexicon: {}\n", document_lexicon().value_or("-"));
-            os << fmt::format(
-                "reordered document lexicon: {}\n", reordered_document_lexicon().value_or("-"));
-            os << fmt::format("min. list length: {}\n", min_length());
-            os << fmt::format("depth: {}\n", [this] {
-                if (auto depth = this->depth(); depth) {
-                    return fmt::format("{}", *depth);
-                }
-                return std::string("-");
-            }());
-            os << fmt::format("No compression: {}\n", nogb());
-            os << fmt::format("Print: {}\n", print());
-            os << fmt::format("Node config: {}\n", node_config().value_or("-"));
-            return os;
-        }
-
-        /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard)
         {
             m_input_basename = expand_shard(m_input_basename, shard);
@@ -450,15 +463,31 @@ namespace arg {
                 m_doclex = expand_shard(*m_doclex, shard);
                 m_reordered_doclex = expand_shard(*m_reordered_doclex, shard);
             }
+            if (m_mapping) {
+                m_mapping = expand_shard(*m_mapping, shard);
+            }
+            if (m_feature) {
+                m_feature = expand_shard(*m_feature, shard);
+            }
         }
 
       private:
         std::string m_input_basename{};
         std::optional<std::string> m_output_basename{};
-        std::optional<std::string> m_output_fwd{};
-        std::optional<std::string> m_input_fwd{};
         std::optional<std::string> m_doclex{};
         std::optional<std::string> m_reordered_doclex{};
+
+        bool m_random = false;
+        bool m_bp = false;
+        std::optional<std::string> m_feature{};
+        std::optional<std::string> m_mapping{};
+
+        // --random
+        std::uint64_t m_seed = std::random_device{}();
+
+        // --bp
+        std::optional<std::string> m_output_fwd{};
+        std::optional<std::string> m_input_fwd{};
         std::size_t m_min_len = 0;
         std::optional<std::size_t> m_depth{};
         bool m_nogb = false;
@@ -491,7 +520,7 @@ struct Args: public T... {
 };
 
 using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
-using RecursiveGraphBisectionArgs = Args<arg::RecursiveGraphBisection, arg::Threads, arg::Verbose>;
+using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
 using CompressArgs = pisa::Args<arg::Compress, arg::Encoding, arg::Quantize>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
 

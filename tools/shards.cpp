@@ -12,7 +12,7 @@
 #include "binary_collection.hpp"
 #include "compress.hpp"
 #include "invert.hpp"
-#include "recursive_graph_bisection.hpp"
+#include "reorder_docids.hpp"
 #include "sharding.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
@@ -22,7 +22,7 @@ using pisa::CompressArgs;
 using pisa::CreateWandDataArgs;
 using pisa::format_shard;
 using pisa::InvertArgs;
-using pisa::RecursiveGraphBisectionArgs;
+using pisa::ReorderDocuments;
 using pisa::resolve_shards;
 using pisa::Shard_Id;
 
@@ -34,13 +34,11 @@ int main(int argc, char** argv)
     CLI::App app{"Executes commands for shards."};
     auto* invert =
         app.add_subcommand("invert", "Constructs an inverted index from a forward index.");
-    auto* bp = app.add_subcommand(
-        "recursive-graph-bisection",
-        "Recursive graph bisection algorithm used for inverted indexed reordering.");
+    auto* reorder = app.add_subcommand("reorder-docids", "Reorder document IDs.");
     auto* compress = app.add_subcommand("compress", "Compresses an inverted index");
     auto* wand = app.add_subcommand("wand-data", "Creates additional data for query processing.");
     InvertArgs invert_args(invert);
-    RecursiveGraphBisectionArgs bp_args(bp);
+    ReorderDocuments reorder_args(reorder);
     CompressArgs compress_args(compress);
     CreateWandDataArgs wand_args(wand);
     app.require_subcommand(1);
@@ -59,13 +57,13 @@ int main(int argc, char** argv)
             shard_id += 1;
         }
     }
-    if (bp->parsed()) {
-        auto shards = resolve_shards(bp_args.input_basename(), ".docs");
+    if (reorder->parsed()) {
+        auto shards = resolve_shards(reorder_args.input_basename(), ".docs");
         spdlog::info("Processing {} shards", shards.size());
         for (auto shard: shards) {
-            auto shard_args = bp_args;
+            auto shard_args = reorder_args;
             shard_args.apply_shard(shard);
-            if (auto ret = pisa::bp::run(shard_args); ret != 0) {
+            if (auto ret = pisa::reorder_docids(shard_args); ret != 0) {
                 return ret;
             }
         }
