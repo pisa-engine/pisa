@@ -127,9 +127,9 @@ namespace arg {
     enum class ScorerMode : bool { Required, Optional };
 
     template <typename T>
-    void add_scorer_options(CLI::App* app, T& args, bool scorer_required)
+    void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required)
     {
-        if (scorer_required) {
+        if (scorer_required == ScorerMode::Required) {
             app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
         } else {
             app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
@@ -146,11 +146,7 @@ namespace arg {
         explicit Quantize(CLI::App* app) : m_params("")
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-            if constexpr (Mode == ScorerMode::Required) {
-                add_scorer_options(app, *this, true);
-            } else {
-                add_scorer_options(app, *this, false);
-            }
+            add_scorer_options(app, *this, Mode);
         }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
@@ -163,7 +159,7 @@ namespace arg {
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, bool scorer_required);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required);
 
       private:
         ScorerParams m_params;
@@ -172,12 +168,15 @@ namespace arg {
     };
 
     struct Scorer {
-        explicit Scorer(CLI::App* app) : m_params("") { add_scorer_options(app, *this, true); }
+        explicit Scorer(CLI::App* app) : m_params("")
+        {
+            add_scorer_options(app, *this, ScorerMode::Required);
+        }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, bool scorer_required);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required);
 
       private:
         ScorerParams m_params;
@@ -319,7 +318,7 @@ namespace arg {
 
             app->add_flag("--compress", m_compress, "Compress additional data");
             app->add_flag("--quantize", m_quantize, "Quantize scores");
-            add_scorer_options(app, *this, true);
+            add_scorer_options(app, *this, ScorerMode::Required);
             app->add_flag("--range", m_range, "Create docid-range based data")
                 ->excludes(block_size_opt)
                 ->excludes(block_lambda_opt);
@@ -364,7 +363,7 @@ namespace arg {
         }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, bool scorer_required);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required);
 
       private:
         std::optional<float> m_lambda{};
