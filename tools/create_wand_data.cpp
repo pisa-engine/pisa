@@ -11,7 +11,7 @@ int main(int argc, const char** argv)
         args.output(),
         args.input_basename(),
         args.block_size(),
-        args.scorer(),
+        args.scorer_params(),
         args.range(),
         args.compress(),
         args.quantize(),

@@ -62,7 +62,7 @@ void compress_index(
     bool check,
     std::string const& seq_type,
     std::optional<std::string> const& wand_data_filename,
-    std::optional<std::string> const& scorer_name,
+    ScorerParams const& scorer_params,
     bool quantized)
 {
     using namespace pisa;
@@ -87,8 +87,8 @@ void compress_index(
 
         std::unique_ptr<index_scorer<WandType>> scorer;
 
-        if (scorer_name) {
-            scorer = scorer::from_name(*scorer_name, wdata);
+        if (quantized) {
+            scorer = scorer::from_params(scorer_params, wdata);
         }
 
         size_t term_id = 0;
@@ -150,7 +150,7 @@ void compress(
     std::optional<std::string> const& wand_data_filename,
     std::string const& index_encoding,
     std::string const& output_filename,
-    std::optional<std::string> const& scorer_name,
+    ScorerParams const& scorer_params,
     bool quantize,
     bool check)
 {
@@ -169,7 +169,7 @@ void compress(
             check,                                                               \
             index_encoding,                                                      \
             wand_data_filename,                                                  \
-            scorer_name,                                                         \
+            scorer_params,                                                       \
             quantize);                                                           \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

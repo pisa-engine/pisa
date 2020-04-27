@@ -36,7 +36,7 @@ class wand_data {
         LengthsIterator len_it,
         uint64_t num_docs,
         binary_freq_collection const& coll,
-        std::string const& scorer_name,
+        const ScorerParams& scorer_params,
         BlockSize block_size,
         bool is_quantized,
         std::unordered_set<size_t> const& terms_to_drop)
@@ -80,7 +80,7 @@ class wand_data {
         m_term_occurrence_counts.steal(term_occurrence_counts);
         m_term_posting_counts.steal(term_posting_counts);
 
-        auto scorer = scorer::from_name(scorer_name, *this);
+        auto scorer = scorer::from_params(scorer_params, *this);
         {
             pisa::progress progress("Storing score upper bounds", coll.size());
             size_t term_id = 0;
@@ -168,7 +168,7 @@ void create_wand_data(
     std::string const& output,
     std::string const& input_basename,
     BlockSize block_size,
-    std::string const& scorer,
+    const ScorerParams& scorer_params,
     bool range,
     bool compress,
     bool quantize,
@@ -183,7 +183,7 @@ void create_wand_data(
             sizes_coll.begin()->begin(),
             coll.num_docs(),
             coll,
-            scorer,
+            scorer_params,
             block_size,
             quantize,
             dropped_term_ids);
@@ -193,7 +193,7 @@ void create_wand_data(
             sizes_coll.begin()->begin(),
             coll.num_docs(),
             coll,
-            scorer,
+            scorer_params,
             block_size,
             quantize,
             dropped_term_ids);
@@ -203,7 +203,7 @@ void create_wand_data(
             sizes_coll.begin()->begin(),
             coll.num_docs(),
             coll,
-            scorer,
+            scorer_params,
             block_size,
             quantize,
             dropped_term_ids);
