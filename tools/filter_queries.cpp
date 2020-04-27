@@ -74,11 +74,13 @@ void filter_queries(
     std::optional<std::string> const& query_file,
     std::optional<std::string> const& term_lexicon,
     std::optional<std::string> const& stemmer,
+    std::optional<std::string> const& stopwords_filename,
     std::size_t min_query_len,
     std::size_t max_query_len)
 {
     std::optional<Format> fmt{};
-    auto parser = [term_processor = TermProcessor(term_lexicon, {}, stemmer)](auto query) mutable {
+    auto parser = [term_processor = TermProcessor(term_lexicon, stopwords_filename, stemmer)](
+                      auto query) mutable {
         std::vector<pisa::ParsedTerm> parsed_terms;
         pisa::TermTokenizer tokenizer(query);
         for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
@@ -127,12 +129,18 @@ int main(int argc, char** argv)
     std::size_t min_query_len = 1;
     std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
 
-    pisa::App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Unranked>> app(
+    pisa::App<arg::Query<arg::QueryMode::Unranked>> app(
         "Filters out empty queries against a v1 index.");
     app.add_option("--min", min_query_len, "Minimum query legth to consider");
     app.add_option("--max", max_query_len, "Maximum query legth to consider");
     CLI11_PARSE(app, argc, argv);
 
-    filter_queries(app.query_file(), app.term_lexicon(), app.stemmer(), min_query_len, max_query_len);
+    filter_queries(
+        app.query_file(),
+        app.term_lexicon(),
+        app.stemmer(),
+        app.stop_words(),
+        min_query_len,
+        max_query_len);
     return 0;
 }

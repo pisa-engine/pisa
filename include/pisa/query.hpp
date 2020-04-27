@@ -22,8 +22,8 @@ using ParseFn = std::function<std::vector<ParsedTerm>(std::string const&)>;
 
 class QueryContainer;
 
-/// Query is a special container that maintains important invariants, such as sorted term IDs,
-/// and also has some additional data, like term weights, etc.
+/// QueryRequest is a special container that maintains important invariants, such as sorted term
+/// IDs, and also has some additional data, like term weights, etc.
 class QueryRequest {
   public:
     explicit QueryRequest(QueryContainer const& data);

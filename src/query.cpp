@@ -125,6 +125,7 @@ auto QueryContainer::parse(ParseFn parse_fn) -> QueryContainer&
         term_ids.push_back(term.id);
     }
     m_data->term_ids = std::move(term_ids);
+    m_data->processed_terms = std::move(processed_terms);
     return *this;
 }
 
