@@ -28,7 +28,7 @@ void thresholds(
     const std::optional<std::string>& wand_data_filename,
     const std::vector<Query>& queries,
     std::string const& type,
-    std::string const& scorer_name,
+    ScorerParams const& scorer_params,
     uint64_t k,
     bool quantized)
 {
@@ -38,7 +38,7 @@ void thresholds(
 
     WandType wdata;
 
-    auto scorer = scorer::from_name(scorer_name, wdata);
+    auto scorer = scorer::from_params(scorer_params, wdata);
 
     mio::mmap_source md;
     if (wand_data_filename) {
@@ -90,7 +90,7 @@ int main(int argc, const char** argv)
         app.wand_data_path(),
         app.queries(),
         app.index_encoding(),
-        app.scorer(),
+        app.scorer_params(),
         app.k(),
         quantized);
 

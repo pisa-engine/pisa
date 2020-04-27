@@ -34,12 +34,12 @@ TEST_CASE("wand_data_range")
         document_sizes.begin()->begin(),
         collection.num_docs(),
         collection,
-        scorer_name,
+        ScorerParams(scorer_name),
         BlockSize(FixedBlock(5)),
         false,
         dropped_term_ids);
 
-    auto scorer = scorer::from_name(scorer_name, wdata_range);
+    auto scorer = scorer::from_params(ScorerParams(scorer_name), wdata_range);
 
     SECTION("Precomputed block-max scores")
     {
