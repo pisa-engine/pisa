@@ -127,9 +127,9 @@ namespace arg {
     enum class ScorerMode : bool { Required, Optional };
 
     template <typename T>
-    void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required)
+    void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode)
     {
-        if (scorer_required == ScorerMode::Required) {
+        if (scorer_mode == ScorerMode::Required) {
             app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
         } else {
             app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
@@ -159,7 +159,7 @@ namespace arg {
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         ScorerParams m_params;
@@ -176,7 +176,7 @@ namespace arg {
         [[nodiscard]] auto scorer_params() const { return m_params; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         ScorerParams m_params;
@@ -363,7 +363,7 @@ namespace arg {
         }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_required);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         std::optional<float> m_lambda{};
