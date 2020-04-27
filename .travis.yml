@@ -113,9 +113,9 @@ before_install:
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
     fi
   - if [[ "$TEST_CLI" == "On" ]]; then
-      git clone https://github.com/sstephenson/bats.git
-      cd bats
-      sudo ./install.sh /usr/local
+      git clone https://github.com/sstephenson/bats.git;
+      cd bats;
+      sudo ./install.sh /usr/local;
     fi
   - eval "${MATRIX_EVAL}"
   
