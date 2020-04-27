@@ -126,7 +126,7 @@ script:
         make -j2;
         if [[ "$TIDY" != "On" ]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
-            if [[ "$TEST_CLI" != "On" ]]; then
+            if [[ "$TEST_CLI" == "On" ]]; then
                 bash ../test/cli/run.sh;
             fi
         fi
