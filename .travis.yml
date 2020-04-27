@@ -127,7 +127,7 @@ script:
         if [[ "$TIDY" != "On" ]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
             if [[ "$TEST_CLI" != "On" ]]; then
-                bash ../test/cli/run.sh
+                bash ../test/cli/run.sh;
             fi
         fi
       fi
