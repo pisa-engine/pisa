@@ -124,11 +124,29 @@ namespace arg {
         std::string m_algorithm;
     };
 
+    enum class ScorerMode : bool { Required, Optional };
+
+    template <typename T>
+    void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode)
+    {
+        if (scorer_mode == ScorerMode::Required) {
+            app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
+        } else {
+            app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
+        }
+
+        app->add_option("--bm25-k1", args.m_params.bm25_k1, "BM25 k1 parameter.");
+        app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.");
+        app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.");
+        app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.");
+    }
+
+    template <ScorerMode Mode = ScorerMode::Required>
     struct Quantize {
         explicit Quantize(CLI::App* app) : m_params("")
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-            add_scorer_options(app, *this);
+            add_scorer_options(app, *this, Mode);
         }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
@@ -141,7 +159,7 @@ namespace arg {
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         ScorerParams m_params;
@@ -149,23 +167,16 @@ namespace arg {
         bool m_quantize = false;
     };
 
-    template <typename T>
-    void add_scorer_options(CLI::App* app, T& args)
-    {
-        app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
-        app->add_option("--bm25-k1", args.m_params.bm25_k1, "BM25 k1 parameter.");
-        app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.");
-        app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.");
-        app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.");
-    }
-
     struct Scorer {
-        explicit Scorer(CLI::App* app) : m_params("") { add_scorer_options(app, *this); }
+        explicit Scorer(CLI::App* app) : m_params("")
+        {
+            add_scorer_options(app, *this, ScorerMode::Required);
+        }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         ScorerParams m_params;
@@ -307,7 +318,7 @@ namespace arg {
 
             app->add_flag("--compress", m_compress, "Compress additional data");
             app->add_flag("--quantize", m_quantize, "Quantize scores");
-            add_scorer_options(app, *this);
+            add_scorer_options(app, *this, ScorerMode::Required);
             app->add_flag("--range", m_range, "Create docid-range based data")
                 ->excludes(block_size_opt)
                 ->excludes(block_lambda_opt);
@@ -352,7 +363,7 @@ namespace arg {
         }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args);
+        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         std::optional<float> m_lambda{};
@@ -521,7 +532,8 @@ struct Args: public T... {
 
 using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
 using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
-using CompressArgs = pisa::Args<arg::Compress, arg::Encoding, arg::Quantize>;
+using CompressArgs =
+    pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
 
 }  // namespace pisa
