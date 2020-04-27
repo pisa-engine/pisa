@@ -30,7 +30,7 @@ struct IndexData {
               document_sizes.begin()->begin(),
               collection.num_docs(),
               collection,
-              scorer_name,
+              ScorerParams(scorer_name),
               BlockSize(VariableBlock(12.0)),
               false,
               dropped_term_ids)
@@ -80,7 +80,7 @@ auto test(Wand& wdata, std::string const& s_name)
     block_max_wand_query op_q(topk_1);
     topk_queue topk_2(10);
     wand_query wand_q(topk_2);
-    auto scorer = scorer::from_name(s_name, data->wdata);
+    auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
     for (auto const& q: data->queries) {
         wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());
@@ -115,7 +115,7 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                 data->document_sizes.begin()->begin(),
                 data->collection.num_docs(),
                 data->collection,
-                s_name,
+                ScorerParams(s_name),
                 BlockSize(FixedBlock(5)),
                 false,
                 dropped_term_ids);
@@ -128,7 +128,7 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                 data->document_sizes.begin()->begin(),
                 data->collection.num_docs(),
                 data->collection,
-                s_name,
+                ScorerParams(s_name),
                 BlockSize(VariableBlock(12.0)),
                 false,
                 dropped_term_ids);

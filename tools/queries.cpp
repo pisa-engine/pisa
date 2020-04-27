@@ -123,7 +123,7 @@ void perftest(
     std::string const& type,
     std::string const& query_type,
     uint64_t k,
-    std::string const& scorer_name,
+    const ScorerParams& scorer_params,
     bool extract,
     bool safe)
 {
@@ -169,7 +169,7 @@ void perftest(
         }
     }
 
-    auto scorer = scorer::from_name(scorer_name, wdata);
+    auto scorer = scorer::from_params(scorer_params, wdata);
 
     spdlog::info("Performing {} queries", type);
     spdlog::info("K: {}", k);
@@ -332,7 +332,7 @@ int main(int argc, const char** argv)
         app.index_encoding(),
         app.algorithm(),
         app.k(),
-        app.scorer(),
+        app.scorer_params(),
         extract,
         safe);
     /**/

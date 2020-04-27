@@ -40,7 +40,7 @@ void evaluate_queries(
     std::string const& query_type,
     uint64_t k,
     std::string const& documents_filename,
-    std::string const& scorer_name,
+    ScorerParams const& scorer_params,
     std::string const& run_id,
     std::string const& iteration)
 {
@@ -50,7 +50,7 @@ void evaluate_queries(
 
     WandType wdata;
 
-    auto scorer = scorer::from_name(scorer_name, wdata);
+    auto scorer = scorer::from_params(scorer_params, wdata);
 
     mio::mmap_source md;
     if (wand_data_filename) {
@@ -217,7 +217,7 @@ int main(int argc, const char** argv)
         app.algorithm(),
         app.k(),
         documents_file,
-        app.scorer(),
+        app.scorer_params(),
         run_id,
         iteration);
 
