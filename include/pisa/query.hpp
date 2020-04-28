@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <istream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -12,13 +13,13 @@ namespace pisa {
 
 struct QueryContainerInner;
 
-struct ParsedTerm {
+struct ResolvedTerm {
     std::uint32_t id;
     std::string term;
 };
 
 using TermProcessorFn = std::function<std::optional<std::string>(std::string)>;
-using ParseFn = std::function<std::vector<ParsedTerm>(std::string const&)>;
+using ParseFn = std::function<std::vector<ResolvedTerm>(std::string const&)>;
 
 class QueryContainer;
 
@@ -102,6 +103,38 @@ class QueryContainer {
   private:
     QueryContainer();
     std::unique_ptr<QueryContainerInner> m_data;
+};
+
+enum class Format { Json, Colon };
+
+class QueryReader {
+  public:
+    /// Open reader from file.
+    static auto from_file(std::string const& file) -> QueryReader;
+    /// Open reader from stdin.
+    static auto from_stdin() -> QueryReader;
+
+    /// Read next query or return `nullopt` if stream has ended.
+    [[nodiscard]] auto next() -> std::optional<QueryContainer>;
+
+    /// Execute `fn(q)` for each query `q`.
+    template <typename Fn>
+    void for_each(Fn&& fn)
+    {
+        auto query = next();
+        while (query) {
+            fn(std::move(*query));
+            query = next();
+        }
+    }
+
+  private:
+    explicit QueryReader(std::unique_ptr<std::istream> stream, std::istream& stream_ref);
+
+    std::unique_ptr<std::istream> m_stream;
+    std::istream& m_stream_ref;
+    std::string m_line_buf{};
+    std::optional<Format> m_format{};
 };
 
 }  // namespace pisa

@@ -51,12 +51,12 @@ TEST_CASE("Parse query")
     query.parse([&](auto&& q) {
         std::istringstream is(q);
         std::string term;
-        std::vector<pisa::ParsedTerm> parsed_terms;
+        std::vector<pisa::ResolvedTerm> parsed_terms;
         while (is >> term) {
             if (auto t = term_proc(term); t) {
                 if (auto pos = std::find(lexicon.begin(), lexicon.end(), *t); pos != lexicon.end()) {
                     auto id = static_cast<std::uint32_t>(std::distance(lexicon.begin(), pos));
-                    parsed_terms.push_back(pisa::ParsedTerm{id, *t});
+                    parsed_terms.push_back(pisa::ResolvedTerm{id, *t});
                 }
             }
         }
@@ -70,7 +70,7 @@ TEST_CASE("Parsing throws without raw query")
     std::vector<std::uint32_t> term_ids{1, 0, 3};
     auto query = QueryContainer::from_term_ids(term_ids);
     REQUIRE_THROWS_AS(
-        query.parse([](auto&& str) { return std::vector<pisa::ParsedTerm>{}; }), std::domain_error);
+        query.parse([](auto&& str) { return std::vector<pisa::ResolvedTerm>{}; }), std::domain_error);
 }
 
 TEST_CASE("Parse query container from colon-delimited format")

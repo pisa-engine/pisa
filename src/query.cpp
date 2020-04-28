@@ -1,6 +1,8 @@
 #include "query.hpp"
 
 #include <algorithm>
+#include <fstream>
+#include <iostream>
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
@@ -222,6 +224,43 @@ auto QueryContainer::from_colon_format(std::string_view line) -> QueryContainer
         data.query_string = std::string(std::next(pos), line.end());
     }
     return query;
+}
+
+auto QueryReader::from_file(std::string const& file) -> QueryReader
+{
+    auto input = std::make_unique<std::ifstream>(file);
+    auto& ref = *input;
+    return QueryReader(std::move(input), ref);
+}
+
+auto QueryReader::from_stdin() -> QueryReader
+{
+    return QueryReader(nullptr, std::cin);
+}
+
+QueryReader::QueryReader(std::unique_ptr<std::istream> input, std::istream& stream_ref)
+    : m_stream(std::move(input)), m_stream_ref(stream_ref)
+{}
+
+auto QueryReader::next() -> std::optional<QueryContainer>
+{
+    if (std::getline(m_stream_ref, m_line_buf)) {
+        if (m_format) {
+            if (*m_format == Format::Json) {
+                return QueryContainer::from_json(m_line_buf);
+            }
+            return QueryContainer::from_colon_format(m_line_buf);
+        }
+        try {
+            auto query = QueryContainer::from_json(m_line_buf);
+            m_format = Format::Json;
+            return query;
+        } catch (std::exception const& err) {
+            m_format = Format::Colon;
+            return QueryContainer::from_colon_format(m_line_buf);
+        }
+    }
+    return std::nullopt;
 }
 
 }  // namespace pisa
