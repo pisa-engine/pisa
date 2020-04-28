@@ -8,6 +8,16 @@ namespace pisa {
 
 constexpr std::string_view EMPTY_MEMORY = "Empty memory source";
 
+auto MemorySource::from_vector(std::vector<char> vec) -> MemorySource
+{
+    return MemorySource(std::move(vec));
+}
+
+auto MemorySource::from_span(gsl::span<char> span) -> MemorySource
+{
+    return MemorySource(span);
+}
+
 auto MemorySource::mapped_file(std::string const& file) -> MemorySource
 {
     return MemorySource::mapped_file(io::resolve_path(file));
@@ -18,7 +28,7 @@ auto MemorySource::mapped_file(boost::filesystem::path file) -> MemorySource
     if (not boost::filesystem::exists(file)) {
         throw io::NoSuchFile(file.string());
     }
-    return MemorySource(std::make_unique<mio::mmap_source>(file.string().c_str()));
+    return MemorySource(mio::mmap_source(file.string().c_str()));
 }
 
 auto MemorySource::is_mapped() noexcept -> bool

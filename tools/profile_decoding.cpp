@@ -72,10 +72,8 @@ void profile_decoding(const char* index_filename, double p)
     std::default_random_engine rng(1729);
     std::uniform_real_distribution<double> dist01(0.0, 1.0);
 
-    IndexType index;
     spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename);
-    mapper::map(index, m);
+    IndexType index(MemorySource::mapped_file(std::string(index_filename)));
 
     std::vector<uint32_t> values;
 

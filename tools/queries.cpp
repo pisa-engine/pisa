@@ -127,11 +127,8 @@ void perftest(
     bool extract,
     bool safe)
 {
-    IndexType index;
     spdlog::info("Loading index from {}", index_filename);
-
-    auto index_source = MemorySource::mapped_file(index_filename);
-    mapper::map(index, index_source.data());
+    IndexType index(MemorySource::mapped_file(index_filename));
 
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
@@ -144,15 +141,11 @@ void perftest(
         }
     }
 
-    WandType wdata;
-
-    auto wdata_source = [&] {
+    WandType const wdata = [&] {
         if (wand_data_filename) {
-            auto source = MemorySource::mapped_file(*wand_data_filename);
-            mapper::map(wdata, source.data(), mapper::map_flags::warmup);
-            return source;
+            return WandType(MemorySource::mapped_file(*wand_data_filename));
         }
-        return MemorySource();
+        return WandType{};
     }();
 
     std::vector<Threshold> thresholds(queries.size(), 0.0);

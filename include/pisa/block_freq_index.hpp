@@ -5,6 +5,8 @@
 
 #include "block_posting_list.hpp"
 #include "codec/compact_elias_fano.hpp"
+#include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 
 namespace pisa {
 
@@ -12,6 +14,10 @@ template <typename BlockCodec, bool Profile = false>
 class block_freq_index {
   public:
     block_freq_index() = default;
+    explicit block_freq_index(MemorySource source) : m_source(std::move(source))
+    {
+        mapper::map(*this, source.data(), mapper::map_flags::warmup);
+    }
 
     class builder {
       public:
@@ -130,5 +136,6 @@ class block_freq_index {
     size_t m_num_docs{0};
     bit_vector m_endpoints;
     mapper::mappable_vector<uint8_t> m_lists;
+    MemorySource m_source;
 };
 }  // namespace pisa

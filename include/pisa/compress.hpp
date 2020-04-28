@@ -15,12 +15,12 @@
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 #include "util/verify_collection.hpp"  // XXX move to index_build_utils
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
-#include "memory_source.hpp"
 
 namespace pisa {
 
@@ -74,14 +74,11 @@ void compress_index(
     size_t postings = 0;
     {
         pisa::progress progress("Create index", input.size());
-        WandType wdata;
-        auto wdata_source = [&] {
+        WandType const wdata = [&] {
             if (wand_data_filename) {
-                auto source = MemorySource::mapped_file(*wand_data_filename);
-                mapper::map(wdata, source.data(), mapper::map_flags::warmup);
-                return source;
+                return WandType(MemorySource::mapped_file(*wand_data_filename));
             }
-            return MemorySource();
+            return WandType{};
         }();
 
         std::unique_ptr<index_scorer<WandType>> scorer;

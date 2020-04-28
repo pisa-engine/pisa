@@ -14,6 +14,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "util/util.hpp"
@@ -76,17 +77,12 @@ void profile(
     mio::mmap_source m(index_filename);
     mapper::map(index, m);
 
-    WandType wdata;
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
-            throw std::runtime_error("Error opening file");
+    WandType const wdata = [&] {
+        if (wand_data_filename) {
+            return WandType(MemorySource::mapped_file(*wand_data_filename));
         }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
+        return WandType{};
+    }();
 
     spdlog::info("Performing {} queries", type);
 

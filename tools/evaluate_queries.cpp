@@ -44,24 +44,15 @@ void evaluate_queries(
     std::string const& run_id,
     std::string const& iteration)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
-
-    WandType wdata;
+    IndexType index(MemorySource::mapped_file(index_filename));
+    WandType const wdata = [&] {
+        if (wand_data_filename) {
+            return WandType(MemorySource::mapped_file(*wand_data_filename));
+        }
+        return WandType{};
+    }();
 
     auto scorer = scorer::from_params(scorer_params, wdata);
-
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
-        }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
 
     std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
 

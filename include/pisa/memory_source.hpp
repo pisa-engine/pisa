@@ -22,6 +22,14 @@ class MemorySource {
     MemorySource& operator=(MemorySource&&) noexcept = default;
     ~MemorySource() = default;
 
+    /// Constructs a memory source from a vector.
+    [[nodiscard]] static auto from_vector(std::vector<char> vec) -> MemorySource;
+
+    /// Constructs a memory source from a vector.
+    ///
+    /// NOTE: This is non-owning source, so tread carefully!
+    [[nodiscard]] static auto from_span(gsl::span<char> span) -> MemorySource;
+
     /// Constructs a memory source using a memory mapped file.
     ///
     /// \throws NoSuchFile          if the file doesn't exist
@@ -64,10 +72,43 @@ class MemorySource {
     [[nodiscard]] auto subspan(size_type offset, size_type size = gsl::dynamic_extent) const
         -> gsl::span<value_type const>;
 
-  private:
-    explicit MemorySource(std::unique_ptr<mio::mmap_source> source) : m_source(std::move(source)) {}
+    /// Type erasure interface. Any type implementing it are supported as memory source.
+    struct Interface {
+        Interface() = default;
+        Interface(Interface const&) = delete;
+        Interface(Interface&&) noexcept = default;
+        Interface& operator=(Interface const&) = delete;
+        Interface& operator=(Interface&&) noexcept = default;
+        virtual ~Interface() = default;
 
-    std::unique_ptr<mio::mmap_source> m_source;
+        [[nodiscard]] virtual pointer data() const = 0;
+        [[nodiscard]] virtual size_type size() const = 0;
+    };
+
+    /// Actual objects that wrap any type to implement type-earsed interface.
+    template <typename T>
+    struct Impl: Interface {
+        explicit Impl(T source) : m_source(std::move(source)) {}
+        Impl() = default;
+        Impl(Impl const&) = delete;
+        Impl(Impl&&) noexcept = default;
+        Impl& operator=(Impl const&) = delete;
+        Impl& operator=(Impl&&) noexcept = default;
+        ~Impl() = default;
+
+        [[nodiscard]] pointer data() const override { return m_source.data(); }
+        [[nodiscard]] size_type size() const override { return m_source.size(); }
+
+      private:
+        T m_source;
+    };
+
+  private:
+    template <typename T>
+    explicit MemorySource(T source) : m_source(std::make_unique<Impl<T>>(std::move(source)))
+    {}
+
+    std::unique_ptr<Interface> m_source;
 };
 
 }  // namespace pisa
