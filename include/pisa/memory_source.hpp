@@ -91,9 +91,9 @@ class MemorySource {
         explicit Impl(T source) : m_source(std::move(source)) {}
         Impl() = default;
         Impl(Impl const&) = delete;
-        Impl(Impl&&) noexcept = default;
+        Impl(Impl&&) noexcept(T(std::declval<T>())) = default;
         Impl& operator=(Impl const&) = delete;
-        Impl& operator=(Impl&&) noexcept = default;
+        Impl& operator=(Impl&&) noexcept(T(std::declval<T>())) = default;
         ~Impl() = default;
 
         [[nodiscard]] pointer data() const override { return m_source.data(); }
