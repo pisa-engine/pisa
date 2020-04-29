@@ -36,14 +36,6 @@ matrix:
     - os: linux
       dist: xenial
       compiler: gcc
-      addons: &gcc7
-        apt:
-          sources: *all_sources
-          packages: ['g++-7']
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && PISA_COMPILE_HEADERS=On"
-    - os: linux
-      dist: xenial
-      compiler: gcc
       addons: &gcc8
         apt:
           sources: *all_sources
@@ -116,8 +108,8 @@ before_install:
   
 script:
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_COMPILE_HEADERS=${PISA_COMPILE_HEADERS} -DPISA_ENABLE_CLANG_TIDY=${TIDY} -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-9 ${CMAKE_OPTIONS} ..
-    - if [[ "$PISA_COMPILE_HEADERS" != "On" && "$CLANG_FORMAT" != "On" ]]; then
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_ENABLE_CLANG_TIDY=${TIDY} -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-9 ${CMAKE_OPTIONS} ..
+    - if [[ "$CLANG_FORMAT" != "On" ]]; then
         make -j2;
         if [[ "$TIDY" != "On" ]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
