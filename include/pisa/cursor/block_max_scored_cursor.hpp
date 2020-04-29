@@ -31,7 +31,7 @@ class BlockMaxScoredCursor: public ScoredCursor<Cursor> {
 
     [[nodiscard]] auto block_max_score() -> float { return m_wdata.score(); }
     [[nodiscard]] auto block_max_docid() -> std::uint32_t { return m_wdata.docid(); }
-    void block_max_move(std::uint32_t docid) { m_wdata.next_geq(docid); }
+    void block_max_next_geq(std::uint32_t docid) { m_wdata.next_geq(docid); }
 
   private:
     typename Wand::wand_data_enumerator m_wdata;

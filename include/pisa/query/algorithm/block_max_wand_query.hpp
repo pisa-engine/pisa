@@ -64,7 +64,7 @@ struct block_max_wand_query {
 
             for (size_t i = 0; i < pivot + 1; ++i) {
                 if (ordered_cursors[i]->block_max_docid() < pivot_id) {
-                    ordered_cursors[i]->block_max_move(pivot_id);
+                    ordered_cursors[i]->block_max_next_geq(pivot_id);
                 }
 
                 block_upper_bound +=

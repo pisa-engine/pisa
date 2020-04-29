@@ -35,7 +35,7 @@ struct block_max_ranked_and_query {
             // Get current block UB
             double block_upper_bound = 0;
             for (size_t block = 0; block < ordered_cursors.size(); ++block) {
-                ordered_cursors[block]->block_max_move(candidate);
+                ordered_cursors[block]->block_max_next_geq(candidate);
                 block_upper_bound += ordered_cursors[block]->block_max_score()
                     * ordered_cursors[block]->query_weight();
             }

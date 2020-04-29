@@ -57,7 +57,7 @@ struct block_max_maxscore_query {
                 non_essential_lists > 0 ? upper_bounds[non_essential_lists - 1] : 0;
             for (int i = non_essential_lists - 1; i + 1 > 0; --i) {
                 if (ordered_cursors[i]->block_max_docid() < cur_doc) {
-                    ordered_cursors[i]->block_max_move(cur_doc);
+                    ordered_cursors[i]->block_max_next_geq(cur_doc);
                 }
                 block_upper_bound -= ordered_cursors[i]->max_score()
                     - ordered_cursors[i]->block_max_score() * ordered_cursors[i]->query_weight();
