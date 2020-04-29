@@ -14,4 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: cmake
-      run: cmake -DCMAKE_BUILD_TYPE=Debug PISA_COMPILE_HEADERS=On .
+      run: |
+        mkdir -p build && cd build
+        cmake -DCMAKE_BUILD_TYPE=Debug PISA_COMPILE_HEADERS=On ..
