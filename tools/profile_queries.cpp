@@ -10,7 +10,6 @@
 #include "mio/mmap.hpp"
 
 #include "cursor/cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
