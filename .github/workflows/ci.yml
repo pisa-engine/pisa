@@ -17,7 +17,7 @@ jobs:
             compiler: "clang"
             compiler-version: "10"
           - os: ubuntu-latest
-            compiler: "gcc"
+            compiler: "g++"
             compiler-version: "9"
     steps:
     - uses: actions/checkout@v2
@@ -31,25 +31,28 @@ jobs:
           fi
           sudo apt-get update
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            sudo apt-get install -y g++-${{ matrix.version }}
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+            sudo apt-get install -y g++-${{ matrix.compiler-version }}
+            echo "::set-env name=CC::gcc-${{ matrix.compiler-version }}"
+            echo "::set-env name=CXX::g++-${{ matrix.compiler-version }}"
           else
-            sudo apt-get install -y clang-${{ matrix.version }}
-            echo "::set-env name=CC::clang-${{ matrix.version }}"
-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+            sudo apt-get install -y clang-${{ matrix.compiler-version }}
+            echo "::set-env name=CC::clang-${{ matrix.compiler-version }}"
+            echo "::set-env name=CXX::clang++-${{ matrix.compiler-version }}"
           fi
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
+
     - name: Configure
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=OFF ..
+
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: cmake --build . --config Debug
+
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
