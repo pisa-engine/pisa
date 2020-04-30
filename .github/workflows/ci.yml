@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest] # VS not supported yet
+        os: [ubuntu-latest] #, macOS-latest] # VS not supported yet
         include:
           - os: ubuntu-latest
             compiler: "clang"
