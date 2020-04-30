@@ -48,7 +48,7 @@ namespace pisa { namespace mapper {
 
         ~mappable_vector()
         {
-            if (m_deleter) {
+            if (m_deleter != nullptr) {
                 m_deleter();
             }
         }
@@ -67,7 +67,7 @@ namespace pisa { namespace mapper {
         {
             clear();
             m_size = vec.size();
-            if (m_size) {
+            if (m_size > 0) {
                 auto* new_vec = new std::vector<T>;
                 new_vec->swap(vec);
                 m_deleter = boost::lambda::bind(boost::lambda::delete_ptr(), new_vec);
