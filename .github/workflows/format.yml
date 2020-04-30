@@ -1,0 +1,37 @@
+name: clang-format
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install clang-format
+      shell: bash
+      run: |
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
+          sudo apt-get update
+          sudo apt-get install -y clang-format-9
+          echo "::set-env name=CC::clang-9
+          echo "::set-env name=CXX::clang++-10
+
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Create Build Environment
+      shell: bash
+      run: |
+        wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py
+        python run-clang-format.py \
+            --clang-format-executable clang-format-9 \
+            -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp;
+    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_ENABLE_CLANG_TIDY=${TIDY} -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-9 ${CMAKE_OPTIONS} ..
