@@ -12,13 +12,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest] # VS not supported yet
-      include:
-        - os: ubuntu-latest
-          compiler: "clang"
-          compiler-version: "10"
-        - os: ubuntu-latest
-          compiler: "gcc"
-          compiler-version: "9"
+        include:
+          - os: ubuntu-latest
+            compiler: "clang"
+            compiler-version: "10"
+          - os: ubuntu-latest
+            compiler: "gcc"
+            compiler-version: "9"
     steps:
     - uses: actions/checkout@v2
 
