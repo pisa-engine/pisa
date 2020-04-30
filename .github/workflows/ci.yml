@@ -27,4 +27,4 @@ jobs:
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake test
+      run: ctest
