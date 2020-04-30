@@ -33,5 +33,4 @@ jobs:
         wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py
         python run-clang-format.py \
             --clang-format-executable clang-format-9 \
-            -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp;
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=${COVERAGE} -DPISA_ENABLE_CLANG_TIDY=${TIDY} -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-9 ${CMAKE_OPTIONS} ..
+            -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
