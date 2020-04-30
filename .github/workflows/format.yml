@@ -27,7 +27,7 @@ jobs:
       with:
         python-version: 3.7
 
-    - name: Create Build Environment
+    - name: Run clang-format
       shell: bash
       run: |
         wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py

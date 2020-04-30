@@ -19,6 +19,8 @@ jobs:
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           sudo apt-get update
           sudo apt-get install -y clang-10 clang-tidy-10
+          echo "::set-env name=CC::clang-10"
+          echo "::set-env name=CXX::clang++-10"
 
     - name: Create Build Environment
       shell: bash
@@ -27,7 +29,12 @@ jobs:
     - name: Configure
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_ENABLE_CLANG_TIDY=ON ..
+      run: |
+          cmake $GITHUB_WORKSPACE \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DPISA_BUILD_TOOLS=ON \
+            -DPISA_ENABLE_CLANG_TIDY=ON \
+            -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-10 ..
 
     - name: Build
       shell: bash
