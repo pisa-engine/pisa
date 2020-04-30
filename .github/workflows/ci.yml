@@ -11,12 +11,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macOS-latest] # VS not supported yet
+        name: [linux-gcc-9, linux-clang-10]
         include:
-          - os: ubuntu-latest
+          - name: linux-gcc-9
+            os: ubuntu-latest
             compiler: "clang"
             version: "10"
-          - os: ubuntu-latest
+          - name: linux-clang-10
+            os: ubuntu-latest
             compiler: "gcc"
             version: "9"
     steps:
@@ -26,7 +28,7 @@ jobs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
+          # Install compiler
           if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "10" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           fi
