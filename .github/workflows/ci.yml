@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-latest] #, macOS-latest] # VS not supported yet
     steps:
     - uses: actions/checkout@v2
     - name: Create Build Environment
