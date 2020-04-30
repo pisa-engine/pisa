@@ -1,4 +1,4 @@
-name: CI
+name: Build and test
 
 on:
   push:
@@ -11,9 +11,35 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest] #, macOS-latest] # VS not supported yet
+        os: [ubuntu-latest, macOS-latest] # VS not supported yet
+      include:
+        - os: ubuntu-latest
+          compiler: "clang"
+          compiler-version: "10"
+        - os: ubuntu-latest
+          compiler: "gcc"
+          compiler-version: "9"
     steps:
     - uses: actions/checkout@v2
+
+    - name: Install (Linux)
+      if: runner.os == 'Linux'
+      run: |
+          # LLVM 9 is not in Bionic's repositories so we add the official LLVM repository.
+          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.compiler-version }}" = "10" ]; then
+            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
+          fi
+          sudo apt-get update
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            sudo apt-get install -y g++-${{ matrix.version }}
+            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+          else
+            sudo apt-get install -y clang-${{ matrix.version }}
+            echo "::set-env name=CC::clang-${{ matrix.version }}"
+            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+          fi
+
     - name: Create Build Environment
       run: cmake -E make_directory ${{runner.workspace}}/build
     - name: Configure
