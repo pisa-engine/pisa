@@ -28,8 +28,7 @@ int main(int argc, char** argv)
     std::size_t min_query_len = 1;
     std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
 
-    pisa::App<arg::Query<arg::QueryMode::Unranked>> app(
-        "Filters out empty queries against a v1 index.");
+    pisa::App<arg::Query<arg::QueryMode::Unranked>> app("Filters queries by their length");
     app.add_option("--min", min_query_len, "Minimum query legth to consider");
     app.add_option("--max", max_query_len, "Maximum query legth to consider");
     CLI11_PARSE(app, argc, argv);
