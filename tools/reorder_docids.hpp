@@ -20,13 +20,14 @@ auto reorder_docids(ReorderDocuments args) -> int
                 .node_config = args.node_config(),
                 .min_length = args.min_length(),
                 .compress_fwd = not args.nogb(),
-                .print_args = not args.print(),
+                .print_args = args.print(),
             });
         }
-        ReorderOptions options{.input_basename = args.input_basename(),
-                               .output_basename = *args.output_basename(),
-                               .document_lexicon = args.document_lexicon(),
-                               .reordered_document_lexicon = args.reordered_document_lexicon()};
+        ReorderOptions options{
+            .input_basename = args.input_basename(),
+            .output_basename = *args.output_basename(),
+            .document_lexicon = args.document_lexicon(),
+            .reordered_document_lexicon = args.reordered_document_lexicon()};
         if (args.random()) {
             return reorder_random(options, args.seed());
         }
