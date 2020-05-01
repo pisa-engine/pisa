@@ -6,45 +6,19 @@
 
 #include "app.hpp"
 #include "query.hpp"
-#include "query/parser.hpp"
+#include "query/query_parser.hpp"
+#include "query/term_resolver.hpp"
 #include "tokenizer.hpp"
 
 namespace arg = pisa::arg;
 
+using pisa::filter_queries;
 using pisa::QueryContainer;
 using pisa::QueryParser;
 using pisa::QueryReader;
 using pisa::StandardTermResolver;
+using pisa::TermResolver;
 using pisa::io::for_each_line;
-
-enum class Format { Json, Colon };
-
-void filter_queries(
-    std::optional<std::string> const& query_file,
-    std::optional<std::string> const& term_lexicon,
-    std::optional<std::string> const& stemmer,
-    std::optional<std::string> const& stopwords_filename,
-    std::size_t min_query_len,
-    std::size_t max_query_len)
-{
-    auto reader = [&] {
-        if (query_file) {
-            return QueryReader::from_file(*query_file);
-        }
-        return QueryReader::from_stdin();
-    }();
-    reader.for_each([&](auto query) {
-        if (not query.term_ids()) {
-            if (not term_lexicon) {
-                throw std::runtime_error("Unresoved queries (without IDs) require term lexicon.");
-            }
-            query.parse(QueryParser(StandardTermResolver(*term_lexicon, stopwords_filename, stemmer)));
-        }
-        if (auto len = query.term_ids()->size(); len >= min_query_len && len <= max_query_len) {
-            std::cout << query.to_json() << '\n';
-        }
-    });
-}
 
 int main(int argc, char** argv)
 {
@@ -60,15 +34,17 @@ int main(int argc, char** argv)
     app.add_option("--max", max_query_len, "Maximum query legth to consider");
     CLI11_PARSE(app, argc, argv);
 
+    std::optional<StandardTermResolver> term_resolver{};
+    if (app.term_lexicon()) {
+        term_resolver = StandardTermResolver(*app.term_lexicon(), app.stop_words(), app.stemmer());
+    }
+
     try {
         filter_queries(
-            app.query_file(),
-            app.term_lexicon(),
-            app.stemmer(),
-            app.stop_words(),
-            min_query_len,
-            max_query_len);
+            app.query_file(), std::move(term_resolver), min_query_len, max_query_len, std::cout);
         return 0;
+    } catch (pisa::MissingResolverError err) {
+        spdlog::error("Unresoved queries(without IDs) require term lexicon.");
     } catch (std::runtime_error const& err) {
         spdlog::error(err.what());
         return 1;

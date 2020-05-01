@@ -4,7 +4,7 @@
 
 #include <catch2/catch.hpp>
 
-#include "query/parser.hpp"
+#include "query/query_parser.hpp"
 
 using pisa::QueryContainer;
 using pisa::QueryParser;

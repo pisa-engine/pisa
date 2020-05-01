@@ -45,6 +45,8 @@ class QueryContainer {
     QueryContainer& operator=(QueryContainer&&) noexcept;
     ~QueryContainer();
 
+    [[nodiscard]] auto operator==(QueryContainer const& other) const noexcept -> bool;
+
     /// Constructs a query from a raw string.
     [[nodiscard]] static auto raw(std::string query_string) -> QueryContainer;
 

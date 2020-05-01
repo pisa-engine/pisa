@@ -1,11 +1,6 @@
-#include <mio/mmap.hpp>
-
-#include "io.hpp"
-#include "payload_vector.hpp"
-#include "query.hpp"
-#include "query/parser.hpp"
+#include "query/term_resolver.hpp"
+#include "query/query_parser.hpp"
 #include "query/term_processor.hpp"
-#include "tokenizer.hpp"
 
 namespace pisa {
 
@@ -76,19 +71,30 @@ auto StandardTermResolver::is_stopword(std::uint32_t const term) const -> bool
     return pos != m_self->stopwords.end() && *pos == term;
 }
 
-QueryParser::QueryParser(TermResolver term_resolver) : m_term_resolver(std::move(term_resolver)) {}
-
-auto QueryParser::operator()(std::string const& query) -> std::vector<ResolvedTerm>
+void filter_queries(
+    std::optional<std::string> const& query_file,
+    std::optional<TermResolver> term_resolver,
+    std::size_t min_query_len,
+    std::size_t max_query_len,
+    std::ostream& out)
 {
-    TermTokenizer tokenizer(query);
-    std::vector<ResolvedTerm> terms;
-    for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
-        auto term = m_term_resolver(*term_iter);
-        if (term) {
-            terms.push_back(std::move(*term));
+    auto reader = [&] {
+        if (query_file) {
+            return QueryReader::from_file(*query_file);
         }
-    }
-    return terms;
+        return QueryReader::from_stdin();
+    }();
+    reader.for_each([&](auto query) {
+        if (not query.term_ids()) {
+            if (not term_resolver) {
+                throw MissingResolverError{};
+            }
+            query.parse(QueryParser(*term_resolver));
+        }
+        if (auto len = query.term_ids()->size(); len >= min_query_len && len <= max_query_len) {
+            out << query.to_json() << '\n';
+        }
+    });
 }
 
 }  // namespace pisa

@@ -8,6 +8,10 @@
 
 namespace pisa {
 
+/// Thrown if expected resolver but none found.
+struct MissingResolverError {
+};
+
 using TermResolver = std::function<std::optional<ResolvedTerm>(std::string)>;
 
 struct StandardTermResolverParams;
@@ -33,20 +37,17 @@ class StandardTermResolver {
     std::unique_ptr<StandardTermResolverParams> m_self;
 };
 
-/// Parses a query string to processed terms.
-class QueryParser {
-  public:
-    explicit QueryParser(TermResolver term_processor);
-    /// Given a query string, it returns a list of (possibly processed) terms.
-    ///
-    /// Possible transformations of terms include lower-casing and stemming.
-    /// Some terms could be also removed, e.g., because they are on a list of
-    /// stop words. The exact implementation depends on the term processor
-    /// passed to the constructor.
-    auto operator()(std::string const&) -> std::vector<ResolvedTerm>;
-
-  private:
-    TermResolver m_term_resolver;
-};
+/// Reads queries from `query_file`, resolves them with `term_resolver`, filters by
+/// query length (number of resolved terms in the query), and prints the selected
+/// queries to `out`.
+///
+/// \throws MissingResolverError  When no resolver passed but queries don't have IDs resolved.
+//
+void filter_queries(
+    std::optional<std::string> const& query_file,
+    std::optional<TermResolver> term_resolver,
+    std::size_t min_query_len,
+    std::size_t max_query_len,
+    std::ostream& out);
 
 }  // namespace pisa

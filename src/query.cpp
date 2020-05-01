@@ -36,6 +36,13 @@ struct QueryContainerInner {
     std::optional<std::vector<std::string>> processed_terms;
     std::optional<std::vector<std::uint32_t>> term_ids;
     std::optional<float> threshold;
+
+    [[nodiscard]] auto operator==(QueryContainerInner const& other) const noexcept -> bool
+    {
+        return id == other.id && query_string == other.query_string
+            && processed_terms == other.processed_terms && term_ids == other.term_ids
+            && threshold == other.threshold;
+    }
 };
 
 QueryContainer::QueryContainer() : m_data(std::make_unique<QueryContainerInner>()) {}
@@ -51,6 +58,11 @@ QueryContainer& QueryContainer::operator=(QueryContainer const& other)
 }
 QueryContainer& QueryContainer::operator=(QueryContainer&&) noexcept = default;
 QueryContainer::~QueryContainer() = default;
+
+auto QueryContainer::operator==(QueryContainer const& other) const noexcept -> bool
+{
+    return *m_data == *other.m_data;
+}
 
 auto QueryContainer::raw(std::string query_string) -> QueryContainer
 {
