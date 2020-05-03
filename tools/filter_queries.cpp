@@ -43,9 +43,9 @@ int main(int argc, char** argv)
             app.query_file(), std::move(term_resolver), min_query_len, max_query_len, std::cout);
         return 0;
     } catch (pisa::MissingResolverError err) {
-        spdlog::error("Unresoved queries(without IDs) require term lexicon.");
+        spdlog::error("Unresoved queries (without IDs) require term lexicon.");
     } catch (std::runtime_error const& err) {
         spdlog::error(err.what());
-        return 1;
     }
+    return 1;
 }
