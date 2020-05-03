@@ -107,18 +107,18 @@ TEST_CASE("Parse query container from JSON")
     REQUIRE(*query.string() == "brooklyn tea house");
     REQUIRE_FALSE(query.terms());
     REQUIRE_FALSE(query.term_ids());
-    REQUIRE_FALSE(query.threshold());
+    REQUIRE(query.thresholds().empty());
 
     query = QueryContainer::from_json(R"(
     {
         "term_ids": [1, 0, 3],
         "terms": ["brooklyn", "tea", "house"],
-        "threshold": 10.8
+        "thresholds": [{"k": 10, "score": 10.8}]
     }
     )");
     REQUIRE(*query.terms() == std::vector<std::string>{"brooklyn", "tea", "house"});
     REQUIRE(*query.term_ids() == std::vector<std::uint32_t>{1, 0, 3});
-    REQUIRE(*query.threshold() == Approx(10.8));
+    REQUIRE(*query.threshold(10) == Approx(10.8));
     REQUIRE_FALSE(query.id());
     REQUIRE_FALSE(query.string());
 
@@ -133,11 +133,11 @@ TEST_CASE("Serialize query container to JSON")
         "query": "brooklyn tea house",
         "terms": ["brooklyn", "tea", "house"],
         "term_ids": [1, 0, 3],
-        "threshold": 10.0
+        "thresholds": [{"k": 10, "score": 10.0}]
     }
     )");
     auto serialized = query.to_json();
     REQUIRE(
         serialized
-        == R"({"id":"ID","query":"brooklyn tea house","term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"threshold":10.0})");
+        == R"({"id":"ID","query":"brooklyn tea house","term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"thresholds":[{"k":10,"score":10.0}]})");
 }

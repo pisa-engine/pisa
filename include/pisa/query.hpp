@@ -27,12 +27,14 @@ class QueryContainer;
 /// IDs, and also has some additional data, like term weights, etc.
 class QueryRequest {
   public:
-    explicit QueryRequest(QueryContainer const& data);
+    explicit QueryRequest(QueryContainer const& data, std::size_t k);
 
     [[nodiscard]] auto term_ids() const -> gsl::span<std::uint32_t const>;
     [[nodiscard]] auto threshold() const -> std::optional<float>;
+    [[nodiscard]] auto k() const -> std::optional<float>;
 
   private:
+    std::size_t m_k;
     std::optional<float> m_threshold{};
     std::vector<std::uint32_t> m_term_ids{};
 };
@@ -86,7 +88,9 @@ class QueryContainer {
     [[nodiscard]] auto string() const noexcept -> std::optional<std::string> const&;
     [[nodiscard]] auto terms() const noexcept -> std::optional<std::vector<std::string>> const&;
     [[nodiscard]] auto term_ids() const noexcept -> std::optional<std::vector<std::uint32_t>> const&;
-    [[nodiscard]] auto threshold() const noexcept -> std::optional<float> const&;
+    [[nodiscard]] auto threshold(std::size_t k) const noexcept -> std::optional<float>;
+    [[nodiscard]] auto thresholds() const noexcept
+        -> std::vector<std::pair<std::size_t, float>> const&;
 
     /// Sets the raw string.
     [[nodiscard]] auto string(std::string) -> QueryContainer&;
@@ -96,11 +100,14 @@ class QueryContainer {
     /// \throws std::domain_error   when raw string is not set
     auto parse(ParseFn parse_fn) -> QueryContainer&;
 
-    /// Sets the query score threshold.
-    auto threshold(float score) -> QueryContainer&;
+    /// Sets the query score threshold for `k`.
+    ///
+    /// If another threshold for the same `k` exists, it will be replaced,
+    /// and `true` will be returned. Otherwise, `false` will be returned.
+    auto add_threshold(std::size_t k, float score) -> bool;
 
     /// Returns a query ready to be used for retrieval.
-    [[nodiscard]] auto query() const -> QueryRequest;
+    [[nodiscard]] auto query(std::size_t k) const -> QueryRequest;
 
   private:
     QueryContainer();

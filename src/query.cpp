@@ -9,7 +9,13 @@
 
 namespace pisa {
 
-QueryRequest::QueryRequest(QueryContainer const& data) : m_threshold(data.threshold())
+[[nodiscard]] auto first_equal_to(std::size_t k)
+{
+    return [k](auto&& pair) { return pair.first == k; };
+}
+
+QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k)
+    : m_k(k), m_threshold(data.threshold(k))
 {
     if (auto term_ids = data.term_ids(); term_ids) {
         m_term_ids = *term_ids;
@@ -35,13 +41,13 @@ struct QueryContainerInner {
     std::optional<std::string> query_string;
     std::optional<std::vector<std::string>> processed_terms;
     std::optional<std::vector<std::uint32_t>> term_ids;
-    std::optional<float> threshold;
+    std::vector<std::pair<std::size_t, float>> thresholds;
 
     [[nodiscard]] auto operator==(QueryContainerInner const& other) const noexcept -> bool
     {
         return id == other.id && query_string == other.query_string
             && processed_terms == other.processed_terms && term_ids == other.term_ids
-            && threshold == other.threshold;
+            && thresholds == other.thresholds;
     }
 };
 
@@ -115,9 +121,18 @@ auto QueryContainer::term_ids() const noexcept -> std::optional<std::vector<std:
     return m_data->term_ids;
 }
 
-auto QueryContainer::threshold() const noexcept -> std::optional<float> const&
+auto QueryContainer::threshold(std::size_t k) const noexcept -> std::optional<float>
 {
-    return m_data->threshold;
+    auto pos = std::find_if(m_data->thresholds.begin(), m_data->thresholds.end(), first_equal_to(k));
+    if (pos == m_data->thresholds.end()) {
+        return std::nullopt;
+    }
+    return std::make_optional(pos->second);
+}
+
+auto QueryContainer::thresholds() const noexcept -> std::vector<std::pair<std::size_t, float>> const&
+{
+    return m_data->thresholds;
 }
 
 auto QueryContainer::string(std::string raw_query) -> QueryContainer&
@@ -143,15 +158,21 @@ auto QueryContainer::parse(ParseFn parse_fn) -> QueryContainer&
     return *this;
 }
 
-auto QueryContainer::threshold(float score) -> QueryContainer&
+auto QueryContainer::add_threshold(std::size_t k, float score) -> bool
 {
-    m_data->threshold = score;
-    return *this;
+    if (auto pos =
+            std::find_if(m_data->thresholds.begin(), m_data->thresholds.end(), first_equal_to(k));
+        pos != m_data->thresholds.end()) {
+        pos->second = score;
+        return true;
+    }
+    m_data->thresholds.emplace_back(k, score);
+    return false;
 }
 
-auto QueryContainer::query() const -> QueryRequest
+auto QueryContainer::query(std::size_t k) const -> QueryRequest
 {
-    return QueryRequest(*this);
+    return QueryRequest(*this, k);
 }
 
 template <typename T>
@@ -189,8 +210,25 @@ auto QueryContainer::from_json(std::string_view json_string) -> QueryContainer
             data.term_ids = std::move(term_ids);
             at_least_one_required = true;
         }
-        if (auto threshold = get<float>(json, "threshold"); threshold) {
-            data.threshold = threshold;
+        if (auto thresholds = json.find("thresholds"); thresholds != json.end()) {
+            auto raise_error = [&]() {
+                throw std::runtime_error(
+                    fmt::format("Field \"thresholds\" is invalid: {}", thresholds->dump()));
+            };
+            if (not thresholds->is_array()) {
+                raise_error();
+            }
+            for (auto&& threshold_entry: *thresholds) {
+                if (not threshold_entry.is_object()) {
+                    raise_error();
+                }
+                auto k = get<std::size_t>(threshold_entry, "k");
+                auto score = get<float>(threshold_entry, "score");
+                if (not k or not score) {
+                    raise_error();
+                }
+                data.thresholds.emplace_back(*k, *score);
+            }
         }
         if (not at_least_one_required) {
             throw std::invalid_argument(fmt::format(
@@ -218,8 +256,15 @@ auto QueryContainer::to_json() const -> std::string
     if (auto term_ids = m_data->term_ids; term_ids) {
         json["term_ids"] = *term_ids;
     }
-    if (auto threshold = m_data->threshold; threshold) {
-        json["threshold"] = *threshold;
+    if (not m_data->thresholds.empty()) {
+        auto thresholds = nlohmann::json::array();
+        for (auto&& [k, score]: m_data->thresholds) {
+            auto entry = nlohmann::json::object();
+            entry["k"] = k;
+            entry["score"] = score;
+            thresholds.push_back(std::move(entry));
+        }
+        json["thresholds"] = thresholds;
     }
     return json.dump();
 }
