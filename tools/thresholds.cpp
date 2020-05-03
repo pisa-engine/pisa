@@ -10,6 +10,7 @@
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
+#include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"

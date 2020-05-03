@@ -17,6 +17,7 @@
 #include "app.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/cursor.hpp"
+#include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
