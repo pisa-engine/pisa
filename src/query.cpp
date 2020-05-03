@@ -19,9 +19,12 @@ QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k)
 {
     if (auto term_ids = data.term_ids(); term_ids) {
         m_term_ids = *term_ids;
-        std::sort(m_term_ids.begin(), m_term_ids.end());
-        auto last = std::unique(m_term_ids.begin(), m_term_ids.end());
-        m_term_ids.erase(last, m_term_ids.end());
+        auto counts = unique_with_counts(m_term_ids.begin(), m_term_ids.end());
+        m_term_weights.resize(counts.size());
+        m_term_ids.resize(counts.size());
+        std::transform(counts.begin(), counts.end(), m_term_weights.begin(), [](auto count) {
+            return static_cast<float>(count);
+        });
     }
     throw std::domain_error("Query not parsed.");
 }
@@ -29,6 +32,11 @@ QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k)
 auto QueryRequest::term_ids() const -> gsl::span<std::uint32_t const>
 {
     return gsl::span<std::uint32_t const>(m_term_ids);
+}
+
+auto QueryRequest::term_weights() const -> gsl::span<float const>
+{
+    return gsl::span<float const>(m_term_weights);
 }
 
 auto QueryRequest::threshold() const -> std::optional<float>

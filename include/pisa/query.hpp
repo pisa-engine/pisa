@@ -11,6 +11,11 @@
 
 namespace pisa {
 
+// using DocId = std::uint32_t;
+// using Frequency = std::uint32_t;
+// using Score = float;
+using TermId = std::uint32_t;
+
 struct QueryContainerInner;
 
 struct ResolvedTerm {
@@ -30,6 +35,7 @@ class QueryRequest {
     explicit QueryRequest(QueryContainer const& data, std::size_t k);
 
     [[nodiscard]] auto term_ids() const -> gsl::span<std::uint32_t const>;
+    [[nodiscard]] auto term_weights() const -> gsl::span<float const>;
     [[nodiscard]] auto threshold() const -> std::optional<float>;
     [[nodiscard]] auto k() const -> std::optional<float>;
 
@@ -37,6 +43,7 @@ class QueryRequest {
     std::size_t m_k;
     std::optional<float> m_threshold{};
     std::vector<std::uint32_t> m_term_ids{};
+    std::vector<float> m_term_weights{};
 };
 
 class QueryContainer {
@@ -145,5 +152,27 @@ class QueryReader {
     std::string m_line_buf{};
     std::optional<Format> m_format{};
 };
+
+/// Eliminates duplicates in a sorted sequence, and returns a vector of counts.
+template <class ForwardIt>
+[[nodiscard]] auto unique_with_counts(ForwardIt first, ForwardIt last) -> std::vector<std::size_t>
+{
+    std::vector<std::size_t> counts;
+
+    if (first == last) {
+        return counts;
+    }
+
+    ForwardIt result = first;
+    while (++first != last) {
+        if (!(*result == *first) && ++result != first) {
+            *result = std::move(*first);
+            counts.back() += 1;
+        } else {
+            counts.push_back(1);
+        }
+    }
+    return counts;
+}
 
 }  // namespace pisa

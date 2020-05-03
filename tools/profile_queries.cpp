@@ -14,6 +14,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
+#include "query.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "util/util.hpp"
@@ -22,7 +23,7 @@
 using namespace pisa;
 
 template <typename QueryOperator>
-void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries)
+void op_profile(QueryOperator const& query_op, std::vector<QueryContainer> const& queries)
 {
     using namespace pisa;
 

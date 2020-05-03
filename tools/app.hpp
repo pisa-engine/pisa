@@ -12,7 +12,9 @@
 #include <spdlog/spdlog.h>
 
 #include "io.hpp"
+#include "query.hpp"
 #include "query/queries.hpp"
+#include "query/term_resolver.hpp"
 #include "scorer/scorer.hpp"
 #include "sharding.hpp"
 #include "type_safe.hpp"
@@ -89,17 +91,27 @@ namespace arg {
             return std::nullopt;
         }
 
-        [[nodiscard]] auto queries() const -> std::vector<::pisa::Query>
+        [[nodiscard]] auto term_resolver() -> std::optional<TermResolver>
         {
-            std::vector<::pisa::Query> q;
-            auto parse_query = resolve_query_parser(q, m_term_lexicon, m_stop_words, m_stemmer);
-            if (m_query_file) {
-                std::ifstream is(*m_query_file);
-                io::for_each_line(is, parse_query);
-            } else {
-                io::for_each_line(std::cin, parse_query);
+            if (term_lexicon()) {
+                return StandardTermResolver(*term_lexicon(), stop_words(), stemmer());
             }
-            return q;
+            return std::nullopt;
+        }
+
+        [[nodiscard]] auto queries() const -> std::vector<::pisa::QueryContainer>
+        {
+            std::vector<::pisa::QueryContainer> queries;
+            query_reader().for_each([&](auto&& query) { queries.push_back(std::move(query)); });
+            return queries;
+        }
+
+        [[nodiscard]] auto query_reader() const -> QueryReader
+        {
+            if (m_query_file) {
+                return QueryReader::from_file(*m_query_file);
+            }
+            return QueryReader::from_stdin();
         }
 
         [[nodiscard]] auto term_lexicon() const -> std::optional<std::string> const&

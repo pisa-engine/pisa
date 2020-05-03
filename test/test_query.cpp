@@ -7,6 +7,8 @@
 #include "query.hpp"
 
 using pisa::QueryContainer;
+using pisa::TermId;
+using pisa::unique_with_counts;
 
 TEST_CASE("Construct from raw string")
 {
@@ -140,4 +142,24 @@ TEST_CASE("Serialize query container to JSON")
     REQUIRE(
         serialized
         == R"({"id":"ID","query":"brooklyn tea house","term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"thresholds":[{"k":10,"score":10.0}]})");
+}
+
+TEST_CASE("Test dedup terms.")
+{
+    SECTION("Double in front")
+    {
+        std::vector<TermId> terms{0, 0, 1, 2, 2, 2, 3};
+        auto counts = unique_with_counts(terms.begin(), terms.end());
+        REQUIRE(counts == std::vector<std::size_t>{2, 1, 3, 1});
+        terms.resize(counts.size());
+        REQUIRE(terms == std::vector<TermId>{0, 1, 2, 3});
+    }
+    SECTION("Double at the end")
+    {
+        std::vector<TermId> terms{1, 2, 2, 2, 4, 4};
+        auto counts = unique_with_counts(terms.begin(), terms.end());
+        REQUIRE(counts == std::vector<std::size_t>{1, 3, 2});
+        terms.resize(counts.size());
+        REQUIRE(terms == std::vector<TermId>{1, 2, 4});
+    }
 }
