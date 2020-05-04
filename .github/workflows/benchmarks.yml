@@ -46,11 +46,10 @@ jobs:
         key: ${{ runner.os }}-benchmark
 
     - name: Store benchmark result
-      working-directory: ${{runner.workspace}}/build
       uses: rhysd/github-action-benchmark@v1
       with:
         tool: "catch2"
-        output-file-path: output.txt
+        output-file-path: ${{runner.workspace}}/build/output.txt
         external-data-json-path: ./cache/benchmark-data.json
         fail-on-alert: true
         alert-threshold: "105%"
