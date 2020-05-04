@@ -103,6 +103,48 @@ class ranked_or_taat_query_acc: public ranked_or_taat_query {
     }
 };
 
+template <typename T>
+[[nodiscard]] auto stringify() -> std::string
+{
+    std::abort();
+}
+
+template <>
+[[nodiscard]] auto stringify<ranked_or_taat_query_acc<Simple_Accumulator>>() -> std::string
+{
+    return "ranked_or_taat_query_acc<Simple_Accumulator>";
+}
+
+template <>
+[[nodiscard]] auto stringify<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>() -> std::string
+{
+    return "ranked_or_taat_query_acc<Lazy_Accumulator<4>>";
+}
+
+template <>
+[[nodiscard]] auto stringify<wand_query>() -> std::string
+{
+    return "wand_query";
+}
+
+template <>
+[[nodiscard]] auto stringify<maxscore_query>() -> std::string
+{
+    return "maxscore_query";
+}
+
+template <>
+[[nodiscard]] auto stringify<block_max_wand_query>() -> std::string
+{
+    return "block_max_wand_query";
+}
+
+template <>
+[[nodiscard]] auto stringify<block_max_maxscore_query>() -> std::string
+{
+    return "block_max_maxscore_query";
+}
+
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE(
     "Ranked query test",
@@ -127,27 +169,27 @@ TEMPLATE_TEST_CASE(
         return topk;
     };
 
-    BENCHMARK("One-term query")
+    BENCHMARK(fmt::format("{}_1", stringify<TestType>()))
     {
         return run(Query{
             .id = std::nullopt, .terms = std::vector<term_id_type>{33726}, .term_weights = {1.0}});
     };
 
-    BENCHMARK("Two-term query")
+    BENCHMARK(fmt::format("{}_2", stringify<TestType>()))
     {
         return run(Query{.id = std::nullopt,
                          .terms = std::vector<term_id_type>{40429, 86328},
                          .term_weights = {1.0, 1.0}});
     };
 
-    BENCHMARK("Three-term query")
+    BENCHMARK(fmt::format("{}_3", stringify<TestType>()))
     {
         return run(Query{.id = std::nullopt,
                          .terms = std::vector<term_id_type>{106967, 552, 59184},
                          .term_weights = {1.0, 1.0, 1.0}});
     };
 
-    BENCHMARK("Eight-term query")
+    BENCHMARK(fmt::format("{}_8", stringify<TestType>()))
     {
         return run(Query{.id = std::nullopt,
                          .terms =
