@@ -112,13 +112,13 @@ template <typename T>
 template <>
 [[nodiscard]] auto stringify<ranked_or_taat_query_acc<Simple_Accumulator>>() -> std::string
 {
-    return "ranked_or_taat_query_acc<Simple_Accumulator>";
+    return "simple_taat";
 }
 
 template <>
 [[nodiscard]] auto stringify<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>() -> std::string
 {
-    return "ranked_or_taat_query_acc<Lazy_Accumulator<4>>";
+    return "lazy_taat";
 }
 
 template <>
