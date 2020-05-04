@@ -1,0 +1,56 @@
+name: Benchmarks
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get install -y g++-9
+        echo "::set-env name=CC::gcc-9"
+        echo "::set-env name=CXX::g++-9"
+
+    - name: Create Build Environment
+      shell: bash
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DPISA_BUILD_TOOLS=OFF -DPISA_ENABLE_TESTING=OFF ..
+
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Release
+
+    - name: Run Benchmark
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ./bin/bench-cursors | tee output.txt
+
+    - name: Download previous benchmark data
+      uses: actions/cache@v1
+      with:
+        path: ./cache
+        key: ${{ runner.os }}-benchmark
+
+    - name: Store benchmark result
+      working-directory: ${{runner.workspace}}/build
+      uses: rhysd/github-action-benchmark@v1
+      with:
+        tool: "catch2"
+        output-file-path: output.txt
+        external-data-json-path: ./cache/benchmark-data.json
+        fail-on-alert: true
+        alert-threshold: "105%"
