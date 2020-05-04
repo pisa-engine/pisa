@@ -23,7 +23,7 @@ class MaxScoredCursor: public ScoredCursor<Cursor> {
     MaxScoredCursor& operator=(MaxScoredCursor&&) = default;
     ~MaxScoredCursor() = default;
 
-    [[nodiscard]] auto max_score() const noexcept -> float { return m_max_score; }
+    [[nodiscard]] PISA_ALWAYSINLINE auto max_score() const noexcept -> float { return m_max_score; }
 
   private:
     float m_max_score;
@@ -50,4 +50,3 @@ make_max_scored_cursors(Index const& index, WandType const& wdata, Scorer const&
 }
 
 }  // namespace pisa
-
