@@ -68,10 +68,9 @@ class document_range {
     PISA_ALWAYSINLINE document_partition<Iterator> split() const
     {
         Iterator mid = std::next(m_first, size() / 2);
-        return {
-            document_range(m_first, mid, m_fwdidx, m_gains),
-            document_range(mid, m_last, m_fwdidx, m_gains),
-            term_count()};
+        return {document_range(m_first, mid, m_fwdidx, m_gains),
+                document_range(mid, m_last, m_fwdidx, m_gains),
+                term_count()};
     }
 
     PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const
@@ -167,9 +166,13 @@ void compute_move_gains_caching(
     const auto logn1 = log2(from_n);
     const auto logn2 = log2(to_n);
 
-    auto gain_cache = thread_local_data.gains.local();
-    gain_cache.resize(from_lex.size());
-    gain_cache.clear();
+    bool exists;
+    auto& gain_cache = thread_local_data.gains.local(exists);
+    if (not exists) {
+        gain_cache.resize(from_lex.size());
+    } else {
+        gain_cache.clear();
+    }
     auto compute_document_gain = [&](auto& d) {
         double gain = 0.0;
         auto terms = range.terms(d);
@@ -249,7 +252,7 @@ void process_partition(
     int iterations = 20)
 {
     bool exists = false;
-    auto left_degree = thread_local_data.left_degrees.local(exists);
+    auto& left_degree = thread_local_data.left_degrees.local(exists);
     if (exists) {
         left_degree.clear();
     } else {

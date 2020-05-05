@@ -2,11 +2,13 @@
 
 #include "app.hpp"
 #include "pisa/reorder_docids.hpp"
+#include "tbb/task_scheduler_init.h"
 
 namespace pisa {
 
 auto reorder_docids(ReorderDocuments args) -> int
 {
+    tbb::task_scheduler_init init(args.threads());
     try {
         if (args.bp()) {
             return recursive_graph_bisection(RecursiveGraphBisectionOptions{
