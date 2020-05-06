@@ -1,9 +1,10 @@
 #pragma once
 
-#include "query/queries.hpp"
+#include <vector>
+
+#include "query.hpp"
 #include "scorer/index_scorer.hpp"
 #include "wand_data.hpp"
-#include <vector>
 
 namespace pisa {
 
@@ -23,21 +24,22 @@ struct block_max_scored_cursor {
 
 template <typename Index, typename WandType, typename Scorer>
 [[nodiscard]] auto make_block_max_scored_cursors(
-    Index const& index, WandType const& wdata, Scorer const& scorer, Query query)
+    Index const& index, WandType const& wdata, Scorer const& scorer, QueryRequest query)
 {
-    auto terms = query.terms;
-    auto query_term_freqs = query_freqs(terms);
-
-    std::vector<block_max_scored_cursor<Index, WandType>> cursors;
-    cursors.reserve(query_term_freqs.size());
+    using cursor_type = block_max_scored_cursor<Index, WandType>;
+    auto term_ids = query.term_ids();
+    auto term_weights = query.term_weights();
+    std::vector<cursor_type> cursors;
+    cursors.reserve(term_ids.size());
     std::transform(
-        query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-            auto list = index[term.first];
-            auto w_enum = wdata.getenum(term.first);
-            float q_weight = term.second;
-            auto max_weight = q_weight * wdata.max_term_weight(term.first);
-            return block_max_scored_cursor<Index, WandType>{
-                std::move(list), w_enum, q_weight, scorer.term_scorer(term.first), max_weight};
+        term_ids.begin(),
+        term_ids.end(),
+        term_weights.begin(),
+        std::back_inserter(cursors),
+        [&](auto term_id, auto weight) {
+            auto max_weight = weight * wdata.max_term_weight(term_id);
+            return cursor_type{
+                index[term_id], wdata.getenum(term_id), weight, scorer.term_scorer(term_id), max_weight};
         });
     return cursors;
 }

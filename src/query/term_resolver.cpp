@@ -92,7 +92,7 @@ void filter_queries(
             query.parse(QueryParser(*term_resolver));
         }
         if (auto len = query.term_ids()->size(); len >= min_query_len && len <= max_query_len) {
-            out << query.to_json() << '\n';
+            out << query.to_json_string() << '\n';
         }
     });
 }

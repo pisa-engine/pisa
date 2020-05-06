@@ -12,28 +12,42 @@ using namespace pisa::intersection;
 
 TEST_CASE("filter query", "[intersection][unit]")
 {
-    GIVEN("Four-term query")
+    GIVEN("With term IDs")
     {
-        Query query{
-            "Q1",  // query ID
-            {6, 1, 5},  // terms
-            {0.1, 0.4, 1.0}  // weights
-        };
-        auto [mask, expected] = GENERATE(table<Mask, Query>({
-            {0b001, Query{"Q1", {6}, {0.1}}},
-            {0b010, Query{"Q1", {1}, {0.4}}},
-            {0b100, Query{"Q1", {5}, {1.0}}},
-            {0b011, Query{"Q1", {6, 1}, {0.1, 0.4}}},
-            {0b101, Query{"Q1", {6, 5}, {0.1, 1.0}}},
-            {0b110, Query{"Q1", {1, 5}, {0.4, 1.0}}},
-            {0b111, Query{"Q1", {6, 1, 5}, {0.1, 0.4, 1.0}}},
+        auto query = QueryContainer::from_term_ids({6, 1, 5});
+        auto [mask, expected] = GENERATE(table<Mask, QueryContainer>({
+            {0b001, QueryContainer::from_term_ids({6})},
+            {0b010, QueryContainer::from_term_ids({1})},
+            {0b100, QueryContainer::from_term_ids({5})},
+            {0b011, QueryContainer::from_term_ids({6, 1})},
+            {0b101, QueryContainer::from_term_ids({6, 5})},
+            {0b110, QueryContainer::from_term_ids({1, 5})},
+            {0b111, QueryContainer::from_term_ids({6, 1, 5})},
         }));
         WHEN("Filtered with mask " << mask)
         {
             auto actual = filter(query, mask);
-            CHECK(actual.id == expected.id);
-            CHECK(actual.terms == expected.terms);
-            CHECK(actual.term_weights == expected.term_weights);
+            CHECK(actual.term_ids() == expected.term_ids());
+            CHECK(actual.terms() == expected.terms());
+        }
+    }
+    GIVEN("With terms")
+    {
+        auto query = QueryContainer::from_terms({"a", "b", "c"}, std::nullopt);
+        auto [mask, expected] = GENERATE(table<Mask, QueryContainer>({
+            {0b001, QueryContainer::from_terms({"a"}, std::nullopt)},
+            {0b010, QueryContainer::from_terms({"b"}, std::nullopt)},
+            {0b100, QueryContainer::from_terms({"c"}, std::nullopt)},
+            {0b011, QueryContainer::from_terms({"a", "b"}, std::nullopt)},
+            {0b101, QueryContainer::from_terms({"a", "c"}, std::nullopt)},
+            {0b110, QueryContainer::from_terms({"b", "c"}, std::nullopt)},
+            {0b111, QueryContainer::from_terms({"a", "b", "c"}, std::nullopt)},
+        }));
+        WHEN("Filtered with mask " << mask)
+        {
+            auto actual = filter(query, mask);
+            REQUIRE(actual.term_ids() == expected.term_ids());
+            REQUIRE(*actual.terms() == *expected.terms());
         }
     }
 }
@@ -89,10 +103,11 @@ struct InMemoryIndex {
             throw std::out_of_range(
                 fmt::format("Term {} is out of range; index contains {} terms", term_id, size()));
         }
-        return {gsl::make_span(documents[term_id]),
-                gsl::make_span(frequencies[term_id]),
-                num_documents,
-                {num_documents}};
+        return {
+            gsl::make_span(documents[term_id]),
+            gsl::make_span(frequencies[term_id]),
+            num_documents,
+            {num_documents}};
     }
 
     [[nodiscard]] auto size() const noexcept -> std::size_t { return documents.size(); }
@@ -177,32 +192,29 @@ TEST_CASE("compute intersection", "[intersection][unit]")
 {
     GIVEN("Four-term query, index, and wand data object")
     {
-        InMemoryIndex index{{
-                                {0},  // 0
-                                {0, 1, 2},  // 1
-                                {0},  // 2
-                                {0},  // 3
-                                {0},  // 4
-                                {0, 1, 4},  // 5
-                                {1, 4, 8},  // 6
-                            },
-                            {
-                                {1},  // 0
-                                {1, 1, 1},  // 1
-                                {1},  // 2
-                                {1},  // 3
-                                {1},  // 4
-                                {1, 1, 1},  // 5
-                                {1, 1, 1},  // 6
-                            },
-                            10};
+        InMemoryIndex index{
+            {
+                {0},  // 0
+                {0, 1, 2},  // 1
+                {0},  // 2
+                {0},  // 3
+                {0},  // 4
+                {0, 1, 4},  // 5
+                {1, 4, 8},  // 6
+            },
+            {
+                {1},  // 0
+                {1, 1, 1},  // 1
+                {1},  // 2
+                {1},  // 3
+                {1},  // 4
+                {1, 1, 1},  // 5
+                {1, 1, 1},  // 6
+            },
+            10};
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
 
-        Query query{
-            "Q1",  // query ID
-            {6, 1, 5},  // terms
-            {0.1, 0.4, 1.0}  // weights
-        };
+        auto query = QueryContainer::from_term_ids({6, 1, 5});
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
             {0b001, 3, 1.84583f},
             {0b010, 3, 1.84583f},
@@ -226,12 +238,8 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
     GIVEN("A query and a mock function that accumulates arguments")
     {
         std::vector<Mask> masks;
-        auto accumulate = [&](Query const&, Mask const& mask) { masks.push_back(mask); };
-        Query query{
-            "Q1",  // query ID
-            {6, 1, 5},  // terms
-            {0.1, 0.4, 1.0}  // weights
-        };
+        auto accumulate = [&](QueryContainer const&, Mask const& mask) { masks.push_back(mask); };
+        auto query = QueryContainer::from_term_ids({6, 1, 5});
         WHEN("Executed with limit 0")
         {
             for_all_subsets(query, 0, accumulate);
@@ -263,13 +271,14 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
             {
                 CHECK(
                     masks
-                    == std::vector<Mask>{Mask(0b001),
-                                         Mask(0b010),
-                                         Mask(0b011),
-                                         Mask(0b100),
-                                         Mask(0b101),
-                                         Mask(0b110),
-                                         Mask(0b111)});
+                    == std::vector<Mask>{
+                        Mask(0b001),
+                        Mask(0b010),
+                        Mask(0b011),
+                        Mask(0b100),
+                        Mask(0b101),
+                        Mask(0b110),
+                        Mask(0b111)});
             }
         }
     }

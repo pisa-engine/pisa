@@ -9,14 +9,11 @@ namespace pisa {
 template <typename Index>
 [[nodiscard]] auto make_cursors(Index const& index, QueryRequest query)
 {
-    auto terms = query.terms;
-    remove_duplicate_terms(terms);
-    using cursor = typename Index::document_enumerator;
-
-    std::vector<cursor> cursors;
-    cursors.reserve(terms.size());
-    std::transform(terms.begin(), terms.end(), std::back_inserter(cursors), [&](auto&& term) {
-        return index[term];
+    auto term_ids = query.term_ids();
+    std::vector<typename Index::document_enumerator> cursors;
+    cursors.reserve(term_ids.size());
+    std::transform(term_ids.begin(), term_ids.end(), std::back_inserter(cursors), [&](auto&& term_id) {
+        return index[term_id];
     });
 
     return cursors;

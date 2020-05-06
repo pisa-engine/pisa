@@ -8,8 +8,13 @@
 #include <vector>
 
 #include <gsl/span>
+#include <nlohmann/json.hpp>
 
 namespace pisa {
+
+namespace query {
+    constexpr std::size_t unlimited = std::numeric_limits<std::size_t>::max();
+}
 
 // using DocId = std::uint32_t;
 // using Frequency = std::uint32_t;
@@ -32,12 +37,12 @@ class QueryContainer;
 /// IDs, and also has some additional data, like term weights, etc.
 class QueryRequest {
   public:
-    explicit QueryRequest(QueryContainer const& data, std::size_t k);
+    explicit QueryRequest(QueryContainer const& data, std::size_t k = query::unlimited);
 
     [[nodiscard]] auto term_ids() const -> gsl::span<std::uint32_t const>;
     [[nodiscard]] auto term_weights() const -> gsl::span<float const>;
     [[nodiscard]] auto threshold() const -> std::optional<float>;
-    [[nodiscard]] auto k() const -> std::optional<float>;
+    [[nodiscard]] auto k() const -> std::size_t;
 
   private:
     std::size_t m_k;
@@ -76,7 +81,8 @@ class QueryContainer {
     /// Constructs a query from a JSON object.
     [[nodiscard]] static auto from_json(std::string_view json_string) -> QueryContainer;
 
-    [[nodiscard]] auto to_json() const -> std::string;
+    [[nodiscard]] auto to_json_string() const -> std::string;
+    [[nodiscard]] auto to_json() const -> nlohmann::json;
 
     /// Constructs a query from a colon-separated format:
     ///
@@ -113,7 +119,13 @@ class QueryContainer {
     /// and `true` will be returned. Otherwise, `false` will be returned.
     auto add_threshold(std::size_t k, float score) -> bool;
 
+    /// Preserve only terms at given positions.
+    void filter_terms(gsl::span<std::size_t const> term_positions);
+
     /// Returns a query ready to be used for retrieval.
+    ///
+    /// This function takes `k` and resolves the associated threshold if exists.
+    /// For unranked queries, pass `pisa::query::unlimited` explicitly to avoidi mistakes.
     [[nodiscard]] auto query(std::size_t k) const -> QueryRequest;
 
   private:
@@ -152,27 +164,5 @@ class QueryReader {
     std::string m_line_buf{};
     std::optional<Format> m_format{};
 };
-
-/// Eliminates duplicates in a sorted sequence, and returns a vector of counts.
-template <class ForwardIt>
-[[nodiscard]] auto unique_with_counts(ForwardIt first, ForwardIt last) -> std::vector<std::size_t>
-{
-    std::vector<std::size_t> counts;
-
-    if (first == last) {
-        return counts;
-    }
-
-    ForwardIt result = first;
-    while (++first != last) {
-        if (!(*result == *first) && ++result != first) {
-            *result = std::move(*first);
-            counts.back() += 1;
-        } else {
-            counts.push_back(1);
-        }
-    }
-    return counts;
-}
 
 }  // namespace pisa

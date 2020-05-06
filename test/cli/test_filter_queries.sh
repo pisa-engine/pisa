@@ -3,16 +3,7 @@
 PISA_BIN="bin"
 export PATH="$PISA_BIN:$PATH"
 
-function write_lines {
-    file=$1
-    rm -f "$file"
-    shift
-    for line in "$@"
-    do
-        echo "$line" >> "$file"
-    done
-}
-
+. "$BATS_TEST_DIRNAME/common.sh"
 
 function setup {
     write_lines "$BATS_TMPDIR/queries.txt" "brooklyn tea house" "labradoodle" 'Tell your dog I said "hi"'

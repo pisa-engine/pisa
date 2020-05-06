@@ -18,15 +18,17 @@ QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k)
     : m_k(k), m_threshold(data.threshold(k))
 {
     if (auto term_ids = data.term_ids(); term_ids) {
-        m_term_ids = *term_ids;
-        auto counts = unique_with_counts(m_term_ids.begin(), m_term_ids.end());
-        m_term_weights.resize(counts.size());
-        m_term_ids.resize(counts.size());
-        std::transform(counts.begin(), counts.end(), m_term_weights.begin(), [](auto count) {
-            return static_cast<float>(count);
-        });
+        std::map<TermId, std::size_t> counts;
+        for (auto term_id: *term_ids) {
+            counts[term_id] += 1;
+        }
+        for (auto [term_id, count]: counts) {
+            m_term_ids.push_back(term_id);
+            m_term_weights.push_back(static_cast<float>(count));
+        }
+    } else {
+        throw std::domain_error("Query not parsed.");
     }
-    throw std::domain_error("Query not parsed.");
 }
 
 auto QueryRequest::term_ids() const -> gsl::span<std::uint32_t const>
@@ -248,8 +250,12 @@ auto QueryContainer::from_json(std::string_view json_string) -> QueryContainer
             fmt::format("Failed to parse JSON: `{}`: {}", json_string, err.what()));
     }
 }
+auto QueryContainer::to_json_string() const -> std::string
+{
+    return to_json().dump();
+}
 
-auto QueryContainer::to_json() const -> std::string
+auto QueryContainer::to_json() const -> nlohmann::json
 {
     nlohmann::json json;
     if (auto id = m_data->id; id) {
@@ -274,7 +280,7 @@ auto QueryContainer::to_json() const -> std::string
         }
         json["thresholds"] = thresholds;
     }
-    return json.dump();
+    return json;
 }
 
 auto QueryContainer::from_colon_format(std::string_view line) -> QueryContainer
@@ -289,6 +295,40 @@ auto QueryContainer::from_colon_format(std::string_view line) -> QueryContainer
         data.query_string = std::string(std::next(pos), line.end());
     }
     return query;
+}
+
+void QueryContainer::filter_terms(gsl::span<std::size_t const> term_positions)
+{
+    auto const& processed_terms = m_data->processed_terms;
+    auto const& term_ids = m_data->term_ids;
+    if (not processed_terms && not term_ids) {
+        return;
+    }
+    auto query_length = 0;
+    if (processed_terms) {
+        query_length = processed_terms->size();
+    } else if (term_ids) {
+        query_length = term_ids->size();
+    }
+    std::vector<std::string> filtered_terms;
+    std::vector<TermId> filtered_ids;
+    for (auto position: term_positions) {
+        if (position >= query_length) {
+            throw std::out_of_range("Passed term position out of range");
+        }
+        if (processed_terms) {
+            filtered_terms.push_back(std::move((*m_data->processed_terms)[position]));
+        }
+        if (term_ids) {
+            filtered_ids.push_back((*m_data->term_ids)[position]);
+        }
+    }
+    if (processed_terms) {
+        m_data->processed_terms = filtered_terms;
+    }
+    if (term_ids) {
+        m_data->term_ids = filtered_ids;
+    }
 }
 
 auto QueryReader::from_file(std::string const& file) -> QueryReader

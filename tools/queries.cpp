@@ -35,7 +35,7 @@ using ranges::views::enumerate;
 template <typename Fn>
 void extract_times(
     Fn fn,
-    std::vector<Query> const& queries,
+    std::vector<QueryContainer> const& queries,
     std::vector<Threshold> const& thresholds,
     std::string const& index_type,
     std::string const& query_type,
@@ -51,14 +51,14 @@ void extract_times(
                 .count();
         });
         auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
+        os << fmt::format("{}\t{}\n", query.id().value_or(std::to_string(qid)), mean);
     }
 }
 
 template <typename Functor>
 void op_perftest(
     Functor query_func,
-    std::vector<Query> const& queries,
+    std::vector<QueryContainer> const& queries,
     std::vector<Threshold> const& thresholds,
     std::string const& index_type,
     std::string const& query_type,
@@ -118,7 +118,7 @@ template <typename IndexType, typename WandType>
 void perftest(
     const std::string& index_filename,
     const std::optional<std::string>& wand_data_filename,
-    const std::vector<Query>& queries,
+    const std::vector<QueryContainer>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
     std::string const& query_type,
@@ -134,8 +134,8 @@ void perftest(
 
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
-    for (auto const& q: queries) {
-        for (auto t: q.terms) {
+    for (auto&& query: queries) {
+        for (auto t: *query.term_ids()) {
             if (!warmed_up.count(t)) {
                 index.warmup(t);
                 warmed_up.insert(t);
@@ -179,85 +179,90 @@ void perftest(
 
     for (auto&& t: query_types) {
         spdlog::info("Query type: {}", t);
-        std::function<uint64_t(Query, Threshold)> query_fun;
+        std::function<uint64_t(QueryContainer const&, Threshold)> query_fun;
         if (t == "and") {
-            query_fun = [&](Query query, Threshold) {
+            query_fun = [&](QueryContainer const& query, Threshold) {
                 and_query and_q;
-                return and_q(make_cursors(index, query), index.num_docs()).size();
+                return and_q(make_cursors(index, query.query(k)), index.num_docs()).size();
             };
         } else if (t == "or") {
-            query_fun = [&](Query query, Threshold) {
+            query_fun = [&](QueryContainer const& query, Threshold) {
                 or_query<false> or_q;
-                return or_q(make_cursors(index, query), index.num_docs());
+                return or_q(make_cursors(index, query.query(k)), index.num_docs());
             };
         } else if (t == "or_freq") {
-            query_fun = [&](Query query, Threshold) {
+            query_fun = [&](QueryContainer const& query, Threshold) {
                 or_query<true> or_q;
-                return or_q(make_cursors(index, query), index.num_docs());
+                return or_q(make_cursors(index, query.query(k)), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                wand_q(
+                    make_max_scored_cursors(index, wdata, *scorer, query.query(k)), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    make_block_max_scored_cursors(index, wdata, *scorer, query.query(k)),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_maxscore_query block_max_maxscore_q(topk);
                 block_max_maxscore_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    make_block_max_scored_cursors(index, wdata, *scorer, query.query(k)),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 ranked_and_query ranked_and_q(topk);
-                ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+                ranked_and_q(make_scored_cursors(index, *scorer, query.query(k)), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
                 block_max_ranked_and_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    make_block_max_scored_cursors(index, wdata, *scorer, query.query(k)),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 ranked_or_query ranked_or_q(topk);
-                ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+                ranked_or_q(make_scored_cursors(index, *scorer, query.query(k)), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](Query query, Threshold t) {
+            query_fun = [&](QueryContainer const& query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 maxscore_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                maxscore_q(
+                    make_max_scored_cursors(index, wdata, *scorer, query.query(k)), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -265,10 +270,11 @@ void perftest(
             Simple_Accumulator accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
+            query_fun = [&, ranked_or_taat_q, accumulator](
+                            QueryContainer const& query, Threshold t) mutable {
                 topk.set_threshold(t);
                 ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                    make_scored_cursors(index, *scorer, query.query(k)), index.num_docs(), accumulator);
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -276,10 +282,11 @@ void perftest(
             Lazy_Accumulator<4> accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
+            query_fun = [&, ranked_or_taat_q, accumulator](
+                            QueryContainer const& query, Threshold t) mutable {
                 topk.set_threshold(t);
                 ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                    make_scored_cursors(index, *scorer, query.query(k)), index.num_docs(), accumulator);
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -324,10 +331,20 @@ int main(int argc, const char** argv)
         std::cout << "qid\tusec\n";
     }
 
+    std::vector<pisa::QueryContainer> queries;
+    try {
+        queries = app.resolved_queries();
+    } catch (pisa::MissingResolverError err) {
+        spdlog::error("Unresoved queries (without IDs) require term lexicon.");
+        std::exit(1);
+    } catch (std::runtime_error const& err) {
+        spdlog::error(err.what());
+        std::exit(1);
+    }
     auto params = std::make_tuple(
         app.index_filename(),
         app.wand_data_path(),
-        app.queries(),
+        queries,
         app.thresholds_file(),
         app.index_encoding(),
         app.algorithm(),

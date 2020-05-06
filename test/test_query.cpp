@@ -8,7 +8,6 @@
 
 using pisa::QueryContainer;
 using pisa::TermId;
-using pisa::unique_with_counts;
 
 TEST_CASE("Construct from raw string")
 {
@@ -138,28 +137,98 @@ TEST_CASE("Serialize query container to JSON")
         "thresholds": [{"k": 10, "score": 10.0}]
     }
     )");
-    auto serialized = query.to_json();
+    auto serialized = query.to_json_string();
     REQUIRE(
         serialized
         == R"({"id":"ID","query":"brooklyn tea house","term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"thresholds":[{"k":10,"score":10.0}]})");
 }
 
-TEST_CASE("Test dedup terms.")
+TEST_CASE("Copy constructor and assignment")
 {
-    SECTION("Double in front")
+    auto query = QueryContainer::from_json(R"(
     {
-        std::vector<TermId> terms{0, 0, 1, 2, 2, 2, 3};
-        auto counts = unique_with_counts(terms.begin(), terms.end());
-        REQUIRE(counts == std::vector<std::size_t>{2, 1, 3, 1});
-        terms.resize(counts.size());
-        REQUIRE(terms == std::vector<TermId>{0, 1, 2, 3});
+        "id": "ID",
+        "query": "brooklyn tea house",
+        "terms": ["brooklyn", "tea", "house"],
+        "term_ids": [1, 0, 3],
+        "thresholds": [{"k": 10, "score": 10.0}]
     }
-    SECTION("Double at the end")
+    )");
     {
-        std::vector<TermId> terms{1, 2, 2, 2, 4, 4};
-        auto counts = unique_with_counts(terms.begin(), terms.end());
-        REQUIRE(counts == std::vector<std::size_t>{1, 3, 2});
-        terms.resize(counts.size());
-        REQUIRE(terms == std::vector<TermId>{1, 2, 4});
+        QueryContainer copy(query);
+        REQUIRE(query.string() == copy.string());
+        REQUIRE(*query.id() == copy.id());
+        REQUIRE(*query.terms() == *copy.terms());
+        REQUIRE(*query.term_ids() == *copy.term_ids());
+        REQUIRE(query.thresholds() == copy.thresholds());
+    }
+    {
+        auto copy = QueryContainer::raw("");
+        copy = query;
+        REQUIRE(query.string() == copy.string());
+        REQUIRE(*query.id() == copy.id());
+        REQUIRE(*query.terms() == *copy.terms());
+        REQUIRE(*query.term_ids() == *copy.term_ids());
+        REQUIRE(query.thresholds() == copy.thresholds());
+    }
+}
+
+TEST_CASE("Filter terms")
+{
+    SECTION("Both terms and IDs")
+    {
+        auto query = QueryContainer::from_json(R"(
+    {
+        "id": "ID",
+        "query": "brooklyn tea house",
+        "terms": ["brooklyn", "tea", "house"],
+        "term_ids": [1, 0, 3],
+        "thresholds": [{"k": 10, "score": 10.0}]
+    }
+    )");
+        SECTION("First")
+        {
+            query.filter_terms(std::vector<std::size_t>{0});
+            REQUIRE(*query.terms() == std::vector<std::string>{"brooklyn"});
+            REQUIRE(*query.term_ids() == std::vector<TermId>{1});
+        }
+        SECTION("Second")
+        {
+            query.filter_terms(std::vector<std::size_t>{1});
+            REQUIRE(*query.terms() == std::vector<std::string>{"tea"});
+            REQUIRE(*query.term_ids() == std::vector<TermId>{0});
+        }
+        SECTION("Third")
+        {
+            query.filter_terms(std::vector<std::size_t>{2});
+            REQUIRE(*query.terms() == std::vector<std::string>{"house"});
+            REQUIRE(*query.term_ids() == std::vector<TermId>{3});
+        }
+    }
+    SECTION("Only terms")
+    {
+        auto query = QueryContainer::from_json(R"(
+    {
+        "id": "ID",
+        "query": "brooklyn tea house",
+        "terms": ["brooklyn", "tea", "house"],
+        "thresholds": [{"k": 10, "score": 10.0}]
+    }
+    )");
+        query.filter_terms(std::vector<std::size_t>{1});
+        REQUIRE(*query.terms() == std::vector<std::string>{"tea"});
+    }
+    SECTION("Only IDs")
+    {
+        auto query = QueryContainer::from_json(R"(
+    {
+        "id": "ID",
+        "query": "brooklyn tea house",
+        "term_ids": [1, 0, 3],
+        "thresholds": [{"k": 10, "score": 10.0}]
+    }
+    )");
+        query.filter_terms(std::vector<std::size_t>{1});
+        REQUIRE(*query.term_ids() == std::vector<TermId>{0});
     }
 }

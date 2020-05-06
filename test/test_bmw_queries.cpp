@@ -46,7 +46,7 @@ struct IndexData {
         term_id_vec q;
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         auto push_query = [&](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
+            queries.push_back(QueryContainer::from_json(query_line));
         };
         io::for_each_line(qfile, push_query);
     }
@@ -55,7 +55,7 @@ struct IndexData {
     binary_freq_collection collection;
     binary_collection document_sizes;
     Index index;
-    std::vector<Query> queries;
+    std::vector<QueryContainer> queries;
     WandTypePlain wdata;
 
     [[nodiscard]] static auto
@@ -83,8 +83,12 @@ auto test(Wand& wdata, std::string const& s_name)
     auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
     for (auto const& q: data->queries) {
-        wand_q(make_max_scored_cursors(data->index, data->wdata, *scorer, q), data->index.num_docs());
-        op_q(make_block_max_scored_cursors(data->index, wdata, *scorer, q), data->index.num_docs());
+        wand_q(
+            make_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
+            data->index.num_docs());
+        op_q(
+            make_block_max_scored_cursors(data->index, wdata, *scorer, q.query(10)),
+            data->index.num_docs());
         topk_1.finalize();
         topk_2.finalize();
         REQUIRE(topk_2.topk().size() == topk_1.topk().size());

@@ -14,6 +14,7 @@
 #include "io.hpp"
 #include "query.hpp"
 #include "query/queries.hpp"
+#include "query/query_parser.hpp"
 #include "query/term_resolver.hpp"
 #include "scorer/scorer.hpp"
 #include "sharding.hpp"
@@ -91,12 +92,28 @@ namespace arg {
             return std::nullopt;
         }
 
-        [[nodiscard]] auto term_resolver() -> std::optional<TermResolver>
+        [[nodiscard]] auto term_resolver() const -> std::optional<TermResolver>
         {
             if (term_lexicon()) {
                 return StandardTermResolver(*term_lexicon(), stop_words(), stemmer());
             }
             return std::nullopt;
+        }
+
+        [[nodiscard]] auto resolved_queries() const -> std::vector<::pisa::QueryContainer>
+        {
+            auto term_resolver = this->term_resolver();
+            std::vector<::pisa::QueryContainer> queries;
+            query_reader().for_each([&](auto query) {
+                if (not query.term_ids()) {
+                    if (not term_resolver) {
+                        throw MissingResolverError{};
+                    }
+                    query.parse(QueryParser(*term_resolver));
+                }
+                queries.push_back(std::move(query));
+            });
+            return queries;
         }
 
         [[nodiscard]] auto queries() const -> std::vector<::pisa::QueryContainer>

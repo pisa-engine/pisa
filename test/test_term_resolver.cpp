@@ -51,7 +51,7 @@ TEST_CASE("Filter queries")
             {
                 std::ofstream json_out(json_input.c_str());
                 for (auto&& query: queries) {
-                    json_out << query.to_json() << '\n';
+                    json_out << query.to_json_string() << '\n';
                 }
             }
             std::ostringstream output;

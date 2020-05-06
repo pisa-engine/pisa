@@ -53,7 +53,7 @@ void thresholds(
     }
     topk_queue topk(k);
     wand_query wand_q(topk);
-    queries.for_each([](auto&& query) {
+    queries.for_each([&](auto&& query) {
         wand_q(make_max_scored_cursors(index, wdata, *scorer, query.query(k)), index.num_docs());
         topk.finalize();
         auto results = topk.topk();
@@ -97,19 +97,21 @@ int main(int argc, const char** argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                   \
-    }                                                                                           \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                     \
-    {                                                                                           \
-        if (app.is_wand_compressed()) {                                                         \
-            if (quantized) {                                                                    \
-                std::apply(                                                                     \
-                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                            \
-                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);    \
-            }                                                                                   \
-        } else {                                                                                \
-            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);            \
+#define LOOP_BODY(R, DATA, T)                                                                    \
+    }                                                                                            \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                      \
+    {                                                                                            \
+        if (app.is_wand_compressed()) {                                                          \
+            if (quantized) {                                                                     \
+                std::apply(                                                                      \
+                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,           \
+                    std::move(params));                                                          \
+            } else {                                                                             \
+                std::apply(                                                                      \
+                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, std::move(params)); \
+            }                                                                                    \
+        } else {                                                                                 \
+            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, std::move(params));  \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

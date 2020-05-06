@@ -8,7 +8,9 @@
 #include <gsl/span>
 
 #include "payload_vector.hpp"
-#include "query/queries.hpp"
+#include "query.hpp"
+#include "query/query_parser.hpp"
+#include "query/term_resolver.hpp"
 #include "temporary_directory.hpp"
 #include "tokenizer.hpp"
 
@@ -33,7 +35,7 @@ TEST_CASE("Parse query terms to ids")
         .to_file(lexfile.string());
 
     auto [query, id, parsed] =
-        GENERATE(table<std::string, std::optional<std::string>, std::vector<term_id_type>>(
+        GENERATE(table<std::string, std::optional<std::string>, std::vector<TermId>>(
             {{"17:obama family tree", "17", {1, 3}},
              {"obama family tree", std::nullopt, {1, 3}},
              {"obama, family, trees", std::nullopt, {1, 3}},
@@ -41,8 +43,10 @@ TEST_CASE("Parse query terms to ids")
              {"lol's", std::nullopt, {0}},
              {"U.S.A.!?", std::nullopt, {4}}}));
     CAPTURE(query);
-    TermProcessor term_processor(std::make_optional(lexfile.string()), std::nullopt, "krovetz");
-    auto q = parse_query_terms(query, term_processor);
-    REQUIRE(q.id == id);
-    REQUIRE(q.terms == parsed);
+    QueryParser parser(
+        StandardTermResolver(lexfile.string(), std::nullopt, std::make_optional("krovetz")));
+    auto query_container = QueryContainer::from_colon_format(query);
+    query_container.parse(parser);
+    REQUIRE(query_container.id() == id);
+    REQUIRE(*query_container.term_ids() == parsed);
 }

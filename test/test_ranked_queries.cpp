@@ -40,9 +40,9 @@ struct IndexData {
         builder.build(index);
 
         term_id_vec q;
-        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries.jl");
         auto push_query = [&](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
+            queries.push_back(QueryContainer::from_json(query_line));
         };
         io::for_each_line(qfile, push_query);
 
@@ -63,7 +63,7 @@ struct IndexData {
     binary_freq_collection collection;
     binary_collection document_sizes;
     Index index;
-    std::vector<Query> queries;
+    std::vector<QueryContainer> queries;
     wand_data<wand_data_raw> wdata;
 };
 
@@ -123,9 +123,9 @@ TEMPLATE_TEST_CASE(
 
             auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
             for (auto const& q: data->queries) {
-                or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+                or_q(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
                 op_q(
-                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
+                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
                     data->index.num_docs());
                 topk_1.finalize();
                 topk_2.finalize();
@@ -158,9 +158,9 @@ TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", bloc
             auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
             for (auto const& q: data->queries) {
-                and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+                and_q(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
                 op_q(
-                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q),
+                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
                     data->index.num_docs());
                 topk_1.finalize();
                 topk_2.finalize();
@@ -191,8 +191,8 @@ TEST_CASE("Top k")
         auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
         for (auto const& q: data->queries) {
-            or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-            or_1(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            or_10(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
+            or_1(make_scored_cursors(data->index, *scorer, q.query(1)), data->index.num_docs());
             topk_1.finalize();
             topk_2.finalize();
             if (not or_10.topk().empty()) {

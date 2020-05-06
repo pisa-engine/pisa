@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 
+#include "payload_vector.hpp"
 #include "query.hpp"
 
 namespace pisa {
