@@ -25,13 +25,13 @@ struct maxscore_query {
 
         // sort enumerators by increasing maxscore
         std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor* lhs, Cursor* rhs) {
-            return lhs->max_weight < rhs->max_weight;
+            return lhs->max_score() < rhs->max_score();
         });
 
         std::vector<float> upper_bounds(ordered_cursors.size());
-        upper_bounds[0] = ordered_cursors[0]->max_weight;
+        upper_bounds[0] = ordered_cursors[0]->max_score();
         for (size_t i = 1; i < ordered_cursors.size(); ++i) {
-            upper_bounds[i] = upper_bounds[i - 1] + ordered_cursors[i]->max_weight;
+            upper_bounds[i] = upper_bounds[i - 1] + ordered_cursors[i]->max_score();
         }
 
         uint64_t non_essential_lists = 0;
@@ -45,20 +45,19 @@ struct maxscore_query {
 
         uint64_t cur_doc =
             std::min_element(cursors.begin(), cursors.end(), [](Cursor const& lhs, Cursor const& rhs) {
-                return lhs.docs_enum.docid() < rhs.docs_enum.docid();
-            })->docs_enum.docid();
+                return lhs.docid() < rhs.docid();
+            })->docid();
 
         while (non_essential_lists < ordered_cursors.size() && cur_doc < max_docid) {
             float score = 0;
             uint64_t next_doc = max_docid;
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
-                if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
-                    score += ordered_cursors[i]->scorer(
-                        ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
-                    ordered_cursors[i]->docs_enum.next();
+                if (ordered_cursors[i]->docid() == cur_doc) {
+                    score += ordered_cursors[i]->score();
+                    ordered_cursors[i]->next();
                 }
-                if (ordered_cursors[i]->docs_enum.docid() < next_doc) {
-                    next_doc = ordered_cursors[i]->docs_enum.docid();
+                if (ordered_cursors[i]->docid() < next_doc) {
+                    next_doc = ordered_cursors[i]->docid();
                 }
             }
 
@@ -67,10 +66,9 @@ struct maxscore_query {
                 if (!m_topk.would_enter(score + upper_bounds[i])) {
                     break;
                 }
-                ordered_cursors[i]->docs_enum.next_geq(cur_doc);
-                if (ordered_cursors[i]->docs_enum.docid() == cur_doc) {
-                    score += ordered_cursors[i]->scorer(
-                        ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
+                ordered_cursors[i]->next_geq(cur_doc);
+                if (ordered_cursors[i]->docid() == cur_doc) {
+                    score += ordered_cursors[i]->score();
                 }
             }
 
