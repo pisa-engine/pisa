@@ -8,6 +8,7 @@
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
+#include "io.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm.hpp"
 #include "wand_data.hpp"

@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 #include <thread>
+#include <unordered_set>
 
 #include <CLI/CLI.hpp>
 #include <range/v3/view/getlines.hpp>
