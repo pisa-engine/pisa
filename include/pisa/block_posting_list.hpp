@@ -6,8 +6,20 @@
 
 namespace pisa {
 
-template <typename BlockCodec, bool Profile = false>
+enum class IndexArity {
+    Unary = 1,
+    Binary = 2,
+};
+
+template <typename BlockCodec, bool Profile = false, IndexArity Arity = IndexArity::Unary>
 struct block_posting_list {
+    using frequency_type =
+        std::conditional_t<Arity == IndexArity::Unary, std::uint32_t, std::array<uint32_t, 2>>;
+
+    /// \tparam DocsIterator    Iterator of document IDs
+    /// \tparam FreqsIterator   Iterator of frequencies. The type of elements of the iterator is
+    ///                         either `uint32_t` for unary index or `array<uint32_t, 2>` for
+    ///                         binary index.
     template <typename DocsIterator, typename FreqsIterator>
     static void
     write(std::vector<uint8_t>& out, uint32_t n, DocsIterator docs_begin, FreqsIterator freqs_begin)
@@ -24,7 +36,7 @@ struct block_posting_list {
         DocsIterator docs_it(docs_begin);
         FreqsIterator freqs_it(freqs_begin);
         std::vector<uint32_t> docs_buf(block_size);
-        std::vector<uint32_t> freqs_buf(block_size);
+        std::vector<frequency_type> freqs_buf(block_size);
         int32_t last_doc(-1);
         uint32_t block_base = 0;
         for (size_t b = 0; b < blocks; ++b) {
@@ -35,13 +47,20 @@ struct block_posting_list {
                 docs_buf[i] = doc - last_doc - 1;
                 last_doc = doc;
 
-                freqs_buf[i] = *freqs_it++ - 1;
+                if constexpr (Arity == IndexArity::Unary) {
+                    freqs_buf[i] = *freqs_it++ - 1;
+                } else {
+                    std::get<0>(freqs_buf[i]) = std::get<0>(*freqs_it) - 1;
+                    std::get<1>(freqs_buf[i]) = std::get<1>(*freqs_it) - 1;
+                    ++freqs_it;
+                }
             }
             *((uint32_t*)&out[begin_block_maxs + 4 * b]) = last_doc;
 
             BlockCodec::encode(
                 docs_buf.data(), last_doc - block_base - (cur_block_size - 1), cur_block_size, out);
-            BlockCodec::encode(freqs_buf.data(), uint32_t(-1), cur_block_size, out);
+            BlockCodec::encode(
+                freqs_buf.data(), uint32_t(-1), cur_block_size * static_cast<std::uint32_t>(Arity), out);
             if (b != blocks - 1) {
                 *((uint32_t*)&out[begin_block_endpoints + 4 * b]) = out.size() - begin_blocks;
             }
@@ -148,14 +167,21 @@ struct block_posting_list {
             }
         }
 
-        uint64_t docid() const { return m_cur_docid; }
+        uint32_t docid() const { return m_cur_docid; }
 
-        uint64_t PISA_ALWAYSINLINE freq()
+        frequency_type PISA_ALWAYSINLINE freq()
         {
             if (!m_freqs_decoded) {
                 decode_freqs_block();
             }
-            return m_freqs_buf[m_pos_in_block] + 1;
+            if constexpr (Arity == IndexArity::Unary) {
+                return m_freqs_buf[m_pos_in_block] + 1;
+            } else {
+                frequency_type result = m_freqs_buf[m_pos_in_block];
+                ++std::get<0>(result);
+                ++std::get<1>(result);
+                return result;
+            }
         }
 
         uint64_t position() const { return m_cur_block * BlockCodec::block_size + m_pos_in_block; }
@@ -178,7 +204,11 @@ struct block_posting_list {
                 uint32_t cur_base = (b != 0U ? block_max(b - 1) : uint32_t(-1)) + 1;
                 uint8_t const* freq_ptr = BlockCodec::decode(
                     ptr, buf.data(), block_max(b) - cur_base - (cur_block_size - 1), cur_block_size);
-                ptr = BlockCodec::decode(freq_ptr, buf.data(), uint32_t(-1), cur_block_size);
+                ptr = BlockCodec::decode(
+                    freq_ptr,
+                    buf.data(),
+                    uint32_t(-1),
+                    cur_block_size * static_cast<std::uint32_t>(Arity));
                 bytes += ptr - freq_ptr;
             }
 
@@ -207,10 +237,11 @@ struct block_posting_list {
                 BlockCodec::decode(docs_begin, out.data(), doc_gaps_universe, size);
             }
 
-            void decode_freqs(std::vector<uint32_t>& out) const
+            void decode_freqs(std::vector<frequency_type>& out) const
             {
                 out.resize(size);
-                BlockCodec::decode(freqs_begin, out.data(), uint32_t(-1), size);
+                BlockCodec::decode(
+                    freqs_begin, out.data(), uint32_t(-1), size * static_cast<std::uint32_t>(Arity));
             }
 
           private:
@@ -286,7 +317,10 @@ struct block_posting_list {
         void PISA_NOINLINE decode_freqs_block()
         {
             uint8_t const* next_block = BlockCodec::decode(
-                m_freqs_block_data, m_freqs_buf.data(), uint32_t(-1), m_cur_block_size);
+                m_freqs_block_data,
+                m_freqs_buf.data(),
+                uint32_t(-1),
+                m_cur_block_size * static_cast<std::uint32_t>(Arity));
             intrinsics::prefetch(next_block);
             m_freqs_decoded = true;
 
@@ -313,9 +347,10 @@ struct block_posting_list {
         bool m_freqs_decoded{false};
 
         std::vector<uint32_t> m_docs_buf;
-        std::vector<uint32_t> m_freqs_buf;
+        std::vector<frequency_type> m_freqs_buf;
 
         block_profiler::counter_type* m_block_profile;
     };
 };
+
 }  // namespace pisa

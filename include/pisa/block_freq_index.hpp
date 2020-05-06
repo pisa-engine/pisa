@@ -8,7 +8,7 @@
 
 namespace pisa {
 
-template <typename BlockCodec, bool Profile = false>
+template <typename BlockCodec, bool Profile = false, IndexArity Arity = IndexArity::Unary>
 class block_freq_index {
   public:
     block_freq_index() = default;
@@ -31,7 +31,8 @@ class block_freq_index {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
-            block_posting_list<BlockCodec, Profile>::write(m_lists, n, docs_begin, freqs_begin);
+            block_posting_list<BlockCodec, Profile, Arity>::write(
+                m_lists, n, docs_begin, freqs_begin);
             m_endpoints.push_back(m_lists.size());
         }
 
@@ -80,7 +81,8 @@ class block_freq_index {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    using document_enumerator = typename block_posting_list<BlockCodec, Profile>::document_enumerator;
+    using document_enumerator =
+        typename block_posting_list<BlockCodec, Profile, Arity>::document_enumerator;
 
     document_enumerator operator[](size_t i) const
     {
