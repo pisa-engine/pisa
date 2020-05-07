@@ -104,6 +104,7 @@ void compress_index(
     if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
         if (not quantized) {
             compress_index_streaming<CollectionType>(input, params, *output_filename, check);
+            return;
         }
     }
 
