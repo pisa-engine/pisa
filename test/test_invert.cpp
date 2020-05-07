@@ -11,6 +11,7 @@
 #include "binary_collection.hpp"
 #include "filesystem.hpp"
 #include "invert.hpp"
+#include "io.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 
@@ -61,15 +62,16 @@ TEST_CASE("Join term from one index to the same term from another", "[invert][un
 
 TEST_CASE("Accumulate postings to Inverted_Index", "[invert][unit]")
 {
-    std::vector<std::pair<Term_Id, Document_Id>> postings = {{0_t, 0_d},
-                                                             {0_t, 1_d},
-                                                             {0_t, 2_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 0_d},
-                                                             {1_t, 1_d},
-                                                             {2_t, 5_d}};
+    std::vector<std::pair<Term_Id, Document_Id>> postings = {
+        {0_t, 0_d},
+        {0_t, 1_d},
+        {0_t, 2_d},
+        {1_t, 0_d},
+        {1_t, 0_d},
+        {1_t, 0_d},
+        {1_t, 0_d},
+        {1_t, 1_d},
+        {2_t, 5_d}};
     using iterator_type = decltype(postings.begin());
     invert::Inverted_Index<iterator_type> index;
     index(tbb::blocked_range<iterator_type>(postings.begin(), postings.end()));
@@ -98,28 +100,30 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
     }
     REQUIRE(
         index.documents
-        == std::unordered_map<Term_Id, std::vector<Document_Id>>{{0_t, {0_d, 1_d, 4_d}},
-                                                                 {1_t, {2_d, 4_d}},
-                                                                 {2_t, {0_d, 1_d}},
-                                                                 {3_t, {0_d, 1_d, 4_d}},
-                                                                 {4_t, {1_d, 4_d}},
-                                                                 {5_t, {1_d, 2_d, 3_d, 4_d}},
-                                                                 {6_t, {1_d, 4_d}},
-                                                                 {7_t, {1_d}},
-                                                                 {8_t, {2_d, 3_d, 4_d}},
-                                                                 {9_t, {0_d, 2_d, 3_d, 4_d}}});
+        == std::unordered_map<Term_Id, std::vector<Document_Id>>{
+            {0_t, {0_d, 1_d, 4_d}},
+            {1_t, {2_d, 4_d}},
+            {2_t, {0_d, 1_d}},
+            {3_t, {0_d, 1_d, 4_d}},
+            {4_t, {1_d, 4_d}},
+            {5_t, {1_d, 2_d, 3_d, 4_d}},
+            {6_t, {1_d, 4_d}},
+            {7_t, {1_d}},
+            {8_t, {2_d, 3_d, 4_d}},
+            {9_t, {0_d, 2_d, 3_d, 4_d}}});
     REQUIRE(
         index.frequencies
-        == std::unordered_map<Term_Id, std::vector<Frequency>>{{0_t, {2_f, 1_f, 1_f}},
-                                                               {1_t, {1_f, 1_f}},
-                                                               {2_t, {1_f, 1_f}},
-                                                               {3_t, {1_f, 1_f, 1_f}},
-                                                               {4_t, {2_f, 1_f}},
-                                                               {5_t, {2_f, 1_f, 1_f, 1_f}},
-                                                               {6_t, {1_f, 4_f}},
-                                                               {7_t, {1_f}},
-                                                               {8_t, {3_f, 1_f, 1_f}},
-                                                               {9_t, {1_f, 1_f, 1_f, 1_f}}});
+        == std::unordered_map<Term_Id, std::vector<Frequency>>{
+            {0_t, {2_f, 1_f, 1_f}},
+            {1_t, {1_f, 1_f}},
+            {2_t, {1_f, 1_f}},
+            {3_t, {1_f, 1_f, 1_f}},
+            {4_t, {2_f, 1_f}},
+            {5_t, {2_f, 1_f, 1_f, 1_f}},
+            {6_t, {1_f, 4_f}},
+            {7_t, {1_f}},
+            {8_t, {3_f, 1_f, 1_f}},
+            {9_t, {1_f, 1_f, 1_f, 1_f}}});
 }
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]")

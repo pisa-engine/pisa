@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "cursor/max_scored_cursor.hpp"
-#include "query/queries.hpp"
+#include "query.hpp"
 #include "scorer/index_scorer.hpp"
 #include "wand_data.hpp"
 
@@ -42,23 +42,22 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
 
 template <typename Index, typename WandType, typename Scorer>
 [[nodiscard]] auto make_block_max_scored_cursors(
-    Index const& index, WandType const& wdata, Scorer const& scorer, Query query)
+    Index const& index, WandType const& wdata, Scorer const& scorer, QueryRequest query)
 {
-    auto terms = query.terms;
-    auto query_term_freqs = query_freqs(terms);
-
-    std::vector<BlockMaxScoredCursor<typename Index::document_enumerator, WandType>> cursors;
-    cursors.reserve(query_term_freqs.size());
+    using cursor_type = BlockMaxScoredCursor<typename Index::document_enumerator, WandType>;
+    auto term_ids = query.term_ids();
+    auto term_weights = query.term_weights();
+    std::vector<cursor_type> cursors;
+    cursors.reserve(term_ids.size());
     std::transform(
-        query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-            float weight = term.second;
-            auto max_weight = weight * wdata.max_term_weight(term.first);
-            return BlockMaxScoredCursor<typename Index::document_enumerator, WandType>(
-                std::move(index[term.first]),
-                scorer.term_scorer(term.first),
-                weight,
-                max_weight,
-                wdata.getenum(term.first));
+        term_ids.begin(),
+        term_ids.end(),
+        term_weights.begin(),
+        std::back_inserter(cursors),
+        [&](auto term_id, auto weight) {
+            auto max_weight = weight * wdata.max_term_weight(term_id);
+            return cursor_type(
+                index[term_id], scorer.term_scorer(term_id), weight, max_weight, wdata.getenum(term_id));
         });
     return cursors;
 }

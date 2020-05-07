@@ -16,7 +16,9 @@ using namespace pisa;
 
 template <typename IndexType>
 void selective_queries(
-    const std::string& index_filename, std::string const& encoding, std::vector<Query> const& queries)
+    const std::string& index_filename,
+    std::string const& encoding,
+    std::vector<QueryContainer> const& queries)
 {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
@@ -28,14 +30,17 @@ void selective_queries(
     using boost::adaptors::transformed;
     using boost::algorithm::join;
     for (auto const& query: queries) {
-        size_t and_results = and_query()(make_cursors(index, query), index.num_docs()).size();
-        size_t or_results = or_query<false>()(make_cursors(index, query), index.num_docs());
+        size_t and_results =
+            and_query()(make_cursors(index, query.query(pisa::query::unlimited)), index.num_docs())
+                .size();
+        size_t or_results = or_query<false>()(
+            make_cursors(index, query.query(pisa::query::unlimited)), index.num_docs());
 
         double selectiveness = double(and_results) / double(or_results);
         if (selectiveness < 0.005) {
-            std::cout
-                << join(query.terms | transformed([](auto d) { return std::to_string(d); }), " ")
-                << '\n';
+            std::cout << join(
+                *query.term_ids() | transformed([](auto d) { return std::to_string(d); }), " ")
+                      << '\n';
         }
     }
 }
@@ -52,7 +57,7 @@ int main(int argc, const char** argv)
     else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) \
     {                                                       \
         selective_queries<BOOST_PP_CAT(T, _index)>(         \
-            app.index_filename(), app.index_encoding(), app.queries());
+            app.index_filename(), app.index_encoding(), app.resolved_queries());
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

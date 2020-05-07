@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "query/queries.hpp"
+#include "query.hpp"
 #include "scorer/index_scorer.hpp"
 #include "wand_data.hpp"
 
@@ -45,17 +45,20 @@ class ScoredCursor {
 };
 
 template <typename Index, typename Scorer>
-[[nodiscard]] auto make_scored_cursors(Index const& index, Scorer const& scorer, Query query)
+[[nodiscard]] auto make_scored_cursors(Index const& index, Scorer const& scorer, QueryRequest query)
 {
-    auto terms = query.terms;
-    auto query_term_freqs = query_freqs(terms);
-
+    auto term_ids = query.term_ids();
+    auto term_weights = query.term_weights();
     std::vector<ScoredCursor<typename Index::document_enumerator>> cursors;
-    cursors.reserve(query_term_freqs.size());
+    cursors.reserve(term_ids.size());
     std::transform(
-        query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
+        term_ids.begin(),
+        term_ids.end(),
+        term_weights.begin(),
+        std::back_inserter(cursors),
+        [&](auto term_id, auto weight) {
             return ScoredCursor<typename Index::document_enumerator>(
-                index[term.first], scorer.term_scorer(term.first), term.second);
+                index[term_id], scorer.term_scorer(term_id), weight);
         });
     return cursors;
 }

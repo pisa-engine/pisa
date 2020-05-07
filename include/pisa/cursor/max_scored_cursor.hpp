@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "cursor/scored_cursor.hpp"
-#include "query/queries.hpp"
+#include "query.hpp"
 #include "wand_data.hpp"
 
 namespace pisa {
@@ -31,20 +31,22 @@ class MaxScoredCursor: public ScoredCursor<Cursor> {
 };
 
 template <typename Index, typename WandType, typename Scorer>
-[[nodiscard]] auto
-make_max_scored_cursors(Index const& index, WandType const& wdata, Scorer const& scorer, Query query)
+[[nodiscard]] auto make_max_scored_cursors(
+    Index const& index, WandType const& wdata, Scorer const& scorer, QueryRequest query)
 {
-    auto terms = query.terms;
-    auto query_term_freqs = query_freqs(terms);
-
-    std::vector<MaxScoredCursor<typename Index::document_enumerator>> cursors;
-    cursors.reserve(query_term_freqs.size());
+    using cursor_type = MaxScoredCursor<typename Index::document_enumerator>;
+    auto term_ids = query.term_ids();
+    auto term_weights = query.term_weights();
+    std::vector<cursor_type> cursors;
+    cursors.reserve(term_ids.size());
     std::transform(
-        query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-            float query_weight = term.second;
-            auto max_weight = query_weight * wdata.max_term_weight(term.first);
-            return MaxScoredCursor<typename Index::document_enumerator>(
-                index[term.first], scorer.term_scorer(term.first), query_weight, max_weight);
+        term_ids.begin(),
+        term_ids.end(),
+        term_weights.begin(),
+        std::back_inserter(cursors),
+        [&](auto term_id, auto weight) {
+            auto max_weight = weight * wdata.max_term_weight(term_id);
+            return cursor_type(index[term_id], scorer.term_scorer(term_id), weight, max_weight);
         });
     return cursors;
 }

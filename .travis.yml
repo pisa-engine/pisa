@@ -48,7 +48,7 @@ matrix:
         apt:
           sources: *all_sources
           packages: ['g++-9']
-      env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && COVERAGE=Off && DOCKER=Off"
+      env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && COVERAGE=Off && DOCKER=Off && TEST_CLI=On"
     - os: linux
       dist: xenial
       compiler: clang
@@ -104,6 +104,11 @@ before_install:
       brew install ccache;
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
     fi
+  - if [[ "$TEST_CLI" == "On" ]]; then
+      git clone https://github.com/sstephenson/bats.git;
+      cd bats;
+      sudo ./install.sh /usr/local;
+    fi
   - eval "${MATRIX_EVAL}"
   
 script:
@@ -113,6 +118,9 @@ script:
         make -j2;
         if [[ "$TIDY" != "On" ]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
+            if [[ "$TEST_CLI" == "On" ]]; then
+                bash ../test/cli/run.sh;
+            fi
         fi
       fi
     - if [[ "$CLANG_FORMAT" == "On" ]]; then
