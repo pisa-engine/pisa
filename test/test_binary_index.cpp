@@ -13,7 +13,9 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
+#include "io.hpp"
 #include "pisa_config.hpp"
+#include "query.hpp"
 #include "query/algorithm.hpp"
 #include "temporary_directory.hpp"
 #include "test_common.hpp"
@@ -55,19 +57,19 @@ struct IndexData {
         mapper::freeze(index, compressed_path.c_str());
         mapper::freeze(wdata, wdata_path.c_str());
 
-        term_id_vec q;
-        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries.jl");
         auto push_query = [&](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
+            queries.push_back(QueryContainer::from_json(query_line));
         };
         io::for_each_line(qfile, push_query);
 
         std::vector<std::array<std::uint32_t, 2>> pairs;
         for (auto&& query: queries) {
-            for (auto left = 0; left < query.terms.size(); left += 1) {
-                for (auto right = left + 1; right < query.terms.size(); right += 1) {
-                    if (query.terms[left] != query.terms[right]) {
-                        pairs.push_back({query.terms[left], query.terms[right]});
+            auto const& term_ids = *query.term_ids();
+            for (auto left = 0; left < term_ids.size(); left += 1) {
+                for (auto right = left + 1; right < term_ids.size(); right += 1) {
+                    if (term_ids[left] != term_ids[right]) {
+                        pairs.push_back({term_ids[left], term_ids[right]});
                     }
                 }
             }
@@ -97,7 +99,7 @@ struct IndexData {
     binary_freq_collection collection;
     binary_collection document_sizes;
     index_type index;
-    std::vector<Query> queries;
+    std::vector<QueryContainer> queries;
     wand_data<wand_data_raw> wdata;
     Temporary_Directory tmp;
     mio::mmap_source binary_index_source;
@@ -122,21 +124,20 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
         scored_and_query andq;
         auto scorer = scorer::from_params(ScorerParams("bm25"), data->wdata);
         for (auto&& query: data->queries) {
-            for (std::uint32_t left = 0; left < query.terms.size(); left += 1) {
-                for (std::uint32_t right = left + 1; right < query.terms.size(); right += 1) {
-                    if (query.terms[left] != query.terms[right]) {
+            auto const& term_ids = *query.term_ids();
+            for (std::uint32_t left = 0; left < term_ids.size(); left += 1) {
+                for (std::uint32_t right = left + 1; right < term_ids.size(); right += 1) {
+                    if (term_ids[left] != term_ids[right]) {
                         auto expected = andq(
                             make_scored_cursors(
                                 data->index,
                                 *scorer,
-                                Query{
-                                    .id = {},
-                                    .terms = {query.terms[left], query.terms[right]},
-                                    .term_weights = {1, 1}}),
+                                QueryContainer::from_term_ids({term_ids[left], term_ids[right]})
+                                    .query(query::unlimited)),
                             data->index.num_docs());
                         if (!expected.empty()) {
                             auto term_pair =
-                                std::array<std::uint32_t, 2>{query.terms[left], query.terms[right]};
+                                std::array<std::uint32_t, 2>{term_ids[left], term_ids[right]};
                             auto pos = std::lower_bound(
                                 data->pair_mapping.begin(), data->pair_mapping.end(), term_pair);
                             REQUIRE(pos != data->pair_mapping.end());
@@ -144,8 +145,8 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
                             auto pair_id = std::distance(data->pair_mapping.begin(), pos);
                             auto cursor = data->binary_index[pair_id];
                             std::vector<std::pair<std::uint32_t, float>> actual;
-                            auto left_scorer = scorer->term_scorer(query.terms[left]);
-                            auto right_scorer = scorer->term_scorer(query.terms[right]);
+                            auto left_scorer = scorer->term_scorer(term_ids[left]);
+                            auto right_scorer = scorer->term_scorer(term_ids[right]);
                             while (cursor.docid() < cursor.universe()) {
                                 auto score = left_scorer(cursor.docid(), std::get<0>(cursor.freq()));
                                 score += right_scorer(cursor.docid(), std::get<1>(cursor.freq()));
@@ -162,10 +163,6 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
                     }
                 }
             }
-        }
-        for (auto const& q: data->queries) {
-            auto expected =
-                andq(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
         }
     }
 }

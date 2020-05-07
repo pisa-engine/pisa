@@ -34,37 +34,41 @@ void thresholds(
     uint64_t k,
     bool quantized)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    try {
+        IndexType index;
+        mio::mmap_source m(index_filename.c_str());
+        mapper::map(index, m);
 
-    WandType wdata;
+        WandType wdata;
 
-    auto scorer = scorer::from_params(scorer_params, wdata);
+        auto scorer = scorer::from_params(scorer_params, wdata);
 
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
+        mio::mmap_source md;
+        if (wand_data_filename) {
+            std::error_code error;
+            md.map(*wand_data_filename, error);
+            if (error) {
+                spdlog::error("error mapping file: {}, exiting...", error.message());
+                std::abort();
+            }
+            mapper::map(wdata, md, mapper::map_flags::warmup);
         }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
+        topk_queue topk(k);
+        wand_query wand_q(topk);
+        queries.for_each([&](auto&& query) {
+            wand_q(make_max_scored_cursors(index, wdata, *scorer, query.query(k)), index.num_docs());
+            topk.finalize();
+            auto results = topk.topk();
+            topk.clear();
+            float threshold = 0.0;
+            if (results.size() == k) {
+                threshold = results.back().first;
+            }
+            std::cout << threshold << '\n';
+        });
+    } catch (std::exception const& err) {
+        spdlog::error(err.what());
     }
-    topk_queue topk(k);
-    wand_query wand_q(topk);
-    queries.for_each([&](auto&& query) {
-        wand_q(make_max_scored_cursors(index, wdata, *scorer, query.query(k)), index.num_docs());
-        topk.finalize();
-        auto results = topk.topk();
-        topk.clear();
-        float threshold = 0.0;
-        if (results.size() == k) {
-            threshold = results.back().first;
-        }
-        std::cout << threshold << '\n';
-    });
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
@@ -90,7 +94,7 @@ int main(int argc, const char** argv)
     auto params = std::make_tuple(
         app.index_filename(),
         app.wand_data_path(),
-        app.query_reader(),
+        app.resolved_query_reader(),
         app.index_encoding(),
         app.scorer_params(),
         app.k(),

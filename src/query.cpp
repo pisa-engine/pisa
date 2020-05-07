@@ -14,7 +14,56 @@ namespace pisa {
     return [k](auto&& pair) { return pair.first == k; };
 }
 
-QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k)
+void RequestFlagSet::remove(RequestFlag flag)
+{
+    flags ^= static_cast<std::size_t>(flag);
+}
+
+auto RequestFlagSet::operator^(RequestFlag flag) -> RequestFlagSet
+{
+    auto flags_copy = flags;
+    flags_copy ^= static_cast<std::size_t>(flag);
+    return RequestFlagSet{flags_copy};
+}
+
+auto RequestFlagSet::contains(RequestFlag flag) -> bool
+{
+    return (flags & static_cast<std::uint32_t>(flag)) == static_cast<std::uint32_t>(flag);
+}
+
+auto operator|(RequestFlag lhs, RequestFlag rhs) -> RequestFlagSet
+{
+    return RequestFlagSet{static_cast<std::uint32_t>(lhs) | static_cast<std::uint32_t>(lhs)};
+}
+
+auto operator&(RequestFlag lhs, RequestFlag rhs) -> RequestFlagSet
+{
+    return RequestFlagSet{static_cast<std::uint32_t>(lhs) & static_cast<std::uint32_t>(lhs)};
+}
+
+auto operator|(RequestFlagSet lhs, RequestFlag rhs) -> RequestFlagSet
+{
+    return RequestFlagSet{lhs.flags | static_cast<std::uint32_t>(rhs)};
+}
+
+auto operator&(RequestFlagSet lhs, RequestFlag rhs) -> RequestFlagSet
+{
+    return RequestFlagSet{lhs.flags & static_cast<std::uint32_t>(rhs)};
+}
+
+auto operator|=(RequestFlagSet& lhs, RequestFlag rhs) -> RequestFlagSet&
+{
+    lhs = lhs | rhs;
+    return lhs;
+}
+
+auto operator&=(RequestFlagSet& lhs, RequestFlag rhs) -> RequestFlagSet&
+{
+    lhs = lhs & rhs;
+    return lhs;
+}
+
+QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k, RequestFlagSet flags)
     : m_k(k), m_threshold(data.threshold(k))
 {
     if (auto term_ids = data.term_ids(); term_ids) {
@@ -25,6 +74,12 @@ QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k)
         for (auto [term_id, count]: counts) {
             m_term_ids.push_back(term_id);
             m_term_weights.push_back(static_cast<float>(count));
+        }
+        if (not flags.contains(RequestFlag::Threshold)) {
+            m_threshold.reset();
+        }
+        if (not flags.contains(RequestFlag::Weights)) {
+            std::fill(m_term_weights.begin(), m_term_weights.end(), 1.0);
         }
     } else {
         throw std::domain_error("Query not parsed.");
@@ -180,9 +235,9 @@ auto QueryContainer::add_threshold(std::size_t k, float score) -> bool
     return false;
 }
 
-auto QueryContainer::query(std::size_t k) const -> QueryRequest
+auto QueryContainer::query(std::size_t k, RequestFlagSet flags) const -> QueryRequest
 {
-    return QueryRequest(*this, k);
+    return QueryRequest(*this, k, flags);
 }
 
 template <typename T>
@@ -347,25 +402,55 @@ QueryReader::QueryReader(std::unique_ptr<std::istream> input, std::istream& stre
     : m_stream(std::move(input)), m_stream_ref(stream_ref)
 {}
 
-auto QueryReader::next() -> std::optional<QueryContainer>
+auto QueryReader::next_query(QueryReader& reader) -> std::optional<QueryContainer>
 {
-    if (std::getline(m_stream_ref, m_line_buf)) {
-        if (m_format) {
-            if (*m_format == Format::Json) {
-                return QueryContainer::from_json(m_line_buf);
+    if (std::getline(reader.m_stream_ref, reader.m_line_buf)) {
+        if (reader.m_format) {
+            if (*reader.m_format == Format::Json) {
+                return QueryContainer::from_json(reader.m_line_buf);
             }
-            return QueryContainer::from_colon_format(m_line_buf);
+            return QueryContainer::from_colon_format(reader.m_line_buf);
         }
         try {
-            auto query = QueryContainer::from_json(m_line_buf);
-            m_format = Format::Json;
+            auto query = QueryContainer::from_json(reader.m_line_buf);
+            reader.m_format = Format::Json;
             return query;
         } catch (std::exception const& err) {
-            m_format = Format::Colon;
-            return QueryContainer::from_colon_format(m_line_buf);
+            reader.m_format = Format::Colon;
+            return QueryContainer::from_colon_format(reader.m_line_buf);
         }
     }
     return std::nullopt;
+}
+auto QueryReader::next() -> std::optional<QueryContainer>
+{
+    while (true) {
+        auto query = QueryReader::next_query(*this);
+        if (not query) {
+            return std::nullopt;
+        }
+        auto container = *query;
+        for (auto&& fn: m_filter_functions) {
+            if (not fn(container)) {
+                continue;
+            }
+        }
+        for (auto&& fn: m_map_functions) {
+            container = fn(std::move(container));
+        }
+        return container;
+    }
+}
+
+auto QueryReader::map(typename QueryReader::map_function_type fn) && -> QueryReader
+{
+    m_map_functions.push_back(std::move(fn));
+    return std::move(*this);
+}
+auto QueryReader::filter(typename QueryReader::filter_function_type fn) && -> QueryReader
+{
+    m_filter_functions.push_back(std::move(fn));
+    return std::move(*this);
 }
 
 }  // namespace pisa

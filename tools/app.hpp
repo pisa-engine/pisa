@@ -132,6 +132,19 @@ namespace arg {
             return QueryReader::from_stdin();
         }
 
+        [[nodiscard]] auto resolved_query_reader() const -> QueryReader
+        {
+            return query_reader().map([term_resolver = this->term_resolver()](auto query) {
+                if (not query.term_ids()) {
+                    if (not term_resolver) {
+                        throw MissingResolverError{};
+                    }
+                    query.parse(QueryParser(*term_resolver));
+                }
+                return std::move(query);
+            });
+        }
+
         [[nodiscard]] auto term_lexicon() const -> std::optional<std::string> const&
         {
             return m_term_lexicon;

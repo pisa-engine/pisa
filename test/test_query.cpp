@@ -7,6 +7,8 @@
 #include "query.hpp"
 
 using pisa::QueryContainer;
+using pisa::RequestFlag;
+using pisa::RequestFlagSet;
 using pisa::TermId;
 
 TEST_CASE("Construct from raw string")
@@ -231,4 +233,15 @@ TEST_CASE("Filter terms")
         query.filter_terms(std::vector<std::size_t>{1});
         REQUIRE(*query.term_ids() == std::vector<TermId>{0});
     }
+}
+
+TEST_CASE("Request flags")
+{
+    auto flags = RequestFlagSet::all();
+    REQUIRE(flags.contains(RequestFlag::Threshold));
+    REQUIRE(flags.contains(RequestFlag::Weights));
+    flags.remove(RequestFlag::Threshold);
+    REQUIRE(not flags.contains(RequestFlag::Threshold));
+    REQUIRE(flags.contains(RequestFlag::Weights));
+    REQUIRE(not(RequestFlagSet::all() ^ RequestFlag::Threshold).contains(RequestFlag::Threshold));
 }

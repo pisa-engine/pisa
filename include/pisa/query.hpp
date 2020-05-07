@@ -16,9 +16,6 @@ namespace query {
     constexpr std::size_t unlimited = std::numeric_limits<std::size_t>::max();
 }
 
-// using DocId = std::uint32_t;
-// using Frequency = std::uint32_t;
-// using Score = float;
 using TermId = std::uint32_t;
 
 struct QueryContainerInner;
@@ -33,11 +30,31 @@ using ParseFn = std::function<std::vector<ResolvedTerm>(std::string const&)>;
 
 class QueryContainer;
 
+enum class RequestFlag : std::uint32_t {
+    Threshold = 0b01,
+    Weights = 0b10,
+};
+
+struct RequestFlagSet {
+    std::uint32_t flags;
+    [[nodiscard]] static constexpr auto all() -> RequestFlagSet { return RequestFlagSet{0b11}; }
+    void remove(RequestFlag flag);
+    [[nodiscard]] auto operator^(RequestFlag flag) -> RequestFlagSet;
+    [[nodiscard]] auto contains(RequestFlag flag) -> bool;
+};
+
+[[nodiscard]] auto operator|(RequestFlag lhs, RequestFlag rhs) -> RequestFlagSet;
+[[nodiscard]] auto operator&(RequestFlag lhs, RequestFlag rhs) -> RequestFlagSet;
+[[nodiscard]] auto operator|(RequestFlagSet lhs, RequestFlag rhs) -> RequestFlagSet;
+[[nodiscard]] auto operator&(RequestFlagSet lhs, RequestFlag rhs) -> RequestFlagSet;
+auto operator|=(RequestFlagSet& lhs, RequestFlag rhs) -> RequestFlagSet&;
+auto operator&=(RequestFlagSet& lhs, RequestFlag rhs) -> RequestFlagSet&;
+
 /// QueryRequest is a special container that maintains important invariants, such as sorted term
 /// IDs, and also has some additional data, like term weights, etc.
 class QueryRequest {
   public:
-    explicit QueryRequest(QueryContainer const& data, std::size_t k = query::unlimited);
+    explicit QueryRequest(QueryContainer const& data, std::size_t k, RequestFlagSet flags);
 
     [[nodiscard]] auto term_ids() const -> gsl::span<std::uint32_t const>;
     [[nodiscard]] auto term_weights() const -> gsl::span<float const>;
@@ -126,7 +143,8 @@ class QueryContainer {
     ///
     /// This function takes `k` and resolves the associated threshold if exists.
     /// For unranked queries, pass `pisa::query::unlimited` explicitly to avoidi mistakes.
-    [[nodiscard]] auto query(std::size_t k) const -> QueryRequest;
+    [[nodiscard]] auto query(std::size_t k, RequestFlagSet flags = RequestFlagSet::all()) const
+        -> QueryRequest;
 
   private:
     QueryContainer();
@@ -137,6 +155,9 @@ enum class Format { Json, Colon };
 
 class QueryReader {
   public:
+    using map_function_type = std::function<QueryContainer(QueryContainer)>;
+    using filter_function_type = std::function<bool(QueryContainer const&)>;
+
     /// Open reader from file.
     static auto from_file(std::string const& file) -> QueryReader;
     /// Open reader from stdin.
@@ -156,13 +177,19 @@ class QueryReader {
         }
     }
 
+    [[nodiscard]] auto map(map_function_type fn) && -> QueryReader;
+    [[nodiscard]] auto filter(filter_function_type fn) && -> QueryReader;
+
   private:
     explicit QueryReader(std::unique_ptr<std::istream> stream, std::istream& stream_ref);
+    static auto next_query(QueryReader& reader) -> std::optional<QueryContainer>;
 
     std::unique_ptr<std::istream> m_stream;
     std::istream& m_stream_ref;
     std::string m_line_buf{};
     std::optional<Format> m_format{};
+    std::vector<map_function_type> m_map_functions{};
+    std::vector<filter_function_type> m_filter_functions{};
 };
 
 }  // namespace pisa
