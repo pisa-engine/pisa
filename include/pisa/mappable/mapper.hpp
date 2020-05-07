@@ -139,6 +139,20 @@ namespace pisa { namespace mapper {
                 return *this;
             }
 
+            template <>
+            map_visitor& operator()(
+                mappable_vector<std::array<std::uint32_t, 2>>& vec, const char* /* friendly_name */)
+            {
+                vec.clear();
+                (*this)(vec.m_size, "size");
+
+                vec.m_data = reinterpret_cast<const std::array<std::uint32_t, 2>*>(m_cur);
+                size_t bytes = vec.m_size * sizeof(std::uint32_t) * 2;
+
+                m_cur += bytes;
+                return *this;
+            }
+
             size_t bytes_read() const { return size_t(m_cur - m_base); }
 
           protected:

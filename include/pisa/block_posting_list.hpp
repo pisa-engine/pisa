@@ -59,8 +59,24 @@ struct block_posting_list {
 
             BlockCodec::encode(
                 docs_buf.data(), last_doc - block_base - (cur_block_size - 1), cur_block_size, out);
-            BlockCodec::encode(
-                freqs_buf.data(), uint32_t(-1), cur_block_size * static_cast<std::uint32_t>(Arity), out);
+            if constexpr (Arity == IndexArity::Unary) {
+                BlockCodec::encode(
+                    freqs_buf.data(),
+                    uint32_t(-1),
+                    cur_block_size * static_cast<std::uint32_t>(Arity),
+                    out);
+            } else {
+                BlockCodec::encode(
+                    reinterpret_cast<std::uint32_t*>(freqs_buf.data()),
+                    uint32_t(-1),
+                    cur_block_size,
+                    out);
+                BlockCodec::encode(
+                    reinterpret_cast<std::uint32_t*>(freqs_buf.data()) + cur_block_size,
+                    uint32_t(-1),
+                    cur_block_size,
+                    out);
+            }
             if (b != blocks - 1) {
                 *((uint32_t*)&out[begin_block_endpoints + 4 * b]) = out.size() - begin_blocks;
             }
@@ -114,6 +130,8 @@ struct block_posting_list {
             m_freqs_buf.resize(BlockCodec::block_size);
             reset();
         }
+
+        [[nodiscard]] auto universe() const { return m_universe; }
 
         void reset() { decode_docs_block(0); }
 
@@ -318,13 +336,20 @@ struct block_posting_list {
         {
             uint8_t const* next_block = BlockCodec::decode(
                 m_freqs_block_data,
-                m_freqs_buf.data(),
+                reinterpret_cast<uint32_t*>(m_freqs_buf.data()),
                 uint32_t(-1),
-                m_cur_block_size * static_cast<std::uint32_t>(Arity));
+                m_cur_block_size);
+            if constexpr (Arity == IndexArity::Binary) {
+                next_block = BlockCodec::decode(
+                    next_block,
+                    reinterpret_cast<uint32_t*>(m_freqs_buf.data()) + m_cur_block_size,
+                    uint32_t(-1),
+                    m_cur_block_size);
+            }
             intrinsics::prefetch(next_block);
             m_freqs_decoded = true;
 
-            if (Profile) {
+            if constexpr (Profile) {
                 ++m_block_profile[2 * m_cur_block + 1];
             }
         }

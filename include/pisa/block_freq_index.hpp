@@ -122,8 +122,11 @@ class block_freq_index {
     template <typename Visitor>
     void map(Visitor& visit)
     {
-        visit(m_params, "m_params")(m_size, "m_size")(m_num_docs, "m_num_docs")(
-            m_endpoints, "m_endpoints")(m_lists, "m_lists");
+        visit(m_size, "m_size");
+        visit(m_num_docs, "m_num_docs");
+        visit(m_endpoints, "m_endpoints");
+        visit(m_lists, "m_lists");
+        visit(m_params, "m_params");
     }
 
   private:

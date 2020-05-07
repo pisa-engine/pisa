@@ -136,3 +136,9 @@ target_link_libraries(reorder-docids
   pisa
   CLI11
 )
+
+add_executable(build-binary-index build_binary_index.cpp)
+target_link_libraries(build-binary-index
+  pisa
+  CLI11
+)
