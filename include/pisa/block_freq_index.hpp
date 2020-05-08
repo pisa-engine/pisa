@@ -7,6 +7,7 @@
 #include "block_posting_list.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "temporary_directory.hpp"
+#include "writer_worker.hpp"
 
 namespace pisa {
 
@@ -83,12 +84,28 @@ class block_freq_index {
     };
 
     class stream_builder {
+        static constexpr std::size_t buffer_size = 1ULL << 28;
+
       public:
         stream_builder(uint64_t num_docs, global_parameters const& params)
-            : m_params(params), m_postings_output((tmp.path() / "buffer").c_str())
+            : m_params(params), tmp(false), m_postings_output((tmp.path() / "buffer").c_str())
         {
             m_num_docs = num_docs;
             m_endpoints.push_back(0);
+            m_buffer.reserve(buffer_size);
+        }
+
+        void flush()
+        {
+            m_postings_output.write(reinterpret_cast<char const*>(m_buffer.data()), m_buffer.size());
+            m_buffer.clear();
+        }
+
+        void maybe_flush()
+        {
+            if (m_buffer.size() >= buffer_size) {
+                flush();
+            }
         }
 
         template <typename DocsIterator, typename FreqsIterator>
@@ -101,36 +118,17 @@ class block_freq_index {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
-            std::vector<std::uint8_t> buf;
-            block_posting_list<BlockCodec, Profile>::write(buf, n, docs_begin, freqs_begin);
-            m_postings_bytes_written += buf.size();
-            m_postings_output.write(reinterpret_cast<char const*>(buf.data()), buf.size());
+            auto old_size = m_buffer.size();
+            block_posting_list<BlockCodec, Profile>::write(m_buffer, n, docs_begin, freqs_begin);
+            m_postings_bytes_written += m_buffer.size() - old_size;
             m_endpoints.push_back(m_postings_bytes_written);
-        }
-
-        template <typename BlockDataRange>
-        void add_posting_list(uint64_t n, BlockDataRange const& blocks)
-        {
-            if (!n) {
-                throw std::invalid_argument("List must be nonempty");
-            }
-            std::vector<std::uint8_t> buf;
-            block_posting_list<BlockCodec>::write_blocks(buf, n, blocks);
-            m_postings_bytes_written += buf.size();
-            m_postings_output.write(reinterpret_cast<char const*>(buf.data()), buf.size());
-            m_endpoints.push_back(m_postings_bytes_written);
-        }
-
-        template <typename BytesRange>
-        void add_posting_list(BytesRange const& data)
-        {
-            m_postings_bytes_written += data.size();
-            m_postings_output.write(reinterpret_cast<char const*>(data.data()), data.size());
-            m_endpoints.push_back(m_postings_bytes_written);
+            maybe_flush();
         }
 
         void build(std::string const& index_path)
         {
+            flush();
+
             std::ofstream os(index_path.c_str());
             mapper::detail::freeze_visitor freezer(os, 0);
             freezer(m_params, "m_params");
@@ -145,11 +143,55 @@ class block_freq_index {
             freezer(endpoints, "endpoints");
 
             std::ifstream buf((tmp.path() / "buffer").c_str());
-            m_postings_output.close();
             os.write(
                 reinterpret_cast<char const*>(&m_postings_bytes_written),
                 sizeof(m_postings_bytes_written));
             os << buf.rdbuf();
+        }
+
+        template <typename Iter>
+        static void merge_into(Iter first, Iter last, std::string const& index_path)
+        {
+            std::ofstream os(index_path.c_str());
+            mapper::detail::freeze_visitor freezer(os, 0);
+            freezer(first->m_params, "m_params");
+            std::size_t size = std::accumulate(first, last, 0, [](auto size, auto&& builder) {
+                return size + builder.m_endpoints.size() - 1;
+            });
+            freezer(size, "size");
+            freezer(first->m_num_docs, "m_num_docs");
+
+            std::vector<uint64_t> endpoints(size + 1);
+            std::size_t position_offset = 0;
+            std::size_t endpoint_offset = 0;
+            for (auto iter = first; iter != last; ++iter) {
+                auto pos = std::transform(
+                    iter->m_endpoints.begin(),
+                    iter->m_endpoints.end(),
+                    std::next(endpoints.begin(), position_offset),
+                    [endpoint_offset](auto endpoint) { return endpoint + endpoint_offset; });
+                position_offset = std::distance(endpoints.begin(), pos) - 1;
+                endpoint_offset = endpoints[position_offset];
+                iter->m_endpoints.clear();
+            }
+
+            std::size_t postings_bytes =
+                std::accumulate(first, last, 0, [](auto acc, auto&& builder) {
+                    return acc + builder.m_postings_bytes_written;
+                });
+
+            bit_vector_builder bvb;
+            compact_elias_fano::write(bvb, endpoints.begin(), postings_bytes, size, first->m_params);
+            bit_vector endpoints_bit_vector(&bvb);
+            freezer(endpoints_bit_vector, "endpoints");
+
+            os.write(reinterpret_cast<char const*>(&postings_bytes), sizeof(postings_bytes));
+
+            for (auto iter = first; iter != last; ++iter) {
+                iter->m_postings_output.close();
+                std::ifstream buf((iter->tmp.path() / "buffer").c_str());
+                os << buf.rdbuf();
+            }
         }
 
       private:
@@ -157,9 +199,10 @@ class block_freq_index {
         size_t m_num_docs = 0;
         size_t m_size = 0;
         std::vector<uint64_t> m_endpoints{};
-        Temporary_Directory tmp{};
+        TemporaryDirectory tmp;
         std::ofstream m_postings_output;
         std::size_t m_postings_bytes_written{0};
+        std::vector<std::uint8_t> m_buffer;
     };
 
     size_t size() const { return m_size; }

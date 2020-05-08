@@ -10,6 +10,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include <tbb/task_group.h>
 
 #include "configuration.hpp"
 #include "index_types.hpp"
@@ -20,6 +21,7 @@
 #include "util/verify_collection.hpp"  // XXX move to index_build_utils
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
+#include "writer_worker.hpp"
 
 namespace pisa {
 
@@ -54,34 +56,58 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
+template <typename Iter, typename Builder>
+void build_batch(Iter first, Iter last, Builder& builder, pisa::progress& progress)
+{
+    for (auto iter = first; iter != last; ++iter) {
+        size_t size = iter->docs.size();
+        uint64_t freqs_sum =
+            std::accumulate(iter->freqs.begin(), iter->freqs.begin() + size, uint64_t(0));
+        builder.add_posting_list(size, iter->docs.begin(), iter->freqs.begin(), freqs_sum);
+        progress.update(1);
+    }
+}
+
 template <typename CollectionType>
 void compress_index_streaming(
     binary_freq_collection const& input,
     pisa::global_parameters const& params,
     std::string const& output_filename,
-    bool check)
+    bool check,
+    std::size_t threads = std::thread::hardware_concurrency())
 {
+    using builder_type = typename CollectionType::stream_builder;
     spdlog::info("Processing {} documents (streaming)", input.num_docs());
     double tick = get_time_usecs();
 
-    typename CollectionType::stream_builder builder(input.num_docs(), params);
-    size_t postings = 0;
+    tbb::task_group group;
+    auto const num_terms = input.size();
+    auto const batch_size = (num_terms + threads - 1) / threads;
+    std::vector<builder_type> batches;
+    for (auto batch = 0; batch < threads; batch += 1) {
+        batches.emplace_back(input.num_docs(), params);
+    }
     {
-        pisa::progress progress("Create index", input.size());
-
-        size_t term_id = 0;
-        for (auto const& plist: input) {
-            size_t size = plist.docs.size();
-            uint64_t freqs_sum =
-                std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
-            builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
-            progress.update(1);
-            postings += size;
-            term_id += 1;
+        pisa::progress progress("Compress index", input.size());
+        for (auto batch = 0; batch < threads; batch += 1) {
+            auto first = std::next(input.begin(), batch * batch_size);
+            auto last = [&]() {
+                if (batch == threads - 1) {
+                    return input.end();
+                }
+                return std::next(input.begin(), (batch + 1) * batch_size);
+            }();
+            group.run([first, last, batch, &batches, &progress]() {
+                build_batch(first, last, batches[batch], progress);
+            });
+        }
+        group.wait();
+        for (auto& batch: batches) {
+            batch.flush();
         }
     }
+    builder_type::merge_into(batches.begin(), batches.end(), output_filename);
 
-    builder.build(output_filename);
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Index compressed in {} seconds", elapsed_secs);
 
@@ -99,11 +125,12 @@ void compress_index(
     std::string const& seq_type,
     std::optional<std::string> const& wand_data_filename,
     ScorerParams const& scorer_params,
-    bool quantized)
+    bool quantized,
+    std::size_t threads)
 {
     if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
         if (not quantized) {
-            compress_index_streaming<CollectionType>(input, params, *output_filename, check);
+            compress_index_streaming<CollectionType>(input, params, *output_filename, check, threads);
             return;
         }
     }
@@ -194,7 +221,8 @@ void compress(
     std::string const& output_filename,
     ScorerParams const& scorer_params,
     bool quantize,
-    bool check)
+    bool check,
+    std::size_t threads)
 {
     binary_freq_collection input(input_basename.c_str());
     global_parameters params;
@@ -212,7 +240,8 @@ void compress(
             index_encoding,                                                      \
             wand_data_filename,                                                  \
             scorer_params,                                                       \
-            quantize);                                                           \
+            quantize,                                                            \
+            threads);                                                            \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

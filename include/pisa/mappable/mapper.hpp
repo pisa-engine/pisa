@@ -149,7 +149,7 @@ namespace pisa { namespace mapper {
         };
 
         template <>
-        map_visitor& map_visitor::operator()(
+        inline map_visitor& map_visitor::operator()(
             mappable_vector<std::array<std::uint32_t, 2>>& vec, const char* /* friendly_name */)
         {
             vec.clear();

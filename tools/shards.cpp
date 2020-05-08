@@ -82,7 +82,8 @@ int main(int argc, char** argv)
                 shard_args.output(),
                 shard_args.scorer_params(),
                 shard_args.quantize(),
-                shard_args.check());
+                shard_args.check(),
+                shard_args.threads());
         }
         return 0;
     }

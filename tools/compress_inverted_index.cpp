@@ -32,5 +32,6 @@ int main(int argc, char** argv)
         args.output(),
         args.scorer_params(),
         args.quantize(),
-        args.check());
+        args.check(),
+        args.threads());
 }

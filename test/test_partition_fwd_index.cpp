@@ -50,7 +50,7 @@ TEST_CASE("Expand shard", "[sharding]")
 
 TEST_CASE("Resolve shards", "[sharding]")
 {
-    Temporary_Directory dir;
+    TemporaryDirectory dir;
     SECTION("No suffix")
     {
         for (auto f: std::vector<std::string>{"shard.000", "shard.001", "shard.002"}) {
@@ -150,7 +150,7 @@ TEST_CASE("copy_sequence", "[invert][unit]")
 {
     GIVEN("A test forward index")
     {
-        Temporary_Directory dir;
+        TemporaryDirectory dir;
         std::string fwd_basename = (dir.path() / "fwd").string();
         std::string output = (dir.path() / "copy").string();
         int document_count = 1'000;
@@ -181,7 +181,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
 {
     GIVEN("A test forward index")
     {
-        Temporary_Directory dir;
+        TemporaryDirectory dir;
         std::string fwd_basename = (dir.path() / "fwd").string();
         std::string output_basename = (dir.path() / "shards").string();
         int document_count = 1'000;
@@ -237,7 +237,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
 {
     GIVEN("A test forward index")
     {
-        Temporary_Directory dir;
+        TemporaryDirectory dir;
         std::string fwd_basename = (dir.path() / "fwd").string();
         std::string output_basename = (dir.path() / "shards").string();
         int document_count = 1'000;

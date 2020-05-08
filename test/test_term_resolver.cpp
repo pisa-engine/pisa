@@ -17,7 +17,7 @@ TEST_CASE("Filter queries")
     auto term_resolver = [&id](auto&& term) mutable {
         return std::optional<pisa::ResolvedTerm>{pisa::ResolvedTerm{id++, term}};
     };
-    Temporary_Directory tmp;
+    pisa::TemporaryDirectory tmp;
     auto input = (tmp.path() / "input.txt");
     {
         std::ofstream os(input.c_str());

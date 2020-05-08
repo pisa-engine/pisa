@@ -101,7 +101,7 @@ struct IndexData {
     index_type index;
     std::vector<QueryContainer> queries;
     wand_data<wand_data_raw> wdata;
-    Temporary_Directory tmp;
+    TemporaryDirectory tmp;
     mio::mmap_source binary_index_source;
     binary_index_type binary_index;
     mio::mmap_source pair_mapping_source;

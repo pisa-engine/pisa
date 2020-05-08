@@ -41,7 +41,7 @@ void test_block_freq_index()
         b.add_posting_list(n, plist.first.begin(), plist.second.begin(), 0);
     }
 
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto filename = tmpdir.path().string() + "temp.bin";
     {
         collection_type coll;

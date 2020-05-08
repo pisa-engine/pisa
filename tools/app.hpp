@@ -591,7 +591,7 @@ struct Args: public T... {
 using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
 using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
 using CompressArgs =
-    pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>>;
+    pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>, arg::Threads>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
 
 }  // namespace pisa

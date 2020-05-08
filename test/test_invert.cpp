@@ -253,7 +253,7 @@ TEST_CASE("Invert collection", "[invert][unit]")
 {
     GIVEN("A binary collection")
     {
-        Temporary_Directory tmpdir;
+        TemporaryDirectory tmpdir;
         uint32_t batch_size = GENERATE(1, 2, 3, 4, 5);
         uint32_t threads = GENERATE(1, 2, 3, 4, 5);
         bool with_lex = GENERATE(false, true);
