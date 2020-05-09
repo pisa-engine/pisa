@@ -217,6 +217,8 @@ struct compact_ranked_bitvector {
             return pos - m_of.bits_offset;
         }
 
+        uint64_t PISA_ALWAYSINLINE universe() const { return m_of.universe; }
+
       private:
         value_type PISA_NOINLINE slow_move(uint64_t position)
         {

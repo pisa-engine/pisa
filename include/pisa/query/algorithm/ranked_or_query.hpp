@@ -1,9 +1,10 @@
 #pragma once
 
-#include "query/queries.hpp"
-#include "topk_queue.hpp"
 #include <string>
 #include <vector>
+
+#include "cursor/cursor_union.hpp"
+#include "topk_queue.hpp"
 
 namespace pisa {
 
@@ -13,30 +14,15 @@ struct ranked_or_query {
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
-        using Cursor = typename std::decay_t<CursorRange>::value_type;
-        if (cursors.empty()) {
-            return;
-        }
-        uint64_t cur_doc =
-            std::min_element(cursors.begin(), cursors.end(), [](Cursor const& lhs, Cursor const& rhs) {
-                return lhs.docid() < rhs.docid();
-            })->docid();
+        auto postings = union_merge(
+            std::move(cursors),
+            0.0,
+            [](auto score, auto&& cursor) { return score + cursor.score(); },
+            std::optional<std::uint32_t>(max_docid));
 
-        while (cur_doc < max_docid) {
-            float score = 0;
-            uint64_t next_doc = max_docid;
-            for (size_t i = 0; i < cursors.size(); ++i) {
-                if (cursors[i].docid() == cur_doc) {
-                    score += cursors[i].score();
-                    cursors[i].next();
-                }
-                if (cursors[i].docid() < next_doc) {
-                    next_doc = cursors[i].docid();
-                }
-            }
-
-            m_topk.insert(score, cur_doc);
-            cur_doc = next_doc;
+        while (not postings.empty()) {
+            m_topk.insert(postings.payload(), postings.docid());
+            postings.next();
         }
     }
 

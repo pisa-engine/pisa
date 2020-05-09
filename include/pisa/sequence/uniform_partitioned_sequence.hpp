@@ -199,6 +199,8 @@ struct uniform_partitioned_sequence {
             return m_cur_base + m_partition_enum.prev_value();
         }
 
+        uint64_t PISA_ALWAYSINLINE universe() const { return m_universe; }
+
       private:
         // the compiler does not seem smart enough to figure out that this
         // is a very unlikely condition, and inlines the move(0) inside the

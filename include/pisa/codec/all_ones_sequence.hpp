@@ -62,6 +62,8 @@ struct all_ones_sequence {
             return m_position - 1;
         }
 
+        uint64_t universe() const { return m_universe; }
+
       private:
         uint64_t m_universe;
         uint64_t m_position;

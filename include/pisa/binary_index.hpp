@@ -13,6 +13,7 @@
 
 #include "configuration.hpp"
 #include "cursor/cursor_intersection.hpp"
+#include "cursor/numbered_cursor.hpp"
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
 #include "mappable/mapper.hpp"
@@ -53,10 +54,10 @@ void build_binary_index(
             std::vector<typename Index::document_enumerator> cursors{
                 index[left_term], index[right_term]};
             auto intersection = intersect(
-                cursors,
+                number_cursors(cursors),
                 std::array<std::uint32_t, 2>{0, 0},
-                [](auto& frequencies, auto&& cursor, auto term_position) {
-                    frequencies[term_position] = cursor.freq();
+                [](auto& frequencies, auto&& cursor) {
+                    frequencies[cursor.term_position()] = cursor.freq();
                     return frequencies;
                 });
             std::vector<std::uint32_t> documents;

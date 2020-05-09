@@ -8,6 +8,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <mio/mmap.hpp>
+#include <nlohmann/json.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -31,29 +32,6 @@
 
 using namespace pisa;
 using ranges::views::enumerate;
-
-template <typename Fn>
-void extract_times(
-    Fn fn,
-    std::vector<QueryContainer> const& queries,
-    std::vector<Threshold> const& thresholds,
-    std::string const& index_type,
-    std::string const& query_type,
-    size_t runs,
-    std::ostream& os)
-{
-    std::vector<std::size_t> times(runs);
-    for (auto&& [qid, query]: enumerate(queries)) {
-        do_not_optimize_away(fn(query, thresholds[qid]));
-        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
-            return run_with_timer<std::chrono::microseconds>(
-                       [&]() { do_not_optimize_away(fn(q, t)); })
-                .count();
-        });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id().value_or(std::to_string(qid)), mean);
-    }
-}
 
 template <typename Functor>
 void op_perftest(
@@ -81,11 +59,9 @@ void op_perftest(
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query.query(k, request_flags));
                 if (safe && result < k) {
-                    std::cerr << "before: " << result << '\n';
                     num_reruns += 1;
                     result =
                         query_func(query.query(k, RequestFlagSet::all() ^ RequestFlag::Threshold));
-                    std::cerr << "after: " << result << '\n';
                 }
                 do_not_optimize_away(result);
             });
@@ -95,6 +71,16 @@ void op_perftest(
             idx += 1;
         }
     }
+
+    auto times = nlohmann::json::array();
+    std::transform(
+        queries.begin(),
+        queries.end(),
+        query_times.begin(),
+        std::back_inserter(times),
+        [](auto const& query, auto time) {
+            return nlohmann::json{{"query", query.to_json()}, {"time", time}};
+        });
 
     std::sort(query_times.begin(), query_times.end());
     double avg = std::accumulate(query_times.begin(), query_times.end(), double())
@@ -113,8 +99,21 @@ void op_perftest(
     spdlog::info(
         "Num. reruns: {} out of {} total runs (including warmup)", num_reruns, queries.size() * runs);
 
-    stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
-        "q95", q95)("q99", q99);
+    auto status = nlohmann::json{
+        {"encoding", index_type},
+        {"algorithm", query_type},
+        {"avg", avg},
+        {"q50", q50},
+        {"q90", q90},
+        {"q95", q95},
+        {"q99", q99},
+        {"runs", runs},
+        {"k", k},
+        {"use_thresholds", use_thresholds},
+        {"safe", safe},
+        {"reruns", num_reruns / runs},
+        {"queries", times}};
+    std::cout << status.dump() << '\n';
 }
 
 template <typename IndexType, typename WandType>
@@ -126,7 +125,6 @@ void perftest(
     std::string const& query_type,
     uint64_t k,
     const ScorerParams& scorer_params,
-    bool extract,
     bool use_thresholds,
     bool safe)
 {
@@ -197,8 +195,6 @@ void perftest(
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
-                std::cerr << fmt::format(
-                    "Starting BMW with threshold = {}\n", query.threshold().value_or(0));
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -274,15 +270,20 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
+        } else if (t == "maxscore-uni" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                maxscore_uni_query maxscore_q(topk);
+                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return topk.topk().size();
+            };
         } else {
             spdlog::error("Unsupported query type: {}", t);
             break;
         }
-        if (extract) {
-            // extract_times(query_fun, queries, type, t, 2, std::cout);
-        } else {
-            op_perftest(query_fun, queries, type, t, 3, k, use_thresholds, safe);
-        }
+        op_perftest(query_fun, queries, type, t, 3, k, use_thresholds, safe);
     }
 }
 
@@ -292,7 +293,6 @@ using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType:
 
 int main(int argc, const char** argv)
 {
-    bool extract = false;
     bool silent = false;
     bool safe = false;
     bool quantized = false;
@@ -301,7 +301,6 @@ int main(int argc, const char** argv)
     App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer> app{
         "Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
-    app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--silent", silent, "Suppress logging");
     auto* thresholds_option = app.add_flag(
         "--use-thresholds",
@@ -315,14 +314,10 @@ int main(int argc, const char** argv)
     } else {
         spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     }
-    if (extract) {
-        std::cout << "qid\tusec\n";
-    }
 
     std::vector<pisa::QueryContainer> queries;
     try {
         queries = app.resolved_queries();
-        std::cerr << "NO. Queries: " << queries.size() << '\n';
     } catch (pisa::MissingResolverError err) {
         spdlog::error("Unresoved queries (without IDs) require term lexicon.");
         std::exit(1);
@@ -330,6 +325,11 @@ int main(int argc, const char** argv)
         spdlog::error(err.what());
         std::exit(1);
     }
+
+    for (auto& query: queries) {
+        query.add_threshold(app.k(), *query.threshold(app.k()) - 0.001);
+    }
+
     auto params = std::make_tuple(
         app.index_filename(),
         app.wand_data_path(),
@@ -338,7 +338,6 @@ int main(int argc, const char** argv)
         app.algorithm(),
         app.k(),
         app.scorer_params(),
-        extract,
         use_thresholds,
         safe);
     /**/

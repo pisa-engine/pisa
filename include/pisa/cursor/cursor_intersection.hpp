@@ -24,7 +24,11 @@ struct CursorIntersection {
     using value_type = std::uint32_t;
     using payload_type = Payload;
 
-    constexpr CursorIntersection(CursorContainer cursors, Payload init, AccumulateFn accumulate)
+    constexpr CursorIntersection(
+        CursorContainer cursors,
+        Payload init,
+        AccumulateFn accumulate,
+        std::optional<value_type> sentinel = std::nullopt)
         : m_unordered_cursors(std::move(cursors)),
           m_init(std::move(init)),
           m_accumulate(std::move(accumulate)),
@@ -41,12 +45,16 @@ struct CursorIntersection {
             m_cursor_mapping.end(),
             std::back_inserter(m_cursors),
             [&](auto idx) { return std::ref(m_unordered_cursors[idx]); });
-        m_sentinel =
-            std::min_element(
-                m_unordered_cursors.begin(),
-                m_unordered_cursors.end(),
-                [](auto const& lhs, auto const& rhs) { return lhs.universe() < rhs.universe(); })
-                ->universe();
+        if (sentinel) {
+            m_sentinel = *sentinel;
+        } else {
+            m_sentinel =
+                std::min_element(
+                    m_unordered_cursors.begin(),
+                    m_unordered_cursors.end(),
+                    [](auto const& lhs, auto const& rhs) { return lhs.universe() < rhs.universe(); })
+                    ->universe();
+        }
         m_candidate = m_cursors[0].get().docid();
         next();
     }
@@ -68,8 +76,7 @@ struct CursorIntersection {
             if (m_next_cursor == m_cursors.size()) {
                 m_current_payload = m_init;
                 for (auto idx = 0; idx < m_cursors.size(); ++idx) {
-                    m_current_payload =
-                        m_accumulate(m_current_payload, m_cursors[idx].get(), m_cursor_mapping[idx]);
+                    m_current_payload = m_accumulate(m_current_payload, m_cursors[idx].get());
                 }
                 m_cursors[0].get().next();
                 m_current_value = std::exchange(m_candidate, m_cursors[0].get().docid());
@@ -109,11 +116,14 @@ struct CursorIntersection {
 };
 
 template <typename CursorContainer, typename Payload, typename AccumulateFn>
-[[nodiscard]] constexpr inline auto
-intersect(CursorContainer cursors, Payload init, AccumulateFn accumulate)
+[[nodiscard]] constexpr inline auto intersect(
+    CursorContainer cursors,
+    Payload init,
+    AccumulateFn accumulate,
+    std::optional<std::uint32_t> sentinel = std::nullopt)
 {
     return CursorIntersection<CursorContainer, Payload, AccumulateFn>(
-        std::move(cursors), std::move(init), std::move(accumulate));
+        std::move(cursors), std::move(init), std::move(accumulate), sentinel);
 }
 
 template <typename Cursor, typename Payload, typename AccumulateFn>

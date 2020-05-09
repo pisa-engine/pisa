@@ -109,6 +109,8 @@ class freq_index {
 
         uint64_t size() const { return m_docs_enum.size(); }
 
+        uint64_t universe() const { return m_docs_enum.universe(); }
+
         typename DocsSequence::enumerator const& docs_enum() const { return m_docs_enum; }
 
         typename FreqsSequence::enumerator const& freqs_enum() const { return m_freqs_enum; }

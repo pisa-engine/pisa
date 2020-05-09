@@ -137,6 +137,11 @@ struct indexed_sequence {
             return boost::apply_visitor([](auto&& e) { return e.prev_value(); }, m_enumerator);
         }
 
+        uint64_t universe() const
+        {
+            return boost::apply_visitor([](auto&& e) { return e.universe(); }, m_enumerator);
+        }
+
       private:
         index_type m_type{};
         boost::variant<compact_elias_fano::enumerator, compact_ranked_bitvector::enumerator, all_ones_sequence::enumerator>

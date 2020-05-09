@@ -1,5 +1,9 @@
 #pragma once
 
+#include <condition_variable>
+#include <mutex>
+#include <thread>
+
 #include "bit_vector.hpp"
 #include "mappable/mappable_vector.hpp"
 #include "mappable/mapper.hpp"
@@ -84,7 +88,7 @@ class block_freq_index {
     };
 
     class stream_builder {
-        static constexpr std::size_t buffer_size = 1ULL << 28;
+        static constexpr std::size_t buffer_size = 1ULL << 30;
 
       public:
         stream_builder(uint64_t num_docs, global_parameters const& params)
@@ -203,6 +207,8 @@ class block_freq_index {
         std::ofstream m_postings_output;
         std::size_t m_postings_bytes_written{0};
         std::vector<std::uint8_t> m_buffer;
+        std::condition_variable m_output_cond;
+        std::mutex m_output_mutex;
     };
 
     size_t size() const { return m_size; }

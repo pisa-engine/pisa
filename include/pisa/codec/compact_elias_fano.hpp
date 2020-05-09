@@ -254,6 +254,8 @@ struct compact_elias_fano {
 
         inline value_type value() const { return value_type(m_position, m_value); }
 
+        uint64_t PISA_ALWAYSINLINE universe() const { return m_of.universe; }
+
       private:
         value_type PISA_NOINLINE slow_move(uint64_t position)
         {

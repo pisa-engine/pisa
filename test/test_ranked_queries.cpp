@@ -71,137 +71,178 @@ struct IndexData {
 template <typename Index>
 std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
 
-template <typename Acc>
-class ranked_or_taat_query_acc: public ranked_or_taat_query {
-  public:
-    using ranked_or_taat_query::ranked_or_taat_query;
-
-    template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
-    {
-        Acc accumulator(max_docid);
-        ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
-    }
-};
-
-template <typename T>
-class range_query_128: public range_query<T> {
-  public:
-    using range_query<T>::range_query;
-
-    template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
-    {
-        range_query<T>::operator()(cursors, max_docid, 128);
-    }
-};
+// template <typename Acc>
+// class ranked_or_taat_query_acc: public ranked_or_taat_query {
+//  public:
+//    using ranked_or_taat_query::ranked_or_taat_query;
+//
+//    template <typename CursorRange>
+//    void operator()(CursorRange&& cursors, uint64_t max_docid)
+//    {
+//        Acc accumulator(max_docid);
+//        ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
+//    }
+//};
+//
+// template <typename T>
+// class range_query_128: public range_query<T> {
+//  public:
+//    using range_query<T>::range_query;
+//
+//    template <typename CursorRange>
+//    void operator()(CursorRange&& cursors, uint64_t max_docid)
+//    {
+//        range_query<T>::operator()(cursors, max_docid, 128);
+//    }
+//};
+//
+//// NOLINTNEXTLINE(hicpp-explicit-conversions)
+// TEMPLATE_TEST_CASE(
+//    "Ranked query test",
+//    "[query][ranked][integration]",
+//    ranked_or_taat_query_acc<Simple_Accumulator>,
+//    ranked_or_taat_query_acc<Lazy_Accumulator<4>>,
+//    wand_query,
+//    maxscore_query,
+//    block_max_wand_query,
+//    block_max_maxscore_query,
+//    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
+//    range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+//    range_query_128<wand_query>,
+//    range_query_128<maxscore_query>,
+//    range_query_128<block_max_wand_query>,
+//    range_query_128<block_max_maxscore_query>)
+//{
+//    for (auto quantized: {false, true}) {
+//        for (auto&& s_name: {"bm25", "qld"}) {
+//            std::unordered_set<size_t> dropped_term_ids;
+//            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+//            topk_queue topk_1(10);
+//            TestType op_q(topk_1);
+//            topk_queue topk_2(10);
+//            ranked_or_query or_q(topk_2);
+//
+//            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+//            for (auto const& q: data->queries) {
+//                or_q(make_scored_cursors(data->index, *scorer, q.query(10)),
+//                data->index.num_docs()); op_q(
+//                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
+//                    data->index.num_docs());
+//                topk_1.finalize();
+//                topk_2.finalize();
+//                REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+//                for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+//                    REQUIRE(
+//                        topk_2.topk()[i].first
+//                        == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance is %
+//                                                                          // relative
+//                }
+//                topk_1.clear();
+//                topk_2.clear();
+//            }
+//        }
+//    }
+//}
+//
+//// NOLINTNEXTLINE(hicpp-explicit-conversions)
+// TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]",
+// block_max_ranked_and_query)
+//{
+//    for (auto quantized: {false, true}) {
+//        for (auto&& s_name: {"bm25", "qld"}) {
+//            std::unordered_set<size_t> dropped_term_ids;
+//            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+//            topk_queue topk_1(10);
+//            TestType op_q(topk_1);
+//            topk_queue topk_2(10);
+//            ranked_and_query and_q(topk_2);
+//
+//            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+//
+//            for (auto const& q: data->queries) {
+//                and_q(make_scored_cursors(data->index, *scorer, q.query(10)),
+//                data->index.num_docs()); op_q(
+//                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
+//                    data->index.num_docs());
+//                topk_1.finalize();
+//                topk_2.finalize();
+//                REQUIRE(topk_1.topk().size() == topk_2.topk().size());
+//                for (size_t i = 0; i < and_q.topk().size(); ++i) {
+//                    REQUIRE(
+//                        topk_1.topk()[i].first
+//                        == Approx(topk_2.topk()[i].first).epsilon(0.1));  // tolerance is %
+//                                                                          // relative
+//                }
+//                topk_1.clear();
+//                topk_2.clear();
+//            }
+//        }
+//    }
+//}
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE(
-    "Ranked query test",
+    "Threshold methods",
     "[query][ranked][integration]",
-    ranked_or_taat_query_acc<Simple_Accumulator>,
-    ranked_or_taat_query_acc<Lazy_Accumulator<4>>,
     wand_query,
     maxscore_query,
     block_max_wand_query,
     block_max_maxscore_query,
-    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-    range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
-    range_query_128<wand_query>,
-    range_query_128<maxscore_query>,
-    range_query_128<block_max_wand_query>,
-    range_query_128<block_max_maxscore_query>)
-{
-    for (auto quantized: {false, true}) {
-        for (auto&& s_name: {"bm25", "qld"}) {
-            std::unordered_set<size_t> dropped_term_ids;
-            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
-            topk_queue topk_1(10);
-            TestType op_q(topk_1);
-            topk_queue topk_2(10);
-            ranked_or_query or_q(topk_2);
-
-            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
-            for (auto const& q: data->queries) {
-                or_q(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
-                op_q(
-                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
-                    data->index.num_docs());
-                topk_1.finalize();
-                topk_2.finalize();
-                REQUIRE(topk_2.topk().size() == topk_1.topk().size());
-                for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                    REQUIRE(
-                        topk_2.topk()[i].first
-                        == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance is %
-                                                                          // relative
-                }
-                topk_1.clear();
-                topk_2.clear();
-            }
-        }
-    }
-}
-
-// NOLINTNEXTLINE(hicpp-explicit-conversions)
-TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", block_max_ranked_and_query)
-{
-    for (auto quantized: {false, true}) {
-        for (auto&& s_name: {"bm25", "qld"}) {
-            std::unordered_set<size_t> dropped_term_ids;
-            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
-            topk_queue topk_1(10);
-            TestType op_q(topk_1);
-            topk_queue topk_2(10);
-            ranked_and_query and_q(topk_2);
-
-            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
-
-            for (auto const& q: data->queries) {
-                and_q(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
-                op_q(
-                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
-                    data->index.num_docs());
-                topk_1.finalize();
-                topk_2.finalize();
-                REQUIRE(topk_1.topk().size() == topk_2.topk().size());
-                for (size_t i = 0; i < and_q.topk().size(); ++i) {
-                    REQUIRE(
-                        topk_1.topk()[i].first
-                        == Approx(topk_2.topk()[i].first).epsilon(0.1));  // tolerance is %
-                                                                          // relative
-                }
-                topk_1.clear();
-                topk_2.clear();
-            }
-        }
-    }
-}
-
-TEST_CASE("Top k")
+    maxscore_uni_query)
 {
     for (auto&& s_name: {"bm25", "qld"}) {
         std::unordered_set<size_t> dropped_term_ids;
         auto data = IndexData<single_index>::get(s_name, false, dropped_term_ids);
-        topk_queue topk_1(10);
-        ranked_or_query or_10(topk_1);
-        topk_queue topk_2(1);
-        ranked_or_query or_1(topk_2);
+        topk_queue baseline_topk(10);
+        ranked_or_query baseline(baseline_topk);
+        topk_queue topk(10);
+        TestType algo(topk);
 
         auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
-        for (auto const& q: data->queries) {
-            or_10(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
-            or_1(make_scored_cursors(data->index, *scorer, q.query(1)), data->index.num_docs());
-            topk_1.finalize();
-            topk_2.finalize();
-            if (not or_10.topk().empty()) {
-                REQUIRE(not or_1.topk().empty());
-                REQUIRE(or_1.topk().front().first == Approx(or_10.topk().front().first).epsilon(0.1));
+        for (auto& q: data->queries) {
+            baseline(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
+            baseline_topk.finalize();
+            auto threshold = baseline_topk.threshold();
+            q.add_threshold(10, threshold);
+            algo(
+                make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
+                data->index.num_docs());
+            topk.finalize();
+            REQUIRE(topk.topk().size() == baseline_topk.topk().size());
+            for (size_t i = 0; i < baseline_topk.topk().size(); ++i) {
+                REQUIRE(baseline_topk.topk()[i].first == Approx(topk.topk()[i].first).epsilon(0.1));
             }
-            topk_1.clear();
-            topk_2.clear();
+            topk.clear();
+            baseline_topk.clear();
         }
     }
 }
+
+// TEST_CASE("Top k")
+//{
+//    for (auto&& s_name: {"bm25", "qld"}) {
+//        std::unordered_set<size_t> dropped_term_ids;
+//        auto data = IndexData<single_index>::get(s_name, false, dropped_term_ids);
+//        topk_queue topk_1(10);
+//        ranked_or_query or_10(topk_1);
+//        topk_queue topk_2(1);
+//        ranked_or_query or_1(topk_2);
+//
+//        auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+//
+//        for (auto const& q: data->queries) {
+//            or_10(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
+//            or_1(make_scored_cursors(data->index, *scorer, q.query(1)), data->index.num_docs());
+//            topk_1.finalize();
+//            topk_2.finalize();
+//            if (not or_10.topk().empty()) {
+//                REQUIRE(not or_1.topk().empty());
+//                REQUIRE(or_1.topk().front().first ==
+//                Approx(or_10.topk().front().first).epsilon(0.1));
+//            }
+//            topk_1.clear();
+//            topk_2.clear();
+//        }
+//    }
+//}

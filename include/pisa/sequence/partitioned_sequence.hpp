@@ -203,6 +203,8 @@ struct partitioned_sequence {
             return slow_next();
         }
 
+        uint64_t PISA_ALWAYSINLINE universe() const { return m_universe; }
+
         uint64_t size() const { return m_size; }
 
         uint64_t prev_value() const

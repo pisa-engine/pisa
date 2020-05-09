@@ -26,7 +26,7 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
     BlockMaxScoredCursor(BlockMaxScoredCursor const&) = delete;
     BlockMaxScoredCursor(BlockMaxScoredCursor&&) = default;
     BlockMaxScoredCursor& operator=(BlockMaxScoredCursor const&) = delete;
-    BlockMaxScoredCursor& operator=(BlockMaxScoredCursor&&) = default;
+    BlockMaxScoredCursor& operator=(BlockMaxScoredCursor&&) = delete;
     ~BlockMaxScoredCursor() = default;
 
     [[nodiscard]] PISA_ALWAYSINLINE auto block_max_score() -> float { return m_wdata.score(); }

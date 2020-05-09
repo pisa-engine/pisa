@@ -13,7 +13,6 @@
 #include "mappable/mapper.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
-#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_range.hpp"
 #include "wand_data_raw.hpp"
