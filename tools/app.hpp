@@ -40,21 +40,22 @@ namespace arg {
         explicit WandData(CLI::App* app)
         {
             if constexpr (Mode == WandMode::Required) {
-                auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename")->required();
+                auto* wand =
+                    app->add_option("-w,--wand", m_wand_data_path, "WAND data filename")->required();
                 app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
-                ->needs(wand);
+                    ->needs(wand);
             } else {
                 auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
                 app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
-                ->needs(wand);
+                    ->needs(wand);
             }
         }
         [[nodiscard]] auto wand_data_path() const
         {
-            if constexpr(Mode == WandMode::Required) {
-              return *m_wand_data_path;
+            if constexpr (Mode == WandMode::Required) {
+                return *m_wand_data_path;
             } else {
-              return m_wand_data_path;
+                return m_wand_data_path;
             }
         }
         [[nodiscard]] auto is_wand_compressed() const -> bool { return m_wand_compressed; }

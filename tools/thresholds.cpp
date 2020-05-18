@@ -48,7 +48,7 @@ void thresholds(
         std::abort();
     }
     mapper::map(wdata, md, mapper::map_flags::warmup);
-    
+
     topk_queue topk(k);
     wand_query wand_q(topk);
     for (auto const& query: queries) {
@@ -78,8 +78,8 @@ int main(int argc, const char** argv)
 
     bool quantized = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer> app{
-        "Extracts query thresholds."};
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer>
+        app{"Extracts query thresholds."};
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
     CLI11_PARSE(app, argc, argv);

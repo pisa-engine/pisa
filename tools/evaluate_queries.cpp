@@ -189,7 +189,13 @@ int main(int argc, const char** argv)
     std::string run_id = "R0";
     bool quantized = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds, arg::Threads>
+    App<arg::Index,
+        arg::WandData<arg::WandMode::Required>,
+        arg::Query<arg::QueryMode::Ranked>,
+        arg::Algorithm,
+        arg::Scorer,
+        arg::Thresholds,
+        arg::Threads>
         app{"Retrieves query results in TREC format."};
     app.add_option("-r,--run", run_id, "Run identifier");
     app.add_option("--documents", documents_file, "Document lexicon")->required();
