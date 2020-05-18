@@ -306,7 +306,7 @@ int main(int argc, const char** argv)
     bool safe = false;
     bool quantized = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds>
+    App<arg::Index, arg::WandData<arg::WandMode::Optional>, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--extract", extract, "Extract individual query times");

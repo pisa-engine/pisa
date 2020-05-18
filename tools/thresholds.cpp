@@ -25,7 +25,7 @@ using namespace pisa;
 template <typename IndexType, typename WandType>
 void thresholds(
     const std::string& index_filename,
-    const std::optional<std::string>& wand_data_filename,
+    const std::string& wand_data_filename,
     const std::vector<Query>& queries,
     std::string const& type,
     ScorerParams const& scorer_params,
@@ -41,15 +41,14 @@ void thresholds(
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
-        }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
+    std::error_code error;
+    md.map(wand_data_filename, error);
+    if (error) {
+        spdlog::error("error mapping file: {}, exiting...", error.message());
+        std::abort();
     }
+    mapper::map(wdata, md, mapper::map_flags::warmup);
+    
     topk_queue topk(k);
     wand_query wand_q(topk);
     for (auto const& query: queries) {
@@ -79,7 +78,7 @@ int main(int argc, const char** argv)
 
     bool quantized = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Scorer> app{
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer> app{
         "Extracts query thresholds."};
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
