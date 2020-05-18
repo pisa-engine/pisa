@@ -14,7 +14,7 @@
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
 #include <spdlog/spdlog.h>
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
 
 #include "binary_collection.hpp"
 #include "io.hpp"
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
         spdlog::set_level(spdlog::level::debug);
     }
 
-    tbb::task_scheduler_init init(threads);
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
     spdlog::info("Number of threads: {}", threads);
 
     if (*random_option) {

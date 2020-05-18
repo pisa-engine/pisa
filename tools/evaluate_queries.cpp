@@ -12,7 +12,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <tbb/parallel_for.h>
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "app.hpp"
@@ -199,7 +199,7 @@ int main(int argc, const char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    tbb::task_scheduler_init init(app.threads());
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads());
     spdlog::info("Number of threads: {}", app.threads());
 
     if (run_id.empty()) {

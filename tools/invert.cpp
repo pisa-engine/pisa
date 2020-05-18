@@ -8,7 +8,7 @@
 #include "pstl/execution"
 #include "spdlog/spdlog.h"
 #include "tbb/task_group.h"
-#include "tbb/task_scheduler_init.h"
+#include "tbb/global_control.h"
 
 #include "app.hpp"
 #include "binary_collection.hpp"
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     CLI::App app{"Constructs an inverted index from a forward index."};
     pisa::InvertArgs args(&app);
     CLI11_PARSE(app, argc, argv);
-    tbb::task_scheduler_init init(args.threads());
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, args.threads());
     spdlog::info("Number of threads: {}", args.threads());
     pisa::invert::invert_forward_index(
         args.input_basename(),
