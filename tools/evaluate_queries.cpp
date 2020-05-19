@@ -11,8 +11,8 @@
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-#include <tbb/parallel_for.h>
 #include <tbb/global_control.h>
+#include <tbb/parallel_for.h>
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "app.hpp"

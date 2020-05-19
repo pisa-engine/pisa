@@ -5,8 +5,8 @@
 #include <CLI/CLI.hpp>
 #include <gsl/span>
 #include <spdlog/spdlog.h>
-#include <tbb/task_group.h>
 #include <tbb/global_control.h>
+#include <tbb/task_group.h>
 
 #include "app.hpp"
 #include "binary_collection.hpp"
@@ -45,7 +45,8 @@ int main(int argc, char** argv)
     CLI11_PARSE(app, argc, argv);
 
     if (invert->parsed()) {
-        tbb::global_control control(tbb::global_control::max_allowed_parallelism, invert_args.threads() + 1);
+        tbb::global_control control(
+            tbb::global_control::max_allowed_parallelism, invert_args.threads() + 1);
         spdlog::info("Number of worker threads: {}", invert_args.threads());
         Shard_Id shard_id{0};
         for (auto shard: resolve_shards(invert_args.input_basename())) {
