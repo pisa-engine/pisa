@@ -39,17 +39,15 @@ namespace arg {
     struct WandData {
         explicit WandData(CLI::App* app)
         {
+            auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
+            app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
+                ->needs(wand);
+
             if constexpr (Mode == WandMode::Required) {
-                auto* wand =
-                    app->add_option("-w,--wand", m_wand_data_path, "WAND data filename")->required();
-                app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
-                    ->needs(wand);
-            } else {
-                auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-                app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
-                    ->needs(wand);
+                wand->required();
             }
         }
+
         [[nodiscard]] auto wand_data_path() const
         {
             if constexpr (Mode == WandMode::Required) {
