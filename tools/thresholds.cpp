@@ -26,7 +26,7 @@ using namespace pisa;
 template <typename IndexType, typename WandType>
 void thresholds(
     const std::string& index_filename,
-    const std::optional<std::string>& wand_data_filename,
+    const std::string& wand_data_filename,
     const std::vector<Query>& queries,
     std::string const& type,
     ScorerParams const& scorer_params,
@@ -34,12 +34,7 @@ void thresholds(
     bool quantized)
 {
     IndexType index(MemorySource::mapped_file(index_filename));
-    WandType const wdata = [&] {
-        if (wand_data_filename) {
-            return WandType(MemorySource::mapped_file(*wand_data_filename));
-        }
-        return WandType{};
-    }();
+    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
 
@@ -72,8 +67,8 @@ int main(int argc, const char** argv)
 
     bool quantized = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Scorer> app{
-        "Extracts query thresholds."};
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer>
+        app{"Extracts query thresholds."};
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
     CLI11_PARSE(app, argc, argv);
