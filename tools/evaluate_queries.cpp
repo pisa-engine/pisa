@@ -199,8 +199,8 @@ int main(int argc, const char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads());
-    spdlog::info("Number of threads: {}", app.threads());
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
+    spdlog::info("Number of worker threads: {}", app.threads());
 
     if (run_id.empty()) {
         run_id = "PISA";

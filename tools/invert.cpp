@@ -20,8 +20,8 @@ int main(int argc, char** argv)
     CLI::App app{"Constructs an inverted index from a forward index."};
     pisa::InvertArgs args(&app);
     CLI11_PARSE(app, argc, argv);
-    tbb::global_control control(tbb::global_control::max_allowed_parallelism, args.threads());
-    spdlog::info("Number of threads: {}", args.threads());
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, args.threads() + 1);
+    spdlog::info("Number of worker threads: {}", args.threads());
     pisa::invert::invert_forward_index(
         args.input_basename(),
         args.output_basename(),

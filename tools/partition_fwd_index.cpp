@@ -53,8 +53,8 @@ int main(int argc, char** argv)
         spdlog::set_level(spdlog::level::debug);
     }
 
-    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads);
-    spdlog::info("Number of threads: {}", threads);
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads + 1);
+    spdlog::info("Number of worker threads: {}", threads);
 
     if (*random_option) {
         auto mapping = create_random_mapping(input_basename, shard_count);
