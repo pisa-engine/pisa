@@ -33,16 +33,28 @@ namespace arg {
         std::string m_encoding;
     };
 
+    enum class WandMode : bool { Required, Optional };
+
+    template <WandMode Mode = WandMode::Required>
     struct WandData {
         explicit WandData(CLI::App* app)
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
                 ->needs(wand);
+
+            if constexpr (Mode == WandMode::Required) {
+                wand->required();
+            }
         }
-        [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const&
+
+        [[nodiscard]] auto wand_data_path() const
         {
-            return m_wand_data_path;
+            if constexpr (Mode == WandMode::Required) {
+                return *m_wand_data_path;
+            } else {
+                return m_wand_data_path;
+            }
         }
         [[nodiscard]] auto is_wand_compressed() const -> bool { return m_wand_compressed; }
 
