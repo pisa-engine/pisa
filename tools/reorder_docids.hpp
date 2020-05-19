@@ -20,7 +20,7 @@ auto reorder_docids(ReorderDocuments args) -> int
                 .node_config = args.node_config(),
                 .min_length = args.min_length(),
                 .compress_fwd = not args.nogb(),
-                .print_args = not args.print(),
+                .print_args = args.print(),
             });
         }
         ReorderOptions options{.input_basename = args.input_basename(),
