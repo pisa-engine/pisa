@@ -129,18 +129,19 @@ namespace arg {
     template <typename T>
     CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode)
     {
-        CLI::Option *opt;
+        CLI::Option* scorer;
         if (scorer_mode == ScorerMode::Required) {
-            opt = app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
+            scorer =
+                app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
         } else {
-            opt = app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
+            scorer = app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
         }
 
-        app->add_option("--bm25-k1", args.m_params.bm25_k1, "BM25 k1 parameter.");
-        app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.");
-        app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.");
-        app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.");
-        return opt;
+        app->add_option("--bm25-k1", args.m_params.bm25_k1, "BM25 k1 parameter.")->needs(scorer);
+        app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.")->needs(scorer);
+        app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.")->needs(scorer);
+        app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.")->needs(scorer);
+        return scorer;
     }
 
     template <ScorerMode Mode = ScorerMode::Required>
