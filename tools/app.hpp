@@ -127,18 +127,20 @@ namespace arg {
     enum class ScorerMode : bool { Required, Optional };
 
     template <typename T>
-    void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode)
+    CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode)
     {
+        CLI::Option *opt;
         if (scorer_mode == ScorerMode::Required) {
-            app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
+            opt = app->add_option("-s,--scorer", args.m_params.name, "Scorer function")->required();
         } else {
-            app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
+            opt = app->add_option("-s,--scorer", args.m_params.name, "Scorer function");
         }
 
         app->add_option("--bm25-k1", args.m_params.bm25_k1, "BM25 k1 parameter.");
         app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.");
         app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.");
         app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.");
+        return opt;
     }
 
     template <ScorerMode Mode = ScorerMode::Required>
@@ -146,7 +148,12 @@ namespace arg {
         explicit Quantize(CLI::App* app) : m_params("")
         {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
-            add_scorer_options(app, *this, Mode);
+            auto* scorer = add_scorer_options(app, *this, Mode);
+            auto* quant = app->add_flag("--quantize", m_quantize, "Quantizes the scores");
+            wand->needs(scorer);
+            scorer->needs(wand);
+            scorer->needs(quant);
+            quant->needs(scorer);
         }
 
         [[nodiscard]] auto scorer_params() const { return m_params; }
@@ -159,7 +166,7 @@ namespace arg {
         [[nodiscard]] auto quantize() const { return m_quantize; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
+        friend CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         ScorerParams m_params;
@@ -176,7 +183,7 @@ namespace arg {
         [[nodiscard]] auto scorer_params() const { return m_params; }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
+        friend CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         ScorerParams m_params;
@@ -363,7 +370,7 @@ namespace arg {
         }
 
         template <typename T>
-        friend void add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
+        friend CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
       private:
         std::optional<float> m_lambda{};
