@@ -3,7 +3,7 @@
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
-#include <tbb/task_scheduler_init.h>
+#include <tbb/global_control.h>
 
 #include "forward_index_builder.hpp"
 #include "parser.hpp"
@@ -62,8 +62,8 @@ int main(int argc, char** argv)
         spdlog::set_level(spdlog::level::debug);
     }
 
-    tbb::task_scheduler_init init(threads);
-    spdlog::info("Number of threads: {}", threads);
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads + 1);
+    spdlog::info("Number of worker threads: {}", threads);
 
     Forward_Index_Builder builder;
     if (*merge_cmd) {
