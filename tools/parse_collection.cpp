@@ -65,17 +65,22 @@ int main(int argc, char** argv)
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads + 1);
     spdlog::info("Number of worker threads: {}", threads);
 
-    Forward_Index_Builder builder;
-    if (*merge_cmd) {
-        builder.merge(output_filename, document_count, batch_count);
-    } else {
-        builder.build(
-            std::cin,
-            output_filename,
-            record_parser(format, std::cin),
-            term_processor_builder(stemmer),
-            content_parser(content_parser_type),
-            batch_size,
-            threads);
+    try {
+        Forward_Index_Builder builder;
+        if (*merge_cmd) {
+            builder.merge(output_filename, document_count, batch_count);
+        } else {
+            builder.build(
+                std::cin,
+                output_filename,
+                record_parser(format, std::cin),
+                term_processor_builder(stemmer),
+                content_parser(content_parser_type),
+                batch_size,
+                threads);
+        }
+    } catch (std::exception& err) {
+        spdlog::error(err.what());
+        return EXIT_FAILURE;
     }
 }
