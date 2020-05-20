@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <string>
+#include <unordered_map>
 
 #include <fmt/format.h>
 
@@ -101,5 +103,55 @@ std::string format_time(Unit time)
     minutes -= hours * 60;
     return fmt::format("{:02d}:{:02d}:{:02d}.{:02d}", hours, minutes, seconds, millis);
 }
+
+/// Static timer allows to accumulate time in any place in the codebase to be later aggregated.
+/// Useful for debugging/benchmarking.
+class StaticTimer {
+  public:
+    StaticTimer() = default;
+
+    [[nodiscard]] static auto get(std::string const& name) -> StaticTimer*
+    {
+        if (StaticTimer::m_data.find(name) == StaticTimer::m_data.end()) {
+            StaticTimer::m_data[name] = std::make_unique<StaticTimer>();
+        }
+        return StaticTimer::m_data[name].get();
+    }
+
+    void add_time(std::chrono::nanoseconds time)
+    {
+        m_elapsed += time;
+        // m_count += 1;
+    }
+    void reset()
+    {
+        m_elapsed = std::chrono::nanoseconds(0);
+        // m_count = 0;
+    }
+
+    //[[nodiscard]] auto count() const -> std::size_t { return m_count; }
+
+    [[nodiscard]] auto nanos() const -> std::chrono::nanoseconds { return m_elapsed; }
+
+    [[nodiscard]] auto micros() const -> std::size_t { return m_elapsed.count() / 1000; }
+
+    //[[nodiscard]] auto avg_nanos() const -> double
+    //{
+    //    return static_cast<double>(m_elapsed.count()) / m_count;
+    //}
+
+    //[[nodiscard]] auto avg_micros() const -> double
+    //{
+    //    return static_cast<double>(micros()) / m_count;
+    //}
+
+  private:
+    static std::unordered_map<std::string, std::unique_ptr<StaticTimer>> m_data;
+
+    std::chrono::nanoseconds m_elapsed{0};
+    // std::size_t m_count{0};
+};
+
+std::unordered_map<std::string, std::unique_ptr<StaticTimer>> StaticTimer::m_data = {};
 
 }  // namespace pisa

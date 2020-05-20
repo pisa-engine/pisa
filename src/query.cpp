@@ -1,11 +1,14 @@
 #include "query.hpp"
 
 #include <algorithm>
+#include <bitset>
 #include <fstream>
 #include <iostream>
 
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
+#include <range/v3/algorithm/sort.hpp>
+#include <range/v3/algorithm/unique.hpp>
 
 namespace pisa {
 
@@ -75,6 +78,32 @@ QueryRequest::QueryRequest(QueryContainer const& data, std::size_t k, RequestFla
             m_term_ids.push_back(term_id);
             m_term_weights.push_back(static_cast<float>(count));
         }
+        if (auto selection = data.selection(k); selection && flags.contains(RequestFlag::Selection)) {
+            std::vector<TermId> selected_terms;
+            std::transform(
+                selection->selected_terms.begin(),
+                selection->selected_terms.end(),
+                std::back_inserter(selected_terms),
+                [&](auto term_position) { return (*term_ids).at(term_position); });
+            ranges::sort(selected_terms);
+            selected_terms.erase(ranges::unique(selected_terms), selected_terms.end());
+            std::vector<TermPair> selected_pairs;
+            std::transform(
+                selection->selected_pairs.begin(),
+                selection->selected_pairs.end(),
+                std::back_inserter(selected_pairs),
+                [&](auto term_positions) {
+                    return TermPair(
+                        (*term_ids).at(std::get<0>(term_positions)),
+                        (*term_ids).at(std::get<1>(term_positions)));
+                });
+            ranges::sort(selected_pairs);
+            selected_pairs.erase(ranges::unique(selected_pairs), selected_pairs.end());
+            m_selection = Selection<TermId>{
+                .selected_terms = std::move(selected_terms),
+                .selected_pairs = std::move(selected_pairs),
+            };
+        }
         if (not flags.contains(RequestFlag::Threshold)) {
             m_threshold.reset();
         }
@@ -101,18 +130,29 @@ auto QueryRequest::threshold() const -> std::optional<float>
     return m_threshold;
 }
 
+auto QueryRequest::selection() const -> std::optional<Selection<TermId>>
+{
+    return m_selection;
+}
+
+auto QueryRequest::k() const -> std::size_t
+{
+    return m_k;
+}
+
 struct QueryContainerInner {
     std::optional<std::string> id;
     std::optional<std::string> query_string;
     std::optional<std::vector<std::string>> processed_terms;
     std::optional<std::vector<std::uint32_t>> term_ids;
     std::vector<std::pair<std::size_t, float>> thresholds;
+    std::vector<std::pair<std::size_t, Selection<std::size_t>>> selections;
 
     [[nodiscard]] auto operator==(QueryContainerInner const& other) const noexcept -> bool
     {
         return id == other.id && query_string == other.query_string
             && processed_terms == other.processed_terms && term_ids == other.term_ids
-            && thresholds == other.thresholds;
+            && thresholds == other.thresholds && selections == other.selections;
     }
 };
 
@@ -200,6 +240,21 @@ auto QueryContainer::thresholds() const noexcept -> std::vector<std::pair<std::s
     return m_data->thresholds;
 }
 
+auto QueryContainer::selection(std::size_t k) const noexcept -> std::optional<Selection<std::size_t>>
+{
+    auto pos = std::find_if(m_data->selections.begin(), m_data->selections.end(), first_equal_to(k));
+    if (pos == m_data->selections.end()) {
+        return std::nullopt;
+    }
+    return std::make_optional(pos->second);
+}
+
+auto QueryContainer::selections() const noexcept
+    -> std::vector<std::pair<std::size_t, Selection<std::size_t>>> const&
+{
+    return m_data->selections;
+}
+
 auto QueryContainer::string(std::string raw_query) -> QueryContainer&
 {
     m_data->query_string = std::move(raw_query);
@@ -232,6 +287,18 @@ auto QueryContainer::add_threshold(std::size_t k, float score) -> bool
         return true;
     }
     m_data->thresholds.emplace_back(k, score);
+    return false;
+}
+
+auto QueryContainer::add_selection(std::size_t k, Selection<std::size_t> selection) -> bool
+{
+    if (auto pos =
+            std::find_if(m_data->selections.begin(), m_data->selections.end(), first_equal_to(k));
+        pos != m_data->selections.end()) {
+        pos->second = std::move(selection);
+        return true;
+    }
+    m_data->selections.emplace_back(k, std::move(selection));
     return false;
 }
 
@@ -295,6 +362,52 @@ auto QueryContainer::from_json(std::string_view json_string) -> QueryContainer
                 data.thresholds.emplace_back(*k, *score);
             }
         }
+        if (auto selections = json.find("selections"); selections != json.end()) {
+            auto raise_error = [&]() {
+                throw std::runtime_error(
+                    fmt::format("Field \"selections\" is invalid: {}", selections->dump()));
+            };
+            if (not selections->is_array()) {
+                raise_error();
+            }
+            for (auto&& selections_entry: *selections) {
+                if (not selections_entry.is_object()) {
+                    raise_error();
+                }
+                auto k = get<std::size_t>(selections_entry, "k");
+                auto masks = get<std::vector<std::size_t>>(selections_entry, "intersections");
+                if (not k or not masks) {
+                    raise_error();
+                }
+                std::vector<std::size_t> selected_terms;
+                std::vector<std::array<std::size_t, 2>> selected_pairs;
+                for (auto mask: *masks) {
+                    std::bitset<64> m(mask);
+                    if (m.count() > 2) {
+                        std::runtime_error("Only single term and pair selections are supported");
+                    }
+                    std::array<std::size_t, 2> term_positions{};
+                    std::size_t pos = 0;
+                    auto out = term_positions.begin();
+                    while (m.count() > 0) {
+                        if (m.test(pos)) {
+                            m.reset(pos);
+                            *out++ = pos;
+                        }
+                        pos += 1;
+                    }
+                    if (out == term_positions.end()) {
+                        selected_pairs.push_back(term_positions);
+                    } else {
+                        selected_terms.push_back(std::get<0>(term_positions));
+                    }
+                }
+                data.selections.emplace_back(
+                    *k,
+                    Selection<std::size_t>{
+                        .selected_terms = selected_terms, .selected_pairs = selected_pairs});
+            }
+        }
         if (not at_least_one_required) {
             throw std::invalid_argument(fmt::format(
                 "JSON must have either raw query, terms, or term IDs: {}", json_string));
@@ -334,6 +447,24 @@ auto QueryContainer::to_json() const -> nlohmann::json
             thresholds.push_back(std::move(entry));
         }
         json["thresholds"] = thresholds;
+    }
+    if (not m_data->selections.empty()) {
+        auto selections = nlohmann::json::array();
+        for (auto&& [k, intersections]: m_data->selections) {
+            auto entry = nlohmann::json::object();
+            entry["k"] = k;
+            std::vector<std::size_t> intersections_vec;
+            for (auto term: intersections.selected_terms) {
+                intersections_vec.push_back(1U << term);
+            }
+            for (auto [left, right]: intersections.selected_pairs) {
+                intersections_vec.push_back((1U << left) | (1U << right));
+            }
+            std::sort(intersections_vec.begin(), intersections_vec.end());
+            entry["intersections"] = intersections_vec;
+            selections.push_back(std::move(entry));
+        }
+        json["selections"] = selections;
     }
     return json;
 }

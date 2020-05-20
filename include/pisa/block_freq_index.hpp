@@ -123,7 +123,8 @@ class block_freq_index {
                 throw std::invalid_argument("List must be nonempty");
             }
             auto old_size = m_buffer.size();
-            block_posting_list<BlockCodec, Profile>::write(m_buffer, n, docs_begin, freqs_begin);
+            block_posting_list<BlockCodec, Profile, Arity>::write(
+                m_buffer, n, docs_begin, freqs_begin);
             m_postings_bytes_written += m_buffer.size() - old_size;
             m_endpoints.push_back(m_postings_bytes_written);
             maybe_flush();

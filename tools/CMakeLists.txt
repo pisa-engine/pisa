@@ -3,22 +3,22 @@
 #  pisa
 #  CLI11
 #)
-#
-#add_executable(build-binary-index build_binary_index.cpp)
-#target_link_libraries(build-binary-index
+
+#add_executable(build-pair-index build_binary_index.cpp)
+#target_link_libraries(build-pair-index
 #  pisa
 #  CLI11
 #)
-#
-#add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
-#target_include_directories(optimal_hybrid_index PRIVATE ${STXXL_INCLUDE_DIRS})
-#target_link_libraries(optimal_hybrid_index
-#  ${STXXL_LIBRARIES}
-#  pisa
-#)
-#set_target_properties(optimal_hybrid_index PROPERTIES
-#            CXX_STANDARD 14
-#)
+
+##add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
+##target_include_directories(optimal_hybrid_index PRIVATE ${STXXL_INCLUDE_DIRS})
+##target_link_libraries(optimal_hybrid_index
+##  ${STXXL_LIBRARIES}
+##  pisa
+##)
+##set_target_properties(optimal_hybrid_index PROPERTIES
+##            CXX_STANDARD 14
+##)
 #
 #add_executable(create_wand_data create_wand_data.cpp)
 #target_link_libraries(create_wand_data
@@ -32,12 +32,12 @@ target_link_libraries(queries
   CLI11
 )
 
-#add_executable(evaluate_queries evaluate_queries.cpp)
-#target_link_libraries(evaluate_queries
-#  pisa
-#  CLI11
-#)
-#
+add_executable(evaluate_queries evaluate_queries.cpp)
+target_link_libraries(evaluate_queries
+  pisa
+  CLI11
+)
+
 #add_executable(thresholds thresholds.cpp)
 #target_link_libraries(thresholds
 #  pisa

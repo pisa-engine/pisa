@@ -9,8 +9,8 @@ namespace pisa {
 struct maxscore_query {
     explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
 
-    template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
+    template <typename CursorRange, typename Inspect = void>
+    void operator()(CursorRange&& cursors, uint64_t max_docid, Inspect* inspect = nullptr)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
@@ -52,6 +52,9 @@ struct maxscore_query {
             float score = 0;
             uint64_t next_doc = max_docid;
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
+                if constexpr (not std::is_void_v<Inspect>) {
+                    inspect->document();
+                }
                 if (ordered_cursors[i]->docid() == cur_doc) {
                     score += ordered_cursors[i]->score();
                     ordered_cursors[i]->next();
@@ -67,6 +70,9 @@ struct maxscore_query {
                     break;
                 }
                 ordered_cursors[i]->next_geq(cur_doc);
+                if constexpr (not std::is_void_v<Inspect>) {
+                    inspect->lookup();
+                }
                 if (ordered_cursors[i]->docid() == cur_doc) {
                     score += ordered_cursors[i]->score();
                 }

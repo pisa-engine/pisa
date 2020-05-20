@@ -6,6 +6,7 @@
 #include "mio/mmap.hpp"
 
 #include "mappable/mappable_vector.hpp"
+#include "query.hpp"
 
 namespace pisa { namespace mapper {
 
@@ -147,6 +148,20 @@ namespace pisa { namespace mapper {
             const uint64_t m_flags;
             uint64_t m_freeze_flags;
         };
+
+        template <>
+        inline map_visitor&
+        map_visitor::operator()(mappable_vector<TermPair>& vec, const char* /* friendly_name */)
+        {
+            vec.clear();
+            (*this)(vec.m_size, "size");
+
+            vec.m_data = reinterpret_cast<const TermPair*>(m_cur);
+            size_t bytes = vec.m_size * sizeof(std::uint32_t) * 2;
+
+            m_cur += bytes;
+            return *this;
+        }
 
         template <>
         inline map_visitor& map_visitor::operator()(

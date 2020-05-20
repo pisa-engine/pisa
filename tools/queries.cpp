@@ -16,6 +16,7 @@
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "app.hpp"
+#include "binary_index.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
@@ -50,12 +51,18 @@ void op_perftest(
     }
 
     std::vector<std::uint64_t> query_times(queries.size(), std::numeric_limits<std::uint64_t>::max());
+    std::vector<std::uint64_t> prelude_times(queries.size());
+    std::vector<std::uint64_t> lookup_times(queries.size());
+    std::vector<std::uint64_t> posting_times(queries.size());
     std::size_t num_reruns = 0;
     spdlog::info("Safe: {}", safe);
 
     for (size_t run = 0; run < runs; ++run) {
         size_t idx = 0;
         for (auto const& query: queries) {
+            StaticTimer::get("prelude")->reset();
+            StaticTimer::get("lookups")->reset();
+            StaticTimer::get("postings")->reset();
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query.query(k, request_flags));
                 if (safe && result < k) {
@@ -67,6 +74,9 @@ void op_perftest(
             });
             if (usecs.count() < query_times[idx]) {
                 query_times[idx] = usecs.count();
+                prelude_times[idx] = StaticTimer::get("prelude")->micros();
+                lookup_times[idx] = StaticTimer::get("lookups")->micros();
+                posting_times[idx] = StaticTimer::get("postings")->micros();
             }
             idx += 1;
         }
@@ -99,6 +109,19 @@ void op_perftest(
     spdlog::info(
         "Num. reruns: {} out of {} total runs (including warmup)", num_reruns, queries.size() * runs);
 
+    spdlog::info(
+        "Avg prelude: {}",
+        std::accumulate(prelude_times.begin(), prelude_times.end(), double(0.0))
+            / static_cast<double>(query_times.size()));
+    spdlog::info(
+        "Avg lookups: {}",
+        std::accumulate(lookup_times.begin(), lookup_times.end(), double(0.0))
+            / static_cast<double>(query_times.size()));
+    spdlog::info(
+        "Avg postings: {}",
+        std::accumulate(posting_times.begin(), posting_times.end(), double(0.0))
+            / static_cast<double>(query_times.size()));
+
     auto status = nlohmann::json{
         {"encoding", index_type},
         {"algorithm", query_type},
@@ -126,7 +149,8 @@ void perftest(
     uint64_t k,
     const ScorerParams& scorer_params,
     bool use_thresholds,
-    bool safe)
+    bool safe,
+    std::optional<std::string>& pair_index_path)
 {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
@@ -158,6 +182,14 @@ void perftest(
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
+
+    using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
+    auto pair_index = [&]() -> std::optional<pair_index_type> {
+        if (pair_index_path) {
+            return pair_index_type::load(*pair_index_path);
+        }
+        return std::nullopt;
+    }();
 
     auto scorer = scorer::from_params(scorer_params, wdata);
 
@@ -274,8 +306,121 @@ void perftest(
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
-                maxscore_uni_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                maxscore_uni_query q(topk);
+                q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return topk.topk().size();
+            };
+        } else if (t == "maxscore-inter" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                if (not query.selection()) {
+                    spdlog::error("maxscore_inter_query requires posting list selections");
+                    std::exit(1);
+                }
+                // auto selection = *query.selection();
+                // if (selection.selected_pairs.empty()) {
+                //    maxscore_uni_query q(topk);
+                //    q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                //    index.num_docs()); topk.finalize(); return topk.topk().size();
+                //}
+                maxscore_inter_query q(topk);
+                if (not pair_index) {
+                    spdlog::error("Must provide pair index for maxscore-inter");
+                    std::exit(1);
+                }
+                q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                topk.finalize();
+                return topk.topk().size();
+            };
+        } else if (t == "maxscore-inter-eager" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                if (not query.selection()) {
+                    spdlog::error("maxscore_inter_query requires posting list selections");
+                    std::exit(1);
+                }
+                auto selection = *query.selection();
+                if (selection.selected_pairs.empty()) {
+                    maxscore_uni_query q(topk);
+                    q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    topk.finalize();
+                    return topk.topk().size();
+                }
+                maxscore_inter_eager_query q(topk);
+                if (not pair_index) {
+                    spdlog::error("Must provide pair index for maxscore-inter");
+                    std::exit(1);
+                }
+                q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                topk.finalize();
+                return topk.topk().size();
+            };
+        } else if (t == "maxscore-inter-opt" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                if (not query.selection()) {
+                    spdlog::error("maxscore-inter-opt requires posting list selections");
+                    std::exit(1);
+                }
+                auto selection = *query.selection();
+                if (selection.selected_pairs.empty()) {
+                    maxscore_uni_query q(topk);
+                    q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    topk.finalize();
+                    return topk.topk().size();
+                }
+                if (not pair_index) {
+                    spdlog::error("Must provide pair index for maxscore-inter");
+                    std::exit(1);
+                }
+                switch (query.term_ids().size()) {
+                case 1:
+                case 2: {
+                    maxscore_inter_opt_query<2> q(topk);
+                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                    break;
+                }
+                case 3:
+                case 4: {
+                    maxscore_inter_opt_query<4> q(topk);
+                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                    break;
+                }
+                case 5:
+                case 6: {
+                    maxscore_inter_opt_query<6> q(topk);
+                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                    break;
+                }
+                case 7:
+                case 8: {
+                    maxscore_inter_opt_query<8> q(topk);
+                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                    break;
+                }
+                case 9:
+                case 10:
+                case 11:
+                case 12: {
+                    maxscore_inter_opt_query<12> q(topk);
+                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                    break;
+                }
+                default: throw std::runtime_error("Query too long");
+                }
+                topk.finalize();
+                return topk.topk().size();
+            };
+        } else if (t == "block-max-union" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                BlockMaxUnionQuery q(topk);
+                q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -297,6 +442,7 @@ int main(int argc, const char** argv)
     bool safe = false;
     bool quantized = false;
     bool use_thresholds = false;
+    std::optional<std::string> pair_index_path{};
 
     App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer> app{
         "Benchmarks queries on a given index."};
@@ -307,6 +453,7 @@ int main(int argc, const char** argv)
         use_thresholds,
         "Initialize top-k queue with threshold passed as part of a query object");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")->needs(thresholds_option);
+    app.add_option("--pair-index", pair_index_path, "Path to pair index.");
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -317,7 +464,12 @@ int main(int argc, const char** argv)
 
     std::vector<pisa::QueryContainer> queries;
     try {
-        queries = app.resolved_queries();
+        auto reader = app.resolved_query_reader();
+        reader.for_each([&](auto&& query) {
+            // if (not query.selection(app.k())->selected_pairs.empty()) {
+            queries.push_back(query);
+            //}
+        });
     } catch (pisa::MissingResolverError err) {
         spdlog::error("Unresoved queries (without IDs) require term lexicon.");
         std::exit(1);
@@ -339,7 +491,8 @@ int main(int argc, const char** argv)
         app.k(),
         app.scorer_params(),
         use_thresholds,
-        safe);
+        safe,
+        pair_index_path);
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \

@@ -30,7 +30,7 @@ namespace pisa { namespace mapper {
 
         mappable_vector() : m_data(0), m_size(0), m_deleter() {}
         mappable_vector(mappable_vector const&) = delete;
-        mappable_vector(mappable_vector&&) = delete;
+        mappable_vector(mappable_vector&&) = default;
         mappable_vector& operator=(mappable_vector const&) = delete;
         mappable_vector& operator=(mappable_vector&&) = delete;
 

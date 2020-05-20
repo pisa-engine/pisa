@@ -61,7 +61,7 @@ struct VectorCursor {
 
     [[nodiscard]] auto size() const noexcept -> std::size_t { return documents.size(); }
     [[nodiscard]] auto docid() const noexcept -> std::uint32_t { return documents[0]; }
-    [[nodiscard]] auto freq() const noexcept -> float { return frequencies[0]; }
+    [[nodiscard]] auto freq() const noexcept -> std::uint32_t { return frequencies[0]; }
     void next()
     {
         if (documents[0] < max_docid) {

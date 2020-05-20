@@ -1,24 +1,25 @@
 #pragma once
 
-#include <string>
+#include <optional>
 #include <vector>
 
-#include "cursor/block_max_union.hpp"
-#include "cursor/cursor_union.hpp"
 #include "topk_queue.hpp"
+
+#include "cursor/block_max_union.hpp"
 
 namespace pisa {
 
-struct ranked_or_query {
-    explicit ranked_or_query(topk_queue& topk) : m_topk(topk) {}
+struct BlockMaxUnionQuery {
+    explicit BlockMaxUnionQuery(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
-        auto postings = union_merge(
+        auto postings = block_max_union(
             std::move(cursors),
             0.0,
             [](auto score, auto&& cursor) { return score + cursor.score(); },
+            [&](auto score) { return m_topk.would_enter(score); },
             std::optional<std::uint32_t>(max_docid));
 
         while (not postings.empty()) {

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
+
+#include "util/compiler_attribute.hpp"
 #include "util/likely.hpp"
 #include "util/util.hpp"
-#include <algorithm>
 
 namespace pisa {
 
@@ -44,7 +46,7 @@ struct topk_queue {
         return true;
     }
 
-    bool would_enter(float score) const { return score >= m_threshold; }
+    PISA_ALWAYSINLINE bool would_enter(float score) const { return score >= m_threshold; }
 
     void finalize()
     {

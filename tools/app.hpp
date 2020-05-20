@@ -593,5 +593,6 @@ using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
 using CompressArgs =
     pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>, arg::Threads>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
+using PairIndexArgs = pisa::Args<arg::Index, arg::Query<arg::QueryMode::Unranked>>;
 
 }  // namespace pisa

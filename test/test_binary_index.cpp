@@ -63,23 +63,19 @@ struct IndexData {
         };
         io::for_each_line(qfile, push_query);
 
-        std::vector<std::array<std::uint32_t, 2>> pairs;
+        std::vector<TermPair> pairs;
         for (auto&& query: queries) {
             auto const& term_ids = *query.term_ids();
             for (auto left = 0; left < term_ids.size(); left += 1) {
                 for (auto right = left + 1; right < term_ids.size(); right += 1) {
                     if (term_ids[left] != term_ids[right]) {
-                        pairs.push_back({term_ids[left], term_ids[right]});
+                        pairs.emplace_back(term_ids[left], term_ids[right]);
                     }
                 }
             }
         }
 
-        build_binary_index(
-            compressed_path.string(),
-            wdata_path.string(),
-            std::move(pairs),
-            binary_index_path.string());
+        build_binary_index(compressed_path.string(), std::move(pairs), binary_index_path.string());
         binary_index_source = mio::mmap_source(binary_index_path.c_str());
         mapper::map(binary_index, binary_index_source.data());
         pair_mapping_source =
@@ -105,7 +101,7 @@ struct IndexData {
     mio::mmap_source binary_index_source;
     binary_index_type binary_index;
     mio::mmap_source pair_mapping_source;
-    mapper::mappable_vector<std::array<std::uint32_t, 2>> pair_mapping;
+    mapper::mappable_vector<TermPair> pair_mapping;
 };
 
 std::unordered_map<std::string, unique_ptr<IndexData>> IndexData::data = {};
@@ -136,8 +132,7 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
                                     .query(query::unlimited)),
                             data->index.num_docs());
                         if (!expected.empty()) {
-                            auto term_pair =
-                                std::array<std::uint32_t, 2>{term_ids[left], term_ids[right]};
+                            auto term_pair = pisa::TermPair(term_ids[left], term_ids[right]);
                             auto pos = std::lower_bound(
                                 data->pair_mapping.begin(), data->pair_mapping.end(), term_pair);
                             REQUIRE(pos != data->pair_mapping.end());
@@ -145,8 +140,8 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
                             auto pair_id = std::distance(data->pair_mapping.begin(), pos);
                             auto cursor = data->binary_index[pair_id];
                             std::vector<std::pair<std::uint32_t, float>> actual;
-                            auto left_scorer = scorer->term_scorer(term_ids[left]);
-                            auto right_scorer = scorer->term_scorer(term_ids[right]);
+                            auto left_scorer = scorer->term_scorer(term_pair.front());
+                            auto right_scorer = scorer->term_scorer(term_pair.back());
                             while (cursor.docid() < cursor.universe()) {
                                 auto score = left_scorer(cursor.docid(), std::get<0>(cursor.freq()));
                                 score += right_scorer(cursor.docid(), std::get<1>(cursor.freq()));

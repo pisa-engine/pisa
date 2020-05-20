@@ -3,6 +3,7 @@
 #include <sstream>
 
 #include <catch2/catch.hpp>
+#include <gsl/span>
 
 #include "query.hpp"
 
@@ -10,6 +11,7 @@ using pisa::QueryContainer;
 using pisa::RequestFlag;
 using pisa::RequestFlagSet;
 using pisa::TermId;
+using pisa::TermPair;
 
 TEST_CASE("Construct from raw string")
 {
@@ -103,7 +105,8 @@ TEST_CASE("Parse query container from JSON")
     auto query = QueryContainer::from_json(R"(
     {
         "id": "ID",
-        "query": "brooklyn tea house"
+        "query": "brooklyn tea house",
+        "selections": [{"k": 10, "intersections": [1, 2, 3, 4]}]
     }
     )");
     REQUIRE(*query.id() == "ID");
@@ -111,6 +114,10 @@ TEST_CASE("Parse query container from JSON")
     REQUIRE_FALSE(query.terms());
     REQUIRE_FALSE(query.term_ids());
     REQUIRE(query.thresholds().empty());
+    auto selection = query.selection(10);
+    REQUIRE(selection.has_value());
+    REQUIRE(selection->selected_terms == std::vector<std::size_t>{0, 1, 2});
+    REQUIRE(selection->selected_pairs == std::vector<std::array<std::size_t, 2>>{{0, 1}});
 
     query = QueryContainer::from_json(R"(
     {
@@ -136,13 +143,14 @@ TEST_CASE("Serialize query container to JSON")
         "query": "brooklyn tea house",
         "terms": ["brooklyn", "tea", "house"],
         "term_ids": [1, 0, 3],
-        "thresholds": [{"k": 10, "score": 10.0}]
+        "thresholds": [{"k": 10, "score": 10.0}],
+        "selections": [{"k": 10, "intersections": [1, 2, 4, 5]}]
     }
     )");
     auto serialized = query.to_json_string();
     REQUIRE(
         serialized
-        == R"({"id":"ID","query":"brooklyn tea house","term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"thresholds":[{"k":10,"score":10.0}]})");
+        == R"({"id":"ID","query":"brooklyn tea house","selections":[{"intersections":[1,2,4,5],"k":10}],"term_ids":[1,0,3],"terms":["brooklyn","tea","house"],"thresholds":[{"k":10,"score":10.0}]})");
 }
 
 TEST_CASE("Copy constructor and assignment")
@@ -153,7 +161,8 @@ TEST_CASE("Copy constructor and assignment")
         "query": "brooklyn tea house",
         "terms": ["brooklyn", "tea", "house"],
         "term_ids": [1, 0, 3],
-        "thresholds": [{"k": 10, "score": 10.0}]
+        "thresholds": [{"k": 10, "score": 10.0}],
+        "selections": [{"k": 10, "intersections": [1, 2, 4]}]
     }
     )");
     {
@@ -163,6 +172,7 @@ TEST_CASE("Copy constructor and assignment")
         REQUIRE(*query.terms() == *copy.terms());
         REQUIRE(*query.term_ids() == *copy.term_ids());
         REQUIRE(query.thresholds() == copy.thresholds());
+        REQUIRE(query.selections() == copy.selections());
     }
     {
         auto copy = QueryContainer::raw("");
@@ -172,6 +182,7 @@ TEST_CASE("Copy constructor and assignment")
         REQUIRE(*query.terms() == *copy.terms());
         REQUIRE(*query.term_ids() == *copy.term_ids());
         REQUIRE(query.thresholds() == copy.thresholds());
+        REQUIRE(query.selections() == copy.selections());
     }
 }
 
@@ -244,4 +255,100 @@ TEST_CASE("Request flags")
     REQUIRE(not flags.contains(RequestFlag::Threshold));
     REQUIRE(flags.contains(RequestFlag::Weights));
     REQUIRE(not(RequestFlagSet::all() ^ RequestFlag::Threshold).contains(RequestFlag::Threshold));
+}
+
+TEST_CASE("QueryRequest")
+{
+    auto query = QueryContainer::from_json(R"(
+    {
+        "id": "ID",
+        "query": "brooklyn tea house",
+        "terms": ["brooklyn", "tea", "house"],
+        "term_ids": [1, 0, 3],
+        "thresholds": [{"k": 10, "score": 10.0}],
+        "selections": [{"k": 10, "intersections": [1, 2, 4, 5]}]
+    }
+    )");
+    SECTION("all")
+    {
+        auto request = query.query(10);
+        REQUIRE(request.k() == 10);
+        REQUIRE(request.term_ids() == gsl::make_span(std::vector<TermId>{0, 1, 3}));
+        REQUIRE(request.term_weights() == gsl::make_span(std::vector<float>{1.0, 1.0, 1.0}));
+        REQUIRE(request.threshold().has_value());
+        REQUIRE(*request.threshold() == 10.0);
+        REQUIRE(request.selection().has_value());
+        auto selection = *request.selection();
+        REQUIRE(selection.selected_pairs == std::vector<TermPair>{{1, 3}});
+        REQUIRE(selection.selected_terms == std::vector<TermId>{0, 1, 3});
+    }
+    SECTION("different k")
+    {
+        auto request = query.query(5);
+        REQUIRE(request.k() == 5);
+        REQUIRE(request.term_ids() == gsl::make_span(std::vector<TermId>{0, 1, 3}));
+        REQUIRE(request.term_weights() == gsl::make_span(std::vector<float>{1.0, 1.0, 1.0}));
+        REQUIRE(not request.threshold().has_value());
+        REQUIRE(not request.selection().has_value());
+    }
+    SECTION("Suppress threshold")
+    {
+        auto request = query.query(10, RequestFlagSet::all() ^ RequestFlag::Threshold);
+        REQUIRE(request.k() == 10);
+        REQUIRE(request.term_ids() == gsl::make_span(std::vector<TermId>{0, 1, 3}));
+        REQUIRE(request.term_weights() == gsl::make_span(std::vector<float>{1.0, 1.0, 1.0}));
+        REQUIRE(not request.threshold().has_value());
+        REQUIRE(request.selection().has_value());
+        auto selection = *request.selection();
+        REQUIRE(selection.selected_pairs == std::vector<TermPair>{{1, 3}});
+        REQUIRE(selection.selected_terms == std::vector<TermId>{0, 1, 3});
+    }
+    SECTION("Suppress selection")
+    {
+        auto request = query.query(10, RequestFlagSet::all() ^ RequestFlag::Selection);
+        REQUIRE(request.k() == 10);
+        REQUIRE(request.term_ids() == gsl::make_span(std::vector<TermId>{0, 1, 3}));
+        REQUIRE(request.term_weights() == gsl::make_span(std::vector<float>{1.0, 1.0, 1.0}));
+        REQUIRE(request.threshold().has_value());
+        REQUIRE(*request.threshold() == 10.0);
+        REQUIRE(not request.selection().has_value());
+    }
+}
+
+TEST_CASE("TermPair")
+{
+    SECTION("Constructor")
+    {
+        REQUIRE(TermPair(0, 1) == TermPair(1, 0));
+        REQUIRE(TermPair(std::array<TermId, 2>{1, 0}) == TermPair(0, 1));
+    }
+    SECTION("From array")
+    {
+        TermPair tp(0, 1);
+        tp = std::array<TermId, 2>{1, 0};
+        REQUIRE(tp == TermPair(0, 1));
+    }
+    SECTION("Accessors")
+    {
+        TermPair tp(1, 0);
+        REQUIRE(tp.at(0) == 0);
+        REQUIRE(tp.at(1) == 1);
+        REQUIRE_THROWS_AS(tp.at(2), std::out_of_range);
+        REQUIRE(std::get<0>(tp) == 0);
+        REQUIRE(std::get<1>(tp) == 1);
+        REQUIRE(tp.front() == 0);
+        REQUIRE(tp.back() == 1);
+        REQUIRE(*tp.data() == 0);
+        REQUIRE(*std::next(tp.data()) == 1);
+        REQUIRE(std::vector<TermId>(tp.begin(), tp.end()) == std::vector<TermId>{0, 1});
+        REQUIRE(std::vector<TermId>(tp.cbegin(), tp.cend()) == std::vector<TermId>{0, 1});
+    }
+    SECTION("swap")
+    {
+        TermPair tp1(1, 0);
+        TermPair tp2(4, 5);
+        std::swap(tp1, tp2);
+        REQUIRE(tp1 == TermPair(4, 5));
+        REQUIRE(tp2 == TermPair(0, 1));
+    }
 }
