@@ -32,7 +32,7 @@ auto term_processor = [](std::optional<std::string> const& type) -> Stemmer_t {
         };
     }
     if (*type == "krovetz") {
-        static stem::KrovetzStemmer kstemmer;
+        thread_local stem::KrovetzStemmer kstemmer;
         return [](std::string&& term) -> std::string {
             boost::algorithm::to_lower(term);
             return kstemmer.kstem_stemmer(term);
