@@ -44,10 +44,10 @@ TEST_CASE("Write header", "[parsing][forward_index]")
 {
     std::ostringstream os;
 
-    auto [document_count, encoded_header] = GENERATE(table<uint32_t, std::string>(
-        {{0, {1, 0, 0, 0, 0, 0, 0, 0}},
-         {1, {1, 0, 0, 0, 1, 0, 0, 0}},
-         {10, {1, 0, 0, 0, 10, 0, 0, 0}}}));
+    auto [document_count, encoded_header] =
+        GENERATE(table<uint32_t, std::string>({{0, {1, 0, 0, 0, 0, 0, 0, 0}},
+                                               {1, {1, 0, 0, 0, 1, 0, 0, 0}},
+                                               {10, {1, 0, 0, 0, 10, 0, 0, 0}}}));
     GIVEN("Document count is " << document_count)
     WHEN("Header is written to stream")
     {
