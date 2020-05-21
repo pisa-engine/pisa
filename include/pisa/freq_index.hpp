@@ -9,9 +9,13 @@
 
 namespace pisa {
 
+struct BitVectorIndexTag;
+
 template <typename DocsSequence, typename FreqsSequence>
 class freq_index {
   public:
+    using index_layout_tag = BitVectorIndexTag;
+
     freq_index() : m_num_docs(0) {}
 
     class builder {
