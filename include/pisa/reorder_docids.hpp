@@ -9,8 +9,6 @@
 
 #include <gsl/span>
 #include <spdlog/spdlog.h>
-#include <tbb/task_group.h>
-#include <tbb/task_scheduler_init.h>
 
 #include "binary_freq_collection.hpp"
 #include "recursive_graph_bisection.hpp"
