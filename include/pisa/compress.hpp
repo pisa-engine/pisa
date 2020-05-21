@@ -55,6 +55,42 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
+template <typename CollectionType>
+void compress_index_streaming(
+    binary_freq_collection const& input,
+    pisa::global_parameters const& params,
+    std::string const& output_filename,
+    bool check)
+{
+    spdlog::info("Processing {} documents (streaming)", input.num_docs());
+    double tick = get_time_usecs();
+
+    typename CollectionType::stream_builder builder(input.num_docs(), params);
+    size_t postings = 0;
+    {
+        pisa::progress progress("Create index", input.size());
+
+        size_t term_id = 0;
+        for (auto const& plist: input) {
+            size_t size = plist.docs.size();
+            uint64_t freqs_sum =
+                std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
+            builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            progress.update(1);
+            postings += size;
+            term_id += 1;
+        }
+    }
+
+    builder.build(output_filename);
+    double elapsed_secs = (get_time_usecs() - tick) / 1000000;
+    spdlog::info("Index compressed in {} seconds", elapsed_secs);
+
+    if (check) {
+        verify_collection<binary_freq_collection, CollectionType>(input, output_filename.c_str());
+    }
+}
+
 template <typename CollectionType, typename WandType>
 void compress_index(
     binary_freq_collection const& input,
@@ -66,7 +102,13 @@ void compress_index(
     ScorerParams const& scorer_params,
     bool quantized)
 {
-    using namespace pisa;
+    if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
+        if (not quantized) {
+            compress_index_streaming<CollectionType>(input, params, *output_filename, check);
+            return;
+        }
+    }
+
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 

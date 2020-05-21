@@ -11,7 +11,7 @@ namespace pisa {
 class QueryStemmer {
   public:
     explicit QueryStemmer(std::optional<std::string> const& stemmer_name)
-        : m_stemmer(term_processor(stemmer_name))
+        : m_stemmer(term_processor_builder(stemmer_name)())
     {}
     std::string operator()(std::string const& query_string)
     {
