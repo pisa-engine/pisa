@@ -2,15 +2,20 @@
 
 #include "bit_vector.hpp"
 #include "mappable/mappable_vector.hpp"
+#include "mappable/mapper.hpp"
 
 #include "block_posting_list.hpp"
 #include "codec/compact_elias_fano.hpp"
+#include "temporary_directory.hpp"
 
 namespace pisa {
+
+struct BlockIndexTag;
 
 template <typename BlockCodec, bool Profile = false>
 class block_freq_index {
   public:
+    using index_layout_tag = BlockIndexTag;
     block_freq_index() = default;
 
     class builder {
@@ -74,6 +79,86 @@ class block_freq_index {
         size_t m_num_docs;
         std::vector<uint64_t> m_endpoints;
         std::vector<uint8_t> m_lists;
+    };
+
+    class stream_builder {
+      public:
+        stream_builder(uint64_t num_docs, global_parameters const& params)
+            : m_params(params), m_postings_output((tmp.path() / "buffer").c_str())
+        {
+            m_num_docs = num_docs;
+            m_endpoints.push_back(0);
+        }
+
+        template <typename DocsIterator, typename FreqsIterator>
+        void add_posting_list(
+            uint64_t n,
+            DocsIterator docs_begin,
+            FreqsIterator freqs_begin,
+            uint64_t /* occurrences */)
+        {
+            if (!n) {
+                throw std::invalid_argument("List must be nonempty");
+            }
+            std::vector<std::uint8_t> buf;
+            block_posting_list<BlockCodec, Profile>::write(buf, n, docs_begin, freqs_begin);
+            m_postings_bytes_written += buf.size();
+            m_postings_output.write(reinterpret_cast<char const*>(buf.data()), buf.size());
+            m_endpoints.push_back(m_postings_bytes_written);
+        }
+
+        template <typename BlockDataRange>
+        void add_posting_list(uint64_t n, BlockDataRange const& blocks)
+        {
+            if (!n) {
+                throw std::invalid_argument("List must be nonempty");
+            }
+            std::vector<std::uint8_t> buf;
+            block_posting_list<BlockCodec>::write_blocks(buf, n, blocks);
+            m_postings_bytes_written += buf.size();
+            m_postings_output.write(reinterpret_cast<char const*>(buf.data()), buf.size());
+            m_endpoints.push_back(m_postings_bytes_written);
+        }
+
+        template <typename BytesRange>
+        void add_posting_list(BytesRange const& data)
+        {
+            m_postings_bytes_written += data.size();
+            m_postings_output.write(reinterpret_cast<char const*>(data.data()), data.size());
+            m_endpoints.push_back(m_postings_bytes_written);
+        }
+
+        void build(std::string const& index_path)
+        {
+            std::ofstream os(index_path.c_str());
+            mapper::detail::freeze_visitor freezer(os, 0);
+            freezer(m_params, "m_params");
+            std::size_t size = m_endpoints.size() - 1;
+            freezer(size, "size");
+            freezer(m_num_docs, "m_num_docs");
+
+            bit_vector_builder bvb;
+            compact_elias_fano::write(
+                bvb, m_endpoints.begin(), m_postings_bytes_written, size, m_params);
+            bit_vector endpoints(&bvb);
+            freezer(endpoints, "endpoints");
+
+            std::ifstream buf((tmp.path() / "buffer").c_str());
+            m_postings_output.close();
+            os.write(
+                reinterpret_cast<char const*>(&m_postings_bytes_written),
+                sizeof(m_postings_bytes_written));
+            os << buf.rdbuf();
+        }
+
+      private:
+        global_parameters m_params{};
+        size_t m_num_docs = 0;
+        size_t m_size = 0;
+        std::vector<uint64_t> m_endpoints{};
+        Temporary_Directory tmp{};
+        std::ofstream m_postings_output;
+        std::size_t m_postings_bytes_written{0};
     };
 
     size_t size() const { return m_size; }
