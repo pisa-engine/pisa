@@ -11,7 +11,6 @@
 #include "block_posting_list.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "temporary_directory.hpp"
-#include "writer_worker.hpp"
 
 namespace pisa {
 
@@ -92,7 +91,7 @@ class block_freq_index {
 
       public:
         stream_builder(uint64_t num_docs, global_parameters const& params)
-            : m_params(params), tmp(false), m_postings_output((tmp.path() / "buffer").c_str())
+            : m_params(params), m_postings_output((m_tmp.path() / "buffer").c_str())
         {
             m_num_docs = num_docs;
             m_endpoints.push_back(0);
@@ -147,7 +146,8 @@ class block_freq_index {
             bit_vector endpoints(&bvb);
             freezer(endpoints, "endpoints");
 
-            std::ifstream buf((tmp.path() / "buffer").c_str());
+            std::ifstream buf((m_tmp.path() / "buffer").c_str());
+            m_postings_output.close();
             os.write(
                 reinterpret_cast<char const*>(&m_postings_bytes_written),
                 sizeof(m_postings_bytes_written));
@@ -204,12 +204,10 @@ class block_freq_index {
         size_t m_num_docs = 0;
         size_t m_size = 0;
         std::vector<uint64_t> m_endpoints{};
-        TemporaryDirectory tmp;
+        Temporary_Directory m_tmp{};
         std::ofstream m_postings_output;
         std::size_t m_postings_bytes_written{0};
         std::vector<std::uint8_t> m_buffer;
-        std::condition_variable m_output_cond;
-        std::mutex m_output_mutex;
     };
 
     size_t size() const { return m_size; }

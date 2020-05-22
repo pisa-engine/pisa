@@ -444,8 +444,8 @@ int main(int argc, const char** argv)
     bool use_thresholds = false;
     std::optional<std::string> pair_index_path{};
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer> app{
-        "Benchmarks queries on a given index."};
+    App<arg::Index, arg::WandData<arg::WandMode::Optional>, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer>
+        app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--silent", silent, "Suppress logging");
     auto* thresholds_option = app.add_flag(

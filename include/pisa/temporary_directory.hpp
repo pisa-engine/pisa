@@ -4,22 +4,26 @@
 
 #include "boost/filesystem.hpp"
 
-namespace pisa {
+struct Temporary_Directory {
+    Temporary_Directory()
+        : dir_(boost::filesystem::temp_directory_path() / boost::filesystem::unique_path())
+    {
+        if (boost::filesystem::exists(dir_)) {
+            boost::filesystem::remove_all(dir_);
+        }
+        boost::filesystem::create_directory(dir_);
+        std::cerr << "Created a tmp dir " << dir_.c_str() << '\n';
+    }
+    ~Temporary_Directory()
+    {
+        if (boost::filesystem::exists(dir_)) {
+            boost::filesystem::remove_all(dir_);
+        }
+        std::cerr << "Removed a tmp dir " << dir_.c_str() << '\n';
+    }
 
-class TemporaryDirectory {
-  public:
-    explicit TemporaryDirectory(bool silent = false);
-    TemporaryDirectory(TemporaryDirectory const&) = delete;
-    TemporaryDirectory& operator=(TemporaryDirectory const&) = delete;
-    TemporaryDirectory(TemporaryDirectory&&) noexcept;
-    TemporaryDirectory& operator=(TemporaryDirectory&&) noexcept;
-    ~TemporaryDirectory();
-
-    [[nodiscard]] auto path() -> boost::filesystem::path const&;
+    [[nodiscard]] auto path() -> boost::filesystem::path const& { return dir_; }
 
   private:
-    boost::filesystem::path m_dir;
-    bool m_silent;
+    boost::filesystem::path dir_;
 };
-
-}  // namespace pisa

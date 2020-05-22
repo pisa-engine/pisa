@@ -90,7 +90,7 @@ int main(int argc, const char** argv)
     bool combinations = false;
     // bool header = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Unranked>> app{
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>> app{
         "Computes intersections of posting lists."};
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");

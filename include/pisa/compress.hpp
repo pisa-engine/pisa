@@ -56,18 +56,6 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
-template <typename Iter, typename Builder>
-void build_batch(Iter first, Iter last, Builder& builder, pisa::progress& progress)
-{
-    for (auto iter = first; iter != last; ++iter) {
-        size_t size = iter->docs.size();
-        uint64_t freqs_sum =
-            std::accumulate(iter->freqs.begin(), iter->freqs.begin() + size, uint64_t(0));
-        builder.add_posting_list(size, iter->docs.begin(), iter->freqs.begin(), freqs_sum);
-        progress.update(1);
-    }
-}
-
 template <typename CollectionType>
 void compress_index_streaming(
     binary_freq_collection const& input,

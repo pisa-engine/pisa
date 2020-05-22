@@ -340,7 +340,11 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 is,
                 output,
                 next_record,
-                [](std::string&& term) -> std::string { return std::forward<std::string>(term); },
+                [] {
+                    return [](std::string&& term) -> std::string {
+                        return std::forward<std::string>(term);
+                    };
+                },
                 parse_plaintext_content,
                 batch_size,
                 thread_count);

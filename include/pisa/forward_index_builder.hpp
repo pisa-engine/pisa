@@ -28,6 +28,7 @@
 #include "io.hpp"
 #include "parsing/html.hpp"
 #include "payload_vector.hpp"
+#include "query/term_processor.hpp"
 #include "tokenizer.hpp"
 #include "type_safe.hpp"
 #include "warcpp/warcpp.hpp"
@@ -53,7 +54,7 @@ struct Document_Record {
     std::string url_;
 };
 
-using process_term_function_type = std::function<std::string(std::string&&)>;
+using process_term_function_type = std::function<std::string(std::string)>;
 using process_content_function_type =
     std::function<void(std::string&&, std::function<void(std::string&&)>)>;
 
@@ -312,11 +313,12 @@ class Forward_Index_Builder {
         spdlog::info("Success.");
     }
 
+    template <typename TermProcessorConstruct>
     void build(
         std::istream& is,
         std::string const& output_file,
         read_record_function_type next_record,
-        process_term_function_type process_term,
+        TermProcessorConstruct&& term_processor,
         process_content_function_type process_content,
         std::ptrdiff_t batch_size,
         std::size_t threads) const
@@ -341,8 +343,12 @@ class Forward_Index_Builder {
                         batch_number, std::move(record_batch), first_document, output_file};
                 };
                 queue.push(0);
-                batch_group.run([bp = batch_process(), process_term, this, &queue, &process_content]() {
-                    run(bp, process_term, process_content);
+                batch_group.run([bp = batch_process(),
+                                 term_processor = term_processor(),
+                                 this,
+                                 &queue,
+                                 &process_content]() {
+                    run(bp, std::move(term_processor), process_content);
                     int x;
                     queue.try_pop(x);
                 });
@@ -359,8 +365,12 @@ class Forward_Index_Builder {
                         batch_number, std::move(record_batch), first_document, output_file};
                 };
                 queue.push(0);
-                batch_group.run([bp = batch_process(), process_term, this, &queue, &process_content]() {
-                    run(bp, process_term, process_content);
+                batch_group.run([bp = batch_process(),
+                                 term_processor = term_processor(),
+                                 this,
+                                 &queue,
+                                 &process_content]() {
+                    run(bp, std::move(term_processor), process_content);
                     int x;
                     queue.try_pop(x);
                 });

@@ -18,7 +18,7 @@ namespace pisa {
 
 using term_id_type = uint32_t;
 using Stemmer_t = std::function<std::string(std::string)>;
-auto term_processor = [](std::optional<std::string> const& type) -> std::function<Stemmer_t()> {
+auto term_processor_builder = [](std::optional<std::string> const& type) -> std::function<Stemmer_t()> {
     if (not type) {
         return [] {
             return [](std::string&& term) -> std::string {
@@ -36,11 +36,11 @@ auto term_processor = [](std::optional<std::string> const& type) -> std::functio
         };
     }
     if (*type == "krovetz") {
-        static stem::KrovetzStemmer kstemmer;
-        return [] {
-            return [](std::string&& term) -> std::string {
+        return []() {
+            return [kstemmer = std::make_shared<stem::KrovetzStemmer>()](
+                       std::string&& term) mutable -> std::string {
                 boost::algorithm::to_lower(term);
-                return kstemmer.kstem_stemmer(term);
+                return kstemmer->kstem_stemmer(term);
             };
         };
     }
@@ -72,7 +72,7 @@ class TermProcessor {
         };
 
         // Implements '_to_id' method.
-        _to_id = [=](auto str) { return to_id(term_processor(stemmer_type)(str)); };
+        _to_id = [=](auto str) { return to_id(term_processor_builder(stemmer_type)()(str)); };
         // Loads stopwords.
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);
