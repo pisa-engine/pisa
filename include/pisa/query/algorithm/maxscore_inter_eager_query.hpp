@@ -48,9 +48,32 @@ struct maxscore_inter_eager_query {
         std::uint32_t max_docid,
         Inspect* inspect = nullptr)
     {
-        using bigram_cursor_type = PairMaxScoredCursor<typename std::decay_t<PairIndex>::cursor_type>;
-        using lookup_cursor_type =
-            std::decay_t<decltype(make_max_scored_cursor(index, wdata, scorer, std::declval<TermId>()))>;
+        using lookup_cursor_type = std::conditional_t<
+            std::is_void_v<Inspect>,
+            std::decay_t<decltype(make_max_scored_cursor(index, wdata, scorer, std::declval<TermId>()))>,
+            InspectingCursor<
+                std::decay_t<decltype(make_max_scored_cursor(index, wdata, scorer, std::declval<TermId>()))>,
+                Inspect>>;
+        using bigram_cursor_type = std::conditional_t<
+            std::is_void_v<Inspect>,
+            PairMaxScoredCursor<typename std::decay_t<PairIndex>::cursor_type>,
+            InspectingCursor<PairMaxScoredCursor<typename std::decay_t<PairIndex>::cursor_type>, Inspect>>;
+
+        auto inspect_cursors = [&](auto&& cursors) {
+            if constexpr (std::is_void_v<Inspect>) {
+                return std::forward<decltype(cursors)>(cursors);
+            } else {
+                return ::pisa::inspect_cursors(std::forward<decltype(cursors)>(cursors), *inspect);
+            }
+        };
+
+        auto inspect_cursor = [&](auto&& cursors) {
+            if constexpr (std::is_void_v<Inspect>) {
+                return std::forward<decltype(cursors)>(cursors);
+            } else {
+                return ::pisa::inspect_cursor(std::forward<decltype(cursors)>(cursors), *inspect);
+            }
+        };
 
         auto term_ids = query.term_ids();
 
@@ -73,19 +96,18 @@ struct maxscore_inter_eager_query {
             auto essential_cursors = make_max_scored_cursors(
                 index, wdata, scorer, QueryContainer::from_term_ids(essential_terms).query(query.k()));
             return join_union_lookup(
-                std::move(essential_cursors),
-                std::move(lookup_cursors),
+                inspect_cursors(std::move(essential_cursors)),
+                inspect_cursors(std::move(lookup_cursors)),
                 0.0F,
                 Add{},
                 is_above_threshold,
-                max_docid,
-                inspect);
+                max_docid);
         }();
         auto unigram_heap =
             accumulate_cursor_to_heap(unigram_cursor, query.k(), m_topk.threshold(), max_docid);
 
         using lookup_transform_type =
-            LookupTransform<lookup_cursor_type, decltype(is_above_threshold), Inspect>;
+            LookupTransform<lookup_cursor_type, decltype(is_above_threshold)>;
         using transform_payload_cursor_type =
             TransformPayloadCursor<bigram_cursor_type, lookup_transform_type>;
 
@@ -97,8 +119,8 @@ struct maxscore_inter_eager_query {
             if (not pair_id) {
                 throw std::runtime_error(fmt::format("Pair not found: <{}, {}>", left, right));
             }
-            auto cursor = make_max_scored_pair_cursor(
-                pair_index.index(), wdata, *pair_id, scorer, left, right);
+            auto cursor = inspect_cursor(make_max_scored_pair_cursor(
+                pair_index.index(), wdata, *pair_id, scorer, left, right));
 
             std::vector<TermId> essential_terms{left, right};
             auto lookup_terms = ranges::views::set_difference(non_essential_terms, essential_terms)
@@ -119,10 +141,9 @@ struct maxscore_inter_eager_query {
                 transform_payload_cursor_type(
                     std::move(cursor),
                     lookup_transform_type(
-                        std::move(lookup_cursors),
+                        inspect_cursors(std::move(lookup_cursors)),
                         lookup_cursors_upper_bound,
-                        is_above_threshold,
-                        inspect)),
+                        is_above_threshold)),
                 query.k(),
                 m_topk.threshold(),
                 max_docid);

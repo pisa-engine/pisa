@@ -19,6 +19,7 @@
 #include "app.hpp"
 #include "binary_index.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/inspecting_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
@@ -346,8 +347,16 @@ void inspect(
         spdlog::error("Unimplemented");
         std::abort();
     } else if (query_type == "block_max_wand" && wand_data_filename) {
-        spdlog::error("Unimplemented");
-        std::abort();
+        query_fun = [&](QueryRequest query) {
+            topk_queue topk(k);
+            topk.set_threshold(query.threshold().value_or(0));
+            block_max_wand_query block_max_wand_q(topk);
+            Inspect inspect;
+            block_max_wand_q(
+                inspect_cursors(make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+                index.num_docs());
+            return inspect;
+        };
     } else if (query_type == "block_max_maxscore" && wand_data_filename) {
         spdlog::error("Unimplemented");
         std::abort();
@@ -367,7 +376,8 @@ void inspect(
             maxscore_query maxscore_q(topk);
             Inspect inspect;
             maxscore_q(
-                make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs(), &inspect);
+                inspect_cursors(make_max_scored_cursors(index, wdata, *scorer, query), inspect),
+                index.num_docs());
             return inspect;
         };
     } else if (query_type == "ranked_or_taat" && wand_data_filename) {
@@ -382,7 +392,8 @@ void inspect(
             topk.set_threshold(query.threshold().value_or(0));
             maxscore_uni_query q(topk);
             Inspect inspect;
-            q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs(), &inspect);
+            q(inspect_cursors(make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+              index.num_docs());
             return inspect;
         };
     } else if (query_type == "maxscore-inter" && wand_data_filename) {
@@ -397,9 +408,9 @@ void inspect(
             auto selection = *query.selection();
             if (selection.selected_pairs.empty()) {
                 maxscore_uni_query q(topk);
-                q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                  index.num_docs(),
-                  &inspect);
+                q(inspect_cursors(
+                      make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+                  index.num_docs());
                 return inspect;
             }
             if (not pair_index) {
@@ -422,9 +433,9 @@ void inspect(
             auto selection = *query.selection();
             if (selection.selected_pairs.empty()) {
                 maxscore_uni_query q(topk);
-                q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                  index.num_docs(),
-                  &inspect);
+                q(inspect_cursors(
+                      make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+                  index.num_docs());
                 return inspect;
             }
             if (not pair_index) {
@@ -447,9 +458,9 @@ void inspect(
             auto selection = *query.selection();
             if (selection.selected_pairs.empty()) {
                 maxscore_uni_query q(topk);
-                q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                  index.num_docs(),
-                  &inspect);
+                q(inspect_cursors(
+                      make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+                  index.num_docs());
                 return inspect;
             }
             if (not pair_index) {

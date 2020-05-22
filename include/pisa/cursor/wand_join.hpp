@@ -12,13 +12,7 @@
 
 namespace pisa {
 
-template <
-    typename Cursors,
-    typename Payload,
-    typename AccumulateFn,
-    typename ThresholdFn
-    // typename Inspect = void
-    >
+template <typename Cursors, typename Payload, typename AccumulateFn, typename ThresholdFn, typename Inspect = void>
 struct BlockMaxWandJoin {
     using cursor_type = std::decay_t<typename Cursors::value_type>;
     using payload_type = Payload;
@@ -29,11 +23,13 @@ struct BlockMaxWandJoin {
         Payload init,
         AccumulateFn accumulate,
         ThresholdFn above_threshold,
-        std::uint32_t sentinel)
+        std::uint32_t sentinel,
+        Inspect* inspect = nullptr)
         : m_cursors(std::move(cursors)),
           m_init(std::move(init)),
           m_accumulate(std::move(accumulate)),
-          m_above_threshold(std::move(above_threshold))
+          m_above_threshold(std::move(above_threshold)),
+          m_inspect(inspect)
     {
         m_ordered_cursors.reserve(m_cursors.size());
         std::transform(
@@ -120,6 +116,9 @@ struct BlockMaxWandJoin {
                             break;
                         }
                         en->next();
+                        if constexpr (not std::is_void_v<Inspect>) {
+                            m_inspect->posting();
+                        }
                     }
                     sort_cursors();
                     exit = true;
@@ -128,6 +127,9 @@ struct BlockMaxWandJoin {
                     for (; m_ordered_cursors[next_list]->docid() == pivot_docid; --next_list) {
                     }
                     m_ordered_cursors[next_list]->next_geq(pivot_docid);
+                    if constexpr (not std::is_void_v<Inspect>) {
+                        m_inspect->lookup();
+                    }
 
                     for (size_t i = next_list + 1; i < m_ordered_cursors.size(); ++i) {
                         if (m_ordered_cursors[i]->docid() <= m_ordered_cursors[i - 1]->docid()) {
@@ -189,6 +191,9 @@ struct BlockMaxWandJoin {
         }
 
         m_ordered_cursors[next_list]->next_geq(next);
+        if constexpr (not std::is_void_v<Inspect>) {
+            m_inspect->lookup();
+        }
 
         // bubble down the advanced list
         for (size_t i = next_list + 1; i < m_ordered_cursors.size(); ++i) {
@@ -209,14 +214,26 @@ struct BlockMaxWandJoin {
     value_type m_current_value{};
     value_type m_sentinel{};
     payload_type m_current_payload{};
+
+    Inspect* m_inspect;
 };
 
-template <typename Cursors, typename Payload, typename AccumulateFn, typename ThresholdFn>
+template <typename Cursors, typename Payload, typename AccumulateFn, typename ThresholdFn, typename Inspect = void>
 auto join_block_max_wand(
-    Cursors cursors, Payload init, AccumulateFn accumulate, ThresholdFn threshold, std::uint32_t sentinel)
+    Cursors cursors,
+    Payload init,
+    AccumulateFn accumulate,
+    ThresholdFn threshold,
+    std::uint32_t sentinel,
+    Inspect* inspect = nullptr)
 {
-    return BlockMaxWandJoin<Cursors, Payload, AccumulateFn, ThresholdFn>(
-        std::move(cursors), std::move(init), std::move(accumulate), std::move(threshold), sentinel);
+    return BlockMaxWandJoin<Cursors, Payload, AccumulateFn, ThresholdFn, Inspect>(
+        std::move(cursors),
+        std::move(init),
+        std::move(accumulate),
+        std::move(threshold),
+        sentinel,
+        inspect);
 }
 
 }  // namespace pisa

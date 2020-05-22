@@ -16,6 +16,7 @@
 
 #include "cursor/cursor.hpp"
 #include "cursor/cursor_union.hpp"
+#include "cursor/inspecting_cursor.hpp"
 #include "cursor/lookup_transform.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/numbered_cursor.hpp"
@@ -185,6 +186,14 @@ struct maxscore_inter_opt_query {
         using lookup_cursor_type =
             NumberedCursor<MaxScoredCursor<typename std::decay_t<Index>::document_enumerator>, TermId>;
 
+        auto inspect_cursors = [&](auto&& cursors) {
+            if constexpr (std::is_void_v<Inspect>) {
+                return std::forward<decltype(cursors)>(cursors);
+            } else {
+                return ::pisa::inspect_cursors(std::forward<decltype(cursors)>(cursors), *inspect);
+            }
+        };
+
         auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
         // auto prelude_timer = StaticTimer::get("prelude");
@@ -210,10 +219,10 @@ struct maxscore_inter_opt_query {
 
         auto essential_term_cursors =
             number_cursors(make_max_scored_cursors(index, wdata, scorer, essential_terms));
-        auto lookup_cursors = number_cursors(
-                                  make_max_scored_cursors(index, wdata, scorer, non_essential_terms),
-                                  non_essential_terms)
-            | sort(std::greater{}, func::max_score{});
+        auto lookup_cursors = inspect_cursors(
+            number_cursors(
+                make_max_scored_cursors(index, wdata, scorer, non_essential_terms), non_essential_terms)
+            | sort(std::greater{}, func::max_score{}));
 
         auto term_position = term_position_function<N>(
             essential_terms, ranges::views::transform(lookup_cursors, [](auto&& cursor) {
@@ -225,11 +234,10 @@ struct maxscore_inter_opt_query {
         Payload<N> initial_payload{};
 
         auto merged_unigrams = union_merge(
-            std::move(essential_term_cursors), initial_payload, [&](auto& acc, auto& cursor) {
+            inspect_cursors(std::move(essential_term_cursors)),
+            initial_payload,
+            [&](auto& acc, auto& cursor) {
                 // auto start = now();
-                if constexpr (not std::is_void_v<Inspect>) {
-                    inspect->posting();
-                }
                 auto const pos = cursor.term_position();
                 acc.scores[pos] = cursor.score();
                 acc.state |= 1U << pos;
@@ -268,11 +276,10 @@ struct maxscore_inter_opt_query {
             }());
 
         auto merged_pairs = union_merge(
-            std::move(essential_pair_cursors), initial_payload, [&](auto& acc, auto& cursor) {
+            inspect_cursors(std::move(essential_pair_cursors)),
+            initial_payload,
+            [&](auto& acc, auto& cursor) {
                 // auto start = now();
-                if constexpr (not std::is_void_v<Inspect>) {
-                    inspect->posting();
-                }
                 auto const score = cursor.score();
                 auto const& pos = cursor.term_position();
                 acc.scores[std::get<0>(pos)] = std::get<0>(score);
@@ -321,9 +328,6 @@ struct maxscore_inter_opt_query {
         // prelude_timer->add_time(now() - start);
 
         while (cursor.docid() < max_docid) {
-            if constexpr (not std::is_void_v<Inspect>) {
-                inspect->document();
-            }
             // auto start = now();
 
             auto const docid = cursor.docid();
@@ -335,10 +339,6 @@ struct maxscore_inter_opt_query {
 
             auto next_idx = next_lookup[state];
             while (PISA_UNLIKELY(next_idx >= 0 && m_topk.would_enter(score + mus[state]))) {
-                if constexpr (not std::is_void_v<Inspect>) {
-                    inspect->lookup();
-                }
-
                 auto lookup_idx = next_idx - essential_terms.size();
                 auto&& lookup_cursor = lookup_cursors[lookup_idx];
 

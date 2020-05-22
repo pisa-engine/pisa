@@ -204,7 +204,7 @@ class block_freq_index {
         size_t m_num_docs = 0;
         size_t m_size = 0;
         std::vector<uint64_t> m_endpoints{};
-        Temporary_Directory m_tmp{};
+        TemporaryDirectory m_tmp{};
         std::ofstream m_postings_output;
         std::size_t m_postings_bytes_written{0};
         std::vector<std::uint8_t> m_buffer;

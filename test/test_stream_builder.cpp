@@ -23,7 +23,7 @@ TEST_CASE("Stream builder for block index", "[index]")
     using index_type = block_simdbp_index;
 
     binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    Temporary_Directory tmp;
+    TemporaryDirectory tmp;
     auto expected_path = tmp.path() / "expected";
     auto actual_path = tmp.path() / "actual";
 

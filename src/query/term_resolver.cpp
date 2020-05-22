@@ -39,7 +39,7 @@ StandardTermResolver::StandardTermResolver(
         return std::nullopt;
     };
 
-    m_self->transform = pisa::term_processor(stemmer_type);
+    m_self->transform = pisa::term_processor_builder(stemmer_type)();
 
     if (stopwords_filename) {
         std::ifstream is(*stopwords_filename);

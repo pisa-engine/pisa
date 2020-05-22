@@ -319,12 +319,13 @@ void perftest(
                     spdlog::error("maxscore_inter_query requires posting list selections");
                     std::exit(1);
                 }
-                // auto selection = *query.selection();
-                // if (selection.selected_pairs.empty()) {
-                //    maxscore_uni_query q(topk);
-                //    q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-                //    index.num_docs()); topk.finalize(); return topk.topk().size();
-                //}
+                auto selection = *query.selection();
+                if (selection.selected_pairs.empty()) {
+                    maxscore_uni_query q(topk);
+                    q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    topk.finalize();
+                    return topk.topk().size();
+                }
                 maxscore_inter_query q(topk);
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
