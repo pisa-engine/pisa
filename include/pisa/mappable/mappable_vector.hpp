@@ -48,7 +48,7 @@ namespace pisa { namespace mapper {
 
         ~mappable_vector()
         {
-            if (m_deleter != nullptr) {
+            if (not m_deleter.empty()) {
                 m_deleter();
             }
         }
