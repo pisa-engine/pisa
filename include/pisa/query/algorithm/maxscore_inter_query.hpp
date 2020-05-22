@@ -120,8 +120,15 @@ struct maxscore_inter_query {
         };
 
         auto unigram_cursor = join_union_lookup(
-            inspect_cursors(make_max_scored_cursors(
-                index, wdata, scorer, QueryContainer::from_term_ids(essential_terms).query(query.k()))),
+            union_merge(
+                inspect_cursors(make_max_scored_cursors(
+                    index,
+                    wdata,
+                    scorer,
+                    QueryContainer::from_term_ids(essential_terms).query(query.k()))),
+                0.0F,
+                Add{},
+                max_docid),
             gsl::make_span(lookup_cursors),
             0.0F,
             Add{},

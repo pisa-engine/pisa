@@ -104,13 +104,7 @@ auto maxscore_partition(gsl::span<C> cursors, float threshold, P projection = fu
 /// container and you want to avoid moving them, you may pass a view such as `gsl::span`.
 /// However, it is discouraged in general case due to potential lifetime issues and dangling
 /// references.
-template <
-    typename EssentialCursor,
-    typename LookupCursors,
-    typename Payload,
-    typename AccumulateFn,
-    typename ThresholdFn,
-    typename Inspect = void>
+template <typename EssentialCursor, typename LookupCursors, typename Payload, typename AccumulateFn, typename ThresholdFn>
 struct UnionLookupJoin {
     using lookup_cursor_type = typename LookupCursors::value_type;
     using payload_type = Payload;
@@ -122,21 +116,19 @@ struct UnionLookupJoin {
         Payload init,
         AccumulateFn accumulate,
         ThresholdFn above_threshold,
-        std::uint32_t sentinel,
-        Inspect* inspect = nullptr)
+        std::uint32_t sentinel)
         : m_essential_cursor(std::move(essential_cursor)),
           m_lookup_cursors(std::move(lookup_cursors)),
           m_init(std::move(init)),
           m_accumulate(std::move(accumulate)),
-          m_above_threshold(std::move(above_threshold)),
-          m_inspect(inspect)
+          m_above_threshold(std::move(above_threshold))
     {
         m_upper_bounds.resize(m_lookup_cursors.size());
         std::inclusive_scan(
             m_lookup_cursors.rbegin(),
             m_lookup_cursors.rend(),
             m_upper_bounds.rbegin(),
-            [](auto acc, auto&& cursor) { return cursor.max_score(); },
+            [](auto acc, auto&& cursor) { return acc + cursor.max_score(); },
             0.0);
         // TODO(michal): automatic sentinel inference.
         // m_sentinel = essential_cursor.sentinel();
@@ -165,7 +157,7 @@ struct UnionLookupJoin {
     {
         bool exit = false;
         while (not exit) {
-            if (m_essential_cursor.empty()) {
+            if (PISA_UNLIKELY(m_essential_cursor.empty())) {
                 m_current_value = sentinel();
                 return;
             }
@@ -173,28 +165,20 @@ struct UnionLookupJoin {
             m_current_payload = m_essential_cursor.payload();
             m_essential_cursor.next();
 
-            if constexpr (not std::is_void_v<Inspect>) {
-                m_inspect->document();
-            }
-
             exit = true;
-
-            // auto lookup_bound = m_upper_bounds.begin();
+            auto lookup_bound = m_upper_bounds.begin();
             for (auto&& cursor: m_lookup_cursors) {
-                // if (not m_above_threshold(m_current_payload + *lookup_bound)) {
-                //    exit = false;
-                //    break;
-                //}
+                if (not m_above_threshold(m_current_payload + *lookup_bound)) {
+                    exit = false;
+                    break;
+                }
                 if (cursor.docid() < m_current_value) {
                     cursor.next_geq(m_current_value);
-                    if constexpr (not std::is_void_v<Inspect>) {
-                        m_inspect->lookup();
-                    }
                 }
                 if (cursor.docid() == m_current_value) {
                     m_current_payload = m_accumulate(m_current_payload, cursor);
                 }
-                //++lookup_bound;
+                std::advance(lookup_bound, 1);
             }
         }
     }
@@ -215,8 +199,6 @@ struct UnionLookupJoin {
     value_type m_sentinel{};
     payload_type m_current_payload{};
     std::vector<payload_type> m_upper_bounds{};
-
-    Inspect* m_inspect;
 };
 
 template <
@@ -381,32 +363,51 @@ struct UnionLookupJoin_ {
     Inspect* m_inspect;
 };
 
-/// Convenience function to construct a `UnionLookupJoin` cursor operator.
-/// See the struct documentation for more information.
-template <
-    typename EssentialCursors,
-    typename LookupCursors,
-    typename Payload,
-    typename AccumulateFn,
-    typename ThresholdFn,
-    typename Inspect = void>
+///// Convenience function to construct a `UnionLookupJoin` cursor operator.
+///// See the struct documentation for more information.
+// template <
+//    typename EssentialCursors,
+//    typename LookupCursors,
+//    typename Payload,
+//    typename AccumulateFn,
+//    typename ThresholdFn,
+//    typename Inspect = void>
+// auto join_union_lookup(
+//    EssentialCursors essential_cursors,
+//    LookupCursors lookup_cursors,
+//    Payload init,
+//    AccumulateFn accumulate,
+//    ThresholdFn threshold,
+//    std::uint32_t sentinel,
+//    Inspect* inspect = nullptr)
+//{
+//    return UnionLookupJoin_<EssentialCursors, LookupCursors, Payload, AccumulateFn, ThresholdFn,
+//    Inspect>(
+//        std::move(essential_cursors),
+//        std::move(lookup_cursors),
+//        std::move(init),
+//        std::move(accumulate),
+//        std::move(threshold),
+//        sentinel,
+//        inspect);
+//}
+
+template <typename EssentialCursors, typename LookupCursors, typename Payload, typename AccumulateFn, typename ThresholdFn>
 auto join_union_lookup(
     EssentialCursors essential_cursors,
     LookupCursors lookup_cursors,
     Payload init,
     AccumulateFn accumulate,
     ThresholdFn threshold,
-    std::uint32_t sentinel,
-    Inspect* inspect = nullptr)
+    std::uint32_t sentinel)
 {
-    return UnionLookupJoin_<EssentialCursors, LookupCursors, Payload, AccumulateFn, ThresholdFn, Inspect>(
+    return UnionLookupJoin<EssentialCursors, LookupCursors, Payload, AccumulateFn, ThresholdFn>(
         std::move(essential_cursors),
         std::move(lookup_cursors),
         std::move(init),
         std::move(accumulate),
         std::move(threshold),
-        sentinel,
-        inspect);
+        sentinel);
 }
 
 }  // namespace pisa

@@ -170,6 +170,110 @@ struct VariadicCursorUnion {
     std::uint32_t m_next_docid{};
 };
 
+/// Transforms a list of cursors into one cursor by lazily merging them together.
+template <typename Payload, typename CursorsTuple, typename... AccumulateFn>
+struct GenericCursorUnion {
+    using value_type = std::uint32_t;
+
+    constexpr GenericCursorUnion(Payload init, CursorsTuple cursors, std::tuple<AccumulateFn...> accumulate)
+        : m_cursors(std::move(cursors)), m_init(std::move(init)), m_accumulate(std::move(accumulate))
+    {
+        m_next_docid = std::numeric_limits<value_type>::max();
+        m_sentinel = std::numeric_limits<value_type>::min();
+        for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
+            if (cursor.docid() < m_next_docid) {
+                m_next_docid = cursor.docid();
+            }
+        });
+        for_each_cursor([&](auto&& cursor, [[maybe_unused]] auto&& fn) {
+            if (cursor.universe() > m_sentinel) {
+                m_sentinel = cursor.universe();
+            }
+        });
+        next();
+    }
+
+    template <typename Fn>
+    PISA_ALWAYSINLINE void for_each_cursor(Fn&& fn)
+    {
+        auto inner_loop = [&](auto&& inner_cursors, auto&& accumulate) {
+            for (auto&& cursor: inner_cursors) {
+                fn(std::forward<decltype(cursor)>(cursor),
+                   std::forward<decltype(accumulate)>(accumulate));
+            }
+        };
+        std::apply(
+            [&](auto&&... inner_cursors) {
+                std::apply(
+                    [&](auto&&... accumulate) {
+                        (inner_loop(
+                             std::forward<decltype(inner_cursors)>(inner_cursors),
+                             std::forward<decltype(accumulate)>(accumulate)),
+                         ...);
+                    },
+                    m_accumulate);
+            },
+            m_cursors);
+    }
+
+    [[nodiscard]] PISA_ALWAYSINLINE constexpr auto docid() const noexcept -> value_type
+    {
+        return m_current_value;
+    }
+    [[nodiscard]] PISA_ALWAYSINLINE constexpr auto score() const noexcept -> Payload const&
+    {
+        return m_current_payload;
+    }
+    [[nodiscard]] PISA_ALWAYSINLINE constexpr auto payload() const noexcept -> Payload const&
+    {
+        return m_current_payload;
+    }
+    [[nodiscard]] PISA_ALWAYSINLINE constexpr auto sentinel() const noexcept -> std::uint32_t
+    {
+        return m_sentinel;
+    }
+    [[nodiscard]] PISA_ALWAYSINLINE constexpr auto universe() const noexcept -> std::uint32_t
+    {
+        return m_sentinel;
+    }
+
+    PISA_ALWAYSINLINE constexpr void next()
+    {
+        if (PISA_UNLIKELY(m_next_docid == m_sentinel)) {
+            m_current_value = m_sentinel;
+            ::pisa::init_payload(m_current_payload, m_init);
+        } else {
+            ::pisa::init_payload(m_current_payload, m_init);
+            m_current_value = m_next_docid;
+            m_next_docid = m_sentinel;
+            for_each_cursor([&](auto&& cursor, auto&& accumulate) {
+                if (cursor.docid() == m_current_value) {
+                    m_current_payload = accumulate(m_current_payload, cursor);
+                    cursor.next();
+                }
+                if (cursor.docid() < m_next_docid) {
+                    m_next_docid = cursor.docid();
+                }
+            });
+        }
+    }
+
+    [[nodiscard]] PISA_ALWAYSINLINE constexpr auto empty() const noexcept -> bool
+    {
+        return m_current_value >= sentinel();
+    }
+
+  private:
+    CursorsTuple m_cursors;
+    Payload m_init;
+    std::tuple<AccumulateFn...> m_accumulate;
+
+    value_type m_current_value{};
+    value_type m_sentinel{};
+    Payload m_current_payload{};
+    std::uint32_t m_next_docid{};
+};
+
 template <typename CursorContainer, typename Payload, typename AccumulateFn>
 [[nodiscard]] constexpr inline auto union_merge(
     CursorContainer cursors,
@@ -186,6 +290,14 @@ template <typename Payload, typename... Cursors, typename... AccumulateFn>
     Payload init, std::tuple<Cursors...> cursors, std::tuple<AccumulateFn...> accumulate)
 {
     return VariadicCursorUnion<Payload, std::tuple<Cursors...>, AccumulateFn...>(
+        std::move(init), std::move(cursors), std::move(accumulate));
+}
+
+template <typename Payload, typename... Cursors, typename... AccumulateFn>
+[[nodiscard]] constexpr inline auto generic_union_merge(
+    Payload init, std::tuple<Cursors...> cursors, std::tuple<AccumulateFn...> accumulate)
+{
+    return GenericCursorUnion<Payload, std::tuple<Cursors...>, AccumulateFn...>(
         std::move(init), std::move(cursors), std::move(accumulate));
 }
 

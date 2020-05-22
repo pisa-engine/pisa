@@ -207,8 +207,7 @@ void evaluate_queries(
                 spdlog::error("maxscore_inter_query requires posting list selections");
                 std::exit(1);
             }
-            auto selection = *query.selection();
-            maxscore_inter_opt_query<16> q(topk);
+            maxscore_inter_opt_query q(topk);
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -467,7 +466,7 @@ void inspect(
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
             }
-            maxscore_inter_opt_query<16> q(topk);
+            maxscore_inter_opt_query q(topk);
             q(query, index, wdata, *pair_index, *scorer, index.num_docs(), &inspect);
             return inspect;
         };

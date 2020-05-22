@@ -96,7 +96,7 @@ struct maxscore_inter_eager_query {
             auto essential_cursors = make_max_scored_cursors(
                 index, wdata, scorer, QueryContainer::from_term_ids(essential_terms).query(query.k()));
             return join_union_lookup(
-                inspect_cursors(std::move(essential_cursors)),
+                union_merge(inspect_cursors(std::move(essential_cursors)), 0.0F, Add{}, max_docid),
                 inspect_cursors(std::move(lookup_cursors)),
                 0.0F,
                 Add{},

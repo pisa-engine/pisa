@@ -76,11 +76,14 @@ class CursorJoin {
     }
 
   protected:
-    void set_sentinel(value_type sentinel) { m_sentinel = sentinel; }
-    void set_current_value(value_type docid) { m_current_value = docid; }
-    void set_current_payload(value_type payload) { m_current_payload = payload; }
-    void init_payload() { ::pisa::init_payload(m_current_payload, m_init); }
-    void accumulate(Cursor& cursor) { m_current_payload = m_accumulate(m_current_payload, cursor); }
+    PISA_ALWAYSINLINE void set_sentinel(value_type sentinel) { m_sentinel = sentinel; }
+    PISA_ALWAYSINLINE void set_current_value(value_type docid) { m_current_value = docid; }
+    PISA_ALWAYSINLINE void set_current_payload(value_type payload) { m_current_payload = payload; }
+    PISA_ALWAYSINLINE void init_payload() { ::pisa::init_payload(m_current_payload, m_init); }
+    PISA_ALWAYSINLINE void accumulate(Cursor& cursor)
+    {
+        m_current_payload = m_accumulate(m_current_payload, cursor);
+    }
 
   private:
     payload_type m_init;

@@ -7,6 +7,7 @@
 
 #include "cursor/cursor.hpp"
 #include "cursor/cursor_union.hpp"
+#include "cursor/inspecting_cursor.hpp"
 #include "cursor/union_lookup_join.hpp"
 #include "cursor/wand_join.hpp"
 #include "topk_queue.hpp"
@@ -41,29 +42,14 @@ struct maxscore_uni_query {
         for (auto pos: ranges::views::reverse(non_essential)) {
             non_essential_cursors.push_back(std::move(cursors[pos]));
         }
-        // auto lookup_upper_bound = std::accumulate(
-        //    non_essential_cursors.begin(),
-        //    non_essential_cursors.end(),
-        //    0.0F,
-        //    [](auto acc, auto&& cursor) { return acc + cursor.max_score(); });
 
         auto joined = join_union_lookup(
-            std::move(essential_cursors),
-            // union_merge(std::move(essential_cursors), 0.0, Add{}, max_docid),
-            // join_block_max_wand(
-            //    std::move(essential_cursors),
-            //    0.0,
-            //    Add{},
-            //    [&, lookup_upper_bound](auto score) {
-            //        return m_topk.would_enter(score + lookup_upper_bound);
-            //    },
-            //    max_docid),
+            union_merge(std::move(essential_cursors), 0.0, Add{}, max_docid),
             std::move(non_essential_cursors),
             0.0,
             Add{},
             [&](auto score) { return m_topk.would_enter(score); },
-            max_docid,
-            inspect);
+            max_docid);
         while (not joined.empty()) {
             m_topk.insert(joined.score(), joined.docid());
             joined.next();

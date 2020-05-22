@@ -378,41 +378,43 @@ void perftest(
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
                 }
-                switch (query.term_ids().size()) {
-                case 1:
-                case 2: {
-                    maxscore_inter_opt_query<2> q(topk);
-                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                    break;
-                }
-                case 3:
-                case 4: {
-                    maxscore_inter_opt_query<4> q(topk);
-                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                    break;
-                }
-                case 5:
-                case 6: {
-                    maxscore_inter_opt_query<6> q(topk);
-                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                    break;
-                }
-                case 7:
-                case 8: {
-                    maxscore_inter_opt_query<8> q(topk);
-                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                    break;
-                }
-                case 9:
-                case 10:
-                case 11:
-                case 12: {
-                    maxscore_inter_opt_query<12> q(topk);
-                    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                    break;
-                }
-                default: throw std::runtime_error("Query too long");
-                }
+                // switch (query.term_ids().size()) {
+                // case 1:
+                // case 2: {
+                //    maxscore_inter_opt_query<2> q(topk);
+                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                //    break;
+                //}
+                // case 3:
+                // case 4: {
+                //    maxscore_inter_opt_query<4> q(topk);
+                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                //    break;
+                //}
+                // case 5:
+                // case 6: {
+                //    maxscore_inter_opt_query<6> q(topk);
+                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                //    break;
+                //}
+                // case 7:
+                // case 8: {
+                //    maxscore_inter_opt_query<8> q(topk);
+                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                //    break;
+                //}
+                // case 9:
+                // case 10:
+                // case 11:
+                // case 12: {
+                //    maxscore_inter_opt_query<12> q(topk);
+                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+                //    break;
+                //}
+                // default: throw std::runtime_error("Query too long");
+                //}
+                maxscore_inter_opt_query q(topk);
+                q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
