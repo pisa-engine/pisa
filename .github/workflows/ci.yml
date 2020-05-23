@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux-gcc-9, linux-gcc-7, linux-clang-10, linux-clang-6]
+        name: [linux-gcc-9, linux-gcc-7, linux-clang-10, linux-clang-7]
         include:
           - name: linux-gcc-9
             os: ubuntu-latest
@@ -24,9 +24,10 @@ jobs:
             os: ubuntu-latest
             compiler: "clang"
             version: "10"
-          - name: linux-clang-6
+          - name: linux-clang-7
             os: ubuntu-latest
-            compiler: "clang" # default on bionic: clang-6
+            compiler: "clang"
+            version: "7"
     steps:
     - uses: actions/checkout@v2
 
@@ -43,10 +44,6 @@ jobs:
 
           if [ "${cc}" = "clang-10" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
-          fi
-          if [ "${cc}" = "clang" ]; then
-            sudo apt-get install -y libc++-7-dev libc++abi-7-dev
-            echo "::set-env name=CMAKE_CXX_FLAGS::-stdlib=libc++"
           fi
           sudo apt-get update
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
