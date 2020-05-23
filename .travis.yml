@@ -26,37 +26,11 @@ matrix:
     - os: linux
       dist: xenial
       compiler: gcc
-      addons: &gcc7
-        apt:
-          sources: *all_sources
-          packages:
-            - g++-7
-            - lcov
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=Off"
-    - os: linux
-      dist: xenial
-      compiler: gcc
       addons: &gcc8
         apt:
           sources: *all_sources
           packages: ['g++-8']
       env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && DOCKER=On"
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-          apt:
-              sources: *all_sources
-              packages: ['clang-5.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-          apt:
-              sources: *all_sources
-              packages: ['clang-6.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
     - os: osx
       osx_image: xcode10.3
       compiler: clang
