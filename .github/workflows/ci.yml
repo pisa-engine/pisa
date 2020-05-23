@@ -46,7 +46,7 @@ jobs:
           fi
           if [ "${cc}" = "clang" ]; then
             sudo apt-get remove -y gcc-9 g++-9 libstdc++-9-dev
-            sudo apt-get install -y libstdc++-7
+            sudo apt-get install -y libstdc++-7-dev
           fi
           sudo apt-get update
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
