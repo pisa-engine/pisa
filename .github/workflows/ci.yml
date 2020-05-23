@@ -45,7 +45,7 @@ jobs:
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           fi
           if [ "${cc}" = "clang" ]; then
-            sudo apt-get remove -y gcc-9 g++-9
+            sudo apt-get remove -y gcc-9 g++-9 libstdc++-9-dev
           fi
           sudo apt-get update
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
