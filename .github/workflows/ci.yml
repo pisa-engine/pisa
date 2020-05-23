@@ -19,16 +19,14 @@ jobs:
             version: "9"
           - name: linux-gcc-7
             os: ubuntu-latest
-            compiler: "gcc"
-            version: "7"
+            compiler: "gcc" # default on bionic: gcc-7
           - name: linux-clang-10
             os: ubuntu-latest
             compiler: "clang"
             version: "10"
           - name: linux-clang-6
             os: ubuntu-latest
-            compiler: "clang"
-            version: "6"
+            compiler: "clang" # default on bionic: clang-6
     steps:
     - uses: actions/checkout@v2
 
@@ -37,19 +35,23 @@ jobs:
       shell: bash
       run: |
           # Install compiler
-          if [ "${{ matrix.compiler }}" = "clang" ] && [ "${{ matrix.version }}" = "10" ]; then
+
+          cc="${{ matrix.compiler }}-${{ matrix.version }}"
+          cc="${cc%-}"
+          cxx="${cc/clang/clang++}"
+          cxx="${cxx/gcc/g++}"
+
+          if [ "${cc}" = "clang-10" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           fi
           sudo apt-get update
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            sudo apt-get install -y g++-${{ matrix.version }}
-            echo "::set-env name=CC::gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+              sudo apt-get install -y "${cxx}"
           else
-            sudo apt-get install -y clang-${{ matrix.version }}
-            echo "::set-env name=CC::clang-${{ matrix.version }}"
-            echo "::set-env name=CXX::clang++-${{ matrix.version }}"
+              sudo apt-get install -y "${cc}"
           fi
+          echo "::set-env name=CC::${cc}"
+          echo "::set-env name=CXX::${cxx}"
 
     - name: Create Build Environment
       shell: bash
