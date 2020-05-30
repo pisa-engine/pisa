@@ -405,13 +405,13 @@ void inspect(
                 std::exit(1);
             }
             auto selection = *query.selection();
-            if (selection.selected_pairs.empty()) {
-                maxscore_uni_query q(topk);
-                q(inspect_cursors(
-                      make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
-                  index.num_docs());
-                return inspect;
-            }
+            // if (selection.selected_pairs.empty()) {
+            //    maxscore_uni_query q(topk);
+            //    q(inspect_cursors(
+            //          make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+            //      index.num_docs());
+            //    return inspect;
+            //}
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -430,13 +430,13 @@ void inspect(
                 std::exit(1);
             }
             auto selection = *query.selection();
-            if (selection.selected_pairs.empty()) {
-                maxscore_uni_query q(topk);
-                q(inspect_cursors(
-                      make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
-                  index.num_docs());
-                return inspect;
-            }
+            // if (selection.selected_pairs.empty()) {
+            //    maxscore_uni_query q(topk);
+            //    q(inspect_cursors(
+            //          make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+            //      index.num_docs());
+            //    return inspect;
+            //}
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -455,13 +455,13 @@ void inspect(
                 std::exit(1);
             }
             auto selection = *query.selection();
-            if (selection.selected_pairs.empty()) {
-                maxscore_uni_query q(topk);
-                q(inspect_cursors(
-                      make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
-                  index.num_docs());
-                return inspect;
-            }
+            // if (selection.selected_pairs.empty()) {
+            //    maxscore_uni_query q(topk);
+            //    q(inspect_cursors(
+            //          make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
+            //      index.num_docs());
+            //    return inspect;
+            //}
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -493,7 +493,8 @@ using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType:
 
 int main(int argc, const char** argv)
 {
-    spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     std::string documents_file;
     std::string run_id = "R0";

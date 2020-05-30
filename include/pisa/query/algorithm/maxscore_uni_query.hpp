@@ -18,8 +18,8 @@ namespace pisa {
 struct maxscore_uni_query {
     explicit maxscore_uni_query(topk_queue& topk) : m_topk(topk) {}
 
-    template <typename CursorRange, typename Inspect = void>
-    void operator()(CursorRange&& cursors, uint64_t max_docid, Inspect* inspect = nullptr)
+    template <typename CursorRange>
+    void operator()(CursorRange&& cursors, uint64_t max_docid)
     {
         using cursor_type = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
@@ -44,7 +44,7 @@ struct maxscore_uni_query {
         }
 
         auto joined = join_union_lookup(
-            union_merge(std::move(essential_cursors), 0.0, Add{}, max_docid),
+            std::move(essential_cursors),
             std::move(non_essential_cursors),
             0.0,
             Add{},

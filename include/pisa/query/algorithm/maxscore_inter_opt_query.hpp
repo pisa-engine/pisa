@@ -15,6 +15,7 @@
 #include <range/v3/view/transform.hpp>
 
 #include "cursor/cursor.hpp"
+#include "cursor/cursor_intersection.hpp"
 #include "cursor/cursor_union.hpp"
 #include "cursor/inspecting_cursor.hpp"
 #include "cursor/lookup_transform.hpp"
@@ -71,22 +72,12 @@ PISA_ALWAYSINLINE auto precompute_next_lookup(
     return next_lookup;
 }
 
-// template <std::size_t N>
-// struct alignas(N < 8 ? 16 : 32) Payload {
-//    std::array<float, N> scores{};
-//    std::size_t state{0};
-//};
-
 struct Payload {
     State state{0};
     float score{0.0};
 
     PISA_ALWAYSINLINE auto operator+=(Payload const& other) -> Payload&
     {
-        // if ((state & other.state) == 0) {
-        //    score += other.score;
-        //    state |= other.state;
-        //}
         score += other.score * static_cast<float>((state & other.state) == 0);
         state |= other.state;
         return *this;
@@ -101,84 +92,6 @@ struct Payload {
         return *this;
     }
 };
-
-// void horizontal_sum_4(float* lhs, float const* rhs)
-//{
-//    __m128 const x = _mm_load_ps(lhs);
-//    __m128 const y = _mm_load_ps(rhs);
-//    __m128 const result = _mm_add_ps(x, y);
-//    _mm_store_ps(lhs, result);
-//}
-//
-// void horizontal_sum_8(float* lhs, float const* rhs)
-//{
-//    __m256 const x = _mm256_load_ps(lhs);
-//    __m256 const y = _mm256_load_ps(rhs);
-//    __m256 const result = _mm256_add_ps(x, y);
-//    _mm256_store_ps(lhs, result);
-//}
-
-// template <std::size_t N>
-// void accumulate_n(Payload<N>& accumulator, Payload<N> const& payload)
-//{
-//    auto& acc = accumulator.scores;
-//    auto const& score = payload.scores;
-//    if constexpr (N == 4) {
-//        horizontal_sum_4(&acc[0], &score[0]);
-//    } else if constexpr (N == 6) {
-//        horizontal_sum_4(&acc[0], &score[0]);
-//        acc[4] += score[4];
-//        acc[5] += score[5];
-//    } else if constexpr (N == 8) {
-//        horizontal_sum_8(&acc[0], &score[0]);
-//    } else if constexpr (N == 10) {
-//        horizontal_sum_8(&acc[0], &score[0]);
-//        acc[8] += score[8];
-//        acc[9] += score[9];
-//    } else if constexpr (N == 12) {
-//        horizontal_sum_8(&acc[0], &score[0]);
-//        horizontal_sum_4(&acc[8], &score[8]);
-//    } else {
-//        std::transform(acc.begin(), acc.end(), score.begin(), acc.begin(), std::plus{});
-//    }
-//    accumulator.state |= payload.state;
-//}
-
-//[[nodiscard]] PISA_ALWAYSINLINE auto sum_scores_4(float const* scores) -> float
-//{
-//    float result;
-//    __m128 const x = _mm_load_ps(scores);
-//    __m128 const y = _mm_hadd_ps(x, x);
-//    __m128 const z = _mm_hadd_ps(y, y);
-//    _mm_store_ss(&result, z);
-//    return result;
-//}
-//
-//[[nodiscard]] PISA_ALWAYSINLINE auto sum_scores_8(float const* scores) -> float
-//{
-//    float result;
-//    __m128 const a = _mm_load_ps(scores);
-//    __m128 const b = _mm_load_ps(std::next(scores, 4));
-//    __m128 const x = _mm_hadd_ps(a, b);
-//    __m128 const y = _mm_hadd_ps(x, x);
-//    __m128 const z = _mm_hadd_ps(y, y);
-//    _mm_store_ss(&result, z);
-//    return result;
-//}
-//
-// template <std::size_t N>
-//[[nodiscard]] PISA_ALWAYSINLINE auto sum_scores(std::array<float, N> const& scores) -> float
-//{
-//    if constexpr (N == 4) {
-//        return sum_scores_4(&scores[0]);
-//    } else if (N == 8) {
-//        return sum_scores_8(&scores[0]);
-//    } else if (N == 12) {
-//        return sum_scores_8(&scores[0]) + sum_scores_4(&scores[8]);
-//    } else {
-//        return std::accumulate(scores.begin(), scores.end(), 0.0F, std::plus{});
-//    }
-//}
 
 template <std::size_t N, typename R1, typename R2>
 [[nodiscard]] PISA_ALWAYSINLINE auto term_position_function(R1&& essential_terms, R2&& lookup_terms)
@@ -197,7 +110,9 @@ template <std::size_t N, typename R1, typename R2>
 }
 
 struct maxscore_inter_opt_query {
-    explicit maxscore_inter_opt_query(topk_queue& topk) : m_topk(topk) {}
+    explicit maxscore_inter_opt_query(topk_queue& topk, bool dynamic_intersections = false)
+        : m_topk(topk), m_dynamic_intersections(dynamic_intersections)
+    {}
 
     template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
     void operator()(
@@ -211,16 +126,6 @@ struct maxscore_inter_opt_query {
     {
         using lookup_cursor_type =
             NumberedCursor<MaxScoredCursor<typename std::decay_t<Index>::document_enumerator>, TermId>;
-
-        auto inspect_cursors = [&](auto&& cursors) {
-            if constexpr (std::is_void_v<Inspect>) {
-                return std::forward<decltype(cursors)>(cursors);
-            } else {
-                return ::pisa::inspect_cursors(std::forward<decltype(cursors)>(cursors), *inspect);
-            }
-        };
-
-        auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
         auto const term_ids = query.term_ids();
         auto const term_count = term_ids.size();
@@ -239,7 +144,8 @@ struct maxscore_inter_opt_query {
         auto lookup_cursors = inspect_cursors(
             number_cursors(
                 make_max_scored_cursors(index, wdata, scorer, non_essential_terms), non_essential_terms)
-            | sort(std::greater{}, func::max_score{}));
+                | sort(std::greater{}, func::max_score{}),
+            inspect);
 
         auto term_position = term_position_function<16>(
             essential_terms, ranges::views::transform(lookup_cursors, [](auto&& cursor) {
@@ -250,22 +156,57 @@ struct maxscore_inter_opt_query {
 
         Payload initial_payload{};
 
+        auto accumulate_single = [](auto& acc, auto&& cursor) {
+            acc.score = cursor.score();
+            acc.state |= 1U << cursor.term_position();
+            return acc;
+        };
+        auto accumulate_intersection = [](auto& acc, auto&& cursor) {
+            acc[cursor.term_position()] = cursor.score();
+            return acc;
+        };
+        auto accumulate_pair = [](auto& acc, auto&& cursor) {
+            auto const& score = cursor.score();
+            auto const& pos = cursor.term_position();
+            acc.accumulate(1U << std::get<0>(pos), std::get<0>(score));
+            acc.accumulate(1U << std::get<1>(pos), std::get<1>(score));
+            return acc;
+        };
+
         using pair_cursor_type = NumberedCursor<
             PairMaxScoredCursor<typename std::decay_t<PairIndex>::cursor_type>,
             std::array<State, 2>>;
 
+        using intersection_type = NumberedCursor<
+            CursorIntersection<
+                std::decay_t<decltype(number_cursors(make_max_scored_cursors(
+                    index, wdata, scorer, std::declval<std::vector<TermId>>())))>,
+                std::array<float, 2>,
+                decltype(accumulate_intersection)>,
+            std::array<State, 2>>;
+
         std::vector<pair_cursor_type> essential_pair_cursors;
+        std::vector<intersection_type> essential_intersections;
         for (auto [left, right]: selection->selected_pairs) {
             auto pair_id = pair_index.pair_id(left, right);
-            if (not pair_id) {
-                throw std::runtime_error(fmt::format("Pair not found: <{}, {}>", left, right));
-            }
             State left_pos = term_position(left);
             State right_pos = term_position(right);
-            auto cursor = number_cursor(
-                make_max_scored_pair_cursor(pair_index.index(), wdata, *pair_id, scorer, left, right),
-                std::array<State, 2>{left_pos, right_pos});  //, left_mask, right_mask});
-            essential_pair_cursors.push_back(std::move(cursor));
+            if (m_dynamic_intersections || not pair_id) {
+                if (not m_dynamic_intersections) {
+                    throw std::runtime_error(fmt::format("Pair not found: <{}, {}>", left, right));
+                }
+                auto cursors = number_cursors(make_max_scored_cursors(
+                    index, wdata, scorer, std::vector<TermId>{left, right}));
+                essential_intersections.push_back(number_cursor(
+                    intersect(std::move(cursors), std::array<float, 2>{}, accumulate_intersection),
+                    std::array<State, 2>{left_pos, right_pos}));
+            } else {
+                auto cursor = number_cursor(
+                    make_max_scored_pair_cursor(
+                        pair_index.index(), wdata, *pair_id, scorer, left, right),
+                    std::array<State, 2>{left_pos, right_pos});
+                essential_pair_cursors.push_back(std::move(cursor));
+            }
         }
 
         auto next_lookup =
@@ -282,21 +223,10 @@ struct maxscore_inter_opt_query {
         auto cursor = generic_union_merge(
             initial_payload,
             std::make_tuple(
-                inspect_cursors(std::move(essential_term_cursors)),
-                inspect_cursors(std::move(essential_pair_cursors))),
-            std::make_tuple(
-                [](auto& acc, auto&& cursor) {
-                    acc.score = cursor.score();
-                    acc.state |= 1U << cursor.term_position();
-                    return acc;
-                },
-                [](auto& acc, auto&& cursor) {
-                    auto const& score = cursor.score();
-                    auto const& pos = cursor.term_position();
-                    acc.accumulate(1U << std::get<0>(pos), std::get<0>(score));
-                    acc.accumulate(1U << std::get<1>(pos), std::get<1>(score));
-                    return acc;
-                }));
+                inspect_cursors(std::move(essential_term_cursors), inspect),
+                inspect_cursors(std::move(essential_pair_cursors), inspect),
+                inspect_cursors(std::move(essential_intersections), inspect)),
+            std::make_tuple(accumulate_single, accumulate_pair, accumulate_pair));
 
         auto lookup_cursors_upper_bound = std::accumulate(
             lookup_cursors.begin(), lookup_cursors.end(), 0.0F, [](auto acc, auto&& cursor) {
@@ -357,6 +287,7 @@ struct maxscore_inter_opt_query {
 
   private:
     topk_queue& m_topk;
+    bool m_dynamic_intersections;
 };
 
 }  // namespace pisa

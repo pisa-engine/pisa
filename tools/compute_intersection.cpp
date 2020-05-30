@@ -28,7 +28,8 @@ void intersect(
     std::optional<std::string> const& wand_data_filename,
     QueryRange&& queries,
     IntersectionType intersection_type,
-    std::optional<int> max_term_count)
+    std::optional<int> max_term_count,
+    ScorerParams const& scorer_params)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -51,7 +52,7 @@ void intersect(
         if (intersection_type == IntersectionType::Combinations) {
             auto intersections = nlohmann::json::array();
             auto process_intersection = [&](auto const& query, auto const& mask) {
-                auto intersection = Intersection::compute(index, wdata, query, mask);
+                auto intersection = Intersection::compute(index, wdata, query, scorer_params, mask);
                 if (intersection.length > 0) {
                     intersections.push_back(nlohmann::json{
                         {"length", intersection.length},
@@ -64,7 +65,7 @@ void intersect(
                 nlohmann::json{{"query", query.to_json()}, {"intersections", intersections}};
             std::cout << output.dump() << '\n';
         } else {
-            auto intersection = Intersection::compute(index, wdata, query);
+            auto intersection = Intersection::compute(index, wdata, query, scorer_params);
             auto query_json = query.to_json();
             auto intersection_json = nlohmann::json::object();
             intersection_json["length"] = intersection.length;
@@ -90,8 +91,9 @@ int main(int argc, const char** argv)
     bool combinations = false;
     // bool header = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>> app{
-        "Computes intersections of posting lists."};
+    CLI::App app{"Computes intersections of posting lists."};
+    Args<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::Scorer>
+        args(&app);
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
     app.add_option(
@@ -103,7 +105,7 @@ int main(int argc, const char** argv)
     app.add_option("--max-query-len", max_query_len, "Maximum query length");
     CLI11_PARSE(app, argc, argv);
 
-    auto queries = app.resolved_queries();
+    auto queries = args.resolved_queries();
     auto filtered_queries = ranges::views::filter(queries, [&](auto&& query) {
         auto size = query.term_ids()->size();
         return size >= min_query_len || size <= max_query_len;
@@ -114,22 +116,23 @@ int main(int argc, const char** argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                               \
-    }                                                       \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) \
-    {                                                       \
-        intersect<BOOST_PP_CAT(T, _index), wand_raw_index>( \
-            app.index_filename(),                           \
-            app.wand_data_path(),                           \
-            filtered_queries,                               \
-            intersection_type,                              \
-            max_term_count);                                \
+#define LOOP_BODY(R, DATA, T)                                \
+    }                                                        \
+    else if (args.index_encoding() == BOOST_PP_STRINGIZE(T)) \
+    {                                                        \
+        intersect<BOOST_PP_CAT(T, _index), wand_raw_index>(  \
+            args.index_filename(),                           \
+            args.wand_data_path(),                           \
+            filtered_queries,                                \
+            intersection_type,                               \
+            max_term_count,                                  \
+            args.scorer_params());                           \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
 
     } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
+        spdlog::error("Unknown type {}", args.index_encoding());
     }
 }

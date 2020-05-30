@@ -52,6 +52,7 @@ struct Intersection {
         Index const& index,
         Wand const& wand,
         QueryContainer const& query,
+        ScorerParams const& scorer_params,
         std::optional<intersection::Mask> term_mask = std::nullopt) -> Intersection;
 };
 
@@ -60,11 +61,12 @@ inline auto Intersection::compute(
     Index const& index,
     Wand const& wand,
     QueryContainer const& query,
+    ScorerParams const& scorer_params,
     std::optional<intersection::Mask> term_mask) -> Intersection
 {
     auto filtered_query = term_mask ? intersection::filter(query, *term_mask) : query;
     scored_and_query retrieve{};
-    auto scorer = scorer::from_params(ScorerParams("bm25"), wand);
+    auto scorer = scorer::from_params(scorer_params, wand);
     auto results = retrieve(
         make_scored_cursors(index, *scorer, filtered_query.query(query::unlimited)),
         index.num_docs());

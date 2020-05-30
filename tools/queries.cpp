@@ -320,12 +320,11 @@ void perftest(
                     std::exit(1);
                 }
                 auto selection = *query.selection();
-                if (selection.selected_pairs.empty()) {
-                    maxscore_uni_query q(topk);
-                    q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    topk.finalize();
-                    return topk.topk().size();
-                }
+                // if (selection.selected_pairs.empty()) {
+                //    maxscore_uni_query q(topk);
+                //    q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                //    index.num_docs()); topk.finalize(); return topk.topk().size();
+                //}
                 maxscore_inter_query q(topk);
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
@@ -344,12 +343,11 @@ void perftest(
                     std::exit(1);
                 }
                 auto selection = *query.selection();
-                if (selection.selected_pairs.empty()) {
-                    maxscore_uni_query q(topk);
-                    q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    topk.finalize();
-                    return topk.topk().size();
-                }
+                // if (selection.selected_pairs.empty()) {
+                //    maxscore_uni_query q(topk);
+                //    q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                //    index.num_docs()); topk.finalize(); return topk.topk().size();
+                //}
                 maxscore_inter_eager_query q(topk);
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
@@ -368,62 +366,17 @@ void perftest(
                     std::exit(1);
                 }
                 auto selection = *query.selection();
-                if (selection.selected_pairs.empty()) {
-                    maxscore_uni_query q(topk);
-                    q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    topk.finalize();
-                    return topk.topk().size();
-                }
+                // if (selection.selected_pairs.empty()) {
+                //    maxscore_uni_query q(topk);
+                //    q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+                //    index.num_docs()); topk.finalize(); return topk.topk().size();
+                //}
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
                 }
-                // switch (query.term_ids().size()) {
-                // case 1:
-                // case 2: {
-                //    maxscore_inter_opt_query<2> q(topk);
-                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                //    break;
-                //}
-                // case 3:
-                // case 4: {
-                //    maxscore_inter_opt_query<4> q(topk);
-                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                //    break;
-                //}
-                // case 5:
-                // case 6: {
-                //    maxscore_inter_opt_query<6> q(topk);
-                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                //    break;
-                //}
-                // case 7:
-                // case 8: {
-                //    maxscore_inter_opt_query<8> q(topk);
-                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                //    break;
-                //}
-                // case 9:
-                // case 10:
-                // case 11:
-                // case 12: {
-                //    maxscore_inter_opt_query<12> q(topk);
-                //    q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                //    break;
-                //}
-                // default: throw std::runtime_error("Query too long");
-                //}
                 maxscore_inter_opt_query q(topk);
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "block-max-union" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                BlockMaxUnionQuery q(topk);
-                q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -441,6 +394,9 @@ using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType:
 
 int main(int argc, const char** argv)
 {
+    spdlog::drop("");
+    spdlog::set_default_logger(spdlog::stderr_color_mt(""));
+
     bool silent = false;
     bool safe = false;
     bool quantized = false;

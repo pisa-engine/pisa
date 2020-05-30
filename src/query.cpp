@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 
+#include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <nlohmann/json.hpp>
 #include <range/v3/algorithm/sort.hpp>
@@ -519,9 +520,15 @@ void QueryContainer::filter_terms(gsl::span<std::size_t const> term_positions)
 
 auto QueryReader::from_file(std::string const& file) -> QueryReader
 {
+    if (not boost::filesystem::exists(file)) {
+        throw std::runtime_error(fmt::format("File not found: {}", file));
+    }
     auto input = std::make_unique<std::ifstream>(file);
-    auto& ref = *input;
-    return QueryReader(std::move(input), ref);
+    if (input->good()) {
+        auto& ref = *input;
+        return QueryReader(std::move(input), ref);
+    }
+    throw std::runtime_error(fmt::format("Unable to read from file: {}", file));
 }
 
 auto QueryReader::from_stdin() -> QueryReader

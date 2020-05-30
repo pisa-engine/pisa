@@ -153,7 +153,7 @@ namespace arg {
                     }
                     query.parse(QueryParser(*term_resolver));
                 }
-                return std::move(query);
+                return query;
             });
         }
 

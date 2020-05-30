@@ -103,32 +103,14 @@ struct maxscore_inter_query {
             return cursors;
         }();
 
-        auto inspect_cursors = [&](auto&& cursors) {
-            if constexpr (std::is_void_v<Inspect>) {
-                return std::forward<decltype(cursors)>(cursors);
-            } else {
-                return ::pisa::inspect_cursors(std::forward<decltype(cursors)>(cursors), *inspect);
-            }
-        };
-
-        auto inspect_cursor = [&](auto&& cursors) {
-            if constexpr (std::is_void_v<Inspect>) {
-                return std::forward<decltype(cursors)>(cursors);
-            } else {
-                return ::pisa::inspect_cursor(std::forward<decltype(cursors)>(cursors), *inspect);
-            }
-        };
-
         auto unigram_cursor = join_union_lookup(
-            union_merge(
-                inspect_cursors(make_max_scored_cursors(
+            inspect_cursors(
+                make_max_scored_cursors(
                     index,
                     wdata,
                     scorer,
-                    QueryContainer::from_term_ids(essential_terms).query(query.k()))),
-                0.0F,
-                Add{},
-                max_docid),
+                    QueryContainer::from_term_ids(essential_terms).query(query.k())),
+                inspect),
             gsl::make_span(lookup_cursors),
             0.0F,
             Add{},
@@ -156,8 +138,9 @@ struct maxscore_inter_query {
             if (not pair_id) {
                 throw std::runtime_error(fmt::format("Pair not found: <{}, {}>", left, right));
             }
-            auto cursor = inspect_cursor(make_max_scored_pair_cursor(
-                pair_index.index(), wdata, *pair_id, scorer, left, right));
+            auto cursor = inspect_cursor(
+                make_max_scored_pair_cursor(pair_index.index(), wdata, *pair_id, scorer, left, right),
+                inspect);
             std::vector<TermId> v{left, right};
             auto bigram_lookup_cursors =
                 ranges::views::set_difference(non_essential_terms, v)
@@ -176,7 +159,7 @@ struct maxscore_inter_query {
             bigram_cursors.emplace_back(
                 std::move(cursor),
                 LookupTransform(
-                    inspect_cursors(std::move(bigram_lookup_cursors)),
+                    inspect_cursors(std::move(bigram_lookup_cursors), inspect),
                     lookup_cursors_upper_bound,
                     is_above_threshold));
         }

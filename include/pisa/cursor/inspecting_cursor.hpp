@@ -24,8 +24,10 @@ class InspectingCursor: public Cursor {
 
     void PISA_ALWAYSINLINE next_geq(uint64_t docid)
     {
-        m_inspect.lookup();
-        base_cursor_type::next_geq(docid);
+        if (this->docid() < docid) {
+            m_inspect.lookup();
+            base_cursor_type::next_geq(docid);
+        }
     }
 
   private:
@@ -47,6 +49,31 @@ template <typename Cursor, typename Inspect>
         inspecting_cursors.emplace_back(std::move(cursor), inspect);
     }
     return inspecting_cursors;
+}
+
+template <typename Cursor, typename Inspect>
+[[nodiscard]] auto inspect_cursor(Cursor cursor, [[maybe_unused]] Inspect* inspect)
+{
+    if constexpr (std::is_void_v<Inspect>) {
+        return cursor;
+    } else {
+        return InspectingCursor<std::decay_t<Cursor>, Inspect>(std::move(cursor), *inspect);
+    }
+}
+
+template <typename Cursor, typename Inspect>
+[[nodiscard]] auto inspect_cursors(std::vector<Cursor> cursors, [[maybe_unused]] Inspect* inspect)
+{
+    if constexpr (std::is_void_v<Inspect>) {
+        return cursors;
+    } else {
+        std::vector<InspectingCursor<std::decay_t<Cursor>, Inspect>> inspecting_cursors;
+        inspecting_cursors.reserve(cursors.size());
+        for (auto&& cursor: cursors) {
+            inspecting_cursors.emplace_back(std::move(cursor), *inspect);
+        }
+        return inspecting_cursors;
+    }
 }
 
 }  // namespace pisa

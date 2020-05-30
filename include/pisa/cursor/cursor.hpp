@@ -7,6 +7,16 @@
 
 namespace pisa {
 
+template <typename InputIterator, typename OutputIterator, typename BinaryOperation, typename Tp>
+OutputIterator inclusive_scan(
+    InputIterator first, InputIterator last, OutputIterator result, BinaryOperation binary_op, Tp init)
+{
+    for (; first != last; ++first) {
+        *result++ = init = binary_op(init, *first);
+    }
+    return result;
+}
+
 struct Add {
     template <typename Score, typename Cursor>
     PISA_ALWAYSINLINE auto operator()(Score&& score, Cursor&& cursor)
@@ -67,6 +77,10 @@ class CursorJoin {
         return m_current_payload;
     }
     [[nodiscard]] PISA_ALWAYSINLINE auto sentinel() const noexcept -> std::uint32_t
+    {
+        return m_sentinel;
+    }
+    [[nodiscard]] PISA_ALWAYSINLINE auto universe() const noexcept -> std::uint32_t
     {
         return m_sentinel;
     }

@@ -226,7 +226,7 @@ TEST_CASE("compute intersection", "[intersection][unit]")
         }));
         WHEN("Computed intersection with mask " << mask)
         {
-            auto intersection = Intersection::compute(index, wand, query, mask);
+            auto intersection = Intersection::compute(index, wand, query, ScorerParams("bm25"), mask);
             CHECK(intersection.length == len);
             CHECK(intersection.max_score == Approx(max));
         }

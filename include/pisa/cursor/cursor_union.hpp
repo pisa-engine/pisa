@@ -77,6 +77,14 @@ struct CursorUnion: public CursorJoin<typename CursorContainer::value_type, Payl
         }
     }
 
+    void merge_cursor(Cursor cursor)
+    {
+        m_cursors.push_back(std::move(cursor));
+        if (auto docid = cursor.docid(); docid < m_next_docid) {
+            m_next_docid = docid;
+        }
+    }
+
   private:
     CursorContainer m_cursors;
     std::uint32_t m_next_docid{};
@@ -196,8 +204,8 @@ struct GenericCursorUnion {
     template <typename Fn>
     PISA_ALWAYSINLINE void for_each_cursor(Fn&& fn)
     {
-        auto inner_loop = [&](auto&& inner_cursors, auto&& accumulate) {
-            for (auto&& cursor: inner_cursors) {
+        auto inner_loop = [&fn](auto&& cursors, auto&& accumulate) {
+            for (auto&& cursor: cursors) {
                 fn(std::forward<decltype(cursor)>(cursor),
                    std::forward<decltype(accumulate)>(accumulate));
             }
