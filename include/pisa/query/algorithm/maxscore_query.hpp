@@ -393,12 +393,12 @@ struct maxscore_query {
     [[nodiscard]] PISA_ALWAYSINLINE auto calc_upper_bounds(Cursors&& cursors) -> std::vector<float>
     {
         std::vector<float> upper_bounds(cursors.size());
-        pisa::inclusive_scan(
-            cursors.rbegin(),
-            cursors.rend(),
-            upper_bounds.rbegin(),
-            [](auto acc, auto&& cursor) { return acc + cursor.max_score(); },
-            0.0);
+        auto out = upper_bounds.rbegin();
+        float bound = 0.0;
+        for (auto pos = cursors.rbegin(); pos != cursors.rend(); ++pos) {
+            bound += pos->max_score();
+            *out++ = bound;
+        }
         return upper_bounds;
     }
 
@@ -414,23 +414,6 @@ struct maxscore_query {
 
     enum class UpdateResult : bool { Continue, ShortCircuit };
     enum class DocumentStatus : bool { Insert, Skip };
-
-    // template <typename CursorIterator>
-    //[[nodiscard]] auto accumulate_essential(CursorIterator first, CursorIterator last) -> int
-    //{
-    //    auto next_docid = max_docid;
-    //    for (auto iter = cursors.begin(); iter != first_lookup; std::advance(iter, 1)) {
-    //        auto& cursor = *iter;
-    //        if (cursor.docid() == current_docid) {
-    //            current_score += cursor.score();
-    //            cursor.next();
-    //        }
-    //        if (auto docid = cursor.docid(); docid < next_docid) {
-    //            next_docid = docid;
-    //        }
-    //    }
-    //    return next_docid;
-    //}
 
     template <typename Cursors>
     void operator()(Cursors&& unordered_cursors, uint64_t max_docid)
