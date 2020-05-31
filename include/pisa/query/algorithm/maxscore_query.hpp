@@ -16,14 +16,17 @@ struct maxscore_query {
 
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
-        -> std::vector<typename std::decay_t<Cursors>::value_type*>
+        -> std::vector<typename std::decay_t<Cursors>::value_type>
     {
-        std::vector<typename std::decay_t<Cursors>::value_type*> sorted(cursors.size());
-        std::transform(
-            cursors.begin(), cursors.end(), sorted.begin(), [](auto&& cursor) { return &cursor; });
-        std::sort(sorted.begin(), sorted.end(), [&](auto&& lhs, auto&& rhs) {
-            return lhs->max_score() > rhs->max_score();
+        std::vector<std::size_t> term_positions(cursors.size());
+        std::iota(term_positions.begin(), term_positions.end(), 0);
+        std::sort(term_positions.begin(), term_positions.end(), [&](auto&& lhs, auto&& rhs) {
+            return cursors[lhs].max_score() > cursors[rhs].max_score();
         });
+        std::vector<typename std::decay_t<Cursors>::value_type> sorted;
+        for (auto pos: term_positions) {
+            sorted.push_back(std::move(cursors[pos]));
+        };
         return sorted;
     }
 
@@ -34,7 +37,7 @@ struct maxscore_query {
         auto out = upper_bounds.rbegin();
         float bound = 0.0;
         for (auto pos = cursors.rbegin(); pos != cursors.rend(); ++pos) {
-            bound += (*pos)->max_score();
+            bound += pos->max_score();
             *out++ = bound;
         }
         return upper_bounds;
@@ -43,10 +46,10 @@ struct maxscore_query {
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t
     {
-        return (*std::min_element(
-                    cursors.begin(),
-                    cursors.end(),
-                    [](auto&& lhs, auto&& rhs) { return lhs->docid() < rhs->docid(); }))
+        return std::min_element(
+                   cursors.begin(),
+                   cursors.end(),
+                   [](auto&& lhs, auto&& rhs) { return lhs.docid() < rhs.docid(); })
             ->docid();
     }
 
@@ -54,13 +57,8 @@ struct maxscore_query {
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
-    void operator()(Cursors&& unordered_cursors, uint64_t max_docid)
+    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid)
     {
-        using cursor_type = typename std::decay_t<Cursors>::value_type;
-        if (unordered_cursors.empty()) {
-            return;
-        }
-        auto cursors = sorted(unordered_cursors);
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
 
@@ -97,12 +95,12 @@ struct maxscore_query {
                 current_score = 0;
                 current_docid = std::exchange(next_docid, max_docid);
 
-                std::for_each(cursors.begin(), first_lookup, [&](auto* cursor) {
-                    if (cursor->docid() == current_docid) {
-                        current_score += cursor->score();
-                        cursor->next();
+                std::for_each(cursors.begin(), first_lookup, [&](auto& cursor) {
+                    if (cursor.docid() == current_docid) {
+                        current_score += cursor.score();
+                        cursor.next();
                     }
-                    if (auto docid = cursor->docid(); docid < next_docid) {
+                    if (auto docid = cursor.docid(); docid < next_docid) {
                         next_docid = docid;
                     }
                 });
@@ -110,14 +108,14 @@ struct maxscore_query {
                 status = DocumentStatus::Insert;
                 auto lookup_bound = first_upper_bound;
                 for (auto pos = first_lookup; pos != cursors.end(); ++pos, ++lookup_bound) {
-                    auto* cursor = *pos;
+                    auto& cursor = *pos;
                     if (not above_threshold(current_score + *lookup_bound)) {
                         status = DocumentStatus::Skip;
                         break;
                     }
-                    cursor->next_geq(current_docid);
-                    if (cursor->docid() == current_docid) {
-                        current_score += cursor->score();
+                    cursor.next_geq(current_docid);
+                    if (cursor.docid() == current_docid) {
+                        current_score += cursor.score();
                     }
                 }
             }
@@ -126,6 +124,18 @@ struct maxscore_query {
                 return;
             }
         }
+    }
+
+    template <typename Cursors>
+    void operator()(Cursors&& cursors_, uint64_t max_docid)
+    {
+        using cursor_type = typename std::decay_t<Cursors>::value_type;
+        if (cursors_.empty()) {
+            return;
+        }
+        auto cursors = sorted(cursors_);
+        run_sorted(cursors, max_docid);
+        std::swap(cursors, cursors_);
     }
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
