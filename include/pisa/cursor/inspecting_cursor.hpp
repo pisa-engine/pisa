@@ -13,25 +13,25 @@ class InspectingCursor: public Cursor {
     using base_cursor_type = Cursor;
 
     InspectingCursor(Cursor cursor, Inspect& inspect)
-        : base_cursor_type(std::move(cursor)), m_inspect(inspect)
+        : base_cursor_type(std::move(cursor)), m_inspect(std::ref(inspect))
     {}
 
     void PISA_ALWAYSINLINE next()
     {
-        m_inspect.posting();
+        m_inspect.get().posting();
         base_cursor_type::next();
     }
 
     void PISA_ALWAYSINLINE next_geq(uint64_t docid)
     {
         if (this->docid() < docid) {
-            m_inspect.lookup();
+            m_inspect.get().lookup();
             base_cursor_type::next_geq(docid);
         }
     }
 
   private:
-    Inspect& m_inspect;
+    std::reference_wrapper<Inspect> m_inspect;
 };
 
 template <typename Cursor, typename Inspect>

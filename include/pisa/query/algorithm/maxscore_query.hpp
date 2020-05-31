@@ -178,202 +178,6 @@ auto join_maxscore(
 struct maxscore_query {
     explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
 
-    // template <typename CursorRange>
-    // void operator()(CursorRange&& cursors, uint64_t max_docid)
-    //{
-    //    using Cursor = typename std::decay_t<CursorRange>::value_type;
-    //    if (cursors.empty()) {
-    //        return;
-    //    }
-
-    //    std::vector<Cursor*> ordered_cursors;
-    //    ordered_cursors.reserve(cursors.size());
-    //    for (auto& en: cursors) {
-    //        ordered_cursors.push_back(&en);
-    //    }
-
-    //    // sort enumerators by increasing maxscore
-    //    std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor* lhs, Cursor* rhs) {
-    //        return lhs->max_score() < rhs->max_score();
-    //    });
-
-    //    std::vector<float> upper_bounds(ordered_cursors.size());
-    //    upper_bounds[0] = ordered_cursors[0]->max_score();
-    //    for (size_t i = 1; i < ordered_cursors.size(); ++i) {
-    //        upper_bounds[i] = upper_bounds[i - 1] + ordered_cursors[i]->max_score();
-    //    }
-
-    //    uint64_t non_essential_lists = 0;
-    //    auto update_non_essential_lists = [&]() {
-    //        while (non_essential_lists < ordered_cursors.size()
-    //               && !m_topk.would_enter(upper_bounds[non_essential_lists])) {
-    //            non_essential_lists += 1;
-    //        }
-    //    };
-    //    update_non_essential_lists();
-
-    //    uint64_t cur_doc =
-    //        std::min_element(cursors.begin(), cursors.end(), [](Cursor const& lhs, Cursor const&
-    //        rhs) {
-    //            return lhs.docid() < rhs.docid();
-    //        })->docid();
-
-    //    while (non_essential_lists < ordered_cursors.size() && cur_doc < max_docid) {
-    //        float score = 0;
-    //        uint64_t next_doc = max_docid;
-    //        for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
-    //            if (ordered_cursors[i]->docid() == cur_doc) {
-    //                score += ordered_cursors[i]->score();
-    //                ordered_cursors[i]->next();
-    //            }
-    //            if (ordered_cursors[i]->docid() < next_doc) {
-    //                next_doc = ordered_cursors[i]->docid();
-    //            }
-    //        }
-
-    //        // try to complete evaluation with non-essential lists
-    //        for (size_t i = non_essential_lists - 1; i + 1 > 0; --i) {
-    //            if (!m_topk.would_enter(score + upper_bounds[i])) {
-    //                break;
-    //            }
-    //            ordered_cursors[i]->next_geq(cur_doc);
-    //            if (ordered_cursors[i]->docid() == cur_doc) {
-    //                score += ordered_cursors[i]->score();
-    //            }
-    //        }
-
-    //        if (m_topk.insert(score, cur_doc)) {
-    //            update_non_essential_lists();
-    //        }
-
-    //        cur_doc = next_doc;
-    //    }
-    //}
-
-    // template <typename CursorRange>
-    // void operator()(CursorRange&& cursors, uint64_t max_docid)
-    //{
-    //    using cursor_type = typename std::decay_t<CursorRange>::value_type;
-    //    if (cursors.empty()) {
-    //        return;
-    //    }
-
-    //    std::vector<std::size_t> term_positions(cursors.size());
-    //    std::iota(term_positions.begin(), term_positions.end(), 0);
-    //    ranges::sort(
-    //        term_positions, std::less{}, [&](auto&& pos) { return cursors[pos].max_score(); });
-    //    std::vector<cursor_type> ordered_cursors;
-    //    for (auto pos: term_positions) {
-    //        ordered_cursors.push_back(std::move(cursors[pos]));
-    //    };
-    //    auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
-
-    //    auto next_docid =
-    //        std::min_element(
-    //            ordered_cursors.begin(),
-    //            ordered_cursors.end(),
-    //            [](auto const& lhs, auto const& rhs) { return lhs.docid() < rhs.docid(); })
-    //            ->docid();
-
-    //    std::vector<float> upper_bounds(ordered_cursors.size());
-    //    upper_bounds[0] = ordered_cursors[0].max_score();
-    //    for (size_t i = 1; i < ordered_cursors.size(); ++i) {
-    //        upper_bounds[i] = upper_bounds[i - 1] + ordered_cursors[i].max_score();
-    //    }
-
-    //    uint64_t non_essential_lists = 0;
-    //    auto update_non_essential_lists = [&]() {
-    //        while (non_essential_lists < ordered_cursors.size()
-    //               && !m_topk.would_enter(upper_bounds[non_essential_lists])) {
-    //            non_essential_lists += 1;
-    //        }
-    //    };
-    //    update_non_essential_lists();
-    //    if (non_essential_lists == ordered_cursors.size()) {
-    //        return;
-    //    }
-
-    //    float score = 0;
-    //    auto current_docid = next_docid;
-
-    //    while (current_docid < max_docid) {
-    //        bool exit = false;
-    //        while (not exit) {
-    //            if (PISA_UNLIKELY(next_docid >= max_docid)) {
-    //                return;
-    //            }
-    //            score = 0;
-    //            current_docid = next_docid;
-    //            next_docid = max_docid;
-    //            // for (auto iter = ordered_cursors.rbegin();
-    //            //     iter != std::prev(ordered_cursors.rend(), non_essential_lists);
-    //            //     std::advance(iter, 1)) {
-    //            for (auto iter = std::next(ordered_cursors.begin(), non_essential_lists);
-    //                 iter != ordered_cursors.end();
-    //                 std::advance(iter, 1)) {
-    //                auto& cursor = *iter;
-    //                // for (auto pos = non_essential_lists; pos < ordered_cursors.size(); pos +=1)
-    //                // {
-    //                // auto& cursor = ordered_cursors[pos];
-    //                if (cursor.docid() == current_docid) {
-    //                    score += cursor.score();
-    //                    cursor.next();
-    //                }
-    //                if (cursor.docid() < next_docid) {
-    //                    next_docid = cursor.docid();
-    //                }
-    //            }
-    //            exit = true;
-    //            // auto lookup_bound = first_upper_bound;
-    //            // for (auto iter = first_lookup; iter != ordered_cursors.rend();
-    //            std::advance(iter,
-    //            // 1)) {
-    //            auto lookup_bound = std::prev(upper_bounds.rend(), non_essential_lists);
-    //            for (auto iter = std::prev(ordered_cursors.rend(), non_essential_lists);
-    //                 iter != ordered_cursors.rend();
-    //                 std::advance(iter, 1)) {
-    //                auto& cursor = *iter;
-    //                if (not above_threshold(score + *lookup_bound)) {
-    //                    exit = false;
-    //                    break;
-    //                }
-    //                cursor.next_geq(current_docid);
-    //                if (cursor.docid() == current_docid) {
-    //                    score += cursor.score();
-    //                }
-    //                std::advance(lookup_bound, 1);
-    //            }
-    //        }
-    //        if (m_topk.insert(score, current_docid)) {
-    //            update_non_essential_lists();
-    //            // if (first_lookup == ordered_cursors.rbegin()) {
-    //            if (non_essential_lists == ordered_cursors.size()) {
-    //                return;
-    //            }
-    //        }
-    //    }
-    //}
-
-    // template <typename CursorRange>
-    // void operator()(CursorRange&& cursors, uint64_t max_docid)
-    //{
-    //    using cursor_type = typename std::decay_t<CursorRange>::value_type;
-    //    if (cursors.empty()) {
-    //        return;
-    //    }
-
-    //    auto joined = join_maxscore(
-    //        std::move(cursors),
-    //        0.0,
-    //        Add{},
-    //        [&](auto score) { return m_topk.would_enter(score); },
-    //        max_docid);
-    //    while (not joined.empty()) {
-    //        m_topk.insert(joined.score(), joined.docid());
-    //        joined.next();
-    //    }
-    //}
-
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
         -> std::vector<typename std::decay_t<Cursors>::value_type>
@@ -416,13 +220,14 @@ struct maxscore_query {
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
-    void operator()(Cursors&& unordered_cursors, uint64_t max_docid)
+    void operator()(Cursors&& cursors_, uint64_t max_docid)
     {
         using cursor_type = typename std::decay_t<Cursors>::value_type;
-        if (unordered_cursors.empty()) {
+        if (cursors_.empty()) {
             return;
         }
-        auto cursors = sorted(unordered_cursors);
+        auto cursors = sorted(cursors_);
+
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
 
@@ -443,6 +248,7 @@ struct maxscore_query {
         };
 
         if (update_non_essential_lists() == UpdateResult::ShortCircuit) {
+            std::swap(cursors, cursors_);
             return;
         }
 
@@ -453,6 +259,7 @@ struct maxscore_query {
             auto status = DocumentStatus::Skip;
             while (status == DocumentStatus::Skip) {
                 if (PISA_UNLIKELY(next_docid >= max_docid)) {
+                    std::swap(cursors, cursors_);
                     return;
                 }
 
@@ -485,9 +292,11 @@ struct maxscore_query {
             }
             if (m_topk.insert(current_score, current_docid)
                 && update_non_essential_lists() == UpdateResult::ShortCircuit) {
+                std::swap(cursors, cursors_);
                 return;
             }
         }
+        std::swap(cursors, cursors_);
     }
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }

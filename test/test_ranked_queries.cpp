@@ -106,14 +106,13 @@ TEMPLATE_TEST_CASE(
     wand_query,
     maxscore_query,
     block_max_wand_query,
-    block_max_maxscore_query
-    // range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-    // range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
-    // range_query_128<wand_query>,
-    // range_query_128<maxscore_query>,
-    // range_query_128<block_max_wand_query>,
-    // range_query_128<block_max_maxscore_query>
-)
+    block_max_maxscore_query,
+    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
+    range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+    range_query_128<wand_query>,
+    range_query_128<maxscore_query>,
+    range_query_128<block_max_wand_query>,
+    range_query_128<block_max_maxscore_query>)
 {
     for (auto quantized: {false, true}) {
         for (auto&& s_name: {"bm25", "qld"}) {
