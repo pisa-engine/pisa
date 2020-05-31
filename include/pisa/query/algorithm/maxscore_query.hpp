@@ -4,9 +4,6 @@
 #include <numeric>
 #include <vector>
 
-#include <range/v3/algorithm/sort.hpp>
-#include <range/v3/view/transform.hpp>
-
 #include "cursor/cursor.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
@@ -21,9 +18,12 @@ struct maxscore_query {
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
         -> std::vector<typename std::decay_t<Cursors>::value_type*>
     {
-        auto sorted = cursors | ranges::views::transform([](auto&& cursor) { return &cursor; })
-            | ranges::to_vector;
-        ranges::sort(sorted, std::greater{}, [&](auto&& cursor) { return cursor->max_score(); });
+        std::vector<typename std::decay_t<Cursors>::value_type*> sorted(cursors.size());
+        std::transform(
+            cursors.begin(), cursors.end(), sorted.begin(), [](auto&& cursor) { return &cursor; });
+        std::sort(sorted.begin(), sorted.end(), [&](auto&& lhs, auto&& rhs) {
+            return lhs->max_score() > rhs->max_score();
+        });
         return sorted;
     }
 
