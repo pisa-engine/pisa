@@ -4,7 +4,6 @@
 #include <numeric>
 #include <vector>
 
-#include "cursor/cursor.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
