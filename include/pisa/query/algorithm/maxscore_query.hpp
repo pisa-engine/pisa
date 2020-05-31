@@ -4,9 +4,8 @@
 #include <numeric>
 #include <vector>
 
-#include <range/v3/algorithm/reverse.hpp>
 #include <range/v3/algorithm/sort.hpp>
-#include <range/v3/view/reverse.hpp>
+#include <range/v3/view/transform.hpp>
 
 #include "cursor/cursor.hpp"
 #include "query/queries.hpp"
@@ -20,16 +19,11 @@ struct maxscore_query {
 
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
-        -> std::vector<typename std::decay_t<Cursors>::value_type>
+        -> std::vector<typename std::decay_t<Cursors>::value_type*>
     {
-        std::vector<std::size_t> term_positions(cursors.size());
-        std::iota(term_positions.begin(), term_positions.end(), 0);
-        ranges::sort(
-            term_positions, std::greater{}, [&](auto&& pos) { return cursors[pos].max_score(); });
-        std::vector<typename std::decay_t<Cursors>::value_type> sorted;
-        for (auto pos: term_positions) {
-            sorted.push_back(std::move(cursors[pos]));
-        };
+        auto sorted = cursors | ranges::views::transform([](auto&& cursor) { return &cursor; })
+            | ranges::to_vector;
+        ranges::sort(sorted, std::greater{}, [&](auto&& cursor) { return cursor->max_score(); });
         return sorted;
     }
 
@@ -40,7 +34,7 @@ struct maxscore_query {
         auto out = upper_bounds.rbegin();
         float bound = 0.0;
         for (auto pos = cursors.rbegin(); pos != cursors.rend(); ++pos) {
-            bound += pos->max_score();
+            bound += (*pos)->max_score();
             *out++ = bound;
         }
         return upper_bounds;
@@ -49,10 +43,10 @@ struct maxscore_query {
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t
     {
-        return std::min_element(
-                   cursors.begin(),
-                   cursors.end(),
-                   [](auto&& lhs, auto&& rhs) { return lhs.docid() < rhs.docid(); })
+        return (*std::min_element(
+                    cursors.begin(),
+                    cursors.end(),
+                    [](auto&& lhs, auto&& rhs) { return lhs->docid() < rhs->docid(); }))
             ->docid();
     }
 
@@ -103,12 +97,12 @@ struct maxscore_query {
                 current_score = 0;
                 current_docid = std::exchange(next_docid, max_docid);
 
-                std::for_each(cursors.begin(), first_lookup, [&](auto& cursor) {
-                    if (cursor.docid() == current_docid) {
-                        current_score += cursor.score();
-                        cursor.next();
+                std::for_each(cursors.begin(), first_lookup, [&](auto* cursor) {
+                    if (cursor->docid() == current_docid) {
+                        current_score += cursor->score();
+                        cursor->next();
                     }
-                    if (auto docid = cursor.docid(); docid < next_docid) {
+                    if (auto docid = cursor->docid(); docid < next_docid) {
                         next_docid = docid;
                     }
                 });
@@ -116,14 +110,14 @@ struct maxscore_query {
                 status = DocumentStatus::Insert;
                 auto lookup_bound = first_upper_bound;
                 for (auto pos = first_lookup; pos != cursors.end(); ++pos, ++lookup_bound) {
-                    auto& cursor = *pos;
+                    auto* cursor = *pos;
                     if (not above_threshold(current_score + *lookup_bound)) {
                         status = DocumentStatus::Skip;
                         break;
                     }
-                    cursor.next_geq(current_docid);
-                    if (cursor.docid() == current_docid) {
-                        current_score += cursor.score();
+                    cursor->next_geq(current_docid);
+                    if (cursor->docid() == current_docid) {
+                        current_score += cursor->score();
                     }
                 }
             }
