@@ -220,14 +220,8 @@ struct maxscore_query {
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
-    void operator()(Cursors&& cursors_, uint64_t max_docid)
+    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid)
     {
-        using cursor_type = typename std::decay_t<Cursors>::value_type;
-        if (cursors_.empty()) {
-            return;
-        }
-        auto cursors = sorted(cursors_);
-
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
 
@@ -248,7 +242,6 @@ struct maxscore_query {
         };
 
         if (update_non_essential_lists() == UpdateResult::ShortCircuit) {
-            std::swap(cursors, cursors_);
             return;
         }
 
@@ -259,7 +252,6 @@ struct maxscore_query {
             auto status = DocumentStatus::Skip;
             while (status == DocumentStatus::Skip) {
                 if (PISA_UNLIKELY(next_docid >= max_docid)) {
-                    std::swap(cursors, cursors_);
                     return;
                 }
 
@@ -292,10 +284,20 @@ struct maxscore_query {
             }
             if (m_topk.insert(current_score, current_docid)
                 && update_non_essential_lists() == UpdateResult::ShortCircuit) {
-                std::swap(cursors, cursors_);
                 return;
             }
         }
+    }
+
+    template <typename Cursors>
+    void operator()(Cursors&& cursors_, uint64_t max_docid)
+    {
+        using cursor_type = typename std::decay_t<Cursors>::value_type;
+        if (cursors_.empty()) {
+            return;
+        }
+        auto cursors = sorted(cursors_);
+        run_sorted(cursors, max_docid);
         std::swap(cursors, cursors_);
     }
 

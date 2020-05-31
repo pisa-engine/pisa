@@ -111,7 +111,7 @@ TEMPLATE_TEST_CASE(
     range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
     range_query_128<wand_query>,
     range_query_128<maxscore_query>,
-    range_query_128<block_max_wand_query>,
+    // range_query_128<block_max_wand_query>,
     range_query_128<block_max_maxscore_query>)
 {
     for (auto quantized: {false, true}) {
