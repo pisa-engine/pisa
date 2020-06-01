@@ -133,23 +133,34 @@ struct UnionLookupJoin {
         AccumulateFn accumulate,
         ThresholdFn above_threshold,
         std::uint32_t sentinel)
-        : m_essential_cursor(std::move(essential_cursor)),
+        : m_essential_cursors(std::move(essential_cursor)),
           m_lookup_cursors(std::move(lookup_cursors)),
           m_init(std::move(init)),
           m_accumulate(std::move(accumulate)),
           m_above_threshold(std::move(above_threshold))
     {
-        m_upper_bounds.resize(m_lookup_cursors.size());
-        pisa::inclusive_scan(
-            m_lookup_cursors.rbegin(),
-            m_lookup_cursors.rend(),
-            m_upper_bounds.rbegin(),
-            [](auto acc, auto&& cursor) { return acc + cursor.max_score(); },
-            0.0);
+        m_sentinel = sentinel;
         // TODO(michal): automatic sentinel inference.
         // m_sentinel = essential_cursor.sentinel();
-        m_sentinel = sentinel;
-        next();
+        if (m_essential_cursors.empty()) {
+            m_next_docid = m_sentinel;
+            m_current_value = m_sentinel;
+        } else {
+            m_upper_bounds.resize(m_lookup_cursors.size());
+            pisa::inclusive_scan(
+                m_lookup_cursors.rbegin(),
+                m_lookup_cursors.rend(),
+                m_upper_bounds.rbegin(),
+                [](auto acc, auto&& cursor) { return acc + cursor.max_score(); },
+                0.0);
+            m_next_docid =
+                std::min_element(
+                    m_essential_cursors.begin(),
+                    m_essential_cursors.end(),
+                    [](auto const& lhs, auto const& rhs) { return lhs.docid() < rhs.docid(); })
+                    ->docid();
+            next();
+        }
     }
 
     [[nodiscard]] constexpr PISA_ALWAYSINLINE auto docid() const noexcept -> value_type
@@ -173,13 +184,23 @@ struct UnionLookupJoin {
     {
         bool exit = false;
         while (not exit) {
-            if (PISA_UNLIKELY(m_essential_cursor.empty())) {
-                m_current_value = sentinel();
+            if (PISA_UNLIKELY(m_current_value >= m_sentinel)) {
+                m_current_value = m_sentinel;
                 return;
             }
-            m_current_value = m_essential_cursor.docid();
-            m_current_payload = m_essential_cursor.payload();
-            m_essential_cursor.next();
+
+            m_current_payload = m_init;
+            m_current_value = std::exchange(m_next_docid, m_sentinel);
+
+            for (auto& cursor: m_essential_cursors) {
+                if (cursor.docid() == m_current_value) {
+                    m_current_payload += cursor.score();
+                    cursor.next();
+                }
+                if (auto docid = cursor.docid(); docid < m_next_docid) {
+                    m_next_docid = docid;
+                }
+            }
 
             exit = true;
             auto lookup_bound = m_upper_bounds.begin();
@@ -203,7 +224,7 @@ struct UnionLookupJoin {
     }
 
   private:
-    EssentialCursor m_essential_cursor;
+    EssentialCursor m_essential_cursors;
     LookupCursors m_lookup_cursors;
     payload_type m_init;
     AccumulateFn m_accumulate;
@@ -211,178 +232,10 @@ struct UnionLookupJoin {
 
     value_type m_current_value{};
     value_type m_sentinel{};
+    value_type m_next_docid{};
     payload_type m_current_payload{};
     std::vector<payload_type> m_upper_bounds{};
 };
-
-// template <
-//    typename EssentialCursors,
-//    typename LookupCursors,
-//    typename Payload,
-//    typename AccumulateFn,
-//    typename ThresholdFn,
-//    typename Inspect = void>
-// struct UnionLookupJoin_ {
-//    using essential_cursor_type = typename EssentialCursors::value_type;
-//    using lookup_cursor_type = typename LookupCursors::value_type;
-//
-//    using payload_type = Payload;
-//    using value_type = std::uint32_t;
-//
-//    using essential_iterator_category =
-//        typename std::iterator_traits<typename EssentialCursors::iterator>::iterator_category;
-//
-//    static_assert(
-//        std::is_base_of<std::random_access_iterator_tag, essential_iterator_category>(),
-//        "cursors must be stored in a random access container");
-//
-//    UnionLookupJoin_(
-//        EssentialCursors essential_cursors,
-//        LookupCursors lookup_cursors,
-//        Payload init,
-//        AccumulateFn accumulate,
-//        ThresholdFn above_threshold,
-//        std::uint32_t sentinel)
-//        : m_essential_cursors(std::move(essential_cursors)),
-//          m_lookup_cursors(std::move(lookup_cursors)),
-//          m_init(std::move(init)),
-//          m_accumulate(std::move(accumulate)),
-//          m_above_threshold(std::move(above_threshold))
-//    {
-//        if (m_essential_cursors.empty()) {
-//            m_sentinel = sentinel;
-//            // TODO(michal): automatic sentinel inference.
-//            // if (m_lookup_cursors.empty()) {
-//            //    m_sentinel = std::numeric_limits<value_type>::max();
-//            //} else {
-//            //    m_sentinel = min_sentinel(m_lookup_cursors);
-//            //}
-//            m_current_value = m_sentinel;
-//            m_current_payload = m_init;
-//            return;
-//        }
-//        m_upper_bounds.resize(m_lookup_cursors.size());
-//        std::inclusive_scan(
-//            m_lookup_cursors.rbegin(),
-//            m_lookup_cursors.rend(),
-//            m_upper_bounds.rbegin(),
-//            [](auto acc, auto&& cursor) { return acc + cursor.max_score(); },
-//            0.0);
-//        m_next_docid = std::min_element(
-//                           m_essential_cursors.begin(),
-//                           m_essential_cursors.end(),
-//                           [](auto const& lhs, auto const& rhs) { return lhs.docid() <
-//                           rhs.docid(); })
-//                           ->docid();
-//        // TODO(michal): automatic sentinel inference.
-//        // m_sentinel = min_sentinel(m_essential_cursors);
-//        m_sentinel = sentinel;
-//        next();
-//    }
-//
-//    [[nodiscard]] constexpr PISA_ALWAYSINLINE auto docid() const noexcept -> value_type
-//    {
-//        return m_current_value;
-//    }
-//    [[nodiscard]] constexpr PISA_ALWAYSINLINE auto score() const noexcept -> Payload const&
-//    {
-//        return m_current_payload;
-//    }
-//    [[nodiscard]] constexpr PISA_ALWAYSINLINE auto payload() const noexcept -> Payload const&
-//    {
-//        return m_current_payload;
-//    }
-//    [[nodiscard]] constexpr PISA_ALWAYSINLINE auto sentinel() const noexcept -> std::uint32_t
-//    {
-//        return m_sentinel;
-//    }
-//
-//    constexpr PISA_ALWAYSINLINE void next()
-//    {
-//        bool exit = false;
-//        while (not exit) {
-//            if (PISA_UNLIKELY(m_next_docid >= sentinel())) {
-//                m_current_value = sentinel();
-//                m_current_payload = m_init;
-//                return;
-//            }
-//
-//            m_current_payload = m_init;
-//            m_current_value = std::exchange(m_next_docid, sentinel());
-//
-//            for (auto&& cursor: m_essential_cursors) {
-//                if (cursor.docid() == m_current_value) {
-//                    m_current_payload = m_accumulate(m_current_payload, cursor);
-//                    cursor.next();
-//                }
-//                if (auto docid = cursor.docid(); docid < m_next_docid) {
-//                    m_next_docid = docid;
-//                }
-//            }
-//
-//            exit = true;
-//            auto lookup_bound = m_upper_bounds.begin();
-//            for (auto&& cursor: m_lookup_cursors) {
-//                if (not m_above_threshold(m_current_payload + *lookup_bound)) {
-//                    exit = false;
-//                    break;
-//                }
-//                cursor.next_geq(m_current_value);
-//                if (cursor.docid() == m_current_value) {
-//                    m_current_payload = m_accumulate(m_current_payload, cursor);
-//                }
-//                std::advance(lookup_bound, 1);
-//            }
-//        }
-//    }
-//
-//    [[nodiscard]] constexpr PISA_ALWAYSINLINE auto empty() const noexcept -> bool
-//    {
-//        return m_current_value >= sentinel();
-//    }
-//
-//  private:
-//    EssentialCursors m_essential_cursors;
-//    LookupCursors m_lookup_cursors;
-//    payload_type m_init;
-//    AccumulateFn m_accumulate;
-//    ThresholdFn m_above_threshold;
-//
-//    value_type m_current_value{};
-//    value_type m_sentinel{};
-//    payload_type m_current_payload{};
-//    std::uint32_t m_next_docid{};
-//    std::vector<payload_type> m_upper_bounds{};
-//};
-
-///// Convenience function to construct a `UnionLookupJoin` cursor operator.
-///// See the struct documentation for more information.
-// template <
-//    typename EssentialCursors,
-//    typename LookupCursors,
-//    typename Payload,
-//    typename AccumulateFn,
-//    typename ThresholdFn,
-//    typename Inspect = void>
-// auto join_union_lookup(
-//    EssentialCursors essential_cursors,
-//    LookupCursors lookup_cursors,
-//    Payload init,
-//    AccumulateFn accumulate,
-//    ThresholdFn threshold,
-//    std::uint32_t sentinel,
-//    Inspect* inspect = nullptr)
-//{
-//    return UnionLookupJoin_<EssentialCursors, LookupCursors, Payload, AccumulateFn, ThresholdFn,
-//    Inspect>(
-//        std::move(essential_cursors),
-//        std::move(lookup_cursors),
-//        std::move(init),
-//        std::move(accumulate),
-//        std::move(threshold),
-//        sentinel,
-//        inspect);
-//}
 
 template <typename EssentialCursors, typename LookupCursors, typename Payload, typename AccumulateFn, typename ThresholdFn>
 auto join_union_lookup(
@@ -394,8 +247,8 @@ auto join_union_lookup(
     std::uint32_t sentinel)
 {
     using union_type = CursorUnion<EssentialCursors, Payload, AccumulateFn>;
-    return UnionLookupJoin<union_type, LookupCursors, Payload, AccumulateFn, ThresholdFn>(
-        union_merge(std::move(essential_cursors), std::move(init), std::move(accumulate), sentinel),
+    return UnionLookupJoin<EssentialCursors, LookupCursors, Payload, AccumulateFn, ThresholdFn>(
+        std::move(essential_cursors),
         std::move(lookup_cursors),
         std::move(init),
         std::move(accumulate),

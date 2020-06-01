@@ -21,8 +21,6 @@
 #include "cursor/lookup_transform.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/numbered_cursor.hpp"
-#include "cursor/union_lookup_join.hpp"
-#include "cursor/wand_join.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"

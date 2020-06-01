@@ -10,6 +10,7 @@
 #include "cursor/inspecting_cursor.hpp"
 #include "cursor/union_lookup_join.hpp"
 #include "cursor/wand_join.hpp"
+#include "query/algorithm/maxscore_query.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
 
@@ -26,26 +27,25 @@ struct maxscore_uni_query {
             return;
         }
 
-        std::vector<std::size_t> term_positions(cursors.size());
-        std::iota(term_positions.begin(), term_positions.end(), 0);
+        // std::vector<std::size_t> term_positions(cursors.size());
+        // std::iota(term_positions.begin(), term_positions.end(), 0);
 
-        auto [non_essential, essential] = maxscore_partition(
-            gsl::make_span(term_positions), m_topk.threshold(), [&](auto term_position) {
-                return cursors[term_position].max_score();
-            });
+        // auto [non_essential, essential] = maxscore_partition(
+        //    gsl::make_span(term_positions), m_topk.threshold(), [&](auto term_position) {
+        //        return cursors[term_position].max_score();
+        //    });
 
-        std::vector<cursor_type> essential_cursors;
-        std::vector<cursor_type> non_essential_cursors;
-        for (auto pos: essential) {
-            essential_cursors.push_back(std::move(cursors[pos]));
-        }
-        for (auto pos: ranges::views::reverse(non_essential)) {
-            non_essential_cursors.push_back(std::move(cursors[pos]));
-        }
+        // std::vector<cursor_type> essential_cursors;
+        // std::vector<cursor_type> non_essential_cursors;
+        // for (auto pos: essential) {
+        //    essential_cursors.push_back(std::move(cursors[pos]));
+        //}
+        // for (auto pos: ranges::views::reverse(non_essential)) {
+        //    non_essential_cursors.push_back(std::move(cursors[pos]));
+        //}
 
-        auto joined = join_union_lookup(
-            std::move(essential_cursors),
-            std::move(non_essential_cursors),
+        auto joined = join_maxscore_uni(
+            std::move(cursors),
             0.0,
             Add{},
             [&](auto score) { return m_topk.would_enter(score); },

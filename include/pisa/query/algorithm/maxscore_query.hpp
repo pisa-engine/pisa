@@ -16,7 +16,14 @@
 
 namespace pisa {
 
-template <typename Cursors, typename Payload, typename AccumulateFn, typename ThresholdFn>
+enum class EssentialMode : bool { Dynamic, Static };
+
+template <
+    typename Cursors,
+    typename Payload,
+    typename AccumulateFn,
+    typename ThresholdFn,
+    EssentialMode mode = EssentialMode::Dynamic>
 struct MaxscoreJoin {
     using cursor_type = std::decay_t<typename Cursors::value_type>;
     using payload_type = Payload;
@@ -116,14 +123,16 @@ struct MaxscoreJoin {
                 std::advance(lookup_bound, 1);
             }
         }
-        if (m_above_threshold(m_current_payload)) {
-            while (m_first_lookup != m_cursors.begin()
-                   && !m_above_threshold(*std::prev(m_first_upper_bound))) {
-                std::advance(m_first_lookup, -1);
-                std::advance(m_first_upper_bound, -1);
-                if (m_first_lookup == m_cursors.begin()) {
-                    m_current_value = m_sentinel;
-                    return;
+        if constexpr (mode == EssentialMode::Dynamic) {
+            if (m_above_threshold(m_current_payload)) {
+                while (m_first_lookup != m_cursors.begin()
+                       && !m_above_threshold(*std::prev(m_first_upper_bound))) {
+                    std::advance(m_first_lookup, -1);
+                    std::advance(m_first_upper_bound, -1);
+                    if (m_first_lookup == m_cursors.begin()) {
+                        m_current_value = m_sentinel;
+                        return;
+                    }
                 }
             }
         }
@@ -167,7 +176,33 @@ auto join_maxscore(
         ordered_cursors.push_back(std::move(cursors[pos]));
     };
 
-    return MaxscoreJoin<std::vector<cursor_type>, Payload, AccumulateFn, ThresholdFn>(
+    return MaxscoreJoin<std::vector<cursor_type>, Payload, AccumulateFn, ThresholdFn, EssentialMode::Dynamic>(
+        std::move(ordered_cursors),
+        std::move(init),
+        std::move(accumulate),
+        std::move(above_threshold),
+        sentinel);
+}
+
+template <typename Cursors, typename Payload, typename AccumulateFn, typename ThresholdFn>
+auto join_maxscore_uni(
+    Cursors cursors,
+    Payload init,
+    AccumulateFn accumulate,
+    ThresholdFn above_threshold,
+    std::uint32_t sentinel)
+{
+    using cursor_type = std::decay_t<typename Cursors::value_type>;
+    std::vector<std::size_t> term_positions(cursors.size());
+    std::iota(term_positions.begin(), term_positions.end(), 0);
+    ranges::sort(
+        term_positions, std::greater{}, [&](auto&& pos) { return cursors[pos].max_score(); });
+    std::vector<cursor_type> ordered_cursors;
+    for (auto pos: term_positions) {
+        ordered_cursors.push_back(std::move(cursors[pos]));
+    };
+
+    return MaxscoreJoin<std::vector<cursor_type>, Payload, AccumulateFn, ThresholdFn, EssentialMode::Static>(
         std::move(ordered_cursors),
         std::move(init),
         std::move(accumulate),
