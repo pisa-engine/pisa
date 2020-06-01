@@ -128,7 +128,6 @@ struct maxscore_query {
     template <typename Cursors>
     void operator()(Cursors&& cursors_, uint64_t max_docid)
     {
-        using cursor_type = typename std::decay_t<Cursors>::value_type;
         if (cursors_.empty()) {
             return;
         }
