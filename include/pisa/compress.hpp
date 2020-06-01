@@ -12,6 +12,7 @@
 #include <spdlog/spdlog.h>
 
 #include "configuration.hpp"
+#include "ensure.hpp"
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
 #include "mappable/mapper.hpp"
@@ -121,54 +122,8 @@ void compress_index_streaming(
     }
 }
 
-class Ensure {
-  public:
-    explicit Ensure(bool condition) : m_condition(condition) {}
-
-    template <typename Error>
-    PISA_ALWAYSINLINE auto or_throw(Error&& error)
-    {
-        if (not m_condition) {
-            throw std::forward<Error>(error);
-        }
-    }
-
-    template <typename Fn>
-    PISA_ALWAYSINLINE auto or_else(Fn&& fn)
-    {
-        if (not m_condition) {
-            fn();
-        }
-    }
-
-    PISA_ALWAYSINLINE auto or_panic(std::string_view error_msg)
-    {
-        if (not m_condition) {
-            spdlog::error(error_msg);
-            std::exit(EXIT_FAILURE);
-        }
-    }
-
-    template <typename Fn>
-    PISA_ALWAYSINLINE auto or_panic_with(Fn&& fn)
-    {
-        if (not m_condition) {
-            fn();
-            std::exit(EXIT_FAILURE);
-        }
-    }
-
-  private:
-    bool m_condition;
-};
-
-[[nodiscard]] auto ensure(bool condition) -> Ensure
-{
-    return Ensure(condition);
-}
-
-// TODO: Group parameters under a common `optional` so that, say, it is impossible to get `quantized
-// == true` and at the same time `wand_data_filename == std::nullopt`.
+// TODO(michal): Group parameters under a common `optional` so that, say, it is impossible to get
+// `quantized == true` and at the same time `wand_data_filename == std::nullopt`.
 template <typename CollectionType, typename WandType>
 void compress_index(
     binary_freq_collection const& input,
