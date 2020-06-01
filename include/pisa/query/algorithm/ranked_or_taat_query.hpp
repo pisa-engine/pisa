@@ -24,11 +24,9 @@ class ranked_or_taat_query {
         accumulator.init();
 
         for (auto&& cursor: cursors) {
-            while (cursor.docs_enum.docid() < max_docid) {
-                accumulator.accumulate(
-                    cursor.docs_enum.docid(),
-                    cursor.scorer(cursor.docs_enum.docid(), cursor.docs_enum.freq()));
-                cursor.docs_enum.next();
+            while (cursor.docid() < max_docid) {
+                accumulator.accumulate(cursor.docid(), cursor.score());
+                cursor.next();
             }
         }
         accumulator.aggregate(m_topk);

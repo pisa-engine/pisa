@@ -25,16 +25,16 @@ struct ranked_and_query {
 
         // sort by increasing frequency
         std::sort(ordered_cursors.begin(), ordered_cursors.end(), [](Cursor* lhs, Cursor* rhs) {
-            return lhs->docs_enum.size() < rhs->docs_enum.size();
+            return lhs->size() < rhs->size();
         });
 
-        uint64_t candidate = ordered_cursors[0]->docs_enum.docid();
+        uint64_t candidate = ordered_cursors[0]->docid();
         size_t i = 1;
         while (candidate < max_docid) {
             for (; i < ordered_cursors.size(); ++i) {
-                ordered_cursors[i]->docs_enum.next_geq(candidate);
-                if (ordered_cursors[i]->docs_enum.docid() != candidate) {
-                    candidate = ordered_cursors[i]->docs_enum.docid();
+                ordered_cursors[i]->next_geq(candidate);
+                if (ordered_cursors[i]->docid() != candidate) {
+                    candidate = ordered_cursors[i]->docid();
                     i = 0;
                     break;
                 }
@@ -43,13 +43,12 @@ struct ranked_and_query {
             if (i == ordered_cursors.size()) {
                 float score = 0;
                 for (i = 0; i < ordered_cursors.size(); ++i) {
-                    score += ordered_cursors[i]->scorer(
-                        ordered_cursors[i]->docs_enum.docid(), ordered_cursors[i]->docs_enum.freq());
+                    score += ordered_cursors[i]->score();
                 }
 
-                m_topk.insert(score, ordered_cursors[0]->docs_enum.docid());
-                ordered_cursors[0]->docs_enum.next();
-                candidate = ordered_cursors[0]->docs_enum.docid();
+                m_topk.insert(score, ordered_cursors[0]->docid());
+                ordered_cursors[0]->next();
+                candidate = ordered_cursors[0]->docid();
                 i = 1;
             }
         }
