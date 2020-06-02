@@ -11,8 +11,8 @@
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+#include <tbb/global_control.h>
 #include <tbb/parallel_for.h>
-#include <tbb/task_scheduler_init.h>
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "app.hpp"
@@ -34,7 +34,7 @@ using ranges::views::enumerate;
 template <typename IndexType, typename WandType>
 void evaluate_queries(
     const std::string& index_filename,
-    const std::optional<std::string>& wand_data_filename,
+    const std::string& wand_data_filename,
     const std::vector<QueryContainer>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
@@ -54,19 +54,17 @@ void evaluate_queries(
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
-        }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
+    std::error_code error;
+    md.map(wand_data_filename, error);
+    if (error) {
+        spdlog::error("error mapping file: {}, exiting...", error.message());
+        std::abort();
     }
+    mapper::map(wdata, md, mapper::map_flags::warmup);
 
     std::function<std::vector<std::pair<float, uint64_t>>(QueryRequest)> query_fun;
 
-    if (query_type == "wand" && wand_data_filename) {
+    if (query_type == "wand") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             wand_query wand_q(topk);
@@ -74,7 +72,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "block_max_wand" && wand_data_filename) {
+    } else if (query_type == "block_max_wand") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
@@ -83,7 +81,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "block_max_maxscore" && wand_data_filename) {
+    } else if (query_type == "block_max_maxscore") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
@@ -92,7 +90,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
+    } else if (query_type == "block_max_ranked_and") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
@@ -101,7 +99,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "ranked_and" && wand_data_filename) {
+    } else if (query_type == "ranked_and") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             ranked_and_query ranked_and_q(topk);
@@ -109,7 +107,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "ranked_or" && wand_data_filename) {
+    } else if (query_type == "ranked_or") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             ranked_or_query ranked_or_q(topk);
@@ -117,7 +115,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "maxscore" && wand_data_filename) {
+    } else if (query_type == "maxscore") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
@@ -125,7 +123,7 @@ void evaluate_queries(
             topk.finalize();
             return topk.topk();
         };
-    } else if (query_type == "ranked_or_taat" && wand_data_filename) {
+    } else if (query_type == "ranked_or_taat") {
         query_fun =
             [&, accumulator = Simple_Accumulator(index.num_docs())](QueryRequest query) mutable {
                 topk_queue topk(k);
@@ -135,7 +133,7 @@ void evaluate_queries(
                 topk.finalize();
                 return topk.topk();
             };
-    } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
+    } else if (query_type == "ranked_or_taat_lazy") {
         query_fun =
             [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](QueryRequest query) mutable {
                 topk_queue topk(k);
@@ -194,7 +192,13 @@ int main(int argc, const char** argv)
     std::string run_id = "R0";
     bool quantized = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds, arg::Threads>
+    App<arg::Index,
+        arg::WandData<arg::WandMode::Required>,
+        arg::Query<arg::QueryMode::Ranked>,
+        arg::Algorithm,
+        arg::Scorer,
+        arg::Thresholds,
+        arg::Threads>
         app{"Retrieves query results in TREC format."};
     app.add_option("-r,--run", run_id, "Run identifier");
     app.add_option("--documents", documents_file, "Document lexicon")->required();
@@ -202,8 +206,8 @@ int main(int argc, const char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
-    tbb::task_scheduler_init init(app.threads());
-    spdlog::info("Number of threads: {}", app.threads());
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
+    spdlog::info("Number of worker threads: {}", app.threads());
 
     if (run_id.empty()) {
         run_id = "PISA";

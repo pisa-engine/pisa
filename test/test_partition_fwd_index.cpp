@@ -129,7 +129,9 @@ void build_fwd_index(std::string const& output)
         is,
         output,
         next_plaintext_record,
-        [](std::string&& term) -> std::string { return std::forward<std::string>(term); },
+        [] {
+            return [](std::string&& term) -> std::string { return std::forward<std::string>(term); };
+        },
         pisa::parse_plaintext_content,
         20'000,
         2);

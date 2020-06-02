@@ -19,20 +19,19 @@ struct ranked_or_query {
         }
         uint64_t cur_doc =
             std::min_element(cursors.begin(), cursors.end(), [](Cursor const& lhs, Cursor const& rhs) {
-                return lhs.docs_enum.docid() < rhs.docs_enum.docid();
-            })->docs_enum.docid();
+                return lhs.docid() < rhs.docid();
+            })->docid();
 
         while (cur_doc < max_docid) {
             float score = 0;
             uint64_t next_doc = max_docid;
             for (size_t i = 0; i < cursors.size(); ++i) {
-                if (cursors[i].docs_enum.docid() == cur_doc) {
-                    score +=
-                        cursors[i].scorer(cursors[i].docs_enum.docid(), cursors[i].docs_enum.freq());
-                    cursors[i].docs_enum.next();
+                if (cursors[i].docid() == cur_doc) {
+                    score += cursors[i].score();
+                    cursors[i].next();
                 }
-                if (cursors[i].docs_enum.docid() < next_doc) {
-                    next_doc = cursors[i].docs_enum.docid();
+                if (cursors[i].docid() < next_doc) {
+                    next_doc = cursors[i].docid();
                 }
             }
 

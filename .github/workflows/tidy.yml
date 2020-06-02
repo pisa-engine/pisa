@@ -1,0 +1,43 @@
+name: clang-tidy
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install clang and clang-tidy
+      shell: bash
+      run: |
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
+          sudo apt-get update
+          sudo apt-get install -y clang-10 clang-tidy-10
+          sudo apt-get install -y libtool m4 autoconf
+          echo "::set-env name=CC::clang-10"
+          echo "::set-env name=CXX::clang++-10"
+
+    - name: Create Build Environment
+      shell: bash
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: |
+          cmake $GITHUB_WORKSPACE \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DPISA_BUILD_TOOLS=ON \
+            -DPISA_ENABLE_CLANG_TIDY=ON \
+            -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-10 ..
+
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Debug -- -j 4
