@@ -29,9 +29,9 @@ jobs:
 
     - name: Cache external depenencies
       uses: actions/cache@v2
-        with:
-          path: ${{ runner.workspace }}/build/external
-          key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
+      with:
+        path: ${{ runner.workspace }}/build/external
+        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
 
     - name: Install (Linux)
       if: runner.os == 'Linux'
