@@ -19,7 +19,7 @@ jobs:
           sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           sudo apt-get update
           sudo apt-get install -y clang-10 clang-tidy-10
-          sudo apt-get install -y libtool
+          sudo apt-get install -y libtool m4 autoconf
           echo "::set-env name=CC::clang-10"
           echo "::set-env name=CXX::clang++-10"
 
