@@ -42,6 +42,7 @@ jobs:
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           fi
           sudo apt-get update
+          sudo apt-get install -y libtool m4 autoconf
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
               sudo apt-get install -y "${cxx}"
           else
@@ -62,7 +63,7 @@ jobs:
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug
+      run: cmake --build . --config Debug -- -j 4
 
     - name: Test
       shell: bash
