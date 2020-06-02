@@ -39,6 +39,7 @@ jobs:
           if [ "${cc}" = "clang-10" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           fi
+          sudo wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_18.04/Release.key -O "/etc/apt/trusted.gpg.d/devel:kubic:libcontainers:stable.asc"
           sudo apt-get update
           sudo apt-get install -y libtool m4 autoconf
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
