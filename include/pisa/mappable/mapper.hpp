@@ -148,6 +148,20 @@ namespace pisa { namespace mapper {
             uint64_t m_freeze_flags;
         };
 
+        template <>
+        map_visitor& map_visitor::operator()(
+            mappable_vector<std::array<std::uint32_t, 2>>& vec, const char* /* friendly_name */)
+        {
+            vec.clear();
+            (*this)(vec.m_size, "size");
+
+            vec.m_data = reinterpret_cast<const std::array<std::uint32_t, 2>*>(m_cur);
+            size_t bytes = vec.m_size * sizeof(std::uint32_t) * 2;
+
+            m_cur += bytes;
+            return *this;
+        }
+
         class sizeof_visitor {
           public:
             explicit sizeof_visitor(bool with_tree = false) : m_size(0)

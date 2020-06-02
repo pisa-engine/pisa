@@ -12,7 +12,7 @@ namespace pisa {
 
 struct BlockIndexTag;
 
-template <typename BlockCodec, bool Profile = false>
+template <typename BlockCodec, bool Profile = false, IndexArity Arity = IndexArity::Unary>
 class block_freq_index {
   public:
     using index_layout_tag = BlockIndexTag;
@@ -36,7 +36,8 @@ class block_freq_index {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
-            block_posting_list<BlockCodec, Profile>::write(m_lists, n, docs_begin, freqs_begin);
+            block_posting_list<BlockCodec, Profile, Arity>::write(
+                m_lists, n, docs_begin, freqs_begin);
             m_endpoints.push_back(m_lists.size());
         }
 
@@ -165,7 +166,8 @@ class block_freq_index {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    using document_enumerator = typename block_posting_list<BlockCodec, Profile>::document_enumerator;
+    using document_enumerator =
+        typename block_posting_list<BlockCodec, Profile, Arity>::document_enumerator;
 
     document_enumerator operator[](size_t i) const
     {
@@ -205,8 +207,11 @@ class block_freq_index {
     template <typename Visitor>
     void map(Visitor& visit)
     {
-        visit(m_params, "m_params")(m_size, "m_size")(m_num_docs, "m_num_docs")(
-            m_endpoints, "m_endpoints")(m_lists, "m_lists");
+        visit(m_size, "m_size");
+        visit(m_num_docs, "m_num_docs");
+        visit(m_endpoints, "m_endpoints");
+        visit(m_lists, "m_lists");
+        visit(m_params, "m_params");
     }
 
   private:
@@ -216,4 +221,5 @@ class block_freq_index {
     bit_vector m_endpoints;
     mapper::mappable_vector<uint8_t> m_lists;
 };
+
 }  // namespace pisa
