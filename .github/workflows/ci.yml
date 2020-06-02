@@ -27,18 +27,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Cache external depenencies
-      uses: actions/cache@v2
-      with:
-        path: ${{ runner.workspace }}/build/external
-        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
-
     - name: Install (Linux)
       if: runner.os == 'Linux'
       shell: bash
       run: |
-          # Install compiler
-
           cc="${{ matrix.compiler }}-${{ matrix.version }}"
           cc="${cc%-}"
           cxx="${cc/clang/clang++}"
@@ -60,6 +52,12 @@ jobs:
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/build
 
+    - name: Cache external depenencies
+      uses: actions/cache@v2
+      with:
+        path: ${{ runner.workspace }}/build/external
+        key: ${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.version }}
+
     - name: Configure
       shell: bash
       working-directory: ${{runner.workspace}}/build
@@ -68,9 +66,9 @@ jobs:
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug
+      run: cmake --build . --config Debug -- -j 4
 
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: ctest
+      run: ctest -j
