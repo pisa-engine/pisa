@@ -68,4 +68,4 @@ jobs:
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: ctest
+      run: ctest -j 4
