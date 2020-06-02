@@ -129,10 +129,9 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
                             make_scored_cursors(
                                 data->index,
                                 *scorer,
-                                Query{
-                                    .id = {},
-                                    .terms = {query.terms[left], query.terms[right]},
-                                    .term_weights = {1, 1}}),
+                                Query{.id = {},
+                                      .terms = {query.terms[left], query.terms[right]},
+                                      .term_weights = {1, 1}}),
                             data->index.num_docs());
                         if (!expected.empty()) {
                             auto term_pair =
