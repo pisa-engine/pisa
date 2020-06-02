@@ -39,4 +39,4 @@ jobs:
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug -- -j 8
+      run: cmake --build . --config Debug -- -j
