@@ -109,7 +109,7 @@ void kt_thresholds(
             Query query;
             query.terms.push_back(term);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0f);
+            threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
         }
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
@@ -118,7 +118,7 @@ void kt_thresholds(
                     query.terms.push_back(terms[i]);
                     query.terms.push_back(terms[j]);
                     wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0f);
+                    threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                 }
             }
         }
@@ -132,7 +132,7 @@ void kt_thresholds(
                         query.terms.push_back(terms[s]);
                         wand_q(
                             make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                        threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0f);
+                        threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                     }
                 }
             }
