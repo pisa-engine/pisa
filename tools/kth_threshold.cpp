@@ -92,9 +92,9 @@ void kt_thresholds(
         topk_queue topk(k);
         wand_query wand_q(topk);
 
-        for (size_t i = 0; i < terms.size(); ++i) {
+        for(auto&& term : terms) {
             Query q;
-            q.terms.push_back(terms[i]);
+            q.terms.push_back(term);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, q), index.num_docs());
             topk.finalize();
             auto results = topk.topk();
