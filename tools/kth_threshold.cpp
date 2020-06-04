@@ -63,24 +63,37 @@ void kt_thresholds(
     using Triple = std::set<uint32_t>;
     std::unordered_set<Triple, boost::hash<Triple>> triples_set;
 
-    std::string t;
+    auto to_int = [](std::vector<std::string> const& term_ids) {
+        std::set<uint32_t> term_ids_int;
+        for (auto&& term_id: term_ids) {
+            try {
+                term_ids_int.insert(std::stoi(term_id));
+            } catch (const std::invalid_argument& e) {
+                throw std::runtime_error(fmt::format("Cannot convert {} to int.", term_id));
+            } catch (const std::out_of_range& e) {
+                throw std::runtime_error(fmt::format("Cannot convert {} to int.", term_id));
+            }
+        }
+        return term_ids_int;
+    };
+
+    std::string line;
     if (pairs_filename) {
         std::ifstream pin(*pairs_filename);
-        while (std::getline(pin, t)) {
-            std::vector<std::string> p;
-            boost::algorithm::split(p, t, boost::is_any_of(" \t"));
-            pairs_set.insert({(uint32_t)std::stoi(p[0]), (uint32_t)std::stoi(p[1])});
+        while (std::getline(pin, line)) {
+            std::vector<std::string> term_ids;
+            boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
+            pairs_set.insert(to_int(term_ids));
         }
         spdlog::info("Number of pairs loaded: {}", pairs_set.size());
     }
 
     if (triples_filename) {
         std::ifstream trin(*triples_filename);
-        while (std::getline(trin, t)) {
-            std::vector<std::string> p;
-            boost::algorithm::split(p, t, boost::is_any_of(" \t"));
-            triples_set.insert(
-                {(uint32_t)std::stoi(p[0]), (uint32_t)std::stoi(p[1]), (uint32_t)std::stoi(p[2])});
+        while (std::getline(trin, line)) {
+            std::vector<std::string> term_ids;
+            boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
+            triples_set.insert(to_int(term_ids));
         }
         spdlog::info("Number of triples loaded: {}", triples_set.size());
     }
@@ -93,53 +106,33 @@ void kt_thresholds(
         wand_query wand_q(topk);
 
         for (auto&& term: terms) {
-            Query q;
-            q.terms.push_back(term);
-            wand_q(make_max_scored_cursors(index, wdata, *scorer, q), index.num_docs());
-            topk.finalize();
-            auto results = topk.topk();
-            topk.clear();
-            float t = 0.0;
-            if (results.size() == k) {
-                t = results.back().first;
-            }
-            threshold = std::max(threshold, t);
+            Query query;
+            query.terms.push_back(term);
+            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0f);
         }
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
-                if (pairs_set.count({terms[i], terms[j]})) {
-                    Query q;
-                    q.terms.push_back(terms[i]);
-                    q.terms.push_back(terms[j]);
-                    wand_q(make_max_scored_cursors(index, wdata, *scorer, q), index.num_docs());
-                    topk.finalize();
-                    auto results = topk.topk();
-                    topk.clear();
-                    float t = 0.0;
-                    if (results.size() == k) {
-                        t = results.back().first;
-                    }
-                    threshold = std::max(threshold, t);
+                if (pairs_set.count({terms[i], terms[j]}) > 0) {
+                    Query query;
+                    query.terms.push_back(terms[i]);
+                    query.terms.push_back(terms[j]);
+                    wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0f);
                 }
             }
         }
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 for (size_t s = j + 1; s < terms.size(); ++s) {
-                    if (triples_set.count({terms[i], terms[j], terms[s]})) {
-                        Query q;
-                        q.terms.push_back(terms[i]);
-                        q.terms.push_back(terms[j]);
-                        q.terms.push_back(terms[s]);
-                        wand_q(make_max_scored_cursors(index, wdata, *scorer, q), index.num_docs());
-                        topk.finalize();
-                        auto results = topk.topk();
-                        topk.clear();
-                        float t = 0.0;
-                        if (results.size() == k) {
-                            t = results.back().first;
-                        }
-                        threshold = std::max(threshold, t);
+                    if (triples_set.count({terms[i], terms[j], terms[s]}) > 0) {
+                        Query query;
+                        query.terms.push_back(terms[i]);
+                        query.terms.push_back(terms[j]);
+                        query.terms.push_back(terms[s]);
+                        wand_q(
+                            make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                        threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0f);
                     }
                 }
             }

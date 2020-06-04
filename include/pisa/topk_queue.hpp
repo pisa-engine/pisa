@@ -62,6 +62,8 @@ struct topk_queue {
 
     void set_threshold(Threshold t) noexcept { m_threshold = t; }
 
+    Threshold threshold() noexcept { return m_threshold; }
+
     void clear() noexcept
     {
         m_q.clear();
