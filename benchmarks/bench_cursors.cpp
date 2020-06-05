@@ -12,8 +12,8 @@
 using pisa::binary_collection;
 using pisa::binary_freq_collection;
 using pisa::block_max_maxscore_query;
-using pisa::block_max_scored_cursor;
 using pisa::block_max_wand_query;
+using pisa::BlockMaxScoredCursor;
 using pisa::BlockSize;
 using pisa::FixedBlock;
 using pisa::global_parameters;
@@ -177,37 +177,42 @@ TEMPLATE_TEST_CASE(
 
     BENCHMARK(fmt::format("{}_2", stringify<TestType>()))
     {
-        return run(Query{.id = std::nullopt,
-                         .terms = std::vector<term_id_type>{40429, 86328},
-                         .term_weights = {1.0, 1.0}});
+        return run(Query{
+            .id = std::nullopt,
+            .terms = std::vector<term_id_type>{40429, 86328},
+            .term_weights = {1.0, 1.0}});
     };
 
     BENCHMARK(fmt::format("{}_3", stringify<TestType>()))
     {
-        return run(Query{.id = std::nullopt,
-                         .terms = std::vector<term_id_type>{106967, 552, 59184},
-                         .term_weights = {1.0, 1.0, 1.0}});
+        return run(Query{
+            .id = std::nullopt,
+            .terms = std::vector<term_id_type>{106967, 552, 59184},
+            .term_weights = {1.0, 1.0, 1.0}});
     };
 
     BENCHMARK(fmt::format("{}_4", stringify<TestType>()))
     {
-        return run(Query{.id = std::nullopt,
-                         .terms = std::vector<term_id_type>{62574, 93388, 40150, 68583},
-                         .term_weights = {1.0, 1.0, 1.0, 1.0}});
+        return run(Query{
+            .id = std::nullopt,
+            .terms = std::vector<term_id_type>{62574, 93388, 40150, 68583},
+            .term_weights = {1.0, 1.0, 1.0, 1.0}});
     };
 
     BENCHMARK(fmt::format("{}_5", stringify<TestType>()))
     {
-        return run(Query{.id = std::nullopt,
-                         .terms = std::vector<term_id_type>{73411, 82481, 72583, 79520, 46235},
-                         .term_weights = {1.0, 1.0, 1.0, 1.0, 1.0}});
+        return run(Query{
+            .id = std::nullopt,
+            .terms = std::vector<term_id_type>{73411, 82481, 72583, 79520, 46235},
+            .term_weights = {1.0, 1.0, 1.0, 1.0, 1.0}});
     };
 
     BENCHMARK(fmt::format("{}_6", stringify<TestType>()))
     {
-        return run(Query{.id = std::nullopt,
-                         .terms = std::vector<term_id_type>{60341, 49248, 34323, 95878, 67486, 75119},
-                         .term_weights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0}});
+        return run(Query{
+            .id = std::nullopt,
+            .terms = std::vector<term_id_type>{60341, 49248, 34323, 95878, 67486, 75119},
+            .term_weights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0}});
     };
 
     BENCHMARK(fmt::format("{}_7", stringify<TestType>()))
@@ -220,10 +225,10 @@ TEMPLATE_TEST_CASE(
 
     BENCHMARK(fmt::format("{}_8", stringify<TestType>()))
     {
-        return run(Query{.id = std::nullopt,
-                         .terms =
-                             std::vector<term_id_type>{
-                                 110717, 76695, 110770, 74156, 102912, 54599, 42353, 111450},
-                         .term_weights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}});
+        return run(Query{
+            .id = std::nullopt,
+            .terms =
+                std::vector<term_id_type>{110717, 76695, 110770, 74156, 102912, 54599, 42353, 111450},
+            .term_weights = {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}});
     };
 }
