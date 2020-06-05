@@ -86,8 +86,9 @@ jobs:
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug -- -j 4
-
+      run: |
+          [ -d "$HOME/.ccache" ] && sudo chown -R "$USER": "$HOME/.ccache"
+          cmake --build . --config Debug -- -j 4
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
