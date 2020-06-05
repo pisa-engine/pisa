@@ -165,7 +165,7 @@ int main(int argc, const char** argv)
 
     App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer>
         app{"A tool for performing threshold estimation using the k-highest impact score for each "
-            "term, pair or triple of a query."};
+            "term, pair or triple of a query. Pairs and triples are only used if provided with --pairs and --triples respectively."};
     auto pairs = app.add_option(
         "-p,--pairs", pairs_filename, "A tab separated file containing all the cached term pairs");
     auto triples = app.add_option(
