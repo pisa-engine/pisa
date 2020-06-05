@@ -41,10 +41,7 @@ std::set<uint32_t> parse_tuple(std::string const& line, size_t k)
     for (auto&& term_id: term_ids) {
         try {
             term_ids_int.insert(std::stoi(term_id));
-        } catch (const std::invalid_argument& e) {
-            throw std::runtime_error(
-                fmt::format("Cannot convert {} to int in line: {}", term_id, line));
-        } catch (const std::out_of_range& e) {
+        } catch (...) {
             throw std::runtime_error(
                 fmt::format("Cannot convert {} to int in line: {}", term_id, line));
         }
@@ -123,7 +120,7 @@ void kt_thresholds(
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 if (pairs_set.count({terms[i], terms[j]}) > 0) {
                     Query query;
-                    query.terms = {terms[i], terms[j]}
+                    query.terms = {terms[i], terms[j]};
                     wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                     threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                 }
@@ -134,7 +131,7 @@ void kt_thresholds(
                 for (size_t s = j + 1; s < terms.size(); ++s) {
                     if (triples_set.count({terms[i], terms[j], terms[s]}) > 0) {
                         Query query;
-                        query.terms = {terms[i], terms[j], terms[s]}
+                        query.terms = {terms[i], terms[j], terms[s]};
                         wand_q(
                             make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                         threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
