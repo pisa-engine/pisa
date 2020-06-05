@@ -24,10 +24,10 @@ jobs:
             os: ubuntu-latest
             compiler: "clang"
             version: "10"
-          - name: macos-xcode-11.3
+          - name: macos-gcc-9
             os: macos-latest
-            compiler: "xcode"
-            version: "11.3"
+            compiler: "gcc"
+            version: "9"
     steps:
     - uses: actions/checkout@v2
 
@@ -58,14 +58,8 @@ jobs:
       if: runner.os == 'macOS'
       run: |
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            brew install gcc@${{ matrix.version }}
             echo "::set-env name=CC::gcc-${{ matrix.version }}"
             echo "::set-env name=CXX::g++-${{ matrix.version }}"
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
-            export CPATH=`xcrun --show-sdk-path`/usr/include
           fi
     - name: Create Build Environment
       shell: bash
