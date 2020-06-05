@@ -28,13 +28,10 @@ jobs:
             os: macos-latest
             compiler: "gcc"
             version: "9"
-          - name: macos-xcode-11.5
+          - name: macos-xcode-11.3
             os: macos-latest
             compiler: "xcode"
-            version: "11.5"
-            
-            libcxx: libstdc++11
-
+            version: "11.3"
     steps:
     - uses: actions/checkout@v2
 
