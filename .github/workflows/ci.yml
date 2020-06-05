@@ -24,6 +24,10 @@ jobs:
             os: ubuntu-latest
             compiler: "clang"
             version: "10"
+          - name: macos-clang-10
+            os: macos-latest
+            compiler: "clang"
+            version: "10"
     steps:
     - uses: actions/checkout@v2
 
