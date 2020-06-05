@@ -24,10 +24,10 @@ jobs:
             os: ubuntu-latest
             compiler: "clang"
             version: "10"
-          - name: macos-clang-10
+          - name: macos-xcode-11.3
             os: macos-latest
             compiler: "xcode"
-            version: "11.5"
+            version: "11.3"
     steps:
     - uses: actions/checkout@v2
 
