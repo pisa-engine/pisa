@@ -2,6 +2,7 @@
 
 #include <catch2/catch.hpp>
 #include <functional>
+#include <optional>
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "compress.hpp"
@@ -40,7 +41,11 @@ TEST_CASE("Stream builder for block index", "[index]")
 
     // Build the streaming way
     compress_index_streaming<index_type>(
-        collection, pisa::global_parameters{}, actual_path.string(), false);
+        collection,
+        pisa::global_parameters{},
+        actual_path.string(),
+        std::optional<QuantizedScorer<pisa::wand_data<pisa::wand_data_raw>>>{},
+        false);
 
     auto expected_bytes = io::load_data(expected_path.string());
     auto actual_bytes = io::load_data(actual_path.string());

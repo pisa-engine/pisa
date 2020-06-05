@@ -2,29 +2,25 @@
 #include <optional>
 #include <unordered_set>
 
-#include "boost/algorithm/string/classification.hpp"
-#include "boost/algorithm/string/split.hpp"
+#include <CLI/CLI.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 #include <boost/functional/hash.hpp>
-
-#include "mio/mmap.hpp"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
-
-#include "mappable/mapper.hpp"
+#include <mio/mmap.hpp>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include "app.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "mappable/mapper.hpp"
+#include "query.hpp"
 #include "query/algorithm.hpp"
+#include "scorer/scorer.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
-
-#include "query/algorithm.hpp"
-#include "scorer/scorer.hpp"
-
-#include "CLI/CLI.hpp"
 
 using namespace pisa;
 
@@ -53,7 +49,7 @@ template <typename IndexType, typename WandType>
 void kt_thresholds(
     const std::string& index_filename,
     const std::string& wand_data_filename,
-    const std::vector<Query>& queries,
+    const std::vector<QueryContainer>& queries,
     std::string const& type,
     ScorerParams const& scorer_params,
     uint64_t k,
@@ -106,22 +102,24 @@ void kt_thresholds(
     for (auto const& query: queries) {
         float threshold = 0;
 
-        auto terms = query.terms;
+        auto request = query.query(query::unlimited);
+        auto terms = request.term_ids();
         topk_queue topk(k);
         wand_query wand_q(topk);
 
         for (auto&& term: terms) {
-            Query query;
-            query.terms.push_back(term);
-            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            wand_q(
+                make_max_scored_cursors(index, wdata, *scorer, std::vector<TermId>{term}),
+                index.num_docs());
             threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
         }
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 if (pairs_set.count({terms[i], terms[j]}) > 0 or all_pairs) {
-                    Query query;
-                    query.terms = {terms[i], terms[j]};
-                    wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    wand_q(
+                        make_max_scored_cursors(
+                            index, wdata, *scorer, std::vector<TermId>{terms[i], terms[j]}),
+                        index.num_docs());
                     threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                 }
             }
@@ -130,10 +128,13 @@ void kt_thresholds(
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 for (size_t s = j + 1; s < terms.size(); ++s) {
                     if (triples_set.count({terms[i], terms[j], terms[s]}) > 0 or all_triples) {
-                        Query query;
-                        query.terms = {terms[i], terms[j], terms[s]};
                         wand_q(
-                            make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                            make_max_scored_cursors(
+                                index,
+                                wdata,
+                                *scorer,
+                                std::vector<TermId>{terms[i], terms[j], terms[s]}),
+                            index.num_docs());
                         threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                     }
                 }
@@ -182,7 +183,7 @@ int main(int argc, const char** argv)
     auto params = std::make_tuple(
         app.index_filename(),
         app.wand_data_path(),
-        app.queries(),
+        app.resolved_queries(),
         app.index_encoding(),
         app.scorer_params(),
         app.k(),

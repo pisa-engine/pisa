@@ -22,7 +22,6 @@
 #include "util/verify_collection.hpp"  // XXX move to index_build_utils
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
-#include "writer_worker.hpp"
 
 namespace pisa {
 

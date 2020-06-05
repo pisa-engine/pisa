@@ -17,6 +17,7 @@
 #include "pisa_config.hpp"
 #include "query.hpp"
 #include "query/algorithm/maxscore_inter_eager_query.hpp"
+#include "query/algorithm/maxscore_inter_opt_query.hpp"
 #include "query/algorithm/maxscore_query.hpp"
 #include "query/algorithm/ranked_or_query.hpp"
 #include "temporary_directory.hpp"
@@ -109,7 +110,11 @@ std::ostream& operator<<(std::ostream& os, std::array<std::uint32_t, 2> p)
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE(
-    "Ranked query test", "[query][ranked][integration]", maxscore_inter_query, maxscore_inter_eager_query)
+    "Ranked query test",
+    "[query][ranked][integration]",
+    maxscore_inter_query,
+    maxscore_inter_eager_query,
+    maxscore_inter_opt_query)
 {
     std::unordered_set<size_t> dropped_term_ids;
     auto data = IndexData::get("bm25");

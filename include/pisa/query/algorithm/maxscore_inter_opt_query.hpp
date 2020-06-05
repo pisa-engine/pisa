@@ -94,7 +94,7 @@ struct Payload {
 template <std::size_t N, typename R1, typename R2>
 [[nodiscard]] PISA_ALWAYSINLINE auto term_position_function(R1&& essential_terms, R2&& lookup_terms)
 {
-    std::array<TermId, N> ids;
+    std::array<TermId, N> ids{};
     std::copy(essential_terms.begin(), essential_terms.end(), ids.begin());
     std::copy(
         lookup_terms.begin(), lookup_terms.end(), std::next(ids.begin(), essential_terms.size()));

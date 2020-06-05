@@ -18,7 +18,7 @@ struct TemporaryDirectory {
 
   private:
     boost::filesystem::path m_dir;
-    bool m_silent;
+    bool m_silent = false;
 };
 
 }  // namespace pisa

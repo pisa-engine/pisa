@@ -13,7 +13,6 @@ template <typename Cursor, typename Wand>
 class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
   public:
     using base_cursor_type = Cursor;
-<<<<<<< HEAD
 
     BlockMaxScoredCursor(
         Cursor cursor,
