@@ -123,8 +123,7 @@ void kt_thresholds(
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 if (pairs_set.count({terms[i], terms[j]}) > 0) {
                     Query query;
-                    query.terms.push_back(terms[i]);
-                    query.terms.push_back(terms[j]);
+                    query.terms = {terms[i], terms[j]}
                     wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                     threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                 }
@@ -135,9 +134,7 @@ void kt_thresholds(
                 for (size_t s = j + 1; s < terms.size(); ++s) {
                     if (triples_set.count({terms[i], terms[j], terms[s]}) > 0) {
                         Query query;
-                        query.terms.push_back(terms[i]);
-                        query.terms.push_back(terms[j]);
-                        query.terms.push_back(terms[s]);
+                        query.terms = {terms[i], terms[j], terms[s]}
                         wand_q(
                             make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                         threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
