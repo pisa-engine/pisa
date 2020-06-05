@@ -54,8 +54,8 @@ jobs:
           else
               sudo apt-get install -y "${cc}"
           fi
-          echo "::set-env name=CC::ccache ${cc}"
-          echo "::set-env name=CXX::ccache ${cxx}"
+          echo "::set-env name=CC::${cc}"
+          echo "::set-env name=CXX::${cxx}"
     - name: Install (macOS)
       if: runner.os == 'macOS'
       run: |
@@ -65,8 +65,8 @@ jobs:
             echo "::set-env name=CXX::ccache g++-${{ matrix.version }}"
           else
             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "::set-env name=CC::ccache $(xcrun -f clang)"
-            echo "::set-env name=CXX::ccache $(xcrun -f clang++)"
+            echo "::set-env name=CC::$(xcrun -f clang)"
+            echo "::set-env name=CXX::$(xcrun -f clang++)"
             echo "::set-env name=SDKROOT::$(xcodebuild -version -sdk macosx Path)"
             echo "::set-env name=PATH::$(dirname $(xcrun -f clang)):$PATH"
           fi
