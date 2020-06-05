@@ -26,8 +26,8 @@ jobs:
             version: "10"
           - name: macos-clang-10
             os: macos-latest
-            compiler: "clang"
-            version: "10"
+            compiler: "xcode"
+            version: "11.5"
     steps:
     - uses: actions/checkout@v2
 
@@ -54,7 +54,18 @@ jobs:
           fi
           echo "::set-env name=CC::${cc}"
           echo "::set-env name=CXX::${cxx}"
-
+    - name: Install (macOS)
+      if: runner.os == 'macOS'
+      run: |
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            brew install gcc@${{ matrix.version }}
+            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+            echo "::set-env name=CXX::g++-${{ matrix.version }}"
+          else
+            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+            echo "::set-env name=CC::clang"
+            echo "::set-env name=CXX::clang++"
+          fi
     - name: Create Build Environment
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/build
