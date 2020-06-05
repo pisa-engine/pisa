@@ -62,13 +62,17 @@ struct topk_queue {
 
     void set_threshold(Threshold t) noexcept { m_threshold = t; }
 
+    Threshold threshold() const noexcept { return m_threshold; }
+
     void clear() noexcept
     {
         m_q.clear();
         m_threshold = 0;
     }
 
-    [[nodiscard]] uint64_t size() const noexcept { return m_k; }
+    [[nodiscard]] size_t capacity() const noexcept { return m_k; }
+
+    [[nodiscard]] size_t size() const noexcept { return m_q.size(); }
 
   private:
     float m_threshold;
