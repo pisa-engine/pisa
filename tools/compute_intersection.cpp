@@ -52,10 +52,9 @@ void intersect(
             auto intersections = nlohmann::json::array();
             auto process_intersection = [&](auto const& query, auto const& mask) {
                 auto intersection = Intersection::compute(index, wdata, query, mask);
-                intersections.push_back(nlohmann::json{
-                    {"length", intersection.length},
-                    {"max_score", intersection.max_score},
-                    {"mask", mask.to_ulong()}});
+                intersections.push_back(nlohmann::json{{"length", intersection.length},
+                                                       {"max_score", intersection.max_score},
+                                                       {"mask", mask.to_ulong()}});
             };
             for_all_subsets(query, max_term_count, process_intersection);
             auto output =
