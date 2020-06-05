@@ -59,7 +59,9 @@ void kt_thresholds(
     uint64_t k,
     bool quantized,
     std::optional<std::string> pairs_filename,
-    std::optional<std::string> triples_filename)
+    std::optional<std::string> triples_filename,
+    bool all_pairs,
+    bool all_triples)
 {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
@@ -116,7 +118,7 @@ void kt_thresholds(
         }
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
-                if (pairs_set.count({terms[i], terms[j]}) > 0) {
+                if (pairs_set.count({terms[i], terms[j]}) > 0 or all_pairs) {
                     Query query;
                     query.terms = {terms[i], terms[j]};
                     wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -127,7 +129,7 @@ void kt_thresholds(
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 for (size_t s = j + 1; s < terms.size(); ++s) {
-                    if (triples_set.count({terms[i], terms[j], terms[s]}) > 0) {
+                    if (triples_set.count({terms[i], terms[j], terms[s]}) > 0 or all_triples) {
                         Query query;
                         query.terms = {terms[i], terms[j], terms[s]};
                         wand_q(
@@ -158,11 +160,20 @@ int main(int argc, const char** argv)
     std::string wand_data_filename;
     bool quantized = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer>
-        app{"A tool for performing threshold estimation using k-th score informations."};
+    bool all_pairs = false;
+    bool all_triples = false;
 
-    app.add_option("-p,--pairs", pairs_filename, "Pairs filename");
-    app.add_option("-t,--triples", triples_filename, "Triples filename");
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer>
+        app{"A tool for performing threshold estimation using the k-highest impact score for each "
+            "term, pair or triple of a query."};
+    auto pairs = app.add_option(
+        "-p,--pairs", pairs_filename, "A tab separated file containing all the cached term pairs");
+    auto triples = app.add_option(
+        "-t,--triples",
+        triples_filename,
+        "A tab separated file containing all the cached term triples");
+    app.add_flag("--all-pairs", "Consider all term pairs of a query")->excludes(pairs);
+    app.add_flag("--all-triples", "Consider all term triples of a query")->excludes(triples);
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
     CLI11_PARSE(app, argc, argv);
@@ -176,7 +187,9 @@ int main(int argc, const char** argv)
         app.k(),
         quantized,
         pairs_filename,
-        triples_filename);
+        triples_filename,
+        all_pairs,
+        all_triples);
 
     /**/
     if (false) {
