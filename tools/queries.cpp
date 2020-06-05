@@ -63,20 +63,25 @@ void op_perftest(
             StaticTimer::get("prelude")->reset();
             StaticTimer::get("lookups")->reset();
             StaticTimer::get("postings")->reset();
-            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query.query(k, request_flags));
-                if (safe && result < k) {
-                    num_reruns += 1;
-                    result =
-                        query_func(query.query(k, RequestFlagSet::all() ^ RequestFlag::Threshold));
+            try {
+                auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
+                    uint64_t result = query_func(query.query(k, request_flags));
+                    if (safe && result < k) {
+                        num_reruns += 1;
+                        result = query_func(
+                            query.query(k, RequestFlagSet::all() ^ RequestFlag::Threshold));
+                    }
+                    do_not_optimize_away(result);
+                });
+                if (usecs.count() < query_times[idx]) {
+                    query_times[idx] = usecs.count();
+                    prelude_times[idx] = StaticTimer::get("prelude")->micros();
+                    lookup_times[idx] = StaticTimer::get("lookups")->micros();
+                    posting_times[idx] = StaticTimer::get("postings")->micros();
                 }
-                do_not_optimize_away(result);
-            });
-            if (usecs.count() < query_times[idx]) {
-                query_times[idx] = usecs.count();
-                prelude_times[idx] = StaticTimer::get("prelude")->micros();
-                lookup_times[idx] = StaticTimer::get("lookups")->micros();
-                posting_times[idx] = StaticTimer::get("postings")->micros();
+            } catch (std::invalid_argument const& err) {
+                throw std::runtime_error(fmt::format(
+                    "Error while executing query: {}\n{}", err.what(), query.to_json_string(2)));
             }
             idx += 1;
         }
@@ -316,8 +321,7 @@ void perftest(
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
                 if (not query.selection()) {
-                    spdlog::error("maxscore_inter_query requires posting list selections");
-                    std::exit(1);
+                    throw std::invalid_argument("No selections");
                 }
                 auto selection = *query.selection();
                 if (selection.selected_pairs.empty()) {
@@ -341,8 +345,7 @@ void perftest(
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
                 if (not query.selection()) {
-                    spdlog::error("maxscore_inter_query requires posting list selections");
-                    std::exit(1);
+                    throw std::invalid_argument("No selections");
                 }
                 auto selection = *query.selection();
                 if (selection.selected_pairs.empty()) {
@@ -366,8 +369,7 @@ void perftest(
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
                 if (not query.selection()) {
-                    spdlog::error("maxscore-inter-opt requires posting list selections");
-                    std::exit(1);
+                    throw std::invalid_argument("No selections");
                 }
                 auto selection = *query.selection();
                 if (selection.selected_pairs.empty()) {

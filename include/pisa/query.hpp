@@ -219,7 +219,8 @@ class QueryContainer {
     /// Constructs a query from a JSON object.
     [[nodiscard]] static auto from_json(std::string_view json_string) -> QueryContainer;
 
-    [[nodiscard]] auto to_json_string() const -> std::string;
+    /// Pretty printed only if `indent >= 0`; by default, one line returned.
+    [[nodiscard]] auto to_json_string(int indent = -1) const -> std::string;
     [[nodiscard]] auto to_json() const -> nlohmann::json;
 
     /// Constructs a query from a colon-separated format:

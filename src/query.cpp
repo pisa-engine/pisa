@@ -419,9 +419,9 @@ auto QueryContainer::from_json(std::string_view json_string) -> QueryContainer
             fmt::format("Failed to parse JSON: `{}`: {}", json_string, err.what()));
     }
 }
-auto QueryContainer::to_json_string() const -> std::string
+auto QueryContainer::to_json_string(int indent) const -> std::string
 {
-    return to_json().dump();
+    return to_json().dump(indent);
 }
 
 auto QueryContainer::to_json() const -> nlohmann::json

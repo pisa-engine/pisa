@@ -6,6 +6,8 @@
 
 #include <gsl/span>
 
+#include "binary_index.hpp"
+#include "cursor/scored_cursor.hpp"
 #include "query.hpp"
 #include "query/algorithm/and_query.hpp"
 #include "scorer/scorer.hpp"
@@ -14,7 +16,7 @@ namespace pisa {
 
 namespace intersection {
 
-    enum class IntersectionType { Query, Combinations };
+    enum class IntersectionType { Query, Combinations, ExistingCombinations };
 
     /// Mask is set to a static-sized bitset for performance.
     /// Using dynamic bitset slows down a lot, and these operations will be performed on
@@ -54,6 +56,15 @@ struct Intersection {
         QueryContainer const& query,
         ScorerParams const& scorer_params,
         std::optional<intersection::Mask> term_mask = std::nullopt) -> Intersection;
+
+    template <typename Index, typename Wand, typename PairIndex>
+    inline static auto compute(
+        Index const& index,
+        Wand const& wand,
+        QueryContainer const& query,
+        ScorerParams const& scorer_params,
+        intersection::Mask term_mask,
+        PairIndex const& pair_index) -> Intersection;
 };
 
 template <typename Index, typename Wand>
@@ -79,6 +90,58 @@ inline auto Intersection::compute(
     };
     float max_score = max_element(results);
     return Intersection{results.size(), max_score};
+}
+
+template <typename Index, typename Wand, typename PairIndex>
+inline auto Intersection::compute(
+    Index const& index,
+    Wand const& wand,
+    QueryContainer const& query,
+    ScorerParams const& scorer_params,
+    intersection::Mask term_mask,
+    PairIndex const& pair_index) -> Intersection
+{
+    auto scorer = scorer::from_params(scorer_params, wand);
+    auto filtered_query = intersection::filter(query, term_mask);
+    auto request = filtered_query.query(query::unlimited);
+    auto term_ids = request.term_ids();
+
+    if (term_ids.size() == 2) {
+        auto pair_id = pair_index.pair_id(term_ids[0], term_ids[1]);
+        if (not pair_id) {
+            return Intersection{0, 0.0};
+        }
+        auto cursor = PairScoredCursor<std::decay_t<decltype(pair_index.index()[*pair_id])>>(
+            pair_index.index()[*pair_id],
+            scorer->term_scorer(term_ids[0]),
+            scorer->term_scorer(term_ids[1]),
+            1.0);
+        auto size = cursor.size();
+        float max_score = 0.0;
+        while (cursor.docid() < cursor.universe()) {
+            auto scores = cursor.score();
+            auto score = std::get<0>(scores) + std::get<1>(scores);
+            if (score > max_score) {
+                max_score = score;
+            }
+            cursor.next();
+        }
+        return Intersection{size, max_score};
+    }
+    if (term_ids.size() == 1) {
+        auto cursor = ScoredCursor<std::decay_t<decltype(index[0])>>(
+            index[term_ids[0]], scorer->term_scorer(term_ids[0]), 1.0);
+        auto size = cursor.size();
+        float max_score = 0.0;
+        while (cursor.docid() < cursor.universe()) {
+            if (auto score = cursor.score(); score > max_score) {
+                max_score = score;
+            }
+            cursor.next();
+        }
+        return Intersection{size, max_score};
+    }
+    return Intersection{0, 0.0};
 }
 
 /// Do `func` for all intersections in a query that have a given maximum number of terms.

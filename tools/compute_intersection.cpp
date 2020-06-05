@@ -12,6 +12,7 @@
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
+#include "binary_index.hpp"
 #include "index_types.hpp"
 #include "intersection.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
@@ -29,8 +30,10 @@ void intersect(
     QueryRange&& queries,
     IntersectionType intersection_type,
     std::optional<int> max_term_count,
-    ScorerParams const& scorer_params)
+    ScorerParams const& scorer_params,
+    std::optional<std::string> pair_index_path)
 {
+    using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
@@ -47,12 +50,34 @@ void intersect(
         }
         mapper::map(wdata, md, mapper::map_flags::warmup);
     }
+    auto pair_index = [&] {
+        if (pair_index_path) {
+            return std::make_optional(pair_index_type::load(*pair_index_path));
+        }
+        return std::optional<pair_index_type>{};
+    }();
 
     for (auto&& query: queries) {
         if (intersection_type == IntersectionType::Combinations) {
             auto intersections = nlohmann::json::array();
             auto process_intersection = [&](auto const& query, auto const& mask) {
                 auto intersection = Intersection::compute(index, wdata, query, scorer_params, mask);
+                if (intersection.length > 0) {
+                    intersections.push_back(nlohmann::json{
+                        {"length", intersection.length},
+                        {"max_score", intersection.max_score},
+                        {"mask", mask.to_ulong()}});
+                }
+            };
+            for_all_subsets(query, max_term_count, process_intersection);
+            auto output =
+                nlohmann::json{{"query", query.to_json()}, {"intersections", intersections}};
+            std::cout << output.dump() << '\n';
+        } else if (intersection_type == IntersectionType::ExistingCombinations) {
+            auto intersections = nlohmann::json::array();
+            auto process_intersection = [&](auto const& query, auto const& mask) {
+                auto intersection =
+                    Intersection::compute(index, wdata, query, scorer_params, mask, *pair_index);
                 if (intersection.length > 0) {
                     intersections.push_back(nlohmann::json{
                         {"length", intersection.length},
@@ -89,6 +114,7 @@ int main(int argc, const char** argv)
     std::size_t min_query_len = 0;
     std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
     bool combinations = false;
+    std::optional<std::string> pair_index;
     // bool header = false;
 
     CLI::App app{"Computes intersections of posting lists."};
@@ -96,13 +122,20 @@ int main(int argc, const char** argv)
         args(&app);
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
-    app.add_option(
-           "--max-term-count,--mtc",
-           max_term_count,
-           "Max number of terms when computing combinations")
-        ->needs(combinations_flag);
+    auto* mtc = app.add_option(
+                       "--max-term-count,--mtc",
+                       max_term_count,
+                       "Max number of terms when computing combinations")
+                    ->needs(combinations_flag);
     app.add_option("--min-query-len", min_query_len, "Minimum query length");
     app.add_option("--max-query-len", max_query_len, "Maximum query length");
+    app.add_option(
+           "--only-from",
+           pair_index,
+           "Pair index path from which to calculate pair intersections.\n"
+           "It always computes all combinations of pairs that exist in the pair index "
+           "in addition to all single term lists.")
+        ->excludes(combinations_flag);
     CLI11_PARSE(app, argc, argv);
 
     auto queries = args.resolved_queries();
@@ -111,8 +144,12 @@ int main(int argc, const char** argv)
         return size >= min_query_len || size <= max_query_len;
     });
 
-    IntersectionType intersection_type =
-        combinations ? IntersectionType::Combinations : IntersectionType::Query;
+    auto const intersection_type = [&] {
+        if (pair_index) {
+            return IntersectionType::ExistingCombinations;
+        }
+        return combinations ? IntersectionType::Combinations : IntersectionType::Query;
+    }();
 
     /**/
     if (false) {
@@ -126,7 +163,8 @@ int main(int argc, const char** argv)
             filtered_queries,                                \
             intersection_type,                               \
             max_term_count,                                  \
-            args.scorer_params());                           \
+            args.scorer_params(),                            \
+            pair_index);                                     \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
