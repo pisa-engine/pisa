@@ -46,7 +46,7 @@ struct IndexData {
         }
         builder.build(index);
         term_id_vec q;
-        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
+        std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries.jl");
         auto push_query = [&](std::string const& query_line) {
             queries.push_back(QueryContainer::from_json(query_line));
         };

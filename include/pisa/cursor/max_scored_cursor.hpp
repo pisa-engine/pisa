@@ -47,7 +47,7 @@ template <typename Index, typename WandType, typename Scorer>
         std::back_inserter(cursors),
         [&](auto term_id, auto weight) {
             auto max_weight = weight * wdata.max_term_weight(term_id);
-            return cursor_type{index[term_id], weight, scorer.term_scorer(term_id), max_weight};
+            return cursor_type{index[term_id], scorer.term_scorer(term_id), weight, max_weight};
         });
     return cursors;
 }

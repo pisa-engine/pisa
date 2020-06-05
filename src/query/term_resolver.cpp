@@ -1,5 +1,6 @@
 #include "query/term_resolver.hpp"
 #include "query/query_parser.hpp"
+#include "query/query_stemmer.hpp"
 #include "query/term_processor.hpp"
 
 namespace pisa {
@@ -39,7 +40,7 @@ StandardTermResolver::StandardTermResolver(
         return std::nullopt;
     };
 
-    m_self->transform = pisa::term_processor(stemmer_type);
+    m_self->transform = pisa::QueryStemmer(stemmer_type);
 
     if (stopwords_filename) {
         std::ifstream is(*stopwords_filename);

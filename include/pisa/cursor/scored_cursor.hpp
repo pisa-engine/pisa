@@ -58,7 +58,7 @@ template <typename Index, typename Scorer>
         term_weights.begin(),
         std::back_inserter(cursors),
         [&](auto term_id, auto weight) {
-            return cursor_type{index[term_id], weight, scorer.term_scorer(term_id)};
+            return cursor_type{index[term_id], scorer.term_scorer(term_id), weight};
         });
     return cursors;
 }
