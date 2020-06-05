@@ -70,7 +70,7 @@ jobs:
             echo "::set-env name=CC::clang"
             echo "::set-env name=CXX::clang++"
             echo "::set-env name=CPATH::/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"
-            sudo ln -s /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/* /usr/local/include/
+            echo "::set-env name=LIBRARY_PATH::/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib:/opt/local/lib"
           fi
     - name: Create Build Environment
       shell: bash
