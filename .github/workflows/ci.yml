@@ -60,9 +60,10 @@ jobs:
       if: runner.os == 'macOS'
       run: |
           brew install autoconf automake libtool cmake ccache
+          export PATH="/usr/local/opt/ccache/libexec:$PATH";
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            echo "::set-env name=CC::ccache gcc-${{ matrix.version }}"
-            echo "::set-env name=CXX::ccache g++-${{ matrix.version }}"
+            echo "::set-env name=CC::gcc-${{ matrix.version }}"
+            echo "::set-env name=CXX::g++-${{ matrix.version }}"
           else
             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
             echo "::set-env name=CC::$(xcrun -f clang)"
