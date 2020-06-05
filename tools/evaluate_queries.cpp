@@ -21,6 +21,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
+#include "query.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "util/util.hpp"
@@ -34,7 +35,7 @@ template <typename IndexType, typename WandType>
 void evaluate_queries(
     const std::string& index_filename,
     const std::string& wand_data_filename,
-    const std::vector<Query>& queries,
+    const std::vector<QueryContainer>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
     std::string const& query_type,
@@ -61,10 +62,10 @@ void evaluate_queries(
     }
     mapper::map(wdata, md, mapper::map_flags::warmup);
 
-    std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
+    std::function<std::vector<std::pair<float, uint64_t>>(QueryRequest)> query_fun;
 
     if (query_type == "wand") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             wand_query wand_q(topk);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -72,7 +73,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "block_max_wand") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
             block_max_wand_q(
@@ -81,7 +82,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "block_max_maxscore") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
             block_max_maxscore_q(
@@ -90,7 +91,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "block_max_ranked_and") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
             block_max_ranked_and_q(
@@ -99,7 +100,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "ranked_and") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             ranked_and_query ranked_and_q(topk);
             ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
@@ -107,7 +108,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "ranked_or") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             ranked_or_query ranked_or_q(topk);
             ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
@@ -115,7 +116,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "maxscore") {
-        query_fun = [&](Query query) {
+        query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
             maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -123,23 +124,25 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "ranked_or_taat") {
-        query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
-            topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            topk.finalize();
-            return topk.topk();
-        };
+        query_fun =
+            [&, accumulator = Simple_Accumulator(index.num_docs())](QueryRequest query) mutable {
+                topk_queue topk(k);
+                ranked_or_taat_query ranked_or_taat_q(topk);
+                ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                topk.finalize();
+                return topk.topk();
+            };
     } else if (query_type == "ranked_or_taat_lazy") {
-        query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
-            topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            topk.finalize();
-            return topk.topk();
-        };
+        query_fun =
+            [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](QueryRequest query) mutable {
+                topk_queue topk(k);
+                ranked_or_taat_query ranked_or_taat_q(topk);
+                ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                topk.finalize();
+                return topk.topk();
+            };
     } else {
         spdlog::error("Unsupported query type: {}", query_type);
     }
@@ -150,13 +153,13 @@ void evaluate_queries(
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
     tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
-        raw_results[query_idx] = query_fun(queries[query_idx]);
+        raw_results[query_idx] = query_fun(queries[query_idx].query(k));
     });
     auto end_batch = std::chrono::steady_clock::now();
 
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
-        auto qid = queries[query_idx].id;
+        auto qid = queries[query_idx].id();
         for (auto&& [rank, result]: enumerate(results)) {
             std::cout << fmt::format(
                 "{}\t{}\t{}\t{}\t{}\t{}\n",
@@ -212,10 +215,21 @@ int main(int argc, const char** argv)
 
     auto iteration = "Q0";
 
+    std::vector<pisa::QueryContainer> queries;
+    try {
+        queries = app.resolved_queries();
+    } catch (pisa::MissingResolverError err) {
+        spdlog::error("Unresoved queries (without IDs) require term lexicon.");
+        std::exit(1);
+    } catch (std::runtime_error const& err) {
+        spdlog::error(err.what());
+        std::exit(1);
+    }
+
     auto params = std::make_tuple(
         app.index_filename(),
         app.wand_data_path(),
-        app.queries(),
+        queries,
         app.thresholds_file(),
         app.index_encoding(),
         app.algorithm(),

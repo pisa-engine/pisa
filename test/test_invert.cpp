@@ -11,6 +11,7 @@
 #include "binary_collection.hpp"
 #include "filesystem.hpp"
 #include "invert.hpp"
+#include "io.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 

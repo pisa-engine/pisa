@@ -38,13 +38,18 @@ matrix:
           apt:
               sources: *all_sources
               packages: ['clang-6.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && TEST_CLI=On"
 
 # Install dependencies
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
       brew install ccache;
       export PATH="/usr/local/opt/ccache/libexec:$PATH";
+    fi
+  - if [[ "$TEST_CLI" == "On" ]]; then
+      git clone https://github.com/sstephenson/bats.git;
+      cd bats;
+      sudo ./install.sh /usr/local;
     fi
   - eval "${MATRIX_EVAL}"
   
@@ -55,6 +60,9 @@ script:
         make -j2;
         if [[ "$TIDY" != "On" ]]; then
             CTEST_OUTPUT_ON_FAILURE=TRUE ctest -j2;
+            if [[ "$TEST_CLI" == "On" ]]; then
+                bash ../test/cli/run.sh;
+            fi
         fi
       fi
     - if [[ "$CLANG_FORMAT" == "On" ]]; then

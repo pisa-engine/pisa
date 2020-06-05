@@ -14,6 +14,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
+#include "query.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "util/util.hpp"
@@ -22,7 +23,7 @@
 using namespace pisa;
 
 template <typename QueryOperator>
-void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries)
+void op_profile(QueryOperator const& query_op, std::vector<QueryContainer> const& queries)
 {
     using namespace pisa;
 
@@ -64,7 +65,7 @@ void profile(
     const std::string index_filename,
 
     const std::optional<std::string>& wand_data_filename,
-    std::vector<Query> const& queries,
+    std::vector<QueryContainer> const& queries,
     std::string const& type,
     std::string const& query_type)
 {
@@ -97,44 +98,45 @@ void profile(
 
     for (auto const& t: query_types) {
         spdlog::info("Query type: {}", t);
-        std::function<uint64_t(Query)> query_fun;
+        std::function<uint64_t(QueryContainer)> query_fun;
         if (t == "and") {
-            query_fun = [&](Query query) {
+            query_fun = [&](QueryContainer query) {
                 and_query and_q;
                 return and_q(
-                           make_cursors<typename add_profiling<IndexType>::type>(index, query),
+                           make_cursors<typename add_profiling<IndexType>::type>(
+                               index, query.query(query::unlimited)),
                            index.num_docs())
                     .size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query) {
+            query_fun = [&](QueryContainer query) {
                 topk_queue topk(10);
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(
                     make_scored_cursors<typename add_profiling<IndexType>::type>(
-                        index, *scorer, query),
+                        index, *scorer, query.query(10)),
                     index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](Query query) {
+            query_fun = [&](QueryContainer query) {
                 topk_queue topk(10);
                 wand_query wand_q(topk);
                 wand_q(
                     make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                        index, wdata, *scorer, query),
+                        index, wdata, *scorer, query.query(10)),
                     index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](Query query) {
+            query_fun = [&](QueryContainer query) {
                 topk_queue topk(10);
                 maxscore_query maxscore_q(topk);
                 maxscore_q(
                     make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                        index, wdata, *scorer, query),
+                        index, wdata, *scorer, query.query(10)),
                     index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
@@ -162,7 +164,7 @@ int main(int argc, const char** argv)
         args++;
     }
 
-    std::vector<Query> queries;
+    std::vector<QueryContainer> queries;
     term_id_vec q;
     if (std::string(argv[args]) == "--file") {
         args++;
@@ -170,13 +172,15 @@ int main(int argc, const char** argv)
         std::filebuf fb;
         if (fb.open(argv[args], std::ios::in) != nullptr) {
             std::istream is(&fb);
-            while (read_query(q, is)) {
-                queries.push_back({std::nullopt, q, {}});
+            std::string query_line;
+            while (std::getline(is, query_line)) {
+                queries.push_back(QueryContainer::from_colon_format(query_line));
             }
         }
     } else {
-        while (read_query(q)) {
-            queries.push_back({std::nullopt, q, {}});
+        std::string query_line;
+        while (std::getline(std::cin, query_line)) {
+            queries.push_back(QueryContainer::from_colon_format(query_line));
         }
     }
 

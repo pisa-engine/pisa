@@ -15,6 +15,7 @@
 #include "index_types.hpp"
 #include "io.hpp"
 #include "mappable/mapper.hpp"
+#include "query.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "util/util.hpp"
@@ -27,7 +28,7 @@ template <typename IndexType, typename WandType>
 void thresholds(
     const std::string& index_filename,
     const std::string& wand_data_filename,
-    const std::vector<Query>& queries,
+    QueryReader queries,
     std::string const& type,
     ScorerParams const& scorer_params,
     uint64_t k,
@@ -52,8 +53,8 @@ void thresholds(
 
     topk_queue topk(k);
     wand_query wand_q(topk);
-    for (auto const& query: queries) {
-        wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+    queries.for_each([&](auto&& query) {
+        wand_q(make_max_scored_cursors(index, wdata, *scorer, query.query(k)), index.num_docs());
         topk.finalize();
         auto results = topk.topk();
         topk.clear();
@@ -62,7 +63,7 @@ void thresholds(
             threshold = results.back().first;
         }
         std::cout << threshold << '\n';
-    }
+    });
 }
 
 using wand_raw_index = wand_data<wand_data_raw>;
@@ -88,7 +89,7 @@ int main(int argc, const char** argv)
     auto params = std::make_tuple(
         app.index_filename(),
         app.wand_data_path(),
-        app.queries(),
+        app.query_reader(),
         app.index_encoding(),
         app.scorer_params(),
         app.k(),
@@ -96,19 +97,21 @@ int main(int argc, const char** argv)
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                   \
-    }                                                                                           \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                     \
-    {                                                                                           \
-        if (app.is_wand_compressed()) {                                                         \
-            if (quantized) {                                                                    \
-                std::apply(                                                                     \
-                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                            \
-                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);    \
-            }                                                                                   \
-        } else {                                                                                \
-            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);            \
+#define LOOP_BODY(R, DATA, T)                                                                    \
+    }                                                                                            \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                      \
+    {                                                                                            \
+        if (app.is_wand_compressed()) {                                                          \
+            if (quantized) {                                                                     \
+                std::apply(                                                                      \
+                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,           \
+                    std::move(params));                                                          \
+            } else {                                                                             \
+                std::apply(                                                                      \
+                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, std::move(params)); \
+            }                                                                                    \
+        } else {                                                                                 \
+            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, std::move(params));  \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

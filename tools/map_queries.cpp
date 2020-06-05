@@ -25,11 +25,12 @@ int main(int argc, const char** argv)
 
     using boost::adaptors::transformed;
     using boost::algorithm::join;
-    for (auto&& q: app.queries()) {
-        if (query_id and q.id) {
-            std::cout << *(q.id) << ":";
+    for (auto&& q: app.resolved_queries()) {
+        if (query_id and q.id()) {
+            std::cout << *q.id() << ":";
         }
-        std::cout << join(q.terms | transformed([](auto d) { return std::to_string(d); }), separator)
-                  << '\n';
+        std::cout
+            << join(*q.term_ids() | transformed([](auto d) { return std::to_string(d); }), separator)
+            << '\n';
     }
 }
