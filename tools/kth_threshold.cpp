@@ -28,6 +28,30 @@
 
 using namespace pisa;
 
+std::set<uint32_t> parse_tuple(std::string const& line, size_t k)
+{
+    std::vector<std::string> term_ids;
+    boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
+    if (term_ids.size() != k) {
+        throw std::runtime_error(fmt::format(
+            "Wrong number of terms in line: {} (expected {} but found {})", line, k, term_ids.size()));
+    }
+
+    std::set<uint32_t> term_ids_int;
+    for (auto&& term_id: term_ids) {
+        try {
+            term_ids_int.insert(std::stoi(term_id));
+        } catch (const std::invalid_argument& e) {
+            throw std::runtime_error(
+                fmt::format("Cannot convert {} to int in line: {}", term_id, line));
+        } catch (const std::out_of_range& e) {
+            throw std::runtime_error(
+                fmt::format("Cannot convert {} to int in line: {}", term_id, line));
+        }
+    }
+    return term_ids_int;
+}
+
 template <typename IndexType, typename WandType>
 void kt_thresholds(
     const std::string& index_filename,
@@ -63,27 +87,11 @@ void kt_thresholds(
     using Triple = std::set<uint32_t>;
     std::unordered_set<Triple, boost::hash<Triple>> triples_set;
 
-    auto to_int = [](std::vector<std::string> const& term_ids) {
-        std::set<uint32_t> term_ids_int;
-        for (auto&& term_id: term_ids) {
-            try {
-                term_ids_int.insert(std::stoi(term_id));
-            } catch (const std::invalid_argument& e) {
-                throw std::runtime_error(fmt::format("Cannot convert {} to int.", term_id));
-            } catch (const std::out_of_range& e) {
-                throw std::runtime_error(fmt::format("Cannot convert {} to int.", term_id));
-            }
-        }
-        return term_ids_int;
-    };
-
     std::string line;
     if (pairs_filename) {
         std::ifstream pin(*pairs_filename);
         while (std::getline(pin, line)) {
-            std::vector<std::string> term_ids;
-            boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
-            pairs_set.insert(to_int(term_ids));
+            pairs_set.insert(parse_tuple(line, 2));
         }
         spdlog::info("Number of pairs loaded: {}", pairs_set.size());
     }
@@ -93,7 +101,7 @@ void kt_thresholds(
         while (std::getline(trin, line)) {
             std::vector<std::string> term_ids;
             boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
-            triples_set.insert(to_int(term_ids));
+            triples_set.insert(parse_tuple(line, 3));
         }
         spdlog::info("Number of triples loaded: {}", triples_set.size());
     }
