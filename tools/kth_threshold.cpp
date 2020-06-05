@@ -96,8 +96,6 @@ void kt_thresholds(
     if (triples_filename) {
         std::ifstream trin(*triples_filename);
         while (std::getline(trin, line)) {
-            std::vector<std::string> term_ids;
-            boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
             triples_set.insert(parse_tuple(line, 3));
         }
         spdlog::info("Number of triples loaded: {}", triples_set.size());
