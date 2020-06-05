@@ -219,8 +219,9 @@ struct maxscore_query {
     {
         std::vector<std::size_t> term_positions(cursors.size());
         std::iota(term_positions.begin(), term_positions.end(), 0);
-        ranges::sort(
-            term_positions, std::greater{}, [&](auto&& pos) { return cursors[pos].max_score(); });
+        std::sort(term_positions.begin(), term_positions.end(), [&](auto&& lhs, auto&& rhs) {
+            return cursors[lhs].max_score() > cursors[rhs].max_score();
+        });
         std::vector<typename std::decay_t<Cursors>::value_type> sorted;
         for (auto pos: term_positions) {
             sorted.push_back(std::move(cursors[pos]));
@@ -327,7 +328,6 @@ struct maxscore_query {
     template <typename Cursors>
     void operator()(Cursors&& cursors_, uint64_t max_docid)
     {
-        using cursor_type = typename std::decay_t<Cursors>::value_type;
         if (cursors_.empty()) {
             return;
         }

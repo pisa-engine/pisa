@@ -142,6 +142,6 @@ template <typename Index, typename WandType, typename Scorer>
             return cursor_type(index[term_id], scorer.term_scorer(term_id), weight, max_weight);
         });
     return cursors;
-}
+}  // namespace pisa
 
 }  // namespace pisa

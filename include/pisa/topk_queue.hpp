@@ -70,9 +70,11 @@ struct topk_queue {
         m_threshold = 0;
     }
 
-    [[nodiscard]] uint64_t size() const noexcept { return m_k; }
-
     [[nodiscard]] float threshold() const noexcept { return m_threshold; }
+
+    [[nodiscard]] size_t capacity() const noexcept { return m_k; }
+
+    [[nodiscard]] size_t size() const noexcept { return m_q.size(); }
 
   private:
     float m_threshold;

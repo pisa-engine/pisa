@@ -39,7 +39,7 @@ class base_binary_collection {
         // Indicates that the application expects to access this address range in a sequential
         // manner
         auto ret = posix_madvise((void*)m_data, m_data_size, POSIX_MADV_SEQUENTIAL);
-        if (ret) {
+        if (ret != 0) {
             spdlog::error("Error calling madvice: {}", errno);
         }
 #endif
@@ -92,7 +92,7 @@ class base_binary_collection {
 
         auto const& operator*() const { return m_cur_seq; }
 
-        auto const* operator-> () const { return &m_cur_seq; }
+        auto const* operator->() const { return &m_cur_seq; }
 
         base_iterator& operator++()
         {

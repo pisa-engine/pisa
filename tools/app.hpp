@@ -472,7 +472,7 @@ namespace arg {
                                   "Assign IDs randomly. You can use --seed for deterministic "
                                   "results.")
                               ->needs(output);
-            auto mapping = methods->add_flag(
+            auto mapping = methods->add_option(
                 "--from-mapping",
                 m_mapping,
                 "Use the mapping defined in this new-line delimited text file");

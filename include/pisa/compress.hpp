@@ -13,6 +13,7 @@
 #include <tbb/task_group.h>
 
 #include "configuration.hpp"
+#include "ensure.hpp"
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
 #include "mappable/mapper.hpp"
@@ -56,11 +57,21 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
         "freqs_avg_part", long_postings / freqs_partitions);
 }
 
-template <typename CollectionType>
+template <typename Wand>
+struct QuantizedScorer {
+    QuantizedScorer(std::unique_ptr<index_scorer<Wand>> scorer, LinearQuantizer quantizer)
+        : scorer(std::move(scorer)), quantizer(quantizer)
+    {}
+    std::unique_ptr<index_scorer<Wand>> scorer;
+    LinearQuantizer quantizer;
+};
+
+template <typename CollectionType, typename Wand>
 void compress_index_streaming(
     binary_freq_collection const& input,
     pisa::global_parameters const& params,
     std::string const& output_filename,
+    std::optional<QuantizedScorer<Wand>> quantized_scorer,
     bool check)
 {
     spdlog::info("Processing {} documents (streaming)", input.num_docs());
@@ -72,14 +83,35 @@ void compress_index_streaming(
         pisa::progress progress("Create index", input.size());
 
         size_t term_id = 0;
-        for (auto const& plist: input) {
-            size_t size = plist.docs.size();
-            uint64_t freqs_sum =
-                std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
-            builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
-            progress.update(1);
-            postings += size;
-            term_id += 1;
+        if (quantized_scorer) {
+            auto&& [scorer, quantizer] = *quantized_scorer;
+            std::vector<std::uint64_t> quantized_scores;
+            for (auto const& plist: input) {
+                auto term_scorer = scorer->term_scorer(term_id);
+                std::size_t size = plist.docs.size();
+                for (size_t pos = 0; pos < size; ++pos) {
+                    auto doc = *(plist.docs.begin() + pos);
+                    auto freq = *(plist.freqs.begin() + pos);
+                    auto score = term_scorer(doc, freq);
+                    quantized_scores.push_back(quantizer(score));
+                }
+                auto sum = std::accumulate(
+                    quantized_scores.begin(), quantized_scores.end(), std::uint64_t(0));
+                builder.add_posting_list(size, plist.docs.begin(), quantized_scores.begin(), sum);
+                term_id += 1;
+                quantized_scores.clear();
+                progress.update(1);
+            }
+        } else {
+            for (auto const& plist: input) {
+                size_t size = plist.docs.size();
+                uint64_t freqs_sum =
+                    std::accumulate(plist.freqs.begin(), plist.freqs.begin() + size, uint64_t(0));
+                builder.add_posting_list(size, plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+                progress.update(1);
+                postings += size;
+                term_id += 1;
+            }
         }
     }
 
@@ -87,11 +119,13 @@ void compress_index_streaming(
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Index compressed in {} seconds", elapsed_secs);
 
-    if (check) {
+    if (check && not quantized_scorer) {
         verify_collection<binary_freq_collection, CollectionType>(input, output_filename.c_str());
     }
 }
 
+// TODO(michal): Group parameters under a common `optional` so that, say, it is impossible to get
+// `quantized == true` and at the same time `wand_data_filename == std::nullopt`.
 template <typename CollectionType, typename WandType>
 void compress_index(
     binary_freq_collection const& input,
@@ -105,10 +139,27 @@ void compress_index(
     std::size_t threads)
 {
     if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
-        if (not quantized) {
-            compress_index_streaming<CollectionType>(input, params, *output_filename, check);
-            return;
+        std::optional<QuantizedScorer<WandType>> quantized_scorer{};
+        WandType wdata;
+        mio::mmap_source wdata_source;
+        if (quantized) {
+            ensure(wand_data_filename.has_value())
+                .or_panic("Bug: Asked for quantized but no wand data");
+            std::error_code error;
+            wdata_source.map(*wand_data_filename, error);
+            if (error) {
+                spdlog::error("error mapping file: {}, exiting...", error.message());
+                std::abort();
+            }
+            mapper::map(wdata, wdata_source, mapper::map_flags::warmup);
+            auto scorer = scorer::from_params(scorer_params, wdata);
+            LinearQuantizer quantizer(
+                wdata.index_max_term_weight(), configuration::get().quantization_bits);
+            quantized_scorer = QuantizedScorer(std::move(scorer), quantizer);
         }
+        compress_index_streaming<CollectionType, WandType>(
+            input, params, *output_filename, std::move(quantized_scorer), check);
+        return;
     }
 
     spdlog::info("Processing {} documents", input.num_docs());

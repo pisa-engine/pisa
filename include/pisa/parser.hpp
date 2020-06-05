@@ -52,7 +52,7 @@ record_parser(std::string const& type, std::istream& is)
                     parser->read_record(),
                     [](trecpp::Record rec) {
                         return std::make_optional<Document_Record>(
-                            std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
+                            rec.trecid(), rec.content(), rec.url());
                     },
                     [](trecpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", error);
@@ -74,8 +74,9 @@ record_parser(std::string const& type, std::istream& is)
                         if (not rec.valid_response()) {
                             return std::optional<Document_Record>{};
                         }
+                        // TODO(michal): use std::move
                         return std::make_optional<Document_Record>(
-                            std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
+                            rec.trecid(), rec.content(), rec.url());
                     },
                     [](warcpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", error);

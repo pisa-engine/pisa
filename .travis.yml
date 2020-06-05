@@ -26,16 +26,6 @@ matrix:
     - os: linux
       dist: xenial
       compiler: gcc
-      addons: &gcc7
-        apt:
-          sources: *all_sources
-          packages:
-            - g++-7
-            - lcov
-      env: MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && COVERAGE=Off"
-    - os: linux
-      dist: xenial
-      compiler: gcc
       addons: &gcc8
         apt:
           sources: *all_sources
@@ -43,60 +33,12 @@ matrix:
       env: MATRIX_EVAL="CC=gcc-8 && CXX=g++-8 && COVERAGE=Off && DOCKER=On"
     - os: linux
       dist: xenial
-      compiler: gcc
-      addons: &gcc9
-        apt:
-          sources: *all_sources
-          packages: ['g++-9']
-      env: MATRIX_EVAL="CC=gcc-9 && CXX=g++-9 && COVERAGE=Off && DOCKER=Off && TEST_CLI=On"
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-          apt:
-              sources: *all_sources
-              packages: ['clang-5.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0 && COVERAGE=Off"
-    - os: linux
-      dist: xenial
       compiler: clang
       addons:
           apt:
               sources: *all_sources
               packages: ['clang-6.0', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off"
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-          apt:
-              sources:
-                - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
-                  key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-              packages:
-                - clang-format-9
-      env: MATRIX_EVAL="COVERAGE=Off && CLANG_FORMAT=On"
-    - os: linux
-      dist: xenial
-      compiler: clang
-      addons:
-          apt:
-              sources:
-                - ubuntu-toolchain-r-test
-                - llvm-toolchain-xenial-6.0
-                - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-9 main'
-                  key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-              packages:
-                - ['clang-tidy-9', 'clang-9', 'libstdc++-7-dev']
-      env: MATRIX_EVAL="CC=clang-9 && CXX=clang++-9 && COVERAGE=Off && TIDY=On"
-    - os: osx
-      osx_image: xcode10.3
-      compiler: clang
-      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
-    - os: osx
-      osx_image: xcode11.2
-      compiler: clang
-      env: MATRIX_EVAL="CC=clang && CXX=clang++ && COVERAGE=Off"
+      env: MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0 && COVERAGE=Off && TEST_CLI=On"
 
 # Install dependencies
 before_install:
