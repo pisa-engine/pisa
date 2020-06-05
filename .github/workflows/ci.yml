@@ -67,9 +67,10 @@ jobs:
             echo "::set-env name=CXX::g++-${{ matrix.version }}"
           else
             sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "::set-env name=CC::clang"
-            echo "::set-env name=CXX::clang++"
-            echo "::set-env name=CPATH::/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"
+            echo "::set-env name=CC::$(xcrun -f clang)"
+            echo "::set-env name=CXX::$(xcrun -f clang++)"
+            echo "::set-env name=SDKROOT::$(xcodebuild -version -sdk macosx Path)"
+            echo "::set-env name=PATH::$(dirname $(xcrun -f clang)):$PATH"
           fi
     - name: Create Build Environment
       shell: bash
