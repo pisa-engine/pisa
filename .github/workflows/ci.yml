@@ -70,6 +70,9 @@ jobs:
             echo "::set-env name=CC::clang"
             echo "::set-env name=CXX::clang++"
             echo "::set-env name=CPATH::/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"
+            export CFLAGS=-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+            export CCFLAGS=-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
+            export CXXFLAGS=-isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
           fi
     - name: Create Build Environment
       shell: bash
