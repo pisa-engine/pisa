@@ -1,7 +1,9 @@
 #pragma once
 
-#include "query/queries.hpp"
+#include <algorithm>
 #include <vector>
+
+#include "query/queries.hpp"
 
 namespace pisa {
 
