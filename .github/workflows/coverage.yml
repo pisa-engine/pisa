@@ -1,0 +1,45 @@
+name: Code coverage
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set environment variables
+      shell: bash
+      run: |
+          echo "::set-env name=CC::clang-9"
+          echo "::set-env name=CXX::clang++-9"
+
+    - name: Create Build Environment
+      shell: bash
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=OFF -DENABLE_COVERAGE=ON ..
+
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Debug -- -j 4
+
+    - name: Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -j 4
+
+    - name: xxx
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: bash <(curl -s https://codecov.io/bash);
+
