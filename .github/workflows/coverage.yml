@@ -16,8 +16,8 @@ jobs:
     - name: Install lcov
       shell: bash
       run: |
-          echo "::set-env name=CC::gcc-8"
-          echo "::set-env name=CXX::g++-8"
+          echo "::set-env name=CC::gcc-7"
+          echo "::set-env name=CXX::g++-7"
 
     - name: Create Build Environment
       shell: bash
