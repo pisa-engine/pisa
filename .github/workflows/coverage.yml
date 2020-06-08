@@ -16,8 +16,8 @@ jobs:
     - name: Install lcov
       shell: bash
       run: |
-          echo "::set-env name=CC::gcc-7"
-          echo "::set-env name=CXX::g++-7"
+          echo "::set-env name=CC::gcc-9"
+          echo "::set-env name=CXX::g++-9"
 
     - name: Create Build Environment
       shell: bash
@@ -41,6 +41,4 @@ jobs:
     - name: Upload results
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: |
-          export CODECOV_TOKEN="06a073fd-b24b-41de-a59d-eb6da5629db9"
-          bash <(curl -s https://codecov.io/bash);
+      run: bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -x gcov-9
