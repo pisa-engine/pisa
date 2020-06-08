@@ -41,4 +41,6 @@ jobs:
     - name: Upload results
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: bash <(curl -s https://codecov.io/bash);
+      run: |
+          export CODECOV_TOKEN="e3f86b6b-0770-4816-9b7d-19b0c550229f"
+          bash <(curl -s https://codecov.io/bash);
