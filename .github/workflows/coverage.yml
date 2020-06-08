@@ -41,4 +41,7 @@ jobs:
     - name: Upload results
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: bash <(curl -s https://codecov.io/bash) -t ${{ secrets.CODECOV_TOKEN }} -x gcov-9
+      run: |
+        set -ex
+        curl -s https://codecov.io/bash >codecov.sh
+        bash codecov.sh -t ${{ secrets.CODECOV_TOKEN }} -x gcov-9
