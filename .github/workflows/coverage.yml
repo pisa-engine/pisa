@@ -13,9 +13,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set environment variables
+    - name: Install lcov
       shell: bash
       run: |
+          sudo apt-get install lcov
           echo "::set-env name=CC::clang-9"
           echo "::set-env name=CXX::clang++-9"
 
@@ -38,8 +39,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: ctest -j 4
 
-    - name: xxx
+    - name: Upload results
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: bash <(curl -s https://codecov.io/bash);
-
