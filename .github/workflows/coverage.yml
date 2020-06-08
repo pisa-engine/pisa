@@ -13,11 +13,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install lcov
+    - name: Install codecov
       shell: bash
       run: |
           echo "::set-env name=CC::gcc-9"
           echo "::set-env name=CXX::g++-9"
+          python -u -m pip install git+https://github.com/nmoinvaz/codecov-python.git@master
+
 
     - name: Create Build Environment
       shell: bash
@@ -42,6 +44,4 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: |
-        set -ex
-        curl -s https://codecov.io/bash >codecov.sh
-        bash codecov.sh -t ${{ secrets.CODECOV_TOKEN }} -x gcov-9
+        python -m codecov --required --gcov-exec="gcov-9" -t ${{ secrets.CODECOV_TOKEN }}
