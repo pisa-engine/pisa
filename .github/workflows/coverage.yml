@@ -16,9 +16,8 @@ jobs:
     - name: Install lcov
       shell: bash
       run: |
-          sudo apt-get install lcov g++-8
           echo "::set-env name=CC::gcc-8"
-          echo "::set-env name=CXX::gcc++-8"
+          echo "::set-env name=CXX::g++-8"
 
     - name: Create Build Environment
       shell: bash
