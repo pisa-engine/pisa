@@ -16,10 +16,9 @@ jobs:
     - name: Install codecov
       shell: bash
       run: |
-          echo "::set-env name=CC::gcc-9"
-          echo "::set-env name=CXX::g++-9"
-          python -u -m pip install git+https://github.com/nmoinvaz/codecov-python.git@master
-
+          echo "::set-env name=CC::gcc-7"
+          echo "::set-env name=CXX::g++-7"
+          python -u -m pip install codecov
 
     - name: Create Build Environment
       shell: bash
