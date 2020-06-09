@@ -39,6 +39,8 @@ jobs:
       run: ctest -j 4
 
     - name: Generate Coverage repport
+      shell: bash	
+      working-directory: ${{runner.workspace}}/build	
       run: |
           lcov --capture --directory . --output-file coverage.info
           lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter system-files
