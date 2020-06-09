@@ -13,13 +13,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install codecov
+    - name: Install codecov and lcov
       shell: bash
       run: |
           echo "::set-env name=CC::gcc-7"
           echo "::set-env name=CXX::g++-7"
           python -u -m pip install codecov
-
+          sudo apt-get install -y lcov
     - name: Create Build Environment
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/build
