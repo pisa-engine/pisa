@@ -33,11 +33,6 @@ target_link_libraries(profile_queries
   pisa
 )
 
-add_executable(profile_decoding profile_decoding.cpp)
-target_link_libraries(profile_decoding
-  pisa
-)
-
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
   pisa
