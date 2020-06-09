@@ -13,12 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install codecov and lcov
+    - name: Install lcov
       shell: bash
       run: |
           echo "::set-env name=CC::gcc-7"
           echo "::set-env name=CXX::g++-7"
-          python -u -m pip install codecov
           sudo apt-get install -y lcov
     - name: Create Build Environment
       shell: bash
@@ -39,13 +38,15 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: ctest -j 4
 
-    - name: Upload results
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
+    - name: Generate Coverage repport
       run: |
           lcov --capture --directory . --output-file coverage.info
           lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter system-files
           lcov --remove coverage.info '**/external/*' --output-file coverage.info # filter external folder
           lcov --remove coverage.info '**/test/*' --output-file coverage.info # filter tests
           lcov --list coverage.info # debug info
-          python -m codecov -t ${{ secrets.CODECOV_TOKEN }} -f coverage.info
+    - name: Upload to codecov.io
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: coverage.info
