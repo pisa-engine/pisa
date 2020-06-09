@@ -47,8 +47,8 @@ jobs:
           lcov --remove coverage.info '**/external/*' --output-file coverage.info # filter external folder
           lcov --remove coverage.info '**/test/*' --output-file coverage.info # filter tests
           lcov --list coverage.info # debug info
-    - name: Upload to codecov.io
+    - name: Upload to codecov.io	
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: coverage.info
+        file: ${{runner.workspace}}/build/coverage.info
