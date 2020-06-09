@@ -4,16 +4,6 @@ target_link_libraries(compress_inverted_index
   CLI11
 )
 
-add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
-target_include_directories(optimal_hybrid_index PRIVATE ${STXXL_INCLUDE_DIRS})
-target_link_libraries(optimal_hybrid_index
-  ${STXXL_LIBRARIES}
-  pisa
-)
-set_target_properties(optimal_hybrid_index PROPERTIES
-            CXX_STANDARD 14
-)
-
 add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
   pisa
