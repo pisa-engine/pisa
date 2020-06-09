@@ -136,3 +136,9 @@ target_link_libraries(reorder-docids
   pisa
   CLI11
 )
+
+add_executable(kth_threshold kth_threshold.cpp)
+target_link_libraries(kth_threshold
+  pisa
+  CLI11
+)
