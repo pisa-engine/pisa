@@ -49,4 +49,4 @@ jobs:
           lcov --remove coverage.info '**/external/*' --output-file coverage.info # filter external folder
           lcov --remove coverage.info '**/test/*' --output-file coverage.info # filter tests
           lcov --list coverage.info # debug info
-          python -m codecov --required --gcov-exec="gcov-9" -t ${{ secrets.CODECOV_TOKEN }} -f coverage.info
+          python -m codecov -t ${{ secrets.CODECOV_TOKEN }} -f coverage.info
