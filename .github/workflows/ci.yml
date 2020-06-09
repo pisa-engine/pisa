@@ -11,7 +11,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux-gcc-9, linux-gcc-7, linux-clang-10]
+        name: [linux-gcc-9, linux-gcc-7, linux-clang-6, linux-clang-10, macos-gcc-9, macos-xcode-11.3]
         include:
           - name: linux-gcc-9
             os: ubuntu-latest
@@ -20,6 +20,10 @@ jobs:
           - name: linux-gcc-7
             os: ubuntu-latest
             compiler: "gcc" # default on bionic: gcc-7
+          - name: linux-clang-6
+            os: ubuntu-latest
+            compiler: "clang"
+            version: "6.0"
           - name: linux-clang-10
             os: ubuntu-latest
             compiler: "clang"
@@ -46,6 +50,10 @@ jobs:
 
           if [ "${cc}" = "clang-10" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
+          fi
+          if [ "${cc}" = "clang-6.0" ]; then
+            # Problems compiling with Clang 6 against libstdc++-9
+            sudo apt-get remove libstdc++-9-dev libgcc-9-dev cpp-9
           fi
           sudo apt-get update
           sudo apt-get install -y libtool m4 autoconf ccache
