@@ -1,9 +1,6 @@
 [submodule "external/FastPFor"]
 	path = external/FastPFor
 	url = https://github.com/lemire/FastPFor.git
-[submodule "external/stxxl"]
-	path = external/stxxl
-	url = https://github.com/stxxl/stxxl.git
 [submodule "external/CMake-codecov"]
 	path = external/CMake-codecov
 	url = https://github.com/RWTH-HPC/CMake-codecov.git
