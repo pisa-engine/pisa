@@ -35,6 +35,18 @@ using StrColl = std::vector<std::vector<std::pair<std::string, std::uint32_t>>>;
     return strcoll;
 }
 
+void compare_strcolls(StrColl const& expected, StrColl const& actual)
+{
+    REQUIRE(expected.size() == actual.size());
+    for (int list_idx = 0; list_idx < expected.size(); list_idx += 1) {
+        REQUIRE(expected[list_idx].size() == actual[list_idx].size());
+        for (int posting_idx = 0; posting_idx < expected[list_idx].size(); posting_idx += 1) {
+            REQUIRE(expected[list_idx][posting_idx].first == actual[list_idx][posting_idx].first);
+            REQUIRE(expected[list_idx][posting_idx].second == actual[list_idx][posting_idx].second);
+        }
+    }
+}
+
 TEST_CASE("Reorder documents with BP")
 {
     Temporary_Directory tmp;
@@ -89,19 +101,31 @@ TEST_CASE("Reorder documents with BP")
             {
                 auto expected = coll_to_strings(inv_path, fmt::format("{}.doclex", fwd_path));
                 auto actual = coll_to_strings(bp_inv_path, fmt::format("{}.doclex", bp_fwd_path));
-                REQUIRE(expected.size() == actual.size());
-                for (int list_idx = 0; list_idx < expected.size(); list_idx += 1) {
-                    REQUIRE(expected[list_idx].size() == actual[list_idx].size());
-                    for (int posting_idx = 0; posting_idx < expected[list_idx].size();
-                         posting_idx += 1) {
-                        REQUIRE(
-                            expected[list_idx][posting_idx].first
-                            == actual[list_idx][posting_idx].first);
-                        REQUIRE(
-                            expected[list_idx][posting_idx].second
-                            == actual[list_idx][posting_idx].second);
-                    }
-                }
+                compare_strcolls(expected, actual);
+            }
+        }
+
+        WHEN("Reordered documents with BP node version")
+        {
+            int code = recursive_graph_bisection(RecursiveGraphBisectionOptions{
+                .input_basename = inv_path,
+                .output_basename = bp_inv_path,
+                .output_fwd = std::nullopt,
+                .input_fwd = std::nullopt,
+                .document_lexicon = fmt::format("{}.doclex", fwd_path),
+                .reordered_document_lexicon = fmt::format("{}.doclex", bp_fwd_path),
+                .depth = std::nullopt,
+                .node_config = PISA_SOURCE_DIR "/test/test_data/bp-node-config.txt",
+                .min_length = 0,
+                .compress_fwd = false,
+                .print_args = false,
+            });
+            REQUIRE(code == 0);
+            THEN("Both collections are equal when mapped to strings")
+            {
+                auto expected = coll_to_strings(inv_path, fmt::format("{}.doclex", fwd_path));
+                auto actual = coll_to_strings(bp_inv_path, fmt::format("{}.doclex", bp_fwd_path));
+                compare_strcolls(expected, actual);
             }
         }
     }
