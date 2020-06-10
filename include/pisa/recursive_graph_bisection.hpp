@@ -43,6 +43,20 @@ namespace bp {
         return a[3] - a[2] + a[1] - a[0];  // Can we do it with SIMD?
     };
 
+    template <typename ThreadLocalContainer>
+    [[nodiscard]] PISA_ALWAYSINLINE auto&
+    clear_or_init(ThreadLocalContainer&& container, std::size_t size)
+    {
+        bool exists = false;
+        auto& ref = container.local(exists);
+        if (exists) {
+            ref.clear();
+        } else {
+            ref.resize(size);
+        }
+        return ref;
+    }
+
 }  // namespace bp
 
 template <class Iterator>
@@ -68,9 +82,10 @@ class document_range {
     PISA_ALWAYSINLINE document_partition<Iterator> split() const
     {
         Iterator mid = std::next(m_first, size() / 2);
-        return {document_range(m_first, mid, m_fwdidx, m_gains),
-                document_range(mid, m_last, m_fwdidx, m_gains),
-                term_count()};
+        return {
+            document_range(m_first, mid, m_fwdidx, m_gains),
+            document_range(mid, m_last, m_fwdidx, m_gains),
+            term_count()};
     }
 
     PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const
@@ -166,13 +181,7 @@ void compute_move_gains_caching(
     const auto logn1 = log2(from_n);
     const auto logn2 = log2(to_n);
 
-    bool exists;
-    auto& gain_cache = thread_local_data.gains.local(exists);
-    if (not exists) {
-        gain_cache.resize(from_lex.size());
-    } else {
-        gain_cache.clear();
-    }
+    auto& gain_cache = bp::clear_or_init(thread_local_data.gains, from_lex.size());
     auto compute_document_gain = [&](auto& d) {
         double gain = 0.0;
         auto terms = range.terms(d);
@@ -251,19 +260,10 @@ void process_partition(
     bp::ThreadLocal& thread_local_data,
     int iterations = 20)
 {
-    bool exists = false;
-    auto& left_degree = thread_local_data.left_degrees.local(exists);
-    if (exists) {
-        left_degree.clear();
-    } else {
-        left_degree.resize(partition.left.term_count());
-    }
-    auto right_degree = thread_local_data.right_degrees.local(exists);
-    if (exists) {
-        right_degree.clear();
-    } else {
-        right_degree.resize(partition.right.term_count());
-    }
+    auto& left_degree =
+        bp::clear_or_init(thread_local_data.left_degrees, partition.left.term_count());
+    auto& right_degree =
+        bp::clear_or_init(thread_local_data.right_degrees, partition.right.term_count());
     compute_degrees(partition.left, left_degree);
     compute_degrees(partition.right, right_degree);
     degree_map_pair degrees{left_degree, right_degree};
