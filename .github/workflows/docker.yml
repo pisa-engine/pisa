@@ -16,6 +16,6 @@ jobs:
             -H "Content-Type:application/json" \
             -H "Travis-API-Version:3" \
             -H "Accept:application/json" \
-            -H "Authorization:token ${secrets.TRAVIS_API_TOKEN}" \
+            -H "Authorization:token ${{secrets.TRAVIS_API_TOKEN}}" \
             -d '{"request":{"branch":"master"}}' \
             'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests'
