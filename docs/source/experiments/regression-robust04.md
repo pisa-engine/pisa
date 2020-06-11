@@ -11,7 +11,9 @@ mkdir robust04
 ### Parsing
 
 ```
-gzip -dc $(find /path/to/disk45/ -type f -name '*.*z' \( -path '*/disk4/fr94/[0-9]*/*' -o -path '*/disk4/ft/ft*' -o -path '*/disk5/fbis/fb*' -o -path '*/disk5/latimes/la*' \)) | bin/parse_collection -f trectext -b 10000 --stemmer porter2 --content-parser html -o robust04/fwd
+gzip -dc $(find /path/to/disk45/ -type f -name '*.*z' \
+\( -path '*/disk4/fr94/[0-9]*/*' -o -path '*/disk4/ft/ft*' -o -path '*/disk5/fbis/fb*' -o -path '*/disk5/latimes/la*' \)) \
+| bin/parse_collection -f trectext -b 10000 --stemmer porter2 --content-parser html -o robust04/fwd
 ```
 
 You can replace `gzip -dc` with `zcat` on Linux or `gzcat` on MacOS.
