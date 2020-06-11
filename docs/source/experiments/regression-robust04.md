@@ -61,10 +61,15 @@ The above command will download the topics from the NIST website, extract the ar
 
 Qrels can be downloaded from NIST:
 [TREC 2004 Robust Track (Topics 301-450 & 601-700)](http://trec.nist.gov/data/robust/qrels.robust2004.txt)
-
-
 ```
 wget http://trec.nist.gov/data/robust/qrels.robust2004.txt
+```
+
+[`trec_eval`](https://github.com/usnistgov/trec_eval) is the standard tool used by the TREC community for
+evaluating an ad-hoc retrieval run, given the results file and a standard set of judged results (qrels).
+It needs to be compiled and installed in order to perform the following command:
+
+```
 trec_eval -m map -m P.30 -m ndcg_cut.20 qrels.robust2004.txt run.robust2004.bm25.title.robust2004.txt
 ```
 
