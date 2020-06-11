@@ -96,7 +96,7 @@ Qrels can be downloaded from NIST:
 wget http://trec.nist.gov/data/robust/qrels.robust2004.txt
 ```
 
-[`trec_eval`](https://github.com/usnistgov/trec_eval) is the standard tool used by the TREC community for
+[trec_eval](https://github.com/usnistgov/trec_eval) is the standard tool used by the TREC community for
 evaluating an ad-hoc retrieval run, given the results file and a standard set of judged results (qrels).
 It needs to be compiled and installed in order to perform the following command:
 
