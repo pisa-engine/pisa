@@ -3,9 +3,14 @@
 # PISA: Performant Indexes and Search for Academia v0.8.2
 
 ![Build and test](https://github.com/pisa-engine/pisa/workflows/Build%20and%20test/badge.svg)
-[![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
+![Compile Headers](https://github.com/pisa-engine/pisa/workflows/Compile%20Headers/badge.svg)
+![clang-tidy](https://github.com/pisa-engine/pisa/workflows/clang-tidy/badge.svg)
+![clang-format](https://github.com/pisa-engine/pisa/workflows/clang-format/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/pisa/badge/?version=latest)](https://pisa.readthedocs.io/en/latest/?badge=latest)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/83cbd7128c084994a87fb8394bd91a16)](https://www.codacy.com/app/amallia/pisa?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=pisa-engine/pisa&amp;utm_campaign=Badge_Grade)
+[![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
+
+
 [![GitHub issues](https://img.shields.io/github/issues/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/issues)
 [![GitHub forks](https://img.shields.io/github/forks/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/network)
 [![GitHub stars](https://img.shields.io/github/stars/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/stargazers)
