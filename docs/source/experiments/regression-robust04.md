@@ -1,4 +1,4 @@
-# PISA: Regressions for [Disks 4 & 5](https://trec.nist.gov/data_disks.html) (Robust04)
+# PISA: Regression Tests for [Disks 4 & 5](https://trec.nist.gov/data_disks.html) (Robust04)
 
 ## Indexing
 
