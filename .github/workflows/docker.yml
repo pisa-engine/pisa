@@ -5,6 +5,9 @@ on:
 
 jobs:
   build:
+    runs-on: ubuntu-latest
+
+    steps:
     - name: Trigger docker build
       shell: bash	
       working-directory: ${{runner.workspace}}/build	
