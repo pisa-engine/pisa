@@ -14,11 +14,11 @@
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/stride.hpp>
-#include <tbb/task_scheduler_init.h>
 
 #include "binary_freq_collection.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "payload_vector.hpp"
 #include "pisa_config.hpp"
 #include "sharding.hpp"
 #include "temporary_directory.hpp"
@@ -39,6 +39,39 @@ using index_type = invert::Inverted_Index<iterator_type>;
             std::move(record.trecid()), std::move(record.content()), std::move(record.url()));
     }
     return std::nullopt;
+}
+
+TEST_CASE("Expand shard", "[sharding]")
+{
+    REQUIRE(pisa::expand_shard("path", 17_s) == "path.017");
+    REQUIRE(pisa::expand_shard("path.{}", 17_s) == "path.017");
+    REQUIRE(pisa::expand_shard("path.{}.ext", 17_s) == "path.017.ext");
+}
+
+TEST_CASE("Resolve shards", "[sharding]")
+{
+    Temporary_Directory dir;
+    SECTION("No suffix")
+    {
+        for (auto f: std::vector<std::string>{"shard.000", "shard.001", "shard.002"}) {
+            std::ofstream os((dir.path() / f).string());
+            os << ".";
+        }
+        REQUIRE(
+            pisa::resolve_shards((dir.path() / "shard.{}").string())
+            == std::vector<Shard_Id>{Shard_Id(0), Shard_Id(1), Shard_Id(2)});
+    }
+    SECTION("With suffix")
+    {
+        for (auto f:
+             std::vector<std::string>{"shard.000.docs", "shard.001.docs", "shard.002.docs"}) {
+            std::ofstream os((dir.path() / f).string());
+            os << ".";
+        }
+        REQUIRE(
+            pisa::resolve_shards((dir.path() / "shard.{}").string(), ".docs")
+            == std::vector<Shard_Id>{Shard_Id(0), Shard_Id(1), Shard_Id(2)});
+    }
 }
 
 TEST_CASE("mapping_from_files", "[invert][unit]")
@@ -89,7 +122,6 @@ auto round_robin_mapping(int document_count, int shard_count)
 
 void build_fwd_index(std::string const& output)
 {
-    tbb::task_scheduler_init init;
     std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
     std::ifstream is(input);
     pisa::Forward_Index_Builder builder;
@@ -97,7 +129,9 @@ void build_fwd_index(std::string const& output)
         is,
         output,
         next_plaintext_record,
-        [](std::string&& term) -> std::string { return std::forward<std::string>(term); },
+        [] {
+            return [](std::string&& term) -> std::string { return std::forward<std::string>(term); };
+        },
         pisa::parse_plaintext_content,
         20'000,
         2);
@@ -203,7 +237,6 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
 
 TEST_CASE("partition_fwd_index", "[invert][integration]")
 {
-    tbb::task_scheduler_init init;
     GIVEN("A test forward index")
     {
         Temporary_Directory dir;
@@ -230,7 +263,7 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     REQUIRE(actual_titles == expected_titles);
                 }
             }
-            AND_THEN("Documents are identical wrt terms")
+            AND_THEN("Document contents are identical wrt terms")
             {
                 auto full = binary_collection(fwd_basename.c_str());
                 auto full_iter = ++full.begin();
@@ -238,9 +271,6 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                 std::vector<binary_collection> shards;
                 std::vector<typename binary_collection::const_iterator> shard_iterators;
                 std::vector<std::vector<std::string>> shard_terms;
-                shards.reserve(13);
-                shard_iterators.reserve(13);
-                shard_terms.reserve(13);
                 for (auto shard: shard_ids) {
                     shards.push_back(binary_collection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str()));
@@ -273,6 +303,28 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     if (shard == 13_s) {
                         shard = 0_s;
                     }
+                }
+            }
+            AND_THEN("Terms and term lexicon match")
+            {
+                for (auto shard: shard_ids) {
+                    auto terms = io::read_string_vector(
+                        fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str());
+                    mio::mmap_source m(
+                        fmt::format("{}.{:03d}.termlex", output_basename, shard.as_int()).c_str());
+                    auto lexicon = Payload_Vector<>::from(m);
+                    REQUIRE(terms == std::vector<std::string>(lexicon.begin(), lexicon.end()));
+                }
+            }
+            AND_THEN("Documents and document lexicon match")
+            {
+                for (auto shard: shard_ids) {
+                    auto documents = io::read_string_vector(
+                        fmt::format("{}.{:03d}.documents", output_basename, shard.as_int()).c_str());
+                    mio::mmap_source m(
+                        fmt::format("{}.{:03d}.doclex", output_basename, shard.as_int()).c_str());
+                    auto lexicon = Payload_Vector<>::from(m);
+                    REQUIRE(documents == std::vector<std::string>(lexicon.begin(), lexicon.end()));
                 }
             }
         }

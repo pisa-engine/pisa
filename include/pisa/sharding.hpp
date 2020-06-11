@@ -5,8 +5,8 @@
 #include <string>
 #include <unordered_map>
 
+#include <boost/filesystem.hpp>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <gsl/span>
 #include <mio/mmap.hpp>
 #include <pstl/algorithm>
@@ -21,11 +21,11 @@
 #include <range/v3/view/transform.hpp>
 #include <range/v3/view/zip.hpp>
 #include <spdlog/spdlog.h>
-#include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
 #include "invert.hpp"
 #include "io.hpp"
+#include "payload_vector.hpp"
 #include "type_safe.hpp"
 #include "vec_map.hpp"
 
@@ -33,6 +33,40 @@ namespace pisa {
 
 using pisa::literals::operator""_d;
 using pisa::literals::operator""_s;
+
+[[nodiscard]] auto
+format_shard(std::string_view basename, Shard_Id shard, std::string_view suffix = {}) -> std::string
+{
+    return fmt::format("{}.{:03d}{}", basename, shard.as_int(), suffix);
+}
+
+[[nodiscard]] auto expand_shard(std::string_view basename, Shard_Id shard) -> std::string
+{
+    if (auto pos = basename.find("{}"); pos != std::string_view::npos) {
+        return fmt::format(
+            "{}{:03d}{}", basename.substr(0, pos), shard.as_int(), basename.substr(pos + 2));
+    }
+    return format_shard(basename, shard);
+}
+
+auto resolve_shards(std::string_view basename, std::string_view suffix = {}) -> std::vector<Shard_Id>
+{
+    Shard_Id shard{0};
+    std::vector<Shard_Id> shards;
+    while (true) {
+        boost::filesystem::path p(fmt::format("{}{}", expand_shard(basename, shard), suffix));
+        if (boost::filesystem::exists(p)) {
+            shards.push_back(shard);
+            shard += 1;
+        } else {
+            if (shards.empty()) {
+                spdlog::error("No shards found (failed at finding: {})", p.string());
+            }
+            break;
+        }
+    }
+    return shards;
+}
 
 template <typename StreamRange>
 auto mapping_from_files(std::istream* full_titles, StreamRange&& shard_titles)
@@ -49,7 +83,7 @@ auto mapping_from_files(std::istream* full_titles, StreamRange&& shard_titles)
                     "Document {} already belongs to shard {}: mapping for shard {} ignored",
                     title,
                     pos->second.as_int(),
-                    shard_id);
+                    shard_id.as_int());
             }
         });
         shard_id += 1;
@@ -135,8 +169,10 @@ auto rearrange_sequences(
     }
     std::ifstream is(input_basename);
     std::ifstream dis(fmt::format("{}.documents", input_basename));
+    std::ifstream uis(fmt::format("{}.urls", input_basename));
     VecMap<Shard_Id, std::ofstream> os;
     VecMap<Shard_Id, std::ofstream> dos;
+    VecMap<Shard_Id, std::ofstream> uos;
     for (auto shard: ranges::views::iota(0_s, *shard_count)) {
         spdlog::debug("Initializing file for shard {}", shard.as_int());
         auto filename = fmt::format("{}.{:03d}", output_basename, shard.as_int());
@@ -144,6 +180,7 @@ auto rearrange_sequences(
         constexpr std::array<char, 8> zero{0, 0, 0, 0, 0, 0, 0, 0};
         os.back().write(zero.data(), zero.size());
         dos.emplace_back(fmt::format("{}.documents", filename));
+        uos.emplace_back(fmt::format("{}.urls", filename));
     }
     is.ignore(8);
     VecMap<Shard_Id, std::uint32_t> shard_sizes(shard_count->as_int(), 0U);
@@ -152,9 +189,16 @@ auto rearrange_sequences(
     for (auto shard: mapping) {
         spdlog::debug("Copying sequence {} to shard {}", idx++, shard.as_int());
         copy_sequence(is, os[shard]);
-        std::string title;
-        std::getline(dis, title);
-        dos[shard] << title << '\n';
+        {
+            std::string title;
+            std::getline(dis, title);
+            dos[shard] << title << '\n';
+        }
+        {
+            std::string url;
+            std::getline(uis, url);
+            uos[shard] << url << '\n';
+        }
         shard_sizes[shard]++;
     }
     spdlog::info("Writing sizes");
@@ -184,11 +228,21 @@ auto process_shard(
     }
 
     spdlog::debug("[Shard {}] Writing terms", shard_id.as_int());
-    std::ofstream tos(fmt::format("{}.terms", basename));
-    for (auto&& [term, occurs]: ranges::views::zip(terms.as_vector(), has_term)) {
-        if (occurs != 0U) {
-            tos << term << '\n';
+    {
+        std::ofstream tos(fmt::format("{}.terms", basename));
+        for (auto&& [term, occurs]: ranges::views::zip(terms.as_vector(), has_term)) {
+            if (occurs != 0U) {
+                tos << term << '\n';
+            }
         }
+    }
+
+    {
+        spdlog::debug("[Shard {}] Creating term lexicon", shard_id.as_int());
+        std::ifstream title_is(fmt::format("{}.terms", basename));
+        encode_payload_vector(
+            std::istream_iterator<io::Line>(title_is), std::istream_iterator<io::Line>())
+            .to_file(fmt::format("{}.termlex", basename));
     }
 
     spdlog::debug("[Shard {}] Remapping term IDs", shard_id.as_int());
@@ -202,6 +256,12 @@ auto process_shard(
         for (auto& term: *iter) {
             term = remapped_term_id(term);
         }
+    }
+    {
+        spdlog::debug("[Shard {}] Creating document lexicon", shard_id.as_int());
+        std::ifstream os(fmt::format("{}.documents", basename));
+        encode_payload_vector(std::istream_iterator<io::Line>(os), std::istream_iterator<io::Line>())
+            .to_file(fmt::format("{}.doclex", basename));
     }
     spdlog::info("Shard {} finished.", shard_id.as_int());
 }

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <functional>
+#include <memory>
 #include <optional>
+#include <spdlog/spdlog.h>
 #include <unordered_set>
 
 #include <KrovetzStemmer/KrovetzStemmer.hpp>
@@ -15,6 +17,35 @@
 namespace pisa {
 
 using term_id_type = uint32_t;
+using Stemmer_t = std::function<std::string(std::string)>;
+auto term_processor_builder = [](std::optional<std::string> const& type) -> std::function<Stemmer_t()> {
+    if (not type) {
+        return [] {
+            return [](std::string&& term) -> std::string {
+                boost::algorithm::to_lower(term);
+                return std::move(term);
+            };
+        };
+    }
+    if (*type == "porter2") {
+        return [] {
+            return [](std::string&& term) -> std::string {
+                boost::algorithm::to_lower(term);
+                return porter2::Stemmer{}.stem(term);
+            };
+        };
+    }
+    if (*type == "krovetz") {
+        return []() {
+            return [kstemmer = std::make_shared<stem::KrovetzStemmer>()](
+                       std::string&& term) mutable -> std::string {
+                boost::algorithm::to_lower(term);
+                return kstemmer->kstem_stemmer(term);
+            };
+        };
+    }
+    throw std::invalid_argument(fmt::format("Unknown stemmer type: {}", *type));
+};
 
 class TermProcessor {
   private:
@@ -41,28 +72,7 @@ class TermProcessor {
         };
 
         // Implements '_to_id' method.
-        if (not stemmer_type) {
-            _to_id = [=](auto str) {
-                boost::algorithm::to_lower(str);
-                return to_id(std::move(str));
-            };
-        } else if (*stemmer_type == "porter2") {
-            _to_id = [=](auto str) {
-                boost::algorithm::to_lower(str);
-                porter2::Stemmer stemmer{};
-                return to_id(std::move(stemmer.stem(str)));
-            };
-        } else if (*stemmer_type == "krovetz") {
-            _to_id = [=](auto str) {
-                boost::algorithm::to_lower(str);
-                stem::KrovetzStemmer stemmer{};
-                stemmer.kstem_stemmer(str);
-                return to_id(stemmer.kstem_stemmer(std::move(str)));
-            };
-        } else {
-            throw std::invalid_argument("Unknown stemmer");
-        }
-
+        _to_id = [=](auto str) { return to_id(term_processor_builder(stemmer_type)()(str)); };
         // Loads stopwords.
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);

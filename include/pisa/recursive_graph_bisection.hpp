@@ -8,10 +8,13 @@
 
 #include "pstl/algorithm"
 #include "pstl/execution"
+#include "tbb/enumerable_thread_specific.h"
 #include "tbb/task_group.h"
 
 #include "forward_index.hpp"
+#include "payload_vector.hpp"
 #include "util/index_build_utils.hpp"
+#include "util/inverted_index_utils.hpp"
 #include "util/log.hpp"
 #include "util/progress.hpp"
 #include "util/single_init_vector.hpp"
@@ -20,6 +23,15 @@ namespace pisa {
 const Log2<4096> log2;
 
 namespace bp {
+
+    using ThreadLocalGains = tbb::enumerable_thread_specific<single_init_vector<double>>;
+    using ThreadLocalDegrees = tbb::enumerable_thread_specific<single_init_vector<size_t>>;
+
+    struct ThreadLocal {
+        ThreadLocalGains gains;
+        ThreadLocalDegrees left_degrees;
+        ThreadLocalDegrees right_degrees;
+    };
 
     PISA_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2)
     {
@@ -30,6 +42,20 @@ namespace bp {
         _mm_store_ps(a, _result);
         return a[3] - a[2] + a[1] - a[0];  // Can we do it with SIMD?
     };
+
+    template <typename ThreadLocalContainer>
+    [[nodiscard]] PISA_ALWAYSINLINE auto&
+    clear_or_init(ThreadLocalContainer&& container, std::size_t size)
+    {
+        bool exists = false;
+        auto& ref = container.local(exists);
+        if (exists) {
+            ref.clear();
+        } else {
+            ref.resize(size);
+        }
+        return ref;
+    }
 
 }  // namespace bp
 
@@ -148,13 +174,13 @@ void compute_move_gains_caching(
     const std::ptrdiff_t from_n,
     const std::ptrdiff_t to_n,
     const single_init_vector<size_t>& from_lex,
-    const single_init_vector<size_t>& to_lex)
+    const single_init_vector<size_t>& to_lex,
+    bp::ThreadLocal& thread_local_data)
 {
     const auto logn1 = log2(from_n);
     const auto logn2 = log2(to_n);
 
-    thread_local single_init_vector<double> gain_cache(from_lex.size());
-    gain_cache.clear();
+    auto& gain_cache = bp::clear_or_init(thread_local_data.gains, from_lex.size());
     auto compute_document_gain = [&](auto& d) {
         double gain = 0.0;
         auto terms = range.terms(d);
@@ -185,12 +211,15 @@ void compute_move_gains_caching(
 
 template <class Iterator, class GainF>
 void compute_gains(
-    document_partition<Iterator>& partition, const degree_map_pair& degrees, GainF gain_function)
+    document_partition<Iterator>& partition,
+    const degree_map_pair& degrees,
+    GainF gain_function,
+    bp::ThreadLocal& thread_local_data)
 {
     auto n1 = partition.left.size();
     auto n2 = partition.right.size();
-    gain_function(partition.left, n1, n2, degrees.left, degrees.right);
-    gain_function(partition.right, n2, n1, degrees.right, degrees.left);
+    gain_function(partition.left, n1, n2, degrees.left, degrees.right, thread_local_data);
+    gain_function(partition.right, n2, n1, degrees.right, degrees.left, thread_local_data);
 }
 
 template <class Iterator>
@@ -224,18 +253,22 @@ void swap(document_partition<Iterator>& partition, degree_map_pair& degrees)
 }
 
 template <class Iterator, class GainF>
-void process_partition(document_partition<Iterator>& partition, GainF gain_function, int iterations = 20)
+void process_partition(
+    document_partition<Iterator>& partition,
+    GainF gain_function,
+    bp::ThreadLocal& thread_local_data,
+    int iterations = 20)
 {
-    thread_local single_init_vector<size_t> left_degree(partition.left.term_count());
-    left_degree.clear();
-    thread_local single_init_vector<size_t> right_degree(partition.right.term_count());
-    right_degree.clear();
+    auto& left_degree =
+        bp::clear_or_init(thread_local_data.left_degrees, partition.left.term_count());
+    auto& right_degree =
+        bp::clear_or_init(thread_local_data.right_degrees, partition.right.term_count());
     compute_degrees(partition.left, left_degree);
     compute_degrees(partition.right, right_degree);
     degree_map_pair degrees{left_degree, right_degree};
 
     for (int iteration = 0; iteration < iterations; ++iteration) {
-        compute_gains(partition, degrees, gain_function);
+        compute_gains(partition, degrees, gain_function, thread_local_data);
         tbb::parallel_invoke(
             [&] {
                 std::sort(
@@ -259,13 +292,14 @@ template <class Iterator>
 void recursive_graph_bisection(
     document_range<Iterator> documents, size_t depth, size_t cache_depth, progress& p)
 {
+    bp::ThreadLocal thread_local_data;
     std::sort(documents.begin(), documents.end());
     auto partition = documents.split();
     if (cache_depth >= 1) {
-        process_partition(partition, compute_move_gains_caching<true, Iterator>);
+        process_partition(partition, compute_move_gains_caching<true, Iterator>, thread_local_data);
         --cache_depth;
     } else {
-        process_partition(partition, compute_move_gains_caching<false, Iterator>);
+        process_partition(partition, compute_move_gains_caching<false, Iterator>, thread_local_data);
     }
 
     p.update(documents.size());
@@ -287,6 +321,7 @@ void recursive_graph_bisection(
 template <class Iterator>
 void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, progress& p)
 {
+    bp::ThreadLocal thread_local_data;
     std::sort(nodes.begin(), nodes.end());
     auto first = nodes.begin();
     auto end = nodes.end();
@@ -295,7 +330,7 @@ void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, pr
             first, end, [&first](const auto& node) { return node.level > first->level; });
         bool last_level = last == end;
         tbb::task_group level_group;
-        std::for_each(first, last, [&level_group, last_level, &p](auto& node) {
+        std::for_each(first, last, [&thread_local_data, &level_group, last_level, &p](auto& node) {
             level_group.run([&]() {
                 std::sort(node.partition.left.begin(), node.partition.left.end());
                 std::sort(node.partition.right.begin(), node.partition.right.end());
@@ -303,11 +338,13 @@ void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, pr
                     process_partition(
                         node.partition,
                         compute_move_gains_caching<true, Iterator>,
+                        thread_local_data,
                         node.iteration_count);
                 } else {
                     process_partition(
                         node.partition,
                         compute_move_gains_caching<false, Iterator>,
+                        thread_local_data,
                         node.iteration_count);
                 }
                 if (last_level) {

@@ -6,8 +6,6 @@
 #include <numeric>
 #include <vector>
 
-#include <tbb/task_scheduler_init.h>
-
 #include "test_generic_sequence.hpp"
 
 #include "freq_index.hpp"
@@ -21,7 +19,6 @@
 template <typename DocsSequence, typename FreqsSequence>
 void test_freq_index()
 {
-    tbb::task_scheduler_init init;
     pisa::global_parameters params;
     uint64_t universe = 20000;
     using collection_type = pisa::freq_index<DocsSequence, FreqsSequence>;

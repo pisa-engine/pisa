@@ -123,7 +123,7 @@ void perftest(
     std::string const& type,
     std::string const& query_type,
     uint64_t k,
-    std::string const& scorer_name,
+    const ScorerParams& scorer_params,
     bool extract,
     bool safe)
 {
@@ -172,7 +172,7 @@ void perftest(
         }
     }
 
-    auto scorer = scorer::from_name(scorer_name, wdata);
+    auto scorer = scorer::from_params(scorer_params, wdata);
 
     spdlog::info("Performing {} queries", type);
     spdlog::info("K: {}", k);
@@ -306,7 +306,12 @@ int main(int argc, const char** argv)
     bool safe = false;
     bool quantized = false;
 
-    App<arg::Index, arg::WandData, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer, arg::Thresholds>
+    App<arg::Index,
+        arg::WandData<arg::WandMode::Optional>,
+        arg::Query<arg::QueryMode::Ranked>,
+        arg::Algorithm,
+        arg::Scorer,
+        arg::Thresholds>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--extract", extract, "Extract individual query times");
@@ -332,7 +337,7 @@ int main(int argc, const char** argv)
         app.index_encoding(),
         app.algorithm(),
         app.k(),
-        app.scorer(),
+        app.scorer_params(),
         extract,
         safe);
     /**/

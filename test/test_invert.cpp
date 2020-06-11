@@ -7,7 +7,6 @@
 #include <boost/filesystem.hpp>
 #include <gsl/span>
 #include <range/v3/view/iota.hpp>
-#include <tbb/task_scheduler_init.h>
 
 #include "binary_collection.hpp"
 #include "filesystem.hpp"
@@ -125,7 +124,6 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
 {
-    tbb::task_scheduler_init init;
     auto [lhs, rhs, expected_joined, message] =
         GENERATE(table<index_type, index_type, index_type, std::string>(
             {{index_type(
@@ -204,7 +202,6 @@ TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
 
 TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
 {
-    tbb::task_scheduler_init init;
     std::vector<std::vector<Term_Id>> collection = {
         /* Doc 0 */ {2_t, 0_t, 3_t, 9_t, 0_t},
         /* Doc 1 */ {5_t, 0_t, 3_t, 4_t, 2_t, 6_t, 7_t, 4_t, 5_t},
@@ -250,13 +247,13 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
 
 TEST_CASE("Invert collection", "[invert][unit]")
 {
-    tbb::task_scheduler_init init;
     GIVEN("A binary collection")
     {
         Temporary_Directory tmpdir;
         uint32_t batch_size = GENERATE(1, 2, 3, 4, 5);
         uint32_t threads = GENERATE(1, 2, 3, 4, 5);
-        auto collection_filename = (tmpdir.path() / "collection.plaintext").string();
+        bool with_lex = GENERATE(false, true);
+        auto collection_filename = (tmpdir.path() / "fwd").string();
         {
             std::vector<uint32_t> collection_data{
                 /* size */ 1,  /* count */ 5,
@@ -269,13 +266,21 @@ TEST_CASE("Invert collection", "[invert][unit]")
             os.write(
                 reinterpret_cast<char*>(collection_data.data()),
                 collection_data.size() * sizeof(uint32_t));
+            if (with_lex) {
+                std::vector<std::string> terms{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+                encode_payload_vector(terms.begin(), terms.end())
+                    .to_file((tmpdir.path() / "fwd.termlex").string());
+            }
         }
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads")
         {
-            uint32_t term_count = 10;
             auto index_basename = (tmpdir.path() / "idx").string();
+            std::optional<std::uint32_t> term_count{};
+            if (not with_lex) {
+                term_count = 10;
+            }
             invert::invert_forward_index(
-                collection_filename, index_basename, term_count, batch_size, threads);
+                collection_filename, index_basename, batch_size, threads, term_count);
             THEN("Index is stored in binary_freq_collection format")
             {
                 std::vector<uint32_t> document_data{

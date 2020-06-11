@@ -3,8 +3,6 @@
 #include <catch2/catch.hpp>
 #include <functional>
 
-#include <tbb/task_scheduler_init.h>
-
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
@@ -27,13 +25,12 @@ struct IndexData {
               document_sizes.begin()->begin(),
               collection.num_docs(),
               collection,
-              scorer_name,
+              ScorerParams(scorer_name),
               BlockSize(FixedBlock(5)),
               quantized,
               dropped_term_ids)
 
     {
-        tbb::task_scheduler_init init;
         typename Index::builder builder(collection.num_docs(), params);
         for (auto const& plist: collection) {
             uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
@@ -124,7 +121,7 @@ TEMPLATE_TEST_CASE(
             topk_queue topk_2(10);
             ranked_or_query or_q(topk_2);
 
-            auto scorer = scorer::from_name(s_name, data->wdata);
+            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
             for (auto const& q: data->queries) {
                 or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
                 op_q(
@@ -158,7 +155,7 @@ TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", bloc
             topk_queue topk_2(10);
             ranked_and_query and_q(topk_2);
 
-            auto scorer = scorer::from_name(s_name, data->wdata);
+            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
             for (auto const& q: data->queries) {
                 and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
@@ -191,7 +188,7 @@ TEST_CASE("Top k")
         topk_queue topk_2(1);
         ranked_or_query or_1(topk_2);
 
-        auto scorer = scorer::from_name(s_name, data->wdata);
+        auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
         for (auto const& q: data->queries) {
             or_10(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());

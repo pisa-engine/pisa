@@ -11,24 +11,6 @@ target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 set(CLI11_TESTING OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 
-# stxxl
-add_definitions(-DSTXXL_VERBOSE_LEVEL=-10) # suppress messages to stdout
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/stxxl)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STXXL_CXX_FLAGS}")
-include_directories(${STXXL_INCLUDE_DIRS})
-set_target_properties(stxxl PROPERTIES
-            CXX_STANDARD 14
-)
-set_target_properties(${LIBSTXXL_SOURCES} PROPERTIES
-            CXX_STANDARD 14
-)
-set_target_properties(stxxl_tool test1 test2 PROPERTIES
-            CXX_STANDARD 14
-)
-target_compile_options(stxxl PRIVATE    -Wno-deprecated-declarations
-)
-
-
 # Add streamvbyte
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/include)
 add_library(streamvbyte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/src/streamvbyte.c
@@ -108,6 +90,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/trecpp)
 # Add trecpp
 set(WAPOPP_ENABLE_TESTING OFF CACHE BOOL "skip wapopp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp)
+target_compile_options(wapopp PRIVATE -Wno-error=all -Wno-missing-braces)
 
 # Add fmt
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
@@ -120,4 +103,4 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
-target_compile_options(rapidcheck PRIVATE -Wno-error=all)
+target_compile_options(rapidcheck PRIVATE -Wno-error)

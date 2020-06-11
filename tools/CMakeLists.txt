@@ -1,17 +1,7 @@
-add_executable(create_freq_index create_freq_index.cpp)
-target_link_libraries(create_freq_index
+add_executable(compress_inverted_index compress_inverted_index.cpp)
+target_link_libraries(compress_inverted_index
   pisa
   CLI11
-)
-
-add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
-target_include_directories(optimal_hybrid_index PRIVATE ${STXXL_INCLUDE_DIRS})
-target_link_libraries(optimal_hybrid_index
-  ${STXXL_LIBRARIES}
-  pisa
-)
-set_target_properties(optimal_hybrid_index PROPERTIES
-            CXX_STANDARD 14
 )
 
 add_executable(create_wand_data create_wand_data.cpp)
@@ -43,23 +33,6 @@ target_link_libraries(profile_queries
   pisa
 )
 
-add_executable(profile_decoding profile_decoding.cpp)
-target_link_libraries(profile_decoding
-  pisa
-)
-
-add_executable(shuffle_docids shuffle_docids.cpp)
-target_link_libraries(shuffle_docids
-  pisa
-  CLI11
-)
-
-add_executable(recursive_graph_bisection recursive_graph_bisection.cpp)
-target_link_libraries(recursive_graph_bisection
-  pisa
-  CLI11
-)
-
 add_executable(evaluate_collection_ordering evaluate_collection_ordering.cpp)
 target_link_libraries(evaluate_collection_ordering
   pisa
@@ -69,7 +42,6 @@ add_executable(parse_collection parse_collection.cpp)
 target_link_libraries(parse_collection
   pisa
   CLI11
-  wapopp
 )
 
 add_executable(invert invert.cpp)
@@ -120,6 +92,12 @@ target_link_libraries(map_queries
   CLI11
 )
 
+add_executable(stem_queries stem_queries.cpp)
+target_link_libraries(stem_queries
+  pisa
+  CLI11
+)
+
 add_executable(count_postings count_postings.cpp)
 target_link_libraries(count_postings
   pisa
@@ -132,3 +110,20 @@ target_link_libraries(selective_queries
   CLI11
 )
 
+add_executable(shards shards.cpp)
+target_link_libraries(shards
+  pisa
+  CLI11
+)
+
+add_executable(reorder-docids reorder_docids.cpp)
+target_link_libraries(reorder-docids
+  pisa
+  CLI11
+)
+
+add_executable(kth_threshold kth_threshold.cpp)
+target_link_libraries(kth_threshold
+  pisa
+  CLI11
+)
