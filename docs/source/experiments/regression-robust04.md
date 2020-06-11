@@ -20,25 +20,25 @@ The directory `/path/to/disk45/` should be the root directory of [TREC Disks 4 &
 ### Inverting
 
 ```
-bin/invert -i robust04/fwd -o robust04/inv -b 400000 --term-count $(cat robust04/fwd.terms | wc -l)
+/path/to/pisa/build/bin/invert -i robust04/fwd -o robust04/inv -b 400000 --term-count $(cat robust04/fwd.terms | wc -l)
 ```
 
 ### Reordering
 
 ```
-bin/recursive_graph_bisection -c robust04/inv -o robust04/inv.bp --documents robust04/fwd.doclex --reordered-documents robust04/fwd.bp.doclex
+/path/to/pisa/build/bin/recursive_graph_bisection -c robust04/inv -o robust04/inv.bp --documents robust04/fwd.doclex --reordered-documents robust04/fwd.bp.doclex
 ```
 
 ### Meta data
 
 ```
-bin/create_wand_data -c robust04/inv.bp -b 64 -o robust04/inv.bm25.bmw -s bm25
+/path/to/pisa/build/bin/create_wand_data -c robust04/inv.bp -b 64 -o robust04/inv.bm25.bmw -s bm25
 ```
 
 ### Index Compression
 
 ```
-bin/create_freq_index -e block_simdbp -c robust04/inv.bp -o robust04/inv.block_simdbp --check
+/path/to/pisa/build/bin/create_freq_index -e block_simdbp -c robust04/inv.bp -o robust04/inv.block_simdbp --check
 ```
 ## Retrieval
 
@@ -48,12 +48,12 @@ Queries can be downloaded from NIST:
 ```
 wget http://trec.nist.gov/data/robust/04.testset.gz
 gunzip 04.testset.gz
-bin/extract_topics -i 04.testset -o topics.robust2004
+/path/to/pisa/build/bin/extract_topics -i 04.testset -o topics.robust2004
 ```
 The above command will download the topics from the NIST website, extract the archive and parse topics in order to get `title`, `desc` and `narr` fields in separate files.
 
 ```
-bin/evaluate_queries -e block_simdbp -a block_max_wand -i robust04/inv.block_simdbp -w robust04/inv.bm25.bmw --stemmer porter2 --documents robust04/fwd.bp.doclex --terms robust04/fwd.termlex -k 1000 --scorer bm25 -q topics.robust2004.title > run.robust2004.bm25.title.robust2004.txt
+/path/to/pisa/build/bin/evaluate_queries -e block_simdbp -a block_max_wand -i robust04/inv.block_simdbp -w robust04/inv.bm25.bmw --stemmer porter2 --documents robust04/fwd.bp.doclex --terms robust04/fwd.termlex -k 1000 --scorer bm25 -q topics.robust2004.title > run.robust2004.bm25.title.robust2004.txt
 ```
 
 ## Evaluation
