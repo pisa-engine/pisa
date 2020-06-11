@@ -24,7 +24,7 @@ The directory `/path/to/disk45/` should be the root directory of [TREC Disks 4 &
 ```
 
 ### Reordering
-We perform Recursive Graph Bisection (aka BP) algorithm, which is currently the state-of-the-art for minimizing the compressed space used by an inverted index (or graph) through document reordering. 
+We perform [Recursive Graph Bisection (aka BP) algorithm](https://dl.acm.org/doi/10.1145/2939672.2939862), which is currently the state-of-the-art for minimizing the compressed space used by an inverted index (or graph) through document reordering. 
 
 ```
 /path/to/pisa/build/bin/recursive_graph_bisection -c robust04/inv -o robust04/inv.bp --documents robust04/fwd.doclex --reordered-documents robust04/fwd.bp.doclex
