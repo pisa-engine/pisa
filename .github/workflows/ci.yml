@@ -97,4 +97,4 @@ jobs:
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: ctest -j 4
+      run: ctest -VV -j 4
