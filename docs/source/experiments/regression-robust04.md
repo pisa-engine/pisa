@@ -20,7 +20,7 @@ The directory `/path/to/disk45/` should be the root directory of [TREC Disks 4 &
 ### Inverting
 
 ```
-/path/to/pisa/build/bin/invert -i robust04/fwd -o robust04/inv -b 400000 --term-count $(cat robust04/fwd.terms | wc -l)
+/path/to/pisa/build/bin/invert -i robust04/fwd -o robust04/inv -b 400000
 ```
 
 ### Reordering
@@ -31,7 +31,8 @@ We perform Recursive Graph Bisection (aka BP) algorithm, which is currently the 
 ```
 
 ### Meta data
-To perform BM25 queries it is necessary to build an additional file containing the parameters needed to compute the score, such as the document lengths. The file can be built with the following command:
+To perform BM25 queries it is necessary to build an additional file containing the information needed to compute the score, such as the document lengths. The following command builds a metadata file with block-max structure with blocks of fixed size of 64 postings:
+
 ```
 /path/to/pisa/build/bin/create_wand_data -c robust04/inv.bp -b 64 -o robust04/inv.bm25.bmw -s bm25
 ```
