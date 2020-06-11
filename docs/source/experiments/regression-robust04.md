@@ -31,7 +31,7 @@ We perform Recursive Graph Bisection (aka BP) algorithm, which is currently the 
 ```
 
 ### Meta data
-
+To perform BM25 queries it is necessary to build an additional file containing the parameters needed to compute the score, such as the document lengths. The file can be built with the following command:
 ```
 /path/to/pisa/build/bin/create_wand_data -c robust04/inv.bp -b 64 -o robust04/inv.bm25.bmw -s bm25
 ```
