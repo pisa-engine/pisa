@@ -34,12 +34,18 @@ class PairIndex {
 
     [[nodiscard]] static auto load(std::string const& file_path) -> PairIndex
     {
-        PairIndex<Index> pair_index;
-        pair_index.m_index_source = mio::mmap_source(file_path.c_str());
-        mapper::map(pair_index.m_index, pair_index.m_index_source);
-        pair_index.m_mapping_source = mio::mmap_source(fmt::format("{}.pairs", file_path).c_str());
-        mapper::map(pair_index.m_pair_mapping, pair_index.m_mapping_source);
-        return pair_index;
+        try {
+            PairIndex<Index> pair_index;
+            pair_index.m_index_source = mio::mmap_source(file_path.c_str());
+            mapper::map(pair_index.m_index, pair_index.m_index_source);
+            pair_index.m_mapping_source =
+                mio::mmap_source(fmt::format("{}.pairs", file_path).c_str());
+            mapper::map(pair_index.m_pair_mapping, pair_index.m_mapping_source);
+            return pair_index;
+        } catch (std::system_error const& err) {
+            throw std::runtime_error(
+                fmt::format("Failed to load pair index from {}: {}", file_path, err.what()));
+        }
     }
 
     [[nodiscard]] auto index() -> Index& { return m_index; }

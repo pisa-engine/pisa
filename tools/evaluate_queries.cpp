@@ -39,7 +39,6 @@ void evaluate_queries(
     const std::string& index_filename,
     const std::string& wand_data_filename,
     const std::vector<QueryContainer>& queries,
-    const std::optional<std::string>& thresholds_filename,
     std::string const& type,
     std::string const& query_type,
     uint64_t k,
@@ -302,7 +301,6 @@ void inspect(
     const std::string& index_filename,
     const std::optional<std::string>& wand_data_filename,
     const std::vector<QueryContainer>& queries,
-    const std::optional<std::string>& thresholds_filename,
     std::string const& type,
     std::string const& query_type,
     uint64_t k,
@@ -537,6 +535,9 @@ int main(int argc, const char** argv)
     std::vector<pisa::QueryContainer> queries;
     try {
         queries = app.resolved_queries();
+        for (auto& query: queries) {
+            query.add_threshold(app.k(), *query.threshold(app.k()) - 0.001);
+        }
     } catch (pisa::MissingResolverError err) {
         spdlog::error("Unresoved queries (without IDs) require term lexicon.");
         std::exit(1);
@@ -549,7 +550,6 @@ int main(int argc, const char** argv)
         app.index_filename(),
         app.wand_data_path(),
         queries,
-        app.thresholds_file(),
         app.index_encoding(),
         app.algorithm(),
         app.k(),
