@@ -95,8 +95,7 @@ Finally, you can retrieve the id of a given term: `./bin/lexicon rlookup example
 - Krovetz
 
 ### Supported formats
-- `plaintext`: every line contains the document's title first, then any number of
-             whitespaces, followed by the content delimited by a new line character.
+- `plaintext`: every line contains the document's title first, then any number of whitespaces, followed by the content delimited by a new line character.
 - `trectext`: TREC newswire collections.
 - `trecweb`: TREC web collections.
 - `warc`: Web ARChive format as defined in [the format specification](https://iipc.github.io/warc-specifications/specifications/warc-format/warc-1.0/).
