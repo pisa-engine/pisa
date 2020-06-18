@@ -60,7 +60,6 @@ void op_perftest(
     for (size_t run = 0; run < runs; ++run) {
         size_t idx = 0;
         for (auto const& query: queries) {
-            std::cout << query.to_json_string() << '\n';
             StaticTimer::get("prelude")->reset();
             StaticTimer::get("lookups")->reset();
             StaticTimer::get("postings")->reset();
