@@ -9,7 +9,7 @@ namespace pisa {
 
 class progress {
   public:
-    progress(const std::string& name, size_t goal) : m_name(name)
+    progress(const std::string& name, size_t goal) : m_name(name), m_elapsed()
     {
         if (goal == 0) {
             throw std::runtime_error("goal must be positive");
