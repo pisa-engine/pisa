@@ -6,7 +6,30 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/filesystem.hpp>
+#include <fmt/format.h>
+
 namespace pisa::io {
+
+class NoSuchFile {
+  public:
+    explicit NoSuchFile(std::string file) : m_file(std::move(file)) {}
+    [[nodiscard]] auto what() const -> std::string {
+        return fmt::format("No such file: {}", m_file);
+    }
+
+  private:
+    std::string m_file;
+};
+
+[[nodiscard]] inline auto resolve_path(std::string const& file) -> boost::filesystem::path
+{
+    boost::filesystem::path p(file);
+    if (not boost::filesystem::exists(p)) {
+        throw NoSuchFile(file);
+    }
+    return p;
+}
 
 class Line: public std::string {
     friend std::istream& operator>>(std::istream& is, Line& line) { return std::getline(is, line); }
