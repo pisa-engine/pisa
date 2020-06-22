@@ -23,10 +23,13 @@ bit_vector compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores
 bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint16_t threshold)
 {
     bit_vector_builder bv;
+    if (scores[0].size() == 0) {
+        return bit_vector(&bv);
+    }
     bv.reserve(scores[0].size());
     __m128i thresholds = _mm_set1_epi16(threshold);
     size_t i = 0;
-    for (; i < scores[0].size() and scores[0].size() - i > 0; i += 8) {
+    for (; i < scores[0].size() and scores[0].size() - i >= 8; i += 8) {
         __m128i sum = _mm_loadu_si128((__m128i*)(scores[0].data() + i));
         for (size_t term = 1; term < scores.size(); ++term) {
             sum = _mm_adds_epu16(sum, _mm_loadu_si128((__m128i*)(scores[term].data() + i)));
@@ -39,20 +42,12 @@ bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& sc
         bv.append_bits(maskBitsL1, 8);
     }
 
-    auto remain = scores[0].size() - i;
-    if (remain > 0) {
-        uint32_t mask = 0;
-        for (; i < scores[0].size(); ++i) {
-            uint16_t sum = scores[0][i];
-            for (size_t term = 1; term < scores.size(); ++term) {
-                sum += scores[term][i];
-            }
-            if (sum >= threshold) {
-                mask += 1;
-                mask = (mask << 1);
-            }
+    for (; i < scores[0].size(); i += 1) {
+        uint16_t sum = scores[0][i];
+        for (size_t term = 1; term < scores.size(); ++term) {
+            sum += scores[term][i];
         }
-        bv.append_bits(mask, remain);
+        bv.append_bits(static_cast<uint64_t>(sum >= threshold), 1);
     }
     return bit_vector(&bv);
 }
@@ -68,7 +63,7 @@ avx2_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint
     bv.reserve(scores[0].size());
     __m256i thresholds = _mm256_set1_epi16(threshold);
     size_t i = 0;
-    for (; i < scores[0].size() and scores[0].size() - i > 0; i += 16) {
+    for (; i < scores[0].size() and scores[0].size() - i >= 16; i += 16) {
         __m256i sum = _mm256_loadu_si256((__m256i*)(scores[0].data() + i));
         for (size_t term = 1; term < scores.size(); ++term) {
             sum = _mm256_adds_epu16(sum, _mm256_loadu_si256((__m256i*)(scores[term].data() + i)));
@@ -79,21 +74,14 @@ avx2_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint
         bv.append_bits(maskBitsL1, 16);
     }
 
-    auto remain = scores[0].size() - i;
-    if (remain > 0) {
-        uint32_t mask = 0;
-        for (; i < scores[0].size(); ++i) {
-            uint16_t sum = scores[0][i];
-            for (size_t term = 1; term < scores.size(); ++term) {
-                sum += scores[term][i];
-            }
-            if (sum >= threshold) {
-                mask += 1;
-                mask = (mask << 1);
-            }
+    for (; i < scores[0].size(); i += 1) {
+        uint16_t sum = scores[0][i];
+        for (size_t term = 1; term < scores.size(); ++term) {
+            sum += scores[term][i];
         }
-        bv.append_bits(mask << (32 - remain), remain);
+        bv.append_bits(static_cast<uint64_t>(sum >= threshold), 1);
     }
+
     return bit_vector(&bv);
 }
 
