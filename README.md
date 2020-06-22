@@ -3,9 +3,7 @@
 # PISA: Performant Indexes and Search for Academia v0.8.2
 
 ![Build and test](https://github.com/pisa-engine/pisa/workflows/Build%20and%20test/badge.svg)
-![Compile Headers](https://github.com/pisa-engine/pisa/workflows/Compile%20Headers/badge.svg)
 ![clang-tidy](https://github.com/pisa-engine/pisa/workflows/clang-tidy/badge.svg)
-![clang-format](https://github.com/pisa-engine/pisa/workflows/clang-format/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/pisa/badge/?version=latest)](https://pisa.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
 
