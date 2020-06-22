@@ -53,6 +53,8 @@ bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& sc
     return bit_vector(&bv);
 }
 
+#ifdef __AVX2__
+
 bit_vector
 avx2_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint16_t threshold)
 {
@@ -87,5 +89,7 @@ avx2_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint
     }
     return bit_vector(&bv);
 }
+
+#endif
 
 }  // namespace pisa
