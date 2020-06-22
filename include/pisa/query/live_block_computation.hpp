@@ -31,7 +31,7 @@ bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& sc
         }
 
         __m128i masksL1 = _mm_cmpeq_epi16(_mm_max_epu16(sum, thresholds), sum);
-		uint32_t maskBitsL1 = _mm_movemask_epi8(masksL1);
+        uint32_t maskBitsL1 = _mm_movemask_epi8(masksL1);
         bv.append_bits(maskBitsL1, 8);
     }
 
@@ -66,7 +66,7 @@ avx2_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint
             sum = _mm256_adds_epu16(sum, _mm256_loadu_si256((__m256i*)(scores[term].data() + i)));
         }
         __m256i masksL1 = _mm256_cmpeq_epi16(_mm256_max_epu16(sum, thresholds), sum);
-		uint32_t maskBitsL1 = _mm256_movemask_epi8(masksL1);
+        uint32_t maskBitsL1 = _mm256_movemask_epi8(masksL1);
         bv.append_bits(maskBitsL1, 16);
     }
 
