@@ -8,7 +8,6 @@
 #include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <gsl/span>
-#include <mio/mmap.hpp>
 #include <pstl/algorithm>
 #include <pstl/execution>
 #include <pstl/numeric>
