@@ -13,7 +13,7 @@ bit_vector compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores
         for (size_t term = 1; term < scores.size(); ++term) {
             sum += scores[term][i];
         }
-        bv.append_bits(sum >= threshold, 1);
+        bv.append_bits(static_cast<uint64_t>(sum >= threshold), 1);
     }
     return bit_vector(&bv);
 }
