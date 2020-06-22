@@ -39,6 +39,8 @@ class progress {
     std::string m_name;
     size_t m_count = 0;
     size_t m_goal = 0;
+    size_t m_progress = 0;
+    std::chrono::seconds m_elapsed = 0;
 
     std::chrono::time_point<std::chrono::steady_clock> m_start = std::chrono::steady_clock::now();
 
@@ -50,9 +52,13 @@ class progress {
         size_t progress = (100 * m_count) / m_goal;
         std::chrono::seconds elapsed = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::steady_clock::now() - m_start);
-        std::cerr << '\r' << m_name << ": " << progress << "% [";
-        format_interval(std::cerr, elapsed);
-        std::cerr << "]";
+        if (progress != m_progress and elapsed != m_elapsed) {
+            m_progress = progress;
+            m_elapsed = elapsed;
+            std::cerr << '\r' << m_name << ": " << progress << "% [";
+            format_interval(std::cerr, elapsed);
+            std::cerr << "]";
+        }
     }
 
     std::ostream& format_interval(std::ostream& out, std::chrono::seconds time)
