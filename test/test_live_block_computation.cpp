@@ -22,6 +22,7 @@ TEST_CASE("test_live_block_computation")
         }
     });
 }
+#ifdef __AVX__
 
 TEST_CASE("test_avx_live_block_computation")
 {
@@ -39,6 +40,8 @@ TEST_CASE("test_avx_live_block_computation")
         }
     });
 }
+
+#endif
 
 #ifdef __AVX2__
 
