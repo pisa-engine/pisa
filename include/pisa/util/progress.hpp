@@ -40,7 +40,7 @@ class progress {
     size_t m_count = 0;
     size_t m_goal = 0;
     size_t m_progress = 0;
-    std::chrono::seconds m_elapsed = 0;
+    std::chrono::seconds m_elapsed;
 
     std::chrono::time_point<std::chrono::steady_clock> m_start = std::chrono::steady_clock::now();
 
