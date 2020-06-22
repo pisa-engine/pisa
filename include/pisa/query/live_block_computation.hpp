@@ -23,9 +23,6 @@ bit_vector compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores
 bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint16_t threshold)
 {
     bit_vector_builder bv;
-    if (scores[0].size() == 0) {
-        return bit_vector(&bv);
-    }
     bv.reserve(scores[0].size());
     __m128i thresholds = _mm_set1_epi16(threshold);
     size_t i = 0;
