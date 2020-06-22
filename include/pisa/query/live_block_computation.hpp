@@ -18,6 +18,8 @@ bit_vector compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores
     return bit_vector(&bv);
 }
 
+#ifdef __AVX__
+
 bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint16_t threshold)
 {
     bit_vector_builder bv;
@@ -54,6 +56,8 @@ bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& sc
     }
     return bit_vector(&bv);
 }
+
+#endif
 
 #ifdef __AVX2__
 
