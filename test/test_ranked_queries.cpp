@@ -100,7 +100,6 @@ class range_query_128: public range_query<T> {
 TEMPLATE_TEST_CASE(
     "Ranked query test",
     "[query][ranked][integration]",
-    BlockMaxUnionQuery,
     ranked_or_taat_query_acc<Simple_Accumulator>,
     ranked_or_taat_query_acc<Lazy_Accumulator<4>>,
     wand_query,

@@ -536,7 +536,13 @@ int main(int argc, const char** argv)
     try {
         queries = app.resolved_queries();
         for (auto& query: queries) {
-            query.add_threshold(app.k(), *query.threshold(app.k()) - 0.001);
+            if (auto threshold = query.threshold(app.k()); threshold && *threshold > 0.0) {
+                if (quantized) {
+                    query.add_threshold(app.k(), *threshold - 1.0);
+                } else {
+                    query.add_threshold(app.k(), std::nextafter(*threshold, 0.0));
+                }
+            }
         }
     } catch (pisa::MissingResolverError err) {
         spdlog::error("Unresoved queries (without IDs) require term lexicon.");

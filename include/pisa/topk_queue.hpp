@@ -46,7 +46,7 @@ struct topk_queue {
         return true;
     }
 
-    PISA_ALWAYSINLINE bool would_enter(float score) const { return score >= m_threshold; }
+    PISA_ALWAYSINLINE bool would_enter(float score) const { return score > m_threshold; }
 
     void finalize()
     {
