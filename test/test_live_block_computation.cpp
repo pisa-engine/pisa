@@ -40,6 +40,8 @@ TEST_CASE("test_avx_live_block_computation")
     });
 }
 
+#ifdef __AVX2__
+
 TEST_CASE("test_avx2_live_block_computation")
 {
     rc::check([](std::vector<uint16_t> scores, uint16_t threshold) {
@@ -56,3 +58,5 @@ TEST_CASE("test_avx2_live_block_computation")
         }
     });
 }
+
+#endif
