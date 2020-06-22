@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bit_vector.hpp"
+#include <immintrin.h>
 namespace pisa {
 
 bit_vector compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint16_t threshold)
@@ -37,11 +38,11 @@ bit_vector avx_compute_live_quant16(std::vector<std::vector<uint16_t>> const& sc
     if (remain > 0) {
         uint32_t mask = 0;
         for (; i < scores[0].size(); ++i) {
-            uint8_t sum = scores[0][i];
+            uint16_t sum = scores[0][i];
             for (size_t term = 1; term < scores.size(); ++term) {
                 sum += scores[term][i];
             }
-            if (sum > threshold) {
+            if (sum >= threshold) {
                 mask += 1;
                 mask = (mask << 1);
             }
@@ -71,7 +72,7 @@ avx2_compute_live_quant16(std::vector<std::vector<uint16_t>> const& scores, uint
     if (remain > 0) {
         uint32_t mask = 0;
         for (; i < scores[0].size(); ++i) {
-            uint8_t sum = scores[0][i];
+            uint16_t sum = scores[0][i];
             for (size_t term = 1; term < scores.size(); ++term) {
                 sum += scores[term][i];
             }
