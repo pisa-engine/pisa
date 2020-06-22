@@ -52,7 +52,7 @@ class progress {
         size_t progress = (100 * m_count) / m_goal;
         std::chrono::seconds elapsed = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::steady_clock::now() - m_start);
-        if (progress != m_progress and elapsed != m_elapsed) {
+        if (progress != m_progress or elapsed != m_elapsed) {
             m_progress = progress;
             m_elapsed = elapsed;
             std::cerr << '\r' << m_name << ": " << progress << "% [";
