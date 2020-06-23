@@ -9,10 +9,10 @@ namespace pisa {
 
 class progress {
   public:
-    progress(const std::string& name, size_t goal) : m_name(name), m_elapsed()
+    progress(const std::string& name, size_t goal) : m_name(name)
     {
         if (goal == 0) {
-            throw std::runtime_error("goal must be positive");
+            throw std::runtime_error("Progress bar must have a positive goal but 0 given");
         }
         m_goal = goal;
     }
@@ -40,7 +40,7 @@ class progress {
     size_t m_count = 0;
     size_t m_goal = 0;
     size_t m_progress = 0;
-    std::chrono::seconds m_elapsed;
+    std::chrono::seconds m_elapsed{};
 
     std::chrono::time_point<std::chrono::steady_clock> m_start = std::chrono::steady_clock::now();
 
