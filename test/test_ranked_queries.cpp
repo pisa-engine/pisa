@@ -13,6 +13,7 @@
 #include "query/algorithm.hpp"
 #include "test_common.hpp"
 #include "query/live_block_computation.hpp"
+#include "wand_data_range.hpp"
 
 using namespace pisa;
 
@@ -159,21 +160,22 @@ TEMPLATE_TEST_CASE(
             TestType op_q(topk_1);
             topk_queue topk_2(10);
             ranked_or_query or_q(topk_2);
+            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
             constexpr size_t range_size = 1024;
             std::map<uint32_t, std::vector<uint16_t>> term_enum;
             size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
-            // for (auto const& q: queries) {
-            //     for (auto t: q.terms) {
-            //         auto docs_enum = index[t];
-            //         auto s = scorer->term_scorer(t);
-            //         term_enum[t] =
-            //             wand_data_range<1024, 0>::compute_block_max_scores(docs_enum, s, blocks_num);
-            //     }
-            // }
+            for (auto const& q: data->queries) {
+                for (auto t: q.terms) {
+                    auto docs_enum = data->index[t];
+                    auto s = scorer->term_scorer(t);
+                    auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
+                            docs_enum, s, blocks_num);
+                    term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
+                }
+            }
 
 
-            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
             for (auto const& q: data->queries) {
                 or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
                 topk_2.finalize();
