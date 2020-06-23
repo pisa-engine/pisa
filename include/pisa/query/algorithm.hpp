@@ -3,6 +3,7 @@
 #include "query/algorithm/and_query.hpp"
 #include "query/algorithm/block_max_maxscore_query.hpp"
 #include "query/algorithm/block_max_ranked_and_query.hpp"
+#include "query/algorithm/block_max_wand_lb_query.hpp"
 #include "query/algorithm/block_max_wand_query.hpp"
 #include "query/algorithm/maxscore_query.hpp"
 #include "query/algorithm/or_query.hpp"

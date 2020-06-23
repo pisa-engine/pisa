@@ -5,12 +5,14 @@
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
+#include "cursor/range_block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm.hpp"
 #include "test_common.hpp"
+#include "query/live_block_computation.hpp"
 
 using namespace pisa;
 
@@ -142,6 +144,63 @@ TEMPLATE_TEST_CASE(
         }
     }
 }
+
+// NOLINTNEXTLINE(hicpp-explicit-conversions)
+TEMPLATE_TEST_CASE(
+    "Ranked range-query test",
+    "[query][ranked][range][integration]",
+    block_max_wand_lb_query)
+{
+        auto quantized = true;
+        for (auto&& s_name: {"bm25", "qld"}) {
+            std::unordered_set<size_t> dropped_term_ids;
+            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+            topk_queue topk_1(10);
+            TestType op_q(topk_1);
+            topk_queue topk_2(10);
+            ranked_or_query or_q(topk_2);
+
+            constexpr size_t range_size = 1024;
+            std::map<uint32_t, std::vector<uint16_t>> term_enum;
+            size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
+            // for (auto const& q: queries) {
+            //     for (auto t: q.terms) {
+            //         auto docs_enum = index[t];
+            //         auto s = scorer->term_scorer(t);
+            //         term_enum[t] =
+            //             wand_data_range<1024, 0>::compute_block_max_scores(docs_enum, s, blocks_num);
+            //     }
+            // }
+
+
+            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+            for (auto const& q: data->queries) {
+                or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+                topk_2.finalize();
+
+                std::vector<std::vector<uint16_t>> scores;
+                for (auto&& t: q.terms) {
+                    scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
+                }
+                auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
+                
+                op_q(
+                    make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
+                    data->index.num_docs(), live_blocks_bv, range_size);
+                topk_1.finalize();
+                
+                REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+                for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+                    REQUIRE(
+                        topk_2.topk()[i].first
+                        == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance is %
+                                                                          // relative
+                }
+                topk_1.clear();
+                topk_2.clear();
+            }
+        }
+    }
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", block_max_ranked_and_query)

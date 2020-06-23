@@ -6,8 +6,8 @@
 #include <vector>
 namespace pisa {
 
-struct block_max_wand_query {
-    explicit block_max_wand_query(topk_queue& topk) : m_topk(topk) {}
+struct block_max_wand_lb_query {
+    explicit block_max_wand_lb_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(
@@ -36,7 +36,7 @@ struct block_max_wand_query {
 
         uint32_t nextLiveDid = live_block * range_size;
         for (Cursor* en: ordered_cursors) {
-            en->docs_enum.next_geq(nextLiveDid);
+            en->next_geq(nextLiveDid);
         }
 
         sort_cursors();
@@ -73,7 +73,7 @@ struct block_max_wand_query {
             double block_upper_bound = 0;
 
             for (size_t i = 0; i < pivot + 1; ++i) {
-                block_upper_bound += ordered_cursors[i]->scores[pivot_id / range_size];
+                block_upper_bound += ordered_cursors[i]->scores(pivot_id / range_size);
             }
 
             if (m_topk.would_enter(block_upper_bound)) {
@@ -86,7 +86,7 @@ struct block_max_wand_query {
                         }
                         float part_score = en->score();
                         score += part_score;
-                        block_upper_bound -= en->scores[pivot_id / range_size] - part_score;
+                        block_upper_bound -= en->scores(pivot_id / range_size) - part_score;
                         if (!m_topk.would_enter(block_upper_bound)) {
                             break;
                         }
