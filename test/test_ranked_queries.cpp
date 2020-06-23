@@ -153,7 +153,7 @@ TEMPLATE_TEST_CASE(
     block_max_wand_lb_query)
 {
         auto quantized = true;
-        for (auto&& s_name: {"bm25", "qld"}) {
+        for (auto&& s_name: {"quantized"}) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
             topk_queue topk_1(10);
@@ -162,7 +162,7 @@ TEMPLATE_TEST_CASE(
             ranked_or_query or_q(topk_2);
             auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
-            constexpr size_t range_size = 1024;
+            constexpr size_t range_size = 128;
             std::map<uint32_t, std::vector<uint16_t>> term_enum;
             size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
             for (auto const& q: data->queries) {
@@ -174,7 +174,6 @@ TEMPLATE_TEST_CASE(
                     term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
                 }
             }
-
 
             for (auto const& q: data->queries) {
                 or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
