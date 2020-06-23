@@ -13,8 +13,7 @@ struct range_query {
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size,
-                    bit_vector const&live_blocks,
-                    std::vector<std::vector<uint16_t>> const& scores)
+                    bit_vector const&live_blocks)
     {
         if (cursors.empty()) {
             return;
