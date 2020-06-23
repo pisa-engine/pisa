@@ -22,7 +22,7 @@ class freq_index {
 
     explicit freq_index(MemorySource source) : m_source(std::move(source))
     {
-        mapper::map(*this, source.data(), mapper::map_flags::warmup);
+        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
     class builder {
