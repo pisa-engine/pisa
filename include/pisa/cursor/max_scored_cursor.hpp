@@ -24,6 +24,8 @@ class MaxScoredCursor: public ScoredCursor<Cursor> {
     ~MaxScoredCursor() = default;
 
     [[nodiscard]] PISA_ALWAYSINLINE auto max_score() const noexcept -> float { return m_max_score; }
+    PISA_ALWAYSINLINE void max_score(float score) noexcept { m_max_score = score; }
+
 
   private:
     float m_max_score;

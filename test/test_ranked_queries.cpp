@@ -5,14 +5,14 @@
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
-#include "cursor/range_block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
+#include "cursor/range_block_max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm.hpp"
-#include "test_common.hpp"
 #include "query/live_block_computation.hpp"
+#include "test_common.hpp"
 #include "wand_data_range.hpp"
 
 using namespace pisa;
@@ -86,17 +86,17 @@ class ranked_or_taat_query_acc: public ranked_or_taat_query {
     }
 };
 
-template <typename T>
-class range_query_128: public range_query<T> {
-  public:
-    using range_query<T>::range_query;
+// template <typename T>
+// class range_query_128: public range_query<T> {
+//   public:
+//     using range_query<T>::range_query;
 
-    template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
-    {
-        range_query<T>::operator()(cursors, max_docid, 128);
-    }
-};
+//     template <typename CursorRange>
+//     void operator()(CursorRange&& cursors, uint64_t max_docid)
+//     {
+//         range_query<T>::operator()(cursors, max_docid, 128);
+//     }
+// };
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE(
@@ -107,13 +107,14 @@ TEMPLATE_TEST_CASE(
     wand_query,
     maxscore_query,
     block_max_wand_query,
-    block_max_maxscore_query,
-    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-    range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
-    range_query_128<wand_query>,
-    range_query_128<maxscore_query>,
-    range_query_128<block_max_wand_query>,
-    range_query_128<block_max_maxscore_query>)
+    block_max_maxscore_query
+    // range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
+    // range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+    // range_query_128<wand_query>,
+    // range_query_128<maxscore_query>,
+    // range_query_128<block_max_wand_query>,
+    // range_query_128<block_max_maxscore_query>
+    )
 {
     for (auto quantized: {false, true}) {
         for (auto&& s_name: {"bm25", "qld"}) {
@@ -146,62 +147,121 @@ TEMPLATE_TEST_CASE(
     }
 }
 
+// // NOLINTNEXTLINE(hicpp-explicit-conversions)
+// TEMPLATE_TEST_CASE("BMW-LB test", "[query][ranked][range][integration]", block_max_wand_lb_query)
+// {
+//     auto quantized = true;
+//     for (auto&& s_name: {"quantized"}) {
+//         std::unordered_set<size_t> dropped_term_ids;
+//         auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+//         topk_queue topk_1(10);
+//         TestType op_q(topk_1);
+//         topk_queue topk_2(10);
+//         ranked_or_query or_q(topk_2);
+//         auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+
+//         constexpr size_t range_size = 128;
+//         std::map<uint32_t, std::vector<uint16_t>> term_enum;
+//         size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
+//         for (auto const& q: data->queries) {
+//             for (auto t: q.terms) {
+//                 auto docs_enum = data->index[t];
+//                 auto s = scorer->term_scorer(t);
+//                 auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
+//                     docs_enum, s, blocks_num);
+//                 term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
+//             }
+//         }
+
+//         for (auto const& q: data->queries) {
+//             or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+//             topk_2.finalize();
+
+//             std::vector<std::vector<uint16_t>> scores;
+//             for (auto&& t: q.terms) {
+//                 scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
+//             }
+//             auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
+
+//             op_q(
+//                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
+//                 data->index.num_docs(),
+//                 live_blocks_bv,
+//                 range_size);
+//             topk_1.finalize();
+
+//             REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+//             for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+//                 REQUIRE(
+//                     topk_2.topk()[i].first
+//                     == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance
+//                                                                       // is %
+//                                                                       // relative
+//             }
+//             topk_1.clear();
+//             topk_2.clear();
+//         }
+//     }
+// }
+
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE(
-    "Ranked range-query test",
-    "[query][ranked][range][integration]",
-    block_max_wand_lb_query)
+    "Ranked range-query test", "[query][ranked][range][integration]", range_query<maxscore_query>)
 {
-        auto quantized = true;
-        for (auto&& s_name: {"quantized"}) {
-            std::unordered_set<size_t> dropped_term_ids;
-            auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
-            topk_queue topk_1(10);
-            TestType op_q(topk_1);
-            topk_queue topk_2(10);
-            ranked_or_query or_q(topk_2);
-            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+    auto quantized = true;
+    for (auto&& s_name: {"quantized"}) {
+        std::unordered_set<size_t> dropped_term_ids;
+        auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
+        topk_queue topk_1(10);
+        TestType op_q(topk_1);
+        topk_queue topk_2(10);
+        ranked_or_query or_q(topk_2);
+        auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
-            constexpr size_t range_size = 128;
-            std::map<uint32_t, std::vector<uint16_t>> term_enum;
-            size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
-            for (auto const& q: data->queries) {
-                for (auto t: q.terms) {
-                    auto docs_enum = data->index[t];
-                    auto s = scorer->term_scorer(t);
-                    auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
-                            docs_enum, s, blocks_num);
-                    term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
-                }
-            }
-
-            for (auto const& q: data->queries) {
-                or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
-                topk_2.finalize();
-
-                std::vector<std::vector<uint16_t>> scores;
-                for (auto&& t: q.terms) {
-                    scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
-                }
-                auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
-                
-                op_q(
-                    make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
-                    data->index.num_docs(), live_blocks_bv, range_size);
-                topk_1.finalize();
-                
-                REQUIRE(topk_2.topk().size() == topk_1.topk().size());
-                for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                    REQUIRE(
-                        topk_2.topk()[i].first
-                        == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance is %
-                                                                          // relative
-                }
-                topk_1.clear();
-                topk_2.clear();
+        constexpr size_t range_size = 128;
+        std::map<uint32_t, std::vector<uint16_t>> term_enum;
+        size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
+        for (auto const& q: data->queries) {
+            for (auto t: q.terms) {
+                auto docs_enum = data->index[t];
+                auto s = scorer->term_scorer(t);
+                auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
+                    docs_enum, s, blocks_num);
+                term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
             }
         }
+
+        for (auto const& q: data->queries) {
+            or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
+            topk_2.finalize();
+
+            std::vector<std::vector<uint16_t>> scores;
+            for (auto&& t: q.terms) {
+                scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
+            }
+            auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
+
+            op_q(
+                make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
+                data->index.num_docs(),
+                range_size,
+                live_blocks_bv,
+                scores);
+            topk_1.finalize();
+
+            REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+            for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+                REQUIRE(
+                    topk_2.topk()[i].first
+                    == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance
+                                                                      // is %
+                                                                      // relative
+            }
+            topk_1.clear();
+            topk_2.clear();
+        }
     }
+}
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
 TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", block_max_ranked_and_query)
