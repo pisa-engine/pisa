@@ -169,7 +169,7 @@ TEMPLATE_TEST_CASE(
                 for (auto t: q.terms) {
                     auto docs_enum = data->index[t];
                     auto s = scorer->term_scorer(t);
-                    auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
+                    auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
                             docs_enum, s, blocks_num);
                     term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
                 }
