@@ -13,6 +13,7 @@
 
 #include "boost/filesystem.hpp"
 #include "gsl/span"
+#include "memory_source.hpp"
 #include "payload_vector.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
@@ -344,8 +345,8 @@ namespace invert {
         std::optional<std::uint32_t> term_count = std::nullopt)
     {
         if (not term_count) {
-            mio::mmap_source m(fmt::format("{}.termlex", input_basename).c_str());
-            auto terms = Payload_Vector<>::from(m);
+            auto source = MemorySource::mapped_file(fmt::format("{}.termlex", input_basename));
+            auto terms = Payload_Vector<>::from(source);
             term_count = static_cast<std::uint32_t>(terms.size());
         }
 
