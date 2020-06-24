@@ -32,7 +32,7 @@ class wand_data {
     wand_data() = default;
     explicit wand_data(MemorySource source) : m_source(std::move(source))
     {
-        mapper::map(*this, source.data(), mapper::map_flags::warmup);
+        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
     template <typename LengthsIterator>
