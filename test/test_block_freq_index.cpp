@@ -42,7 +42,7 @@ void test_block_freq_index()
     }
 
     Temporary_Directory tmpdir;
-    auto filename = tmpdir.path().string() + "temp.bin";
+    auto filename = (tmpdir.path() / "temp.bin").string();
     {
         collection_type coll;
         b.build(coll);
@@ -50,10 +50,7 @@ void test_block_freq_index()
     }
 
     {
-        collection_type coll;
-        mio::mmap_source m(filename.c_str());
-        pisa::mapper::map(coll, m);
-
+        collection_type coll(pisa::MemorySource::mapped_file(filename));
         for (size_t i = 0; i < posting_lists.size(); ++i) {
             auto const& plist = posting_lists[i];
             auto doc_enum = coll[i];
