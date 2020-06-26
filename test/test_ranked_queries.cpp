@@ -245,8 +245,7 @@ TEMPLATE_TEST_CASE(
                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
                 data->index.num_docs(),
                 range_size,
-                live_blocks_bv,
-                scores);
+                live_blocks_bv);
             topk_1.finalize();
 
             REQUIRE(topk_2.topk().size() == topk_1.topk().size());
