@@ -8,6 +8,7 @@
 #include "query/algorithm/maxscore_query.hpp"
 #include "query/algorithm/or_query.hpp"
 #include "query/algorithm/range_query.hpp"
+#include "query/algorithm/range_or_taat_query.hpp"
 #include "query/algorithm/range_taat_query.hpp"
 #include "query/algorithm/ranked_and_query.hpp"
 #include "query/algorithm/ranked_or_query.hpp"
