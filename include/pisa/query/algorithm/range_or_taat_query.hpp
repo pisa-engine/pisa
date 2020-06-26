@@ -173,6 +173,7 @@ void simd_aggregate(
 }
 #endif
 
+template<size_t range_size>
 struct range_or_taat_query {
     explicit range_or_taat_query(topk_queue& topk) : m_topk(topk) {}
 
@@ -180,10 +181,7 @@ struct range_or_taat_query {
     void operator()(
         CursorRange&& cursors,
         uint64_t max_docid,
-        size_t range_size,
-        bit_vector const& live_blocks,
-        std::vector<uint8_t>& topk_vector,
-        std::vector<uint32_t>& topdoc_vector)
+        bit_vector const& live_blocks)
     {
         if (cursors.empty()) {
             return;
@@ -194,27 +192,35 @@ struct range_or_taat_query {
         size_t i = en.next(), end = (i + 1) * range_size;
         for (; i < live_blocks.size() and end < max_docid; i = en.next(), end = (i + 1) * range_size) {
             auto min_docid = end - range_size;
-            std::array<uint8_t, 32> addon{};
+            std::array<uint16_t, range_size> addon{};
 
             for (auto&& c: cursors) {
                 c.next_geq(min_docid);
                 while (c.docid() < end) {
-                    addon[c.docid() % 32] += c.freq();
+                    addon[c.docid() % range_size] += c.freq();
                     c.next();
                 }
             }
-            simd_aggregate(topk_vector, topdoc_vector, addon, m_topk.threshold(), min_docid, total);
+            for (int j = 0; j < range_size; ++j)
+            {
+                m_topk.insert(addon[j], i * range_size + j);
+            }
+
+            // simd_aggregate(topk_vector, topdoc_vector, addon, m_topk.threshold(), min_docid, total);
         }
 
-        size_t kk = std::min(size_t(m_topk.capacity()), total);
-        auto zip = ranges::views::zip(topk_vector, topdoc_vector);
-        ranges::partial_sort(
-            zip.begin(),
-            zip.begin() + kk,
-            zip.begin() + total,
-            [](const auto& lhs, const auto& rhs) -> decltype(auto) {
-                return std::get<0>(lhs) > std::get<0>(rhs);
-            });
+        // size_t kk = std::min(size_t(m_topk.capacity()), total);
+        // auto zip = ranges::views::zip(topk_vector, topdoc_vector);
+        // ranges::partial_sort(
+        //     zip.begin(),
+        //     zip.begin() + kk,
+        //     zip.begin() + total,
+        //     [](const auto& lhs, const auto& rhs) -> decltype(auto) {
+        //         return std::get<0>(lhs) > std::get<0>(rhs);
+        //     });
+        //   topk_vector.resize(kk);
+        //   topk_vector.shrink_to_fit();
+
     }
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }

@@ -114,7 +114,7 @@ TEMPLATE_TEST_CASE(
     // range_query_128<maxscore_query>,
     // range_query_128<block_max_wand_query>,
     // range_query_128<block_max_maxscore_query>
-    )
+)
 {
     for (auto quantized: {false, true}) {
         for (auto&& s_name: {"bm25", "qld"}) {
@@ -184,10 +184,8 @@ TEMPLATE_TEST_CASE(
 //             auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
 
 //             op_q(
-//                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
-//                 data->index.num_docs(),
-//                 live_blocks_bv,
-//                 range_size);
+//                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q,
+//                 term_enum), data->index.num_docs(), live_blocks_bv, range_size);
 //             topk_1.finalize();
 
 //             REQUIRE(topk_2.topk().size() == topk_1.topk().size());
@@ -262,22 +260,21 @@ TEMPLATE_TEST_CASE(
     }
 }
 
-
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
-TEST_CASE(
-    "Ranked range or-taat query test", "[query][ranked][range][integration]", )
+TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration]", )
 {
     auto quantized = true;
     for (auto&& s_name: {"quantized"}) {
+        constexpr size_t range_size = 128;
+
         std::unordered_set<size_t> dropped_term_ids;
         auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
         topk_queue topk_1(10);
-        range_or_taat_query op_q(topk_1);
+        range_or_taat_query<range_size> op_q(topk_1);
         topk_queue topk_2(10);
         ranked_or_query or_q(topk_2);
         auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
-        constexpr size_t range_size = 128;
         std::map<uint32_t, std::vector<uint16_t>> term_enum;
         size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
         for (auto const& q: data->queries) {
@@ -300,22 +297,19 @@ TEST_CASE(
             }
             auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
 
-            std::vector<uint8_t> topk_vector(26'000'000);
-            std::vector<uint32_t> topdoc_vector(26'000'000);
+            // std::vector<uint16_t> topk_vector(26'000'000);
+            // std::vector<uint32_t> topdoc_vector(26'000'000);
             op_q(
                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
                 data->index.num_docs(),
-                range_size,
-                live_blocks_bv, topk_vector, topdoc_vector);
+                live_blocks_bv);
             topk_1.finalize();
 
             REQUIRE(topk_2.topk().size() == topk_1.topk().size());
             for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                REQUIRE(
-                    topk_2.topk()[i].first
-                    == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance
-                                                                      // is %
-                                                                      // relative
+                REQUIRE(topk_2.topk()[i].first == topk_1.topk()[i].first);  // tolerance
+                                                                            // is %
+                                                                            // relative
             }
             topk_1.clear();
             topk_2.clear();
