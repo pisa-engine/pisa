@@ -297,17 +297,19 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
             }
             auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
 
-            // std::vector<uint16_t> topk_vector(26'000'000);
-            // std::vector<uint32_t> topdoc_vector(26'000'000);
+            std::vector<uint16_t> topk_vector(1'000);
+            std::vector<uint32_t> topdoc_vector(1'000);
+            topk_1.set_threshold(topk_2.threshold());
             op_q(
                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
                 data->index.num_docs(),
-                live_blocks_bv);
+                live_blocks_bv, topk_vector, topdoc_vector);
             topk_1.finalize();
 
-            REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+
+            REQUIRE(topk_2.topk().size() == topk_vector.size());
             for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                REQUIRE(topk_2.topk()[i].first == topk_1.topk()[i].first);  // tolerance
+                REQUIRE(topk_2.topk()[i].first == topk_vector[i]);  // tolerance
                                                                             // is %
                                                                             // relative
             }
