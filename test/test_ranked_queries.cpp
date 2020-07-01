@@ -306,7 +306,7 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
                 live_blocks_bv, topk_vector, topdoc_vector);
             topk_1.finalize();
 
-
+            
             REQUIRE(topk_2.topk().size() == topk_vector.size());
             for (size_t i = 0; i < topk_2.topk().size(); ++i) {
                 REQUIRE(topk_2.topk()[i].first == topk_vector[i]);  // tolerance

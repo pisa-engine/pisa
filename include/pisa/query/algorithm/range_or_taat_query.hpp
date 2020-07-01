@@ -230,7 +230,7 @@ struct range_or_taat_query {
             //     m_topk.insert(addon[j], i * range_size + j);
             // }
 
-            simd_aggregate<range_size>(topk_vector, addon, m_topk.threshold(), min_docid, total);
+            simd_aggregate<range_size>(topk_vector, addon, std::max(m_topk.threshold(), 1.f), min_docid, total);
         }
 
         size_t kk = std::min(size_t(m_topk.capacity()), total);
@@ -245,8 +245,6 @@ struct range_or_taat_query {
           topk_vector.resize(kk);
           topk_vector.shrink_to_fit();
     }
-
-    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
   private:
     topk_queue& m_topk;
