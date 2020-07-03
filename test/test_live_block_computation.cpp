@@ -9,7 +9,7 @@ using namespace pisa;
 
 TEST_CASE("test_live_block_computation")
 {
-    rc::check([](std::vector<uint16_t> scores, uint16_t threshold) {
+    rc::check([](std::vector<uint8_t> scores, uint16_t threshold) {
         {
             auto bv = compute_live_quant16({scores}, threshold);
             REQUIRE(bv.size() == scores.size());
@@ -26,7 +26,7 @@ TEST_CASE("test_live_block_computation")
 
 TEST_CASE("test_avx_live_block_computation")
 {
-    rc::check([](std::vector<uint16_t> scores, uint16_t threshold) {
+    rc::check([](std::vector<uint8_t> scores, uint16_t threshold) {
         {
             auto bv = compute_live_quant16({scores}, threshold);
             auto avx_bv = avx_compute_live_quant16({scores}, threshold);
@@ -47,7 +47,7 @@ TEST_CASE("test_avx_live_block_computation")
 
 TEST_CASE("test_avx2_live_block_computation")
 {
-    rc::check([](std::vector<uint16_t> scores, uint16_t threshold) {
+    rc::check([](std::vector<uint8_t> scores, uint16_t threshold) {
         {
             auto bv = compute_live_quant16({scores}, threshold);
             auto avx2_bv = avx2_compute_live_quant16({scores}, threshold);
