@@ -19,7 +19,7 @@ class RangeBlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
         TermScorer term_scorer,
         float weight,
         float max_score,
-        std::vector<uint16_t> &scores)
+        std::vector<uint8_t> &scores)
         : MaxScoredCursor<Cursor>(std::move(cursor), std::move(term_scorer), weight, max_score),
          m_scores(scores)
     {}
@@ -32,12 +32,12 @@ class RangeBlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
     [[nodiscard]] PISA_ALWAYSINLINE auto scores(size_t id) -> float { return m_scores[id]; }
 
   private:
-    std::vector<uint16_t> &m_scores;
+    std::vector<uint8_t> &m_scores;
 };
 
 template <typename Index, typename WandType, typename Scorer>
 [[nodiscard]] auto make_range_block_max_scored_cursors(
-    Index const& index, WandType const& wdata, Scorer const& scorer, Query query, std::map<uint32_t, std::vector<uint16_t>> &term_enum)
+    Index const& index, WandType const& wdata, Scorer const& scorer, Query query, std::map<uint32_t, std::vector<uint8_t>> &term_enum)
 {
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);

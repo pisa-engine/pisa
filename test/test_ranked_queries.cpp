@@ -4,11 +4,13 @@
 #include <functional>
 
 #include "accumulator/lazy_accumulator.hpp"
+#include "configuration.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/range_block_max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
+#include "linear_quantizer.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm.hpp"
 #include "query/live_block_computation.hpp"
@@ -34,11 +36,38 @@ struct IndexData {
               dropped_term_ids)
 
     {
+        std::unique_ptr<index_scorer<wand_data<wand_data_raw>>> scorer;
+        if (quantized) {
+            scorer = scorer::from_params(ScorerParams(scorer_name), wdata);
+        }
         typename Index::builder builder(collection.num_docs(), params);
+        size_t term_id = 0;
+
         for (auto const& plist: collection) {
-            uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
-            builder.add_posting_list(
-                plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            size_t size = plist.docs.size();
+            if (quantized) {
+                LinearQuantizer quantizer(
+                    wdata.index_max_term_weight(), configuration::get().quantization_bits);
+                auto term_scorer = scorer->term_scorer(term_id);
+                std::vector<uint64_t> quants;
+                for (size_t pos = 0; pos < size; ++pos) {
+                    uint64_t doc = *(plist.docs.begin() + pos);
+                    uint64_t freq = *(plist.freqs.begin() + pos);
+                    float score = term_scorer(doc, freq);
+                    uint64_t quant_score = quantizer(score);
+                    quants.push_back(quant_score);
+                }
+                assert(quants.size() == size);
+                uint64_t quants_sum =
+                    std::accumulate(quants.begin(), quants.begin() + quants.size(), uint64_t(0));
+                builder.add_posting_list(size, plist.docs.begin(), quants.begin(), quants_sum);
+            } else {
+                uint64_t freqs_sum =
+                    std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
+                builder.add_posting_list(
+                    plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            }
+            term_id += 1;
         }
         builder.build(index);
 
@@ -203,21 +232,23 @@ TEMPLATE_TEST_CASE(
 // }
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
-TEMPLATE_TEST_CASE(
-    "Ranked range-query test", "[query][ranked][range][integration]", range_query<maxscore_query>)
+TEST_CASE(
+    "Ranked range-maxscore test", "[query][ranked][range][integration]")
 {
     auto quantized = true;
-    for (auto&& s_name: {"quantized"}) {
+    for (auto&& s_name: {"bm25"}) {
         std::unordered_set<size_t> dropped_term_ids;
         auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
         topk_queue topk_1(10);
-        TestType op_q(topk_1);
+        range_query<maxscore_query> op_q(topk_1);
         topk_queue topk_2(10);
         ranked_or_query or_q(topk_2);
-        auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+
+        auto scorer_name = quantized ? "quantized" : s_name;
+        auto scorer = scorer::from_params(ScorerParams(scorer_name), data->wdata);
 
         constexpr size_t range_size = 128;
-        std::map<uint32_t, std::vector<uint16_t>> term_enum;
+        std::map<uint32_t, std::vector<uint8_t>> term_enum;
         size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
         for (auto const& q: data->queries) {
             for (auto t: q.terms) {
@@ -225,7 +256,7 @@ TEMPLATE_TEST_CASE(
                 auto s = scorer->term_scorer(t);
                 auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
                     docs_enum, s, blocks_num);
-                term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
+                term_enum[t] = std::vector<uint8_t>(tmp.begin(), tmp.end());
             }
         }
 
@@ -233,7 +264,7 @@ TEMPLATE_TEST_CASE(
             or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             topk_2.finalize();
 
-            std::vector<std::vector<uint16_t>> scores;
+            std::vector<std::vector<uint8_t>> scores;
             for (auto&& t: q.terms) {
                 scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
             }
@@ -248,9 +279,9 @@ TEMPLATE_TEST_CASE(
 
             REQUIRE(topk_2.topk().size() == topk_1.topk().size());
             for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                REQUIRE(
+                CHECK(
                     topk_2.topk()[i].first
-                    == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance
+                    == topk_1.topk()[i].first);  // tolerance
                                                                       // is %
                                                                       // relative
             }
@@ -264,7 +295,7 @@ TEMPLATE_TEST_CASE(
 TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration]", )
 {
     auto quantized = true;
-    for (auto&& s_name: {"quantized"}) {
+    for (auto&& s_name: {"bm25"}) {
         constexpr size_t range_size = 128;
 
         std::unordered_set<size_t> dropped_term_ids;
@@ -273,9 +304,11 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
         range_or_taat_query<range_size> op_q(topk_1);
         topk_queue topk_2(10);
         ranked_or_query or_q(topk_2);
-        auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
 
-        std::map<uint32_t, std::vector<uint16_t>> term_enum;
+        auto scorer_name = quantized ? "quantized" : s_name;
+        auto scorer = scorer::from_params(ScorerParams(scorer_name), data->wdata);
+
+        std::map<uint32_t, std::vector<uint8_t>> term_enum;
         size_t blocks_num = ceil_div(data->index.num_docs(), range_size);
         for (auto const& q: data->queries) {
             for (auto t: q.terms) {
@@ -283,7 +316,7 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
                 auto s = scorer->term_scorer(t);
                 auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
                     docs_enum, s, blocks_num);
-                term_enum[t] = std::vector<uint16_t>(tmp.begin(), tmp.end());
+                term_enum[t] = std::vector<uint8_t>(tmp.begin(), tmp.end());
             }
         }
 
@@ -291,7 +324,7 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
             or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             topk_2.finalize();
 
-            std::vector<std::vector<uint16_t>> scores;
+            std::vector<std::vector<uint8_t>> scores;
             for (auto&& t: q.terms) {
                 scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
             }
@@ -303,15 +336,14 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
             op_q(
                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
                 data->index.num_docs(),
-                live_blocks_bv, topk_vector, topdoc_vector);
+                live_blocks_bv,
+                topk_vector,
+                topdoc_vector);
             topk_1.finalize();
 
-            
-            REQUIRE(topk_2.topk().size() == topk_vector.size());
+            CHECK(topk_2.topk().size() == topk_vector.size());
             for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                REQUIRE(topk_2.topk()[i].first == topk_vector[i]);  // tolerance
-                                                                            // is %
-                                                                            // relative
+                CHECK(topk_2.topk()[i].first == topk_vector[i]); 
             }
             topk_1.clear();
             topk_2.clear();
