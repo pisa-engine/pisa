@@ -43,7 +43,7 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
-    [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t
+    [[nodiscard]] PISA_ALWAYSINLINE auto compute_min_docid(Cursors&& cursors) -> std::uint32_t
     {
         return std::min_element(
                    cursors.begin(),
@@ -56,14 +56,14 @@ struct maxscore_query {
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
-    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid)
+    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid, uint64_t min_docid)
     {
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
 
         auto first_upper_bound = upper_bounds.end();
         auto first_lookup = cursors.end();
-        auto next_docid = min_docid(cursors);
+        auto next_docid = compute_min_docid(cursors);
 
         auto update_non_essential_lists = [&] {
             while (first_lookup != cursors.begin()
@@ -83,6 +83,11 @@ struct maxscore_query {
 
         float current_score = 0;
         std::uint32_t current_docid = 0;
+
+        std::for_each(cursors.begin(), first_lookup, [&](auto& cursor) {
+            cursor.next_geq(min_docid);
+        });
+
 
         while (current_docid < max_docid) {
             auto status = DocumentStatus::Skip;
@@ -126,13 +131,13 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
-    void operator()(Cursors&& cursors_, uint64_t max_docid)
+    void operator()(Cursors&& cursors_, uint64_t max_docid, uint64_t min_docid = 0)
     {
         if (cursors_.empty()) {
             return;
         }
         auto cursors = sorted(cursors_);
-        run_sorted(cursors, max_docid);
+        run_sorted(cursors, max_docid, min_docid);
         std::swap(cursors, cursors_);
     }
 

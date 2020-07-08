@@ -103,20 +103,23 @@ void simd_aggregate(
             // std::cout << std::bitset<8>(  reverse((uint8_t(maskBitsL1 >> 8)))) << std::endl;;
 
             // Log<uint16_t>(_mm256_extractf128_si256(acc, 1));
-            uint8_t mask =  ~((uint8_t(maskBitsL1 >> 8)));
+            uint8_t mask = ~((uint8_t(maskBitsL1 >> 8)));
 
             _mm_storeu_si128(
-                (__m128i*)(topk_vector.data() + total), prune_epi16(_mm256_extractf128_si256(acc, 1), mask));
+                (__m128i*)(topk_vector.data() + total),
+                prune_epi16(_mm256_extractf128_si256(acc, 1), mask));
             total += count1;
         }
         if (count2 > 0) {
             // Log<uint16_t>(_mm256_extractf128_si256(acc, 0));
-            // Log<uint16_t>(prune_epi16(_mm256_extractf128_si256(acc, 0), reverse((uint8_t(maskBitsL1)))));
-            // std::cout << std::bitset<8>(  reverse((uint8_t(maskBitsL1)))) << std::endl;;
-            
-            uint8_t mask =  ~((uint8_t(maskBitsL1)));
+            // Log<uint16_t>(prune_epi16(_mm256_extractf128_si256(acc, 0),
+            // reverse((uint8_t(maskBitsL1))))); std::cout << std::bitset<8>(
+            // reverse((uint8_t(maskBitsL1)))) << std::endl;;
+
+            uint8_t mask = ~((uint8_t(maskBitsL1)));
             _mm_storeu_si128(
-                (__m128i*)(topk_vector.data() + total), prune_epi16(_mm256_extractf128_si256(acc, 0), mask));
+                (__m128i*)(topk_vector.data() + total),
+                prune_epi16(_mm256_extractf128_si256(acc, 0), mask));
             total += count2;
         }
 
@@ -203,10 +206,15 @@ void simd_aggregate(
 
 template <size_t range_size>
 struct range_or_taat_query {
-    explicit range_or_taat_query(topk_queue& topk) : m_topk(topk) {}
+    explicit range_or_taat_query(size_t k, uint16_t threshold) : m_k(k), m_threshold(threshold) {}
 
     template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid, bit_vector const& live_blocks, std::vector<uint16_t>& topk_vector, std::vector<uint32_t>& topdoc_vector)
+    void operator()(
+        CursorRange&& cursors,
+        uint64_t max_docid,
+        bit_vector const& live_blocks,
+        std::vector<uint16_t>& topk_vector,
+        std::vector<uint32_t>& topdoc_vector)
     {
         if (cursors.empty()) {
             return;
@@ -215,25 +223,22 @@ struct range_or_taat_query {
         size_t total = 0;
         bit_vector::unary_enumerator en(live_blocks, 0);
         size_t i = en.next(), end = (i + 1) * range_size;
-        for (; i < live_blocks.size() and end < max_docid; i = en.next(), end = (i + 1) * range_size) {
+        for (; i < live_blocks.size(); i = en.next(), end = (i + 1) * range_size) {
             auto min_docid = end - range_size;
             std::array<uint16_t, range_size> addon{};
 
             for (auto&& c: cursors) {
                 c.next_geq(min_docid);
-                while (c.docid() < end) {
+                while (c.docid() < end and c.docid() < max_docid ) {
                     addon[c.docid() % range_size] += c.freq();
                     c.next();
                 }
             }
-            // for (int j = 0; j < range_size; ++j) {
-            //     m_topk.insert(addon[j], i * range_size + j);
-            // }
-
-            simd_aggregate<range_size>(topk_vector, addon, std::max(m_topk.threshold(), 1.f), min_docid, total);
+            simd_aggregate<range_size>(
+                topk_vector, addon, std::max(m_threshold, uint16_t(1)), min_docid, total);
         }
 
-        size_t kk = std::min(size_t(m_topk.capacity()), total);
+        size_t kk = std::min(size_t(m_k), total);
         auto zip = ranges::views::zip(topk_vector, topdoc_vector);
         ranges::partial_sort(
             zip.begin(),
@@ -242,12 +247,13 @@ struct range_or_taat_query {
             [](const auto& lhs, const auto& rhs) -> decltype(auto) {
                 return std::get<0>(lhs) > std::get<0>(rhs);
             });
-          topk_vector.resize(kk);
-          topk_vector.shrink_to_fit();
+        topk_vector.resize(kk);
+        topk_vector.shrink_to_fit();
     }
 
   private:
-    topk_queue& m_topk;
+    size_t m_k;
+    uint16_t m_threshold;
 };
 
 }  // namespace pisa
