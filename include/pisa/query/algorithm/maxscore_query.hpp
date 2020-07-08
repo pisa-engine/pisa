@@ -84,10 +84,8 @@ struct maxscore_query {
         float current_score = 0;
         std::uint32_t current_docid = 0;
 
-        std::for_each(cursors.begin(), first_lookup, [&](auto& cursor) {
-            cursor.next_geq(min_docid);
-        });
-
+        std::for_each(
+            cursors.begin(), first_lookup, [&](auto& cursor) { cursor.next_geq(min_docid); });
 
         while (current_docid < max_docid) {
             auto status = DocumentStatus::Skip;

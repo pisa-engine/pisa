@@ -127,3 +127,9 @@ target_link_libraries(kth_threshold
   pisa
   CLI11
 )
+
+add_executable(range_queries range_queries.cpp)
+target_link_libraries(range_queries
+  pisa
+  CLI11
+)
