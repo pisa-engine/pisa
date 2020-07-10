@@ -34,6 +34,9 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
+static std::vector<uint16_t> topk_vector(1'000'000);
+static std::vector<uint32_t> topdoc_vector(1'000'000);
+
 template <typename Fn>
 void extract_times(
     Fn fn,
@@ -178,12 +181,12 @@ void perftest(
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     std::map<uint32_t, std::vector<uint8_t>> term_enum;
-    size_t blocks_num = ceil_div(index.num_docs(), 128);
+    size_t blocks_num = ceil_div(index.num_docs(), 32);
     for (auto const& q: queries) {
         for (auto t: q.terms) {
             auto docs_enum = index[t];
             auto s = scorer->term_scorer(t);
-            auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
+            auto tmp = wand_data_range<32, 0>::compute_block_max_scores(
                     docs_enum, s, blocks_num);
             term_enum[t] = std::vector<uint8_t>(tmp.begin(), tmp.end());
         }
@@ -219,8 +222,17 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "or") {
-      
+        } else if (t == "range-or-taat") {
+            query_fun = [&](Query query, Threshold t, bit_vector const& live_blocks) mutable {
+            range_or_taat_query<32> op_q(k, t);
+            op_q(
+                make_range_block_max_scored_cursors(index, wdata, *scorer, query, term_enum),
+                index.num_docs(),
+                live_blocks,
+                topk_vector,
+                topdoc_vector);
+            return topk_vector.size();
+            };
         } else {
             spdlog::error("Unsupported query type: {}", t);
             break;
