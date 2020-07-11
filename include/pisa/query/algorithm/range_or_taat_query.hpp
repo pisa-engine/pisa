@@ -122,7 +122,6 @@ void simd_aggregate(
                 prune_epi16(_mm256_extractf128_si256(acc, 0), mask));
             total += count2;
         }
-
         // Uncomment
         // __m128i docs = _mm_loadu_si128((__m128i*)(ids + i));
         // _mm_storeu_si128((__m128i*)(topdoc_vector.data() + total), docs);
@@ -209,7 +208,7 @@ struct range_or_taat_query {
     explicit range_or_taat_query(size_t k, uint16_t threshold) : m_k(k), m_threshold(threshold) {}
 
     template <typename CursorRange>
-    void operator()(
+    size_t operator()(
         CursorRange&& cursors,
         uint64_t max_docid,
         bit_vector const& live_blocks,
@@ -217,7 +216,7 @@ struct range_or_taat_query {
         std::vector<uint32_t>& topdoc_vector)
     {
         if (cursors.empty()) {
-            return;
+            return 0;
         }
 
         size_t total = 0;
@@ -247,8 +246,7 @@ struct range_or_taat_query {
             [](const auto& lhs, const auto& rhs) -> decltype(auto) {
                 return std::get<0>(lhs) > std::get<0>(rhs);
             });
-        topk_vector.resize(kk);
-        topk_vector.shrink_to_fit();
+        return kk;
     }
 
   private:

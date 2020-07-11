@@ -181,12 +181,12 @@ void perftest(
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     std::map<uint32_t, std::vector<uint8_t>> term_enum;
-    size_t blocks_num = ceil_div(index.num_docs(), 32);
+    size_t blocks_num = ceil_div(index.num_docs(), 128);
     for (auto const& q: queries) {
         for (auto t: q.terms) {
             auto docs_enum = index[t];
             auto s = scorer->term_scorer(t);
-            auto tmp = wand_data_range<32, 0>::compute_block_max_scores(
+            auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
                     docs_enum, s, blocks_num);
             term_enum[t] = std::vector<uint8_t>(tmp.begin(), tmp.end());
         }
@@ -206,7 +206,7 @@ void perftest(
             query_fun = [&](Query query, Threshold t, bit_vector const& live_blocks) mutable {
                 topk_queue topk(k);
                 topk.set_threshold(t);
-                range_query<maxscore_query> range_maxscore_q(topk);
+                range_query<maxscore_query, 128> range_maxscore_q(topk);
                 // for(auto&& t : query.terms) {
                 //     auto docs_enum = index[t];
                 //     if(docs_enum.size() < 8192){
@@ -218,20 +218,19 @@ void perftest(
 
                 // }
                 range_maxscore_q(
-                    make_range_block_max_scored_cursors(index, wdata, *scorer, query, term_enum), index.num_docs(), 128, live_blocks);
+                    make_range_block_max_scored_cursors(index, wdata, *scorer, query, term_enum), index.num_docs(), live_blocks);
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "range-or-taat") {
+        } else if (t == "range_or_taat") {
             query_fun = [&](Query query, Threshold t, bit_vector const& live_blocks) mutable {
             range_or_taat_query<32> op_q(k, t);
-            op_q(
+            return op_q(
                 make_range_block_max_scored_cursors(index, wdata, *scorer, query, term_enum),
                 index.num_docs(),
                 live_blocks,
                 topk_vector,
                 topdoc_vector);
-            return topk_vector.size();
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);

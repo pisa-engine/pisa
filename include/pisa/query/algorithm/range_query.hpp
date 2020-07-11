@@ -7,13 +7,13 @@
 
 namespace pisa {
 
-template <typename QueryAlg>
+template <typename QueryAlg, size_t range_size>
 struct range_query {
     explicit range_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(
-        CursorRange&& cursors, uint64_t max_docid, size_t range_size, bit_vector const& live_blocks)
+        CursorRange&& cursors, uint64_t max_docid, bit_vector const& live_blocks)
     {
         if (cursors.empty()) {
             return;
