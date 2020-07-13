@@ -290,23 +290,35 @@ void process_partition(
 
 template <class Iterator>
 void recursive_graph_bisection(
-    document_range<Iterator> documents, size_t depth, size_t cache_depth, progress& p)
+    document_range<Iterator> documents,
+    size_t depth,
+    size_t cache_depth,
+    progress& p,
+    std::shared_ptr<bp::ThreadLocal> thread_local_data = nullptr)
 {
-    bp::ThreadLocal thread_local_data;
+    if (thread_local_data == nullptr) {
+        thread_local_data = std::make_shared<bp::ThreadLocal>();
+    }
     std::sort(documents.begin(), documents.end());
     auto partition = documents.split();
     if (cache_depth >= 1) {
-        process_partition(partition, compute_move_gains_caching<true, Iterator>, thread_local_data);
+        process_partition(partition, compute_move_gains_caching<true, Iterator>, *thread_local_data);
         --cache_depth;
     } else {
-        process_partition(partition, compute_move_gains_caching<false, Iterator>, thread_local_data);
+        process_partition(partition, compute_move_gains_caching<false, Iterator>, *thread_local_data);
     }
 
     p.update(documents.size());
     if (depth > 1 && documents.size() > 2) {
         tbb::parallel_invoke(
-            [&] { recursive_graph_bisection(partition.left, depth - 1, cache_depth, p); },
-            [&] { recursive_graph_bisection(partition.right, depth - 1, cache_depth, p); });
+            [&, thread_local_data] {
+                recursive_graph_bisection(
+                    partition.left, depth - 1, cache_depth, p, thread_local_data);
+            },
+            [&, thread_local_data] {
+                recursive_graph_bisection(
+                    partition.right, depth - 1, cache_depth, p, thread_local_data);
+            });
     } else {
         std::sort(partition.left.begin(), partition.left.end());
         std::sort(partition.right.begin(), partition.right.end());
