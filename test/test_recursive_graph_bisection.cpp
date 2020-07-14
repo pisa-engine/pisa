@@ -83,6 +83,10 @@ TEST_CASE("Reorder documents with BP")
 
         WHEN("Reordered documents with BP")
         {
+            auto cache_depth = GENERATE(
+                std::optional<std::size_t>{},
+                std::make_optional<std::size_t>(1),
+                std::make_optional<std::size_t>(2));
             int code = recursive_graph_bisection(RecursiveGraphBisectionOptions{
                 .input_basename = inv_path,
                 .output_basename = bp_inv_path,
@@ -90,7 +94,7 @@ TEST_CASE("Reorder documents with BP")
                 .input_fwd = std::nullopt,
                 .document_lexicon = fmt::format("{}.doclex", fwd_path),
                 .reordered_document_lexicon = fmt::format("{}.doclex", bp_fwd_path),
-                .depth = std::nullopt,
+                .depth = cache_depth,
                 .node_config = std::nullopt,
                 .min_length = 0,
                 .compress_fwd = false,
