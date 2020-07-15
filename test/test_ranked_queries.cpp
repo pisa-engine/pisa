@@ -84,7 +84,7 @@ struct IndexData {
     [[nodiscard]] static auto
     get(std::string const& s_name, bool quantized, std::unordered_set<size_t> const& dropped_term_ids)
     {
-        if (IndexData::data.find(s_name) == IndexData::data.end()) {
+        if (IndexData::data.find(s_name+"_"+std::to_string(quantized)) == IndexData::data.end()) {
             IndexData::data[s_name] =
                 std::make_unique<IndexData<Index>>(s_name, quantized, dropped_term_ids);
         }
@@ -146,7 +146,7 @@ TEMPLATE_TEST_CASE(
 )
 {
     for (auto quantized: {false, true}) {
-        for (auto&& s_name: {"bm25", "qld"}) {
+        for (auto&& s_name: {"bm25"}) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
             topk_queue topk_1(10);
@@ -246,6 +246,7 @@ TEST_CASE("Ranked range-maxscore test", "[query][ranked][range][integration]")
         topk_queue topk_2(10);
         ranked_or_query or_q(topk_2);
 
+
         auto scorer_name = quantized ? "quantized" : s_name;
         auto scorer = scorer::from_params(ScorerParams(scorer_name), data->wdata);
 
@@ -254,14 +255,15 @@ TEST_CASE("Ranked range-maxscore test", "[query][ranked][range][integration]")
         for (auto const& q: data->queries) {
             for (auto t: q.terms) {
                 auto docs_enum = data->index[t];
-                auto s = scorer->term_scorer(t);
                 auto tmp = wand_data_range<range_size, 0>::compute_block_max_scores(
-                    docs_enum, s, blocks_num);
+                    docs_enum, scorer->term_scorer(t), blocks_num);
                 term_enum[t] = std::vector<uint8_t>(tmp.begin(), tmp.end());
             }
         }
 
-        for (auto const& q: data->queries) {
+        // for (auto const& q: data->queries) {
+        Query q;
+        q.terms = {101587,61936,40429,86328,13975,94987,102912,75488,86157};
             or_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
             topk_2.finalize();
 
@@ -269,7 +271,8 @@ TEST_CASE("Ranked range-maxscore test", "[query][ranked][range][integration]")
             for (auto&& t: q.terms) {
                 scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
             }
-            auto live_blocks_bv = compute_live_quant16(scores, topk_2.threshold());
+            topk_1.set_threshold(topk_2.threshold());
+            auto live_blocks_bv = compute_live_quant16(scores, std::max(1.f, topk_2.threshold()));
 
             op_q(
                 make_range_block_max_scored_cursors(data->index, data->wdata, *scorer, q, term_enum),
@@ -283,7 +286,7 @@ TEST_CASE("Ranked range-maxscore test", "[query][ranked][range][integration]")
             }
             topk_1.clear();
             topk_2.clear();
-        }
+        // }
     }
 }
 
@@ -322,7 +325,7 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
             for (auto&& t: q.terms) {
                 scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
             }
-            auto live_blocks_bv = compute_live_quant16(scores, 0);
+            auto live_blocks_bv = compute_live_quant16(scores, std::max(1.f, topk_2.threshold()));
 
             range_or_taat_query<range_size> op_q(10, topk_2.threshold());
             std::vector<uint16_t> topk_vector(10'000);
@@ -347,7 +350,7 @@ TEST_CASE("Ranked range or-taat query test", "[query][ranked][range][integration
 TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", block_max_ranked_and_query)
 {
     for (auto quantized: {false, true}) {
-        for (auto&& s_name: {"bm25", "qld"}) {
+        for (auto&& s_name: {"bm25" }) {
             std::unordered_set<size_t> dropped_term_ids;
             auto data = IndexData<single_index>::get(s_name, quantized, dropped_term_ids);
             topk_queue topk_1(10);
@@ -355,7 +358,8 @@ TEMPLATE_TEST_CASE("Ranked AND query test", "[query][ranked][integration]", bloc
             topk_queue topk_2(10);
             ranked_and_query and_q(topk_2);
 
-            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+       		auto scorer_name = quantized ? "quantized" : s_name;
+        	auto scorer = scorer::from_params(ScorerParams(scorer_name), data->wdata);
 
             for (auto const& q: data->queries) {
                 and_q(make_scored_cursors(data->index, *scorer, q), data->index.num_docs());
