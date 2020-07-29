@@ -133,3 +133,9 @@ target_link_libraries(range_queries
   pisa
   CLI11
 )
+
+add_executable(bench_range_block_max bench_range_block_max.cpp)
+target_link_libraries(bench_range_block_max
+  pisa
+  CLI11
+)
