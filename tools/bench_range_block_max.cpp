@@ -130,6 +130,45 @@ void op_perftest(
     }
 }
 
+std::vector<uint8_t> compress(std::vector<uint8_t> uncompressed){
+    std::vector<uint8_t> compressed;
+    size_t blocks = 0;
+    for(size_t i = 0; i < uncompressed.size(); i++){
+        if(i % 256  == 0) { 
+            compressed.push_back(0);
+        }
+        if(uncompressed[i]){
+            blocks += 1;
+            compressed.push_back(i%256);
+            compressed.push_back(uncompressed[i]);
+        }    
+        if(i % 256 == 255 or i == uncompressed.size() - 1){
+            compressed[compressed.size() - blocks * 2] = blocks;
+        }
+    }
+    for (int i = 0; i < compressed.size(); ++i)
+    {
+        std::cout << size_t(compressed[i]) << " ";
+    }
+    std::cout << std::endl;
+    return compressed;
+}
+
+std::vector<uint8_t> decompress(std::vector<uint8_t> compressed){
+        std::vector<uint8_t> uncompressed;
+        auto superblock = 0;
+        for(size_t i = 0; i < compressed.size(); i++){
+            uncompressed.resize(256);
+            i+= compressed[i] * 2;
+            for (int z = 0; z < 2 * compressed[i]; z+=2)
+            {
+                uncompressed[compressed[z] + 256 * superblock] = compressed[z+1];
+            }
+            superblock +=1;
+        }
+        return uncompressed;
+}
+
 template <typename IndexType, typename WandType>
 void perftest(
     const std::string& index_filename,
@@ -200,6 +239,13 @@ void perftest(
                 auto s = scorer->term_scorer(t);
                 auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
                         docs_enum, s, blocks_num);
+                auto c_tmp = compress(std::vector<uint8_t>(tmp.begin(), tmp.end()));
+                auto d_tmp = decompress(c_tmp);
+                // for (int i = 0; i < tmp.size(); ++i)
+                // {
+                //     if(d_tmp[i] != tmp[i])
+                //         std::cout << "error" << std::endl;
+                // }
                 uncompressed += blocks_num;
                 compressed  += blocks_num/256;
                 for(auto&& tt: tmp){
