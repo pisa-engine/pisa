@@ -40,12 +40,18 @@ void extract_times(
     std::string const& index_type,
     std::string const& query_type,
     size_t runs,
+    bool quantized,
     std::ostream& os)
 {
     std::vector<std::size_t> times(runs);
     for (auto&& [qid, query]: enumerate(queries)) {
-        do_not_optimize_away(fn(query, thresholds[qid]));
-        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
+        auto threshold = thresholds[qid];
+        threshold = std::max(
+            quantized ? threshold - 1.0 : std::nextafter(threshold, 0.0),
+            0.0
+        );
+        do_not_optimize_away(fn(query, threshold));
+        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = threshold]() {
             return run_with_timer<std::chrono::microseconds>(
                        [&]() { do_not_optimize_away(fn(q, t)); })
                 .count();
@@ -64,7 +70,8 @@ void op_perftest(
     std::string const& query_type,
     size_t runs,
     std::uint64_t k,
-    bool safe)
+    bool safe,
+    bool quantized)
 {
     std::vector<double> query_times;
     std::size_t num_reruns = 0;
@@ -73,8 +80,13 @@ void op_perftest(
     for (size_t run = 0; run <= runs; ++run) {
         size_t idx = 0;
         for (auto const& query: queries) {
+            auto threshold = thresholds[idx];
+            threshold = std::max(
+                quantized ? threshold - 1.0 : std::nextafter(threshold, 0.0),
+                0.0
+            );
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query, thresholds[idx]);
+                uint64_t result = query_func(query, threshold);
                 if (safe && result < k) {
                     num_reruns += 1;
                     result = query_func(query, 0);
@@ -125,7 +137,8 @@ void perftest(
     uint64_t k,
     const ScorerParams& scorer_params,
     bool extract,
-    bool safe)
+    bool safe,
+    bool quantized)
 {
     spdlog::info("Loading index from {}", index_filename);
     IndexType index(MemorySource::mapped_file(index_filename));
@@ -281,9 +294,9 @@ void perftest(
             break;
         }
         if (extract) {
-            extract_times(query_fun, queries, thresholds, type, t, 2, std::cout);
+            extract_times(query_fun, queries, thresholds, type, t, 2, quantized, std::cout);
         } else {
-            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe);
+            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe, quantized);
         }
     }
 }
@@ -332,7 +345,8 @@ int main(int argc, const char** argv)
         app.k(),
         app.scorer_params(),
         extract,
-        safe);
+        safe,
+        quantized);
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \
