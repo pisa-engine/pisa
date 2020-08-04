@@ -139,3 +139,16 @@ target_link_libraries(bench_range_block_max
   pisa
   CLI11
 )
+
+add_executable(count_lists count_lists.cpp)
+target_link_libraries(count_lists
+  pisa
+  CLI11
+)
+
+
+add_executable(bench_on_the_fly bench_on_the_fly.cpp)
+target_link_libraries(bench_on_the_fly
+  pisa
+  CLI11
+)
