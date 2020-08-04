@@ -129,45 +129,47 @@ void op_perftest(
             "q95", q95)("q99", q99);
     }
 }
-
 std::vector<uint8_t> compress(std::vector<uint8_t> uncompressed){
     std::vector<uint8_t> compressed;
+    auto header_size = ceil_div(uncompressed.size(), 256);
+    compressed.resize(header_size);
     size_t blocks = 0;
     for(size_t i = 0; i < uncompressed.size(); i++){
-        if(i % 256  == 0) { 
-            compressed.push_back(0);
-        }
         if(uncompressed[i]){
             blocks += 1;
             compressed.push_back(i%256);
             compressed.push_back(uncompressed[i]);
         }    
         if(i % 256 == 255 or i == uncompressed.size() - 1){
-            compressed[compressed.size() - blocks * 2] = blocks;
+            compressed[i/256] = blocks;
+            blocks = 0;
         }
     }
-    for (int i = 0; i < compressed.size(); ++i)
-    {
-        std::cout << size_t(compressed[i]) << " ";
-    }
-    std::cout << std::endl;
     return compressed;
 }
 
-std::vector<uint8_t> decompress(std::vector<uint8_t> compressed){
+std::vector<uint8_t> decompress(std::vector<uint8_t> compressed, size_t header_size){
         std::vector<uint8_t> uncompressed;
-        auto superblock = 0;
-        for(size_t i = 0; i < compressed.size(); i++){
-            uncompressed.resize(256);
-            i+= compressed[i] * 2;
-            for (int z = 0; z < 2 * compressed[i]; z+=2)
+        uncompressed.resize(header_size * 256);
+
+        auto k = header_size;
+        for (int i = 0; i < header_size; ++i)
+        {
+            auto blocks = compressed[i];
+
+            for (int j = 0; j < blocks; ++j)
             {
-                uncompressed[compressed[z] + 256 * superblock] = compressed[z+1];
+                
+                auto pos = compressed[k]; 
+                auto val = compressed[k+1]; 
+                k+=2;
+                uncompressed[i * 256 + pos] = val;
             }
-            superblock +=1;
         }
         return uncompressed;
 }
+
+
 
 template <typename IndexType, typename WandType>
 void perftest(
@@ -240,12 +242,13 @@ void perftest(
                 auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
                         docs_enum, s, blocks_num);
                 auto c_tmp = compress(std::vector<uint8_t>(tmp.begin(), tmp.end()));
-                auto d_tmp = decompress(c_tmp);
-                // for (int i = 0; i < tmp.size(); ++i)
-                // {
-                //     if(d_tmp[i] != tmp[i])
-                //         std::cout << "error" << std::endl;
-                // }
+                auto header_size = ceil_div(tmp.size(), 256);
+                auto d_tmp = decompress(c_tmp, header_size);
+                for (int i = 0; i < tmp.size(); ++i)
+                {
+                    if(d_tmp[i] != tmp[i])
+                        std::cout << i << ") " << size_t(d_tmp[i]) << " != " << tmp[i]<< std::endl;
+                }
                 uncompressed += blocks_num;
                 compressed  += blocks_num/256;
                 for(auto&& tt: tmp){
