@@ -34,8 +34,8 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-static std::vector<uint16_t> topk_vector(1'000'000);
-static std::vector<uint32_t> topdoc_vector(1'000'000);
+static std::vector<uint16_t> topk_vector(100'000'000);
+static std::vector<uint32_t> topdoc_vector(100'000'000);
 
 template <typename Fn>
 void extract_times(
@@ -45,6 +45,7 @@ void extract_times(
     std::string const& index_type,
     std::string const& query_type,
     size_t runs,
+    bool quantized,
     std::ostream& os,
     std::map<uint32_t, std::vector<uint8_t>> &term_enum)
 {
@@ -54,17 +55,23 @@ void extract_times(
         for(auto&& t : query.terms) {
             scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
         }
+        auto threshold = thresholds[qid];
+        threshold = std::max(
+            quantized ? threshold - 1.0 : std::nextafter(threshold, 0.0),
+            0.0
+        );
+
         auto live_blocks_bv = avx2_compute_live_quant16(scores, std::max(uint16_t(1), uint16_t(thresholds[qid])));
-        do_not_optimize_away(fn(query, thresholds[qid], live_blocks_bv));
-        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid], &scores]() {
+        do_not_optimize_away(fn(query, threshold, live_blocks_bv));
+        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = threshold, &scores]() {
             return run_with_timer<std::chrono::microseconds>(
                        [&]() { 
                         auto live_blocks_bv = avx2_compute_live_quant16(scores, std::max(uint16_t(1), uint16_t(t)));
                         do_not_optimize_away(fn(q, t, live_blocks_bv)); })
                 .count();
         });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
+        float mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
+        os <<  mean/1000 << std::endl;
     }
 }
 
@@ -78,6 +85,7 @@ void op_perftest(
     size_t runs,
     std::uint64_t k,
     bool safe,
+    bool quantized,
     std::map<uint32_t, std::vector<uint8_t>> &term_enum)
 {
     std::vector<double> query_times;
@@ -91,10 +99,15 @@ void op_perftest(
             for(auto&& t : query.terms) {
                 scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
             }
+            auto threshold = thresholds[idx];
+            threshold = std::max(
+                quantized ? threshold - 1.0 : std::nextafter(threshold, 0.0),
+                0.0
+            );
 
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 auto live_blocks_bv = avx2_compute_live_quant16(scores, std::max(uint16_t(1), uint16_t(thresholds[idx])));
-                uint64_t result = query_func(query, thresholds[idx], live_blocks_bv);
+                uint64_t result = query_func(query, threshold, live_blocks_bv);
                 do_not_optimize_away(result);
             });
             if (run != 0) {  // first run is not timed
@@ -141,7 +154,8 @@ void perftest(
     uint64_t k,
     const ScorerParams& scorer_params,
     bool extract,
-    bool safe)
+    bool safe,
+    bool quantized)
 {
     spdlog::info("Loading index from {}", index_filename);
     IndexType index(MemorySource::mapped_file(index_filename));
@@ -206,7 +220,7 @@ void perftest(
             query_fun = [&](Query query, Threshold t, bit_vector const& live_blocks) mutable {
                 topk_queue topk(k);
                 topk.set_threshold(t);
-                range_query<maxscore_query, 128> range_maxscore_q(topk);
+                range_query<maxscore_p_query, 128> range_maxscore_q(topk);
                 // for(auto&& t : query.terms) {
                 //     auto docs_enum = index[t];
                 //     if(docs_enum.size() < 8192){
@@ -232,14 +246,28 @@ void perftest(
                 topk_vector,
                 topdoc_vector);
             };
-        } else {
+        } else if (t == "bmw_lb") {
+            query_fun = [&](Query query, Threshold t, bit_vector const& live_blocks) mutable {
+            topk_queue topk(k);
+            topk.set_threshold(t);
+            block_max_wand_lb_query<128> op_q(topk);
+            op_q(
+                make_range_block_max_scored_cursors(index, wdata, *scorer, query, term_enum),
+                index.num_docs(),
+                live_blocks);
+            topk.finalize();
+            return topk.topk().size();
+
+            };
+        }
+         else {
             spdlog::error("Unsupported query type: {}", t);
             break;
         }
         if (extract) {
-            extract_times(query_fun, queries, thresholds, type, t, 2, std::cout, term_enum);
+            extract_times(query_fun, queries, thresholds, type, t, 2, quantized, std::cout, term_enum);
         } else {
-            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe, term_enum);
+            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe, quantized, term_enum);
         }
     }
 }
@@ -288,7 +316,8 @@ int main(int argc, const char** argv)
         app.k(),
         app.scorer_params(),
         extract,
-        safe);
+        safe,
+        quantized);
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \

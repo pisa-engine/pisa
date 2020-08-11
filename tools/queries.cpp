@@ -56,8 +56,8 @@ void extract_times(
                        [&]() { do_not_optimize_away(fn(q, t)); })
                 .count();
         });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
+        float mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
+        os <<  mean/1000 << std::endl;
     }
 }
 
@@ -265,6 +265,9 @@ void perftest(
                 maxscore_query maxscore_q(topk);
                 maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
+                for(auto && a: topk.topk()){
+                    std::cout << a.first  << " " << a.second << std::endl;
+                }
                 return topk.topk().size();
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
@@ -332,7 +335,6 @@ int main(int argc, const char** argv)
         spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     }
     if (extract) {
-        std::cout << "qid\tusec\n";
     }
 
     auto params = std::make_tuple(

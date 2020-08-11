@@ -13,18 +13,26 @@ struct range_query {
 
     template <typename CursorRange>
     void operator()(
-        CursorRange&& cursors, uint64_t max_docid, bit_vector const& live_blocks)
+        CursorRange&& cursors_, uint64_t max_docid, bit_vector const& live_blocks)
     {
-        if (cursors.empty()) {
+        if (cursors_.empty()) {
             return;
         }
+        using Cursor = typename std::decay_t<CursorRange>::value_type;
+        std::vector<Cursor *> cursors;
+        cursors.reserve(cursors_.size());
+        for (auto &en : cursors_) {
+            cursors.push_back(&en);
+        }
+
+
         bit_vector::unary_enumerator en(live_blocks, 0);
         uint64_t i = en.next(), end = (i + 1) * range_size;
         for (; i < live_blocks.size(); i = en.next(), end = (i + 1) * range_size) {
             auto min_docid = end - range_size;
             size_t t = 0;
             for (auto&& c: cursors) {
-                c.max_score(c.scores(i));
+                c->max_score(c->scores(i));
                 t += 1;
             }
             process_range(cursors, min_docid, std::min(end, max_docid));

@@ -37,98 +37,7 @@ using ranges::views::enumerate;
 static std::vector<uint16_t> topk_vector(1'000'000);
 static std::vector<uint32_t> topdoc_vector(1'000'000);
 
-template <typename Fn>
-void extract_times(
-    Fn fn,
-    std::vector<Query> const& queries,
-    std::vector<Threshold> const& thresholds,
-    std::string const& index_type,
-    std::string const& query_type,
-    size_t runs,
-    std::ostream& os,
-    std::map<uint32_t, std::vector<uint8_t>> &term_enum)
-{
-    std::vector<std::size_t> times(runs);
-    for (auto&& [qid, query]: enumerate(queries)) {
-        std::vector<std::vector<uint8_t>> scores;
-        for(auto&& t : query.terms) {
-            scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
-        }
-        auto live_blocks_bv = avx2_compute_live_quant16(scores, std::max(uint16_t(1), uint16_t(thresholds[qid])));
-        do_not_optimize_away(fn(query, thresholds[qid], live_blocks_bv));
-        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid], &scores]() {
-            return run_with_timer<std::chrono::microseconds>(
-                       [&]() { 
-                        auto live_blocks_bv = avx2_compute_live_quant16(scores, std::max(uint16_t(1), uint16_t(t)));
-                        do_not_optimize_away(fn(q, t, live_blocks_bv)); })
-                .count();
-        });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
-    }
-}
 
-template <typename Functor>
-void op_perftest(
-    Functor query_func,
-    std::vector<Query> const& queries,
-    std::vector<Threshold> const& thresholds,
-    std::string const& index_type,
-    std::string const& query_type,
-    size_t runs,
-    std::uint64_t k,
-    bool safe,
-    std::map<uint32_t, std::vector<uint8_t>> &term_enum)
-{
-    std::vector<double> query_times;
-    std::size_t num_reruns = 0;
-    spdlog::info("Safe: {}", safe);
-
-    for (size_t run = 0; run <= runs; ++run) {
-        size_t idx = 0;
-        for (auto const& query: queries) {
-            std::vector<std::vector<uint8_t>> scores;
-            for(auto&& t : query.terms) {
-                scores.emplace_back(term_enum[t].begin(), term_enum[t].end());
-            }
-
-            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                auto live_blocks_bv = avx2_compute_live_quant16(scores, std::max(uint16_t(1), uint16_t(thresholds[idx])));
-                uint64_t result = query_func(query, thresholds[idx], live_blocks_bv);
-                do_not_optimize_away(result);
-            });
-            if (run != 0) {  // first run is not timed
-                query_times.push_back(usecs.count());
-            }
-            idx += 1;
-        }
-    }
-
-    if (false) {
-        for (auto t: query_times) {
-            std::cout << (t / 1000) << std::endl;
-        }
-    } else {
-        std::sort(query_times.begin(), query_times.end());
-        double avg =
-            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
-        double q50 = query_times[query_times.size() / 2];
-        double q90 = query_times[90 * query_times.size() / 100];
-        double q95 = query_times[95 * query_times.size() / 100];
-        double q99 = query_times[99 * query_times.size() / 100];
-
-        spdlog::info("---- {} {}", index_type, query_type);
-        spdlog::info("Mean: {}", avg);
-        spdlog::info("50% quantile: {}", q50);
-        spdlog::info("90% quantile: {}", q90);
-        spdlog::info("95% quantile: {}", q95);
-        spdlog::info("99% quantile: {}", q99);
-        spdlog::info("Num. reruns: {}", num_reruns);
-
-        stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
-            "q95", q95)("q99", q99);
-    }
-}
 std::vector<uint8_t> compress(std::vector<uint8_t> uncompressed){
     std::vector<uint8_t> compressed;
     auto header_size = ceil_div(uncompressed.size(), 256);
@@ -222,7 +131,6 @@ void perftest(
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     std::map<uint32_t, std::vector<uint8_t>> term_enum;
-    size_t blocks_num = ceil_div(index.num_docs(), 128);
 
     size_t uncompressed = 0;
     size_t compressed = 0;
@@ -230,38 +138,75 @@ void perftest(
     size_t mid = 0;
     size_t shor = 0;
     size_t lon = 0;
+
+    for (size_t t = 0; t < index.size(); ++t) {
+        auto docs_enum = index[t];
+        if(docs_enum.size() >= 16384 and docs_enum.size() < 262144){
+            auto s = scorer->term_scorer(t);
+            
+	    	size_t blocks_num = ceil_div(index.num_docs(), 1024);
+            auto tmp = wand_data_range<1024, 0>::compute_block_max_scores(
+                    docs_enum, s, blocks_num);
+            auto c_tmp = compress(std::vector<uint8_t>(tmp.begin(), tmp.end()));
+            uncompressed += tmp.size();
+            compressed  += c_tmp.size();
+        }
+    }
+
+    std::vector<double> query_times;
+    auto runs = 2;
+    for (size_t run = 0; run <= runs; ++run) {
+
     for (auto const& q: queries) {
+    	size_t blocks_num = ceil_div(index.num_docs(), 128);
+    	size_t header_size = ceil_div(blocks_num, 256);
+		std::vector<std::vector<uint8_t>> compress_vector;
+
         for (auto t: q.terms) {
             auto docs_enum = index[t];
-            total +=1;
-            if(docs_enum.size() < 16384){shor+=1;}
-            if(docs_enum.size() > 262144){lon+=1;}
             if(docs_enum.size() >= 16384 and docs_enum.size() < 262144){
-                mid+=1;
                 auto s = scorer->term_scorer(t);
+                
                 auto tmp = wand_data_range<128, 0>::compute_block_max_scores(
                         docs_enum, s, blocks_num);
                 auto c_tmp = compress(std::vector<uint8_t>(tmp.begin(), tmp.end()));
-                auto header_size = ceil_div(tmp.size(), 256);
-                auto d_tmp = decompress(c_tmp, header_size);
-                for (int i = 0; i < tmp.size(); ++i)
-                {
-                    if(d_tmp[i] != tmp[i])
-                        std::cout << i << ") " << size_t(d_tmp[i]) << " != " << tmp[i]<< std::endl;
-                }
-                uncompressed += blocks_num;
-                compressed  += blocks_num/256;
-                for(auto&& tt: tmp){
-                    if(tt>0){
-                        compressed+=2;
-                    }
-                }
+                compress_vector.push_back(c_tmp);
             }
         }
+        auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
+
+        for (auto c_tmp: compress_vector) {
+            
+            auto d_tmp = decompress(c_tmp, header_size);
+    
+	            
+        }
+        });
+
+        if (run != 0) {  // first run is not timed
+    	            query_times.push_back(usecs.count());
+	    }
+
     }
-    std::cout << shor << " " << mid << " " << lon << " " << total << std::endl;
+	}
+    std::cout << "Compressed: " << compressed << std::endl;
+    std::cout << "uncompressed: " << uncompressed << std::endl;
 
     std::cout << (float)compressed/uncompressed << std::endl;
+
+        std::sort(query_times.begin(), query_times.end());
+        double avg =
+            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
+        double q50 = query_times[query_times.size() / 2];
+        double q90 = query_times[90 * query_times.size() / 100];
+        double q95 = query_times[95 * query_times.size() / 100];
+        double q99 = query_times[99 * query_times.size() / 100];
+
+        spdlog::info("Mean: {}", avg);
+        spdlog::info("50% quantile: {}", q50);
+        spdlog::info("90% quantile: {}", q90);
+        spdlog::info("95% quantile: {}", q95);
+        spdlog::info("99% quantile: {}", q99);
 
 
 }

@@ -6,6 +6,7 @@
 #include "query/algorithm/block_max_wand_lb_query.hpp"
 #include "query/algorithm/block_max_wand_query.hpp"
 #include "query/algorithm/maxscore_query.hpp"
+#include "query/algorithm/maxscore_p_query.hpp"
 #include "query/algorithm/or_query.hpp"
 #include "query/algorithm/range_query.hpp"
 #include "query/algorithm/range_or_taat_query.hpp"

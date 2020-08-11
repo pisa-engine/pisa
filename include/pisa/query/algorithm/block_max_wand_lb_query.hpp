@@ -6,12 +6,13 @@
 #include <vector>
 namespace pisa {
 
+template <size_t range_size>
 struct block_max_wand_lb_query {
     explicit block_max_wand_lb_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
     void operator()(
-        CursorRange&& cursors, uint64_t max_docid, bit_vector const& live_blocks, size_t range_size)
+        CursorRange&& cursors, uint64_t max_docid, bit_vector const& live_blocks)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
@@ -91,11 +92,12 @@ struct block_max_wand_lb_query {
                             break;
                         }
                     }
-                    if (pivot_id + 1 < (live_block + 1) * range_size) {
+                    if (pivot_id + 1 < (ordered_cursors[pivot]->docid()/range_size + 1) * range_size) {
                         nextLiveDid = pivot_id + 1;
                     } else {
-                        live_block = en.next();
-                        nextLiveDid = live_block * range_size;
+	     		        bit_vector::unary_enumerator en(live_blocks, ordered_cursors[pivot]->docid()/range_size);
+				        live_block = en.next();
+                        nextLiveDid = std::min(max_docid,std::max(pivot_id + 1, live_block * range_size));
                     }
 
                     for (Cursor* en: ordered_cursors) {
@@ -126,7 +128,7 @@ struct block_max_wand_lb_query {
                 }
 
             } else {
-                uint64_t next;
+                uint64_t next = max_docid;
                 uint64_t next_list = pivot;
 
                 float max_weight = ordered_cursors[next_list]->max_score();
@@ -138,12 +140,19 @@ struct block_max_wand_lb_query {
                     }
                 }
 
-                live_block = en.next();
-                next = live_block * range_size;
-
-                if (pivot + 1 < ordered_cursors.size() && ordered_cursors[pivot + 1]->docid() < next) {
+                size_t block = ordered_cursors[pivot]->docid()/range_size;
+                uint32_t smallest_did = (block + 1) * range_size;
+                next = smallest_did;
+                if (pivot + 1 < ordered_cursors.size() && ordered_cursors[pivot + 1]->docid() < smallest_did) {
                     next = ordered_cursors[pivot + 1]->docid();
                 }
+				if (next <= pivot_id) {
+                    next = pivot_id + 1;
+                }
+
+		        bit_vector::unary_enumerator en(live_blocks, block);
+		        live_block = en.next();
+				next = std::min(max_docid,std::max(next, live_block * range_size));
 
                 ordered_cursors[next_list]->next_geq(next);
 
