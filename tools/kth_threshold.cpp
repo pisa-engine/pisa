@@ -87,8 +87,8 @@ void kt_thresholds(
     std::unordered_set<Triple, boost::hash<Triple>> triples_set;
 
     std::string line;
-    if(all_pairs) {
-       spdlog::info("All pairs are available.");
+    if (all_pairs) {
+        spdlog::info("All pairs are available.");
     }
     if (pairs_filename) {
         std::ifstream pin(*pairs_filename);
@@ -98,7 +98,7 @@ void kt_thresholds(
         spdlog::info("Number of pairs loaded: {}", pairs_set.size());
     }
 
-    if(all_triples) {
+    if (all_triples) {
         spdlog::info("All triples are available.");
     }
     if (triples_filename) {
