@@ -87,6 +87,9 @@ void kt_thresholds(
     std::unordered_set<Triple, boost::hash<Triple>> triples_set;
 
     std::string line;
+    if (all_pairs) {
+        spdlog::info("All pairs are available.");
+    }
     if (pairs_filename) {
         std::ifstream pin(*pairs_filename);
         while (std::getline(pin, line)) {
@@ -95,6 +98,9 @@ void kt_thresholds(
         spdlog::info("Number of pairs loaded: {}", pairs_set.size());
     }
 
+    if (all_triples) {
+        spdlog::info("All triples are available.");
+    }
     if (triples_filename) {
         std::ifstream trin(*triples_filename);
         while (std::getline(trin, line)) {
@@ -176,8 +182,8 @@ int main(int argc, const char** argv)
         "-t,--triples",
         triples_filename,
         "A tab separated file containing all the cached term triples");
-    app.add_flag("--all-pairs", "Consider all term pairs of a query")->excludes(pairs);
-    app.add_flag("--all-triples", "Consider all term triples of a query")->excludes(triples);
+    app.add_flag("--all-pairs", all_pairs, "Consider all term pairs of a query")->excludes(pairs);
+    app.add_flag("--all-triples", all_triples, "Consider all term triples of a query")->excludes(triples);
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
     CLI11_PARSE(app, argc, argv);
