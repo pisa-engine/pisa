@@ -50,10 +50,7 @@ void thresholds(
         if (results.size() == k) {
             threshold = results.back().first;
         }
-        threshold = std::max(
-            quantized ? threshold - 1.0 : std::nextafter(threshold, 0.0),
-            0.0
-        );
+        threshold = std::max(quantized ? threshold - 1.0 : std::nextafter(threshold, 0.0), 0.0);
         std::cout << threshold << '\n';
     }
 }
