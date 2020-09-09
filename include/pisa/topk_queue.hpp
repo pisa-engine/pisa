@@ -60,14 +60,21 @@ struct topk_queue {
 
     [[nodiscard]] std::vector<entry_type> const& topk() const noexcept { return m_q; }
 
-    void set_threshold(Threshold t) noexcept { m_threshold = t; }
+    void set_threshold(Threshold t) noexcept
+    {
+        m_threshold = std::max(std::nextafter(t, 0.0), 0.0);
+        m_predicted_threshold = t;
+    }
 
     Threshold threshold() const noexcept { return m_threshold; }
+
+    bool is_correct() noexcept { return (m_threshold == m_predicted_threshold); }
 
     void clear() noexcept
     {
         m_q.clear();
         m_threshold = 0;
+        m_predicted_threshold = 0;
     }
 
     [[nodiscard]] size_t capacity() const noexcept { return m_k; }
@@ -76,6 +83,7 @@ struct topk_queue {
 
   private:
     float m_threshold;
+    float m_predicted_threshold;
     uint64_t m_k;
     std::vector<entry_type> m_q;
 };
