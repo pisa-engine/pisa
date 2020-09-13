@@ -10,8 +10,8 @@ using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
-    explicit topk_queue(uint64_t k) : m_threshold(0), m_initialized_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
-    explicit topk_queue(uint64_t k, Threshold t) : m_threshold(0), m_initialized_threshold(t), m_k(k) { m_q.reserve(m_k + 1); }
+    explicit topk_queue(uint64_t k) : m_k(k) { m_q.reserve(m_k + 1); }
+    explicit topk_queue(uint64_t k, Threshold t) : m_k(k) { force_threshold(t); m_q.reserve(m_k + 1); }
     topk_queue(topk_queue const&) = default;
     topk_queue(topk_queue&&) noexcept = default;
     topk_queue& operator=(topk_queue const&) = default;
