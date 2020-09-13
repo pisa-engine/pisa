@@ -10,7 +10,8 @@ using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
 
-    explicit topk_queue(uint64_t k) : m_threshold(0), m_predicted_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
+    explicit topk_queue(uint64_t k) : m_threshold(0), m_initialized_threshold(0), m_k(k) { m_q.reserve(m_k + 1); }
+    explicit topk_queue(uint64_t k, Threshold t) : m_threshold(0), m_initialized_threshold(t), m_k(k) { m_q.reserve(m_k + 1); }
     topk_queue(topk_queue const&) = default;
     topk_queue(topk_queue&&) noexcept = default;
     topk_queue& operator=(topk_queue const&) = default;
@@ -60,21 +61,30 @@ struct topk_queue {
 
     [[nodiscard]] std::vector<entry_type> const& topk() const noexcept { return m_q; }
 
-    void set_threshold(Threshold t) noexcept
+    /// Override the threshold to be `threshold`.
+    ///
+    /// This is meant to be used at the beginning of query processing if a threshold is available beforehand,
+    /// e.g., by means of estimation. Note that if `threshold` is higher than it would be at the end of query processing,
+    /// it could result in incomplete document list.
+    void force_threshold(Threshold t) noexcept
     {
         m_threshold = std::max(std::nextafter(t, 0.0), 0.0);
-        m_predicted_threshold = t;
+        m_initialized_threshold = t;
     }
 
-    Threshold threshold() const noexcept { return m_threshold; }
+    /// Returns the threshold based on the heap state. The threshold is defined as the score of the `k`-th document
+    /// or 0.0 if the heap is not full.
+    Threshold threshold() const noexcept { return capacity() == size() ? m_q.front().first : 0.0; }
 
-    bool is_correct() noexcept { return (m_threshold == m_predicted_threshold); }
+    /// Returns `true` if no documents have been missed up to this point.
+    /// The reason why document could be missed is forcing a threshold that is too high (overestimated).
+    bool is_safe() noexcept { return m_threshold >= m_initialized_threshold; }
 
     void clear() noexcept
     {
         m_q.clear();
         m_threshold = 0;
-        m_predicted_threshold = 0;
+        m_initialized_threshold = 0;
     }
 
     [[nodiscard]] size_t capacity() const noexcept { return m_k; }
@@ -82,8 +92,8 @@ struct topk_queue {
     [[nodiscard]] size_t size() const noexcept { return m_q.size(); }
 
   private:
-    float m_threshold;
-    float m_predicted_threshold;
+    float m_threshold = 0;
+    float m_initialized_threshold = 0;
     uint64_t m_k;
     std::vector<entry_type> m_q;
 };

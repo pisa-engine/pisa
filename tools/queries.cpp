@@ -191,7 +191,7 @@ void perftest(
         } else if (t == "wand" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 wand_query wand_q(topk);
                 wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
@@ -200,7 +200,7 @@ void perftest(
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -210,7 +210,7 @@ void perftest(
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 block_max_maxscore_query block_max_maxscore_q(topk);
                 block_max_maxscore_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -220,7 +220,7 @@ void perftest(
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
@@ -229,7 +229,7 @@ void perftest(
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
                 block_max_ranked_and_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
@@ -239,7 +239,7 @@ void perftest(
         } else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 ranked_or_query ranked_or_q(topk);
                 ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
@@ -248,7 +248,7 @@ void perftest(
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 maxscore_query maxscore_q(topk);
                 maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
@@ -259,7 +259,7 @@ void perftest(
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
@@ -270,7 +270,7 @@ void perftest(
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
-                topk.set_threshold(t);
+                topk.force_threshold(t);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
