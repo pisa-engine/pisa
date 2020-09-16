@@ -122,6 +122,12 @@ target_link_libraries(reorder-docids
   CLI11
 )
 
+add_executable(filter-queries filter_queries.cpp)
+target_link_libraries(filter-queries
+  pisa
+  CLI11
+)
+
 add_executable(kth_threshold kth_threshold.cpp)
 target_link_libraries(kth_threshold
   pisa
