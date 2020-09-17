@@ -9,6 +9,7 @@
 #include <tbb/task_group.h>
 
 #include "./taily_stats.hpp"
+#include "./taily_thresholds.hpp"
 #include "app.hpp"
 #include "binary_collection.hpp"
 #include "compress.hpp"
@@ -28,6 +29,7 @@ using pisa::resolve_shards;
 using pisa::Shard_Id;
 using pisa::TailyRankArgs;
 using pisa::TailyStatsArgs;
+using pisa::TailyThresholds;
 
 int main(int argc, char** argv)
 {
@@ -43,12 +45,14 @@ int main(int argc, char** argv)
     auto* taily = app.add_subcommand(
         "taily-stats", "Extracts Taily statistics from the index and stores it in a file.");
     auto* taily_rank = app.add_subcommand("taily-rank", "Computes Taily shard ranks for queries.");
+    auto* taily_thresholds = app.add_subcommand("taily-thresholds", "Computes Taily thresholds.");
     InvertArgs invert_args(invert);
     ReorderDocuments reorder_args(reorder);
     CompressArgs compress_args(compress);
     CreateWandDataArgs wand_args(wand);
     TailyStatsArgs taily_args(taily);
     TailyRankArgs taily_rank_args(taily_rank);
+    TailyThresholds taily_thresholds_args(taily_thresholds);
     app.require_subcommand(1);
     CLI11_PARSE(app, argc, argv);
 
@@ -123,7 +127,7 @@ int main(int argc, char** argv)
             }
         }
         if (taily_rank->parsed()) {
-            auto shards = resolve_shards(taily_rank_args.shard_stats(), ".docs");
+            auto shards = resolve_shards(taily_rank_args.shard_stats());
             std::vector<std::string> shard_stats;
             for (auto shard: shards) {
                 auto shard_args = taily_rank_args;
@@ -145,6 +149,15 @@ int main(int argc, char** argv)
                     }
                     std::cout << "]\n";
                 });
+        }
+        if (taily_thresholds->parsed()) {
+            auto shards = resolve_shards(taily_thresholds_args.stats());
+            spdlog::info("Processing {} shards", shards.size());
+            for (auto shard: shards) {
+                auto shard_args = taily_thresholds_args;
+                shard_args.apply_shard(shard);
+                pisa::estimate_taily_thresholds(shard_args);
+            }
         }
         return 0;
     } catch (pisa::io::NoSuchFile err) {

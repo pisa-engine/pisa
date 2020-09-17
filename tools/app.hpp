@@ -608,4 +608,20 @@ struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
     std::string m_shard_stats;
 };
 
+struct TailyThresholds: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
+    explicit TailyThresholds(CLI::App* app) : pisa::Args<arg::Query<arg::QueryMode::Ranked>>(app)
+    {
+        app->add_option("--stats", m_stats, "Taily statistics file")->required();
+        app->set_config("--config", "", "Configuration .ini file", false);
+    }
+
+    [[nodiscard]] auto stats() const -> std::string const& { return m_stats; }
+
+    /// Transform paths for `shard`.
+    void apply_shard(Shard_Id shard) { m_stats = expand_shard(m_stats, shard); }
+
+  private:
+    std::string m_stats;
+};
+
 }  // namespace pisa
