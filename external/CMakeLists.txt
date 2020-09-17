@@ -68,6 +68,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
 
 # Add Boost
 add_subdirectory(boost-cmake)
+set(BOOST_INCLUDEDIR ${CMAKE_CURRENT_SOURCE_DIR}/boost-cmake CACHE PATH "Change boost lookup path")
+set(BOOST_LIBRARYDIR ${CMAKE_BINARY_DIR}/boost-cmake CACHE PATH "Change boost lookup path")
 
 # Add Catch
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
