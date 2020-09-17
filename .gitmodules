@@ -69,4 +69,4 @@
 	url = https://github.com/emil-e/rapidcheck.git
 [submodule "external/taily"]
 	path = external/taily
-	url = git@github.com:pisa-engine/taily.git
+	url = https://github.com/pisa-engine/taily.gi
