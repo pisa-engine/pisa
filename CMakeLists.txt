@@ -105,6 +105,7 @@ target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can 
     spdlog
     fmt::fmt
     range-v3
+    taily
 )
 target_include_directories(pisa PUBLIC external)
 

@@ -6,6 +6,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <gsl/span>
+
 #include <boost/filesystem.hpp>
 #include <fmt/format.h>
 
@@ -14,7 +16,8 @@ namespace pisa::io {
 class NoSuchFile {
   public:
     explicit NoSuchFile(std::string file) : m_file(std::move(file)) {}
-    [[nodiscard]] auto what() const -> std::string {
+    [[nodiscard]] auto what() const -> std::string
+    {
         return fmt::format("No such file: {}", m_file);
     }
 
@@ -81,6 +84,12 @@ void for_each_line(std::istream& is, Function fn)
         throw std::runtime_error("Failed reading " + data_file);
     }
     return data;
+}
+
+inline void write_data(std::string const& data_file, gsl::span<std::byte const> bytes)
+{
+    std::ofstream os(data_file);
+    os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
 }
 
 }  // namespace pisa::io

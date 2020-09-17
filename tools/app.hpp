@@ -58,6 +58,14 @@ namespace arg {
         }
         [[nodiscard]] auto is_wand_compressed() const -> bool { return m_wand_compressed; }
 
+        /// Transform paths for `shard`.
+        void apply_shard(Shard_Id shard)
+        {
+            if (m_wand_data_path) {
+                m_wand_data_path = expand_shard(*m_wand_data_path, shard);
+            }
+        }
+
       private:
         std::optional<std::string> m_wand_data_path;
         bool m_wand_compressed = false;
@@ -555,5 +563,49 @@ using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
 using CompressArgs =
     pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>>;
 using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
+
+struct TailyStatsArgs: pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer> {
+    explicit TailyStatsArgs(CLI::App* app)
+        : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer>(app)
+    {
+        app->add_option("-c,--collection", m_collection_path, "Binary collection basename")->required();
+        app->add_option("-o,--output", m_output_path, "Output file path")->required();
+        app->set_config("--config", "", "Configuration .ini file", false);
+    }
+
+    [[nodiscard]] auto collection_path() const -> std::string const& { return m_collection_path; }
+    [[nodiscard]] auto output_path() const -> std::string const& { return m_output_path; }
+
+    /// Transform paths for `shard`.
+    void apply_shard(Shard_Id shard)
+    {
+        arg::WandData<arg::WandMode::Required>::apply_shard(shard);
+        m_collection_path = expand_shard(m_collection_path, shard);
+        m_output_path = expand_shard(m_output_path, shard);
+    }
+
+  private:
+    std::string m_collection_path;
+    std::string m_output_path;
+};
+
+struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
+    explicit TailyRankArgs(CLI::App* app) : pisa::Args<arg::Query<arg::QueryMode::Ranked>>(app)
+    {
+        app->add_option("--global-stats", m_global_stats, "Global Taily statistics")->required();
+        app->add_option("--shard-stats", m_shard_stats, "Shard-level Taily statistics")->required();
+        app->set_config("--config", "", "Configuration .ini file", false);
+    }
+
+    [[nodiscard]] auto global_stats() const -> std::string const& { return m_global_stats; }
+    [[nodiscard]] auto shard_stats() const -> std::string const& { return m_shard_stats; }
+
+    /// Transform paths for `shard`.
+    void apply_shard(Shard_Id shard) { m_shard_stats = expand_shard(m_shard_stats, shard); }
+
+  private:
+    std::string m_global_stats;
+    std::string m_shard_stats;
+};
 
 }  // namespace pisa

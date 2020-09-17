@@ -84,7 +84,7 @@ auto MemorySource::subspan(size_type offset, size_type size) const -> gsl::span<
         }
         throw std::out_of_range("Subspan out of bounds");
     }
-    if (offset > this->size() || offset + size >= this->size()) {
+    if (offset > this->size() || offset + size > this->size()) {
         throw std::out_of_range("Subspan out of bounds");
     }
     return span().subspan(offset, size);

@@ -104,3 +104,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
 target_compile_options(rapidcheck PRIVATE -Wno-error)
+
+# Add taily
+set(TAILY_ENABLE_TESTING OFF CACHE BOOL "skip taily testing")
+set(TAILY_BUILD_EXAMPLE OFF CACHE BOOL "skip taily example")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/taily)
