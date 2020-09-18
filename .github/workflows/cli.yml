@@ -1,4 +1,4 @@
-name: Build and test
+name: CLI Test
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: |
-          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release \
+          cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug \
             -DPISA_ENABLE_BENCHMARKING=OFF \
             -DPISA_ENABLE_TESTING=OFF \
             -DPISA_BUILD_TOOLS=ON ..
@@ -58,7 +58,7 @@ jobs:
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Release -- -j 4
+      run: cmake --build . --config Debug -- -j 4
 
     - name: Test CLI
       shell: bash
