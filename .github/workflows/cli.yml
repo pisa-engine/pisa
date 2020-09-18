@@ -63,4 +63,4 @@ jobs:
     - name: Test CLI
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: ../test/cli/run.sh
+      run: ${{runner.workspace}}/test/cli/run.sh
