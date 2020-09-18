@@ -65,6 +65,7 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: |
           ls ../
-          ls ../test
-          ls ../test/cli
-          bash ../test/cli/run.sh
+          ls ../pisa
+          ls ../pisa/test
+          ls ../pisa/test/cli
+          bash ../pisa/test/cli/run.sh
