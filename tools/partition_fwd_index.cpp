@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <exception>
 #include <random>
 #include <thread>
 #include <vector>
@@ -56,15 +57,23 @@ int main(int argc, char** argv)
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads + 1);
     spdlog::info("Number of worker threads: {}", threads);
 
-    if (*random_option) {
-        auto mapping = create_random_mapping(input_basename, shard_count);
-        partition_fwd_index(input_basename, output_basename, mapping);
-    } else if (*shard_files_option) {
-        auto mapping = mapping_from_files(
-            fmt::format("{}.documents", input_basename), gsl::make_span(shard_files));
-        partition_fwd_index(input_basename, output_basename, mapping);
-    } else {
-        spdlog::error("You must define either --random-shards or --shard-files");
+    try {
+        if (*random_option) {
+            auto mapping = create_random_mapping(input_basename, shard_count);
+            partition_fwd_index(input_basename, output_basename, mapping);
+        } else if (*shard_files_option) {
+            auto mapping = mapping_from_files(
+                fmt::format("{}.documents", input_basename), gsl::make_span(shard_files));
+            partition_fwd_index(input_basename, output_basename, mapping);
+        } else {
+            spdlog::error("You must define either --random-shards or --shard-files");
+            std::exit(1);
+        }
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        std::exit(1);
+    } catch (...) {
+        spdlog::error("Unknown error");
         std::exit(1);
     }
 
