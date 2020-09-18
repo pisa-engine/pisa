@@ -1,5 +1,7 @@
 #!/usr/bin/env bats
 
+set +x
+
 PISA_BIN="bin"
 export PATH="$PISA_BIN:$PATH"
 DIR=$(dirname "$0")
@@ -86,7 +88,7 @@ write_sizes () {
     partition_fwd_index \
         --input "$BATS_TMPDIR/fwd" \
         --output "$BATS_TMPDIR/fwd.shard" \
-        --shard-files $BATS_TEST_DIRNAME/../test/test_data/clueweb1k.shard.*
+        --shard-files $BATS_TEST_DIRNAME/../test_data/clueweb1k.shard.*
 
     echo "=== Invert shards"
     shards invert \
