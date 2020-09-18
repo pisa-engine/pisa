@@ -42,6 +42,15 @@ jobs:
           echo "::set-env name=CC::${cc}"
           echo "::set-env name=CXX::${cxx}"
 
+    - name: Install bats
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+          # Install bats
+          git clone https://github.com/sstephenson/bats.git
+          cd bats
+          sudo ./install.sh /usr/local
+
     - name: Create Build Environment
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/build
@@ -63,9 +72,4 @@ jobs:
     - name: Test CLI
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: |
-          ls ../
-          ls ../pisa
-          ls ../pisa/test
-          ls ../pisa/test/cli
-          bash ../pisa/test/cli/run.sh
+      run: ../pisa/test/cli/run.sh
