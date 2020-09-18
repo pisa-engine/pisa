@@ -11,7 +11,9 @@
 #include "memory_source.hpp"
 #include "query/queries.hpp"
 #include "scorer/scorer.hpp"
+#include "type_safe.hpp"
 #include "util/progress.hpp"
+#include "vec_map.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
@@ -122,11 +124,26 @@ void write_feature_stats(
 template <typename Fn>
 void taily_score_shards(
     std::string const& global_stats_path,
-    std::vector<std::string> const& shard_stats_paths,
-    std::vector<::pisa::Query> const& queries,
+    VecMap<Shard_Id, std::string> const& shard_stats_paths,
+    std::vector<::pisa::Query> const& global_queries,
+    VecMap<Shard_Id, std::vector<::pisa::Query>> const& shard_queries,
     std::size_t k,
     Fn func)
 {
+    if (shard_stats_paths.size() != shard_queries.size()) {
+        throw std::invalid_argument(fmt::format(
+            "Number of discovered shard stats paths ({}) does not match number of "
+            "parsed query lists ({})",
+            shard_stats_paths.size(),
+            shard_queries.size()));
+    }
+    std::for_each(shard_queries.begin(), shard_queries.end(), [&global_queries](auto&& sq) {
+        if (global_queries.size() != sq.size()) {
+            throw std::invalid_argument(
+                "Global queries and shard queries do not all have the same size.");
+        }
+    });
+
     auto global_stats = pisa::TailyStats::from_mapped(global_stats_path);
     std::vector<pisa::TailyStats> shard_stats;
     std::transform(
@@ -134,14 +151,16 @@ void taily_score_shards(
         shard_stats_paths.end(),
         std::back_inserter(shard_stats),
         [](auto&& path) { return pisa::TailyStats::from_mapped(path); });
-    for (auto&& query: queries) {
-        auto global = global_stats.query_stats(query);
+    for (std::size_t query_idx = 0; query_idx < global_queries.size(); query_idx += 1) {
+        auto global = global_stats.query_stats(global_queries[query_idx]);
         std::vector<taily::Query_Statistics> shards;
         std::transform(
             shard_stats.begin(),
             shard_stats.end(),
+            shard_queries.begin(),
             std::back_inserter(shards),
-            [&query](auto&& shard) { return shard.query_stats(query); });
+            [query_idx](
+                auto&& shard, auto&& queries) { return shard.query_stats(queries[query_idx]); });
         func(taily::score_shards(global, shards, k));
     }
 }

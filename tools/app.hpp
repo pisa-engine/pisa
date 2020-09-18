@@ -90,11 +90,11 @@ namespace arg {
         explicit Query(CLI::App* app)
         {
             app->add_option("-q,--queries", m_query_file, "Path to file with queries", false);
-            auto* terms = app->add_option("--terms", m_term_lexicon, "Term lexicon");
+            m_terms_option = app->add_option("--terms", m_term_lexicon, "Term lexicon");
             app->add_option(
                    "--stopwords", m_stop_words, "List of blacklisted stop words to filter out")
-                ->needs(terms);
-            app->add_option("--stemmer", m_stemmer, "Stemmer type")->needs(terms);
+                ->needs(m_terms_option);
+            app->add_option("--stemmer", m_stemmer, "Stemmer type")->needs(m_terms_option);
 
             if constexpr (Mode == QueryMode::Ranked) {
                 app->add_option("-k", m_k, "The number of top results to return")->required();
@@ -124,12 +124,17 @@ namespace arg {
 
         [[nodiscard]] auto k() const -> int { return m_k; }
 
+      protected:
+        [[nodiscard]] auto terms_option() const -> CLI::Option* { return m_terms_option; }
+        void override_term_lexicon(std::string term_lexicon) { m_term_lexicon = term_lexicon; }
+
       private:
         std::optional<std::string> m_query_file;
         int m_k = 0;
         std::optional<std::string> m_stop_words{std::nullopt};
         std::optional<std::string> m_stemmer{std::nullopt};
         std::optional<std::string> m_term_lexicon{std::nullopt};
+        CLI::Option* m_terms_option{};
     };
 
     struct Algorithm {
@@ -592,20 +597,27 @@ struct TailyStatsArgs: pisa::Args<arg::WandData<arg::WandMode::Required>, arg::S
 struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
     explicit TailyRankArgs(CLI::App* app) : pisa::Args<arg::Query<arg::QueryMode::Ranked>>(app)
     {
+        arg::Query<arg::QueryMode::Ranked>::terms_option()->required(true);
         app->add_option("--global-stats", m_global_stats, "Global Taily statistics")->required();
         app->add_option("--shard-stats", m_shard_stats, "Shard-level Taily statistics")->required();
+        app->add_option("--shard-terms", m_shard_term_lexicon, "Shard-level term lexicons")->required();
         app->set_config("--config", "", "Configuration .ini file", false);
     }
 
     [[nodiscard]] auto global_stats() const -> std::string const& { return m_global_stats; }
     [[nodiscard]] auto shard_stats() const -> std::string const& { return m_shard_stats; }
 
-    /// Transform paths for `shard`.
-    void apply_shard(Shard_Id shard) { m_shard_stats = expand_shard(m_shard_stats, shard); }
+    void apply_shard(Shard_Id shard)
+    {
+        m_shard_term_lexicon = expand_shard(m_shard_term_lexicon, shard);
+        override_term_lexicon(m_shard_term_lexicon);
+        m_shard_stats = expand_shard(m_shard_stats, shard);
+    }
 
   private:
     std::string m_global_stats;
     std::string m_shard_stats;
+    std::string m_shard_term_lexicon;
 };
 
 struct TailyThresholds: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {

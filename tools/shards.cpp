@@ -17,6 +17,7 @@
 #include "reorder_docids.hpp"
 #include "sharding.hpp"
 #include "util/util.hpp"
+#include "vec_map.hpp"
 #include "wand_data.hpp"
 
 namespace invert = pisa::invert;
@@ -44,7 +45,11 @@ int main(int argc, char** argv)
     auto* wand = app.add_subcommand("wand-data", "Creates additional data for query processing.");
     auto* taily = app.add_subcommand(
         "taily-stats", "Extracts Taily statistics from the index and stores it in a file.");
-    auto* taily_rank = app.add_subcommand("taily-rank", "Computes Taily shard ranks for queries.");
+    auto* taily_rank = app.add_subcommand(
+        "taily-score",
+        "Computes Taily shard ranks for queries."
+        " NOTE: as term IDs need to be resolved individually for each shard,"
+        " DO NOT provide already parsed and resolved queries (with IDs instead of terms).");
     auto* taily_thresholds = app.add_subcommand("taily-thresholds", "Computes Taily thresholds.");
     InvertArgs invert_args(invert);
     ReorderDocuments reorder_args(reorder);
@@ -128,16 +133,20 @@ int main(int argc, char** argv)
         }
         if (taily_rank->parsed()) {
             auto shards = resolve_shards(taily_rank_args.shard_stats());
-            std::vector<std::string> shard_stats;
+            pisa::VecMap<Shard_Id, std::string> shard_stats;
+            std::vector<::pisa::Query> global_queries;
+            pisa::VecMap<Shard_Id, std::vector<::pisa::Query>> shard_queries;
             for (auto shard: shards) {
                 auto shard_args = taily_rank_args;
                 shard_args.apply_shard(shard);
                 shard_stats.push_back(shard_args.shard_stats());
+                shard_queries.push_back(shard_args.queries());
             }
             pisa::taily_score_shards(
                 taily_rank_args.global_stats(),
                 shard_stats,
                 taily_rank_args.queries(),
+                shard_queries,
                 taily_rank_args.k(),
                 [](auto&& scores) {
                     std::cout << '[';
