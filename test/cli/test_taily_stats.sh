@@ -90,6 +90,18 @@ write_sizes () {
         --output "$BATS_TMPDIR/fwd.shard" \
         --shard-files $BATS_TEST_DIRNAME/../test_data/clueweb1k.shard.*
 
+    echo "=== Invert index"
+    invert \
+        --input "$BATS_TMPDIR/fwd" \
+        --output "$BATS_TMPDIR/inv"
+
+    echo "=== Wand data for index"
+    create_wand_data \
+        --collection "$BATS_TMPDIR/inv" \
+        --output "$BATS_TMPDIR/bm25" \
+        --scorer bm25 \
+        --block-size 32
+
     echo "=== Invert shards"
     shards invert \
         --input "$BATS_TMPDIR/fwd.shard" \
@@ -99,13 +111,6 @@ write_sizes () {
     shards wand-data \
         --collection "$BATS_TMPDIR/inv.shard" \
         --output "$BATS_TMPDIR/bm25.shard" \
-        --scorer bm25 \
-        --block-size 32
-
-    echo "=== Wand data for index"
-    create_wand_data \
-        --collection "$BATS_TMPDIR/inv" \
-        --output "$BATS_TMPDIR/bm25" \
         --scorer bm25 \
         --block-size 32
 
