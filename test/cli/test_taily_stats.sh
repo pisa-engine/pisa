@@ -2,6 +2,7 @@
 
 PISA_BIN="bin"
 export PATH="$PISA_BIN:$PATH"
+DIR=$(dirname "$0")
 
 echo_int () {
     if (( $1 >= 0 && $1 <= 255 ))
@@ -75,7 +76,8 @@ write_sizes () {
     [[ "$size" = "88" ]]
 }
 
-@test "Extract Taily features for shards and score" { cat "../test/test_data/clueweb1k.plaintext" | parse_collection \
+@test "Extract Taily features for shards and score" {
+    cat "$BATS_TEST_DIRNAME/../test_data/clueweb1k.plaintext" | parse_collection \
         --stemmer porter2 \
         --output "$BATS_TMPDIR/fwd" \
         --format plaintext
@@ -84,7 +86,7 @@ write_sizes () {
     partition_fwd_index \
         --input "$BATS_TMPDIR/fwd" \
         --output "$BATS_TMPDIR/fwd.shard" \
-        --shard-files ../test/test_data/clueweb1k.shard.*
+        --shard-files $BATS_TEST_DIRNAME/../test/test_data/clueweb1k.shard.*
 
     echo "=== Invert shards"
     shards invert \
