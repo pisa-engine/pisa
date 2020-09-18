@@ -20,7 +20,7 @@ int main(int argc, const char** argv)
     CLI11_PARSE(app, argc, argv);
     try {
         pisa::estimate_taily_thresholds(args);
-    } catch (std::exception err) {
+    } catch (std::exception const& err) {
         spdlog::error("{}", err.what());
     } catch (...) {
         spdlog::error("Unknown error");

@@ -65,7 +65,7 @@ class TailyStats {
     {
         try {
             return m_source.subspan(start, size);
-        } catch (std::out_of_range) {
+        } catch (std::out_of_range const&) {
             throw std::out_of_range(fmt::format(
                 "Tried to read bytes {}-{} but memory source is of size {}",
                 start,
