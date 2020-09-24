@@ -51,8 +51,9 @@ namespace detail {
 
         [[nodiscard]] constexpr auto operator+(size_type n) const -> Payload_Vector_Iterator
         {
-            return {std::next(offset_iter, n),
-                    std::next(payload_iter, *std::next(offset_iter, n) - *offset_iter)};
+            return {
+                std::next(offset_iter, n),
+                std::next(payload_iter, *std::next(offset_iter, n) - *offset_iter)};
         }
 
         [[nodiscard]] constexpr auto operator+=(size_type n) -> Payload_Vector_Iterator&
@@ -64,8 +65,9 @@ namespace detail {
 
         [[nodiscard]] constexpr auto operator-(size_type n) const -> Payload_Vector_Iterator
         {
-            return {std::prev(offset_iter, n),
-                    std::prev(payload_iter, *offset_iter - *std::prev(offset_iter, n))};
+            return {
+                std::prev(offset_iter, n),
+                std::prev(payload_iter, *offset_iter - *std::prev(offset_iter, n))};
         }
 
         [[nodiscard]] constexpr auto operator-=(size_type n) -> Payload_Vector_Iterator&
@@ -333,6 +335,34 @@ class Payload_Vector {
     gsl::span<size_type const> offsets_;
     gsl::span<std::byte const> payloads_;
 };
+
+/// Find the position of `value` in a sorted range.
+///
+/// \tparam Iter   A random access iterator type.
+/// \tparam T      Element type, must be convertible to
+///                `std::iterator_traits<Iter>::difference_type`
+///
+/// The function assumes that the elements between `begin` and `end` are sorted according to `cmp`.
+template <typename Iter, typename T, typename Compare = std::less<>>
+auto binary_search(Iter begin, Iter end, T value, Compare cmp = std::less<>{})
+    -> std::optional<typename std::iterator_traits<Iter>::difference_type>
+{
+    if (auto pos = std::lower_bound(begin, end, value, cmp); pos != end and *pos == value) {
+        return std::distance(begin, pos);
+    }
+    return std::nullopt;
+}
+
+/// Find the position of `value` in a sorted range.
+///
+/// It calls the function overload that takes iterators. See that overload's documentation for more
+/// information.
+template <typename T, typename Compare = std::less<T>>
+auto binary_search(gsl::span<std::add_const_t<T>> range, T value, Compare cmp = std::less<T>{})
+    -> std::optional<std::ptrdiff_t>
+{
+    return pisa::binary_search(range.begin(), range.end(), value, cmp);
+}
 
 }  // namespace pisa
 

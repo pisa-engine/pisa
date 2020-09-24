@@ -65,11 +65,7 @@ class TermProcessor {
         auto terms = Payload_Vector<>::from(*source);
         auto to_id = [source = std::move(source), terms](auto str) -> std::optional<term_id_type> {
             // Note: the lexicographical order of the terms matters.
-            auto pos = std::lower_bound(terms.begin(), terms.end(), std::string_view(str));
-            if (*pos == std::string_view(str)) {
-                return std::distance(terms.begin(), pos);
-            }
-            return std::nullopt;
+            return pisa::binary_search(terms.begin(), terms.end(), std::string_view(str));
         };
 
         // Implements '_to_id' method.
