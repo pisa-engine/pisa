@@ -6,6 +6,7 @@
 
 #include <fmt/format.h>
 #include <gsl/span>
+#include <rapidcheck.h>
 
 #include "payload_vector.hpp"
 
@@ -202,4 +203,41 @@ TEST_CASE("Test payload vector decoding", "[payload_vector][unit]")
     REQUIRE(
         std::vector<std::string>(vec.begin(), vec.end())
         == std::vector<std::string>{"abc", "def", "ghij", "klm"});
+}
+
+TEST_CASE("Test binary search", "[payload_vector][unit]")
+{
+    std::vector<int> elements{0, 1, 2, 4, 5, 7, 8, 100};
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 0).value() == 0);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 1).value() == 1);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 2).value() == 2);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 4).value() == 3);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 5).value() == 4);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 7).value() == 5);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 8).value() == 6);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 100).value() == 7);
+    REQUIRE(pisa::binary_search(elements.begin(), elements.end(), 101).has_value() == false);
+}
+
+TEST_CASE("Binary search for sorted values is correct", "[payload_vector][prop]")
+{
+    rc::check([](std::vector<int> elements, std::vector<int> lookups) {
+        std::sort(elements.begin(), elements.end());
+        for (auto v: lookups) {
+            if (auto pos = pisa::binary_search(elements, v); pos) {
+                REQUIRE(*pos >= 0);
+                REQUIRE(*pos < elements.size());
+                REQUIRE(elements[*pos] == v);
+            }
+        }
+    });
+}
+
+TEST_CASE("Binary search for unsorted values doesn't crash", "[payload_vector][prop]")
+{
+    rc::check([](std::vector<int> elements, std::vector<int> lookups) {
+        for (auto v: lookups) {
+            pisa::binary_search(elements, 0);
+        }
+    });
 }
