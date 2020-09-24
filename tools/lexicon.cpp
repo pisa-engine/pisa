@@ -54,9 +54,9 @@ int main(int argc, char** argv)
             return 1;
         }
         if (*rlookup) {
-            auto pos = std::lower_bound(lexicon.begin(), lexicon.end(), std::string_view(value));
-            if (pos != lexicon.end() and *pos == std::string_view(value)) {
-                std::cout << std::distance(lexicon.begin(), pos) << '\n';
+            auto pos = pisa::binary_search(lexicon.begin(), lexicon.end(), std::string_view(value));
+            if (pos) {
+                std::cout << *pos << '\n';
                 return 0;
             }
             spdlog::error("Requested term {} was not found", value);
