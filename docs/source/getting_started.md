@@ -5,7 +5,7 @@
 ### Requirements
 
 Currently, our continuous integration pipeline compiles PISA and runs tests
-following configurations:
+in the following configurations:
 - Linux:
     - GCC 9
     - GCC 7
@@ -20,7 +20,7 @@ mostly due to a combination of man-hour shortage, prioritization, and no
 core contributors working on Windows at the moment.
 If you want to help us set up a Github workflow for Windows and work out
 some issues with compilation, let us know on our
-[Slack channel](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
+[Slack channel](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw).
 
 ### Dependencies
 
@@ -37,18 +37,24 @@ The following steps explain how to build PISA.
 First, you need the code checked out from Github.
 (Alternatively, you can download the tarball and unpack it on your local machine.)
 
-    $ git clone https://github.com/pisa-engine/pisa.git
-    $ cd pisa
+```shell
+$ git clone https://github.com/pisa-engine/pisa.git
+$ cd pisa
+```
 
 Then create a build environment.
 
-    $ mkdir build
-    $ cd build
+```shell
+$ mkdir build
+$ cd build
+```
 
 Finally, configure with CMake and compile:
 
-    $ cmake .. -DCMAKE_BUILD_TYPE=Release
-    $ make
+```shell
+$ cmake .. -DCMAKE_BUILD_TYPE=Release
+$ make
+```
 
 #### Build Types
 
@@ -56,20 +62,24 @@ There are two build types available:
 - `Release` (default)
 - `Debug`
 
-Use `Debug` only for debugging. It is much slower at runtime.
+Use `Debug` only for development, testing, and debugging. It is much slower at runtime.
 
 #### Build Systems
 
 CMake supports configuring for different build systems.
-On Linux and Mac, the default is Makefiles, thus the following two commands are equivalent:
+On Linux and Mac, the default is Makefiles, thus, the following two commands are equivalent:
 
-    $ cmake -G ..
-    $ cmake -G "Unix Makefiles" ..
+```shell
+$ cmake -G ..
+$ cmake -G "Unix Makefiles" ..
+```
 
 Alternatively to Makefiles, you can configure the project to use Ninja instead:
 
-    $ cmake -G Ninja ..
-    $ ninja # instead of make
+```shell
+$ cmake -G Ninja ..
+$ ninja # instead of make
+```
 
 Other build systems should work in theory but are not tested.
 
@@ -77,7 +87,9 @@ Other build systems should work in theory but are not tested.
 
 You can run the unit and integration tests with:
 
-    $ ctest
+```shell
+$ ctest
+```
 
 The directory `test/test_data` contains a small document collection used in the
 unit tests. The binary format of the collection is described in a following
