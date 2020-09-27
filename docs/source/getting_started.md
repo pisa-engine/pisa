@@ -2,29 +2,87 @@
 
 ## Building the code
 
-The code is tested on Linux with `GCC 7.4.0`, `GCC 8.1.0`, `Clang 5.0`, `Clang 6.0` and on macOS with `AppleClang 9.1.0`.
+### Requirements
 
-The following dependencies are needed for the build.
+Currently, our continuous integration pipeline compiles PISA and runs tests
+following configurations:
+- Linux:
+    - GCC 9
+    - GCC 7
+    - Clang 6
+    - Clang 10
+- MaxOS:
+    - GCC 9
+    - XCode 11.3
 
-* CMake >= 3.0, for the build system
-* OpenMP (optional)
+Supporting Windows is planned but is currently not being actively worked on,
+mostly due to a combination of man-hour shortage, prioritization, and no
+core contributors working on Windows at the moment.
+If you want to help us set up a Github workflow for Windows and work out
+some issues with compilation, let us know on our
+[Slack channel](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
 
-To build the code:
+### Dependencies
+
+The runtime dependencies are managed automatically with CMake and git submodules.
+However, there are several build dependencies needed:
+
+- `CMake >= 3.0`
+- `autoconf`,  `automake`, `libtool`, and `m4` (for building `gumbo-parser`)
+- OpenMP (optional)
+
+### Building
+
+The following steps explain how to build PISA.
+First, you need the code checked out from Github.
+(Alternatively, you can download the tarball and unpack it on your local machine.)
+
+    $ git clone https://github.com/pisa-engine/pisa.git
+    $ cd pisa
+
+Then create a build environment.
 
     $ mkdir build
     $ cd build
+
+Finally, configure with CMake and compile:
+
     $ cmake .. -DCMAKE_BUILD_TYPE=Release
     $ make
 
-## Run unit tests
+#### Build Types
 
-To run the unit tests simply perform a `make test`.
+There are two build types available:
+- `Release` (default)
+- `Debug`
+
+Use `Debug` only for debugging. It is much slower at runtime.
+
+#### Build Systems
+
+CMake supports configuring for different build systems.
+On Linux and Mac, the default is Makefiles, thus the following two commands are equivalent:
+
+    $ cmake -G ..
+    $ cmake -G "Unix Makefiles" ..
+
+Alternatively to Makefiles, you can configure the project to use Ninja instead:
+
+    $ cmake -G Ninja ..
+    $ ninja # instead of make
+
+Other build systems should work in theory but are not tested.
+
+## Testing
+
+You can run the unit and integration tests with:
+
+    $ ctest
 
 The directory `test/test_data` contains a small document collection used in the
 unit tests. The binary format of the collection is described in a following
 section.
 An example set of queries can also be found in `test/test_data/queries`.
-
 
 ## PISA Regression Experiments
 
