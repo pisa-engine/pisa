@@ -6,7 +6,7 @@ A _forward index_ is a data structure that stores the term identifiers associate
 The objective of the parsing process is to represent a given collection as a forward index. To parse a collection, use the `parse_collection` command:
 
     parse_collection - parse collection and store as forward index.
-    Usage: ./bin/parse_collection [OPTIONS]
+    Usage: ./bin/parse_collection [OPTIONS] [SUBCOMMAND]
 
     Options:
       -h,--help                   Print this help message and exit
@@ -18,10 +18,11 @@ The objective of the parsing process is to represent a given collection as a for
       --content-parser TEXT       Content parser type
       --debug                     Print debug messages
 
-      Subcommands:
-        merge                       Merge previously produced batch files.
-                                    When parsing process was killed during merging, use this
-                                    command to finish merging without having to restart building batches.
+    Subcommands:
+      merge                       Merge previously produced batch files.
+                                  When parsing process was killed during merging,
+                                  use this command to finish merging without having
+                                  to restart building batches.
 
 For example:
 
