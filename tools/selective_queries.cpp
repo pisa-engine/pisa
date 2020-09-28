@@ -46,18 +46,13 @@ int main(int argc, const char** argv)
         "Filters selective queries for a given index."};
     CLI11_PARSE(app, argc, argv);
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                               \
-    }                                                       \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) \
-    {                                                       \
-        selective_queries<BOOST_PP_CAT(T, _index)>(         \
-            app.index_filename(), app.index_encoding(), app.queries());
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown encoding {}", app.index_encoding());
+    try {
+        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+            selective_queries<decltype(index)>(
+                app.index_filename(), app.index_encoding(), app.queries());
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }

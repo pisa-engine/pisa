@@ -333,26 +333,21 @@ int main(int argc, const char** argv)
         app.scorer_params(),
         extract,
         safe);
-    /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                        \
-    }                                                                                                \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                          \
-    {                                                                                                \
-        if (app.is_wand_compressed()) {                                                              \
-            if (quantized) {                                                                         \
-                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                                 \
-                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);           \
-            }                                                                                        \
-        } else {                                                                                     \
-            std::apply(perftest<BOOST_PP_CAT(T, _index), wand_raw_index>, params);                   \
-        }
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
 
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
+    try {
+        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    std::apply(perftest<decltype(index), wand_uniform_index_quantized>, params);
+                } else {
+                    std::apply(perftest<decltype(index), wand_uniform_index>, params);
+                }
+            } else {
+                std::apply(perftest<decltype(index), wand_raw_index>, params);
+            }
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }

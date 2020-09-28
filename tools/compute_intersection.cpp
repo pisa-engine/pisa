@@ -117,24 +117,17 @@ int main(int argc, const char** argv)
     IntersectionType intersection_type =
         combinations ? IntersectionType::Combinations : IntersectionType::Query;
 
-    /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                               \
-    }                                                       \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) \
-    {                                                       \
-        intersect<BOOST_PP_CAT(T, _index), wand_raw_index>( \
-            app.index_filename(),                           \
-            app.wand_data_path(),                           \
-            filtered_queries,                               \
-            intersection_type,                              \
-            max_term_count);                                \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
+    try {
+        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+            intersect<decltype(index), wand_raw_index>(
+                app.index_filename(),
+                app.wand_data_path(),
+                filtered_queries,
+                intersection_type,
+                max_term_count);
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }

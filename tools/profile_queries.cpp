@@ -176,18 +176,12 @@ int main(int argc, const char** argv)
         }
     }
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                               \
-    }                                                                       \
-    else if (type == BOOST_PP_STRINGIZE(T))                                 \
-    {                                                                       \
-        profile<BOOST_PP_CAT(T, _index)>(                                   \
-            index_filename, wand_data_filename, queries, type, query_type); \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", type);
+    try {
+        with_index(type, index_filename, [&](auto index) {
+            profile<decltype(index)>(index_filename, wand_data_filename, queries, type, query_type);
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }
