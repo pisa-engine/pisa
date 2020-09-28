@@ -127,17 +127,12 @@ int main(int argc, const char** argv)
     std::string type = argv[1];
     const char* index_filename = argv[2];
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                    \
-    }                                                            \
-    else if (type == BOOST_PP_STRINGIZE(T))                      \
-    {                                                            \
-        perftest<BOOST_PP_CAT(T, _index)>(index_filename, type); \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", type);
+    try {
+        with_index(type, index_filename, [&](auto index) {
+            perftest<decltype(index)>(index_filename, type);
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }

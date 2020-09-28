@@ -45,23 +45,6 @@ using block_simple8b_index = block_freq_index<pisa::simple8b_block>;
 using block_simple16_index = block_freq_index<pisa::simple16_block>;
 using block_simdbp_index = block_freq_index<pisa::simdbp_block>;
 
-constexpr static auto INDEX_TYPES = std::array{
-    "ef",
-    "single",
-    "pefuniform",
-    "pefopt",
-    "block_optpfor",
-    "block_varintg8iu",
-    "block_streamvbyte",
-    "block_maskedvbyte",
-    "block_interpolative",
-    "block_qmx",
-    "block_varintgb",
-    "block_simple8b",
-    "block_simple16",
-    "block_simdbp",
-};
-
 using Index = std::variant<
     ef_index,
     single_index,
@@ -77,6 +60,50 @@ using Index = std::variant<
     block_simple8b_index,
     block_simple16_index,
     block_simdbp_index>;
+
+namespace detail {
+    inline std::string_view index_name(ef_index const&) noexcept { return "ef"; }
+    inline std::string_view index_name(single_index const&) noexcept { return "single"; }
+    inline std::string_view index_name(pefuniform_index const&) noexcept { return "pefuniform"; }
+    inline std::string_view index_name(pefopt_index const&) noexcept { return "pefopt"; }
+    inline std::string_view index_name(block_optpfor_index const&) noexcept
+    {
+        return "block_optpfor";
+    }
+    inline std::string_view index_name(block_varintg8iu_index const&) noexcept
+    {
+        return "block_varintg8iu";
+    }
+    inline std::string_view index_name(block_streamvbyte_index const&) noexcept
+    {
+        return "block_streamvbyte";
+    }
+    inline std::string_view index_name(block_maskedvbyte_index const&) noexcept
+    {
+        return "block_maskedvbyte";
+    }
+    inline std::string_view index_name(block_interpolative_index const&) noexcept
+    {
+        return "block_interpolative";
+    }
+    inline std::string_view index_name(block_qmx_index const&) noexcept { return "block_qmx"; }
+    inline std::string_view index_name(block_varintgb_index const&) noexcept
+    {
+        return "block_varintgb";
+    }
+    inline std::string_view index_name(block_simple8b_index const&) noexcept
+    {
+        return "block_simple8b";
+    }
+    inline std::string_view index_name(block_simple16_index const&) noexcept
+    {
+        return "block_simple16";
+    }
+    inline std::string_view index_name(block_simdbp_index const&) noexcept
+    {
+        return "block_simdbp";
+    }
+};  // namespace detail
 
 class InvalidEncoding {
   public:
@@ -94,7 +121,7 @@ auto with_alternative(std::string_view index_type, std::string const& path, Fn&&
 {
     using T = std::variant_alternative_t<I, Index>;
 
-    if (index_type == INDEX_TYPES[I]) {
+    if (index_type == detail::index_name(std::variant_alternative_t<I, Index>())) {
         fn(T(MemorySource::mapped_file(path)));
         return true;
     }
@@ -125,7 +152,7 @@ void with_index(std::string_view encoding, std::string const& path, Fn&& fn)
 template <std::size_t I>
 void push_encoding(std::vector<std::string>& encodings)
 {
-    encodings.push_back(INDEX_TYPES[I]);
+    encodings.emplace_back(detail::index_name(std::variant_alternative_t<I, Index>()));
 }
 
 template <std::size_t... I>
