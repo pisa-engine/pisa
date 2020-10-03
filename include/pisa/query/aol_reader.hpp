@@ -25,7 +25,7 @@ class aol_reader {
             std::getline(m_is, line);
             std::vector<std::string> fields;
             boost::algorithm::split(fields, line, boost::is_any_of("\t"));
-            if (fields.size() > 3 and fields[1].size() > 0 and fields[1] != "-") {
+            if (fields.size() > 3 and fields[1].empty() and fields[1] != "-") {
                 return std::make_optional(fields[1]);
             }
         }
