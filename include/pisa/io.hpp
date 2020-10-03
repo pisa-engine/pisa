@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -13,16 +14,17 @@
 
 namespace pisa::io {
 
-class NoSuchFile {
+/// Indicates that a file was not found.
+///
+/// As opposed to the standard c++ IO error, this one preserves the file name in the message for
+/// more informative logging.
+class NoSuchFile: public std::exception {
   public:
-    explicit NoSuchFile(std::string file) : m_file(std::move(file)) {}
-    [[nodiscard]] auto what() const -> std::string
-    {
-        return fmt::format("No such file: {}", m_file);
-    }
+    explicit NoSuchFile(std::string file) : m_message(fmt::format("No such file: {}", file)) {}
+    [[nodiscard]] auto what() const noexcept -> char const* { return m_message.c_str(); }
 
   private:
-    std::string m_file;
+    std::string m_message;
 };
 
 [[nodiscard]] inline auto resolve_path(std::string const& file) -> boost::filesystem::path
