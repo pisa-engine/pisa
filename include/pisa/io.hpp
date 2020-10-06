@@ -7,6 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <gsl/span>
+
 #include <boost/filesystem.hpp>
 #include <fmt/format.h>
 
@@ -84,6 +86,12 @@ void for_each_line(std::istream& is, Function fn)
         throw std::runtime_error("Failed reading " + data_file);
     }
     return data;
+}
+
+inline void write_data(std::string const& data_file, gsl::span<std::byte const> bytes)
+{
+    std::ofstream os(data_file);
+    os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
 }
 
 }  // namespace pisa::io
