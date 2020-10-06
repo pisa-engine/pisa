@@ -11,65 +11,90 @@
 
 using namespace pisa;
 
+[[nodiscard]] auto
+print_function(std::optional<std::string> const& map_file, std::optional<std::string> const& lex_file)
+    -> std::function<void(std::uint32_t)>
+{
+    if (map_file) {
+        return [loaded_map = pisa::io::read_string_vector(*map_file)](std::uint32_t term) {
+            std::cout << loaded_map.at(term) << ' ';
+        };
+    }
+    if (lex_file) {
+        auto source =
+            std::make_shared<pisa::MemorySource>(pisa::MemorySource::mapped_file(*lex_file));
+        auto lexicon = Payload_Vector<>::from(*source);
+        return [source = std::move(source), lexicon](std::uint32_t term) {
+            std::cout << lexicon[term] << ' ';
+        };
+    }
+    return [](auto const& term) { std::cout << term << " "; };
+}
+
 int main(int argc, char** argv)
 {
     std::string collection_file;
     std::optional<std::string> map_file{};
     std::optional<std::string> lex_file{};
-    std::ptrdiff_t first, last;
+    std::size_t first, last;
 
-    CLI::App app{"Reads binary collection to stdout."};
-    app.add_option("-c,--collection", collection_file, "Collection file name")->required();
-
-    auto maptext =
-        app.add_option("--maptext", map_file, "Text file mapping each line number (ID) to a string");
-    auto maplex = app.add_option("--maplex", lex_file, "Lexicon file mapping IDs to strings");
+    CLI::App app{"Reads binary collection to stdout.", "read_collection"};
+    app.add_option("-c,--collection", collection_file, "Collection file path.")->required();
+    auto maptext = app.add_option(
+        "--maptext",
+        map_file,
+        "ID to string mapping in text file format. "
+        "Line n is the string associated with ID n. "
+        "E.g., if used to read a document from a forward index, this would be the `.terms` "
+        "file, which maps term IDs to their string reperesentations.");
+    auto maplex = app.add_option(
+        "--maplex",
+        lex_file,
+        "ID to string mapping in lexicon binary file format. "
+        "E.g., if used to read a document from a forward index, this would be the `.termlex` "
+        "file, which maps term IDs to their string reperesentations.");
     maptext->excludes(maplex);
     maplex->excludes(maptext);
-
-    app.add_option("first", first, "First element number")->required();
-    app.add_option(
+    auto* entry_cmd = app.add_subcommand("entry", "Reads single entry.");
+    entry_cmd->add_option("n", first, "Entry number.")->required();
+    auto* range_cmd = app.add_subcommand("range", "Reads a range of entries.");
+    range_cmd->add_option("first", first, "Start reading from this entry.")->required();
+    range_cmd->add_option(
         "last",
         last,
-        "Open-ended end of range of elements to read. "
-        "If not defined, only one element is read.");
+        "End reading at this entry. "
+        "If not defined, read until the end of the collection.");
     CLI11_PARSE(app, argc, argv);
 
-    std::function<void(std::uint32_t)> print = [](auto const& term) { std::cout << term << " "; };
-
     try {
-        if (map_file) {
-            print = [loaded_map = pisa::io::read_string_vector(*map_file)](std::uint32_t term) {
-                std::cout << loaded_map.at(term) << ' ';
-            };
-        }
-
-        if (lex_file) {
-            auto source =
-                std::make_shared<pisa::MemorySource>(pisa::MemorySource::mapped_file(*lex_file));
-            auto lexicon = Payload_Vector<>::from(*source);
-            print = [source = std::move(source), lexicon](std::uint32_t term) {
-                std::cout << lexicon[term] << ' ';
-            };
-        }
+        auto print = print_function(map_file, lex_file);
 
         binary_collection coll(collection_file.c_str());
         auto iter = coll.begin();
-        for ([[maybe_unused]] auto idx: ranges::views::iota(0, first)) {
+        for ([[maybe_unused]] auto idx: ranges::views::iota(0U, first)) {
             ++iter;
         }
 
-        if (app.count("last") == 0U) {
-            last = first + 1;
-        }
+        auto end = [&] {
+            if (range_cmd->parsed()) {
+                if (range_cmd->count("last") == 0U) {
+                    return coll.end();
+                }
+                if (last < first) {
+                    throw std::invalid_argument(
+                        "Last entry index must be greater or equal to first.");
+                }
+                return std::next(iter, last - first + 1);
+            }
+            return std::next(iter);
+        }();
 
-        for (; first < last; ++first) {
+        for (; iter != end; ++iter) {
             auto sequence = *iter;
             for (auto term: sequence) {
                 print(term);
             }
             std::cout << '\n';
-            ++iter;
         }
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());
