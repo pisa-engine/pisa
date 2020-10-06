@@ -68,6 +68,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
 
 # Add Boost
 add_subdirectory(boost-cmake)
+set(BOOST_INCLUDEDIR ${CMAKE_CURRENT_SOURCE_DIR}/boost-cmake CACHE PATH "Change boost lookup path")
+set(BOOST_LIBRARYDIR ${CMAKE_BINARY_DIR}/boost-cmake CACHE PATH "Change boost lookup path")
 
 # Add Catch
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
@@ -104,3 +106,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
 target_compile_options(rapidcheck PRIVATE -Wno-error)
+
+# Add taily
+set(TAILY_ENABLE_TESTING OFF CACHE BOOL "skip taily testing")
+set(TAILY_BUILD_EXAMPLE OFF CACHE BOOL "skip taily example")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/taily)

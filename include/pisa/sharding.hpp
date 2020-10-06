@@ -107,6 +107,9 @@ auto mapping_from_files(std::string const& full_titles, gsl::span<std::string co
     std::ifstream fis(full_titles);
     std::vector<std::unique_ptr<std::ifstream>> shard_is;
     for (auto const& shard_file: shard_titles) {
+        if (!boost::filesystem::exists(shard_file)) {
+            throw std::invalid_argument(fmt::format("Shard file does not exist: {}", shard_file));
+        }
         shard_is.push_back(std::make_unique<std::ifstream>(shard_file));
     }
     return mapping_from_files(
