@@ -30,7 +30,7 @@ class wand_data {
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
     wand_data() = default;
-    wand_data(wand_data&&) noexcept = default;
+    wand_data(wand_data&&) = default;
     wand_data(wand_data const&) = delete;
     wand_data& operator=(wand_data&&) noexcept = delete;
     wand_data& operator=(wand_data const&) = delete;
