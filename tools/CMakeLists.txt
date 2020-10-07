@@ -127,3 +127,15 @@ target_link_libraries(kth_threshold
   pisa
   CLI11
 )
+
+add_executable(taily-stats taily_stats.cpp)
+target_link_libraries(taily-stats
+  pisa
+  CLI11
+)
+
+add_executable(taily-thresholds taily_thresholds.cpp)
+target_link_libraries(taily-thresholds
+  pisa
+  CLI11
+)

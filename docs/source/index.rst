@@ -30,6 +30,7 @@ Some features of PISA are listed below:
    :caption: Contents:
 
    getting_started
+   indexing_pipeline
    parsing
    inverting
    sharding
