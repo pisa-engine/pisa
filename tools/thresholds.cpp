@@ -24,19 +24,16 @@
 
 using namespace pisa;
 
-template <typename IndexType, typename WandType>
+template <typename Index, typename Wdata>
 void thresholds(
-    const std::string& index_filename,
-    const std::string& wand_data_filename,
+    Index&& index,
+    Wdata&& wdata,
     const std::vector<Query>& queries,
     std::string const& type,
     ScorerParams const& scorer_params,
     uint64_t k,
     bool quantized)
 {
-    IndexType index(MemorySource::mapped_file(index_filename));
-    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
-
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     topk_queue topk(k);
@@ -85,14 +82,25 @@ int main(int argc, const char** argv)
 
     try {
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+            auto th = [&](auto wdata) {
+                thresholds(
+                    std::forward<decltype(index)>(index),
+                    std::forward<decltype(wdata)>(wdata),
+                    app.queries(),
+                    app.index_encoding(),
+                    app.scorer_params(),
+                    app.k(),
+                    quantized);
+            };
+            auto wdata_source = MemorySource::mapped_file(app.wand_data_path());
             if (app.is_wand_compressed()) {
                 if (quantized) {
-                    std::apply(thresholds<decltype(index), wand_uniform_index_quantized>, params);
+                    th(wand_uniform_index_quantized(std::move(wdata_source)));
                 } else {
-                    std::apply(thresholds<decltype(index), wand_uniform_index>, params);
+                    th(wand_uniform_index(std::move(wdata_source)));
                 }
             } else {
-                std::apply(thresholds<decltype(index), wand_raw_index>, params);
+                th(wand_raw_index(std::move(wdata_source)));
             }
         });
     } catch (std::exception const& err) {

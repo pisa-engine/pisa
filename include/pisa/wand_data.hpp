@@ -30,6 +30,12 @@ class wand_data {
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
     wand_data() = default;
+    wand_data(wand_data&&) noexcept = default;
+    wand_data(wand_data const&) = delete;
+    wand_data& operator=(wand_data&&) noexcept = default;
+    wand_data& operator=(wand_data const&) = delete;
+    ~wand_data() = default;
+
     explicit wand_data(MemorySource source) : m_source(std::move(source))
     {
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);

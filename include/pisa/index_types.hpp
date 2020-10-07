@@ -61,6 +61,11 @@ using Index = std::variant<
     block_simple16_index,
     block_simdbp_index>;
 
+template <typename Index>
+struct IndexTypeMarker {
+    using type = Index;
+};
+
 namespace detail {
     inline std::string_view index_name(ef_index const&) noexcept { return "ef"; }
     inline std::string_view index_name(single_index const&) noexcept { return "single"; }
@@ -103,6 +108,70 @@ namespace detail {
     {
         return "block_simdbp";
     }
+
+    template <typename Index>
+    struct add_profiling {
+        using type = Index;
+    };
+
+    template <typename Block>
+    struct add_profiling<block_freq_index<Block, false>> {
+        using type = block_freq_index<Block, true>;
+    };
+
+    template <bool Profile, std::size_t I, typename Fn>
+    auto with_alternative(std::string_view index_type, std::string const& path, Fn&& fn) -> bool
+    {
+        using T = std::variant_alternative_t<I, Index>;
+
+        if (index_type == detail::index_name(std::variant_alternative_t<I, Index>())) {
+            if constexpr (Profile) {
+                using Index = typename add_profiling<T>::type;
+                fn(Index(MemorySource::mapped_file(path)));
+            } else {
+                fn(T(MemorySource::mapped_file(path)));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    template <bool Profile, std::size_t I, typename Fn>
+    auto with_type_alternative(std::string_view index_type, std::string const& path, Fn&& fn) -> bool
+    {
+        using T = std::variant_alternative_t<I, Index>;
+
+        if (index_type == detail::index_name(std::variant_alternative_t<I, Index>())) {
+            if constexpr (Profile) {
+                using Index = typename add_profiling<T>::type;
+                fn(IndexTypeMarker<Index>{});
+            } else {
+                fn(IndexTypeMarker<T>{});
+            }
+            return true;
+        }
+        return false;
+    }
+
+    template <bool Profile, typename Fn, std::size_t... I>
+    auto with_alternatives(
+        std::string_view index_type,
+        std::string const& path,
+        Fn&& fn,
+        std::integer_sequence<std::size_t, I...>) -> bool
+    {
+        return (with_alternative<Profile, I, Fn>(index_type, path, std::forward<Fn>(fn)) && ...);
+    }
+
+    template <bool Profile, typename Fn, std::size_t... I>
+    auto with_type_alternatives(
+        std::string_view index_type,
+        std::string const& path,
+        Fn&& fn,
+        std::integer_sequence<std::size_t, I...>) -> bool
+    {
+        return (with_type_alternative<Profile, I, Fn>(index_type, path, std::forward<Fn>(fn)) && ...);
+    }
 };  // namespace detail
 
 class InvalidEncoding {
@@ -116,34 +185,58 @@ class InvalidEncoding {
     std::string m_message;
 };
 
-template <std::size_t I, typename Fn>
-auto with_alternative(std::string_view index_type, std::string const& path, Fn&& fn) -> bool
-{
-    using T = std::variant_alternative_t<I, Index>;
-
-    if (index_type == detail::index_name(std::variant_alternative_t<I, Index>())) {
-        fn(T(MemorySource::mapped_file(path)));
-        return true;
-    }
-    return false;
-}
-
-template <typename Fn, std::size_t... I>
-auto with_alternatives(
-    std::string_view index_type,
-    std::string const& path,
-    Fn&& fn,
-    std::integer_sequence<std::size_t, I...>) -> bool
-{
-    return (with_alternative<I, Fn>(index_type, path, std::forward<Fn>(fn)) && ...);
-}
-
+/// Executes function `fn(index)` where `index` is the index loaded from `path` and its type
+/// depends on the `encoding` value.
+///
+/// # Exceptions
+/// `InvalidEncoding` is thrown if an invalid `encoding` value was passed.
 template <typename Fn>
 void with_index(std::string_view encoding, std::string const& path, Fn&& fn)
 {
     std::string full_index_type = fmt::format("{}_index", encoding);
     constexpr auto num_types = std::variant_size_v<Index>;
-    if (!with_alternatives(
+    if (!detail::with_alternatives<false>(
+            encoding, path, std::forward<Fn>(fn), std::make_index_sequence<num_types>{})) {
+        throw InvalidEncoding(encoding);
+    }
+}
+
+/// Works similar to `with_index` but sets profiling to `true` in the index type.
+///
+/// # Exceptions
+/// `InvalidEncoding` is thrown if an invalid `encoding` value was passed.
+template <typename Fn>
+void with_profiling_index(std::string_view encoding, std::string const& path, Fn&& fn)
+{
+    std::string full_index_type = fmt::format("{}_index", encoding);
+    constexpr auto num_types = std::variant_size_v<Index>;
+    if (!detail::with_alternatives<true>(
+            encoding, path, std::forward<Fn>(fn), std::make_index_sequence<num_types>{})) {
+        throw InvalidEncoding(encoding);
+    }
+}
+
+/// Executes function `fn(marker)` where `marker` is a value of a special marker type that has an
+/// inner type `type` declared that is the type of the index associated with `encoding`.
+///
+/// This function can be used in a rare case when instead of the index, we only need the information
+/// about its type, e.g., `fn` can be a function that builds the index, thus no index to load exists
+/// yet. The type can be accessed the following way:
+///
+/// ```
+/// with_index_type(encoding, path, [](auto marker){
+///     using Index = typename decltype(marker)::type;
+/// });
+/// ```
+///
+/// # Exceptions
+/// `InvalidEncoding` is thrown if an invalid `encoding` value was passed.
+template <typename Fn>
+void with_index_type(std::string_view encoding, std::string const& path, Fn&& fn)
+{
+    std::string full_index_type = fmt::format("{}_index", encoding);
+    constexpr auto num_types = std::variant_size_v<Index>;
+    if (!detail::with_type_alternatives<true>(
             encoding, path, std::forward<Fn>(fn), std::make_index_sequence<num_types>{})) {
         throw InvalidEncoding(encoding);
     }

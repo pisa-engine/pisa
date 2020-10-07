@@ -14,15 +14,9 @@
 
 using namespace pisa;
 
-template <typename IndexType>
-void selective_queries(
-    const std::string& index_filename, std::string const& encoding, std::vector<Query> const& queries)
+template <typename Index>
+void selective_queries(Index&& index, std::string const& encoding, std::vector<Query> const& queries)
 {
-    IndexType index;
-    spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m, mapper::map_flags::warmup);
-
     spdlog::info("Performing {} queries", encoding);
 
     using boost::adaptors::transformed;
@@ -48,8 +42,8 @@ int main(int argc, const char** argv)
 
     try {
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
-            selective_queries<decltype(index)>(
-                app.index_filename(), app.index_encoding(), app.queries());
+            selective_queries(
+                std::forward<decltype(index)>(index), app.index_encoding(), app.queries());
         });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());

@@ -49,10 +49,10 @@ std::set<uint32_t> parse_tuple(std::string const& line, size_t k)
     return term_ids_int;
 }
 
-template <typename IndexType, typename WandType>
-void kt_thresholds(
-    const std::string& index_filename,
-    const std::string& wand_data_filename,
+template <typename Index, typename Wdata>
+void kth_thresholds(
+    Index&& index,
+    Wdata&& wdata,
     const std::vector<Query>& queries,
     std::string const& type,
     ScorerParams const& scorer_params,
@@ -63,22 +63,7 @@ void kt_thresholds(
     bool all_pairs,
     bool all_triples)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
-
-    WandType wdata;
-
     auto scorer = scorer::from_params(scorer_params, wdata);
-
-    mio::mmap_source md;
-    std::error_code error;
-    md.map(wand_data_filename, error);
-    if (error) {
-        spdlog::error("error mapping file: {}, exiting...", error.message());
-        std::abort();
-    }
-    mapper::map(wdata, md, mapper::map_flags::warmup);
 
     using Pair = std::set<uint32_t>;
     std::unordered_set<Pair, boost::hash<Pair>> pairs_set;
@@ -203,14 +188,29 @@ int main(int argc, const char** argv)
 
     try {
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+            auto thresholds = [&](auto wdata) {
+                kth_thresholds(
+                    std::forward<decltype(index)>(index),
+                    std::forward<decltype(wdata)>(wdata),
+                    app.queries(),
+                    app.index_encoding(),
+                    app.scorer_params(),
+                    app.k(),
+                    quantized,
+                    pairs_filename,
+                    triples_filename,
+                    all_pairs,
+                    all_triples);
+            };
+            auto wdata_source = MemorySource::mapped_file(app.wand_data_path());
             if (app.is_wand_compressed()) {
                 if (quantized) {
-                    std::apply(kt_thresholds<decltype(index), wand_uniform_index_quantized>, params);
+                    thresholds(wand_uniform_index_quantized(std::move(wdata_source)));
                 } else {
-                    std::apply(kt_thresholds<decltype(index), wand_uniform_index>, params);
+                    thresholds(wand_uniform_index(std::move(wdata_source)));
                 }
             } else {
-                std::apply(kt_thresholds<decltype(index), wand_raw_index>, params);
+                thresholds(wand_raw_index(std::move(wdata_source)));
             }
         });
     } catch (std::exception const& err) {

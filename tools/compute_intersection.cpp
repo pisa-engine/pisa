@@ -21,18 +21,14 @@ using namespace pisa;
 using pisa::intersection::IntersectionType;
 using pisa::intersection::Mask;
 
-template <typename IndexType, typename WandType, typename QueryRange>
+template <typename WandType, typename Index, typename QueryRange>
 void intersect(
-    std::string const& index_filename,
+    Index&& index,
     std::optional<std::string> const& wand_data_filename,
     QueryRange&& queries,
     IntersectionType intersection_type,
     std::optional<std::uint8_t> max_term_count = std::nullopt)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
-
     WandType wdata;
 
     mio::mmap_source md;
@@ -119,12 +115,8 @@ int main(int argc, const char** argv)
 
     try {
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
-            intersect<decltype(index), wand_raw_index>(
-                app.index_filename(),
-                app.wand_data_path(),
-                filtered_queries,
-                intersection_type,
-                max_term_count);
+            intersect<wand_raw_index>(
+                index, app.wand_data_path(), filtered_queries, intersection_type, max_term_count);
         });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());
