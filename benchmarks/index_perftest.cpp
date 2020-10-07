@@ -9,8 +9,8 @@
 using pisa::do_not_optimize_away;
 using pisa::get_time_usecs;
 
-template <typename IndexType, bool with_freqs>
-void perftest(IndexType const& index, std::string const& type)
+template <bool with_freqs, typename IndexType>
+void perftest(IndexType&& index, std::string const& type)
 {
     std::string freqs_log = with_freqs ? "+freq()" : "";
     {
@@ -103,18 +103,6 @@ void perftest(IndexType const& index, std::string const& type)
     }
 }
 
-template <typename IndexType>
-void perftest(const char* index_filename, std::string const& type)
-{
-    spdlog::info("Loading index from {}", index_filename);
-    IndexType index;
-    mio::mmap_source m(index_filename);
-    pisa::mapper::map(index, m, pisa::mapper::map_flags::warmup);
-
-    perftest<IndexType, false>(index, type);
-    perftest<IndexType, true>(index, type);
-}
-
 int main(int argc, const char** argv)
 {
     using namespace pisa;
@@ -129,7 +117,8 @@ int main(int argc, const char** argv)
 
     try {
         with_index(type, index_filename, [&](auto index) {
-            perftest<decltype(index)>(index_filename, type);
+            perftest<false>(std::forward<decltype(index)>(index), type);
+            perftest<true>(std::forward<decltype(index)>(index), type);
         });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());

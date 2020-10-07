@@ -32,7 +32,7 @@ class wand_data {
     wand_data() = default;
     wand_data(wand_data&&) noexcept = default;
     wand_data(wand_data const&) = delete;
-    wand_data& operator=(wand_data&&) noexcept = default;
+    wand_data& operator=(wand_data&&) noexcept = delete;
     wand_data& operator=(wand_data const&) = delete;
     ~wand_data() = default;
 
