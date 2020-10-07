@@ -117,8 +117,8 @@ int main(int argc, const char** argv)
 
     try {
         with_index(type, index_filename, [&](auto index) {
-            perftest<false>(std::forward<decltype(index)>(index), type);
-            perftest<true>(std::forward<decltype(index)>(index), type);
+            perftest<false>(index, type);
+            perftest<true>(index, type);
         });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());

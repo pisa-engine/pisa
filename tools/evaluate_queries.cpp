@@ -200,8 +200,8 @@ int main(int argc, const char** argv)
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
             auto evaluate = [&](auto wdata) {
                 evaluate_queries(
-                    std::forward<decltype(index)>(index),
-                    std::forward<decltype(wdata)>(wdata),
+                    index,
+                    wdata,
                     app.queries(),
                     app.thresholds_file(),
                     app.index_encoding(),

@@ -190,8 +190,8 @@ int main(int argc, const char** argv)
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
             auto thresholds = [&](auto wdata) {
                 kth_thresholds(
-                    std::forward<decltype(index)>(index),
-                    std::forward<decltype(wdata)>(wdata),
+                    index,
+                    wdata,
                     app.queries(),
                     app.index_encoding(),
                     app.scorer_params(),

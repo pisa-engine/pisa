@@ -42,8 +42,7 @@ int main(int argc, const char** argv)
 
     try {
         with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
-            selective_queries(
-                std::forward<decltype(index)>(index), app.index_encoding(), app.queries());
+            selective_queries(index, app.index_encoding(), app.queries());
         });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());

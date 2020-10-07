@@ -151,8 +151,7 @@ int main(int argc, const char** argv)
     try {
         spdlog::info("Loading index from {}", index_filename);
         with_profiling_index(type, index_filename, [&](auto index) {
-            profile(
-                std::forward<decltype(index)>(index), wand_data_filename, queries, type, query_type);
+            profile(index, wand_data_filename, queries, type, query_type);
         });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());
