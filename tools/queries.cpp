@@ -23,6 +23,7 @@
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "query/algorithm.hpp"
 #include "scorer/scorer.hpp"
 #include "timer.hpp"
@@ -157,10 +158,8 @@ void perftest(
     bool safe,
     std::optional<std::string>& pair_index_path)
 {
-    IndexType index;
     spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    IndexType index(MemorySource::mapped_file(index_filename));
 
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
@@ -173,20 +172,12 @@ void perftest(
         }
     }
 
-    WandType wdata;
-
-    std::vector<std::string> query_types;
-    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            std::cerr << "error mapping file: " << error.message() << ", exiting..." << std::endl;
-            throw std::runtime_error("Error opening file");
+    WandType const wdata = [&] {
+        if (wand_data_filename) {
+            return WandType(MemorySource::mapped_file(*wand_data_filename));
         }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
+        return WandType{};
+    }();
 
     using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
     auto pair_index = [&]() -> std::optional<pair_index_type> {
@@ -200,6 +191,9 @@ void perftest(
 
     spdlog::info("Performing {} queries", type);
     spdlog::info("K: {}", k);
+
+    std::vector<std::string> query_types;
+    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
     for (auto&& t: query_types) {
         spdlog::info("Query type: {}", t);

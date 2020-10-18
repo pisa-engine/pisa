@@ -173,7 +173,7 @@ auto operator&=(RequestFlagSet& lhs, RequestFlag rhs) -> RequestFlagSet&;
 /// IDs, and also has some additional data, like term weights, etc.
 class QueryRequest {
   public:
-    explicit QueryRequest(QueryContainer const& data, std::size_t k, RequestFlagSet flags);
+    QueryRequest(QueryContainer const& data, std::size_t k, RequestFlagSet flags);
 
     [[nodiscard]] auto term_ids() const -> gsl::span<std::uint32_t const>;
     [[nodiscard]] auto term_weights() const -> gsl::span<float const>;

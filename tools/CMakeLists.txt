@@ -10,16 +10,6 @@ target_link_libraries(build-pair-index
   CLI11
 )
 
-#add_executable(optimal_hybrid_index optimal_hybrid_index.cpp)
-#target_include_directories(optimal_hybrid_index PRIVATE ${STXXL_INCLUDE_DIRS})
-#target_link_libraries(optimal_hybrid_index
-#  ${STXXL_LIBRARIES}
-#  pisa
-#)
-#set_target_properties(optimal_hybrid_index PROPERTIES
-#            CXX_STANDARD 14
-#)
-
 add_executable(create_wand_data create_wand_data.cpp)
 target_link_libraries(create_wand_data
   pisa
@@ -46,11 +36,6 @@ target_link_libraries(thresholds
 
 add_executable(profile_queries profile_queries.cpp)
 target_link_libraries(profile_queries
-  pisa
-)
-
-add_executable(profile_decoding profile_decoding.cpp)
-target_link_libraries(profile_decoding
   pisa
 )
 
@@ -151,6 +136,18 @@ target_link_libraries(filter-queries
 
 add_executable(kth_threshold kth_threshold.cpp)
 target_link_libraries(kth_threshold
+  pisa
+  CLI11
+)
+
+add_executable(taily-stats taily_stats.cpp)
+target_link_libraries(taily-stats
+  pisa
+  CLI11
+)
+
+add_executable(taily-thresholds taily_thresholds.cpp)
+target_link_libraries(taily-thresholds
   pisa
   CLI11
 )

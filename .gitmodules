@@ -1,9 +1,6 @@
 [submodule "external/FastPFor"]
 	path = external/FastPFor
 	url = https://github.com/lemire/FastPFor.git
-[submodule "external/stxxl"]
-	path = external/stxxl
-	url = https://github.com/stxxl/stxxl.git
 [submodule "external/CMake-codecov"]
 	path = external/CMake-codecov
 	url = https://github.com/RWTH-HPC/CMake-codecov.git
@@ -70,3 +67,6 @@
 [submodule "external/rapidcheck"]
 	path = external/rapidcheck
 	url = https://github.com/emil-e/rapidcheck.git
+[submodule "external/taily"]
+	path = external/taily
+	url = https://github.com/pisa-engine/taily.git

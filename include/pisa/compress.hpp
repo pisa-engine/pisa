@@ -17,6 +17,7 @@
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
 #include "util/verify_collection.hpp"  // XXX move to index_build_utils
@@ -168,17 +169,12 @@ void compress_index(
     size_t postings = 0;
     {
         pisa::progress progress("Create index", input.size());
-        WandType wdata;
-        mio::mmap_source md;
-        if (wand_data_filename) {
-            std::error_code error;
-            md.map(*wand_data_filename, error);
-            if (error) {
-                spdlog::error("error mapping file: {}, exiting...", error.message());
-                std::abort();
+        WandType const wdata = [&] {
+            if (wand_data_filename) {
+                return WandType(MemorySource::mapped_file(*wand_data_filename));
             }
-            mapper::map(wdata, md, mapper::map_flags::warmup);
-        }
+            return WandType{};
+        }();
 
         std::unique_ptr<index_scorer<WandType>> scorer;
 

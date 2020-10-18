@@ -17,7 +17,6 @@
 #include "block_freq_index.hpp"
 
 #include "freq_index.hpp"
-#include "mixed_block.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/positive_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
@@ -43,7 +42,6 @@ using block_qmx_index = block_freq_index<pisa::qmx_block>;
 using block_simple8b_index = block_freq_index<pisa::simple8b_block>;
 using block_simple16_index = block_freq_index<pisa::simple16_block>;
 using block_simdbp_index = block_freq_index<pisa::simdbp_block>;
-using block_mixed_index = block_freq_index<pisa::mixed_block>;
 
 }  // namespace pisa
 
@@ -52,7 +50,7 @@ using block_mixed_index = block_freq_index<pisa::mixed_block>;
 //#define PISA_INDEX_TYPES                                                                    \
 //    (ef)(single)(pefuniform)(pefopt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(   \
 //        block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
-//        block_simple16)(block_simdbp)(block_mixed)
+//        block_simple16)(block_simdbp)
 #define PISA_BLOCK_INDEX_TYPES                                                                    \
     (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
-        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)(block_mixed)
+        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)

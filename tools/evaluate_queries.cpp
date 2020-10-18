@@ -49,22 +49,10 @@ void evaluate_queries(
     bool use_thresholds,
     std::optional<std::string>& pair_index_path)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
-
-    WandType wdata;
+    IndexType index(MemorySource::mapped_file(index_filename));
+    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
-
-    mio::mmap_source md;
-    std::error_code error;
-    md.map(wand_data_filename, error);
-    if (error) {
-        spdlog::error("error mapping file: {}, exiting...", error.message());
-        std::abort();
-    }
-    mapper::map(wdata, md, mapper::map_flags::warmup);
 
     using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
     auto pair_index = [&]() -> std::optional<pair_index_type> {
@@ -298,9 +286,9 @@ std::ostream& operator<<(std::ostream& os, Inspect const& inspect)
 
 template <typename IndexType, typename WandType>
 void inspect(
-    const std::string& index_filename,
-    const std::optional<std::string>& wand_data_filename,
-    const std::vector<QueryContainer>& queries,
+    std::string const& index_filename,
+    std::string const& wand_data_filename,
+    std::vector<QueryContainer> const& queries,
     std::string const& type,
     std::string const& query_type,
     uint64_t k,
@@ -311,24 +299,10 @@ void inspect(
     bool use_thresholds,
     std::optional<std::string>& pair_index_path)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
-
-    WandType wdata;
+    IndexType index(MemorySource::mapped_file(index_filename));
+    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
-
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
-        }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
 
     using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
     auto pair_index = [&]() -> std::optional<pair_index_type> {
@@ -340,10 +314,10 @@ void inspect(
 
     std::function<Inspect(QueryRequest)> query_fun;
 
-    if (query_type == "wand" && wand_data_filename) {
+    if (query_type == "wand") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "block_max_wand" && wand_data_filename) {
+    } else if (query_type == "block_max_wand") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
@@ -354,19 +328,19 @@ void inspect(
                 index.num_docs());
             return inspect;
         };
-    } else if (query_type == "block_max_maxscore" && wand_data_filename) {
+    } else if (query_type == "block_max_maxscore") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "block_max_ranked_and" && wand_data_filename) {
+    } else if (query_type == "block_max_ranked_and") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "ranked_and" && wand_data_filename) {
+    } else if (query_type == "ranked_and") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "ranked_or" && wand_data_filename) {
+    } else if (query_type == "ranked_or") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "maxscore" && wand_data_filename) {
+    } else if (query_type == "maxscore") {
         query_fun = [&](QueryRequest const& query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
@@ -377,13 +351,13 @@ void inspect(
                 index.num_docs());
             return inspect;
         };
-    } else if (query_type == "ranked_or_taat" && wand_data_filename) {
+    } else if (query_type == "ranked_or_taat") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "ranked_or_taat_lazy" && wand_data_filename) {
+    } else if (query_type == "ranked_or_taat_lazy") {
         spdlog::error("Unimplemented");
         std::abort();
-    } else if (query_type == "maxscore-uni" && wand_data_filename) {
+    } else if (query_type == "maxscore-uni") {
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
@@ -393,7 +367,7 @@ void inspect(
               index.num_docs());
             return inspect;
         };
-    } else if (query_type == "maxscore-inter" && wand_data_filename) {
+    } else if (query_type == "maxscore-inter") {
         query_fun = [&](QueryRequest const& query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
@@ -418,7 +392,7 @@ void inspect(
             q(query, index, wdata, *pair_index, *scorer, index.num_docs(), &inspect);
             return inspect;
         };
-    } else if (query_type == "maxscore-inter-eager" && wand_data_filename) {
+    } else if (query_type == "maxscore-inter-eager") {
         query_fun = [&](QueryRequest const& query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
@@ -443,7 +417,7 @@ void inspect(
             q(query, index, wdata, *pair_index, *scorer, index.num_docs(), &inspect);
             return inspect;
         };
-    } else if (query_type == "maxscore-inter-opt" && wand_data_filename) {
+    } else if (query_type == "maxscore-inter-opt") {
         query_fun = [&](QueryRequest const& query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));

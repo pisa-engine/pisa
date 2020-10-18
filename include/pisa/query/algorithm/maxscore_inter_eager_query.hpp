@@ -61,6 +61,9 @@ struct maxscore_inter_eager_query {
 
         auto term_ids = query.term_ids();
 
+        if (auto initial_threshold = query.threshold(); initial_threshold) {
+            m_topk.set_threshold(*initial_threshold);
+        }
         auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
         auto selection = query.selection();
@@ -148,8 +151,8 @@ struct maxscore_inter_eager_query {
         std::sort(entries.begin(), entries.end(), [](auto&& lhs, auto&& rhs) {
             return lhs.first > rhs.first;
         });
-        if (entries.size() > m_topk.size()) {
-            entries.erase(std::next(entries.begin(), m_topk.size()), entries.end());
+        if (entries.size() > m_topk.capacity()) {
+            entries.erase(std::next(entries.begin(), m_topk.capacity()), entries.end());
         }
 
         for (auto entry: entries) {

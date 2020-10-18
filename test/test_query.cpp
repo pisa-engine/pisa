@@ -255,6 +255,8 @@ TEST_CASE("Request flags")
     REQUIRE(not flags.contains(RequestFlag::Threshold));
     REQUIRE(flags.contains(RequestFlag::Weights));
     REQUIRE(not(RequestFlagSet::all() ^ RequestFlag::Threshold).contains(RequestFlag::Threshold));
+    REQUIRE((RequestFlagSet::all() ^ RequestFlag::Threshold).contains(RequestFlag::Selection));
+    REQUIRE((RequestFlagSet::all() ^ RequestFlag::Threshold).contains(RequestFlag::Weights));
 }
 
 TEST_CASE("QueryRequest")

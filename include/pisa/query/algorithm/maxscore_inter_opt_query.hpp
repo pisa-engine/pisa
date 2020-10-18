@@ -133,6 +133,10 @@ struct maxscore_inter_opt_query {
             throw std::invalid_argument("maxscore_inter_query requires posting list selections");
         }
 
+        if (auto initial_threshold = query.threshold(); initial_threshold) {
+            m_topk.set_threshold(*initial_threshold);
+        }
+
         auto const essential_terms = selection->selected_terms | to_vector | sort;
         auto const non_essential_terms =
             ranges::views::set_difference(term_ids, essential_terms) | to_vector;
@@ -155,7 +159,7 @@ struct maxscore_inter_opt_query {
         Payload initial_payload{};
 
         auto accumulate_single = [](auto& acc, auto&& cursor) {
-            acc.score = cursor.score();
+            acc.score += cursor.score();
             acc.state |= 1U << cursor.term_position();
             return acc;
         };
@@ -225,11 +229,6 @@ struct maxscore_inter_opt_query {
                 inspect_cursors(std::move(essential_pair_cursors), inspect),
                 inspect_cursors(std::move(essential_intersections), inspect)),
             std::make_tuple(accumulate_single, accumulate_pair, accumulate_pair));
-
-        auto lookup_cursors_upper_bound = std::accumulate(
-            lookup_cursors.begin(), lookup_cursors.end(), 0.0F, [](auto acc, auto&& cursor) {
-                return acc + cursor.max_score();
-            });
 
         auto mus = [&] {
             std::vector<float> mus((term_count + 1) * (1U << term_count), 0.0);

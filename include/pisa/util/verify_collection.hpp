@@ -1,17 +1,19 @@
 #pragma once
 
-#include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "util/util.hpp"
+
+namespace pisa {
 
 template <typename InputCollection, typename Collection>
 void verify_collection(InputCollection const& input, const char* filename)
 {
     Collection coll;
-    mio::mmap_source m(filename);
-    pisa::mapper::map(coll, m);
+    auto source = MemorySource::mapped_file(boost::filesystem::path(filename));
+    pisa::mapper::map(coll, source.data());
     size_t size = 0;
     spdlog::info("Checking the written data, just to be extra safe...");
     size_t s = 0;
@@ -46,3 +48,5 @@ void verify_collection(InputCollection const& input, const char* filename)
     }
     spdlog::info("Everything is OK!");
 }
+
+}  // namespace pisa
