@@ -30,9 +30,10 @@ class wand_data {
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
     wand_data() = default;
-    explicit wand_data(MemorySource source) : m_source(std::move(source))
+    explicit wand_data(MemorySource source)
+        : m_source(std::move(source)), m_memory_span(m_source.subspan(0))
     {
-        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
+        mapper::map(*this, m_memory_span.data(), mapper::map_flags::warmup);
     }
 
     template <typename LengthsIterator>
@@ -167,6 +168,7 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_term_posting_counts;
     mapper::mappable_vector<float> m_max_term_weight;
     MemorySource m_source;
+    MemorySpan m_memory_span;
 };
 
 void create_wand_data(

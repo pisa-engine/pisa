@@ -35,9 +35,7 @@ class PairIndex {
     [[nodiscard]] static auto load(std::string const& file_path) -> PairIndex
     {
         try {
-            PairIndex<Index> pair_index;
-            pair_index.m_index_source = mio::mmap_source(file_path.c_str());
-            mapper::map(pair_index.m_index, pair_index.m_index_source);
+            PairIndex<Index> pair_index(Index(MemorySource::mapped_file(file_path)));
             pair_index.m_mapping_source =
                 mio::mmap_source(fmt::format("{}.pairs", file_path).c_str());
             mapper::map(pair_index.m_pair_mapping, pair_index.m_mapping_source);
@@ -61,13 +59,11 @@ class PairIndex {
     }
 
   private:
-    PairIndex() = default;
-
-    mio::mmap_source m_index_source;
-    mio::mmap_source m_mapping_source;
+    explicit PairIndex(Index index) : m_index(std::move(index)) {}
 
     Index m_index;
-    mapper::mappable_vector<TermPair> m_pair_mapping;
+    mio::mmap_source m_mapping_source{};
+    mapper::mappable_vector<TermPair> m_pair_mapping{};
     // std::unordered_map<TermPair, TermId> m_pair_hash_map;
 };
 
@@ -130,10 +126,10 @@ void build_binary_index(
     std::string const& index_filename, std::vector<TermPair> pairs, std::string const& output_filename)
 {
     using binary_index_type = block_freq_index<pisa::simdbp_block, false, IndexArity::Binary>;
-    block_simdbp_index index;
+    block_simdbp_index index(MemorySource::mapped_file(index_filename));
     spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    // mio::mmap_source m(index_filename.c_str());
+    // mapper::map(index, m);
 
     build_binary_index(
         index,

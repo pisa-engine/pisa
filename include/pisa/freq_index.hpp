@@ -20,9 +20,10 @@ class freq_index {
 
     freq_index() = default;
 
-    explicit freq_index(MemorySource source) : m_source(std::move(source))
+    explicit freq_index(MemorySource source)
+        : m_source(std::move(source)), m_memory_span(m_source.subspan(0))
     {
-        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
+        mapper::map(*this, m_memory_span.data(), mapper::map_flags::warmup);
     }
 
     class builder {
@@ -186,5 +187,6 @@ class freq_index {
     bitvector_collection m_docs_sequences;
     bitvector_collection m_freqs_sequences;
     MemorySource m_source;
+    MemorySpan m_memory_span;
 };
 }  // namespace pisa

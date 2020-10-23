@@ -16,12 +16,37 @@
 using namespace pisa;
 
 template <typename Index>
+MemorySource build_index(
+    binary_freq_collection const& collection, boost::filesystem::path const& dir, bool disk_based)
+{
+    typename Index::builder builder(collection.num_docs(), global_parameters{});
+    for (auto const& plist: collection) {
+        uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
+        builder.add_posting_list(
+            plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+    }
+    Index index;
+    builder.build(index);
+    auto p = (dir / "idx");
+    mapper::freeze(index, p.c_str());
+    if (disk_based) {
+        return MemorySource::disk_resident_file(p);
+    }
+    return MemorySource::mapped_file(p);
+}
+
+template <typename Index>
 struct IndexData {
     static std::unordered_map<std::string, std::unique_ptr<IndexData>> data;
 
-    IndexData(std::string const& scorer_name, bool quantized, std::unordered_set<size_t> const& dropped_term_ids)
+    IndexData(
+        std::string const& scorer_name,
+        bool quantized,
+        std::unordered_set<size_t> const& dropped_term_ids,
+        bool disk_based)
         : collection(PISA_SOURCE_DIR "/test/test_data/test_collection"),
           document_sizes(PISA_SOURCE_DIR "/test/test_data/test_collection.sizes"),
+          index(build_index<Index>(collection, tempdir.path(), disk_based)),
           wdata(
               document_sizes.begin()->begin(),
               collection.num_docs(),
@@ -46,20 +71,22 @@ struct IndexData {
             queries.push_back(QueryContainer::from_json(query_line));
         };
         io::for_each_line(qfile, push_query);
-
-        std::string t;
     }
 
     [[nodiscard]] static auto
-    get(std::string const& s_name, bool quantized, std::unordered_set<size_t> const& dropped_term_ids)
+    get(std::string const& s_name,
+        bool quantized,
+        std::unordered_set<size_t> const& dropped_term_ids,
+        bool disk_based = false)
     {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
             IndexData::data[s_name] =
-                std::make_unique<IndexData<Index>>(s_name, quantized, dropped_term_ids);
+                std::make_unique<IndexData<Index>>(s_name, quantized, dropped_term_ids, disk_based);
         }
         return IndexData::data[s_name].get();
     }
 
+    TemporaryDirectory tempdir{};
     global_parameters params;
     binary_freq_collection collection;
     binary_collection document_sizes;
@@ -113,32 +140,37 @@ TEMPLATE_TEST_CASE(
     // range_query_128<block_max_wand_query>,
     range_query_128<block_max_maxscore_query>)
 {
-    for (auto quantized: {false, true}) {
-        for (auto&& s_name: {"bm25", "qld"}) {
-            std::unordered_set<size_t> dropped_term_ids;
-            auto data = IndexData<block_simdbp_index>::get(s_name, quantized, dropped_term_ids);
-            topk_queue topk_1(10);
-            TestType op_q(topk_1);
-            topk_queue topk_2(10);
-            ranked_or_query or_q(topk_2);
+    for (auto disk_based: {false, true}) {
+        for (auto quantized: {false, true}) {
+            for (auto&& s_name: {"bm25", "qld"}) {
+                std::unordered_set<size_t> dropped_term_ids;
+                auto data = IndexData<block_simdbp_index>::get(
+                    s_name, quantized, dropped_term_ids, disk_based);
+                topk_queue topk_1(10);
+                TestType op_q(topk_1);
+                topk_queue topk_2(10);
+                ranked_or_query or_q(topk_2);
 
-            auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
-            for (auto const& q: data->queries) {
-                or_q(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
-                op_q(
-                    make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
-                    data->index.num_docs());
-                topk_1.finalize();
-                topk_2.finalize();
-                REQUIRE(topk_2.topk().size() == topk_1.topk().size());
-                for (size_t i = 0; i < topk_2.topk().size(); ++i) {
-                    REQUIRE(
-                        topk_2.topk()[i].first
-                        == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance is %
-                                                                          // relative
+                auto scorer = scorer::from_params(ScorerParams(s_name), data->wdata);
+                for (auto const& q: data->queries) {
+                    or_q(
+                        make_scored_cursors(data->index, *scorer, q.query(10)),
+                        data->index.num_docs());
+                    op_q(
+                        make_block_max_scored_cursors(data->index, data->wdata, *scorer, q.query(10)),
+                        data->index.num_docs());
+                    topk_1.finalize();
+                    topk_2.finalize();
+                    REQUIRE(topk_2.topk().size() == topk_1.topk().size());
+                    for (size_t i = 0; i < topk_2.topk().size(); ++i) {
+                        REQUIRE(
+                            topk_2.topk()[i].first
+                            == Approx(topk_1.topk()[i].first).epsilon(0.1));  // tolerance is %
+                                                                              // relative
+                    }
+                    topk_1.clear();
+                    topk_2.clear();
                 }
-                topk_1.clear();
-                topk_2.clear();
             }
         }
     }

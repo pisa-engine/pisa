@@ -25,7 +25,26 @@ class block_freq_index {
     block_freq_index() = default;
     explicit block_freq_index(MemorySource source) : m_source(std::move(source))
     {
-        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
+        auto freeze_flags = bit_cast<std::uint64_t>(m_source.subspan(0, 8).span());
+        std::size_t offset = 8;
+        constexpr auto param_size = sizeof(global_parameters);
+
+        auto param_mem = m_source.subspan(offset, param_size);
+        m_params = bit_cast<global_parameters>(param_mem.span());
+        offset += param_mem.size();
+
+        auto sizes_mem = m_source.subspan(offset, 32);
+        m_size = bit_cast<std::size_t>(sizes_mem.subspan(0, 8));
+        m_num_docs = bit_cast<std::size_t>(sizes_mem.subspan(8, 8));
+        auto endpoint_size = bit_cast<std::size_t>(sizes_mem.subspan(24, 8));
+        offset += 16;
+
+        m_endpoint_memory = m_source.subspan(offset, 8 * endpoint_size + 16);
+        auto mapper = mapper::detail::map_visitor(m_endpoint_memory.data(), 0, freeze_flags);
+        m_endpoints.map(mapper);
+
+        m_list_offset = offset + m_endpoint_memory.size() + 8;
+        m_list_size = m_source.size() - m_list_offset;
     }
 
     class builder {
@@ -73,13 +92,15 @@ class block_freq_index {
             sq.m_params = m_params;
             sq.m_size = m_endpoints.size() - 1;
             sq.m_num_docs = m_num_docs;
-            sq.m_lists.steal(m_lists);
+            sq.m_source = MemorySource::from_vector(std::move(m_lists));
+            sq.m_list_offset = 0;
+            sq.m_list_size = sq.m_source.size();
 
             bit_vector_builder bvb;
             compact_elias_fano::write(
                 bvb,
                 m_endpoints.begin(),
-                sq.m_lists.size(),
+                sq.m_list_size,
                 sq.m_size,
                 m_params);  // XXX
             bit_vector(&bvb).swap(sq.m_endpoints);
@@ -89,7 +110,7 @@ class block_freq_index {
         global_parameters m_params;
         size_t m_num_docs;
         std::vector<uint64_t> m_endpoints;
-        std::vector<uint8_t> m_lists;
+        std::vector<std::uint8_t> m_lists;
     };
 
     class stream_builder {
@@ -226,26 +247,30 @@ class block_freq_index {
     document_enumerator operator[](size_t i) const
     {
         assert(i < size());
-        compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
+        compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_list_size, m_size, m_params);
 
-        auto endpoint = endpoints.move(i).second;
-        return document_enumerator(m_lists.data() + endpoint, num_docs(), i);
+        auto startpoint = endpoints.move(i).second;
+        auto length =
+            i + 1 < size() ? endpoints.move(i + 1).second - startpoint : gsl::dynamic_extent;
+        assert(length > 0);
+        return document_enumerator(m_source.subspan(m_list_offset + startpoint), num_docs(), i);
     }
 
     void warmup(size_t i) const
     {
         assert(i < size());
-        compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
+        compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_list_size, m_size, m_params);
 
         auto begin = endpoints.move(i).second;
-        auto end = m_lists.size();
+        auto end = m_list_size;
         if (i + 1 != size()) {
             end = endpoints.move(i + 1).second;
         }
+        auto span = m_source.subspan(m_list_offset + begin, end - begin);
 
         volatile uint32_t tmp;
-        for (size_t i = begin; i != end; ++i) {
-            tmp = m_lists[i];
+        for (auto v: span) {
+            tmp = v;
         }
         (void)tmp;
     }
@@ -255,17 +280,21 @@ class block_freq_index {
         std::swap(m_params, other.m_params);
         std::swap(m_size, other.m_size);
         m_endpoints.swap(other.m_endpoints);
-        m_lists.swap(other.m_lists);
+        std::swap(m_source, other.m_source);
+        std::swap(m_list_offset, other.m_list_offset);
+        std::swap(m_list_size, other.m_list_size);
     }
 
     template <typename Visitor>
     void map(Visitor& visit)
     {
+        auto lists = m_source.subspan(m_list_offset, m_list_size);
+        auto list_span = lists.span();
         visit(m_params, "m_params");
         visit(m_size, "m_size");
         visit(m_num_docs, "m_num_docs");
         visit(m_endpoints, "m_endpoints");
-        visit(m_lists, "m_lists");
+        visit(list_span, "m_lists");
     }
 
   private:
@@ -273,7 +302,10 @@ class block_freq_index {
     size_t m_size{0};
     size_t m_num_docs{0};
     bit_vector m_endpoints;
-    mapper::mappable_vector<uint8_t> m_lists;
     MemorySource m_source;
+    MemorySpan m_endpoint_memory;
+    size_t m_list_offset{0};
+    size_t m_list_size{0};
 };
+
 }  // namespace pisa

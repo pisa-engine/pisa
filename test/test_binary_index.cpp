@@ -76,8 +76,8 @@ struct IndexData {
         }
 
         build_binary_index(compressed_path.string(), std::move(pairs), binary_index_path.string());
-        binary_index_source = mio::mmap_source(binary_index_path.c_str());
-        mapper::map(binary_index, binary_index_source.data());
+        binary_index =
+            std::make_unique<binary_index_type>(MemorySource::mapped_file(binary_index_path));
         pair_mapping_source =
             mio::mmap_source(fmt::format("{}.pairs", binary_index_path.string()).c_str());
         mapper::map(pair_mapping, pair_mapping_source.data());
@@ -98,8 +98,8 @@ struct IndexData {
     std::vector<QueryContainer> queries;
     wand_data<wand_data_raw> wdata;
     TemporaryDirectory tmp;
-    mio::mmap_source binary_index_source;
-    binary_index_type binary_index;
+    // mio::mmap_source binary_index_source;
+    std::unique_ptr<binary_index_type> binary_index;
     mio::mmap_source pair_mapping_source;
     mapper::mappable_vector<TermPair> pair_mapping;
 };
@@ -138,7 +138,7 @@ TEST_CASE("Ranked query test", "[query][ranked][integration]")
                             REQUIRE(pos != data->pair_mapping.end());
                             REQUIRE(*pos == term_pair);
                             auto pair_id = std::distance(data->pair_mapping.begin(), pos);
-                            auto cursor = data->binary_index[pair_id];
+                            auto cursor = (*data->binary_index)[pair_id];
                             std::vector<std::pair<std::uint32_t, float>> actual;
                             auto left_scorer = scorer->term_scorer(term_pair.front());
                             auto right_scorer = scorer->term_scorer(term_pair.back());

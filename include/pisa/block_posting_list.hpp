@@ -1,6 +1,7 @@
 #pragma once
 
 #include "codec/block_codecs.hpp"
+#include "memory_source.hpp"
 #include "util/block_profiler.hpp"
 #include "util/util.hpp"
 
@@ -114,8 +115,10 @@ struct block_posting_list {
 
     class document_enumerator {
       public:
-        document_enumerator(uint8_t const* data, uint64_t universe, size_t term_id = 0)
-            : m_base(TightVariableByte::decode(data, &m_n, 1)),
+        document_enumerator(MemorySpan memory, uint64_t universe, size_t term_id = 0)
+            : m_memory(std::move(memory)),
+              m_base(TightVariableByte::decode(
+                  reinterpret_cast<std::uint8_t const*>(m_memory.data()), &m_n, 1)),
               m_blocks(ceil_div(m_n, BlockCodec::block_size)),
               m_block_maxs(m_base),
               m_block_endpoints(m_block_maxs + 4 * m_blocks),
@@ -352,6 +355,8 @@ struct block_posting_list {
                 ++m_block_profile[2 * m_cur_block + 1];
             }
         }
+
+        MemorySpan m_memory;
 
         uint32_t m_n{0};
         uint8_t const* m_base;

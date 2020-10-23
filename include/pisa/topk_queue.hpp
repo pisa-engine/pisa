@@ -8,6 +8,9 @@
 
 namespace pisa {
 
+/// How many `std::nextafter` is called when decreasing the initial threshold.
+static constexpr std::size_t EPSILON_FACTOR = 10;
+
 using Threshold = float;
 struct topk_queue {
     using entry_type = std::pair<float, uint64_t>;
@@ -50,6 +53,7 @@ struct topk_queue {
 
     void finalize()
     {
+        m_threshold = size() == capacity() ? m_q.front().first : 0.0;
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
         size_t size = std::lower_bound(
                           m_q.begin(),
@@ -62,7 +66,13 @@ struct topk_queue {
 
     [[nodiscard]] std::vector<entry_type> const& topk() const noexcept { return m_q; }
 
-    void set_threshold(Threshold t) noexcept { m_threshold = t; }
+    void set_threshold(Threshold t) noexcept
+    {
+        for (int _i = 0; _i < EPSILON_FACTOR; ++_i) {
+            t = std::nextafter(t, 0.0F);
+        }
+        m_threshold = t;
+    }
 
     void clear() noexcept
     {

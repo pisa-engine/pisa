@@ -61,8 +61,9 @@ class TermProcessor {
         std::optional<std::string> const& stopwords_filename,
         std::optional<std::string> const& stemmer_type)
     {
-        auto source = std::make_shared<MemorySource>(MemorySource::mapped_file(*terms_file));
-        auto terms = Payload_Vector<>::from(*source);
+        auto source =
+            std::make_shared<MemorySource>(MemorySource::mapped_file(*terms_file))->subspan(0);
+        auto terms = Payload_Vector<>::from(source);
         auto to_id = [source = std::move(source), terms](auto str) -> std::optional<term_id_type> {
             // Note: the lexicographical order of the terms matters.
             return pisa::binary_search(terms.begin(), terms.end(), std::string_view(str));

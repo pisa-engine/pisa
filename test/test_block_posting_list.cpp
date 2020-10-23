@@ -19,9 +19,11 @@
 #include <random>
 #include <vector>
 
+#include <gsl/span>
+
 template <typename PostingList>
 void test_block_posting_list_ops(
-    uint8_t const* data,
+    pisa::MemorySpan data,
     uint64_t n,
     uint64_t universe,
     std::vector<uint64_t> const& docs,
@@ -69,8 +71,10 @@ void test_block_posting_list()
         random_posting_data(n, universe, docs, freqs);
         std::vector<uint8_t> data;
         posting_list_type::write(data, n, docs.begin(), freqs.begin());
+        auto source = pisa::MemorySource::from_span(
+            gsl::make_span(reinterpret_cast<char const*>(data.data()), data.size()));
 
-        test_block_posting_list_ops<posting_list_type>(data.data(), n, universe, docs, freqs);
+        test_block_posting_list_ops<posting_list_type>(source.subspan(0), n, universe, docs, freqs);
     }
 }
 
@@ -88,8 +92,11 @@ void test_block_posting_list_reordering()
         std::vector<uint8_t> data;
         posting_list_type::write(data, n, docs.begin(), freqs.begin());
 
+        auto source = pisa::MemorySource::from_span(
+            gsl::make_span(reinterpret_cast<char const*>(data.data()), data.size()));
+
         // reorder blocks
-        typename posting_list_type::document_enumerator e(data.data(), universe);
+        typename posting_list_type::document_enumerator e(source.subspan(0), universe);
         auto blocks = e.get_blocks();
         std::shuffle(
             blocks.begin() + 1,
@@ -99,8 +106,10 @@ void test_block_posting_list_reordering()
         std::vector<uint8_t> reordered_data;
         posting_list_type::write_blocks(reordered_data, n, blocks);
 
-        test_block_posting_list_ops<posting_list_type>(
-            reordered_data.data(), n, universe, docs, freqs);
+        source = pisa::MemorySource::from_span(
+            gsl::make_span(reinterpret_cast<char const*>(data.data()), data.size()));
+
+        test_block_posting_list_ops<posting_list_type>(source.subspan(0), n, universe, docs, freqs);
     }
 }
 

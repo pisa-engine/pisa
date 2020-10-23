@@ -62,6 +62,20 @@ void test_block_freq_index()
             REQUIRE(coll.num_docs() == doc_enum.docid());
         }
     }
+
+    {
+        collection_type coll(pisa::MemorySource::disk_resident_file(filename));
+        for (size_t i = 0; i < posting_lists.size(); ++i) {
+            auto const& plist = posting_lists[i];
+            auto doc_enum = coll[i];
+            REQUIRE(plist.first.size() == doc_enum.size());
+            for (size_t p = 0; p < plist.first.size(); ++p, doc_enum.next()) {
+                MY_REQUIRE_EQUAL(plist.first[p], doc_enum.docid(), "i = " << i << " p = " << p);
+                MY_REQUIRE_EQUAL(plist.second[p], doc_enum.freq(), "i = " << i << " p = " << p);
+            }
+            REQUIRE(coll.num_docs() == doc_enum.docid());
+        }
+    }
 }
 
 TEST_CASE("block_freq_index")

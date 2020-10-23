@@ -211,9 +211,9 @@ namespace invert {
             auto first_document_in_batch = first_document_id + first_idx_in_batch;
             auto last_document_in_batch = first_document_id + last_idx_in_batch;
             auto current_batch_size = last_idx_in_batch - first_idx_in_batch;
-            batches.push_back(
-                Batch{documents.subspan(first_idx_in_batch, current_batch_size),
-                      ranges::views::iota(first_document_in_batch, last_document_in_batch)});
+            batches.push_back(Batch{
+                documents.subspan(first_idx_in_batch, current_batch_size),
+                ranges::views::iota(first_document_in_batch, last_document_in_batch)});
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
         std::transform(
@@ -345,7 +345,8 @@ namespace invert {
         std::optional<std::uint32_t> term_count = std::nullopt)
     {
         if (not term_count) {
-            auto source = MemorySource::mapped_file(fmt::format("{}.termlex", input_basename));
+            auto source =
+                MemorySource::mapped_file(fmt::format("{}.termlex", input_basename)).subspan(0);
             auto terms = Payload_Vector<>::from(source);
             term_count = static_cast<std::uint32_t>(terms.size());
         }

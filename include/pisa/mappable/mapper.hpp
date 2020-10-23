@@ -79,6 +79,19 @@ namespace pisa { namespace mapper {
                 return *this;
             }
 
+            template <typename T>
+            freeze_visitor& operator()(gsl::span<T>& span, const char* /* friendly_name */)
+            {
+                auto size = span.size();
+                (*this)(size, "size");
+
+                auto n_bytes = static_cast<std::size_t>(size * sizeof(T));
+                m_fout.write(reinterpret_cast<const char*>(span.data()), long(n_bytes));
+                m_written += n_bytes;
+
+                return *this;
+            }
+
             size_t written() const { return m_written; }
 
           protected:
@@ -95,6 +108,9 @@ namespace pisa { namespace mapper {
                 m_freeze_flags = *reinterpret_cast<const uint64_t*>(m_cur);
                 m_cur += sizeof(m_freeze_flags);
             }
+            map_visitor(const char* base_address, uint64_t flags, uint64_t freeze_flags)
+                : m_base(base_address), m_cur(m_base), m_flags(flags), m_freeze_flags(freeze_flags)
+            {}
 
             map_visitor(map_visitor const&) = delete;
             map_visitor(map_visitor&&) = delete;
@@ -138,6 +154,12 @@ namespace pisa { namespace mapper {
 
                 m_cur += bytes;
                 return *this;
+            }
+
+            template <typename T>
+            map_visitor& operator()(gsl::span<T>& span, const char* /* friendly_name */)
+            {
+                throw std::invalid_argument("Cannot map to a span.");
             }
 
             size_t bytes_read() const { return size_t(m_cur - m_base); }
@@ -227,6 +249,21 @@ namespace pisa { namespace mapper {
                 size_t checkpoint = m_size;
                 (*this)(vec.m_size, "size");
                 m_size += static_cast<size_t>(vec.m_size * sizeof(T));
+
+                if (m_cur_size_node) {
+                    make_node(friendly_name)->size = m_size - checkpoint;
+                }
+
+                return *this;
+            }
+
+            template <typename T>
+            sizeof_visitor& operator()(gsl::span<T>& span, const char* friendly_name)
+            {
+                size_t checkpoint = m_size;
+                auto size = span.size();
+                (*this)(size, "size");
+                m_size += static_cast<size_t>(size * sizeof(T));
 
                 if (m_cur_size_node) {
                     make_node(friendly_name)->size = m_size - checkpoint;

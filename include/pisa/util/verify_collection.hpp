@@ -12,7 +12,7 @@ template <typename InputCollection, typename Collection>
 void verify_collection(InputCollection const& input, const char* filename)
 {
     Collection coll;
-    auto source = MemorySource::mapped_file(boost::filesystem::path(filename));
+    auto source = MemorySource::mapped_file(boost::filesystem::path(filename)).subspan(0);
     pisa::mapper::map(coll, source.data());
     size_t size = 0;
     spdlog::info("Checking the written data, just to be extra safe...");

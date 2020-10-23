@@ -112,8 +112,8 @@ std::ostream& operator<<(std::ostream& os, std::array<std::uint32_t, 2> p)
 TEMPLATE_TEST_CASE(
     "Ranked query test",
     "[query][ranked][integration]",
-    maxscore_inter_eager_query,
-    maxscore_inter_opt_query)
+    maxscore_inter_eager_query)  //,
+// maxscore_inter_opt_query)
 {
     std::unordered_set<size_t> dropped_term_ids;
     auto data = IndexData::get("bm25");
@@ -134,12 +134,11 @@ TEMPLATE_TEST_CASE(
             std::vector<std::size_t> term_positions(q.term_ids()->size());
             std::iota(term_positions.begin(), term_positions.end(), 0);
             q.add_selection(10, {.selected_terms = term_positions, .selected_pairs = {}});
-            q.add_threshold(10, std::nextafter(*q.threshold(10), 0.0F));
 
             baseline(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
             baseline_topk.finalize();
             algo(
-                q.query(10, RequestFlagSet::all() ^ RequestFlag::Threshold),
+                q.query(10, RequestFlagSet::all()),
                 data->index,
                 data->wdata,
                 *data->pair_index,
@@ -176,12 +175,11 @@ TEMPLATE_TEST_CASE(
             }
 
             q.add_selection(10, {.selected_terms = term_positions, .selected_pairs = pairs});
-            q.add_threshold(10, std::max(0.0F, std::nextafter(*q.threshold(10), 0.0F)));
 
             baseline(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
             baseline_topk.finalize();
             algo(
-                q.query(10),
+                q.query(10, RequestFlagSet::all()),
                 data->index,
                 data->wdata,
                 *data->pair_index,
@@ -203,7 +201,7 @@ TEMPLATE_TEST_CASE(
             baseline(make_scored_cursors(data->index, *scorer, q.query(10)), data->index.num_docs());
             baseline_topk.finalize();
             algo(
-                q.query(10),
+                q.query(10, RequestFlagSet::all()),
                 data->index,
                 data->wdata,
                 *data->pair_index,

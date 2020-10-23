@@ -184,7 +184,7 @@ struct UnionLookupJoin {
     {
         bool exit = false;
         while (not exit) {
-            if (PISA_UNLIKELY(m_current_value >= m_sentinel)) {
+            if (PISA_UNLIKELY(m_next_docid >= m_sentinel)) {
                 m_current_value = m_sentinel;
                 return;
             }

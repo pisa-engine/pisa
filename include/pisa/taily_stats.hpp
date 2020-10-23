@@ -64,8 +64,7 @@ class TailyStats {
         return value;
     }
 
-    [[nodiscard]] PISA_ALWAYSINLINE auto bytes(std::size_t start, std::size_t size) const
-        -> gsl::span<char const>
+    [[nodiscard]] PISA_ALWAYSINLINE auto bytes(std::size_t start, std::size_t size) const -> MemorySpan
     {
         try {
             return m_source.subspan(start, size);
