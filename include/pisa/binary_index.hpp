@@ -32,10 +32,17 @@ class PairIndex {
     using index_type = Index;
     using cursor_type = typename Index::document_enumerator;
 
-    [[nodiscard]] static auto load(std::string const& file_path) -> PairIndex
+    [[nodiscard]] static auto load(std::string const& file_path, bool disk_resident = true)
+        -> PairIndex
     {
         try {
-            PairIndex<Index> pair_index(Index(MemorySource::mapped_file(file_path)));
+            auto source = [&]() {
+                if (disk_resident) {
+                    return MemorySource::disk_resident_file(file_path);
+                }
+                return MemorySource::mapped_file(file_path);
+            }();
+            PairIndex<Index> pair_index(Index(std::move(source)));
             pair_index.m_mapping_source =
                 mio::mmap_source(fmt::format("{}.pairs", file_path).c_str());
             mapper::map(pair_index.m_pair_mapping, pair_index.m_mapping_source);

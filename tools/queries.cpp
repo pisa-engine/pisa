@@ -156,10 +156,17 @@ void perftest(
     const ScorerParams& scorer_params,
     bool use_thresholds,
     bool safe,
-    std::optional<std::string>& pair_index_path)
+    std::optional<std::string>& pair_index_path,
+    bool disk_resident,
+    bool disk_resident_pairs)
 {
     spdlog::info("Loading index from {}", index_filename);
-    IndexType index(MemorySource::mapped_file(index_filename));
+    auto index = [&]() {
+        if (disk_resident) {
+            return IndexType(MemorySource::disk_resident_file(index_filename));
+        }
+        return IndexType(MemorySource::mapped_file(index_filename));
+    }();
 
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
@@ -182,7 +189,7 @@ void perftest(
     using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
     auto pair_index = [&]() -> std::optional<pair_index_type> {
         if (pair_index_path) {
-            return pair_index_type::load(*pair_index_path);
+            return pair_index_type::load(*pair_index_path, disk_resident_pairs);
         }
         return std::nullopt;
     }();
@@ -403,6 +410,8 @@ int main(int argc, const char** argv)
     bool safe = false;
     bool quantized = false;
     bool use_thresholds = false;
+    bool disk_resident = false;
+    bool disk_resident_pairs = false;
     std::optional<std::string> pair_index_path{};
 
     App<arg::Index, arg::WandData<arg::WandMode::Optional>, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer>
@@ -415,6 +424,12 @@ int main(int argc, const char** argv)
         "Initialize top-k queue with threshold passed as part of a query object");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")->needs(thresholds_option);
     app.add_option("--pair-index", pair_index_path, "Path to pair index.");
+    app.add_flag(
+        "--disk-resident", disk_resident, "Keep index on disk and load postings at query time.");
+    app.add_flag(
+        "--disk-resident-pairs",
+        disk_resident_pairs,
+        "Keep pair index on disk and load postings at query time.");
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -455,7 +470,9 @@ int main(int argc, const char** argv)
         app.scorer_params(),
         use_thresholds,
         safe,
-        pair_index_path);
+        pair_index_path,
+        disk_resident,
+        disk_resident_pairs);
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \

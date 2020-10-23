@@ -253,7 +253,8 @@ class block_freq_index {
         auto length =
             i + 1 < size() ? endpoints.move(i + 1).second - startpoint : gsl::dynamic_extent;
         assert(length > 0);
-        return document_enumerator(m_source.subspan(m_list_offset + startpoint), num_docs(), i);
+        return document_enumerator(
+            m_source.subspan(m_list_offset + startpoint, length), num_docs(), i);
     }
 
     void warmup(size_t i) const

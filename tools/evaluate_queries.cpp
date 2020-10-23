@@ -47,9 +47,16 @@ void evaluate_queries(
     std::string const& run_id,
     std::string const& iteration,
     bool use_thresholds,
-    std::optional<std::string>& pair_index_path)
+    std::optional<std::string>& pair_index_path,
+    bool disk_resident)
 {
-    IndexType index(MemorySource::mapped_file(index_filename));
+    auto index = [&]() {
+        if (disk_resident) {
+            return IndexType(MemorySource::disk_resident_file(index_filename));
+        }
+        return IndexType(MemorySource::mapped_file(index_filename));
+    }();
+
     WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
@@ -297,9 +304,15 @@ void inspect(
     std::string const& run_id,
     std::string const& iteration,
     bool use_thresholds,
-    std::optional<std::string>& pair_index_path)
+    std::optional<std::string>& pair_index_path,
+    bool disk_resident)
 {
-    IndexType index(MemorySource::mapped_file(index_filename));
+    auto index = [&]() {
+        if (disk_resident) {
+            return IndexType(MemorySource::disk_resident_file(index_filename));
+        }
+        return IndexType(MemorySource::mapped_file(index_filename));
+    }();
     WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
@@ -473,6 +486,7 @@ int main(int argc, const char** argv)
     bool quantized = false;
     bool use_thresholds = false;
     bool inspect = false;
+    bool disk_resident = false;
     std::optional<std::string> pair_index_path{};
 
     App<arg::Index,
@@ -494,6 +508,8 @@ int main(int argc, const char** argv)
         use_thresholds,
         "Initialize top-k queue with threshold passed as part of a query object");
     app.add_option("--pair-index", pair_index_path, "Path to pair index.");
+    app.add_flag(
+        "--disk-resident", disk_resident, "Keep index on disk and load postings at query time.");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -538,7 +554,8 @@ int main(int argc, const char** argv)
         run_id,
         iteration,
         use_thresholds,
-        pair_index_path);
+        pair_index_path,
+        disk_resident);
 
     if (inspect) {
         /**/
