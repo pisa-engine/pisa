@@ -59,9 +59,7 @@ void kt_thresholds(
     bool all_pairs,
     bool all_triples)
 {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    IndexType index(MemorySource::mapped_file(index_filename));
 
     WandType wdata;
 
