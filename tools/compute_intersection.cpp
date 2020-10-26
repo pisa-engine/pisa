@@ -34,22 +34,15 @@ void intersect(
     std::optional<std::string> pair_index_path)
 {
     using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    IndexType index(MemorySource::mapped_file(index_filename));
 
-    WandType wdata;
-
-    mio::mmap_source md;
-    if (wand_data_filename) {
-        std::error_code error;
-        md.map(*wand_data_filename, error);
-        if (error) {
-            spdlog::error("error mapping file: {}, exiting...", error.message());
-            std::abort();
+    WandType const wdata = [&] {
+        if (wand_data_filename) {
+            return WandType(MemorySource::mapped_file(*wand_data_filename));
         }
-        mapper::map(wdata, md, mapper::map_flags::warmup);
-    }
+        return WandType{};
+    }();
+
     auto pair_index = [&] {
         if (pair_index_path) {
             return std::make_optional(pair_index_type::load(*pair_index_path));
@@ -115,7 +108,6 @@ int main(int argc, const char** argv)
     std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
     bool combinations = false;
     std::optional<std::string> pair_index;
-    // bool header = false;
 
     CLI::App app{"Computes intersections of posting lists."};
     Args<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::Scorer>
