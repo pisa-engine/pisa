@@ -34,42 +34,51 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-template <typename IndexType, typename WandType>
+struct RunArgs {
+    std::string index_filename;
+    std::string wand_data_filename;
+    std::vector<QueryContainer> queries;
+    std::string index_encoding;
+    std::string algorithm;
+    uint64_t k;
+    std::string documents_lexicon;
+    ScorerParams scorer_params;
+
+    bool use_thresholds = false;
+    bool disk_resident = false;
+
+    std::string run_id = "PISA";
+    std::string iteration = "Q0";
+
+    std::optional<std::string> pair_index_path{};
+
+    template <typename App>
+    RunArgs(App&& app, std::vector<pisa::QueryContainer> queries, std::string documents_lexicon)
+        : index_filename(app.index_filename()),
+          wand_data_filename(app.wand_data_path()),
+          queries(std::move(queries)),
+          index_encoding(app.index_encoding()),
+          algorithm(app.algorithm()),
+          k(app.k()),
+          documents_lexicon(std::move(documents_lexicon)),
+          scorer_params(app.scorer_params())
+    {}
+};
+
+using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
+
+template <typename IndexType, typename WandType, typename Scorer>
 void evaluate_queries(
-    const std::string& index_filename,
-    const std::string& wand_data_filename,
-    const std::vector<QueryContainer>& queries,
-    std::string const& type,
-    std::string const& query_type,
-    uint64_t k,
-    std::string const& documents_filename,
-    ScorerParams const& scorer_params,
-    std::string const& run_id,
-    std::string const& iteration,
-    bool use_thresholds,
-    std::optional<std::string>& pair_index_path,
-    bool disk_resident)
+    IndexType&& index,
+    WandType&& wdata,
+    Scorer&& scorer,
+    std::optional<pair_index_type> const& pair_index,
+    RunArgs const& params)
 {
-    auto index = [&]() {
-        if (disk_resident) {
-            return IndexType(MemorySource::disk_resident_file(index_filename));
-        }
-        return IndexType(MemorySource::mapped_file(index_filename));
-    }();
-
-    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
-
-    auto scorer = scorer::from_params(scorer_params, wdata);
-
-    using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
-    auto pair_index = [&]() -> std::optional<pair_index_type> {
-        if (pair_index_path) {
-            return pair_index_type::load(*pair_index_path);
-        }
-        return std::nullopt;
-    }();
-
     std::function<std::vector<std::pair<float, uint64_t>>(QueryRequest)> query_fun;
+
+    auto const& query_type = params.algorithm;
+    auto const& k = params.k;
 
     if (query_type == "wand") {
         query_fun = [&](QueryRequest query) {
@@ -224,13 +233,14 @@ void evaluate_queries(
     }
 
     auto request_flags = RequestFlagSet::all();
-    if (not use_thresholds) {
+    if (not params.use_thresholds) {
         request_flags.remove(RequestFlag::Threshold);
     }
 
-    auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
+    auto source = std::make_shared<mio::mmap_source>(params.documents_lexicon.c_str());
     auto docmap = Payload_Vector<>::from(*source);
 
+    auto const& queries = params.queries;
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
     tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
@@ -245,11 +255,11 @@ void evaluate_queries(
             std::cout << fmt::format(
                 "{}\t{}\t{}\t{}\t{}\t{}\n",
                 qid.value_or(std::to_string(query_idx)),
-                iteration,
+                params.iteration,
                 docmap[result.second],
                 rank,
                 result.first,
-                run_id);
+                params.run_id);
         }
     }
     auto end_print = std::chrono::steady_clock::now();
@@ -291,41 +301,18 @@ std::ostream& operator<<(std::ostream& os, Inspect const& inspect)
     return os;
 }
 
-template <typename IndexType, typename WandType>
+template <typename IndexType, typename WandType, typename Scorer>
 void inspect(
-    std::string const& index_filename,
-    std::string const& wand_data_filename,
-    std::vector<QueryContainer> const& queries,
-    std::string const& type,
-    std::string const& query_type,
-    uint64_t k,
-    std::string const& documents_filename,
-    ScorerParams const& scorer_params,
-    std::string const& run_id,
-    std::string const& iteration,
-    bool use_thresholds,
-    std::optional<std::string>& pair_index_path,
-    bool disk_resident)
+    IndexType&& index,
+    WandType&& wdata,
+    Scorer&& scorer,
+    std::optional<pair_index_type> const& pair_index,
+    RunArgs const& params)
 {
-    auto index = [&]() {
-        if (disk_resident) {
-            return IndexType(MemorySource::disk_resident_file(index_filename));
-        }
-        return IndexType(MemorySource::mapped_file(index_filename));
-    }();
-    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
-
-    auto scorer = scorer::from_params(scorer_params, wdata);
-
-    using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
-    auto pair_index = [&]() -> std::optional<pair_index_type> {
-        if (pair_index_path) {
-            return pair_index_type::load(*pair_index_path);
-        }
-        return std::nullopt;
-    }();
-
     std::function<Inspect(QueryRequest)> query_fun;
+
+    auto const& query_type = params.algorithm;
+    auto const& k = params.k;
 
     if (query_type == "wand") {
         spdlog::error("Unimplemented");
@@ -460,15 +447,43 @@ void inspect(
     }
 
     auto request_flags = RequestFlagSet::all();
-    if (not use_thresholds) {
+    if (not params.use_thresholds) {
         request_flags.remove(RequestFlag::Threshold);
     }
 
-    for (auto&& query: queries) {
+    for (auto&& query: params.queries) {
         auto inspect = query_fun(query.query(k, request_flags));
         auto output = inspect.to_json();
         output["query"] = query.to_json();
         std::cout << output << '\n';
+    }
+}
+
+template <typename IndexType, typename WandType>
+void run(RunArgs params, bool inspect)
+{
+    auto index = [&]() {
+        if (params.disk_resident) {
+            return IndexType(MemorySource::disk_resident_file(params.index_filename));
+        }
+        return IndexType(MemorySource::mapped_file(params.index_filename));
+    }();
+    WandType const wdata(MemorySource::mapped_file(params.wand_data_filename));
+
+    auto scorer = scorer::from_params(params.scorer_params, wdata);
+
+    using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
+    auto pair_index = [&]() -> std::optional<pair_index_type> {
+        if (params.pair_index_path) {
+            return pair_index_type::load(*params.pair_index_path);
+        }
+        return std::nullopt;
+    }();
+
+    if (inspect) {
+        ::inspect(index, wdata, scorer, pair_index, std::move(params));
+    } else {
+        ::evaluate_queries(index, wdata, scorer, pair_index, std::move(params));
     }
 }
 
@@ -516,12 +531,6 @@ int main(int argc, const char** argv)
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
     spdlog::info("Number of worker threads: {}", app.threads());
 
-    if (run_id.empty()) {
-        run_id = "PISA";
-    }
-
-    auto iteration = "Q0";
-
     std::vector<pisa::QueryContainer> queries;
     try {
         queries = app.resolved_queries();
@@ -542,69 +551,36 @@ int main(int argc, const char** argv)
         std::exit(1);
     }
 
-    auto params = std::make_tuple(
-        app.index_filename(),
-        app.wand_data_path(),
-        queries,
-        app.index_encoding(),
-        app.algorithm(),
-        app.k(),
-        documents_file,
-        app.scorer_params(),
-        run_id,
-        iteration,
-        use_thresholds,
-        pair_index_path,
-        disk_resident);
+    RunArgs params(app, std::move(queries), std::move(documents_file));
+    if (!run_id.empty()) {
+        params.run_id = run_id;
+    }
+    params.use_thresholds = use_thresholds;
+    params.disk_resident = disk_resident;
+    params.pair_index_path = pair_index_path;
 
-    if (inspect) {
-        /**/
-        if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                  \
-    }                                                                                          \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                    \
-    {                                                                                          \
-        if (app.is_wand_compressed()) {                                                        \
-            if (quantized) {                                                                   \
-                std::apply(                                                                    \
-                    ::inspect<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                           \
-                std::apply(::inspect<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);    \
-            }                                                                                  \
-        } else {                                                                               \
-            std::apply(::inspect<BOOST_PP_CAT(T, _index), wand_raw_index>, params);            \
-        }                                                                                      \
+    /**/
+    if (false) {  // NOLINT
+
+#define LOOP_BODY(R, DATA, T)                                                                   \
+    }                                                                                           \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                     \
+    {                                                                                           \
+        if (app.is_wand_compressed()) {                                                         \
+            if (quantized) {                                                                    \
+                ::run<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>(                   \
+                    std::move(params), inspect);                                                \
+            } else {                                                                            \
+                ::run<BOOST_PP_CAT(T, _index), wand_uniform_index>(std::move(params), inspect); \
+            }                                                                                   \
+        } else {                                                                                \
+            ::run<BOOST_PP_CAT(T, _index), wand_raw_index>(std::move(params), inspect);         \
+        }                                                                                       \
         /**/
 
-            BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
+        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY
-        } else {
-            spdlog::error("Unknown type {}", app.index_encoding());
-        }
     } else {
-        /**/
-        if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    }                                                                                              \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \
-    {                                                                                              \
-        if (app.is_wand_compressed()) {                                                            \
-            if (quantized) {                                                                       \
-                std::apply(                                                                        \
-                    evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,       \
-                    params);                                                                       \
-            } else {                                                                               \
-                std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>, params); \
-            }                                                                                      \
-        } else {                                                                                   \
-            std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>, params);         \
-        }                                                                                          \
-        /**/
-
-            BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-        } else {
-            spdlog::error("Unknown type {}", app.index_encoding());
-        }
+        spdlog::error("Unknown type {}", app.index_encoding());
     }
 }
