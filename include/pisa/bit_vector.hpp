@@ -280,9 +280,15 @@ class bit_vector {
     // unsafe and fast version of get_word, it retrieves at least 56 bits
     inline uint64_t get_word56(uint64_t pos) const
     {
-        // XXX check endianness?
         const char* ptr = reinterpret_cast<const char*>(m_bits.data());
-        return *(reinterpret_cast<uint64_t const*>(ptr + pos / 8)) >> (pos % 8);
+        std::uint64_t word = 0;
+        auto first_byte_pos = pos / 8;
+        auto bit_shift = pos % 8;
+        std::memcpy(
+            &word,
+            std::next(ptr, first_byte_pos),
+            std::min(std::uint64_t(8), m_bits.size() * 8 - first_byte_pos));
+        return word >> bit_shift;
     }
 
     inline uint64_t predecessor0(uint64_t pos) const
@@ -429,7 +435,8 @@ class bit_vector {
         {
             m_data = bv.data().data();
             m_position = pos;
-            m_buf = m_data[pos / 64];
+            std::memcpy(&m_buf, m_data + (pos / 64), sizeof(m_buf));
+            // m_buf = m_data[pos / 64];
             // clear low bits
             m_buf &= uint64_t(-1) << (pos % 64);
         }
@@ -442,7 +449,8 @@ class bit_vector {
             uint64_t buf = m_buf;
             while (broadword::lsb(buf, pos_in_word) == 0U) {
                 m_position += 64;
-                buf = m_data[m_position / 64];
+                std::memcpy(&buf, m_data + m_position / 64, sizeof(buf));
+                // buf = m_data[m_position / 64];
             }
 
             m_buf = buf & (buf - 1);  // clear LSB
@@ -459,7 +467,8 @@ class bit_vector {
             while (skipped + (w = broadword::popcount(buf)) <= k) {
                 skipped += w;
                 m_position += 64;
-                buf = m_data[m_position / 64];
+                std::memcpy(&buf, m_data + m_position / 64, sizeof(buf));
+                // buf = m_data[m_position / 64];
             }
             assert(buf);
             uint64_t pos_in_word = broadword::select_in_word(buf, k - skipped);
@@ -477,7 +486,8 @@ class bit_vector {
             while (skipped + (w = broadword::popcount(buf)) <= k) {
                 skipped += w;
                 position += 64;
-                buf = m_data[position / 64];
+                std::memcpy(&buf, m_data + (position / 64), sizeof(buf));
+                // buf = m_data[position / 64];
             }
             assert(buf);
             uint64_t pos_in_word = broadword::select_in_word(buf, k - skipped);
@@ -506,7 +516,7 @@ class bit_vector {
       private:
         uint64_t const* m_data;
         uint64_t m_position;
-        uint64_t m_buf;
+        uint64_t m_buf = 0;
     };
 
   protected:
