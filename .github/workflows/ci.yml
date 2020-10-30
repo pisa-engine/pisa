@@ -52,14 +52,12 @@ jobs:
 
           if [ "${cc}" = "clang-10" ]; then
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
+            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           fi
           if [ "${cc}" = "clang-6.0" ]; then
             # Problems compiling with Clang 6 against libstdc++-9
             sudo apt-get remove libstdc++-9-dev libgcc-9-dev cpp-9
           fi
-          sudo apt-get update
-          sudo apt-get install launchpad-getkeys
-          sudo launchpad-getkeys
           sudo apt-get update
           sudo apt-get install -y libtool m4 autoconf
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
