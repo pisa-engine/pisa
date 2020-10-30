@@ -16,8 +16,8 @@ jobs:
     - name: Install clang and clang-tidy
       shell: bash
       run: |
-          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
           sudo apt-get update
           sudo apt-get install -y clang-10 clang-tidy-10
           sudo apt-get install -y libtool m4 autoconf
