@@ -58,6 +58,9 @@ jobs:
             sudo apt-get remove libstdc++-9-dev libgcc-9-dev cpp-9
           fi
           sudo apt-get update
+          sudo apt-get install launchpad-getkeys
+          sudo launchpad-getkeys
+          sudo apt-get update
           sudo apt-get install -y libtool m4 autoconf
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
               sudo apt-get install -y "${cxx}"
