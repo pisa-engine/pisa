@@ -53,6 +53,7 @@ jobs:
           if [ "${cc}" = "clang-10" ]; then
             wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
             sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
+            sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
           fi
           if [ "${cc}" = "clang-6.0" ]; then
             # Problems compiling with Clang 6 against libstdc++-9
