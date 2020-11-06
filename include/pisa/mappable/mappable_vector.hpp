@@ -88,9 +88,17 @@ namespace pisa { namespace mapper {
 
         inline const_iterator end() const { return m_data + m_size; }
 
-        inline T const& operator[](uint64_t i) const
+        inline T operator[](std::size_t i) const
         {
             assert(i < m_size);
+            return m_data[i];
+        }
+
+        inline T at(std::size_t i) const
+        {
+            if (i >= m_size) {
+                throw std::out_of_range("Index out of bounds.");
+            }
             return m_data[i];
         }
 
