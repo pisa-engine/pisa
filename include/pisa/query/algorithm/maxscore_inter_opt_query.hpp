@@ -21,6 +21,7 @@
 #include "cursor/lookup_transform.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/numbered_cursor.hpp"
+#include "intersection.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
@@ -107,6 +108,29 @@ template <std::size_t N, typename R1, typename R2>
     };
 }
 
+template <typename Index, typename Wand, typename PairIndex>
+[[nodiscard]] auto select_intersections(
+    QueryRequest const query, Index&& index, Wand&& wdata, PairIndex&& pair_index, float threshold)
+    -> Selection<TermId>
+{
+    Selection<TermId> selection;
+    auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(query, index, wdata, pair_index);
+    auto candidates = lattice.selection_candidates(threshold);
+    auto selected = candidates.solve(lattice.costs());
+    auto const& term_ids = query.term_ids();
+    for (auto intersection: selected.intersections) {
+        if (_mm_popcnt_u32(intersection) == 1) {
+            auto idx = __builtin_ctz(intersection);  // TODO: generalize
+            selection.selected_terms.push_back(term_ids[idx]);
+        } else {
+            auto first = __builtin_ctz(intersection);  // TODO: generalize
+            auto second = __builtin_ctz(intersection & ~(1U << first));  // TODO: generalize
+            selection.selected_pairs.emplace_back(term_ids[first], term_ids[second]);
+        }
+    }
+    return selection;
+}
+
 struct maxscore_inter_opt_query {
     explicit maxscore_inter_opt_query(topk_queue& topk, bool dynamic_intersections = false)
         : m_topk(topk), m_dynamic_intersections(dynamic_intersections)
@@ -125,19 +149,22 @@ struct maxscore_inter_opt_query {
         using lookup_cursor_type =
             NumberedCursor<MaxScoredCursor<typename std::decay_t<Index>::document_enumerator>, TermId>;
 
-        auto const term_ids = query.term_ids();
+        auto const& term_ids = query.term_ids();
         auto const term_count = term_ids.size();
 
-        auto const selection = query.selection();
-        if (not selection) {
-            throw std::invalid_argument("maxscore_inter_query requires posting list selections");
-        }
+        auto initial_threshold = query.threshold() ? *query.threshold() : 0.0;
+        m_topk.set_threshold(initial_threshold);
 
-        if (auto initial_threshold = query.threshold(); initial_threshold) {
-            m_topk.set_threshold(*initial_threshold);
+        auto selection = select_intersections(query, index, wdata, pair_index, initial_threshold);
+        if (selection != *query.selection()) {
+            selection = *query.selection();
         }
+        // auto const selection = query.selection();
+        // if (not selection) {
+        //    throw std::invalid_argument("maxscore_inter_query requires posting list selections");
+        //}
 
-        auto const essential_terms = selection->selected_terms | to_vector | sort;
+        auto const essential_terms = selection.selected_terms | to_vector | sort;
         auto const non_essential_terms =
             ranges::views::set_difference(term_ids, essential_terms) | to_vector;
 
@@ -189,7 +216,7 @@ struct maxscore_inter_opt_query {
 
         std::vector<pair_cursor_type> essential_pair_cursors;
         std::vector<intersection_type> essential_intersections;
-        for (auto [left, right]: selection->selected_pairs) {
+        for (auto [left, right]: selection.selected_pairs) {
             auto pair_id = pair_index.pair_id(left, right);
             State left_pos = term_position(left);
             State right_pos = term_position(right);

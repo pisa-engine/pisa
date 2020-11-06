@@ -43,9 +43,15 @@ class PairIndex {
                 return MemorySource::mapped_file(file_path);
             }();
             PairIndex<Index> pair_index(Index(std::move(source)));
+
             pair_index.m_mapping_source =
                 mio::mmap_source(fmt::format("{}.pairs", file_path).c_str());
             mapper::map(pair_index.m_pair_mapping, pair_index.m_mapping_source);
+
+            pair_index.m_posting_counts_source =
+                mio::mmap_source(fmt::format("{}.postingcounts", file_path).c_str());
+            mapper::map(pair_index.m_pair_posting_counts, pair_index.m_posting_counts_source);
+
             return pair_index;
         } catch (std::system_error const& err) {
             throw std::runtime_error(
@@ -64,14 +70,23 @@ class PairIndex {
         }
         return std::nullopt;
     }
+    [[nodiscard]] auto pair_posting_count(TermId pair_id) const -> std::uint32_t
+    {
+        return m_pair_posting_counts.at(pair_id);
+    }
+    [[nodiscard]] auto pair_posting_count(TermId left, TermId right) const -> std::uint32_t
+    {
+        return pair_posting_count(TermPair{left, right});
+    }
 
   private:
     explicit PairIndex(Index index) : m_index(std::move(index)) {}
 
     Index m_index;
     mio::mmap_source m_mapping_source{};
+    mio::mmap_source m_posting_counts_source{};
     mapper::mappable_vector<TermPair> m_pair_mapping{};
-    // std::unordered_map<TermPair, TermId> m_pair_hash_map;
+    mapper::mappable_vector<std::uint32_t> m_pair_posting_counts{};
 };
 
 template <typename Index, typename BinaryBuilder>
@@ -87,7 +102,11 @@ void build_binary_index(
 
     std::sort(pairs.begin(), pairs.end());
     pairs.erase(std::unique(pairs.begin(), pairs.end()), pairs.end());
+
     std::vector<TermPair> pair_mapping;
+    pair_mapping.reserve(pairs.size());
+    std::vector<std::uint32_t> posting_counts;
+    posting_counts.reserve(pairs.size());
 
     size_t postings = 0;
     {
@@ -113,6 +132,7 @@ void build_binary_index(
             if (size == 0) {
                 continue;
             }
+            posting_counts.push_back(size);
             pair_mapping.emplace_back(left_term, right_term);
             builder.add_posting_list(
                 size, documents.begin(), frequencies.begin(), 0  // unused for block index
@@ -122,11 +142,18 @@ void build_binary_index(
         }
     }
 
+    std::cerr << "Flushing metadata...\n";
     builder.build(output_filename.c_str());
-    double elapsed_secs = (get_time_usecs() - tick) / 1000000;
+
+    std::cerr << "Writing pair mapping...\n";
     mapper::mappable_vector<TermPair> mappable_pair_mapping;
     mappable_pair_mapping.steal(pair_mapping);
     mapper::freeze(mappable_pair_mapping, fmt::format("{}.pairs", output_filename).c_str());
+
+    std::cerr << "Writing posting counts...\n";
+    mapper::mappable_vector<std::uint32_t> mappable_posting_counts;
+    mappable_posting_counts.steal(posting_counts);
+    mapper::freeze(mappable_posting_counts, fmt::format("{}.postingcounts", output_filename).c_str());
 }
 
 void build_binary_index(
@@ -135,8 +162,6 @@ void build_binary_index(
     using binary_index_type = block_freq_index<pisa::simdbp_block, false, IndexArity::Binary>;
     block_simdbp_index index(MemorySource::mapped_file(index_filename));
     spdlog::info("Loading index from {}", index_filename);
-    // mio::mmap_source m(index_filename.c_str());
-    // mapper::map(index, m);
 
     build_binary_index(
         index,

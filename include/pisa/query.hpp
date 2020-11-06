@@ -141,6 +141,10 @@ struct Selection {
     {
         return selected_terms == other.selected_terms && selected_pairs == other.selected_pairs;
     }
+    [[nodiscard]] auto operator!=(Selection const& other) const noexcept -> bool
+    {
+        return !(*this == other);
+    }
 };
 
 using TermProcessorFn = std::function<std::optional<std::string>(std::string)>;
