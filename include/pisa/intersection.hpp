@@ -191,9 +191,10 @@ struct SelectionCandidtes {
                     bits.set(idx);
                 }
             }
-            assert(!bits.empty());
-            input.emplace_back(std::move(bits), costs[sub]);
-            intersections.push_back(sub);
+            if (!bits.empty()) {
+                input.emplace_back(std::move(bits), costs[sub]);
+                intersections.push_back(sub);
+            }
         }
         auto result = approximate_weighted_set_cover(gsl::span<Subset<std::size_t> const>(input));
         Selected<S> selected;
@@ -330,18 +331,6 @@ class IntersectionLattice {
     constexpr static auto max_subset_count =
         static_cast<std::size_t>(std::numeric_limits<S>::max()) + 1;
 
-    auto layered_nodes() const
-    {
-        std::array<S, max_query_length> nodes;
-        std::iota(nodes.begin(), nodes.end(), 1);
-        auto last = std::partition(
-            nodes.begin(), nodes.end(), [cap = 1U << query_length()](auto v) { return v < cap; });
-        std::sort(nodes.begin(), last, [](auto lhs, auto rhs) {
-            return _mm_popcnt_u32(lhs) < _mm_popcnt_u32(rhs);
-        });
-        return nodes;
-    }
-
     void cover(std::bitset<max_subset_count>& covered, S mask, gsl::span<S const> nodes) const
     {
         covered.set(mask);
@@ -358,6 +347,19 @@ class IntersectionLattice {
     }
 
   public:
+    auto layered_nodes() const
+    {
+        std::array<S, max_subset_count> nodes;
+        auto cap = static_cast<std::uint64_t>(1) << query_length();
+        std::iota(nodes.begin(), std::next(nodes.begin(), cap), 1);
+        std::sort(nodes.begin(), std::next(nodes.begin(), cap - 1), [](auto lhs, auto rhs) {
+            // TODO: fix perf
+            return std::make_pair(_mm_popcnt_u32(lhs), lhs)
+                < std::make_pair(_mm_popcnt_u32(rhs), rhs);
+        });
+        return nodes;
+    }
+
     /// Builds an intersection lattice for the given query request.
     /// All the necessary data is pulled from the given index objects.
     ///
@@ -478,20 +480,17 @@ class IntersectionLattice {
                 considered_pairs.set(pair_idx(mask));
             }
         }
-        std::for_each(
-            std::next(nodes.begin(), query_length()),
-            std::next(nodes.begin(), 1U << query_length()),
-            [&](auto subset) {
-                if (_mm_popcnt_u32(subset) > 1 && not covered.test(subset)) {  // TODO: generalize
-                    if (_mm_popcnt_u32(subset) == 2 && considered_pairs.test(pair_idx(subset))) {
-                        return;
-                    }
-                    if (score_bound(subset) >= threshold) {
-                        cover(covered, subset, nodes);
-                        elements.push_back(subset);
-                    }
+        std::for_each(std::next(nodes.begin(), query_length()), nodes.end(), [&](auto subset) {
+            if (_mm_popcnt_u32(subset) > 1 && not covered.test(subset)) {  // TODO: generalize
+                if (_mm_popcnt_u32(subset) == 2 && considered_pairs.test(pair_idx(subset))) {
+                    return;
                 }
-            });
+                if (score_bound(subset) >= threshold) {
+                    cover(covered, subset, nodes);
+                    elements.push_back(subset);
+                }
+            }
+        });
         return candidates;
     }
 

@@ -22,6 +22,7 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/numbered_cursor.hpp"
 #include "intersection.hpp"
+#include "query/algorithm/maxscore_query.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
@@ -108,16 +109,55 @@ template <std::size_t N, typename R1, typename R2>
     };
 }
 
+template <typename Index, typename Wand>
+[[nodiscard]] auto
+select_essential_single(QueryRequest const query, Index&& index, Wand&& wdata, float threshold)
+    -> std::pair<Selection<TermId>, std::uint32_t>
+{
+    auto term_ids = query.term_ids();
+    auto term_weights = query.term_weights();
+    std::vector<float> max_scores(term_ids.size());
+    std::transform(
+        term_ids.begin(),
+        term_ids.end(),
+        term_weights.begin(),
+        max_scores.begin(),
+        [&](auto term_id, auto term_weight) { return term_weight * wdata.max_term_weight(term_id); });
+    std::vector<std::size_t> indices(term_ids.size());
+    std::iota(indices.begin(), indices.end(), 0);
+    std::sort(indices.begin(), indices.end(), [&max_scores](auto lhs, auto rhs) {
+        return max_scores[lhs] < max_scores[rhs];
+    });
+    float sum = 0.0;
+    auto first_essential =
+        std::find_if(indices.begin(), indices.end(), [&max_scores, &sum, threshold](auto idx) {
+            sum += max_scores[idx];
+            return sum > threshold;
+        });
+    Selection<TermId> selection;
+    float cost = 0.0;
+    for (auto iter = first_essential; iter != indices.end(); ++iter) {
+        cost += wdata.term_posting_count(*iter);
+        selection.selected_terms.push_back(term_ids[*iter]);
+    }
+    return std::make_pair(std::move(selection), cost);
+}
+
 template <typename Index, typename Wand, typename PairIndex>
 [[nodiscard]] auto select_intersections(
     QueryRequest const query, Index&& index, Wand&& wdata, PairIndex&& pair_index, float threshold)
     -> Selection<TermId>
 {
+    auto [single_selection, single_cost] = select_essential_single(query, index, wdata, threshold);
     Selection<TermId> selection;
+    // std::cerr << "t: " << threshold << '\n';
     auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(query, index, wdata, pair_index);
     auto candidates = lattice.selection_candidates(threshold);
     auto selected = candidates.solve(lattice.costs());
-    auto const& term_ids = query.term_ids();
+    if (selected.cost >= single_cost) {
+        return single_selection;
+    }
+    auto term_ids = query.term_ids();
     for (auto intersection: selected.intersections) {
         if (_mm_popcnt_u32(intersection) == 1) {
             auto idx = __builtin_ctz(intersection);  // TODO: generalize
@@ -155,10 +195,26 @@ struct maxscore_inter_opt_query {
         auto initial_threshold = query.threshold() ? *query.threshold() : 0.0;
         m_topk.set_threshold(initial_threshold);
 
+        // auto print_sel = [](auto selection, auto caption) {
+        //    std::cerr << caption << ":";
+        //    for (auto&& inter: selection.selected_terms) {
+        //        std::cerr << " " << inter;
+        //    }
+        //    std::cerr << " | ";
+        //    for (auto&& inter: selection.selected_pairs) {
+        //        std::cerr << " (" << std::get<0>(inter) << "," << std::get<1>(inter) << ")";
+        //    }
+        //    std::cerr << "\n";
+        //};
+        // print_sel(*query.selection(), "Loaded");
         auto selection = select_intersections(query, index, wdata, pair_index, initial_threshold);
-        if (selection != *query.selection()) {
-            selection = *query.selection();
+        // print_sel(selection, "Computed");
+        if (selection.selected_pairs.empty()) {
+            maxscore_query q(m_topk);
+            q(make_block_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+            return;
         }
+
         // auto const selection = query.selection();
         // if (not selection) {
         //    throw std::invalid_argument("maxscore_inter_query requires posting list selections");

@@ -17,7 +17,9 @@
 #include "cursor/numbered_cursor.hpp"
 #include "cursor/union_lookup_join.hpp"
 #include "cursor/wand_join.hpp"
+#include "query/algorithm/maxscore_inter_opt_query.hpp"
 #include "query/algorithm/maxscore_inter_query.hpp"
+#include "query/algorithm/maxscore_query.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
 
@@ -61,16 +63,25 @@ struct maxscore_inter_eager_query {
 
         auto term_ids = query.term_ids();
 
-        if (auto initial_threshold = query.threshold(); initial_threshold) {
-            m_topk.set_threshold(*initial_threshold);
-        }
+        auto initial_threshold = query.threshold() ? *query.threshold() : 0.0;
+        m_topk.set_threshold(initial_threshold);
+        // if (auto initial_threshold = query.threshold(); initial_threshold) {
+        //    m_topk.set_threshold(*initial_threshold);
+        //}
         auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
-        auto selection = query.selection();
-        if (not selection) {
-            throw std::invalid_argument("maxscore_inter_query requires posting list selections");
+        auto selection = select_intersections(query, index, wdata, pair_index, initial_threshold);
+        // print_sel(selection, "Computed");
+        if (selection.selected_pairs.empty()) {
+            maxscore_query q(m_topk);
+            q(make_block_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+            return;
         }
-        auto essential_terms = selection->selected_terms;
+        // auto selection = query.selection();
+        // if (not selection) {
+        //    throw std::invalid_argument("maxscore_inter_query requires posting list selections");
+        //}
+        auto essential_terms = selection.selected_terms;
         auto non_essential_terms =
             ranges::views::set_difference(term_ids, essential_terms) | ranges::to_vector;
 
@@ -102,7 +113,7 @@ struct maxscore_inter_eager_query {
         std::vector<typename topk_queue::entry_type> entries(
             unigram_heap.topk().begin(), unigram_heap.topk().end());
 
-        for (auto [left, right]: selection->selected_pairs) {
+        for (auto [left, right]: selection.selected_pairs) {
             auto pair_id = pair_index.pair_id(left, right);
             if (not pair_id) {
                 throw std::runtime_error(fmt::format("Pair not found: <{}, {}>", left, right));
