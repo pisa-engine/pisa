@@ -56,7 +56,10 @@ struct block_posting_list {
                     ++freqs_it;
                 }
             }
-            *((uint32_t*)&out[begin_block_maxs + 4 * b]) = last_doc;
+            {
+                auto ld = static_cast<std::uint32_t>(last_doc);
+                std::memcpy(&out[begin_block_maxs + 4 * b], &ld, sizeof(ld));
+            }
 
             BlockCodec::encode(
                 docs_buf.data(), last_doc - block_base - (cur_block_size - 1), cur_block_size, out);
@@ -79,7 +82,8 @@ struct block_posting_list {
                     out);
             }
             if (b != blocks - 1) {
-                *((uint32_t*)&out[begin_block_endpoints + 4 * b]) = out.size() - begin_blocks;
+                std::uint32_t offset = out.size() - begin_blocks;
+                std::memcpy(&out[begin_block_endpoints + 4 * b], &offset, sizeof(offset));
             }
             block_base = last_doc + 1;
         }
@@ -101,11 +105,12 @@ struct block_posting_list {
             size_t b = block.index;
             // write endpoint
             if (b != 0) {
-                *((uint32_t*)&out[begin_block_endpoints + 4 * (b - 1)]) = out.size() - begin_blocks;
+                std::uint32_t endpoint = out.size() - begin_blocks;
+                std::memcpy(&out[begin_block_endpoints + 4 * (b - 1)], &endpoint, sizeof(endpoint));
             }
 
             // write max
-            *((uint32_t*)&out[begin_block_maxs + 4 * b]) = block.max;
+            std::memcpy(&out[begin_block_maxs + 4 * b], &block.max, sizeof(block.max));
 
             // copy block
             block.append_docs_block(out);
@@ -305,12 +310,20 @@ struct block_posting_list {
         }
 
       private:
-        uint32_t block_max(uint32_t block) const { return ((uint32_t const*)m_block_maxs)[block]; }
+        std::uint32_t block_max(uint32_t block) const
+        {
+            std::uint32_t bmax;
+            std::memcpy(&bmax, m_block_maxs + block * 4, sizeof(bmax));
+            return bmax;
+        }
 
         void PISA_NOINLINE decode_docs_block(uint64_t block)
         {
             static const uint64_t block_size = BlockCodec::block_size;
-            uint32_t endpoint = block != 0U ? ((uint32_t const*)m_block_endpoints)[block - 1] : 0;
+            std::uint32_t endpoint = 0;
+            if (block > 0U) {
+                std::memcpy(&endpoint, m_block_endpoints + (block - 1) * 4, sizeof(endpoint));
+            }
             uint8_t const* block_data = m_blocks_data + endpoint;
             m_cur_block_size =
                 ((block + 1) * block_size <= size()) ? block_size : (size() % block_size);

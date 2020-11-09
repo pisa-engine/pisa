@@ -130,7 +130,7 @@ namespace pisa { namespace mapper {
             typename std::enable_if<std::is_pod<T>::value, map_visitor&>::type
             operator()(T& val, const char* /* friendly_name */)
             {
-                val = *reinterpret_cast<const T*>(m_cur);
+                std::memcpy(&val, m_cur, sizeof(T));
                 m_cur += sizeof(T);
                 return *this;
             }

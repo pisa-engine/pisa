@@ -6,9 +6,39 @@
 #include <rapidcheck.h>
 
 #include "bit_vector.hpp"
+#include "codec/interpolative_coding.hpp"
 #include "mappable/mapper.hpp"
 #include "test_common.hpp"
 #include "test_rank_select_common.hpp"
+
+TEST_CASE("bit vector int write/read")
+{
+    rc::check([](std::vector<std::uint32_t> ints) {
+        std::uint32_t max = 0;
+        for (auto& i: ints) {
+            if (i == std::numeric_limits<std::uint32_t>::max()) {
+                --i;
+            }
+            if (i > max) {
+                max = i;
+            }
+        }
+        auto u = max + 1;
+        std::vector<std::uint32_t> buffer;
+        pisa::bit_writer writer(buffer);
+        for (auto i: ints) {
+            writer.write_int(i, u);
+        }
+
+        std::vector<std::uint32_t> out;
+        pisa::bit_reader reader(reinterpret_cast<std::uint8_t const*>(buffer.data()));
+        for (auto i: ints) {
+            out.push_back(reader.read_int(u));
+        }
+
+        REQUIRE(out == ints);
+    });
+}
 
 TEST_CASE("bit_vector")
 {
@@ -37,21 +67,23 @@ TEST_CASE("bit_vector")
             test_equal_bits(v, bitmap, "Random bits (set)");
         }
 
-        auto ints = std::array<uint64_t, 15>{uint64_t(-1),
-                                             uint64_t(1) << 63u,
-                                             1,
-                                             1,
-                                             1,
-                                             3,
-                                             5,
-                                             7,
-                                             0xFFF,
-                                             0xF0F,
-                                             1,
-                                             0xFFFFFF,
-                                             0x123456,
-                                             uint64_t(1) << 63u,
-                                             uint64_t(-1)};
+        auto ints = std::array<uint64_t, 15>{
+            uint64_t(-1),
+            uint64_t(1) << 63u,
+            1,
+            1,
+            1,
+            3,
+            5,
+            7,
+            0xFFF,
+            0xF0F,
+            1,
+            0xFFFFFF,
+            0x123456,
+            uint64_t(1) << 63u,
+            uint64_t(-1)};
+
         {
             pisa::bit_vector_builder bvb;
             for (uint64_t i: ints) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 #include <vector>
 
 #include "util/broadword.hpp"
@@ -73,7 +74,7 @@ class bit_writer {
 
 class bit_reader {
   public:
-    explicit bit_reader(uint32_t const* in) : m_in(in), m_avail(0), m_buf(0), m_pos(0) {}
+    explicit bit_reader(std::uint8_t const* in) : m_in(in), m_avail(0), m_buf(0), m_pos(0) {}
 
     size_t position() const { return m_pos; }
 
@@ -83,9 +84,9 @@ class bit_reader {
             return 0;
         }
 
-        if (m_avail < len) {
-            m_buf |= uint64_t(*m_in++) << m_avail;
-            m_avail += 32;
+        while (m_avail < len) {
+            m_buf |= static_cast<std::uint64_t>(*m_in++) << m_avail;
+            m_avail += 8;
         }
         uint32_t val = m_buf & ((uint64_t(1) << len) - 1);
         m_buf >>= len;
@@ -132,7 +133,7 @@ class bit_reader {
     }
 
   private:
-    uint32_t const* m_in;
+    std::uint8_t const* m_in;
     uint32_t m_avail;
     uint64_t m_buf;
     size_t m_pos;

@@ -37,7 +37,7 @@ void test_block_codec()
                 BlockCodec::decode(encoded.data(), decoded.data(), sum_of_values, values.size());
 
             REQUIRE(encoded.size() == out - encoded.data());
-            REQUIRE(std::equal(values.begin(), values.end(), decoded.begin()));
+            REQUIRE(values == decoded);
         }
     }
 }
