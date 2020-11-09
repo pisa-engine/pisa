@@ -20,7 +20,7 @@
 #include "mappable/mapper.hpp"
 #include "util/index_build_utils.hpp"
 #include "util/util.hpp"
-#include "util/verify_collection.hpp"  // XXX move to index_build_utils
+#include "util/verify_collection.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 

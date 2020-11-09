@@ -249,6 +249,7 @@ void evaluate_queries(
     auto end_batch = std::chrono::steady_clock::now();
 
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
+        std::cerr << query_idx << '\n';
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id();
         for (auto&& [rank, result]: enumerate(results)) {
@@ -475,7 +476,7 @@ void run(RunArgs params, bool inspect)
     using pair_index_type = PairIndex<block_freq_index<simdbp_block, false, IndexArity::Binary>>;
     auto pair_index = [&]() -> std::optional<pair_index_type> {
         if (params.pair_index_path) {
-            return pair_index_type::load(*params.pair_index_path);
+            return pair_index_type::load(*params.pair_index_path, true);
         }
         return std::nullopt;
     }();
