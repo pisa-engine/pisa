@@ -16,11 +16,7 @@ jobs:
     - name: Install clang-format
       shell: bash
       run: |
-          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
-          sudo apt-get update
           sudo apt-get install -y clang-format-9
-          echo "::set-env name=CC::clang-9
-          echo "::set-env name=CXX::clang++-10
 
     - name: Set up Python
       uses: actions/setup-python@v1
