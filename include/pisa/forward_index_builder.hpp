@@ -206,8 +206,8 @@ class Forward_Index_Builder {
             auto first = std::next(terms.begin(), lhs.first);
             auto mid = std::next(terms.begin(), lhs.last);
             auto last = std::next(terms.begin(), rhs.last);
-            std::inplace_merge(std::execution::par, first, mid, last);
-            terms.erase(std::unique(std::execution::par, first, last), last);
+            std::inplace_merge(pstl::execution::par, first, mid, last);
+            terms.erase(std::unique(pstl::execution::par, first, last), last);
             return Term_Span{lhs.first, terms.size(), lhs.lvl + 1};
         };
         auto push_span = [&](Term_Span s) {
