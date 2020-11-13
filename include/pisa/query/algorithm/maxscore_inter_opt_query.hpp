@@ -145,13 +145,18 @@ select_essential_single(QueryRequest const query, Index&& index, Wand&& wdata, f
 
 template <typename Index, typename Wand, typename PairIndex>
 [[nodiscard]] auto select_intersections(
-    QueryRequest const query, Index&& index, Wand&& wdata, PairIndex&& pair_index, float threshold)
-    -> Selection<TermId>
+    QueryRequest const query,
+    Index&& index,
+    Wand&& wdata,
+    PairIndex&& pair_index,
+    float threshold,
+    float pair_cost_scaling) -> Selection<TermId>
 {
     auto [single_selection, single_cost] = select_essential_single(query, index, wdata, threshold);
     Selection<TermId> selection;
     // std::cerr << "t: " << threshold << '\n';
-    auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(query, index, wdata, pair_index);
+    auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(
+        query, index, wdata, pair_index, pair_cost_scaling);
     auto candidates = lattice.selection_candidates(threshold);
     auto selected = candidates.solve(lattice.costs());
     if (selected.cost >= single_cost) {
@@ -172,8 +177,11 @@ template <typename Index, typename Wand, typename PairIndex>
 }
 
 struct maxscore_inter_opt_query {
-    explicit maxscore_inter_opt_query(topk_queue& topk, bool dynamic_intersections = false)
-        : m_topk(topk), m_dynamic_intersections(dynamic_intersections)
+    explicit maxscore_inter_opt_query(
+        topk_queue& topk, float pair_cost_scaling = 1.0, bool dynamic_intersections = false)
+        : m_topk(topk),
+          m_dynamic_intersections(dynamic_intersections),
+          m_pair_cost_scaling(pair_cost_scaling)
     {}
 
     template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
@@ -368,6 +376,7 @@ struct maxscore_inter_opt_query {
   private:
     topk_queue& m_topk;
     bool m_dynamic_intersections;
+    float m_pair_cost_scaling;
 };
 
 }  // namespace pisa

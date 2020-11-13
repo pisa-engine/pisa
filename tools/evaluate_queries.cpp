@@ -44,6 +44,8 @@ struct RunArgs {
     std::string documents_lexicon;
     ScorerParams scorer_params;
 
+    float pair_cost_scaling = 1.0;
+
     bool use_thresholds = false;
     bool disk_resident = false;
 
@@ -172,10 +174,10 @@ void evaluate_queries(
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
-            if (not query.selection()) {
-                spdlog::error("maxscore_inter_query requires posting list selections");
-                std::exit(1);
-            }
+            /* if (not query.selection()) { */
+            /*     spdlog::error("maxscore_inter_query requires posting list selections"); */
+            /*     std::exit(1); */
+            /* } */
             maxscore_inter_query q(topk);
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
@@ -189,11 +191,11 @@ void evaluate_queries(
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
-            if (not query.selection()) {
-                spdlog::error("maxscore_inter_query requires posting list selections");
-                std::exit(1);
-            }
-            maxscore_inter_eager_query q(topk);
+            /* if (not query.selection()) { */
+            /*     spdlog::error("maxscore_inter_query requires posting list selections"); */
+            /*     std::exit(1); */
+            /* } */
+            maxscore_inter_eager_query q(topk, params.pair_cost_scaling);
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -206,11 +208,11 @@ void evaluate_queries(
         query_fun = [&](QueryRequest query) {
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
-            if (not query.selection()) {
-                spdlog::error("maxscore_inter_query requires posting list selections");
-                std::exit(1);
-            }
-            maxscore_inter_opt_query q(topk);
+            /* if (not query.selection()) { */
+            /*     spdlog::error("maxscore_inter_query requires posting list selections"); */
+            /*     std::exit(1); */
+            /* } */
+            maxscore_inter_opt_query q(topk, params.pair_cost_scaling);
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -249,7 +251,7 @@ void evaluate_queries(
     auto end_batch = std::chrono::steady_clock::now();
 
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
-        std::cerr << query_idx << '\n';
+        // std::cerr << query_idx << '\n';
         auto results = raw_results[query_idx];
         auto qid = queries[query_idx].id();
         for (auto&& [rank, result]: enumerate(results)) {
@@ -414,7 +416,7 @@ void inspect(
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
             }
-            maxscore_inter_eager_query q(topk);
+            maxscore_inter_eager_query q(topk, params.pair_cost_scaling);
             q(query, index, wdata, *pair_index, *scorer, index.num_docs(), &inspect);
             return inspect;
         };
@@ -439,7 +441,7 @@ void inspect(
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
             }
-            maxscore_inter_opt_query q(topk);
+            maxscore_inter_opt_query q(topk, params.pair_cost_scaling);
             q(query, index, wdata, *pair_index, *scorer, index.num_docs(), &inspect);
             return inspect;
         };
@@ -504,6 +506,7 @@ int main(int argc, const char** argv)
     bool inspect = false;
     bool disk_resident = false;
     std::optional<std::string> pair_index_path{};
+    float pair_cost_scaling = 1.0;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Required>,
@@ -526,6 +529,11 @@ int main(int argc, const char** argv)
     app.add_option("--pair-index", pair_index_path, "Path to pair index.");
     app.add_flag(
         "--disk-resident", disk_resident, "Keep index on disk and load postings at query time.");
+    app.add_option(
+        "--scale",
+        pair_cost_scaling,
+        "Scaling factor for pair intersection costs when selecting essential posting lists with "
+        "intersections.");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -559,6 +567,7 @@ int main(int argc, const char** argv)
     params.use_thresholds = use_thresholds;
     params.disk_resident = disk_resident;
     params.pair_index_path = pair_index_path;
+    params.pair_cost_scaling = pair_cost_scaling;
 
     /**/
     if (false) {  // NOLINT

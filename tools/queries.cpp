@@ -158,7 +158,8 @@ void perftest(
     bool safe,
     std::optional<std::string>& pair_index_path,
     bool disk_resident,
-    bool disk_resident_pairs)
+    bool disk_resident_pairs,
+    float pair_cost_scaling)
 {
     spdlog::info("Loading index from {}", index_filename);
     auto index = [&]() {
@@ -345,18 +346,18 @@ void perftest(
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
-                if (not query.selection()) {
-                    throw std::invalid_argument("No selections");
-                }
-                auto selection = *query.selection();
-                if (selection.selected_pairs.empty()) {
-                    maxscore_query maxscore_q(topk);
-                    maxscore_q(
-                        make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    topk.finalize();
-                    return topk.topk().size();
-                }
-                maxscore_inter_eager_query q(topk);
+                // if (not query.selection()) {
+                //    throw std::invalid_argument("No selections");
+                //}
+                // auto selection = *query.selection();
+                // if (selection.selected_pairs.empty()) {
+                //    maxscore_query maxscore_q(topk);
+                //    maxscore_q(
+                //        make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                //    topk.finalize();
+                //    return topk.topk().size();
+                //}
+                maxscore_inter_eager_query q(topk, pair_cost_scaling);
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
@@ -384,7 +385,7 @@ void perftest(
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
                 }
-                maxscore_inter_opt_query q(topk);
+                maxscore_inter_opt_query q(topk, pair_cost_scaling);
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
@@ -413,6 +414,7 @@ int main(int argc, const char** argv)
     bool disk_resident = false;
     bool disk_resident_pairs = false;
     std::optional<std::string> pair_index_path{};
+    float pair_cost_scaling = 1.0;
 
     App<arg::Index, arg::WandData<arg::WandMode::Optional>, arg::Query<arg::QueryMode::Ranked>, arg::Algorithm, arg::Scorer>
         app{"Benchmarks queries on a given index."};
@@ -430,6 +432,11 @@ int main(int argc, const char** argv)
         "--disk-resident-pairs",
         disk_resident_pairs,
         "Keep pair index on disk and load postings at query time.");
+    app.add_option(
+        "--scale",
+        pair_cost_scaling,
+        "Scaling factor for pair intersection costs when selecting essential posting lists with "
+        "intersections.");
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -444,7 +451,7 @@ int main(int argc, const char** argv)
         reader.for_each([&](auto&& query) {
             // if (not query.selection(app.k())->selected_pairs.empty()) {
             queries.push_back(query);
-            //}
+            // }
         });
     } catch (pisa::MissingResolverError err) {
         spdlog::error("Unresoved queries (without IDs) require term lexicon.");
@@ -472,7 +479,8 @@ int main(int argc, const char** argv)
         safe,
         pair_index_path,
         disk_resident,
-        disk_resident_pairs);
+        disk_resident_pairs,
+        pair_cost_scaling);
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \

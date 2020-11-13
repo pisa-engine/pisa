@@ -38,7 +38,9 @@ auto accumulate_cursor_to_heap(Cursor&& cursor, std::size_t k, float threshold, 
 }
 
 struct maxscore_inter_eager_query {
-    explicit maxscore_inter_eager_query(topk_queue& topk) : m_topk(topk) {}
+    explicit maxscore_inter_eager_query(topk_queue& topk, float pair_cost_scaling = 1.0)
+        : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling)
+    {}
 
     template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
     void operator()(
@@ -70,7 +72,8 @@ struct maxscore_inter_eager_query {
         //}
         auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
-        auto selection = select_intersections(query, index, wdata, pair_index, initial_threshold);
+        auto selection = select_intersections(
+            query, index, wdata, pair_index, initial_threshold, m_pair_cost_scaling);
         // print_sel(selection, "Computed");
         if (selection.selected_pairs.empty()) {
             maxscore_query q(m_topk);
@@ -175,6 +178,7 @@ struct maxscore_inter_eager_query {
 
   private:
     topk_queue& m_topk;
+    float m_pair_cost_scaling;
 };
 
 }  // namespace pisa

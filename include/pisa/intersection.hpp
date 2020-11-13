@@ -368,9 +368,12 @@ class IntersectionLattice {
     /// This function will throw `std::invalid_argument` if the query is longer than the number of
     /// bits contained in the subset representation type `S`.
     template <typename Index, typename Wand, typename PairIndex>
-    [[nodiscard]] static auto
-    build(QueryRequest const query, Index&& index, Wand&& wdata, PairIndex&& pair_index)
-        -> IntersectionLattice
+    [[nodiscard]] static auto build(
+        QueryRequest const query,
+        Index&& index,
+        Wand&& wdata,
+        PairIndex&& pair_index,
+        float pair_cost_scaling = 1.0) -> IntersectionLattice
     {
         auto term_ids = query.term_ids();
         auto term_weights = query.term_weights();
@@ -396,6 +399,9 @@ class IntersectionLattice {
                 if (auto pair_id = pair_index.pair_id(term_ids[first], term_ids[second]);
                     pair_id.has_value()) {
                     lattice.m_pair_intersections.push_back(mask);
+                    /* lattice.m_costs[mask] = static_cast<std::uint32_t>( */
+                    /*     static_cast<float>(pair_index.pair_posting_count(*pair_id)) */
+                    /*     * pair_cost_scaling); */
                     lattice.m_costs[mask] = pair_index.pair_posting_count(*pair_id);
                     // TODO: Use actual max score.
                     lattice.m_score_bounds[mask] = lattice.m_score_bounds[static_cast<S>(1) << first]
