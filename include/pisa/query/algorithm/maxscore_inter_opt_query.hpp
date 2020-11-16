@@ -150,7 +150,7 @@ template <typename Index, typename Wand, typename PairIndex>
     Wand&& wdata,
     PairIndex&& pair_index,
     float threshold,
-    float pair_cost_scaling) -> Selection<TermId>
+    float pair_cost_scaling) -> std::pair<Selection<TermId>, std::uint32_t>
 {
     auto [single_selection, single_cost] = select_essential_single(query, index, wdata, threshold);
     Selection<TermId> selection;
@@ -160,7 +160,7 @@ template <typename Index, typename Wand, typename PairIndex>
     auto candidates = lattice.selection_candidates(threshold);
     auto selected = candidates.solve(lattice.costs());
     if (selected.cost >= single_cost) {
-        return single_selection;
+        return {std::move(single_selection), single_cost};
     }
     auto term_ids = query.term_ids();
     for (auto intersection: selected.intersections) {
@@ -173,89 +173,116 @@ template <typename Index, typename Wand, typename PairIndex>
             selection.selected_pairs.emplace_back(term_ids[first], term_ids[second]);
         }
     }
-    return selection;
+    return {std::move(selection), selected.cost};
+}
+
+template <typename Cursors>
+[[nodiscard]] PISA_ALWAYSINLINE auto calc_cumulative_costs(Cursors&& cursors)
+    -> std::vector<std::uint32_t>
+{
+    std::vector<std::uint32_t> cumulative_costs(cursors.size());
+    auto out = cumulative_costs.begin();
+    std::uint32_t cost = 0;
+    for (auto pos = cursors.begin(); pos != cursors.end(); ++pos) {
+        cost += pos->max_score();
+        *out++ = cost;
+    }
+    return cumulative_costs;
+}
+
+template <typename CursorIter, typename Fn>
+struct MaxScoreState {
+    Fn above_threshold;
+    std::vector<std::uint32_t> cumulative_costs;
+    std::vector<float> upper_bounds;
+    CursorIter first_cursor;
+    CursorIter first_lookup_cursor;
+    std::vector<float>::const_iterator upper_bound_pos;
+    std::vector<std::uint32_t>::const_iterator cost_pos;
+
+    template <typename Cursors>
+    MaxScoreState(Cursors&& cursors, Fn above_threshold)
+        : above_threshold(std::move(above_threshold)),
+          cumulative_costs(calc_cumulative_costs(cursors)),
+          upper_bounds(calc_upper_bounds(cursors)),
+          first_cursor(cursors.begin()),
+          first_lookup_cursor(cursors.end()),
+          upper_bound_pos(upper_bounds.end()),
+          cost_pos(cumulative_costs.end())
+    {}
+
+    PISA_ALWAYSINLINE auto update()
+    {
+        while (first_lookup_cursor != first_cursor && !above_threshold(*std::prev(upper_bound_pos))) {
+            --first_lookup_cursor;
+            --upper_bound_pos;
+            --cost_pos;
+        }
+    }
+
+    [[nodiscard]] auto cost() const -> std::uint32_t { return *cost_pos; }
+};
+
+template <typename Fn, typename Cursors>
+[[nodiscard]] PISA_ALWAYSINLINE auto make_maxscore_state(Cursors&& cursors, Fn above_threshold)
+    -> MaxScoreState<std::decay_t<decltype(cursors.cbegin())>, Fn>
+{
+    return MaxScoreState<std::decay_t<decltype(cursors.cbegin())>, Fn>(
+        std::forward<Cursors>(cursors), std::move(above_threshold));
+}
+
+template <
+    typename Cursor,
+    typename Payload,
+    std::enable_if_t<std::negation<std::is_reference<Payload>>::value, bool> = true>
+auto accumulate_single_fn()
+{
+    return [](Payload& acc, Cursor&& cursor) -> Payload&& {
+        acc.score += cursor.score();
+        acc.state |= 1U << cursor.term_position();
+        return acc;
+    };
+}
+
+template <
+    typename Cursor,
+    typename Payload,
+    std::enable_if_t<std::negation<std::is_reference<Payload>>::value, bool> = true>
+auto accumulate_intersection(Payload& acc, Cursor&& cursor) -> Payload&
+{
+    acc[cursor.term_position()] = cursor.score();
+    return acc;
+}
+template <
+    typename Cursor,
+    typename Payload,
+    std::enable_if_t<std::negation<std::is_reference<Payload>>::value, bool> = true>
+auto accumulate_pair(Payload& acc, Cursor&& cursor) -> Payload&
+{
+    auto const& score = cursor.score();
+    auto const& pos = cursor.term_position();
+    acc.accumulate(1U << std::get<0>(pos), std::get<0>(score));
+    acc.accumulate(1U << std::get<1>(pos), std::get<1>(score));
+    return acc;
 }
 
 struct maxscore_inter_opt_query {
-    explicit maxscore_inter_opt_query(
-        topk_queue& topk, float pair_cost_scaling = 1.0, bool dynamic_intersections = false)
-        : m_topk(topk),
-          m_dynamic_intersections(dynamic_intersections),
-          m_pair_cost_scaling(pair_cost_scaling)
+    explicit maxscore_inter_opt_query(topk_queue& topk, float pair_cost_scaling = 1.0)
+        : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling)
     {}
 
-    template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
-    void operator()(
-        QueryRequest const query,
-        Index&& index,
-        Wand&& wdata,
-        PairIndex&& pair_index,
-        Scorer&& scorer,
-        std::uint32_t max_docid,
-        Inspect* inspect = nullptr)
+    template <typename EssentialTermCursors, typename EssentialPairCursors, typename LookupCursors>
+    void process_cursors(
+        LookupCursors& lookup_cursors,
+        EssentialTermCursors&& essential_term_cursors,
+        EssentialPairCursors&& essential_pair_cursors,
+        gsl::span<TermId const> essential_terms,
+        std::size_t term_count,
+        std::uint32_t max_docid)
     {
-        using lookup_cursor_type =
-            NumberedCursor<MaxScoredCursor<typename std::decay_t<Index>::document_enumerator>, TermId>;
-
-        auto const& term_ids = query.term_ids();
-        auto const term_count = term_ids.size();
-
-        auto initial_threshold = query.threshold() ? *query.threshold() : 0.0;
-        m_topk.set_threshold(initial_threshold);
-
-        // auto print_sel = [](auto selection, auto caption) {
-        //    std::cerr << caption << ":";
-        //    for (auto&& inter: selection.selected_terms) {
-        //        std::cerr << " " << inter;
-        //    }
-        //    std::cerr << " | ";
-        //    for (auto&& inter: selection.selected_pairs) {
-        //        std::cerr << " (" << std::get<0>(inter) << "," << std::get<1>(inter) << ")";
-        //    }
-        //    std::cerr << "\n";
-        //};
-        // print_sel(*query.selection(), "Loaded");
-        auto selection = select_intersections(query, index, wdata, pair_index, initial_threshold);
-        // print_sel(selection, "Computed");
-        if (selection.selected_pairs.empty()) {
-            maxscore_query q(m_topk);
-            q(make_block_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
-            return;
-        }
-
-        // auto const selection = query.selection();
-        // if (not selection) {
-        //    throw std::invalid_argument("maxscore_inter_query requires posting list selections");
-        //}
-
-        auto const essential_terms = selection.selected_terms | to_vector | sort;
-        auto const non_essential_terms =
-            ranges::views::set_difference(term_ids, essential_terms) | to_vector;
-
-        auto essential_term_cursors =
-            number_cursors(make_max_scored_cursors(index, wdata, scorer, essential_terms));
-        auto lookup_cursors = inspect_cursors(
-            number_cursors(
-                make_max_scored_cursors(index, wdata, scorer, non_essential_terms), non_essential_terms)
-                | sort(std::greater{}, func::max_score{}),
-            inspect);
-
-        auto term_position = term_position_function<16>(
-            essential_terms, ranges::views::transform(lookup_cursors, [](auto&& cursor) {
-                // Unfortunate naming (probably should be changed); it's actually term ID not
-                // term position
-                return cursor.term_position();
-            }));
-
-        Payload initial_payload{};
-
         auto accumulate_single = [](auto& acc, auto&& cursor) {
             acc.score += cursor.score();
             acc.state |= 1U << cursor.term_position();
-            return acc;
-        };
-        auto accumulate_intersection = [](auto& acc, auto&& cursor) {
-            acc[cursor.term_position()] = cursor.score();
             return acc;
         };
         auto accumulate_pair = [](auto& acc, auto&& cursor) {
@@ -266,45 +293,11 @@ struct maxscore_inter_opt_query {
             return acc;
         };
 
-        using pair_cursor_type = NumberedCursor<
-            PairMaxScoredCursor<typename std::decay_t<PairIndex>::cursor_type>,
-            std::array<State, 2>>;
-
-        using intersection_type = NumberedCursor<
-            CursorIntersection<
-                std::decay_t<decltype(number_cursors(make_max_scored_cursors(
-                    index, wdata, scorer, std::declval<std::vector<TermId>>())))>,
-                std::array<float, 2>,
-                decltype(accumulate_intersection)>,
-            std::array<State, 2>>;
-
-        std::vector<pair_cursor_type> essential_pair_cursors;
-        std::vector<intersection_type> essential_intersections;
-        for (auto [left, right]: selection.selected_pairs) {
-            auto pair_id = pair_index.pair_id(left, right);
-            State left_pos = term_position(left);
-            State right_pos = term_position(right);
-            if (m_dynamic_intersections || not pair_id) {
-                if (not m_dynamic_intersections) {
-                    throw std::runtime_error(fmt::format("Pair not found: <{}, {}>", left, right));
-                }
-                auto cursors = number_cursors(make_max_scored_cursors(
-                    index, wdata, scorer, std::vector<TermId>{left, right}));
-                essential_intersections.push_back(number_cursor(
-                    intersect(std::move(cursors), std::array<float, 2>{}, accumulate_intersection),
-                    std::array<State, 2>{left_pos, right_pos}));
-            } else {
-                auto cursor = number_cursor(
-                    make_max_scored_pair_cursor(
-                        pair_index.index(), wdata, *pair_id, scorer, left, right),
-                    std::array<State, 2>{left_pos, right_pos});
-                essential_pair_cursors.push_back(std::move(cursor));
-            }
-        }
+        Payload initial_payload{};
 
         auto next_lookup =
             precompute_next_lookup<16>(essential_terms.size(), lookup_cursors.size(), [&] {
-                std::vector<std::vector<std::uint32_t>> mapping(term_ids.size());
+                std::vector<std::vector<std::uint32_t>> mapping(term_count);
                 for (auto&& cursor: essential_pair_cursors) {
                     auto [left, right] = cursor.term_position();
                     mapping[left].push_back(right);
@@ -315,11 +308,8 @@ struct maxscore_inter_opt_query {
 
         auto cursor = generic_union_merge(
             initial_payload,
-            std::make_tuple(
-                inspect_cursors(std::move(essential_term_cursors), inspect),
-                inspect_cursors(std::move(essential_pair_cursors), inspect),
-                inspect_cursors(std::move(essential_intersections), inspect)),
-            std::make_tuple(accumulate_single, accumulate_pair, accumulate_pair));
+            std::make_tuple(std::move(essential_term_cursors), std::move(essential_pair_cursors)),
+            std::make_tuple(accumulate_single, accumulate_pair));
 
         auto mus = [&] {
             std::vector<float> mus((term_count + 1) * (1U << term_count), 0.0);
@@ -371,11 +361,123 @@ struct maxscore_inter_opt_query {
         };
     }
 
+    template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
+    void operator()(
+        QueryRequest const query,
+        Index&& index,
+        Wand&& wdata,
+        PairIndex&& pair_index,
+        Scorer&& scorer,
+        std::uint32_t max_docid,
+        Inspect* inspect = nullptr)
+    {
+        using lookup_cursor_type =
+            NumberedCursor<MaxScoredCursor<typename std::decay_t<Index>::document_enumerator>, TermId>;
+
+        using pair_cursor_type = NumberedCursor<
+            PairMaxScoredCursor<typename std::decay_t<PairIndex>::cursor_type>,
+            std::array<State, 2>>;
+
+        using inspecting_pair_cursor_type = std::conditional_t<
+            std::is_void_v<Inspect>,  //
+            pair_cursor_type,
+            InspectingCursor<pair_cursor_type, Inspect>>;
+
+        auto const& term_ids = query.term_ids();
+        auto const term_count = term_ids.size();
+
+        auto initial_threshold = query.threshold() ? *query.threshold() : 0.0;
+        m_topk.set_threshold(initial_threshold);
+
+        std::uint32_t first_docid = 0;
+        std::uint32_t initial_interval = max_docid / 20 + 1;
+        std::uint32_t interval = initial_interval;
+        std::uint32_t factor = 1;
+
+        auto calc_last_docid = [&](auto first_docid) {
+            auto interval = (factor++ * initial_interval);
+            auto last_docid = first_docid + interval;
+            if (last_docid > max_docid) {
+                return max_docid;
+            }
+            return last_docid;
+        };
+
+        while (first_docid < max_docid) {
+            auto last_docid = calc_last_docid(first_docid);
+            auto const selection_result = select_intersections(
+                query, index, wdata, pair_index, m_topk.threshold(), m_pair_cost_scaling);
+            auto const& selection = selection_result.first;
+            // auto initial_cost = selection_result.second;
+            if (selection.selected_pairs.empty()) {
+                maxscore_query q(m_topk);
+                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                if (first_docid > 0) {
+                    for (auto&& cursor: cursors) {
+                        cursor.next_geq(first_docid);
+                    }
+                }
+                q(std::move(cursors), last_docid);
+                first_docid = last_docid;
+                continue;
+            }
+            auto const essential_terms = selection.selected_terms | to_vector | sort;
+            auto const non_essential_terms =
+                ranges::views::set_difference(term_ids, essential_terms) | to_vector;
+
+            auto essential_term_cursors = inspect_cursors(
+                number_cursors(make_max_scored_cursors(index, wdata, scorer, essential_terms)),
+                inspect);
+            auto lookup_cursors = inspect_cursors(
+                number_cursors(
+                    make_max_scored_cursors(index, wdata, scorer, non_essential_terms),
+                    non_essential_terms)
+                    | sort(std::greater{}, func::max_score{}),
+                inspect);
+
+            auto term_position = term_position_function<16>(
+                essential_terms, ranges::views::transform(lookup_cursors, [](auto&& cursor) {
+                    // Unfortunate naming (probably should be changed); it's actually term ID not
+                    // term position
+                    return cursor.term_position();
+                }));
+
+            std::vector<pair_cursor_type> essential_pair_cursors;
+            for (auto [left, right]: selection.selected_pairs) {
+                auto pair_id = pair_index.pair_id(left, right);
+                State left_pos = term_position(left);
+                State right_pos = term_position(right);
+                auto cursor = number_cursor(
+                    make_max_scored_pair_cursor(
+                        pair_index.index(), wdata, *pair_id, scorer, left, right),
+                    std::array<State, 2>{left_pos, right_pos});
+                essential_pair_cursors.push_back(std::move(cursor));
+            }
+
+            if (first_docid > 0) {
+                for (auto&& cursor: essential_term_cursors) {
+                    cursor.next_geq(first_docid);
+                }
+                for (auto&& cursor: essential_pair_cursors) {
+                    cursor.next_geq(first_docid);
+                }
+            }
+
+            process_cursors(
+                lookup_cursors,
+                essential_term_cursors,
+                std::move(essential_pair_cursors),
+                std::move(essential_terms),
+                term_ids.size(),
+                last_docid);
+            first_docid = last_docid;
+        }
+    }
+
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
   private:
     topk_queue& m_topk;
-    bool m_dynamic_intersections;
     float m_pair_cost_scaling;
 };
 

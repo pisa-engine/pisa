@@ -210,37 +210,40 @@ auto join_maxscore_uni(
         sentinel);
 }
 
+template <typename Cursors>
+[[nodiscard]] PISA_ALWAYSINLINE auto calc_upper_bounds(Cursors&& cursors) -> std::vector<float>
+{
+    std::vector<float> upper_bounds(cursors.size());
+    auto out = upper_bounds.rbegin();
+    float bound = 0.0;
+    for (auto pos = cursors.rbegin(); pos != cursors.rend(); ++pos) {
+        bound += pos->max_score();
+        *out++ = bound;
+    }
+    return upper_bounds;
+}
+
+enum class UpdateResult : bool { Continue, ShortCircuit };
+enum class DocumentStatus : bool { Insert, Skip };
+
+template <typename Cursors>
+[[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
+    -> std::vector<typename std::decay_t<Cursors>::value_type>
+{
+    std::vector<std::size_t> term_positions(cursors.size());
+    std::iota(term_positions.begin(), term_positions.end(), 0);
+    std::sort(term_positions.begin(), term_positions.end(), [&](auto&& lhs, auto&& rhs) {
+        return cursors[lhs].max_score() > cursors[rhs].max_score();
+    });
+    std::vector<typename std::decay_t<Cursors>::value_type> sorted;
+    for (auto pos: term_positions) {
+        sorted.push_back(std::move(cursors[pos]));
+    };
+    return sorted;
+}
+
 struct maxscore_query {
     explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
-
-    template <typename Cursors>
-    [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
-        -> std::vector<typename std::decay_t<Cursors>::value_type>
-    {
-        std::vector<std::size_t> term_positions(cursors.size());
-        std::iota(term_positions.begin(), term_positions.end(), 0);
-        std::sort(term_positions.begin(), term_positions.end(), [&](auto&& lhs, auto&& rhs) {
-            return cursors[lhs].max_score() > cursors[rhs].max_score();
-        });
-        std::vector<typename std::decay_t<Cursors>::value_type> sorted;
-        for (auto pos: term_positions) {
-            sorted.push_back(std::move(cursors[pos]));
-        };
-        return sorted;
-    }
-
-    template <typename Cursors>
-    [[nodiscard]] PISA_ALWAYSINLINE auto calc_upper_bounds(Cursors&& cursors) -> std::vector<float>
-    {
-        std::vector<float> upper_bounds(cursors.size());
-        auto out = upper_bounds.rbegin();
-        float bound = 0.0;
-        for (auto pos = cursors.rbegin(); pos != cursors.rend(); ++pos) {
-            bound += pos->max_score();
-            *out++ = bound;
-        }
-        return upper_bounds;
-    }
 
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t
@@ -251,9 +254,6 @@ struct maxscore_query {
                    [](auto&& lhs, auto&& rhs) { return lhs.docid() < rhs.docid(); })
             ->docid();
     }
-
-    enum class UpdateResult : bool { Continue, ShortCircuit };
-    enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
     PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid)

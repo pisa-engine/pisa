@@ -399,10 +399,9 @@ class IntersectionLattice {
                 if (auto pair_id = pair_index.pair_id(term_ids[first], term_ids[second]);
                     pair_id.has_value()) {
                     lattice.m_pair_intersections.push_back(mask);
-                    /* lattice.m_costs[mask] = static_cast<std::uint32_t>( */
-                    /*     static_cast<float>(pair_index.pair_posting_count(*pair_id)) */
-                    /*     * pair_cost_scaling); */
-                    lattice.m_costs[mask] = pair_index.pair_posting_count(*pair_id);
+                    lattice.m_costs[mask] = static_cast<std::uint32_t>(
+                        static_cast<float>(pair_index.pair_posting_count(*pair_id))
+                        * pair_cost_scaling);
                     // TODO: Use actual max score.
                     lattice.m_score_bounds[mask] = lattice.m_score_bounds[static_cast<S>(1) << first]
                         + lattice.m_score_bounds[static_cast<S>(1) << second];

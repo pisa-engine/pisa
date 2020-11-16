@@ -73,7 +73,8 @@ struct maxscore_inter_eager_query {
         auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
         auto selection = select_intersections(
-            query, index, wdata, pair_index, initial_threshold, m_pair_cost_scaling);
+                             query, index, wdata, pair_index, initial_threshold, m_pair_cost_scaling)
+                             .first;
         // print_sel(selection, "Computed");
         if (selection.selected_pairs.empty()) {
             maxscore_query q(m_topk);

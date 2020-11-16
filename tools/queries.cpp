@@ -346,17 +346,6 @@ void perftest(
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
-                // if (not query.selection()) {
-                //    throw std::invalid_argument("No selections");
-                //}
-                // auto selection = *query.selection();
-                // if (selection.selected_pairs.empty()) {
-                //    maxscore_query maxscore_q(topk);
-                //    maxscore_q(
-                //        make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                //    topk.finalize();
-                //    return topk.topk().size();
-                //}
                 maxscore_inter_eager_query q(topk, pair_cost_scaling);
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
@@ -370,17 +359,6 @@ void perftest(
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
-                if (not query.selection()) {
-                    throw std::invalid_argument("No selections");
-                }
-                auto selection = *query.selection();
-                if (selection.selected_pairs.empty()) {
-                    maxscore_query maxscore_q(topk);
-                    maxscore_q(
-                        make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    topk.finalize();
-                    return topk.topk().size();
-                }
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
