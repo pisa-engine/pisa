@@ -68,10 +68,11 @@ struct topk_queue {
 
     void set_threshold(Threshold t) noexcept
     {
-        for (int _i = 0; _i < EPSILON_FACTOR; ++_i) {
-            t = std::nextafter(t, 0.0F);
-        }
-        m_threshold = t;
+        m_threshold = std::max(t - 0.0001, 0.0);
+        /* for (int _i = 0; _i < EPSILON_FACTOR; ++_i) { */
+        /*     t = std::nextafter(t, 0.0F); */
+        /* } */
+        /* m_threshold = t; */
     }
 
     void clear() noexcept
@@ -81,6 +82,10 @@ struct topk_queue {
     }
 
     [[nodiscard]] float threshold() const noexcept { return m_threshold; }
+    [[nodiscard]] float final_threshold() const noexcept
+    {
+        return m_q.size() == m_k ? m_q.front().first : 0.0;
+    }
 
     [[nodiscard]] size_t capacity() const noexcept { return m_k; }
 

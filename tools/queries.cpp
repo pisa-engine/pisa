@@ -35,6 +35,11 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
+struct BenchResult {
+    std::uint64_t count;
+    float threshold;
+};
+
 template <typename Functor>
 void op_perftest(
     Functor query_func,
@@ -66,8 +71,11 @@ void op_perftest(
             StaticTimer::get("postings")->reset();
             try {
                 auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                    uint64_t result = query_func(query.query(k, request_flags));
-                    if (safe && result < k) {
+                    auto threshold = query.threshold(k);
+                    auto request = query.query(k, request_flags);
+                    auto result = query_func(request);
+                    if (safe && result.count < k && threshold && *threshold > result.threshold) {
+                        // std::cerr << *threshold << " " << result.threshold << '\n';
                         num_reruns += 1;
                         result = query_func(
                             query.query(k, RequestFlagSet::all() ^ RequestFlag::Threshold));
@@ -205,143 +213,148 @@ void perftest(
 
     for (auto&& t: query_types) {
         spdlog::info("Query type: {}", t);
-        std::function<uint64_t(QueryRequest const&)> query_fun;
+        std::function<BenchResult(QueryRequest const&)> query_fun;
         if (t == "and") {
             query_fun = [&](QueryRequest const& query) {
                 and_query and_q;
-                return and_q(make_cursors(index, query), index.num_docs()).size();
+                return BenchResult{and_q(make_cursors(index, query), index.num_docs()).size(), 0.0};
             };
-        } else if (t == "or") {
-            query_fun = [&](QueryRequest const& query) {
-                or_query<false> or_q;
-                return or_q(make_cursors(index, query), index.num_docs());
-            };
-        } else if (t == "or_freq") {
-            query_fun = [&](QueryRequest const& query) {
-                or_query<true> or_q;
-                return or_q(make_cursors(index, query), index.num_docs());
-            };
-        } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                block_max_wand_query block_max_wand_q(topk);
-                block_max_wand_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                block_max_maxscore_query block_max_maxscore_q(topk);
-                block_max_maxscore_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "ranked_and" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                ranked_and_query ranked_and_q(topk);
-                ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "block_max_ranked_and" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                block_max_ranked_and_query block_max_ranked_and_q(topk);
-                block_max_ranked_and_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                ranked_or_query ranked_or_q(topk);
-                ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                maxscore_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "ranked_or_taat" && wand_data_filename) {
-            Simple_Accumulator accumulator(index.num_docs());
-            topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable {
-                topk.set_threshold(query.threshold().value_or(0));
-                ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            Lazy_Accumulator<4> accumulator(index.num_docs());
-            topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable {
-                topk.set_threshold(query.threshold().value_or(0));
-                ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "maxscore-uni" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                maxscore_uni_query q(topk);
-                q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
-        } else if (t == "maxscore-inter" && wand_data_filename) {
-            query_fun = [&](QueryRequest const& query) {
-                topk_queue topk(k);
-                topk.set_threshold(query.threshold().value_or(0));
-                if (not query.selection()) {
-                    throw std::invalid_argument("No selections");
-                }
-                auto selection = *query.selection();
-                if (selection.selected_pairs.empty()) {
-                    maxscore_query maxscore_q(topk);
-                    maxscore_q(
-                        make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-                    topk.finalize();
-                    return topk.topk().size();
-                }
-                maxscore_inter_query q(topk);
-                if (not pair_index) {
-                    spdlog::error("Must provide pair index for maxscore-inter");
-                    std::exit(1);
-                }
-                q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-                topk.finalize();
-                return topk.topk().size();
-            };
+            //} else if (t == "or") {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        or_query<false> or_q;
+            //        return or_q(make_cursors(index, query), index.num_docs());
+            //    };
+            //} else if (t == "or_freq") {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        or_query<true> or_q;
+            //        return or_q(make_cursors(index, query), index.num_docs());
+            //    };
+            //} else if (t == "wand" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        wand_query wand_q(topk);
+            //        wand_q(make_max_scored_cursors(index, wdata, *scorer, query),
+            //        index.num_docs()); topk.finalize(); return topk.topk().size();
+            //    };
+            //} else if (t == "block_max_wand" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        block_max_wand_query block_max_wand_q(topk);
+            //        block_max_wand_q(
+            //            make_block_max_scored_cursors(index, wdata, *scorer, query),
+            //            index.num_docs());
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "block_max_maxscore" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        block_max_maxscore_query block_max_maxscore_q(topk);
+            //        block_max_maxscore_q(
+            //            make_block_max_scored_cursors(index, wdata, *scorer, query),
+            //            index.num_docs());
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "ranked_and" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        ranked_and_query ranked_and_q(topk);
+            //        ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "block_max_ranked_and" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        block_max_ranked_and_query block_max_ranked_and_q(topk);
+            //        block_max_ranked_and_q(
+            //            make_block_max_scored_cursors(index, wdata, *scorer, query),
+            //            index.num_docs());
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "ranked_or" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        ranked_or_query ranked_or_q(topk);
+            //        ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "maxscore" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        maxscore_query maxscore_q(topk);
+            //        maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query),
+            //        index.num_docs()); topk.finalize(); return topk.topk().size();
+            //    };
+            //} else if (t == "ranked_or_taat" && wand_data_filename) {
+            //    Simple_Accumulator accumulator(index.num_docs());
+            //    topk_queue topk(k);
+            //    ranked_or_taat_query ranked_or_taat_q(topk);
+            //    query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable
+            //    {
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        ranked_or_taat_q(
+            //            make_scored_cursors(index, *scorer, query), index.num_docs(),
+            //            accumulator);
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+            //    Lazy_Accumulator<4> accumulator(index.num_docs());
+            //    topk_queue topk(k);
+            //    ranked_or_taat_query ranked_or_taat_q(topk);
+            //    query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable
+            //    {
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        ranked_or_taat_q(
+            //            make_scored_cursors(index, *scorer, query), index.num_docs(),
+            //            accumulator);
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
+            //} else if (t == "maxscore-uni" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        maxscore_uni_query q(topk);
+            //        q(make_block_max_scored_cursors(index, wdata, *scorer, query),
+            //        index.num_docs()); topk.finalize(); return topk.topk().size();
+            //    };
+            //} else if (t == "maxscore-inter" && wand_data_filename) {
+            //    query_fun = [&](QueryRequest const& query) {
+            //        topk_queue topk(k);
+            //        topk.set_threshold(query.threshold().value_or(0));
+            //        if (not query.selection()) {
+            //            throw std::invalid_argument("No selections");
+            //        }
+            //        auto selection = *query.selection();
+            //        if (selection.selected_pairs.empty()) {
+            //            maxscore_query maxscore_q(topk);
+            //            maxscore_q(
+            //                make_max_scored_cursors(index, wdata, *scorer, query),
+            //                index.num_docs());
+            //            topk.finalize();
+            //            return topk.topk().size();
+            //        }
+            //        maxscore_inter_query q(topk);
+            //        if (not pair_index) {
+            //            spdlog::error("Must provide pair index for maxscore-inter");
+            //            std::exit(1);
+            //        }
+            //        q(query, index, wdata, *pair_index, *scorer, index.num_docs());
+            //        topk.finalize();
+            //        return topk.topk().size();
+            //    };
         } else if (t == "maxscore-inter-eager" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
@@ -353,7 +366,7 @@ void perftest(
                 }
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
-                return topk.topk().size();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
             };
         } else if (t == "maxscore-inter-opt" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -366,7 +379,7 @@ void perftest(
                 maxscore_inter_opt_query q(topk, pair_cost_scaling);
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
-                return topk.topk().size();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);
@@ -437,12 +450,6 @@ int main(int argc, const char** argv)
     } catch (std::runtime_error const& err) {
         spdlog::error(err.what());
         std::exit(1);
-    }
-
-    for (auto& query: queries) {
-        if (auto threshold = query.threshold(app.k()); threshold && *threshold > 0.0) {
-            query.add_threshold(app.k(), std::nextafter(*threshold, 0.0));
-        }
     }
 
     auto params = std::make_tuple(

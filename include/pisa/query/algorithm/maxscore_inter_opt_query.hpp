@@ -395,12 +395,13 @@ struct maxscore_inter_opt_query {
         std::uint32_t factor = 1;
 
         auto calc_last_docid = [&](auto first_docid) {
-            auto interval = (factor++ * initial_interval);
-            auto last_docid = first_docid + interval;
-            if (last_docid > max_docid) {
-                return max_docid;
-            }
-            return last_docid;
+            return max_docid;
+            // auto interval = (factor++ * initial_interval);
+            // auto last_docid = first_docid + interval;
+            // if (last_docid > max_docid) {
+            //    return max_docid;
+            //}
+            // return last_docid;
         };
 
         while (first_docid < max_docid) {
