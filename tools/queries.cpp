@@ -219,142 +219,113 @@ void perftest(
                 and_query and_q;
                 return BenchResult{and_q(make_cursors(index, query), index.num_docs()).size(), 0.0};
             };
-            //} else if (t == "or") {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        or_query<false> or_q;
-            //        return or_q(make_cursors(index, query), index.num_docs());
-            //    };
-            //} else if (t == "or_freq") {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        or_query<true> or_q;
-            //        return or_q(make_cursors(index, query), index.num_docs());
-            //    };
-            //} else if (t == "wand" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        wand_query wand_q(topk);
-            //        wand_q(make_max_scored_cursors(index, wdata, *scorer, query),
-            //        index.num_docs()); topk.finalize(); return topk.topk().size();
-            //    };
-            //} else if (t == "block_max_wand" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        block_max_wand_query block_max_wand_q(topk);
-            //        block_max_wand_q(
-            //            make_block_max_scored_cursors(index, wdata, *scorer, query),
-            //            index.num_docs());
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "block_max_maxscore" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        block_max_maxscore_query block_max_maxscore_q(topk);
-            //        block_max_maxscore_q(
-            //            make_block_max_scored_cursors(index, wdata, *scorer, query),
-            //            index.num_docs());
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "ranked_and" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        ranked_and_query ranked_and_q(topk);
-            //        ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "block_max_ranked_and" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        block_max_ranked_and_query block_max_ranked_and_q(topk);
-            //        block_max_ranked_and_q(
-            //            make_block_max_scored_cursors(index, wdata, *scorer, query),
-            //            index.num_docs());
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "ranked_or" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        ranked_or_query ranked_or_q(topk);
-            //        ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "maxscore" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        maxscore_query maxscore_q(topk);
-            //        maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query),
-            //        index.num_docs()); topk.finalize(); return topk.topk().size();
-            //    };
-            //} else if (t == "ranked_or_taat" && wand_data_filename) {
-            //    Simple_Accumulator accumulator(index.num_docs());
-            //    topk_queue topk(k);
-            //    ranked_or_taat_query ranked_or_taat_q(topk);
-            //    query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable
-            //    {
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        ranked_or_taat_q(
-            //            make_scored_cursors(index, *scorer, query), index.num_docs(),
-            //            accumulator);
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            //    Lazy_Accumulator<4> accumulator(index.num_docs());
-            //    topk_queue topk(k);
-            //    ranked_or_taat_query ranked_or_taat_q(topk);
-            //    query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable
-            //    {
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        ranked_or_taat_q(
-            //            make_scored_cursors(index, *scorer, query), index.num_docs(),
-            //            accumulator);
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
-            //} else if (t == "maxscore-uni" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        maxscore_uni_query q(topk);
-            //        q(make_block_max_scored_cursors(index, wdata, *scorer, query),
-            //        index.num_docs()); topk.finalize(); return topk.topk().size();
-            //    };
-            //} else if (t == "maxscore-inter" && wand_data_filename) {
-            //    query_fun = [&](QueryRequest const& query) {
-            //        topk_queue topk(k);
-            //        topk.set_threshold(query.threshold().value_or(0));
-            //        if (not query.selection()) {
-            //            throw std::invalid_argument("No selections");
-            //        }
-            //        auto selection = *query.selection();
-            //        if (selection.selected_pairs.empty()) {
-            //            maxscore_query maxscore_q(topk);
-            //            maxscore_q(
-            //                make_max_scored_cursors(index, wdata, *scorer, query),
-            //                index.num_docs());
-            //            topk.finalize();
-            //            return topk.topk().size();
-            //        }
-            //        maxscore_inter_query q(topk);
-            //        if (not pair_index) {
-            //            spdlog::error("Must provide pair index for maxscore-inter");
-            //            std::exit(1);
-            //        }
-            //        q(query, index, wdata, *pair_index, *scorer, index.num_docs());
-            //        topk.finalize();
-            //        return topk.topk().size();
-            //    };
+        } else if (t == "or") {
+            query_fun = [&](QueryRequest const& query) {
+                or_query<false> or_q;
+                return BenchResult{or_q(make_cursors(index, query), index.num_docs()), 0.0};
+            };
+        } else if (t == "or_freq") {
+            query_fun = [&](QueryRequest const& query) {
+                or_query<true> or_q;
+                return BenchResult{or_q(make_cursors(index, query), index.num_docs()), 0.0};
+            };
+        } else if (t == "wand" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                wand_query wand_q(topk);
+                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "block_max_wand" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                block_max_wand_query block_max_wand_q(topk);
+                block_max_wand_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "block_max_maxscore" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                block_max_maxscore_query block_max_maxscore_q(topk);
+                block_max_maxscore_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "ranked_and" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                ranked_and_query ranked_and_q(topk);
+                ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "block_max_ranked_and" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                block_max_ranked_and_query block_max_ranked_and_q(topk);
+                block_max_ranked_and_q(
+                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "ranked_or" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                ranked_or_query ranked_or_q(topk);
+                ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "maxscore" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                maxscore_query maxscore_q(topk);
+                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "ranked_or_taat" && wand_data_filename) {
+            Simple_Accumulator accumulator(index.num_docs());
+            topk_queue topk(k);
+            ranked_or_taat_query ranked_or_taat_q(topk);
+            query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable {
+                topk.set_threshold(query.threshold().value_or(0));
+                ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+            Lazy_Accumulator<4> accumulator(index.num_docs());
+            topk_queue topk(k);
+            ranked_or_taat_query ranked_or_taat_q(topk);
+            query_fun = [&, ranked_or_taat_q, accumulator](QueryRequest const& query) mutable {
+                topk.set_threshold(query.threshold().value_or(0));
+                ranked_or_taat_q(
+                    make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                topk.finalize();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
+            };
+        } else if (t == "maxscore-uni" && wand_data_filename) {
+            query_fun = [&](QueryRequest const& query) {
+                topk_queue topk(k);
+                topk.set_threshold(query.threshold().value_or(0));
+                maxscore_uni_query q(topk);
+                q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                topk.finalize();
+                return topk.topk().size();
+            };
         } else if (t == "maxscore-inter-eager" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
