@@ -324,7 +324,7 @@ void perftest(
                 maxscore_uni_query q(topk);
                 q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return topk.topk().size();
+                return BenchResult{topk.topk().size(), topk.final_threshold()};
             };
         } else if (t == "maxscore-inter-eager" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
