@@ -375,11 +375,11 @@ void inspect(
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
             Inspect inspect;
-            if (not query.selection()) {
-                spdlog::error("maxscore_inter_query requires posting list selections");
-                std::exit(1);
-            }
-            auto selection = *query.selection();
+            // if (not query.selection()) {
+            //    spdlog::error("maxscore_inter_query requires posting list selections");
+            //    std::exit(1);
+            //}
+            // auto selection = *query.selection();
             // if (selection.selected_pairs.empty()) {
             //    maxscore_uni_query q(topk);
             //    q(inspect_cursors(
@@ -400,11 +400,11 @@ void inspect(
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
             Inspect inspect;
-            if (not query.selection()) {
-                spdlog::error("maxscore_inter_query requires posting list selections");
-                std::exit(1);
-            }
-            auto selection = *query.selection();
+            // if (not query.selection()) {
+            //    spdlog::error("maxscore_inter_query requires posting list selections");
+            //    std::exit(1);
+            //}
+            // auto selection = *query.selection();
             // if (selection.selected_pairs.empty()) {
             //    maxscore_uni_query q(topk);
             //    q(inspect_cursors(
@@ -425,11 +425,11 @@ void inspect(
             topk_queue topk(k);
             topk.set_threshold(query.threshold().value_or(0));
             Inspect inspect;
-            if (not query.selection()) {
-                spdlog::error("maxscore-inter-opt requires posting list selections");
-                std::exit(1);
-            }
-            auto selection = *query.selection();
+            // if (not query.selection()) {
+            //    spdlog::error("maxscore-inter-opt requires posting list selections");
+            //    std::exit(1);
+            //}
+            // auto selection = *query.selection();
             // if (selection.selected_pairs.empty()) {
             //    maxscore_uni_query q(topk);
             //    q(inspect_cursors(
