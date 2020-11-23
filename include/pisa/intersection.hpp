@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <gsl/span>
+#include <nlohmann/json.hpp>
 
 #include "binary_index.hpp"
 #include "cursor/scored_cursor.hpp"
@@ -173,8 +174,13 @@ struct Selected {
 /// Candidates for intersection selection returned from the query's intersection lattice.
 template <typename S>
 struct SelectionCandidtes {
+    /// Index structures that should be considered as subsets in the Set Cover problem.
     std::vector<S> subsets;
+    /// Index structures that should be considered as elements (and singletons) in the Set Cover
+    /// problem.
     std::vector<S> elements;
+    /// The next threshold value that can change the set of candidates.
+    float next_threshold = std::numeric_limits<float>::max();
 
     /// Return selected index structures. Each structure is represented as a bitmask, so these still
     /// need to be translated into query term IDs.
@@ -465,21 +471,29 @@ class IntersectionLattice {
             auto second = __builtin_ctz(mask & ~(1U << first));  // TODO: generalize
             return first * len + second;
         };
+
         auto lnodes = layered_nodes();
         gsl::span<S const> nodes(lnodes.begin(), 1U << query_length());
+
+        auto add_element = [&](auto mask) {
+            cover(covered, mask, nodes);
+            elements.push_back(mask);
+            if (score_bound(mask) < candidates.next_threshold) {
+                candidates.next_threshold = score_bound(mask);
+            }
+        };
+
         for (auto mask: m_single_term_lists) {
             if (score_bound(mask) >= threshold) {
                 covered_single |= mask;
-                cover(covered, mask, nodes);
-                elements.push_back(mask);
+                add_element(mask);
             }
             subsets.push_back(mask);
         }
         for (auto mask: m_pair_intersections) {
             if (not covered.test(mask)) {
                 if (score_bound(mask) >= threshold) {
-                    elements.push_back(mask);
-                    cover(covered, mask, nodes);
+                    add_element(mask);
                 }
                 subsets.push_back(mask);
                 considered_pairs.set(pair_idx(mask));
@@ -491,8 +505,7 @@ class IntersectionLattice {
                     return;
                 }
                 if (score_bound(subset) >= threshold) {
-                    cover(covered, subset, nodes);
-                    elements.push_back(subset);
+                    add_element(subset);
                 }
             }
         });
@@ -524,6 +537,36 @@ class IntersectionLattice {
           m_score_bounds(std::move(score_bounds))
     {}
 
+    [[nodiscard]] auto to_json() const -> nlohmann::json
+    {
+        nlohmann::json j;
+        auto lnodes = layered_nodes();
+        gsl::span<S const> nodes(lnodes.begin(), 1U << query_length());
+        int layer_idx = 1;
+        nlohmann::json layer{{"layer", 1}, {"nodes", {}}};
+        std::bitset<max_subset_count> available;
+        for (auto node: m_single_term_lists) {
+            available.set(node);
+        }
+        for (auto node: m_pair_intersections) {
+            available.set(node);
+        }
+        for (auto node: nodes) {
+            if (_mm_popcnt_u32(node) > layer_idx) {
+                j.push_back(std::move(layer));
+                layer_idx += 1;
+                layer = nlohmann::json{{"layer", layer_idx}, {"nodes", {}}};
+            }
+            layer["nodes"].push_back(nlohmann::json{
+                {"mask", node},
+                {"cost", cost(node)},
+                {"score_bound", score_bound(node)},
+                {"available", available.test(node)}});
+        }
+        j.push_back(std::move(layer));
+        return j;
+    }
+
   private:
     constexpr IntersectionLattice() { m_costs.fill(std::numeric_limits<std::uint32_t>::max()); }
     std::vector<S> m_single_term_lists{};
@@ -531,5 +574,12 @@ class IntersectionLattice {
     std::array<std::uint32_t, max_subset_count> m_costs{};
     std::array<float, max_subset_count> m_score_bounds{};
 };
+
+template <typename S>
+std::ostream& operator<<(std::ostream& out, IntersectionLattice<S> const& lattice)
+{
+    out << lattice.to_json().dump(4);
+    return out;
+}
 
 }  // namespace pisa

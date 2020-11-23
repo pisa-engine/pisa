@@ -72,13 +72,22 @@ struct maxscore_inter_eager_query {
         //}
         auto is_above_threshold = [this](auto score) { return m_topk.would_enter(score); };
 
-        auto selection = select_intersections(
-                             query, index, wdata, pair_index, initial_threshold, m_pair_cost_scaling)
-                             .first;
+        auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(
+            query, index, wdata, pair_index, m_pair_cost_scaling);
+        auto selection = select_intersections(query, lattice, m_topk.threshold()).selection;
         // print_sel(selection, "Computed");
         if (selection.selected_pairs.empty()) {
-            maxscore_query q(m_topk);
-            q(make_block_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+            // maxscore_query q(m_topk);
+            // q(make_block_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
+            auto process_single = [&](auto algorithm) {
+                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                algorithm(std::move(cursors), max_docid);
+            };
+            if (term_ids.size() > 2) {
+                process_single(maxscore_query(m_topk));
+            } else {
+                process_single(block_max_wand_query(m_topk));
+            }
             return;
         }
         // auto selection = query.selection();

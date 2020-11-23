@@ -22,6 +22,7 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/numbered_cursor.hpp"
 #include "intersection.hpp"
+#include "query/algorithm/block_max_wand_query.hpp"
 #include "query/algorithm/maxscore_query.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
@@ -109,58 +110,71 @@ template <std::size_t N, typename R1, typename R2>
     };
 }
 
-template <typename Index, typename Wand>
+using intersection_lattice_type = IntersectionLattice<std::uint16_t>;
+
 [[nodiscard]] auto
-select_essential_single(QueryRequest const query, Index&& index, Wand&& wdata, float threshold)
+// select_essential_single(QueryRequest const query, Index&& index, Wand&& wdata, float threshold)
+select_essential_single(QueryRequest const query, intersection_lattice_type const& lattice, float threshold)
     -> std::pair<Selection<TermId>, std::uint32_t>
 {
     auto term_ids = query.term_ids();
-    auto term_weights = query.term_weights();
-    std::vector<float> max_scores(term_ids.size());
-    std::transform(
-        term_ids.begin(),
-        term_ids.end(),
-        term_weights.begin(),
-        max_scores.begin(),
-        [&](auto term_id, auto term_weight) { return term_weight * wdata.max_term_weight(term_id); });
+    /* std::vector<float> max_scores(term_ids.size()); */
+    /* std::generate_n(max_scores.begin(), term_ids.size(), [&](auto pos) { */
+    /*     return lattice.score_bound(1U << pos); */
+    /* }); */
     std::vector<std::size_t> indices(term_ids.size());
     std::iota(indices.begin(), indices.end(), 0);
-    std::sort(indices.begin(), indices.end(), [&max_scores](auto lhs, auto rhs) {
-        return max_scores[lhs] < max_scores[rhs];
+    std::sort(indices.begin(), indices.end(), [&lattice](auto lhs, auto rhs) {
+        return lattice.score_bound(1U << lhs) < lattice.score_bound(1U << rhs);
     });
     float sum = 0.0;
     auto first_essential =
-        std::find_if(indices.begin(), indices.end(), [&max_scores, &sum, threshold](auto idx) {
-            sum += max_scores[idx];
+        std::find_if(indices.begin(), indices.end(), [&lattice, &sum, threshold](auto idx) {
+            sum += lattice.score_bound(1U << idx);
             return sum > threshold;
         });
     Selection<TermId> selection;
     float cost = 0.0;
     for (auto iter = first_essential; iter != indices.end(); ++iter) {
-        cost += wdata.term_posting_count(*iter);
+        cost += lattice.cost(*iter);
         selection.selected_terms.push_back(term_ids[*iter]);
     }
     return std::make_pair(std::move(selection), cost);
 }
 
-template <typename Index, typename Wand, typename PairIndex>
-[[nodiscard]] auto select_intersections(
-    QueryRequest const query,
-    Index&& index,
-    Wand&& wdata,
-    PairIndex&& pair_index,
-    float threshold,
-    float pair_cost_scaling) -> std::pair<Selection<TermId>, std::uint32_t>
+struct SelectionResult {
+    Selection<TermId> selection{};
+    std::size_t cost{};
+    float next_threshold{};
+    std::uint32_t next_docid{};
+};
+
+std::ostream& operator<<(std::ostream& out, SelectionResult const& selection_result)
 {
-    auto [single_selection, single_cost] = select_essential_single(query, index, wdata, threshold);
+    out << "{";
+    out << "\tsingle:";
+    for (auto i: selection_result.selection.selected_terms) {
+        out << ' ' << i;
+    }
+    out << "\n\tpairs:";
+    for (auto i: selection_result.selection.selected_pairs) {
+        out << " (" << i.get<0>() << "," << i.get<0>() << ")";
+    }
+    out << "\n\tcost: " << selection_result.cost << '\n';
+    out << "}";
+    return out;
+}
+
+[[nodiscard]] auto select_intersections(
+    QueryRequest const& query, intersection_lattice_type const& lattice, float threshold)
+    -> SelectionResult
+{
+    auto [single_selection, single_cost] = select_essential_single(query, lattice, threshold);
     Selection<TermId> selection;
-    // std::cerr << "t: " << threshold << '\n';
-    auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(
-        query, index, wdata, pair_index, pair_cost_scaling);
     auto candidates = lattice.selection_candidates(threshold);
     auto selected = candidates.solve(lattice.costs());
     if (selected.cost >= single_cost) {
-        return {std::move(single_selection), single_cost};
+        return {std::move(single_selection), single_cost, candidates.next_threshold};
     }
     auto term_ids = query.term_ids();
     for (auto intersection: selected.intersections) {
@@ -173,7 +187,7 @@ template <typename Index, typename Wand, typename PairIndex>
             selection.selected_pairs.emplace_back(term_ids[first], term_ids[second]);
         }
     }
-    return {std::move(selection), selected.cost};
+    return {std::move(selection), selected.cost, candidates.next_threshold};
 }
 
 template <typename Cursors>
@@ -271,14 +285,19 @@ struct maxscore_inter_opt_query {
         : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling)
     {}
 
+    auto process_cursors_maxscore() {}
+
     template <typename EssentialTermCursors, typename EssentialPairCursors, typename LookupCursors>
-    void process_cursors(
+    auto process_cursors(
         LookupCursors& lookup_cursors,
         EssentialTermCursors&& essential_term_cursors,
         EssentialPairCursors&& essential_pair_cursors,
         gsl::span<TermId const> essential_terms,
         std::size_t term_count,
-        std::uint32_t max_docid)
+        std::uint32_t max_docid,
+        QueryRequest const& query,
+        intersection_lattice_type const& lattice,
+        SelectionResult selection_result) -> std::optional<SelectionResult>
     {
         auto accumulate_single = [](auto& acc, auto&& cursor) {
             acc.score += cursor.score();
@@ -333,7 +352,9 @@ struct maxscore_inter_opt_query {
         State const state_mask = (1U << term_count) - 1;
         auto const initial_state = static_cast<State>(essential_terms.size() << term_count);
 
-        while (cursor.docid() < max_docid) {
+        // auto max = selection_result.next_docid == 0 ? max_docid /= 4 : max_docid;
+        auto max = max_docid;
+        while (cursor.docid() < max) {
             auto const docid = cursor.docid();
             auto const& payload = cursor.payload();
 
@@ -356,9 +377,23 @@ struct maxscore_inter_opt_query {
                 next_idx = next_lookup[state];
             }
 
-            m_topk.insert(score, docid);
             cursor.next();
+            m_topk.insert(score, docid);
+            // if (m_topk.insert(score, docid) && m_topk.threshold() >=
+            // selection_result.next_threshold) {
+            //    auto new_selection = select_intersections(query, lattice, m_topk.threshold());
+            //    if (new_selection.cost < selection_result.cost) {
+            //        new_selection.next_docid = cursor.docid();
+            //        return std::make_optional(std::move(new_selection));
+            //    }
+            //}
         };
+        // if (cursor.docid() < max_docid) {
+        //    auto new_selection = select_intersections(query, lattice, m_topk.threshold());
+        //    new_selection.next_docid = cursor.docid();
+        //    return std::make_optional(std::move(new_selection));
+        //}
+        return std::nullopt;
     }
 
     template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
@@ -389,38 +424,54 @@ struct maxscore_inter_opt_query {
         auto initial_threshold = query.threshold() ? *query.threshold() : 0.0;
         m_topk.set_threshold(initial_threshold);
 
-        std::uint32_t first_docid = 0;
-        std::uint32_t initial_interval = max_docid / 20 + 1;
-        std::uint32_t interval = initial_interval;
-        std::uint32_t factor = 1;
+        // std::uint32_t first_docid = 0;
+        // std::uint32_t initial_interval = max_docid / 20 + 1;
+        // std::uint32_t interval = initial_interval;
+        // std::uint32_t factor = 1;
 
-        auto calc_last_docid = [&](auto first_docid) {
-            return max_docid;
-            // auto interval = (factor++ * initial_interval);
-            // auto last_docid = first_docid + interval;
-            // if (last_docid > max_docid) {
-            //    return max_docid;
-            //}
-            // return last_docid;
-        };
+        // auto calc_last_docid = [&](auto first_docid) {
+        //    return max_docid;
+        //    // auto interval = (factor++ * initial_interval);
+        //    // auto last_docid = first_docid + interval;
+        //    // if (last_docid > max_docid) {
+        //    //    return max_docid;
+        //    //}
+        //    // return last_docid;
+        //};
 
-        while (first_docid < max_docid) {
-            auto last_docid = calc_last_docid(first_docid);
-            auto const selection_result = select_intersections(
-                query, index, wdata, pair_index, m_topk.threshold(), m_pair_cost_scaling);
-            auto const& selection = selection_result.first;
-            // auto initial_cost = selection_result.second;
+        auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(
+            query, index, wdata, pair_index, m_pair_cost_scaling);
+        auto selection_result =
+            std::make_optional(select_intersections(query, lattice, m_topk.threshold()));
+
+        while (selection_result) {
+            // auto last_docid = calc_last_docid(first_docid);
+            auto const& selection = selection_result->selection;
             if (selection.selected_pairs.empty()) {
-                maxscore_query q(m_topk);
-                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
-                if (first_docid > 0) {
-                    for (auto&& cursor: cursors) {
-                        cursor.next_geq(first_docid);
+                auto process_single = [&](auto algorithm) {
+                    auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                    if (auto docid = selection_result->next_docid; docid > 0) {
+                        for (auto&& cursor: cursors) {
+                            cursor.next_geq(docid);
+                        }
                     }
+                    algorithm(std::move(cursors), max_docid);
+                };
+                if (term_ids.size() > 2) {
+                    process_single(maxscore_query(m_topk));
+                } else {
+                    process_single(block_max_wand_query(m_topk));
                 }
-                q(std::move(cursors), last_docid);
-                first_docid = last_docid;
-                continue;
+                // auto max = selection_result->next_docid == 0 ? max_docid / 2 : max_docid;
+                // q(std::move(cursors), max);
+                // if (max < max_docid) {
+                //    selection_result =
+                //        std::make_optional(select_intersections(query, lattice,
+                //        m_topk.threshold()));
+                //    selection_result->next_docid = max;
+                //    continue;
+                //}
+                return;
             }
             auto const essential_terms = selection.selected_terms | to_vector | sort;
             auto const non_essential_terms =
@@ -455,23 +506,26 @@ struct maxscore_inter_opt_query {
                 essential_pair_cursors.push_back(std::move(cursor));
             }
 
-            if (first_docid > 0) {
+            if (selection_result->next_docid > 0) {
                 for (auto&& cursor: essential_term_cursors) {
-                    cursor.next_geq(first_docid);
+                    cursor.next_geq(selection_result->next_docid);
                 }
                 for (auto&& cursor: essential_pair_cursors) {
-                    cursor.next_geq(first_docid);
+                    cursor.next_geq(selection_result->next_docid);
                 }
             }
 
-            process_cursors(
+            selection_result = process_cursors(
                 lookup_cursors,
                 essential_term_cursors,
                 std::move(essential_pair_cursors),
                 std::move(essential_terms),
                 term_ids.size(),
-                last_docid);
-            first_docid = last_docid;
+                max_docid,
+                query,
+                lattice,
+                std::move(*selection_result));
+            // first_docid = last_docid;
         }
     }
 

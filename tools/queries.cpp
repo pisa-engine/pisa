@@ -236,7 +236,7 @@ void perftest(
                 wand_query wand_q(topk);
                 wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -246,7 +246,7 @@ void perftest(
                 block_max_wand_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -256,7 +256,7 @@ void perftest(
                 block_max_maxscore_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -265,7 +265,7 @@ void perftest(
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -275,7 +275,7 @@ void perftest(
                 block_max_ranked_and_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "ranked_or" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -284,7 +284,7 @@ void perftest(
                 ranked_or_query ranked_or_q(topk);
                 ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "maxscore" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -293,7 +293,7 @@ void perftest(
                 maxscore_query maxscore_q(topk);
                 maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             Simple_Accumulator accumulator(index.num_docs());
@@ -304,7 +304,7 @@ void perftest(
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
             Lazy_Accumulator<4> accumulator(index.num_docs());
@@ -315,7 +315,7 @@ void perftest(
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "maxscore-uni" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -324,7 +324,7 @@ void perftest(
                 maxscore_uni_query q(topk);
                 q(make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "maxscore-inter-eager" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -337,7 +337,7 @@ void perftest(
                 }
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else if (t == "maxscore-inter-opt" && wand_data_filename) {
             query_fun = [&](QueryRequest const& query) {
@@ -350,7 +350,7 @@ void perftest(
                 maxscore_inter_opt_query q(topk, pair_cost_scaling);
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
-                return BenchResult{topk.topk().size(), topk.final_threshold()};
+                return BenchResult{topk.topk().size(), topk.threshold()};
             };
         } else {
             spdlog::error("Unsupported query type: {}", t);

@@ -82,10 +82,6 @@ struct topk_queue {
     }
 
     [[nodiscard]] float threshold() const noexcept { return m_threshold; }
-    [[nodiscard]] float final_threshold() const noexcept
-    {
-        return m_q.size() == m_k ? m_q.front().first : 0.0;
-    }
 
     [[nodiscard]] size_t capacity() const noexcept { return m_k; }
 
