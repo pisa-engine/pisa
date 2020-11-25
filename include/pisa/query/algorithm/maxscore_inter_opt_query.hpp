@@ -449,7 +449,8 @@ struct maxscore_inter_opt_query {
             auto const& selection = selection_result->selection;
             if (selection.selected_pairs.empty()) {
                 auto process_single = [&](auto algorithm) {
-                    auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                    auto cursors = inspect_cursors(
+                        make_block_max_scored_cursors(index, wdata, scorer, query), inspect);
                     if (auto docid = selection_result->next_docid; docid > 0) {
                         for (auto&& cursor: cursors) {
                             cursor.next_geq(docid);

@@ -80,7 +80,8 @@ struct maxscore_inter_eager_query {
             // maxscore_query q(m_topk);
             // q(make_block_max_scored_cursors(index, wdata, scorer, query), index.num_docs());
             auto process_single = [&](auto algorithm) {
-                auto cursors = make_block_max_scored_cursors(index, wdata, scorer, query);
+                auto cursors = inspect_cursors(
+                    make_block_max_scored_cursors(index, wdata, scorer, query), inspect);
                 algorithm(std::move(cursors), max_docid);
             };
             if (term_ids.size() > 2) {
