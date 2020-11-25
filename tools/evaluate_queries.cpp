@@ -239,6 +239,15 @@ void evaluate_queries(
         request_flags.remove(RequestFlag::Threshold);
     }
 
+    auto run_safe = [&query_fun, k, request_flags](QueryContainer query) {
+        auto threshold = query.threshold(k);
+        auto result = query_fun(query.query(k, request_flags));
+        if (result.size() < k && threshold && *threshold > result.back().first) {
+            result = query_fun(query.query(k, RequestFlagSet::all() ^ RequestFlag::Threshold));
+        }
+        return result;
+    };
+
     auto source = std::make_shared<mio::mmap_source>(params.documents_lexicon.c_str());
     auto docmap = Payload_Vector<>::from(*source);
 
@@ -246,7 +255,8 @@ void evaluate_queries(
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
     tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
-        raw_results[query_idx] = query_fun(queries[query_idx].query(k, request_flags));
+        // raw_results[query_idx] = query_fun(queries[query_idx].query(k, request_flags));
+        raw_results[query_idx] = run_safe(queries[query_idx]);
     });
     auto end_batch = std::chrono::steady_clock::now();
 
@@ -312,7 +322,7 @@ void inspect(
     std::optional<pair_index_type> const& pair_index,
     RunArgs const& params)
 {
-    std::function<Inspect(QueryRequest)> query_fun;
+    std::function<Inspect(QueryRequest, topk_queue&)> query_fun;
 
     auto const& query_type = params.algorithm;
     auto const& k = params.k;
@@ -321,11 +331,9 @@ void inspect(
         spdlog::error("Unimplemented");
         std::abort();
     } else if (query_type == "block_max_wand") {
-        query_fun = [&](QueryRequest query) {
-            topk_queue topk(k);
-            topk.set_threshold(query.threshold().value_or(0));
-            block_max_wand_query block_max_wand_q(topk);
+        query_fun = [&](QueryRequest query, topk_queue& topk) {
             Inspect inspect;
+            block_max_wand_query block_max_wand_q(topk);
             block_max_wand_q(
                 inspect_cursors(make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
                 index.num_docs());
@@ -344,11 +352,9 @@ void inspect(
         spdlog::error("Unimplemented");
         std::abort();
     } else if (query_type == "maxscore") {
-        query_fun = [&](QueryRequest const& query) {
-            topk_queue topk(k);
-            topk.set_threshold(query.threshold().value_or(0));
-            maxscore_query maxscore_q(topk);
+        query_fun = [&](QueryRequest const& query, topk_queue& topk) {
             Inspect inspect;
+            maxscore_query maxscore_q(topk);
             maxscore_q(
                 inspect_cursors(make_max_scored_cursors(index, wdata, *scorer, query), inspect),
                 index.num_docs());
@@ -361,57 +367,16 @@ void inspect(
         spdlog::error("Unimplemented");
         std::abort();
     } else if (query_type == "maxscore-uni") {
-        query_fun = [&](QueryRequest query) {
-            topk_queue topk(k);
-            topk.set_threshold(query.threshold().value_or(0));
-            maxscore_uni_query q(topk);
+        query_fun = [&](QueryRequest query, topk_queue& topk) {
             Inspect inspect;
+            maxscore_uni_query q(topk);
             q(inspect_cursors(make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
               index.num_docs());
             return inspect;
         };
-    } else if (query_type == "maxscore-inter") {
-        query_fun = [&](QueryRequest const& query) {
-            topk_queue topk(k);
-            topk.set_threshold(query.threshold().value_or(0));
-            Inspect inspect;
-            // if (not query.selection()) {
-            //    spdlog::error("maxscore_inter_query requires posting list selections");
-            //    std::exit(1);
-            //}
-            // auto selection = *query.selection();
-            // if (selection.selected_pairs.empty()) {
-            //    maxscore_uni_query q(topk);
-            //    q(inspect_cursors(
-            //          make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
-            //      index.num_docs());
-            //    return inspect;
-            //}
-            if (not pair_index) {
-                spdlog::error("Must provide pair index for maxscore-inter");
-                std::exit(1);
-            }
-            maxscore_inter_query q(topk);
-            q(query, index, wdata, *pair_index, *scorer, index.num_docs(), &inspect);
-            return inspect;
-        };
     } else if (query_type == "maxscore-inter-eager") {
-        query_fun = [&](QueryRequest const& query) {
-            topk_queue topk(k);
-            topk.set_threshold(query.threshold().value_or(0));
+        query_fun = [&](QueryRequest const& query, topk_queue& topk) {
             Inspect inspect;
-            // if (not query.selection()) {
-            //    spdlog::error("maxscore_inter_query requires posting list selections");
-            //    std::exit(1);
-            //}
-            // auto selection = *query.selection();
-            // if (selection.selected_pairs.empty()) {
-            //    maxscore_uni_query q(topk);
-            //    q(inspect_cursors(
-            //          make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
-            //      index.num_docs());
-            //    return inspect;
-            //}
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -421,22 +386,8 @@ void inspect(
             return inspect;
         };
     } else if (query_type == "maxscore-inter-opt") {
-        query_fun = [&](QueryRequest const& query) {
-            topk_queue topk(k);
-            topk.set_threshold(query.threshold().value_or(0));
+        query_fun = [&](QueryRequest const& query, topk_queue& topk) {
             Inspect inspect;
-            // if (not query.selection()) {
-            //    spdlog::error("maxscore-inter-opt requires posting list selections");
-            //    std::exit(1);
-            //}
-            // auto selection = *query.selection();
-            // if (selection.selected_pairs.empty()) {
-            //    maxscore_uni_query q(topk);
-            //    q(inspect_cursors(
-            //          make_block_max_scored_cursors(index, wdata, *scorer, query), inspect),
-            //      index.num_docs());
-            //    return inspect;
-            //}
             if (not pair_index) {
                 spdlog::error("Must provide pair index for maxscore-inter");
                 std::exit(1);
@@ -454,8 +405,22 @@ void inspect(
         request_flags.remove(RequestFlag::Threshold);
     }
 
+    auto run_safe = [&query_fun, k, request_flags](QueryContainer query) {
+        auto threshold = query.threshold(k);
+        auto request = query.query(k, request_flags);
+        topk_queue topk(k);
+        topk.set_threshold(request.threshold().value_or(0));
+        auto result = query_fun(request, topk);
+        topk.finalize();
+        if (topk.size() < k && threshold && *threshold > topk.threshold()) {
+            topk.clear();
+            result = query_fun(query.query(k, RequestFlagSet::all() ^ RequestFlag::Threshold), topk);
+        }
+        return result;
+    };
+
     for (auto&& query: params.queries) {
-        auto inspect = query_fun(query.query(k, request_flags));
+        auto inspect = run_safe(query);
         auto output = inspect.to_json();
         output["query"] = query.to_json();
         std::cout << output << '\n';
