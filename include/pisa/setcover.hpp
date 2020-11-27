@@ -41,14 +41,13 @@ struct Result {
     std::vector<std::size_t> selected_indices;
 };
 
+/// Given subsets, it returns two bitsets:
+/// 1. available: has 1 for any non-empty subset.
+/// 2. possible: has 1 for any element in W that can be covered with the given subset.
 template <typename W>
-auto approximate_weighted_set_cover(gsl::span<Subset<W> const> subsets) -> Result<W>
+auto possible_coverage(gsl::span<Subset<W> const> subsets)
+    -> std::pair<boost::dynamic_bitset<std::uint64_t>, boost::dynamic_bitset<std::uint64_t>>
 {
-    constexpr auto npos = boost::dynamic_bitset<std::uint64_t>::npos;
-    if (subsets.empty()) {
-        return {};
-    }
-
     boost::dynamic_bitset<std::uint64_t> available(subsets.size(), 0);
     boost::dynamic_bitset<std::uint64_t> possible(subsets[0].bits.size(), 0);
     available.set();
@@ -64,7 +63,18 @@ auto approximate_weighted_set_cover(gsl::span<Subset<W> const> subsets) -> Resul
             available.reset(pos);
         }
     }
+    return {available, possible};
+}
 
+template <typename W>
+auto approximate_weighted_set_cover(gsl::span<Subset<W> const> subsets) -> Result<W>
+{
+    constexpr auto npos = boost::dynamic_bitset<std::uint64_t>::npos;
+    if (subsets.empty()) {
+        return {};
+    }
+
+    auto [available, possible] = possible_coverage(subsets);
     boost::dynamic_bitset<std::uint64_t> covered = ~possible;
     boost::dynamic_bitset<std::uint64_t> selected(subsets.size(), 0);
 
@@ -79,6 +89,7 @@ auto approximate_weighted_set_cover(gsl::span<Subset<W> const> subsets) -> Resul
                 min_pos = pos;
             }
         }
+        cost += min_weight;
         covered |= subsets[min_pos].bits;
         selected.set(min_pos);
         available.reset(min_pos);
@@ -86,6 +97,39 @@ auto approximate_weighted_set_cover(gsl::span<Subset<W> const> subsets) -> Resul
     Result<W> result{cost, std::vector<std::size_t>(selected.count())};
     auto out = result.selected_indices.begin();
     for (auto pos = selected.find_first(); pos != npos; pos = selected.find_next(pos)) {
+        *out++ = pos;
+    }
+    return result;
+}
+
+template <typename W>
+auto weighted_set_cover(gsl::span<Subset<W> const> subsets) -> Result<W>
+{
+    constexpr auto npos = boost::dynamic_bitset<std::uint64_t>::npos;
+    if (subsets.empty()) {
+        return {};
+    }
+
+    auto [_, possible] = possible_coverage(subsets);
+
+    auto min_cost = std::numeric_limits<W>::max();
+    boost::dynamic_bitset<std::uint64_t> min_solution(subsets.size(), 0);
+    for (std::uint64_t solution = 0; solution < (1U << subsets.size()) - 1; solution += 1) {
+        boost::dynamic_bitset<std::uint64_t> covered = ~possible;
+        boost::dynamic_bitset<std::uint64_t> selected(subsets.size(), solution);
+        W cost{};
+        for (auto pos = selected.find_first(); pos != npos; pos = selected.find_next(pos)) {
+            covered |= subsets[pos].bits;
+            cost += subsets[pos].weight;
+        }
+        if (cost < min_cost && covered.all()) {
+            min_cost = cost;
+            min_solution = selected;
+        }
+    }
+    Result<W> result{min_cost, std::vector<std::size_t>(min_solution.count())};
+    auto out = result.selected_indices.begin();
+    for (auto pos = min_solution.find_first(); pos != npos; pos = min_solution.find_next(pos)) {
         *out++ = pos;
     }
     return result;

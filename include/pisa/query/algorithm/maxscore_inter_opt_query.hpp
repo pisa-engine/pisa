@@ -112,9 +112,8 @@ template <std::size_t N, typename R1, typename R2>
 
 using intersection_lattice_type = IntersectionLattice<std::uint16_t>;
 
-[[nodiscard]] auto
-// select_essential_single(QueryRequest const query, Index&& index, Wand&& wdata, float threshold)
-select_essential_single(QueryRequest const query, intersection_lattice_type const& lattice, float threshold)
+[[nodiscard]] auto select_essential_single(
+    QueryRequest const query, intersection_lattice_type const& lattice, float threshold)
     -> std::pair<Selection<TermId>, std::uint32_t>
 {
     auto term_ids = query.term_ids();
@@ -136,7 +135,7 @@ select_essential_single(QueryRequest const query, intersection_lattice_type cons
     Selection<TermId> selection;
     float cost = 0.0;
     for (auto iter = first_essential; iter != indices.end(); ++iter) {
-        cost += lattice.cost(*iter);
+        cost += lattice.cost(1U << *iter);
         selection.selected_terms.push_back(term_ids[*iter]);
     }
     return std::make_pair(std::move(selection), cost);
@@ -166,13 +165,15 @@ std::ostream& operator<<(std::ostream& out, SelectionResult const& selection_res
 }
 
 [[nodiscard]] auto select_intersections(
-    QueryRequest const& query, intersection_lattice_type const& lattice, float threshold)
-    -> SelectionResult
+    QueryRequest const& query,
+    intersection_lattice_type const& lattice,
+    float threshold,
+    SelectionMethod method = SelectionMethod::Greedy) -> SelectionResult
 {
     auto [single_selection, single_cost] = select_essential_single(query, lattice, threshold);
     Selection<TermId> selection;
     auto candidates = lattice.selection_candidates(threshold);
-    auto selected = candidates.solve(lattice.costs());
+    auto selected = candidates.solve(lattice.costs(), method);
     if (selected.cost >= single_cost) {
         return {std::move(single_selection), single_cost, candidates.next_threshold};
     }
@@ -463,7 +464,6 @@ struct maxscore_inter_opt_query {
                 } else {
                     process_single(block_max_wand_query(m_topk));
                 }
-                // auto max = selection_result->next_docid == 0 ? max_docid / 2 : max_docid;
                 // q(std::move(cursors), max);
                 // if (max < max_docid) {
                 //    selection_result =

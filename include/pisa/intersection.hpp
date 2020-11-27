@@ -171,6 +171,8 @@ struct Selected {
     std::size_t cost;
 };
 
+enum class SelectionMethod { BruteForce, Greedy };
+
 /// Candidates for intersection selection returned from the query's intersection lattice.
 template <typename S>
 struct SelectionCandidtes {
@@ -184,8 +186,9 @@ struct SelectionCandidtes {
 
     /// Return selected index structures. Each structure is represented as a bitmask, so these still
     /// need to be translated into query term IDs.
-    [[nodiscard]] auto solve(std::array<std::uint32_t, std::numeric_limits<S>::max() + 1> const& costs)
-        -> Selected<S>
+    [[nodiscard]] auto solve(
+        std::array<std::uint32_t, std::numeric_limits<S>::max() + 1> const& costs,
+        SelectionMethod method = SelectionMethod::Greedy) -> Selected<S>
     {
         std::vector<Subset<std::size_t>> input;
         std::vector<S> intersections;
@@ -202,7 +205,9 @@ struct SelectionCandidtes {
                 intersections.push_back(sub);
             }
         }
-        auto result = approximate_weighted_set_cover(gsl::span<Subset<std::size_t> const>(input));
+        auto result = method == SelectionMethod::Greedy
+            ? approximate_weighted_set_cover(gsl::span<Subset<std::size_t> const>(input))
+            : weighted_set_cover(gsl::span<Subset<std::size_t> const>(input));
         Selected<S> selected;
         std::transform(
             result.selected_indices.begin(),
