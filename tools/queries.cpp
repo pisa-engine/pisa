@@ -167,7 +167,8 @@ void perftest(
     std::optional<std::string>& pair_index_path,
     bool disk_resident,
     bool disk_resident_pairs,
-    float pair_cost_scaling)
+    float pair_cost_scaling,
+    SelectionMethod selection_method)
 {
     spdlog::info("Loading index from {}", index_filename);
     auto index = [&]() {
@@ -330,7 +331,7 @@ void perftest(
             query_fun = [&](QueryRequest const& query) {
                 topk_queue topk(k);
                 topk.set_threshold(query.threshold().value_or(0));
-                maxscore_inter_eager_query q(topk, pair_cost_scaling);
+                maxscore_inter_eager_query q(topk, pair_cost_scaling, selection_method);
                 if (not pair_index) {
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
@@ -347,7 +348,7 @@ void perftest(
                     spdlog::error("Must provide pair index for maxscore-inter");
                     std::exit(1);
                 }
-                maxscore_inter_opt_query q(topk, pair_cost_scaling);
+                maxscore_inter_opt_query q(topk, pair_cost_scaling, selection_method);
                 q(query, index, wdata, *pair_index, *scorer, index.num_docs());
                 topk.finalize();
                 return BenchResult{topk.topk().size(), topk.threshold()};
@@ -375,6 +376,7 @@ int main(int argc, const char** argv)
     bool use_thresholds = false;
     bool disk_resident = false;
     bool disk_resident_pairs = false;
+    bool brute_force_selection = false;
     std::optional<std::string> pair_index_path{};
     float pair_cost_scaling = 1.0;
 
@@ -399,6 +401,8 @@ int main(int argc, const char** argv)
         pair_cost_scaling,
         "Scaling factor for pair intersection costs when selecting essential posting lists with "
         "intersections.");
+    app.add_flag(
+        "--brute-force-selection", brute_force_selection, "Use brute force selection method.");
     CLI11_PARSE(app, argc, argv);
 
     if (silent) {
@@ -436,7 +440,8 @@ int main(int argc, const char** argv)
         pair_index_path,
         disk_resident,
         disk_resident_pairs,
-        pair_cost_scaling);
+        pair_cost_scaling,
+        brute_force_selection ? SelectionMethod::BruteForce : SelectionMethod::Greedy);
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \

@@ -168,7 +168,7 @@ std::ostream& operator<<(std::ostream& out, SelectionResult const& selection_res
     QueryRequest const& query,
     intersection_lattice_type const& lattice,
     float threshold,
-    SelectionMethod method = SelectionMethod::Greedy) -> SelectionResult
+    SelectionMethod method) -> SelectionResult
 {
     auto [single_selection, single_cost] = select_essential_single(query, lattice, threshold);
     Selection<TermId> selection;
@@ -282,8 +282,11 @@ auto accumulate_pair(Payload& acc, Cursor&& cursor) -> Payload&
 }
 
 struct maxscore_inter_opt_query {
-    explicit maxscore_inter_opt_query(topk_queue& topk, float pair_cost_scaling = 1.0)
-        : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling)
+    explicit maxscore_inter_opt_query(
+        topk_queue& topk,
+        float pair_cost_scaling = 1.0,
+        SelectionMethod selection_method = SelectionMethod::Greedy)
+        : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling), m_selection_method(selection_method)
     {}
 
     auto process_cursors_maxscore() {}
@@ -442,8 +445,8 @@ struct maxscore_inter_opt_query {
 
         auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(
             query, index, wdata, pair_index, m_pair_cost_scaling);
-        auto selection_result =
-            std::make_optional(select_intersections(query, lattice, m_topk.threshold()));
+        auto selection_result = std::make_optional(
+            select_intersections(query, lattice, m_topk.threshold(), m_selection_method));
 
         while (selection_result) {
             // auto last_docid = calc_last_docid(first_docid);
@@ -535,6 +538,7 @@ struct maxscore_inter_opt_query {
   private:
     topk_queue& m_topk;
     float m_pair_cost_scaling;
+    SelectionMethod m_selection_method;
 };
 
 }  // namespace pisa

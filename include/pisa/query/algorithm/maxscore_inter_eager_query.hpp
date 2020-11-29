@@ -38,8 +38,11 @@ auto accumulate_cursor_to_heap(Cursor&& cursor, std::size_t k, float threshold, 
 }
 
 struct maxscore_inter_eager_query {
-    explicit maxscore_inter_eager_query(topk_queue& topk, float pair_cost_scaling = 1.0)
-        : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling)
+    explicit maxscore_inter_eager_query(
+        topk_queue& topk,
+        float pair_cost_scaling = 1.0,
+        SelectionMethod selection_method = SelectionMethod::Greedy)
+        : m_topk(topk), m_pair_cost_scaling(pair_cost_scaling), m_selection_method(selection_method)
     {}
 
     template <typename Index, typename Wand, typename PairIndex, typename Scorer, typename Inspect = void>
@@ -74,7 +77,8 @@ struct maxscore_inter_eager_query {
 
         auto lattice = pisa::IntersectionLattice<std::uint16_t>::build(
             query, index, wdata, pair_index, m_pair_cost_scaling);
-        auto selection = select_intersections(query, lattice, m_topk.threshold()).selection;
+        auto selection =
+            select_intersections(query, lattice, m_topk.threshold(), m_selection_method).selection;
         // print_sel(selection, "Computed");
         if (selection.selected_pairs.empty()) {
             // maxscore_query q(m_topk);
@@ -190,6 +194,7 @@ struct maxscore_inter_eager_query {
   private:
     topk_queue& m_topk;
     float m_pair_cost_scaling;
+    SelectionMethod m_selection_method;
 };
 
 }  // namespace pisa
