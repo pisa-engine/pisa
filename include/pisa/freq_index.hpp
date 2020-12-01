@@ -6,6 +6,8 @@
 #include "codec/compact_elias_fano.hpp"
 #include "codec/integer_codes.hpp"
 #include "global_parameters.hpp"
+#include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 
 namespace pisa {
 
@@ -16,7 +18,12 @@ class freq_index {
   public:
     using index_layout_tag = BitVectorIndexTag;
 
-    freq_index() : m_num_docs(0) {}
+    freq_index() = default;
+
+    explicit freq_index(MemorySource source) : m_source(std::move(source))
+    {
+        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
+    }
 
     class builder {
       public:
@@ -63,7 +70,7 @@ class freq_index {
 
       private:
         global_parameters m_params;
-        uint64_t m_num_docs;
+        uint64_t m_num_docs = 0;
         bitvector_collection::builder m_docs_sequences;
         bitvector_collection::builder m_freqs_sequences;
     };
@@ -173,8 +180,9 @@ class freq_index {
 
   private:
     global_parameters m_params;
-    uint64_t m_num_docs;
+    uint64_t m_num_docs = 0;
     bitvector_collection m_docs_sequences;
     bitvector_collection m_freqs_sequences;
+    MemorySource m_source;
 };
 }  // namespace pisa

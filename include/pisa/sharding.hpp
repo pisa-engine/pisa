@@ -8,7 +8,6 @@
 #include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <gsl/span>
-#include <mio/mmap.hpp>
 #include <pstl/algorithm>
 #include <pstl/execution>
 #include <pstl/numeric>
@@ -108,6 +107,9 @@ auto mapping_from_files(std::string const& full_titles, gsl::span<std::string co
     std::ifstream fis(full_titles);
     std::vector<std::unique_ptr<std::ifstream>> shard_is;
     for (auto const& shard_file: shard_titles) {
+        if (!boost::filesystem::exists(shard_file)) {
+            throw std::invalid_argument(fmt::format("Shard file does not exist: {}", shard_file));
+        }
         shard_is.push_back(std::make_unique<std::ifstream>(shard_file));
     }
     return mapping_from_files(
@@ -276,7 +278,7 @@ auto partition_fwd_index(
     auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);
     spdlog::info("Remapping shards");
-    std::for_each(std::execution::par_unseq, shard_ids.begin(), shard_ids.end(), [&](auto&& id) {
+    std::for_each(pstl::execution::par_unseq, shard_ids.begin(), shard_ids.end(), [&](auto&& id) {
         process_shard(input_basename, output_basename, id, terms);
     });
 }

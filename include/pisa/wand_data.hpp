@@ -11,9 +11,9 @@
 #include "binary_freq_collection.hpp"
 #include "mappable/mappable_vector.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
-#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_range.hpp"
 #include "wand_data_raw.hpp"
@@ -30,6 +30,10 @@ class wand_data {
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
     wand_data() = default;
+    explicit wand_data(MemorySource source) : m_source(std::move(source))
+    {
+        mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
+    }
 
     template <typename LengthsIterator>
     wand_data(
@@ -162,6 +166,7 @@ class wand_data {
     mapper::mappable_vector<uint32_t> m_term_occurrence_counts;
     mapper::mappable_vector<uint32_t> m_term_posting_counts;
     mapper::mappable_vector<float> m_max_term_weight;
+    MemorySource m_source;
 };
 
 void create_wand_data(

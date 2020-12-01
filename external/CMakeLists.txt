@@ -11,24 +11,6 @@ target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 set(CLI11_TESTING OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 
-# stxxl
-add_definitions(-DSTXXL_VERBOSE_LEVEL=-10) # suppress messages to stdout
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/stxxl)
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${STXXL_CXX_FLAGS}")
-include_directories(${STXXL_INCLUDE_DIRS})
-set_target_properties(stxxl PROPERTIES
-            CXX_STANDARD 14
-)
-set_target_properties(${LIBSTXXL_SOURCES} PROPERTIES
-            CXX_STANDARD 14
-)
-set_target_properties(stxxl_tool test1 test2 PROPERTIES
-            CXX_STANDARD 14
-)
-target_compile_options(stxxl PRIVATE    -Wno-deprecated-declarations
-)
-
-
 # Add streamvbyte
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/include)
 add_library(streamvbyte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/src/streamvbyte.c
@@ -86,6 +68,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
 
 # Add Boost
 add_subdirectory(boost-cmake)
+set(BOOST_INCLUDEDIR ${CMAKE_CURRENT_SOURCE_DIR}/boost-cmake CACHE PATH "Change boost lookup path")
+set(BOOST_LIBRARYDIR ${CMAKE_BINARY_DIR}/boost-cmake CACHE PATH "Change boost lookup path")
 
 # Add Catch
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
@@ -122,3 +106,8 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
 target_compile_options(rapidcheck PRIVATE -Wno-error)
+
+# Add taily
+set(TAILY_ENABLE_TESTING OFF CACHE BOOL "skip taily testing")
+set(TAILY_BUILD_EXAMPLE OFF CACHE BOOL "skip taily example")
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/taily)

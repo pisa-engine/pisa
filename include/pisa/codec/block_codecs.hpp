@@ -156,7 +156,7 @@ struct interpolative_block {
         out[n - 1] = sum_of_values;
         size_t read_interpolative = 0;
         if (n > 1) {
-            bit_reader br((uint32_t const*)inbuf);
+            bit_reader br(inbuf);
             br.read_interpolative(out, n - 1, 0, sum_of_values);
             for (size_t i = n - 1; i > 0; --i) {
                 out[i] -= out[i - 1];

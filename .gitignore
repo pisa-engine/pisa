@@ -25,3 +25,8 @@ docs/_build/
 node_modules
 
 .clangd/
+
+# Latex in documentation
+*.aux
+*.log
+docs/**/*.pdf

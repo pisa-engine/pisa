@@ -13,6 +13,7 @@
 
 #include "boost/filesystem.hpp"
 #include "gsl/span"
+#include "memory_source.hpp"
 #include "payload_vector.hpp"
 #include "pstl/algorithm"
 #include "pstl/execution"
@@ -197,7 +198,7 @@ namespace invert {
     {
         std::vector<uint32_t> document_sizes(documents.size());
         std::transform(
-            std::execution::par_unseq,
+            pstl::execution::par_unseq,
             documents.begin(),
             documents.end(),
             document_sizes.begin(),
@@ -210,13 +211,13 @@ namespace invert {
             auto first_document_in_batch = first_document_id + first_idx_in_batch;
             auto last_document_in_batch = first_document_id + last_idx_in_batch;
             auto current_batch_size = last_idx_in_batch - first_idx_in_batch;
-            batches.push_back(
-                Batch{documents.subspan(first_idx_in_batch, current_batch_size),
-                      ranges::views::iota(first_document_in_batch, last_document_in_batch)});
+            batches.push_back(Batch{
+                documents.subspan(first_idx_in_batch, current_batch_size),
+                ranges::views::iota(first_document_in_batch, last_document_in_batch)});
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
         std::transform(
-            std::execution::par_unseq,
+            pstl::execution::par_unseq,
             batches.begin(),
             batches.end(),
             std::begin(posting_vectors),
@@ -225,7 +226,7 @@ namespace invert {
         posting_vectors.clear();
         posting_vectors.shrink_to_fit();
 
-        std::sort(std::execution::par_unseq, postings.begin(), postings.end());
+        std::sort(pstl::execution::par_unseq, postings.begin(), postings.end());
 
         using iterator_type = decltype(postings.begin());
         invert::Inverted_Index<iterator_type> index;
@@ -344,8 +345,8 @@ namespace invert {
         std::optional<std::uint32_t> term_count = std::nullopt)
     {
         if (not term_count) {
-            mio::mmap_source m(fmt::format("{}.termlex", input_basename).c_str());
-            auto terms = Payload_Vector<>::from(m);
+            auto source = MemorySource::mapped_file(fmt::format("{}.termlex", input_basename));
+            auto terms = Payload_Vector<>::from(source);
             term_count = static_cast<std::uint32_t>(terms.size());
         }
 

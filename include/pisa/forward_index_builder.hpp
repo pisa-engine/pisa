@@ -206,8 +206,8 @@ class Forward_Index_Builder {
             auto first = std::next(terms.begin(), lhs.first);
             auto mid = std::next(terms.begin(), lhs.last);
             auto last = std::next(terms.begin(), rhs.last);
-            std::inplace_merge(std::execution::par, first, mid, last);
-            terms.erase(std::unique(std::execution::par, first, last), last);
+            std::inplace_merge(pstl::execution::par, first, mid, last);
+            terms.erase(std::unique(pstl::execution::par, first, last), last);
             return Term_Span{lhs.first, terms.size(), lhs.lvl + 1};
         };
         auto push_span = [&](Term_Span s) {
@@ -384,16 +384,25 @@ class Forward_Index_Builder {
         remove_batches(output_file, batch_number);
     }
 
+    void try_remove(boost::filesystem::path const& file) const
+    {
+        using boost::filesystem::remove;
+        try {
+            remove(file);
+        } catch (...) {
+            spdlog::warn("Unable to remove temporary batch file {}", file.c_str());
+        }
+    }
+
     void remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const
     {
         using boost::filesystem::path;
-        using boost::filesystem::remove;
         for (auto batch: ranges::views::iota(0, batch_count)) {
             auto batch_basename = batch_file(basename, batch);
-            remove(path{batch_basename + ".documents"});
-            remove(path{batch_basename + ".terms"});
-            remove(path{batch_basename + ".urls"});
-            remove(path{batch_basename});
+            try_remove(path{batch_basename + ".documents"});
+            try_remove(path{batch_basename + ".terms"});
+            try_remove(path{batch_basename + ".urls"});
+            try_remove(path{batch_basename});
         }
     }
 };

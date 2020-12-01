@@ -10,15 +10,20 @@
 
 #include "freq_index.hpp"
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "mio/mmap.hpp"
 #include "sequence/indexed_sequence.hpp"
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/positive_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
+#include "temporary_directory.hpp"
 
 template <typename DocsSequence, typename FreqsSequence>
 void test_freq_index()
 {
+    Temporary_Directory tmpdir;
+    auto idx_path = (tmpdir.path() / "coll.bin").string();
+
     pisa::global_parameters params;
     uint64_t universe = 20000;
     using collection_type = pisa::freq_index<DocsSequence, FreqsSequence>;
@@ -40,14 +45,11 @@ void test_freq_index()
     {
         collection_type coll;
         b.build(coll);
-        pisa::mapper::freeze(coll, "temp.bin");
+        pisa::mapper::freeze(coll, idx_path.c_str());
     }
 
     {
-        collection_type coll;
-        mio::mmap_source m("temp.bin");
-        pisa::mapper::map(coll, m);
-
+        collection_type coll(pisa::MemorySource::mapped_file(idx_path));
         for (size_t i = 0; i < posting_lists.size(); ++i) {
             auto const& plist = posting_lists[i];
             auto doc_enum = coll[i];
