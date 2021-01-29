@@ -16,7 +16,7 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
-#include "query/algorithm.hpp"
+#include "query/algorithm/maxscore_query.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
@@ -114,12 +114,12 @@ void kt_thresholds(
 
         auto terms = query.terms;
         topk_queue topk(k);
-        wand_query wand_q(topk);
+        maxscore_query<topk_queue> q(topk);
 
         for (auto&& term: terms) {
             Query query;
             query.terms.push_back(term);
-            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
             topk.clear();
         }
@@ -128,7 +128,7 @@ void kt_thresholds(
                 if (pairs_set.count({terms[i], terms[j]}) > 0 or all_pairs) {
                     Query query;
                     query.terms = {terms[i], terms[j]};
-                    wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                     threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                     topk.clear();
                 }
@@ -140,8 +140,7 @@ void kt_thresholds(
                     if (triples_set.count({terms[i], terms[j], terms[s]}) > 0 or all_triples) {
                         Query query;
                         query.terms = {terms[i], terms[j], terms[s]};
-                        wand_q(
-                            make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                        q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                         threshold = std::max(threshold, topk.size() == k ? topk.threshold() : 0.0F);
                         topk.clear();
                     }

@@ -10,8 +10,9 @@
 
 namespace pisa {
 
+template <typename Accumulator = topk_queue>
 struct maxscore_query {
-    explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
+    explicit maxscore_query(Accumulator& topk) : m_topk(topk) {}
 
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
@@ -139,7 +140,7 @@ struct maxscore_query {
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
   private:
-    topk_queue& m_topk;
+    Accumulator& m_topk;
 };
 
 }  // namespace pisa

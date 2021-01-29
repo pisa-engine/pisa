@@ -16,6 +16,12 @@ target_link_libraries(queries
   CLI11
 )
 
+add_executable(threshold-queries threshold_queries.cpp)
+target_link_libraries(threshold-queries
+  pisa
+  CLI11
+)
+
 add_executable(evaluate_queries evaluate_queries.cpp)
 target_link_libraries(evaluate_queries
   pisa
