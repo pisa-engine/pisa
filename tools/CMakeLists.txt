@@ -98,8 +98,8 @@ target_link_libraries(stem_queries
   CLI11
 )
 
-add_executable(count_postings count_postings.cpp)
-target_link_libraries(count_postings
+add_executable(count-postings count_postings.cpp)
+target_link_libraries(count-postings
   pisa
   CLI11
 )
