@@ -82,9 +82,10 @@ class document_range {
     PISA_ALWAYSINLINE document_partition<Iterator> split() const
     {
         Iterator mid = std::next(m_first, size() / 2);
-        return {document_range(m_first, mid, m_fwdidx, m_gains),
-                document_range(mid, m_last, m_fwdidx, m_gains),
-                term_count()};
+        return {
+            document_range(m_first, mid, m_fwdidx, m_gains),
+            document_range(mid, m_last, m_fwdidx, m_gains),
+            term_count()};
     }
 
     PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const
@@ -164,7 +165,7 @@ void compute_degrees(document_range<Iterator>& range, single_init_vector<size_t>
     for (const auto& document: range) {
         auto terms = range.terms(document);
         auto deg_map_inc = [&](const auto& t) { deg_map.set(t, deg_map[t] + 1); };
-        std::for_each(std::execution::unseq, terms.begin(), terms.end(), deg_map_inc);
+        std::for_each(pstl::execution::unseq, terms.begin(), terms.end(), deg_map_inc);
     }
 }
 
@@ -272,14 +273,14 @@ void process_partition(
         tbb::parallel_invoke(
             [&] {
                 std::sort(
-                    std::execution::par_unseq,
+                    pstl::execution::par_unseq,
                     partition.left.begin(),
                     partition.left.end(),
                     partition.left.by_gain());
             },
             [&] {
                 std::sort(
-                    std::execution::par_unseq,
+                    pstl::execution::par_unseq,
                     partition.right.begin(),
                     partition.right.end(),
                     partition.right.by_gain());
