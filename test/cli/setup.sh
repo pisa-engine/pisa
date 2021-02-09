@@ -6,7 +6,8 @@
 PISA_BIN="./bin"
 export PATH="$PISA_BIN:$PATH"
 
-cat "../test/test_data/clueweb1k.plaintext" | parse_collection \
+test_dir=${TEST_DIR:-../test}
+cat "$test_dir/test_data/clueweb1k.plaintext" | parse_collection \
     --stemmer porter2 \
     --output "./fwd" \
     --format plaintext
@@ -27,7 +28,7 @@ create_wand_data \
 partition_fwd_index \
     --input "./fwd" \
     --output "./fwd.shard" \
-    --shard-files ../test/test_data/clueweb1k.shard.*
+    --shard-files $TEST_DIR/test_data/clueweb1k.shard.*
 
 shards invert \
     --input "./fwd.shard" \
