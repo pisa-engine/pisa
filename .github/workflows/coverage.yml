@@ -16,8 +16,8 @@ jobs:
     - name: Install lcov
       shell: bash
       run: |
-          echo "::set-env name=CC::gcc-7"
-          echo "::set-env name=CXX::g++-7"
+          echo "CC=gcc-7" >> $GITHUB_ENV
+          echo "CXX=g++-7" >> $GITHUB_ENV
           sudo apt-get install -y lcov
     - name: Create Build Environment
       shell: bash
