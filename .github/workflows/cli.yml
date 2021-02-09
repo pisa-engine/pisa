@@ -39,8 +39,8 @@ jobs:
           else
               sudo apt-get install -y "${cc}"
           fi
-          echo "::set-env name=CC::${cc}"
-          echo "::set-env name=CXX::${cxx}"
+          echo "CC=${cc}" >> $GITHUB_ENV
+          echo "CXX=${cxx}" >> $GITHUB_ENV
 
     - name: Install bats
       if: runner.os == 'Linux'
