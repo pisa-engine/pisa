@@ -22,8 +22,8 @@ jobs:
           sudo apt-get install -y clang-10 clang-tidy-10
           sudo apt-get install -y libtool m4 autoconf
           sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
-          echo "::set-env name=CC::clang-10"
-          echo "::set-env name=CXX::clang++-10"
+          echo "CC=clang-10" >> $GITHUB_ENV
+          echo "CXX=clang++-10" >> $GITHUB_ENV
 
     - name: Create Build Environment
       shell: bash
