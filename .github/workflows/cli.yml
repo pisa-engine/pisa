@@ -72,4 +72,6 @@ jobs:
     - name: Test CLI
       shell: bash
       working-directory: ${{runner.workspace}}/build
+      env:
+          TEST_DIR: ../pisa/test
       run: ../pisa/test/cli/run.sh
