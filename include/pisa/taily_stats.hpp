@@ -11,6 +11,7 @@
 #include "memory_source.hpp"
 #include "query/queries.hpp"
 #include "scorer/scorer.hpp"
+#include "timer.hpp"
 #include "type_safe.hpp"
 #include "util/progress.hpp"
 #include "vec_map.hpp"
@@ -161,7 +162,9 @@ void taily_score_shards(
             std::back_inserter(shards),
             [query_idx](
                 auto&& shard, auto&& queries) { return shard.query_stats(queries[query_idx]); });
-        func(taily::score_shards(global, shards, k));
+        auto [scores, time] = run_with_timer_ret<std::chrono::microseconds>(
+            [&] { return taily::score_shards(global, shards, k); });
+        func(scores, time);
     }
 }
 

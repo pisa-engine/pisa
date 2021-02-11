@@ -155,9 +155,12 @@ write_sizes () {
     count=$(cat $BATS_TMPDIR/scores | wc -l)
     [[ "$count" = "5" ]]
 
-    count=$(cat $BATS_TMPDIR/scores | jq '.|arrays' -c | wc -l)
+    count=$(cat $BATS_TMPDIR/scores | jq '.scores' -c | wc -l)
     [[ "$count" = "5" ]]
 
-    count=$(cat $BATS_TMPDIR/scores | jq 'select(.==[0.0,0.0,0.0,0.0])' -c | wc -l)
+    count=$(cat $BATS_TMPDIR/scores | jq '.time' -c | wc -l)
+    [[ "$count" = "5" ]]
+
+    count=$(cat $BATS_TMPDIR/scores | jq 'select(.scores==[0.0,0.0,0.0,0.0])' -c | wc -l)
     [[ "$count" = "1" ]]
 }
