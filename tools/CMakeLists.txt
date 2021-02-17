@@ -139,9 +139,3 @@ target_link_libraries(taily-thresholds
   pisa
   CLI11
 )
-
-add_executable(extract-maxscores extract_maxscores.cpp)
-target_link_libraries(extract-maxscores
-  pisa
-  CLI11
-)
