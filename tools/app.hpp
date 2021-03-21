@@ -29,6 +29,8 @@ namespace arg {
         }
         [[nodiscard]] auto index_encoding() const -> std::string const& { return m_encoding; }
 
+        void apply_shard(Shard_Id /* shard_id */) {}
+
       private:
         std::string m_encoding;
     };
@@ -194,6 +196,8 @@ namespace arg {
         template <typename T>
         friend CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
 
+        void apply_shard(Shard_Id /* shard_id */) {}
+
       private:
         ScorerParams m_params;
         std::optional<std::string> m_wand_data_path;
@@ -261,6 +265,8 @@ namespace arg {
             os << fmt::format("threads: {}\n", threads());
             return os;
         }
+
+        void apply_shard(Shard_Id /* shard_id */) {}
 
       private:
         std::size_t m_threads = std::thread::hardware_concurrency();
@@ -589,6 +595,8 @@ struct Args: public T... {
         (T::print_args(os), ...);
         return os;
     }
+
+    void apply_shard(Shard_Id shard) { (T::apply_shard(shard), ...); }
 };
 
 using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;

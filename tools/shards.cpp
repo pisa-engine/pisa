@@ -21,8 +21,8 @@
 #include "wand_data.hpp"
 
 namespace invert = pisa::invert;
+using pisa::Args;
 using pisa::CompressArgs;
-using pisa::CreateWandDataArgs;
 using pisa::format_shard;
 using pisa::InvertArgs;
 using pisa::ReorderDocuments;
@@ -43,6 +43,49 @@ void print_taily_scores(std::vector<double> const& scores, std::chrono::microsec
     }
     std::cout << "]}\n";
 }
+
+struct GlobalDataArg {
+    explicit GlobalDataArg(CLI::App* app)
+    {
+        auto group = app->add_option_group(
+            "Global data",
+            "Used when WAND data should be constructed using global index statistics");
+        auto wdata = group->add_option("--global-wdata", m_global_wdata, "");
+        auto gt = group->add_option("--global-termlex", m_global_termlex, "");
+        auto gd = group->add_option("--global-doclex", m_global_doclex, "");
+        auto lt = group->add_option("--local-termlex", m_local_termlex, "");
+        auto ld = group->add_option("--local-doclex", m_local_doclex, "");
+        wdata->needs(gt, gd, lt, ld);
+        gt->needs(wdata);
+        gd->needs(wdata);
+        lt->needs(wdata);
+        ld->needs(wdata);
+    }
+
+    void apply_shard(Shard_Id shard)
+    {
+        if (m_local_doclex.has_value()) {
+            m_local_termlex = expand_shard(*m_local_termlex, shard);
+            m_local_doclex = expand_shard(*m_local_doclex, shard);
+        }
+    }
+
+    [[nodiscard]] auto global_data_paths() const -> std::optional<pisa::GlobalDataPaths>
+    {
+        if (m_global_wdata.has_value()) {
+            return pisa::GlobalDataPaths{
+                *m_global_wdata, *m_global_termlex, *m_local_termlex, *m_global_doclex, *m_local_doclex};
+        }
+        return std::nullopt;
+    }
+
+  private:
+    std::optional<std::string> m_global_wdata;
+    std::optional<std::string> m_global_termlex;
+    std::optional<std::string> m_local_termlex;
+    std::optional<std::string> m_global_doclex;
+    std::optional<std::string> m_local_doclex;
+};
 
 int main(int argc, char** argv)
 {
@@ -66,7 +109,7 @@ int main(int argc, char** argv)
     InvertArgs invert_args(invert);
     ReorderDocuments reorder_args(reorder);
     CompressArgs compress_args(compress);
-    CreateWandDataArgs wand_args(wand);
+    Args<pisa::arg::CreateWandData, GlobalDataArg> wand_args(wand);
     TailyStatsArgs taily_args(taily);
     TailyRankArgs taily_rank_args(taily_rank);
     TailyThresholds taily_thresholds_args(taily_thresholds);
@@ -131,7 +174,8 @@ int main(int argc, char** argv)
                     shard_args.range(),
                     shard_args.compress(),
                     shard_args.quantize(),
-                    shard_args.dropped_term_ids());
+                    shard_args.dropped_term_ids(),
+                    shard_args.global_data_paths());
             }
         }
         if (taily->parsed()) {

@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include "boost/variant.hpp"
+#include "gsl/span"
 #include "spdlog/spdlog.h"
 
 #include "binary_collection.hpp"
@@ -12,6 +13,7 @@
 #include "mappable/mappable_vector.hpp"
 #include "mappable/mapper.hpp"
 #include "memory_source.hpp"
+#include "payload_vector.hpp"
 #include "util/progress.hpp"
 #include "util/util.hpp"
 #include "wand_data_compressed.hpp"
@@ -24,6 +26,52 @@
 class enumerator;
 namespace pisa {
 
+/// Paths to structures used to build shard wand data using global statistics.
+struct GlobalDataPaths {
+    std::string wdata;
+    std::string global_termlex;
+    std::string local_termlex;
+    std::string global_doclex;
+    std::string local_doclex;
+};
+
+/// Parameters used to build shard wand data using global statistics.
+template <typename W>
+struct GlobalData {
+    GlobalData(
+        MemorySource wdata,
+        MemorySource global_termlex_mem,
+        MemorySource local_termlex_mem,
+        MemorySource global_doclex_mem,
+        MemorySource local_doclex_mem,
+        Payload_Vector<> global_termlex,
+        Payload_Vector<> local_termlex,
+        Payload_Vector<> global_doclex,
+        Payload_Vector<> local_doclex)
+        : wdata(std::move(wdata)),
+          global_termlex_mem(std::move(global_termlex_mem)),
+          local_termlex_mem(std::move(local_termlex_mem)),
+          global_doclex_mem(std::move(global_doclex_mem)),
+          local_doclex_mem(std::move(local_doclex_mem)),
+          global_termlex(global_termlex),
+          local_termlex(local_termlex),
+          global_doclex(global_doclex),
+          local_doclex(local_doclex)
+    {}
+
+    W wdata;
+
+    MemorySource global_termlex_mem;
+    MemorySource local_termlex_mem;
+    MemorySource global_doclex_mem;
+    MemorySource local_doclex_mem;
+
+    Payload_Vector<> global_termlex;
+    Payload_Vector<> local_termlex;
+    Payload_Vector<> global_doclex;
+    Payload_Vector<> local_doclex;
+};
+
 template <typename block_wand_type = wand_data_raw>
 class wand_data {
   public:
@@ -35,7 +83,7 @@ class wand_data {
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
-    template <typename LengthsIterator>
+    template <typename LengthsIterator, typename W = block_wand_type>
     wand_data(
         LengthsIterator len_it,
         uint64_t num_docs,
@@ -43,7 +91,8 @@ class wand_data {
         const ScorerParams& scorer_params,
         BlockSize block_size,
         bool is_quantized,
-        std::unordered_set<size_t> const& terms_to_drop)
+        std::unordered_set<size_t> const& terms_to_drop,
+        std::unique_ptr<GlobalData<wand_data<W>>> global_data = nullptr)
         : m_num_docs(num_docs)
     {
         std::vector<uint32_t> doc_lens(num_docs);
@@ -53,17 +102,59 @@ class wand_data {
         global_parameters params;
         spdlog::info("Reading sizes...");
 
-        for (size_t i = 0; i < num_docs; ++i) {
-            uint32_t len = *len_it++;
-            doc_lens[i] = len;
-            m_collection_len += len;
+        if (global_data != nullptr) {
+            m_num_docs = global_data->wdata.num_docs();
+            m_collection_len = global_data->wdata.collection_len();
+            for (size_t i = 0; i < num_docs; ++i) {
+                std::string_view title = global_data->local_doclex[i];
+                auto global_docid = pisa::binary_search(
+                    global_data->global_doclex.begin(), global_data->global_doclex.end(), title);
+
+                if (!global_docid.has_value()) {
+                    throw std::runtime_error(
+                        fmt::format("global lexicon doesn't have local document `{}`", title));
+                }
+                uint32_t len = global_data->wdata.doc_len(*global_docid);
+                doc_lens[i] = len;
+            }
+        } else {
+            for (size_t i = 0; i < num_docs; ++i) {
+                uint32_t len = *len_it++;
+                doc_lens[i] = len;
+                m_collection_len += len;
+            }
         }
 
-        m_avg_len = float(m_collection_len / double(num_docs));
+        m_avg_len = float(m_collection_len / double(m_num_docs));
 
         typename block_wand_type::builder builder(coll, params);
 
-        {
+        if (global_data != nullptr) {
+            pisa::progress progress("Storing terms statistics", coll.size());
+            size_t local_term_id = 0;
+            for (auto const& seq: coll) {
+                if (terms_to_drop.find(local_term_id) != terms_to_drop.end()) {
+                    progress.update(1);
+                    local_term_id += 1;
+                    continue;
+                }
+                std::string_view local_term = global_data->local_termlex[local_term_id];
+                auto global_term_id = pisa::binary_search(
+                    global_data->global_termlex.begin(), global_data->global_termlex.end(), local_term);
+                if (!global_term_id.has_value()) {
+                    throw std::runtime_error(
+                        fmt::format("global lexicon doesn't have local term `{}`", local_term));
+                }
+
+                term_occurrence_counts.push_back(
+                    global_data->wdata.term_occurrence_count(*global_term_id));
+
+                term_posting_counts.push_back(global_data->wdata.term_posting_count(*global_term_id));
+
+                local_term_id += 1;
+                progress.update(1);
+            }
+        } else {
             pisa::progress progress("Storing terms statistics", coll.size());
             size_t term_id = 0;
             for (auto const& seq: coll) {
@@ -120,6 +211,11 @@ class wand_data {
 
     size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
 
+    [[nodiscard]] auto document_lengths() const -> gsl::span<std::uint32_t const>
+    {
+        return gsl::span<std::uint32_t>(m_doc_lens);
+    }
+
     size_t term_occurrence_count(uint64_t term_id) const
     {
         return m_term_occurrence_counts[term_id];
@@ -169,6 +265,37 @@ class wand_data {
     MemorySource m_source;
 };
 
+template <typename W>
+[[nodiscard]] auto load_global_data(std::optional<GlobalDataPaths> const& global_data_paths)
+    -> std::unique_ptr<GlobalData<wand_data<W>>>
+{
+    if (global_data_paths.has_value()) {
+        auto global_termlex_mem = MemorySource::mapped_file(global_data_paths->global_termlex);
+        auto global_termlex = Payload_Vector<>::from(global_termlex_mem.span());
+
+        auto local_termlex_mem = MemorySource::mapped_file(global_data_paths->local_termlex);
+        auto local_termlex = Payload_Vector<>::from(local_termlex_mem.span());
+
+        auto global_doclex_mem = MemorySource::mapped_file(global_data_paths->global_doclex);
+        auto global_doclex = Payload_Vector<>::from(global_doclex_mem.span());
+
+        auto local_doclex_mem = MemorySource::mapped_file(global_data_paths->local_doclex);
+        auto local_doclex = Payload_Vector<>::from(local_doclex_mem.span());
+
+        return std::make_unique<GlobalData<wand_data<W>>>(
+            MemorySource::mapped_file(global_data_paths->wdata),
+            std::move(global_termlex_mem),
+            std::move(local_termlex_mem),
+            std::move(global_doclex_mem),
+            std::move(local_doclex_mem),
+            global_termlex,
+            local_termlex,
+            global_doclex,
+            local_doclex);
+    }
+    return nullptr;
+}
+
 void create_wand_data(
     std::string const& output,
     std::string const& input_basename,
@@ -177,7 +304,8 @@ void create_wand_data(
     bool range,
     bool compress,
     bool quantize,
-    std::unordered_set<size_t> const& dropped_term_ids)
+    std::unordered_set<size_t> const& dropped_term_ids,
+    std::optional<GlobalDataPaths> const& global_data_paths = {})
 {
     spdlog::info("Dropping {} terms", dropped_term_ids.size());
     binary_collection sizes_coll((input_basename + ".sizes").c_str());
@@ -191,7 +319,8 @@ void create_wand_data(
             scorer_params,
             block_size,
             quantize,
-            dropped_term_ids);
+            dropped_term_ids,
+            load_global_data<wand_data_compressed<>>(global_data_paths));
         mapper::freeze(wdata, output.c_str());
     } else if (range) {
         wand_data<wand_data_range<128, 1024>> wdata(
@@ -201,7 +330,8 @@ void create_wand_data(
             scorer_params,
             block_size,
             quantize,
-            dropped_term_ids);
+            dropped_term_ids,
+            load_global_data<wand_data_range<128, 1024>>(global_data_paths));
         mapper::freeze(wdata, output.c_str());
     } else {
         wand_data<wand_data_raw> wdata(
@@ -211,7 +341,8 @@ void create_wand_data(
             scorer_params,
             block_size,
             quantize,
-            dropped_term_ids);
+            dropped_term_ids,
+            load_global_data<wand_data_raw>(global_data_paths));
         mapper::freeze(wdata, output.c_str());
     }
 }
