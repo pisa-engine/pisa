@@ -14,18 +14,18 @@ jobs:
         name: [linux-gcc-9, linux-gcc-7, linux-clang-6, linux-clang-10, macos-gcc-9, macos-xcode-11.3]
         include:
           - name: linux-gcc-9
-            os: ubuntu-latest
+            os: ubuntu-18.04
             compiler: "gcc"
             version: "9"
           - name: linux-gcc-7
-            os: ubuntu-latest
+            os: ubuntu-18.04
             compiler: "gcc" # default on bionic: gcc-7
           - name: linux-clang-6
-            os: ubuntu-latest
+            os: ubuntu-18.04
             compiler: "clang"
             version: "6.0"
           - name: linux-clang-10
-            os: ubuntu-latest
+            os: ubuntu-18.04
             compiler: "clang"
             version: "10"
           - name: macos-gcc-9
