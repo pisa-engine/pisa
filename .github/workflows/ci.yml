@@ -15,11 +15,11 @@ jobs:
         include:
           - name: linux-gcc-9
             os: ubuntu-latest
-            compiler: "gcc"
-            version: "9"
+            compiler: "gcc" # default on focal: gcc-9
           - name: linux-gcc-7
             os: ubuntu-latest
-            compiler: "gcc" # default on bionic: gcc-7
+            compiler: "gcc"
+            version: "7"
           - name: linux-clang-6
             os: ubuntu-latest
             compiler: "clang"
@@ -52,7 +52,7 @@ jobs:
 
           if [ "${cc}" = "clang-10" ]; then
             wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
+            sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-10 main"
             sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
           fi
           if [ "${cc}" = "clang-6.0" ]; then
