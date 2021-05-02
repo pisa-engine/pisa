@@ -24,6 +24,7 @@
 #include "sequence/uniform_partitioned_sequence.hpp"
 
 namespace pisa {
+
 using ef_index = freq_index<compact_elias_fano, positive_sequence<strict_elias_fano>>;
 
 using single_index = freq_index<indexed_sequence, positive_sequence<>>;
@@ -56,37 +57,6 @@ using profiling_block_simple8b_index = block_freq_index<pisa::simple8b_block, tr
 using profiling_block_simple16_index = block_freq_index<pisa::simple16_block, true>;
 using profiling_block_simdbp_index = block_freq_index<pisa::simdbp_block, true>;
 
-template <typename Index>
-struct IndexTypeMarker {
-    using type = Index;
-};
-
-using IndexType_ = std::variant<
-    IndexTypeMarker<ef_index>,
-    IndexTypeMarker<single_index>,
-    IndexTypeMarker<pefuniform_index>,
-    IndexTypeMarker<pefopt_index>,
-    IndexTypeMarker<block_optpfor_index>,
-    IndexTypeMarker<block_varintg8iu_index>,
-    IndexTypeMarker<block_streamvbyte_index>,
-    IndexTypeMarker<block_maskedvbyte_index>,
-    IndexTypeMarker<block_interpolative_index>,
-    IndexTypeMarker<block_qmx_index>,
-    IndexTypeMarker<block_varintgb_index>,
-    IndexTypeMarker<block_simple8b_index>,
-    IndexTypeMarker<block_simple16_index>,
-    IndexTypeMarker<block_simdbp_index>,
-    IndexTypeMarker<profiling_block_optpfor_index>,
-    IndexTypeMarker<profiling_block_varintg8iu_index>,
-    IndexTypeMarker<profiling_block_streamvbyte_index>,
-    IndexTypeMarker<profiling_block_maskedvbyte_index>,
-    IndexTypeMarker<profiling_block_interpolative_index>,
-    IndexTypeMarker<profiling_block_qmx_index>,
-    IndexTypeMarker<profiling_block_varintgb_index>,
-    IndexTypeMarker<profiling_block_simple8b_index>,
-    IndexTypeMarker<profiling_block_simple16_index>,
-    IndexTypeMarker<profiling_block_simdbp_index>>;
-
 class InvalidEncoding: std::exception {
   public:
     explicit InvalidEncoding(std::string_view encoding)
@@ -99,6 +69,38 @@ class InvalidEncoding: std::exception {
 };
 
 namespace detail {
+
+    template <typename Index>
+    struct IndexTypeMarker {
+        using type = Index;
+    };
+
+    using IndexType = std::variant<
+        IndexTypeMarker<ef_index>,
+        IndexTypeMarker<single_index>,
+        IndexTypeMarker<pefuniform_index>,
+        IndexTypeMarker<pefopt_index>,
+        IndexTypeMarker<block_optpfor_index>,
+        IndexTypeMarker<block_varintg8iu_index>,
+        IndexTypeMarker<block_streamvbyte_index>,
+        IndexTypeMarker<block_maskedvbyte_index>,
+        IndexTypeMarker<block_interpolative_index>,
+        IndexTypeMarker<block_qmx_index>,
+        IndexTypeMarker<block_varintgb_index>,
+        IndexTypeMarker<block_simple8b_index>,
+        IndexTypeMarker<block_simple16_index>,
+        IndexTypeMarker<block_simdbp_index>,
+        IndexTypeMarker<profiling_block_optpfor_index>,
+        IndexTypeMarker<profiling_block_varintg8iu_index>,
+        IndexTypeMarker<profiling_block_streamvbyte_index>,
+        IndexTypeMarker<profiling_block_maskedvbyte_index>,
+        IndexTypeMarker<profiling_block_interpolative_index>,
+        IndexTypeMarker<profiling_block_qmx_index>,
+        IndexTypeMarker<profiling_block_varintgb_index>,
+        IndexTypeMarker<profiling_block_simple8b_index>,
+        IndexTypeMarker<profiling_block_simple16_index>,
+        IndexTypeMarker<profiling_block_simdbp_index>>;
+
     template <typename I>
     [[nodiscard]] constexpr auto index_name() noexcept -> std::string_view
     {
@@ -166,14 +168,14 @@ namespace detail {
     template <bool Profile, std::size_t I, typename Fn>
     auto resolve_index_n(std::string_view encoding, Fn fn) -> bool
     {
-        using T = typename std::variant_alternative_t<I, IndexType_>::type;
+        using T = typename std::variant_alternative_t<I, IndexType>::type;
 
         if (encoding == detail::index_name<T>()) {
             if constexpr (Profile) {
                 using P = typename add_profiling<T>::type;
-                fn(IndexType_(IndexTypeMarker<P>{}));
+                fn(IndexType(IndexTypeMarker<P>{}));
             } else {
-                fn(IndexType_(IndexTypeMarker<T>{}));
+                fn(IndexType(IndexTypeMarker<T>{}));
             }
             return true;
         }
@@ -182,11 +184,11 @@ namespace detail {
 
     template <bool Profile, std::size_t... I>
     auto resolve_index_type(std::string_view encoding, std::integer_sequence<std::size_t, I...>)
-        -> IndexType_
+        -> IndexType
     {
-        IndexType_ index_type{};
+        IndexType index_type{};
         bool loaded =
-            (resolve_index_n<Profile, I>(encoding, [&index_type](IndexType_ i) { index_type = i; })
+            (resolve_index_n<Profile, I>(encoding, [&index_type](IndexType i) { index_type = i; })
              || ...);
         if (!loaded) {
             throw InvalidEncoding(encoding);
@@ -195,10 +197,10 @@ namespace detail {
     }
 
     template <bool Profile>
-    [[nodiscard]] auto resolve_index_type(std::string_view encoding) -> IndexType_
+    [[nodiscard]] auto resolve_index_type(std::string_view encoding) -> IndexType
     {
         std::string full_index_type = fmt::format("{}_index", encoding);
-        constexpr auto num_types = std::variant_size_v<IndexType_>;
+        constexpr auto num_types = std::variant_size_v<IndexType>;
         return detail::resolve_index_type<Profile>(encoding, std::make_index_sequence<num_types>{});
     }
 
@@ -206,7 +208,7 @@ namespace detail {
     void push_encoding(std::vector<std::string>& encodings)
     {
         encodings.emplace_back(
-            detail::index_name<typename std::variant_alternative_t<I, IndexType_>::type>());
+            detail::index_name<typename std::variant_alternative_t<I, IndexType>::type>());
     }
 
 };  // namespace detail
@@ -221,13 +223,13 @@ auto encodings(std::integer_sequence<std::size_t, I...>) -> std::vector<std::str
 
 inline auto encodings() -> std::vector<std::string>
 {
-    return encodings(std::make_index_sequence<variant_size_v<IndexType_>>{});
+    return encodings(std::make_index_sequence<variant_size_v<detail::IndexType>>{});
 }
 
 class IndexType {
-    IndexType_ m_type_marker;
+    detail::IndexType m_type_marker;
 
-    explicit IndexType(IndexType_ type_marker) : m_type_marker(type_marker) {}
+    explicit IndexType(detail::IndexType type_marker) : m_type_marker(type_marker) {}
 
   public:
     static auto resolve(std::string_view encoding) -> IndexType
