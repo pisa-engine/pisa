@@ -204,24 +204,26 @@ namespace detail {
         return detail::resolve_index_type<Profile>(encoding, std::make_index_sequence<num_types>{});
     }
 
-    template <std::size_t I>
-    void push_encoding(std::vector<std::string>& encodings)
-    {
-        encodings.emplace_back(
-            detail::index_name<typename std::variant_alternative_t<I, IndexType>::type>());
-    }
-
 };  // namespace detail
 
-template <std::size_t... I>
-auto encodings(std::integer_sequence<std::size_t, I...>) -> std::vector<std::string>
+using Encodings = std::array<std::string_view, variant_size_v<detail::IndexType>>;
+
+template <std::size_t I>
+constexpr void push_encoding(Encodings& encodings)
 {
-    std::vector<std::string> encodings;
-    (detail::push_encoding<I>(encodings), ...);
+    encodings[I] =
+        detail::index_name<typename std::variant_alternative_t<I, detail::IndexType>::type>();
+}
+
+template <std::size_t... I>
+[[nodiscard]] constexpr auto encodings(std::integer_sequence<std::size_t, I...>) -> Encodings
+{
+    Encodings encodings;
+    (push_encoding<I>(encodings), ...);
     return encodings;
 }
 
-inline auto encodings() -> std::vector<std::string>
+[[nodiscard]] inline constexpr auto encodings() -> Encodings
 {
     return encodings(std::make_index_sequence<variant_size_v<detail::IndexType>>{});
 }
