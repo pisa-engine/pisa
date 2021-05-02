@@ -197,7 +197,7 @@ int main(int argc, const char** argv)
     auto iteration = "Q0";
 
     try {
-        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+        IndexType::resolve(app.index_encoding()).load_and_execute(app.index_filename(), [&](auto&& index) {
             auto evaluate = [&](auto wdata) {
                 evaluate_queries(
                     index,

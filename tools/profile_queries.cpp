@@ -150,7 +150,7 @@ int main(int argc, const char** argv)
 
     try {
         spdlog::info("Loading index from {}", index_filename);
-        with_profiling_index(type, index_filename, [&](auto index) {
+        IndexType::resolve_profiling(type).load_and_execute(index_filename, [&](auto&& index) {
             profile(index, wand_data_filename, queries, type, query_type);
         });
     } catch (std::exception const& err) {

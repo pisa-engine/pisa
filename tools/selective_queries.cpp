@@ -41,9 +41,10 @@ int main(int argc, const char** argv)
     CLI11_PARSE(app, argc, argv);
 
     try {
-        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
-            selective_queries(index, app.index_encoding(), app.queries());
-        });
+        IndexType::resolve_profiling(app.index_encoding())
+            .load_and_execute(app.index_filename(), [&](auto&& index) {
+                selective_queries(index, app.index_encoding(), app.queries());
+            });
     } catch (std::exception const& err) {
         spdlog::error("{}", err.what());
         return 1;

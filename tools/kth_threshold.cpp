@@ -187,7 +187,7 @@ int main(int argc, const char** argv)
         all_triples);
 
     try {
-        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+        IndexType::resolve(app.index_encoding()).load_and_execute(app.index_filename(), [&](auto&& index) {
             auto thresholds = [&](auto wdata) {
                 kth_thresholds(
                     index,

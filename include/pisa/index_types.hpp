@@ -45,68 +45,112 @@ using block_simple8b_index = block_freq_index<pisa::simple8b_block>;
 using block_simple16_index = block_freq_index<pisa::simple16_block>;
 using block_simdbp_index = block_freq_index<pisa::simdbp_block>;
 
-using Index = std::variant<
-    ef_index,
-    single_index,
-    pefuniform_index,
-    pefopt_index,
-    block_optpfor_index,
-    block_varintg8iu_index,
-    block_streamvbyte_index,
-    block_maskedvbyte_index,
-    block_interpolative_index,
-    block_qmx_index,
-    block_varintgb_index,
-    block_simple8b_index,
-    block_simple16_index,
-    block_simdbp_index>;
+using profiling_block_optpfor_index = block_freq_index<pisa::optpfor_block, true>;
+using profiling_block_varintg8iu_index = block_freq_index<pisa::varint_G8IU_block, true>;
+using profiling_block_streamvbyte_index = block_freq_index<pisa::streamvbyte_block, true>;
+using profiling_block_maskedvbyte_index = block_freq_index<pisa::maskedvbyte_block, true>;
+using profiling_block_varintgb_index = block_freq_index<pisa::varintgb_block, true>;
+using profiling_block_interpolative_index = block_freq_index<pisa::interpolative_block, true>;
+using profiling_block_qmx_index = block_freq_index<pisa::qmx_block, true>;
+using profiling_block_simple8b_index = block_freq_index<pisa::simple8b_block, true>;
+using profiling_block_simple16_index = block_freq_index<pisa::simple16_block, true>;
+using profiling_block_simdbp_index = block_freq_index<pisa::simdbp_block, true>;
 
 template <typename Index>
 struct IndexTypeMarker {
     using type = Index;
 };
 
+using IndexType_ = std::variant<
+    IndexTypeMarker<ef_index>,
+    IndexTypeMarker<single_index>,
+    IndexTypeMarker<pefuniform_index>,
+    IndexTypeMarker<pefopt_index>,
+    IndexTypeMarker<block_optpfor_index>,
+    IndexTypeMarker<block_varintg8iu_index>,
+    IndexTypeMarker<block_streamvbyte_index>,
+    IndexTypeMarker<block_maskedvbyte_index>,
+    IndexTypeMarker<block_interpolative_index>,
+    IndexTypeMarker<block_qmx_index>,
+    IndexTypeMarker<block_varintgb_index>,
+    IndexTypeMarker<block_simple8b_index>,
+    IndexTypeMarker<block_simple16_index>,
+    IndexTypeMarker<block_simdbp_index>,
+    IndexTypeMarker<profiling_block_optpfor_index>,
+    IndexTypeMarker<profiling_block_varintg8iu_index>,
+    IndexTypeMarker<profiling_block_streamvbyte_index>,
+    IndexTypeMarker<profiling_block_maskedvbyte_index>,
+    IndexTypeMarker<profiling_block_interpolative_index>,
+    IndexTypeMarker<profiling_block_qmx_index>,
+    IndexTypeMarker<profiling_block_varintgb_index>,
+    IndexTypeMarker<profiling_block_simple8b_index>,
+    IndexTypeMarker<profiling_block_simple16_index>,
+    IndexTypeMarker<profiling_block_simdbp_index>>;
+
+class InvalidEncoding: std::exception {
+  public:
+    explicit InvalidEncoding(std::string_view encoding)
+        : m_message(fmt::format("Invalid encoding: {}", encoding))
+    {}
+    [[nodiscard]] auto what() const noexcept -> char const* override { return m_message.c_str(); }
+
+  private:
+    std::string m_message;
+};
+
 namespace detail {
-    inline std::string_view index_name(ef_index const&) noexcept { return "ef"; }
-    inline std::string_view index_name(single_index const&) noexcept { return "single"; }
-    inline std::string_view index_name(pefuniform_index const&) noexcept { return "pefuniform"; }
-    inline std::string_view index_name(pefopt_index const&) noexcept { return "pefopt"; }
-    inline std::string_view index_name(block_optpfor_index const&) noexcept
+    template <typename I>
+    [[nodiscard]] constexpr auto index_name() noexcept -> std::string_view
     {
-        return "block_optpfor";
-    }
-    inline std::string_view index_name(block_varintg8iu_index const&) noexcept
-    {
-        return "block_varintg8iu";
-    }
-    inline std::string_view index_name(block_streamvbyte_index const&) noexcept
-    {
-        return "block_streamvbyte";
-    }
-    inline std::string_view index_name(block_maskedvbyte_index const&) noexcept
-    {
-        return "block_maskedvbyte";
-    }
-    inline std::string_view index_name(block_interpolative_index const&) noexcept
-    {
-        return "block_interpolative";
-    }
-    inline std::string_view index_name(block_qmx_index const&) noexcept { return "block_qmx"; }
-    inline std::string_view index_name(block_varintgb_index const&) noexcept
-    {
-        return "block_varintgb";
-    }
-    inline std::string_view index_name(block_simple8b_index const&) noexcept
-    {
-        return "block_simple8b";
-    }
-    inline std::string_view index_name(block_simple16_index const&) noexcept
-    {
-        return "block_simple16";
-    }
-    inline std::string_view index_name(block_simdbp_index const&) noexcept
-    {
-        return "block_simdbp";
+        if constexpr (std::is_same_v<I, ef_index>) {
+            return "ef";
+        } else if constexpr (std::is_same_v<I, single_index>) {
+            return "single";
+        } else if constexpr (std::is_same_v<I, pefuniform_index>) {
+            return "pefuniform";
+        } else if constexpr (std::is_same_v<I, pefopt_index>) {
+            return "pefopt";
+        } else if constexpr (std::is_same_v<I, block_optpfor_index>) {
+            return "block_optpfor";
+        } else if constexpr (std::is_same_v<I, block_varintg8iu_index>) {
+            return "block_varintg8iu";
+        } else if constexpr (std::is_same_v<I, block_streamvbyte_index>) {
+            return "block_streamvbyte";
+        } else if constexpr (std::is_same_v<I, block_maskedvbyte_index>) {
+            return "block_maskedvbyte";
+        } else if constexpr (std::is_same_v<I, block_interpolative_index>) {
+            return "block_interpolative";
+        } else if constexpr (std::is_same_v<I, block_qmx_index>) {
+            return "block_qmx";
+        } else if constexpr (std::is_same_v<I, block_varintgb_index>) {
+            return "block_varintgb";
+        } else if constexpr (std::is_same_v<I, block_simple8b_index>) {
+            return "block_simple8b";
+        } else if constexpr (std::is_same_v<I, block_simple16_index>) {
+            return "block_simple16";
+        } else if constexpr (std::is_same_v<I, block_simdbp_index>) {
+            return "block_simdbp";
+        } else if constexpr (std::is_same_v<I, profiling_block_optpfor_index>) {
+            return "block_optpfor";
+        } else if constexpr (std::is_same_v<I, profiling_block_varintg8iu_index>) {
+            return "block_varintg8iu";
+        } else if constexpr (std::is_same_v<I, profiling_block_streamvbyte_index>) {
+            return "block_streamvbyte";
+        } else if constexpr (std::is_same_v<I, profiling_block_maskedvbyte_index>) {
+            return "block_maskedvbyte";
+        } else if constexpr (std::is_same_v<I, profiling_block_interpolative_index>) {
+            return "block_interpolative";
+        } else if constexpr (std::is_same_v<I, profiling_block_qmx_index>) {
+            return "block_qmx";
+        } else if constexpr (std::is_same_v<I, profiling_block_varintgb_index>) {
+            return "block_varintgb";
+        } else if constexpr (std::is_same_v<I, profiling_block_simple8b_index>) {
+            return "block_simple8b";
+        } else if constexpr (std::is_same_v<I, profiling_block_simple16_index>) {
+            return "block_simple16";
+        } else if constexpr (std::is_same_v<I, profiling_block_simdbp_index>) {
+            return "block_simdbp";
+        }
     }
 
     template <typename Index>
@@ -120,145 +164,98 @@ namespace detail {
     };
 
     template <bool Profile, std::size_t I, typename Fn>
-    auto with_alternative(std::string_view index_type, std::string const& path, Fn&& fn) -> bool
+    auto resolve_index_n(std::string_view encoding, Fn fn) -> bool
     {
-        using T = std::variant_alternative_t<I, Index>;
+        using T = typename std::variant_alternative_t<I, IndexType_>::type;
 
-        if (index_type == detail::index_name(std::variant_alternative_t<I, Index>())) {
+        if (encoding == detail::index_name<T>()) {
             if constexpr (Profile) {
-                using Index = typename add_profiling<T>::type;
-                fn(Index(MemorySource::mapped_file(path)));
+                using P = typename add_profiling<T>::type;
+                fn(IndexType_(IndexTypeMarker<P>{}));
             } else {
-                fn(T(MemorySource::mapped_file(path)));
+                fn(IndexType_(IndexTypeMarker<T>{}));
             }
             return true;
         }
         return false;
     }
 
-    template <bool Profile, std::size_t I, typename Fn>
-    auto with_type_alternative(std::string_view index_type, std::string const& path, Fn&& fn) -> bool
+    template <bool Profile, std::size_t... I>
+    auto resolve_index_type(std::string_view encoding, std::integer_sequence<std::size_t, I...>)
+        -> IndexType_
     {
-        using T = std::variant_alternative_t<I, Index>;
-
-        if (index_type == detail::index_name(std::variant_alternative_t<I, Index>())) {
-            if constexpr (Profile) {
-                using Index = typename add_profiling<T>::type;
-                fn(IndexTypeMarker<Index>{});
-            } else {
-                fn(IndexTypeMarker<T>{});
-            }
-            return true;
+        IndexType_ index_type{};
+        bool loaded =
+            (resolve_index_n<Profile, I>(encoding, [&index_type](IndexType_ i) { index_type = i; })
+             || ...);
+        if (!loaded) {
+            throw InvalidEncoding(encoding);
         }
-        return false;
+        return index_type;
     }
 
-    template <bool Profile, typename Fn, std::size_t... I>
-    auto with_alternatives(
-        std::string_view index_type,
-        std::string const& path,
-        Fn&& fn,
-        std::integer_sequence<std::size_t, I...>) -> bool
+    template <bool Profile>
+    [[nodiscard]] auto resolve_index_type(std::string_view encoding) -> IndexType_
     {
-        return (with_alternative<Profile, I, Fn>(index_type, path, std::forward<Fn>(fn)) && ...);
+        std::string full_index_type = fmt::format("{}_index", encoding);
+        constexpr auto num_types = std::variant_size_v<IndexType_>;
+        return detail::resolve_index_type<Profile>(encoding, std::make_index_sequence<num_types>{});
     }
 
-    template <bool Profile, typename Fn, std::size_t... I>
-    auto with_type_alternatives(
-        std::string_view index_type,
-        std::string const& path,
-        Fn&& fn,
-        std::integer_sequence<std::size_t, I...>) -> bool
+    template <std::size_t I>
+    void push_encoding(std::vector<std::string>& encodings)
     {
-        return (with_type_alternative<Profile, I, Fn>(index_type, path, std::forward<Fn>(fn)) && ...);
+        encodings.emplace_back(
+            detail::index_name<typename std::variant_alternative_t<I, IndexType_>::type>());
     }
+
 };  // namespace detail
-
-class InvalidEncoding {
-  public:
-    explicit InvalidEncoding(std::string_view encoding)
-        : m_message(fmt::format("Invalid encoding: {}", encoding))
-    {}
-    [[nodiscard]] auto what() const -> char const* { return m_message.c_str(); }
-
-  private:
-    std::string m_message;
-};
-
-/// Executes function `fn(index)` where `index` is the index loaded from `path` and its type
-/// depends on the `encoding` value.
-///
-/// # Exceptions
-/// `InvalidEncoding` is thrown if an invalid `encoding` value was passed.
-template <typename Fn>
-void with_index(std::string_view encoding, std::string const& path, Fn&& fn)
-{
-    std::string full_index_type = fmt::format("{}_index", encoding);
-    constexpr auto num_types = std::variant_size_v<Index>;
-    if (!detail::with_alternatives<false>(
-            encoding, path, std::forward<Fn>(fn), std::make_index_sequence<num_types>{})) {
-        throw InvalidEncoding(encoding);
-    }
-}
-
-/// Works similar to `with_index` but sets profiling to `true` in the index type.
-///
-/// # Exceptions
-/// `InvalidEncoding` is thrown if an invalid `encoding` value was passed.
-template <typename Fn>
-void with_profiling_index(std::string_view encoding, std::string const& path, Fn&& fn)
-{
-    std::string full_index_type = fmt::format("{}_index", encoding);
-    constexpr auto num_types = std::variant_size_v<Index>;
-    if (!detail::with_alternatives<true>(
-            encoding, path, std::forward<Fn>(fn), std::make_index_sequence<num_types>{})) {
-        throw InvalidEncoding(encoding);
-    }
-}
-
-/// Executes function `fn(marker)` where `marker` is a value of a special marker type that has an
-/// inner type `type` declared that is the type of the index associated with `encoding`.
-///
-/// This function can be used in a rare case when instead of the index, we only need the information
-/// about its type, e.g., `fn` can be a function that builds the index, thus no index to load exists
-/// yet. The type can be accessed the following way:
-///
-/// ```
-/// with_index_type(encoding, path, [](auto marker){
-///     using Index = typename decltype(marker)::type;
-/// });
-/// ```
-///
-/// # Exceptions
-/// `InvalidEncoding` is thrown if an invalid `encoding` value was passed.
-template <typename Fn>
-void with_index_type(std::string_view encoding, std::string const& path, Fn&& fn)
-{
-    std::string full_index_type = fmt::format("{}_index", encoding);
-    constexpr auto num_types = std::variant_size_v<Index>;
-    if (!detail::with_type_alternatives<true>(
-            encoding, path, std::forward<Fn>(fn), std::make_index_sequence<num_types>{})) {
-        throw InvalidEncoding(encoding);
-    }
-}
-
-template <std::size_t I>
-void push_encoding(std::vector<std::string>& encodings)
-{
-    encodings.emplace_back(detail::index_name(std::variant_alternative_t<I, Index>()));
-}
 
 template <std::size_t... I>
 auto encodings(std::integer_sequence<std::size_t, I...>) -> std::vector<std::string>
 {
     std::vector<std::string> encodings;
-    (push_encoding<I>(encodings), ...);
+    (detail::push_encoding<I>(encodings), ...);
     return encodings;
 }
 
 inline auto encodings() -> std::vector<std::string>
 {
-    return encodings(std::make_index_sequence<variant_size_v<Index>>{});
+    return encodings(std::make_index_sequence<variant_size_v<IndexType_>>{});
 }
+
+class IndexType {
+    IndexType_ m_type_marker;
+
+    explicit IndexType(IndexType_ type_marker) : m_type_marker(type_marker) {}
+
+  public:
+    static auto resolve(std::string_view encoding) -> IndexType
+    {
+        return IndexType(detail::resolve_index_type<false>(encoding));
+    }
+
+    static auto resolve_profiling(std::string_view encoding) -> IndexType
+    {
+        return IndexType(detail::resolve_index_type<true>(encoding));
+    }
+
+    template <typename Fn>
+    void execute(Fn fn)
+    {
+        std::visit(fn, m_type_marker);
+    }
+
+    template <typename Fn>
+    void load_and_execute(std::string const& index_path, Fn fn)
+    {
+        std::visit(
+            [&](auto marker) {
+                using I = typename decltype(marker)::type;
+                fn(I(MemorySource::mapped_file(index_path)));
+            },
+            m_type_marker);
+    }
+};
 
 }  // namespace pisa

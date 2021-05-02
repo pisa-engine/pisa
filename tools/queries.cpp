@@ -328,7 +328,7 @@ int main(int argc, const char** argv)
 
     try {
         spdlog::info("Loading index from {}", app.index_filename());
-        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+        IndexType::resolve(app.index_encoding()).load_and_execute(app.index_filename(), [&](auto&& index) {
             auto perf = [&](auto wdata) {
                 perftest(
                     index,

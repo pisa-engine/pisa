@@ -14,15 +14,14 @@
 
 using namespace pisa;
 
-template <typename Index>
+template <typename I>
 void extract(
-    std::string const& index_filename,
+    I const& index,
     std::vector<pisa::Query> const& queries,
     std::string const& separator,
     bool sum,
     bool print_qid)
 {
-    Index index(MemorySource::mapped_file(index_filename));
     auto body = [&] {
         if (sum) {
             return std::function<void(Query const&)>([&](auto const& query) {
@@ -66,20 +65,13 @@ int main(int argc, char** argv)
         "printed, separated by the separator defined with --sep");
     CLI11_PARSE(app, argc, argv);
 
-    /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                 \
-    }                                                                                         \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                   \
-    {                                                                                         \
-        extract<BOOST_PP_CAT(T, _index)>(                                                     \
-            app.index_filename(), app.queries(), app.separator(), sum, app.print_query_id()); \
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
+    try {
+        IndexType::resolve(app.index_encoding())
+            .load_and_execute(app.index_filename(), [&](auto const& index) {
+                extract(index, app.queries(), app.separator(), sum, app.print_query_id());
+            });
+    } catch (InvalidEncoding const& err) {
+        spdlog::error("{}", err.what());
     }
 
     return 0;

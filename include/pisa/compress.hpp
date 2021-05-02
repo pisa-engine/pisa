@@ -246,7 +246,7 @@ void compress(
     binary_freq_collection input(input_basename.c_str());
     global_parameters params;
 
-    with_index_type(index_encoding, input_basename, [&](auto type_marker) {
+    IndexType::resolve(index_encoding).execute([&](auto type_marker) {
         compress_index<typename decltype(type_marker)::type, wand_data<wand_data_raw>>(
             input,
             params,

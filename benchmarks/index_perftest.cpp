@@ -116,7 +116,7 @@ int main(int argc, const char** argv)
     const char* index_filename = argv[2];
 
     try {
-        with_index(type, index_filename, [&](auto index) {
+        IndexType::resolve(type).load_and_execute(index_filename, [&](auto&& index) {
             perftest<false>(index, type);
             perftest<true>(index, type);
         });

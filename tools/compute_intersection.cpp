@@ -114,7 +114,7 @@ int main(int argc, const char** argv)
         combinations ? IntersectionType::Combinations : IntersectionType::Query;
 
     try {
-        with_index(app.index_encoding(), app.index_filename(), [&](auto index) {
+        IndexType::resolve(app.index_encoding()).load_and_execute(app.index_filename(), [&](auto&& index) {
             intersect<wand_raw_index>(
                 index, app.wand_data_path(), filtered_queries, intersection_type, max_term_count);
         });
