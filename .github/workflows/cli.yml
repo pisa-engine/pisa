@@ -14,7 +14,7 @@ jobs:
         name: [linux-gcc-9]
         include:
           - name: linux-gcc-9
-            os: ubuntu-latest
+            os: ubuntu-18.04
             compiler: "gcc"
             version: "9"
 
