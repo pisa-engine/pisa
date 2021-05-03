@@ -188,8 +188,7 @@ namespace detail {
     {
         IndexType index_type{};
         bool loaded =
-            (resolve_index_n<Profile, I>(encoding, [&index_type](IndexType i) { index_type = i; })
-             || ...);
+            (resolve_index_n<Profile, I>(encoding, [&](IndexType i) { index_type = i; }) || ...);
         if (!loaded) {
             throw InvalidEncoding(encoding);
         }
