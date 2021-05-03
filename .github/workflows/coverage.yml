@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - uses: actions/checkout@v2
@@ -39,15 +39,15 @@ jobs:
       run: ctest -j 4
 
     - name: Generate Coverage repport
-      shell: bash	
-      working-directory: ${{runner.workspace}}/build	
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
       run: |
           lcov --capture --directory . --output-file coverage.info
           lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter system-files
           lcov --remove coverage.info '**/external/*' --output-file coverage.info # filter external folder
           lcov --remove coverage.info '**/test/*' --output-file coverage.info # filter tests
           lcov --list coverage.info # debug info
-    - name: Upload to codecov.io	
+    - name: Upload to codecov.io
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
