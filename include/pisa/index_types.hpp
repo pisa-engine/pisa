@@ -165,10 +165,10 @@ namespace detail {
         using type = block_freq_index<Block, true>;
     };
 
-    template <bool Profile, std::size_t I, typename Fn>
-    auto resolve_index_n(std::string_view encoding, Fn fn) -> bool
+    template <bool Profile, std::size_t N, typename Fn>
+    auto resolve_index_n(std::string_view encoding, Fn&& fn) -> bool
     {
-        using T = typename std::variant_alternative_t<I, IndexType>::type;
+        using T = typename std::variant_alternative_t<N, IndexType>::type;
 
         if (encoding == detail::index_name<T>()) {
             if constexpr (Profile) {
@@ -182,13 +182,13 @@ namespace detail {
         return false;
     }
 
-    template <bool Profile, std::size_t... I>
-    auto resolve_index_type(std::string_view encoding, std::integer_sequence<std::size_t, I...>)
+    template <bool Profile, std::size_t... N>
+    auto resolve_index_type(std::string_view encoding, std::integer_sequence<std::size_t, N...>)
         -> IndexType
     {
         IndexType index_type{};
-        bool loaded =
-            (resolve_index_n<Profile, I>(encoding, [&](IndexType i) { index_type = i; }) || ...);
+        auto update = [&](IndexType i) { index_type = i; };
+        bool loaded = (resolve_index_n<Profile, N>(encoding, update) || ...);
         if (!loaded) {
             throw InvalidEncoding(encoding);
         }
