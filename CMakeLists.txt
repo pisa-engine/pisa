@@ -5,6 +5,14 @@ project(PISA CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+set(GUMBO_CFLAGS "-fPIC")
+if (NO_GLOBAL_PIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
+    set(GUMBO_CFLAGS "")
+    MESSAGE("Global Position-Independent Code Disabled")
+endif()
 
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
@@ -31,7 +39,7 @@ include(ExternalProject)
 ExternalProject_Add(gumbo-external
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
-    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
+    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser CFLAGS=${GUMBO_CFLAGS}
 	BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a
     BUILD_COMMAND ${MAKE})
 add_library(gumbo::gumbo STATIC IMPORTED)
