@@ -66,7 +66,7 @@ jobs:
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
               sudo apt-get install -y "${cxx}"
           else
-              echo "TOOLCHAIN='-DCMAKE_TOOLCHAIN_FILE=clang.cmake'" >> $GITHUB_ENV
+              echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=clang.cmake" >> $GITHUB_ENV
               sudo apt-get install -y "${cc}"
           fi
           echo "CC=${cc}" >> $GITHUB_ENV
