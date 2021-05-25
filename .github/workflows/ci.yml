@@ -56,9 +56,10 @@ jobs:
             sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
           fi
           if [ "${cc}" = "clang-6.0" ]; then
-            # Problems compiling with Clang 6 against libstdc++-9
+            # Problems compiling with Clang 6 against libstdc++-9/10/11
             sudo apt-get remove libstdc++-9-dev libgcc-9-dev cpp-9
             sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
+            sudo apt-get remove libstdc++-11-dev libgcc-11-dev cpp-11
           fi
           sudo apt-get update
           sudo apt-get install -y libtool m4 autoconf
