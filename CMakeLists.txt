@@ -5,20 +5,19 @@ project(PISA CXX C)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-set(GUMBO_CFLAGS "-fPIC")
-if (NO_GLOBAL_PIC)
-    set(CMAKE_POSITION_INDEPENDENT_CODE OFF)
-    set(GUMBO_CFLAGS "")
-    MESSAGE("Global Position-Independent Code Disabled")
-endif()
 
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
+option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
+
+if (PISA_USE_PIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(GUMBO_CFLAGS "-fPIC")
+endif()
 
 configure_file(
   ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp.in
