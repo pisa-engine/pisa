@@ -126,10 +126,9 @@ TEST_CASE("Write Taily feature stats", "[taily][unit]")
     auto stats_path = tmpdir.path() / "taily";
     GIVEN("Feature statistics")
     {
-        std::vector<Feature_Statistics> stats{
-            Feature_Statistics{1.0, 2.0, 10},
-            Feature_Statistics{3.0, 4.0, 20},
-            Feature_Statistics{5.0, 6.0, 30}};
+        std::vector<Feature_Statistics> stats{Feature_Statistics{1.0, 2.0, 10},
+                                              Feature_Statistics{3.0, 4.0, 20},
+                                              Feature_Statistics{5.0, 6.0, 30}};
 
         WHEN("Stats written to a file")
         {
