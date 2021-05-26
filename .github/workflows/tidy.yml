@@ -37,8 +37,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=Debug \
             -DPISA_BUILD_TOOLS=ON \
             -DPISA_ENABLE_CLANG_TIDY=ON \
-            -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-10 \
-            -DCMAKE_TOOLCHAIN_FILE=clang.cmake ..
+            -DCMAKE_TOOLCHAIN_FILE=clang.cmake \
+            -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-10 ..
 
     - name: Build
       shell: bash
