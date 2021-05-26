@@ -24,7 +24,7 @@ void write_documents(boost::filesystem::path const& path)
 {
     pisa::io::write_data(
         path.string(),
-        std::array{
+        gsl::span<std::byte const>(std::array{
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},
             std::byte{6}, std::byte{0}, std::byte{0}, std::byte{0},  //< #docs
             std::byte{2}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
@@ -36,14 +36,14 @@ void write_documents(boost::filesystem::path const& path)
             std::byte{4}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 1
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
             std::byte{5}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
-        });
+        }));
 }
 
 void write_frequencies(boost::filesystem::path const& path)
 {
     pisa::io::write_data(
         path.string(),
-        std::array{
+        gsl::span<std::byte const>(std::array{
             std::byte{2}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
@@ -53,14 +53,14 @@ void write_frequencies(boost::filesystem::path const& path)
             std::byte{5}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 1
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
             std::byte{4}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
-        });
+        }));
 }
 
 void write_sizes(boost::filesystem::path const& path)
 {
     pisa::io::write_data(
         path.string(),
-        std::array{
+        gsl::span<std::byte const>(std::array{
             std::byte{5}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
@@ -68,7 +68,7 @@ void write_sizes(boost::filesystem::path const& path)
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
-        });
+        }));
 }
 
 TEST_CASE("Extract Taily feature stats", "[taily][unit]")
@@ -126,9 +126,10 @@ TEST_CASE("Write Taily feature stats", "[taily][unit]")
     auto stats_path = tmpdir.path() / "taily";
     GIVEN("Feature statistics")
     {
-        std::vector<Feature_Statistics> stats{Feature_Statistics{1.0, 2.0, 10},
-                                              Feature_Statistics{3.0, 4.0, 20},
-                                              Feature_Statistics{5.0, 6.0, 30}};
+        std::vector<Feature_Statistics> stats{
+            Feature_Statistics{1.0, 2.0, 10},
+            Feature_Statistics{3.0, 4.0, 20},
+            Feature_Statistics{5.0, 6.0, 30}};
 
         WHEN("Stats written to a file")
         {
