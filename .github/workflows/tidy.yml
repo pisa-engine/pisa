@@ -14,10 +14,11 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Bulid docker image
-      working-directory: ${{runner.workspace}}/test/docker/tidy
       shell: bash
       run: |
           pwd
+          ls
+          cd ${{runner.workspace}}/test/docker/tidy
           docker build . -t tidy-image
           docker run --name tidy -v ${{runner.workspace}}:/pisa -d --rm -it tidy-image
 
