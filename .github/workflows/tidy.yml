@@ -12,12 +12,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
 
     - name: Bulid docker image
       working-directory: ${{runner.workspace}}/pisa/test/docker/tidy
       shell: bash
       run: |
-          pwd
           docker build . -t tidy-image
           docker run --name tidy -v ${{runner.workspace}}/pisa:/pisa -d --rm -it tidy-image
 
