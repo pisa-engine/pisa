@@ -17,6 +17,7 @@ jobs:
       working-directory: ${{runner.workspace}}/test/docker/tidy
       shell: bash
       run: |
+          pwd
           docker build . -t tidy-image
           docker run --name tidy -v ${{runner.workspace}}:/pisa -d --rm -it tidy-image
 
