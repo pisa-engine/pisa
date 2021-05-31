@@ -12,34 +12,24 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: true
 
-    - name: Install clang and clang-tidy
+    - name: Bulid docker image
+      working-directory: ${{runner.workspace}}/pisa/test/docker/tidy
       shell: bash
       run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
-          sudo apt-get update
-          sudo apt-get install -y clang-10 clang-tidy-10
-          sudo apt-get install -y libtool m4 autoconf
-          sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
-          echo "CC=clang-10" >> $GITHUB_ENV
-          echo "CXX=clang++-10" >> $GITHUB_ENV
+          docker build . -t tidy-image
+          docker run --name tidy -v ${{runner.workspace}}/pisa:/pisa -d --rm -it tidy-image
 
     - name: Create Build Environment
       shell: bash
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: docker exec tidy cmake -E make_directory /pisa/build
 
     - name: Configure
       shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: |
-          cmake $GITHUB_WORKSPACE \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DPISA_BUILD_TOOLS=ON \
-            -DPISA_ENABLE_CLANG_TIDY=ON \
-            -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy-10 ..
+      run: docker exec -w /pisa/build tidy cmake .. -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_ENABLE_CLANG_TIDY=ON -DCMAKE_TOOLCHAIN_FILE=clang.cmake -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy
 
     - name: Build
       shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug -- -j 4
+      run: docker exec -w /pisa/build tidy cmake --build . --config Debug -- -j 4

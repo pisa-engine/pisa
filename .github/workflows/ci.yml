@@ -56,15 +56,17 @@ jobs:
             sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
           fi
           if [ "${cc}" = "clang-6.0" ]; then
-            # Problems compiling with Clang 6 against libstdc++-9
+            # Problems compiling with Clang 6 against libstdc++-9/10/11
             sudo apt-get remove libstdc++-9-dev libgcc-9-dev cpp-9
             sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
+            sudo apt-get remove libstdc++-11-dev libgcc-11-dev cpp-11
           fi
           sudo apt-get update
           sudo apt-get install -y libtool m4 autoconf
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
               sudo apt-get install -y "${cxx}"
           else
+              echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=clang.cmake" >> $GITHUB_ENV
               sudo apt-get install -y "${cc}"
           fi
           echo "CC=${cc}" >> $GITHUB_ENV
@@ -90,7 +92,7 @@ jobs:
     - name: Configure
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON ..
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON $TOOLCHAIN ..
 
     - name: Build
       shell: bash
