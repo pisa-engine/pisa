@@ -90,29 +90,31 @@ add_library(pisa ${PISA_SRC_FILES})
 target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can switch to PRIVATE?
-    Threads::Threads
-    Boost::boost
-    QMX
-    mio
-    mio_base
-    ParallelSTL
-    GSL
-    FastPFor
-    streamvbyte
-    MaskedVByte
-    simdcomp
-    gumbo::gumbo
-    Boost::filesystem
-    Porter2
-    KrovetzStemmer
-    warcpp
-    wapopp
-    trecpp
-    spdlog
-    fmt::fmt
-    range-v3
-    taily
+target_link_libraries(pisa
+    PUBLIC
+        Threads::Threads
+        Boost::boost
+        QMX
+        mio
+        mio_base
+        ParallelSTL
+        GSL
+        FastPFor
+        streamvbyte
+        MaskedVByte
+        simdcomp
+        Boost::filesystem
+        Porter2
+        KrovetzStemmer
+        spdlog
+        fmt::fmt
+        range-v3
+        taily
+    PRIVATE
+        gumbo::gumbo
+        warcpp
+        wapopp
+        trecpp
 )
 target_include_directories(pisa PUBLIC external)
 

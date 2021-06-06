@@ -10,6 +10,7 @@
 
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "parser.hpp"
 #include "parsing/html.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"

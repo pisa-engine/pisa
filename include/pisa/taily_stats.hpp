@@ -9,6 +9,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "memory_source.hpp"
+#include "pisa/util/compiler_attribute.hpp"
 #include "query/queries.hpp"
 #include "scorer/scorer.hpp"
 #include "timer.hpp"
