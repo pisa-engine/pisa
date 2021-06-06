@@ -94,27 +94,28 @@ target_link_libraries(pisa
     PUBLIC
         Threads::Threads
         Boost::boost
-        QMX
         mio
         mio_base
         ParallelSTL
         GSL
-        FastPFor
-        streamvbyte
-        MaskedVByte
-        simdcomp
         Boost::filesystem
-        Porter2
-        KrovetzStemmer
         spdlog
         fmt::fmt
         range-v3
         taily
+    # These should be made private in the future:
+        FastPFor
+        streamvbyte
+        MaskedVByte
+        simdcomp
+        QMX
     PRIVATE
         gumbo::gumbo
         warcpp
         wapopp
         trecpp
+        Porter2
+        KrovetzStemmer
 )
 target_include_directories(pisa PUBLIC external)
 

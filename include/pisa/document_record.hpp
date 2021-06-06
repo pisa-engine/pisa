@@ -1,6 +1,8 @@
 #pragma once
 
+#include <istream>
 #include <string>
+#include <utility>
 
 namespace pisa {
 
