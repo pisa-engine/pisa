@@ -16,4 +16,4 @@ jobs:
     - name: cmake
       run: |
         mkdir -p build && cd build
-        cmake -DCMAKE_BUILD_TYPE=Debug -DPISA_COMPILE_HEADERS=On ..
+        cmake -DCMAKE_BUILD_TYPE=Debug -DPISA_COMPILE_HEADERS=On -DPISA_CI_BUILD=ON ..

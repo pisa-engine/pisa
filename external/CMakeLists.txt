@@ -82,6 +82,8 @@ set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer)
 
 # Add warcpp
+set(WARCPP_ENABLE_TESTING OFF CACHE BOOL "skip warcpp testing")
+set(WARCPP_BUILD_TOOL OFF CACHE BOOL "skip warcpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 
 # Add trecpp

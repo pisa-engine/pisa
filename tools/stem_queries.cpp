@@ -1,9 +1,12 @@
 #include <fstream>
 #include <string>
 
-#include "CLI/CLI.hpp"
+#include <CLI/CLI.hpp>
+#include <spdlog/spdlog.h>
+
 #include "io.hpp"
 #include "pisa/query/query_stemmer.hpp"
+
 int main(int argc, char const* argv[])
 {
     std::string input_filename;

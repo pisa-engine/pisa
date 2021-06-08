@@ -25,79 +25,18 @@
 #include <tbb/task_group.h>
 
 #include "binary_collection.hpp"
+#include "document_record.hpp"
 #include "io.hpp"
-#include "parsing/html.hpp"
 #include "payload_vector.hpp"
 #include "query/term_processor.hpp"
 #include "tokenizer.hpp"
 #include "type_safe.hpp"
-#include "warcpp/warcpp.hpp"
 
 namespace pisa {
-
-using namespace std::string_view_literals;
-
-struct Document_Record {
-    Document_Record(std::string title, std::string content, std::string url)
-        : title_(std::move(title)), content_(std::move(content)), url_(std::move(url))
-    {}
-    [[nodiscard]] auto title() noexcept -> std::string& { return title_; }
-    [[nodiscard]] auto title() const noexcept -> std::string const& { return title_; }
-    [[nodiscard]] auto content() noexcept -> std::string& { return content_; }
-    [[nodiscard]] auto content() const noexcept -> std::string const& { return content_; }
-    [[nodiscard]] auto url() noexcept -> std::string& { return url_; }
-    [[nodiscard]] auto url() const noexcept -> std::string const& { return url_; }
-
-  private:
-    std::string title_;
-    std::string content_;
-    std::string url_;
-};
 
 using process_term_function_type = std::function<std::string(std::string)>;
 using process_content_function_type =
     std::function<void(std::string&&, std::function<void(std::string&&)>)>;
-
-void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process)
-{
-    TermTokenizer tokenizer(content);
-    std::for_each(tokenizer.begin(), tokenizer.end(), process);
-}
-
-[[nodiscard]] auto is_http(std::string_view content) -> bool
-{
-    auto start = std::find_if(
-        content.begin(), content.end(), [](unsigned char c) { return std::isspace(c) == 0; });
-    if (start == content.end()) {
-        return false;
-    }
-    return std::string_view(&*start, 4) == "HTTP"sv;
-}
-
-void parse_html_content(std::string&& content, std::function<void(std::string&&)> process)
-{
-    content = parsing::html::cleantext([&]() {
-        auto pos = content.begin();
-        if (is_http(content)) {
-            while (pos != content.end()) {
-                pos = std::find(pos, content.end(), '\n');
-                pos = std::find_if(std::next(pos), content.end(), [](unsigned char c) {
-                    return c == '\n' or (std::isspace(c) == 0);
-                });
-                if (pos != content.end() and *pos == '\n') {
-                    return std::string_view(&*pos, std::distance(pos, content.end()));
-                }
-            }
-            return ""sv;
-        }
-        return std::string_view(content);
-    }());
-    if (content.empty()) {
-        return;
-    }
-    TermTokenizer tokenizer(content);
-    std::for_each(tokenizer.begin(), tokenizer.end(), process);
-}
 
 class Forward_Index_Builder {
   public:
@@ -407,32 +346,4 @@ class Forward_Index_Builder {
     }
 };
 
-class Plaintext_Record {
-  public:
-    Plaintext_Record() = default;
-    Plaintext_Record(std::string trecid, std::string content)
-        : m_trecid(std::move(trecid)), m_content(std::move(content))
-    {}
-    [[nodiscard]] auto content() -> std::string& { return m_content; }
-    [[nodiscard]] auto content() const -> std::string const& { return m_content; }
-    [[nodiscard]] auto trecid() -> std::string& { return m_trecid; }
-    [[nodiscard]] auto trecid() const -> std::string const& { return m_trecid; }
-    [[nodiscard]] auto url() -> std::string& { return m_url; }
-    [[nodiscard]] auto url() const -> std::string const& { return m_url; }
-    [[nodiscard]] auto valid() const noexcept -> bool { return true; }
-    [[nodiscard]] static auto read(std::istream& is) {}
-
-  private:
-    std::string m_trecid;
-    std::string m_content;
-    std::string m_url;
-};
-
 }  // namespace pisa
-
-auto operator>>(std::istream& is, pisa::Plaintext_Record& record) -> std::istream&
-{
-    is >> record.trecid();
-    std::getline(is, record.content());
-    return is;
-}

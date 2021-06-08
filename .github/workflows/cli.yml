@@ -62,6 +62,7 @@ jobs:
           cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug \
             -DPISA_ENABLE_BENCHMARKING=OFF \
             -DPISA_ENABLE_TESTING=OFF \
+            -DPISA_CI_BUILD=ON \
             -DPISA_BUILD_TOOLS=ON ..
 
     - name: Build
