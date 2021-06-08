@@ -1,5 +1,6 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
+#include "parser.hpp"
 #include "query/query_stemmer.hpp"
 #include <string>
 
