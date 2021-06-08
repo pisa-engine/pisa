@@ -13,10 +13,16 @@ option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
 option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
+option(PISA_CI_BUILD "Remove debug information from Debug build" ON)
 
-if (PISA_USE_PIC)
+if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(GUMBO_CFLAGS "-fPIC")
+endif()
+
+if(PISA_CI_BUILD)
+    set(CMAKE_C_FLAGS_DEBUG "")
+    set(CMAKE_CXX_FLAGS_DEBUG "")
 endif()
 
 configure_file(
@@ -61,7 +67,9 @@ if (UNIX)
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
    endif ()
 
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
+   if(NOT PISA_CI_BUILD)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
+   endif()
 
 endif()
 
