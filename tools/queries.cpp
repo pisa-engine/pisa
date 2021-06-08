@@ -114,10 +114,10 @@ void op_perftest(
     }
 }
 
-template <typename IndexType, typename WandType>
+template <typename Index, typename Wdata>
 void perftest(
-    const std::string& index_filename,
-    const std::optional<std::string>& wand_data_filename,
+    Index&& index,
+    std::optional<Wdata> const& wdata,
     const std::vector<Query>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
@@ -127,9 +127,6 @@ void perftest(
     bool extract,
     bool safe)
 {
-    spdlog::info("Loading index from {}", index_filename);
-    IndexType index(MemorySource::mapped_file(index_filename));
-
     spdlog::info("Warming up posting lists");
     std::unordered_set<term_id_type> warmed_up;
     for (auto const& q: queries) {
@@ -140,13 +137,6 @@ void perftest(
             }
         }
     }
-
-    WandType const wdata = [&] {
-        if (wand_data_filename) {
-            return WandType(MemorySource::mapped_file(*wand_data_filename));
-        }
-        return WandType{};
-    }();
 
     std::vector<Threshold> thresholds(queries.size(), 0.0);
     if (thresholds_filename) {
@@ -162,7 +152,12 @@ void perftest(
         }
     }
 
-    auto scorer = scorer::from_params(scorer_params, wdata);
+    auto scorer = [&]() -> decltype(scorer::from_params(scorer_params, *wdata)) {
+        if (wdata) {
+            return scorer::from_params(scorer_params, *wdata);
+        }
+        return nullptr;
+    }();
 
     spdlog::info("Performing {} queries", type);
     spdlog::info("K: {}", k);
@@ -172,7 +167,7 @@ void perftest(
 
     for (auto&& t: query_types) {
         spdlog::info("Query type: {}", t);
-        std::function<uint64_t(Query, Threshold)> query_fun;
+        std::function<uint64_t(Query, Threshold)> query_fun;  // = [](Query, Threshold) {};
         if (t == "and") {
             query_fun = [&](Query query, Threshold) {
                 and_query and_q;
@@ -188,36 +183,36 @@ void perftest(
                 or_query<true> or_q;
                 return or_q(make_cursors(index, query), index.num_docs());
             };
-        } else if (t == "wand" && wand_data_filename) {
+        } else if (t == "wand" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                wand_q(make_max_scored_cursors(index, *wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "block_max_wand" && wand_data_filename) {
+        } else if (t == "block_max_wand" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    make_block_max_scored_cursors(index, *wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "block_max_maxscore" && wand_data_filename) {
+        } else if (t == "block_max_maxscore" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_maxscore_query block_max_maxscore_q(topk);
                 block_max_maxscore_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    make_block_max_scored_cursors(index, *wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_and" && wand_data_filename) {
+        } else if (t == "ranked_and" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
@@ -226,17 +221,17 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "block_max_ranked_and" && wand_data_filename) {
+        } else if (t == "block_max_ranked_and" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
                 block_max_ranked_and_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                    make_block_max_scored_cursors(index, *wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_or" && wand_data_filename) {
+        } else if (t == "ranked_or" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
@@ -245,16 +240,16 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "maxscore" && wand_data_filename) {
+        } else if (t == "maxscore" && wdata) {
             query_fun = [&](Query query, Threshold t) {
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 maxscore_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                maxscore_q(make_max_scored_cursors(index, *wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_or_taat" && wand_data_filename) {
+        } else if (t == "ranked_or_taat" && wdata) {
             Simple_Accumulator accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
@@ -265,7 +260,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+        } else if (t == "ranked_or_taat_lazy" && wdata) {
             Lazy_Accumulator<4> accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
@@ -291,6 +286,15 @@ void perftest(
 using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
+
+template <typename Wdata>
+auto load_wdata(std::optional<std::string> const& wand_data_filename) -> std::optional<Wdata>
+{
+    if (wand_data_filename) {
+        return Wdata(MemorySource::mapped_file(*wand_data_filename));
+    }
+    return std::nullopt;
+}
 
 int main(int argc, const char** argv)
 {
@@ -322,37 +326,34 @@ int main(int argc, const char** argv)
         std::cout << "qid\tusec\n";
     }
 
-    auto params = std::make_tuple(
-        app.index_filename(),
-        app.wand_data_path(),
-        app.queries(),
-        app.thresholds_file(),
-        app.index_encoding(),
-        app.algorithm(),
-        app.k(),
-        app.scorer_params(),
-        extract,
-        safe);
-    /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                        \
-    }                                                                                                \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                          \
-    {                                                                                                \
-        if (app.is_wand_compressed()) {                                                              \
-            if (quantized) {                                                                         \
-                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                                 \
-                std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);           \
-            }                                                                                        \
-        } else {                                                                                     \
-            std::apply(perftest<BOOST_PP_CAT(T, _index), wand_raw_index>, params);                   \
-        }
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
+    try {
+        spdlog::info("Loading index from {}", app.index_filename());
+        IndexType::resolve(app.index_encoding()).load_and_execute(app.index_filename(), [&](auto&& index) {
+            auto perf = [&](auto wdata) {
+                perftest(
+                    index,
+                    wdata,
+                    app.queries(),
+                    app.thresholds_file(),
+                    app.index_encoding(),
+                    app.algorithm(),
+                    app.k(),
+                    app.scorer_params(),
+                    extract,
+                    safe);
+            };
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    perf(load_wdata<wand_uniform_index_quantized>(app.wand_data_path()));
+                } else {
+                    perf(load_wdata<wand_uniform_index>(app.wand_data_path()));
+                }
+            } else {
+                perf(load_wdata<wand_raw_index>(app.wand_data_path()));
+            }
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }

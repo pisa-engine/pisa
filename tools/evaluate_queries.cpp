@@ -30,10 +30,10 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-template <typename IndexType, typename WandType>
+template <typename Wdata, typename Index>
 void evaluate_queries(
-    const std::string& index_filename,
-    const std::string& wand_data_filename,
+    Index&& index,
+    Wdata&& wdata,
     const std::vector<Query>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
@@ -44,9 +44,6 @@ void evaluate_queries(
     std::string const& run_id,
     std::string const& iteration)
 {
-    IndexType index(MemorySource::mapped_file(index_filename));
-    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
-
     auto scorer = scorer::from_params(scorer_params, wdata);
     std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
 
@@ -199,41 +196,35 @@ int main(int argc, const char** argv)
 
     auto iteration = "Q0";
 
-    auto params = std::make_tuple(
-        app.index_filename(),
-        app.wand_data_path(),
-        app.queries(),
-        app.thresholds_file(),
-        app.index_encoding(),
-        app.algorithm(),
-        app.k(),
-        documents_file,
-        app.scorer_params(),
-        run_id,
-        iteration);
-
-    /**/
-    if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    }                                                                                              \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \
-    {                                                                                              \
-        if (app.is_wand_compressed()) {                                                            \
-            if (quantized) {                                                                       \
-                std::apply(                                                                        \
-                    evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,       \
-                    params);                                                                       \
-            } else {                                                                               \
-                std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>, params); \
-            }                                                                                      \
-        } else {                                                                                   \
-            std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>, params);         \
-        }                                                                                          \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
+    try {
+        IndexType::resolve(app.index_encoding()).load_and_execute(app.index_filename(), [&](auto&& index) {
+            auto evaluate = [&](auto wdata) {
+                evaluate_queries(
+                    index,
+                    wdata,
+                    app.queries(),
+                    app.thresholds_file(),
+                    app.index_encoding(),
+                    app.algorithm(),
+                    app.k(),
+                    documents_file,
+                    app.scorer_params(),
+                    run_id,
+                    iteration);
+            };
+            auto wdata_source = MemorySource::mapped_file(app.wand_data_path());
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    evaluate(wand_uniform_index_quantized(std::move(wdata_source)));
+                } else {
+                    evaluate(wand_uniform_index(std::move(wdata_source)));
+                }
+            } else {
+                evaluate(wand_raw_index(std::move(wdata_source)));
+            }
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }

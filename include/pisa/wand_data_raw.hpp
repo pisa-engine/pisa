@@ -16,6 +16,11 @@ namespace pisa {
 class wand_data_raw {
   public:
     wand_data_raw() = default;
+    wand_data_raw(wand_data_raw&&) = default;
+    wand_data_raw(wand_data_raw const&) = delete;
+    wand_data_raw& operator=(wand_data_raw&&) noexcept = delete;
+    wand_data_raw& operator=(wand_data_raw const&) = delete;
+    ~wand_data_raw() = default;
 
     class builder {
       public:
