@@ -13,10 +13,16 @@ option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
 option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
+option(PISA_CI_BUILD "Remove debug information from Debug build" ON)
 
-if (PISA_USE_PIC)
+if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(GUMBO_CFLAGS "-fPIC")
+endif()
+
+if(PISA_CI_BUILD)
+    set(CMAKE_C_FLAGS_DEBUG "")
+    set(CMAKE_CXX_FLAGS_DEBUG "")
 endif()
 
 configure_file(
@@ -61,7 +67,9 @@ if (UNIX)
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
    endif ()
 
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
+   if(NOT PISA_CI_BUILD)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
+   endif()
 
 endif()
 
@@ -90,29 +98,32 @@ add_library(pisa ${PISA_SRC_FILES})
 target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can switch to PRIVATE?
-    Threads::Threads
-    Boost::boost
-    QMX
-    mio
-    mio_base
-    ParallelSTL
-    GSL
-    FastPFor
-    streamvbyte
-    MaskedVByte
-    simdcomp
-    gumbo::gumbo
-    Boost::filesystem
-    Porter2
-    KrovetzStemmer
-    warcpp
-    wapopp
-    trecpp
-    spdlog
-    fmt::fmt
-    range-v3
-    taily
+target_link_libraries(pisa
+    PUBLIC
+        Threads::Threads
+        Boost::boost
+        mio
+        mio_base
+        ParallelSTL
+        GSL
+        Boost::filesystem
+        spdlog
+        fmt::fmt
+        range-v3
+        taily
+    # These should be made private in the future:
+        FastPFor
+        streamvbyte
+        MaskedVByte
+        simdcomp
+        QMX
+    PRIVATE
+        gumbo::gumbo
+        warcpp
+        wapopp
+        trecpp
+        Porter2
+        KrovetzStemmer
 )
 target_include_directories(pisa PUBLIC external)
 
@@ -142,13 +153,15 @@ if(PISA_COMPILE_HEADERS)
   list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
   get_property(PISA_INTERFACE_LINK_LIBRARIES TARGET pisa PROPERTY INTERFACE_LINK_LIBRARIES)
   foreach(PISA_INTERFACE_LINK_LIBRARY ${PISA_INTERFACE_LINK_LIBRARIES})
-    get_property(PISA_INTERFACE_LINK_LIBRARY_TYPE TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY TYPE)
-    if(PISA_INTERFACE_LINK_LIBRARY_TYPE STREQUAL "INTERFACE_LIBRARY")
-      get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-      list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
-    else ()
-      get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INCLUDE_DIRECTORIES)
-      list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
+    if(NOT PISA_INTERFACE_LINK_LIBRARY MATCHES ".*LINK_ONLY.*")
+      get_property(PISA_INTERFACE_LINK_LIBRARY_TYPE TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY TYPE)
+      if(PISA_INTERFACE_LINK_LIBRARY_TYPE STREQUAL "INTERFACE_LIBRARY")
+        get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+        list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
+      else ()
+        get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INCLUDE_DIRECTORIES)
+        list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
+      endif()
     endif()
   endforeach()
 
