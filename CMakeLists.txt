@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(PISA CXX C)
+project(PISA VERSION 0.8.2 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -180,3 +180,52 @@ if(PISA_COMPILE_HEADERS)
   endforeach()
 
 endif(PISA_COMPILE_HEADERS)
+
+# set(PROJECT_NAME pisa)
+# set(PISA_TARGET_NAME ${PROJECT_NAME})
+# set(PISA_CONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}" CACHE INTERNAL "")
+# set(PISA_INCLUDE_INSTALL_DIR "include/pisa")
+# set(PISA_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+# set(PISA_CMAKE_CONFIG_TEMPLATE "cmake/config.cmake.in")
+# set(PISA_CMAKE_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+# set(PISA_CMAKE_VERSION_CONFIG_FILE
+#     "${PISA_CMAKE_CONFIG_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+# set(PISA_CMAKE_PROJECT_CONFIG_FILE
+#     "${PISA_CMAKE_CONFIG_DIR}/${PROJECT_NAME}Config.cmake")
+# set(PISA_CMAKE_PROJECT_TARGETS_FILE
+#     "${PISA_CMAKE_CONFIG_DIR}/${PROJECT_NAME}Targets.cmake")
+
+
+# include(CMakePackageConfigHelpers)
+# write_basic_package_version_file(
+#     pisaConfigVersion.cmake
+#     VERSION ${PACKAGE_VERSION}
+#     COMPATIBILITY SameMajorVersion
+#     )
+
+# configure_file(cmake/pisaConfig.cmake.in pisaConfig.cmake @ONLY)
+# install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pisaConfig.cmake"
+#               "${CMAKE_CURRENT_BINARY_DIR}/pisaConfigVersion.cmake"
+#         DESTINATION lib/cmake/pisa
+#         )
+
+# install(TARGETS pisa
+#         EXPORT pisa
+#         LIBRARY DESTINATION lib
+#         ARCHIVE DESTINATION lib
+#         RUNTIME DESTINATION bin
+#         INCLUDES DESTINATION include
+#         )
+
+# install(EXPORT pisa
+#         FILE pisaTargets.cmake
+#         NAMESPACE pisa::
+#         DESTINATION lib/cmake/pisa
+#         )
+
+# install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
+#         DESTINATION include)
+
+# export(TARGETS pisa
+#        NAMESPACE pisa::
+#        FILE "${CMAKE_CURRENT_BINARY_DIR}/pisaTargets.cmake")

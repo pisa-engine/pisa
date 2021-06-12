@@ -31,7 +31,6 @@
 #include "query/term_processor.hpp"
 #include "tokenizer.hpp"
 #include "type_safe.hpp"
-#include "warcpp/warcpp.hpp"
 
 namespace pisa {
 
