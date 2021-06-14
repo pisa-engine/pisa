@@ -93,19 +93,20 @@ if (PISA_ENABLE_CLANG_TIDY)
     endif()
 endif()
 
-include_directories(include)
 add_library(pisa ${PISA_SRC_FILES})
 target_include_directories(pisa PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/pisa>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external>
+    $<INSTALL_INTERFACE:include/pisa>
 )
 target_link_libraries(pisa
     PUBLIC
+        GSL
         Threads::Threads
         Boost::boost
         mio
         mio_base
         ParallelSTL
-        GSL
         Boost::filesystem
         spdlog
         fmt::fmt
@@ -118,14 +119,13 @@ target_link_libraries(pisa
         simdcomp
         QMX
     PRIVATE
-        gumbo::gumbo
-        warcpp
-        wapopp
-        trecpp
-        Porter2
-        KrovetzStemmer
+        $<BUILD_INTERFACE:gumbo::gumbo>
+        $<BUILD_INTERFACE:warcpp>
+        $<BUILD_INTERFACE:wapopp>
+        $<BUILD_INTERFACE:trecpp>
+        $<BUILD_INTERFACE:Porter2>
+        $<BUILD_INTERFACE:KrovetzStemmer>
 )
-target_include_directories(pisa PUBLIC external)
 
 if (PISA_BUILD_TOOLS)
     add_subdirectory(tools)
@@ -194,51 +194,79 @@ if(PISA_COMPILE_HEADERS)
 
 endif(PISA_COMPILE_HEADERS)
 
-# set(PROJECT_NAME pisa)
-# set(PISA_TARGET_NAME ${PROJECT_NAME})
-# set(PISA_CONFIG_INSTALL_DIR "lib/cmake/${PROJECT_NAME}" CACHE INTERNAL "")
-# set(PISA_INCLUDE_INSTALL_DIR "include/pisa")
-# set(PISA_TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
-# set(PISA_CMAKE_CONFIG_TEMPLATE "cmake/config.cmake.in")
-# set(PISA_CMAKE_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-# set(PISA_CMAKE_VERSION_CONFIG_FILE
-#     "${PISA_CMAKE_CONFIG_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
-# set(PISA_CMAKE_PROJECT_CONFIG_FILE
-#     "${PISA_CMAKE_CONFIG_DIR}/${PROJECT_NAME}Config.cmake")
-# set(PISA_CMAKE_PROJECT_TARGETS_FILE
-#     "${PISA_CMAKE_CONFIG_DIR}/${PROJECT_NAME}Targets.cmake")
 
 
-# include(CMakePackageConfigHelpers)
-# write_basic_package_version_file(
-#     pisaConfigVersion.cmake
-#     VERSION ${PACKAGE_VERSION}
-#     COMPATIBILITY SameMajorVersion
-#     )
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    pisaConfigVersion.cmake
+    VERSION ${PACKAGE_VERSION}
+    COMPATIBILITY SameMajorVersion
+    )
 
-# configure_file(cmake/pisaConfig.cmake.in pisaConfig.cmake @ONLY)
-# install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pisaConfig.cmake"
-#               "${CMAKE_CURRENT_BINARY_DIR}/pisaConfigVersion.cmake"
-#         DESTINATION lib/cmake/pisa
-#         )
+configure_file(cmake/pisaConfig.cmake.in pisaConfig.cmake @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/pisaConfig.cmake"
+              "${CMAKE_CURRENT_BINARY_DIR}/pisaConfigVersion.cmake"
+        DESTINATION lib/cmake/pisa
+        )
 
-# install(TARGETS pisa
-#         EXPORT pisa
-#         LIBRARY DESTINATION lib
-#         ARCHIVE DESTINATION lib
-#         RUNTIME DESTINATION bin
-#         INCLUDES DESTINATION include
-#         )
+install(TARGETS
+            pisa
+            GSL
+            Boost_system
+            Boost_filesystem
+            fmt
+            FastPFor
+            streamvbyte
+            MaskedVByte
+            simdcomp
+            QMX
+            warcpp
+            trecpp
+            KrovetzStemmer
+            mio
+            mio_base
+            ParallelSTL
+            spdlog
+            range-v3
+            taily
+            concepts
+            meta
+        EXPORT pisa
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+        )
 
-# install(EXPORT pisa
-#         FILE pisaTargets.cmake
-#         NAMESPACE pisa::
-#         DESTINATION lib/cmake/pisa
-#         )
+install(EXPORT pisa
+        FILE pisaTargets.cmake
+        NAMESPACE pisa::
+        DESTINATION lib/cmake/pisa
+        )
 
-# install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
-#         DESTINATION include)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/pisa
+        DESTINATION include)
 
-# export(TARGETS pisa
-#        NAMESPACE pisa::
-#        FILE "${CMAKE_CURRENT_BINARY_DIR}/pisaTargets.cmake")
+export(TARGETS pisa
+            GSL
+            Boost_system
+            Boost_filesystem
+            fmt
+            FastPFor
+            streamvbyte
+            MaskedVByte
+            simdcomp
+            QMX
+            warcpp
+            trecpp
+            KrovetzStemmer
+            mio
+            mio_base
+            ParallelSTL
+            spdlog
+            range-v3
+            taily
+            concepts
+            meta
+       NAMESPACE pisa::
+       FILE "${CMAKE_CURRENT_BINARY_DIR}/pisaTargets.cmake")

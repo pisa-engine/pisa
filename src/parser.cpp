@@ -1,6 +1,6 @@
-#include "pisa/parser.hpp"
-#include "pisa/parsing/html.hpp"
-#include "pisa/tokenizer.hpp"
+#include "parser.hpp"
+#include "parsing/html.hpp"
+#include "tokenizer.hpp"
 
 #include <trecpp/trecpp.hpp>
 #include <wapopp/wapopp.hpp>

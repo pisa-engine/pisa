@@ -6,15 +6,22 @@ EXECUTE_PROCESS(COMMAND git submodule update --init
 # Add FastPFor
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/FastPFor EXCLUDE_FROM_ALL)
 target_compile_options(FastPFor PRIVATE -Wno-cast-align)
+# target_include_directories(FastPFor PUBLIC
+#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/FastPFor/include>
+#     $<INSTALL_INTERFACE:include>
+# )
 
 # Add CLI11
 set(CLI11_TESTING OFF CACHE BOOL "skip trecpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 
 # Add streamvbyte
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/include)
 add_library(streamvbyte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/src/streamvbyte.c
                                ${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/src/streamvbytedelta.c
+)
+target_include_directories(streamvbyte PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/streamvbyte/include>
+    $<INSTALL_INTERFACE:include>
 )
 target_compile_options(streamvbyte PRIVATE -Wno-cast-align
                                            -Wno-incompatible-pointer-types
@@ -22,10 +29,13 @@ target_compile_options(streamvbyte PRIVATE -Wno-cast-align
 )
 
 # Add maskedvbyte
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/include)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 add_library(MaskedVByte STATIC ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varintdecode.c
                                ${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/src/varintencode.c
+)
+target_include_directories(MaskedVByte PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 # Add QMX
@@ -38,10 +48,13 @@ target_compile_options(mio INTERFACE -Wno-sign-compare)
 
 
 # Add SIMD-BP
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/include)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
 add_library(simdcomp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdbitpacking.c
                             ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdcomputil.c
+)
+target_include_directories(simdcomp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/include>
+    $<INSTALL_INTERFACE:include>
 )
 
 
@@ -64,7 +77,16 @@ target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
 )
 
 # Add GSL
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
+# add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
+add_library(GSL INTERFACE)
+target_include_directories(GSL SYSTEM INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/GSL/include>
+    $<INSTALL_INTERFACE:include>
+)
+install(
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/GSL/include/gsl
+    DESTINATION include
+)
 
 # Add Boost
 add_subdirectory(boost-cmake)
@@ -105,9 +127,11 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 # Add range-v3
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 
-# Add RapidCheck
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
-target_compile_options(rapidcheck PRIVATE -Wno-error)
+if (PISA_ENABLE_TESTING AND BUILD_TESTING)
+    # Add RapidCheck
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
+    target_compile_options(rapidcheck PRIVATE -Wno-error)
+endif()
 
 # Add taily
 set(TAILY_ENABLE_TESTING OFF CACHE BOOL "skip taily testing")
