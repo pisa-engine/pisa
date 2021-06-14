@@ -14,6 +14,21 @@ option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
 option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
 option(PISA_CI_BUILD "Remove debug information from Debug build" ON)
+option(PISA_ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" OFF)
+
+if(ENABLE_IPO)
+    include(CheckIPOSupported)
+    check_ipo_supported(
+        RESULT
+        result
+        OUTPUT
+        output)
+    if(result)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    else()
+        message(SEND_ERROR "IPO is not supported: ${output}")
+    endif()
+endif()
 
 if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -112,11 +127,6 @@ target_link_libraries(pisa
         range-v3
         taily
     # These should be made private in the future:
-        FastPFor
-        streamvbyte
-        MaskedVByte
-        simdcomp
-        QMX
     PRIVATE
         gumbo::gumbo
         warcpp
@@ -124,6 +134,11 @@ target_link_libraries(pisa
         trecpp
         Porter2
         KrovetzStemmer
+        QMX
+        streamvbyte
+        MaskedVByte
+        simdcomp
+        FastPFor
 )
 target_include_directories(pisa PUBLIC external)
 

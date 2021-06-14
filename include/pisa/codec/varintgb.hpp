@@ -2,8 +2,6 @@
 #include "codec/block_codecs.hpp"
 #include <vector>
 
-#include "FastPFor/headers/common.h"
-
 using namespace std;
 
 namespace pisa {
