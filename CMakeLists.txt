@@ -126,7 +126,6 @@ target_link_libraries(pisa
         fmt::fmt
         range-v3
         taily
-    # These should be made private in the future:
     PRIVATE
         gumbo::gumbo
         warcpp
