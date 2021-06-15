@@ -16,7 +16,7 @@ option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
 option(PISA_CI_BUILD "Remove debug information from Debug build" ON)
 option(PISA_ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" OFF)
 
-if(ENABLE_IPO)
+if(PISA_ENABLE_IPO)
     include(CheckIPOSupported)
     check_ipo_supported(
         RESULT
