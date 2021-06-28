@@ -169,7 +169,7 @@ class wand_data {
     MemorySource m_source;
 };
 
-void create_wand_data(
+inline void create_wand_data(
     std::string const& output,
     std::string const& input_basename,
     BlockSize block_size,
@@ -215,4 +215,5 @@ void create_wand_data(
         mapper::freeze(wdata, output.c_str());
     }
 }
+
 }  // namespace pisa
