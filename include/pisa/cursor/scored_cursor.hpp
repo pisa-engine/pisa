@@ -33,8 +33,10 @@ class ScoredCursor {
         return m_base_cursor.docid();
     }
     [[nodiscard]] PISA_ALWAYSINLINE auto freq() -> std::uint32_t { return m_base_cursor.freq(); }
-    [[nodiscard]] PISA_ALWAYSINLINE auto score() -> float { return m_query_weight * 
-                                                                m_term_scorer(docid(), freq()); }
+    [[nodiscard]] PISA_ALWAYSINLINE auto score() -> float
+    {
+        return m_query_weight * m_term_scorer(docid(), freq());
+    }
     void PISA_ALWAYSINLINE next() { m_base_cursor.next(); }
     void PISA_ALWAYSINLINE next_geq(std::uint32_t docid) { m_base_cursor.next_geq(docid); }
     [[nodiscard]] PISA_ALWAYSINLINE auto size() -> std::size_t { return m_base_cursor.size(); }
