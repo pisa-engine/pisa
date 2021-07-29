@@ -38,6 +38,7 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
     {
         return m_wdata.docid();
     }
+
     PISA_ALWAYSINLINE void block_max_next_geq(std::uint32_t docid) { m_wdata.next_geq(docid); }
 
   private:

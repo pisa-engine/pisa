@@ -23,11 +23,13 @@ class MaxScoredCursor: public ScoredCursor<Cursor> {
     MaxScoredCursor& operator=(MaxScoredCursor&&) = default;
     ~MaxScoredCursor() = default;
 
-    [[nodiscard]] PISA_ALWAYSINLINE auto max_score() const noexcept -> float { return m_max_score; }
+    [[nodiscard]] PISA_ALWAYSINLINE auto max_score() const noexcept -> float
+    {
+        return this->query_weight() * m_max_score;
+    }
 
   private:
     float m_max_score;
-    float m_query_weight = 1.0;
 };
 
 template <typename Index, typename WandType, typename Scorer>
