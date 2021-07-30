@@ -33,10 +33,7 @@ class ScoredCursor {
         return m_base_cursor.docid();
     }
     [[nodiscard]] PISA_ALWAYSINLINE auto freq() -> std::uint32_t { return m_base_cursor.freq(); }
-    [[nodiscard]] PISA_ALWAYSINLINE auto score() -> float
-    {
-        return m_query_weight * m_term_scorer(docid(), freq());
-    }
+    [[nodiscard]] PISA_ALWAYSINLINE auto score() -> float { return m_term_scorer(docid(), freq()); }
     void PISA_ALWAYSINLINE next() { m_base_cursor.next(); }
     void PISA_ALWAYSINLINE next_geq(std::uint32_t docid) { m_base_cursor.next_geq(docid); }
     [[nodiscard]] PISA_ALWAYSINLINE auto size() -> std::size_t { return m_base_cursor.size(); }
@@ -48,7 +45,8 @@ class ScoredCursor {
 };
 
 template <typename Index, typename Scorer>
-[[nodiscard]] auto make_scored_cursors(Index const& index, Scorer const& scorer, Query query)
+[[nodiscard]] auto
+make_scored_cursors(Index const& index, Scorer const& scorer, Query query, bool weighted = false)
 {
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
@@ -57,8 +55,17 @@ template <typename Index, typename Scorer>
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
+            auto term_id = term.first;
+            auto term_weight = term.second;
+            if (weighted) {
+                return ScoredCursor<typename Index::document_enumerator>(
+                    index[term_id],
+                    [scorer = scorer.term_scorer(term.first)](
+                        uint32_t doc, uint32_t freq) { return term_weight * scorer(doc, freq); },
+                    term.second);
+            }
             return ScoredCursor<typename Index::document_enumerator>(
-                index[term.first], scorer.term_scorer(term.first), term.second);
+                index[term.first], scorer.term_scorer(term_id), term.second);
         });
     return cursors;
 }
