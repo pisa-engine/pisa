@@ -60,8 +60,8 @@ make_scored_cursors(Index const& index, Scorer const& scorer, Query query, bool 
             if (weighted) {
                 return ScoredCursor<typename Index::document_enumerator>(
                     index[term_id],
-                    [scorer = scorer.term_scorer(term.first)](
-                        uint32_t doc, uint32_t freq) { return term_weight * scorer(doc, freq); },
+                    [scorer = scorer.term_scorer(term.first), weight = term_weight](
+                        uint32_t doc, uint32_t freq) { return weight * scorer(doc, freq); },
                     term.second);
             }
             return ScoredCursor<typename Index::document_enumerator>(
