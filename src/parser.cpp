@@ -89,7 +89,8 @@ record_parser(std::string const& type, std::istream& is)
                         if (rec.has_trecid()) {
                             return std::make_optional<Document_Record>(
                                 rec.trecid(), rec.content(), rec.url());
-                        } else if (rec.has_recordid()) {
+                        }
+                        if (rec.has_recordid()) {
                             return std::make_optional<Document_Record>(
                                 rec.recordid(), rec.content(), rec.url());
                         } 
