@@ -6,7 +6,7 @@
 namespace pisa {
 
 struct block_max_wand_query {
-    explicit block_max_wand_query(topk_queue& topk) : m_topk(topk) {}
+    explicit block_max_wand_query(topk_queue& topk, topk_queue& secondary) : m_topk(topk), m_secondary(secondary) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)
@@ -75,16 +75,22 @@ struct block_max_wand_query {
                 // check if pivot is a possible match
                 if (pivot_id == ordered_cursors[0]->docid()) {
                     float score = 0;
+                    float second_score = 0;
                     for (Cursor* en: ordered_cursors) {
                         if (en->docid() != pivot_id) {
                             break;
                         }
+                        // XXX: Might consider removing partial scoring
+                        // as there may be cases where we bail out from
+                        // scoring a document which is a good one according
+                        // to the secondary ranker
                         float part_score = en->score();
                         score += part_score;
                         block_upper_bound -= en->block_max_score() * en->query_weight() - part_score;
                         if (!m_topk.would_enter(block_upper_bound)) {
                             break;
                         }
+                        second_score += en->secondary_score();
                     }
                     for (Cursor* en: ordered_cursors) {
                         if (en->docid() != pivot_id) {
@@ -94,6 +100,7 @@ struct block_max_wand_query {
                     }
 
                     m_topk.insert(score, pivot_id);
+                    m_secondary.insert(second_score, pivot_id);
                     // resort by docid
                     sort_cursors();
 
@@ -159,12 +166,17 @@ struct block_max_wand_query {
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
+    std::vector<std::pair<float, uint64_t>> const& secondary_topk() const { return m_secondary.topk(); }
+    
     void clear_topk() { m_topk.clear(); }
 
     topk_queue const& get_topk() const { return m_topk; }
 
   private:
     topk_queue& m_topk;
+    topk_queue& m_secondary;
+
+
 };
 
 }  // namespace pisa

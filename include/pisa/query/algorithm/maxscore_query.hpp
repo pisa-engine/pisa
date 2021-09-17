@@ -11,7 +11,7 @@
 namespace pisa {
 
 struct maxscore_query {
-    explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
+    explicit maxscore_query(topk_queue& topk, topk_queue& secondary) : m_topk(topk), m_secondary(secondary) {}
 
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
@@ -82,6 +82,7 @@ struct maxscore_query {
         }
 
         float current_score = 0;
+        float second_score = 0;
         std::uint32_t current_docid = 0;
 
         while (current_docid < max_docid) {
@@ -92,11 +93,13 @@ struct maxscore_query {
                 }
 
                 current_score = 0;
+                second_score = 0;
                 current_docid = std::exchange(next_docid, max_docid);
 
                 std::for_each(cursors.begin(), first_lookup, [&](auto& cursor) {
                     if (cursor.docid() == current_docid) {
                         current_score += cursor.score();
+                        second_score += cursor.secondary_score();
                         cursor.next();
                     }
                     if (auto docid = cursor.docid(); docid < next_docid) {
@@ -115,9 +118,11 @@ struct maxscore_query {
                     cursor.next_geq(current_docid);
                     if (cursor.docid() == current_docid) {
                         current_score += cursor.score();
+                        second_score += cursor.secondary_score();
                     }
                 }
             }
+            m_secondary.insert(second_score, current_docid);
             if (m_topk.insert(current_score, current_docid)
                 && update_non_essential_lists() == UpdateResult::ShortCircuit) {
                 return;
@@ -138,8 +143,12 @@ struct maxscore_query {
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
+    std::vector<std::pair<float, uint64_t>> const& secondary_topk() const { return m_secondary.topk(); }
+
   private:
     topk_queue& m_topk;
+    topk_queue& m_secondary;
+
 };
 
 }  // namespace pisa

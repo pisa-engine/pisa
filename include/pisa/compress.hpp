@@ -91,7 +91,7 @@ void compress_index_streaming(
                 for (size_t pos = 0; pos < size; ++pos) {
                     auto doc = *(plist.docs.begin() + pos);
                     auto freq = *(plist.freqs.begin() + pos);
-                    auto score = term_scorer(doc, freq);
+                    auto score = term_scorer(doc, freq, true);
                     quantized_scores.push_back(quantizer(score));
                 }
                 auto sum = std::accumulate(
@@ -191,7 +191,7 @@ void compress_index(
                 for (size_t pos = 0; pos < size; ++pos) {
                     uint64_t doc = *(plist.docs.begin() + pos);
                     uint64_t freq = *(plist.freqs.begin() + pos);
-                    float score = term_scorer(doc, freq);
+                    float score = term_scorer(doc, freq, true);
                     uint64_t quant_score = quantizer(score);
                     quants.push_back(quant_score);
                 }

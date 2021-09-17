@@ -40,7 +40,7 @@ struct bm25: public index_scorer<Wand> {
     {
         auto term_len = this->m_wdata.term_posting_count(term_id);
         auto term_weight = query_term_weight(term_len, this->m_wdata.num_docs());
-        auto s = [&, term_weight](uint32_t doc, uint32_t freq) {
+        auto s = [&, term_weight](uint32_t doc, uint32_t freq, bool _ = false) {
             return term_weight * doc_term_weight(freq, this->m_wdata.norm_len(doc));
         };
         return s;

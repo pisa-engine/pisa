@@ -53,28 +53,32 @@ void evaluate_queries(
     if (query_type == "wand") {
         query_fun = [&](Query query) {
             topk_queue topk(k);
-            wand_query wand_q(topk);
+            topk_queue secondary(k);
+            wand_query wand_q(topk, secondary);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             topk.finalize();
-            return topk.topk();
+            secondary.finalize();
+            return secondary.topk();
         };
     } else if (query_type == "block_max_wand") {
         query_fun = [&](Query query) {
             topk_queue topk(k);
-            block_max_wand_query block_max_wand_q(topk);
+            topk_queue secondary(k);
+            block_max_wand_query block_max_wand_q(topk, secondary);
             block_max_wand_q(
                 make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            topk.finalize();
-            return topk.topk();
+            secondary.finalize();
+            return secondary.topk();
         };
     } else if (query_type == "block_max_maxscore") {
         query_fun = [&](Query query) {
             topk_queue topk(k);
-            block_max_maxscore_query block_max_maxscore_q(topk);
+            topk_queue secondary(k);
+            block_max_maxscore_query block_max_maxscore_q(topk, secondary);
             block_max_maxscore_q(
                 make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            topk.finalize();
-            return topk.topk();
+            secondary.finalize();
+            return secondary.topk();
         };
     } else if (query_type == "block_max_ranked_and") {
         query_fun = [&](Query query) {
@@ -104,10 +108,11 @@ void evaluate_queries(
     } else if (query_type == "maxscore") {
         query_fun = [&](Query query) {
             topk_queue topk(k);
-            maxscore_query maxscore_q(topk);
+            topk_queue secondary(k); 
+            maxscore_query maxscore_q(topk, secondary);
             maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            topk.finalize();
-            return topk.topk();
+            secondary.finalize();
+            return secondary.topk();
         };
     } else if (query_type == "ranked_or_taat") {
         query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
@@ -136,6 +141,7 @@ void evaluate_queries(
 
     std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
+
     tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
         raw_results[query_idx] = query_fun(queries[query_idx]);
     });

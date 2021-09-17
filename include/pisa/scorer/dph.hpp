@@ -23,7 +23,7 @@ struct dph: public index_scorer<Wand> {
 
     term_scorer_t term_scorer(uint64_t term_id) const override
     {
-        auto s = [&, term_id](uint32_t doc, uint32_t freq) {
+        auto s = [&, term_id](uint32_t doc, uint32_t freq, bool _ = false) {
             float f = (float)freq / this->m_wdata.doc_len(doc);
             float norm = (1.f - f) * (1.f - f) / (freq + 1.f);
             return norm

@@ -8,7 +8,7 @@
 namespace pisa {
 
 struct wand_query {
-    explicit wand_query(topk_queue& topk) : m_topk(topk) {}
+    explicit wand_query(topk_queue& topk, topk_queue& secondary) : m_topk(topk), m_secondary(secondary) {}
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)
@@ -57,15 +57,18 @@ struct wand_query {
             uint64_t pivot_id = ordered_cursors[pivot]->docid();
             if (pivot_id == ordered_cursors[0]->docid()) {
                 float score = 0;
+                float second_score = 0;
                 for (Cursor* en: ordered_cursors) {
                     if (en->docid() != pivot_id) {
                         break;
                     }
                     score += en->score();
+                    second_score += en->secondary_score();
                     en->next();
                 }
 
                 m_topk.insert(score, pivot_id);
+                m_secondary.insert(second_score, pivot_id);
                 // resort by docid
                 sort_enums();
             } else {
@@ -88,8 +91,13 @@ struct wand_query {
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
+    std::vector<std::pair<float, uint64_t>> const& secondary_topk() const { return m_secondary.topk(); }
+
+
   private:
     topk_queue& m_topk;
+    topk_queue& m_secondary;
+
 };
 
 }  // namespace pisa

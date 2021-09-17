@@ -36,7 +36,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
     for (i = 0; i < seq.docs.size(); ++i) {
         uint64_t docid = *(seq.docs.begin() + i);
         uint64_t freq = *(seq.freqs.begin() + i);
-        float score = scorer(docid, freq);
+        float score = scorer(docid, freq, true);
         max_score = std::max(max_score, score);
         if (i == 0 || (i / block_size) == current_block) {
             block_max_score = std::max(block_max_score, score);
@@ -74,7 +74,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
         seq.freqs.begin(),
         std::back_inserter(doc_score),
         [&](const uint64_t& doc, const uint64_t& freq) -> doc_score_t {
-            return {doc, scorer(doc, freq)};
+            return {doc, scorer(doc, freq, true)};
         });
 
     auto p = score_opt_partition(doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda);

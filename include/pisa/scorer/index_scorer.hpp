@@ -7,8 +7,8 @@
 
 namespace pisa {
 
-using term_scorer_t = std::function<float(uint32_t, uint32_t)>;
-using TermScorer = std::function<float(uint32_t, uint32_t)>;
+using term_scorer_t = std::function<float(uint32_t, uint32_t, bool)>;
+using TermScorer = std::function<float(uint32_t, uint32_t, bool)>;
 
 template <typename Wand>
 struct index_scorer {

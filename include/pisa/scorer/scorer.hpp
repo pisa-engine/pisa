@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "bm25.hpp"
+#include "dual.hpp"
 #include "dph.hpp"
 #include "index_scorer.hpp"
 #include "pl2.hpp"
@@ -40,6 +41,9 @@ namespace pisa { namespace scorer {
         }
         if (params.name == "quantized") {
             return std::make_unique<quantized<std::decay_t<decltype(wdata)>>>(wdata);
+        }
+        if (params.name == "dual") {
+            return std::make_unique<dual<std::decay_t<decltype(wdata)>>>(wdata);
         }
         spdlog::error("Unknown scorer {}", params.name);
         std::abort();

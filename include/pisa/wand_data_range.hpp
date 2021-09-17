@@ -30,7 +30,7 @@ class wand_data_range {
         std::vector<float> block_max_scores(m_blocks_num, 0.0F);
         for_each_posting(list, [&](auto docid, auto freq) {
             float& current_max = block_max_scores[docid / range_size];
-            current_max = std::max(current_max, scorer(docid, freq));
+            current_max = std::max(current_max, scorer(docid, freq, true));
         });
         return block_max_scores;
     };
@@ -69,7 +69,7 @@ class wand_data_range {
             for (auto i = 0; i < term_seq.docs.size(); ++i) {
                 uint64_t docid = *(term_seq.docs.begin() + i);
                 uint64_t freq = *(term_seq.freqs.begin() + i);
-                float score = scorer(docid, freq);
+                float score = scorer(docid, freq, true);
                 max_score = std::max(max_score, score);
                 size_t pos = docid / range_size;
                 float& bm = b_max[pos];

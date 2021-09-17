@@ -17,7 +17,7 @@ class configuration {
         return instance;
     }
 
-    size_t quantization_bits{8};
+    size_t quantization_bits{9};
     bool heuristic_greedy{false};
 
   private:

@@ -7,7 +7,8 @@
 namespace pisa {
 
 struct block_max_maxscore_query {
-    explicit block_max_maxscore_query(topk_queue& topk) : m_topk(topk) {}
+    explicit block_max_maxscore_query(topk_queue& topk, topk_queue& secondary) : m_topk(topk), m_secondary(secondary) {}
+
 
     template <typename CursorRange>
     void operator()(CursorRange&& cursors, uint64_t max_docid)
@@ -42,10 +43,12 @@ struct block_max_maxscore_query {
 
         while (non_essential_lists < ordered_cursors.size() && cur_doc < max_docid) {
             float score = 0;
+            float second_score = 0;
             uint64_t next_doc = max_docid;
             for (size_t i = non_essential_lists; i < ordered_cursors.size(); ++i) {
                 if (ordered_cursors[i]->docid() == cur_doc) {
                     score += ordered_cursors[i]->score();
+                    second_score += ordered_cursors[i]->secondary_score();
                     ordered_cursors[i]->next();
                 }
                 if (ordered_cursors[i]->docid() < next_doc) {
@@ -71,6 +74,7 @@ struct block_max_maxscore_query {
                     ordered_cursors[i]->next_geq(cur_doc);
                     if (ordered_cursors[i]->docid() == cur_doc) {
                         auto s = ordered_cursors[i]->score();
+                        second_score += ordered_cursors[i]->secondary_score();
                         // score += s;
                         block_upper_bound += s;
                     }
@@ -83,6 +87,7 @@ struct block_max_maxscore_query {
                 }
                 score += block_upper_bound;
             }
+            m_secondary.insert(second_score, cur_doc);
             if (m_topk.insert(score, cur_doc)) {
                 // update non-essential lists
                 while (non_essential_lists < ordered_cursors.size()
@@ -96,7 +101,11 @@ struct block_max_maxscore_query {
 
     std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
 
+    std::vector<std::pair<float, uint64_t>> const& secondary_topk() const { return m_secondary.topk(); }
+
   private:
     topk_queue& m_topk;
+    topk_queue& m_secondary;
+
 };
 }  // namespace pisa
