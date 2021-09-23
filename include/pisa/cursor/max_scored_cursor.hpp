@@ -53,7 +53,7 @@ make_max_scored_cursors(Index const& index, WandType const& wdata, Scorer const&
                 max_weight = term_weight * max_weight;
                 return MaxScoredCursor<typename Index::document_enumerator>(
                     index[term_id], 
-                    [scorer = scorer.term_scorer(term_id), weight = query_weight](
+                    [scorer = scorer.term_scorer(term_id), weight = term_weight](
                         uint32_t doc, uint32_t freq) { return weight * scorer(doc, freq); },
                     term_weight, max_weight);
             }

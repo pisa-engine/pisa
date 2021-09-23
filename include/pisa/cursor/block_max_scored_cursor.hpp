@@ -66,8 +66,8 @@ template <typename Index, typename WandType, typename Scorer>
                 max_weight = term_weight * max_weight;
                 return BlockMaxScoredCursor<typename Index::document_enumerator, WandType>(
                     std::move(index[term_id]),
-                    [scorer = scorer.term_scorer(term_id), qweight = weight](
-                        uint32_t doc, uint32_t freq) { return qweight * scorer(doc, freq); },
+                    [scorer = scorer.term_scorer(term_id), weight = term_weight](
+                        uint32_t doc, uint32_t freq) { return weight * scorer(doc, freq); },
                     term_weight,
                     max_weight,
                     wdata.getenum(term_id));
