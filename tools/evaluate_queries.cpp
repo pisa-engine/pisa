@@ -41,6 +41,7 @@ void evaluate_queries(
     uint64_t k,
     std::string const& documents_filename,
     ScorerParams const& scorer_params,
+    const bool weighted,
     std::string const& run_id,
     std::string const& iteration)
 {
@@ -54,7 +55,7 @@ void evaluate_queries(
         query_fun = [&](Query query) {
             topk_queue topk(k);
             wand_query wand_q(topk);
-            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            wand_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -63,7 +64,7 @@ void evaluate_queries(
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
             block_max_wand_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -72,7 +73,7 @@ void evaluate_queries(
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
             block_max_maxscore_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -81,7 +82,7 @@ void evaluate_queries(
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
             block_max_ranked_and_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -89,7 +90,7 @@ void evaluate_queries(
         query_fun = [&](Query query) {
             topk_queue topk(k);
             ranked_and_query ranked_and_q(topk);
-            ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+            ranked_and_q(make_scored_cursors(index, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -97,7 +98,7 @@ void evaluate_queries(
         query_fun = [&](Query query) {
             topk_queue topk(k);
             ranked_or_query ranked_or_q(topk);
-            ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
+            ranked_or_q(make_scored_cursors(index, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -105,7 +106,7 @@ void evaluate_queries(
         query_fun = [&](Query query) {
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
-            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -114,7 +115,7 @@ void evaluate_queries(
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
             topk.finalize();
             return topk.topk();
         };
@@ -123,7 +124,7 @@ void evaluate_queries(
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
+                make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
             topk.finalize();
             return topk.topk();
         };
@@ -209,6 +210,7 @@ int main(int argc, const char** argv)
         app.k(),
         documents_file,
         app.scorer_params(),
+        app.weighted(),
         run_id,
         iteration);
 
