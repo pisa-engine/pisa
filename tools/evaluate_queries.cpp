@@ -64,7 +64,8 @@ void evaluate_queries(
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
             block_max_wand_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -73,7 +74,8 @@ void evaluate_queries(
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
             block_max_maxscore_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -82,7 +84,8 @@ void evaluate_queries(
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
             block_max_ranked_and_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                index.num_docs());
             topk.finalize();
             return topk.topk();
         };
@@ -106,7 +109,8 @@ void evaluate_queries(
         query_fun = [&](Query query) {
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
-            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+            maxscore_q(
+                make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
             return topk.topk();
         };

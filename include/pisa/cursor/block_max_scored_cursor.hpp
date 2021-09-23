@@ -29,10 +29,7 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
     BlockMaxScoredCursor& operator=(BlockMaxScoredCursor&&) = default;
     ~BlockMaxScoredCursor() = default;
 
-    [[nodiscard]] PISA_ALWAYSINLINE auto block_max_score() -> float
-    {
-        return m_wdata.score();
-    }
+    [[nodiscard]] PISA_ALWAYSINLINE auto block_max_score() -> float { return m_wdata.score(); }
 
     [[nodiscard]] PISA_ALWAYSINLINE auto block_max_docid() -> std::uint32_t
     {
@@ -56,11 +53,10 @@ template <typename Index, typename WandType, typename Scorer>
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-
             auto term_weight = 1.0f;
             auto term_id = term.first;
             auto max_weight = wdata.max_term_weight(term_id);
-            
+
             if (weighted) {
                 term_weight = term.second;
                 max_weight = term_weight * max_weight;
@@ -72,15 +68,15 @@ template <typename Index, typename WandType, typename Scorer>
                     max_weight,
                     wdata.getenum(term_id));
             }
-            
+
             return BlockMaxScoredCursor<typename Index::document_enumerator, WandType>(
-                std::move(index[term_id]), 
-                scorer.term_scorer(term_id), 
+                std::move(index[term_id]),
+                scorer.term_scorer(term_id),
                 term_weight,
                 max_weight,
                 wdata.getenum(term_id));
         });
- 
+
     return cursors;
 }
 

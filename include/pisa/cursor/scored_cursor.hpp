@@ -55,7 +55,6 @@ make_scored_cursors(Index const& index, Scorer const& scorer, Query query, bool 
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-
             auto term_weight = 1.0f;
             auto term_id = term.first;
 

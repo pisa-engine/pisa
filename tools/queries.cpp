@@ -124,7 +124,7 @@ void perftest(
     std::string const& query_type,
     uint64_t k,
     const ScorerParams& scorer_params,
-    const bool weighted, 
+    const bool weighted,
     bool extract,
     bool safe)
 {
@@ -194,7 +194,9 @@ void perftest(
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 wand_query wand_q(topk);
-                wand_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                wand_q(
+                    make_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -204,7 +206,8 @@ void perftest(
                 topk.set_threshold(t);
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                    make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -214,7 +217,8 @@ void perftest(
                 topk.set_threshold(t);
                 block_max_maxscore_query block_max_maxscore_q(topk);
                 block_max_maxscore_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                    make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -233,7 +237,8 @@ void perftest(
                 topk.set_threshold(t);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
                 block_max_ranked_and_q(
-                    make_block_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                    make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -251,7 +256,9 @@ void perftest(
                 topk_queue topk(k);
                 topk.set_threshold(t);
                 maxscore_query maxscore_q(topk);
-                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                maxscore_q(
+                    make_max_scored_cursors(index, wdata, *scorer, query, weighted),
+                    index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -262,7 +269,9 @@ void perftest(
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
                 topk.set_threshold(t);
                 ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
+                    make_scored_cursors(index, *scorer, query, weighted),
+                    index.num_docs(),
+                    accumulator);
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -273,7 +282,9 @@ void perftest(
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Threshold t) mutable {
                 topk.set_threshold(t);
                 ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
+                    make_scored_cursors(index, *scorer, query, weighted),
+                    index.num_docs(),
+                    accumulator);
                 topk.finalize();
                 return topk.topk().size();
             };

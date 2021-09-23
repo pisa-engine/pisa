@@ -96,7 +96,7 @@ namespace arg {
                 ->needs(m_terms_option);
             app->add_option("--stemmer", m_stemmer, "Stemmer type")->needs(m_terms_option);
             app->add_flag("--weighted", m_weighted, "Weights scores by query frequency");
- 
+
             if constexpr (Mode == QueryMode::Ranked) {
                 app->add_option("-k", m_k, "The number of top results to return")->required();
             }
