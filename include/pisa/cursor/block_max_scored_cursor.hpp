@@ -31,7 +31,7 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
 
     [[nodiscard]] PISA_ALWAYSINLINE auto block_max_score() -> float
     {
-        return this->query_weight() * m_wdata.score();
+        return m_wdata.score();
     }
 
     [[nodiscard]] PISA_ALWAYSINLINE auto block_max_docid() -> std::uint32_t
@@ -47,7 +47,7 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
 
 template <typename Index, typename WandType, typename Scorer>
 [[nodiscard]] auto make_block_max_scored_cursors(
-    Index const& index, WandType const& wdata, Scorer const& scorer, Query query)
+    Index const& index, WandType const& wdata, Scorer const& scorer, Query query, bool weighted = false)
 {
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
@@ -56,15 +56,31 @@ template <typename Index, typename WandType, typename Scorer>
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-            float weight = term.second;
-            auto max_weight = weight * wdata.max_term_weight(term.first);
+
+            auto term_weight = 1.0f;
+            auto term_id = term.first;
+            auto max_weight = wdata.max_term_weight(term_id);
+            
+            if (weighted) {
+                term_weight = term.second;
+                max_weight = term_weight * max_weight;
+                return BlockMaxScoredCursor<typename Index::document_enumerator, WandType>(
+                    std::move(index[term_id]),
+                    [scorer = scorer.term_scorer(term_id), qweight = weight](
+                        uint32_t doc, uint32_t freq) { return qweight * scorer(doc, freq); },
+                    term_weight,
+                    max_weight,
+                    wdata.getenum(term_id));
+            }
+            
             return BlockMaxScoredCursor<typename Index::document_enumerator, WandType>(
-                std::move(index[term.first]),
-                scorer.term_scorer(term.first),
-                weight,
+                std::move(index[term_id]), 
+                scorer.term_scorer(term_id), 
+                term_weight,
                 max_weight,
-                wdata.getenum(term.first));
+                wdata.getenum(term_id));
         });
+ 
     return cursors;
 }
 

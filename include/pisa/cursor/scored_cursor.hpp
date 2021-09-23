@@ -55,17 +55,20 @@ make_scored_cursors(Index const& index, Scorer const& scorer, Query query, bool 
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
+
+            auto term_weight = 1.0f;
             auto term_id = term.first;
-            auto term_weight = term.second;
+
             if (weighted) {
+                term_weight = term.second;
                 return ScoredCursor<typename Index::document_enumerator>(
                     index[term_id],
-                    [scorer = scorer.term_scorer(term.first), weight = term_weight](
+                    [scorer = scorer.term_scorer(term_id), weight = term_weight](
                         uint32_t doc, uint32_t freq) { return weight * scorer(doc, freq); },
-                    term.second);
+                    term_weight);
             }
             return ScoredCursor<typename Index::document_enumerator>(
-                index[term.first], scorer.term_scorer(term_id), term.second);
+                index[term_id], scorer.term_scorer(term_id), term_weight);
         });
     return cursors;
 }
