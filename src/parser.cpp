@@ -86,8 +86,17 @@ record_parser(std::string const& type, std::istream& is)
                             return std::optional<Document_Record>{};
                         }
                         // TODO(michal): use std::move
-                        return std::make_optional<Document_Record>(
-                            rec.trecid(), rec.content(), rec.url());
+                        if (rec.has_trecid()) {
+                            return std::make_optional<Document_Record>(
+                                rec.trecid(), rec.content(), rec.url());
+                        }
+                        if (rec.has_recordid()) {
+                            return std::make_optional<Document_Record>(
+                                rec.recordid(), rec.content(), rec.url());
+                        } 
+                        // This should be unreachable
+                        spdlog::warn("Skipped invalid record: No warc-trec-id or warc-record-id...");
+                        return std::optional<Document_Record>{};
                     },
                     [](warcpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", error);
