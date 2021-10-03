@@ -8,9 +8,6 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <gsl/span>
-#include <pstl/algorithm>
-#include <pstl/execution>
-#include <pstl/numeric>
 #include <range/v3/view/chunk.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/zip.hpp>
@@ -18,6 +15,7 @@
 #include <tbb/global_control.h>
 
 #include "binary_collection.hpp"
+#include "execution.hpp"
 #include "io.hpp"
 #include "sharding.hpp"
 #include "util/util.hpp"

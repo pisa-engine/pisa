@@ -15,15 +15,15 @@
 #include "gsl/span"
 #include "memory_source.hpp"
 #include "payload_vector.hpp"
-#include "pstl/algorithm"
-#include "pstl/execution"
 #include "range/v3/view/iota.hpp"
 #include "spdlog/spdlog.h"
+#include "tbb/blocked_range.h"
 #include "tbb/concurrent_queue.h"
 #include "tbb/task_group.h"
 #include "type_safe.hpp"
 
 #include "binary_collection.hpp"
+#include "execution.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
@@ -198,7 +198,7 @@ namespace invert {
     {
         std::vector<uint32_t> document_sizes(documents.size());
         std::transform(
-            pstl::execution::par_unseq,
+            std::execution::par_unseq,
             documents.begin(),
             documents.end(),
             document_sizes.begin(),
@@ -217,7 +217,7 @@ namespace invert {
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
         std::transform(
-            pstl::execution::par_unseq,
+            std::execution::par_unseq,
             batches.begin(),
             batches.end(),
             std::begin(posting_vectors),
@@ -226,7 +226,7 @@ namespace invert {
         posting_vectors.clear();
         posting_vectors.shrink_to_fit();
 
-        std::sort(pstl::execution::par_unseq, postings.begin(), postings.end());
+        std::sort(std::execution::par_unseq, postings.begin(), postings.end());
 
         using iterator_type = decltype(postings.begin());
         invert::Inverted_Index<iterator_type> index;

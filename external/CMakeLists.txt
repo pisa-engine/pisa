@@ -75,10 +75,11 @@ set(BOOST_LIBRARYDIR ${CMAKE_BINARY_DIR}/boost-cmake CACHE PATH "Change boost lo
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
 # Add Porter2
+set(Porter2_ENABLE_TESTING OFF CACHE BOOL "skip Porter2 testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 
 # Add KrovetzStemmer
-set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
+set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip KrovetzStemmer testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer)
 
 # Add warcpp
