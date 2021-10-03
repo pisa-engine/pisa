@@ -88,6 +88,7 @@ add_subdirectory(boost-cmake)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
 # Add Porter2
+set(Porter2_ENABLE_TESTING OFF CACHE BOOL "skip Porter2 testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 
 # Add warcpp
