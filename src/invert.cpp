@@ -4,8 +4,6 @@
 
 #include "CLI/CLI.hpp"
 #include "gsl/span"
-#include "pstl/algorithm"
-#include "pstl/execution"
 #include "spdlog/spdlog.h"
 #include "tbb/task_group.h"
 #include "tbb/task_scheduler_init.h"
@@ -16,13 +14,14 @@
 
 using namespace pisa;
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     std::string input_basename;
     std::string output_basename;
-    size_t      threads = std::thread::hardware_concurrency();
-    size_t      term_count;
-    ptrdiff_t   batch_size = 100'000;
+    size_t threads = std::thread::hardware_concurrency();
+    size_t term_count;
+    ptrdiff_t batch_size = 100'000;
 
     CLI::App app{"invert - turn forward index into inverted index"};
     app.add_option("-i,--input", input_basename, "Forward index filename")->required();

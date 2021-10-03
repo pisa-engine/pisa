@@ -1,7 +1,7 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <Porter2/Porter2.hpp>
+#include <Porter2.hpp>
 #include <boost/te.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
@@ -13,8 +13,7 @@
 
 using namespace pisa;
 
-std::function<std::optional<Document_Record>(std::istream &)> record_parser(
-    std::string const &type)
+std::function<std::optional<Document_Record>(std::istream &)> record_parser(std::string const &type)
 {
     if (type == "plaintext") {
         return [](std::istream &in) -> std::optional<Document_Record> {
@@ -28,14 +27,15 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
     if (type == "trecweb") {
         return [](std::istream &in) -> std::optional<Document_Record> {
             while (not in.eof()) {
-                auto record = trecpp::match(trecpp::read_subsequent_record(in),
-                                            [](trecpp::Record const &rec) {
-                                                return std::make_optional<Document_Record>(rec);
-                                            },
-                                            [](trecpp::Error const &error) {
-                                                spdlog::warn("Skipped invalid record: {}", error);
-                                                return std::optional<Document_Record>{};
-                                            });
+                auto record = trecpp::match(
+                    trecpp::read_subsequent_record(in),
+                    [](trecpp::Record const &rec) {
+                        return std::make_optional<Document_Record>(rec);
+                    },
+                    [](trecpp::Error const &error) {
+                        spdlog::warn("Skipped invalid record: {}", error);
+                        return std::optional<Document_Record>{};
+                    });
                 if (record) {
                     return record;
                 }
@@ -46,17 +46,18 @@ std::function<std::optional<Document_Record>(std::istream &)> record_parser(
     if (type == "warc") {
         return [](std::istream &in) -> std::optional<Document_Record> {
             while (not in.eof()) {
-                auto record = warcpp::match(warcpp::read_subsequent_record(in),
-                                            [](warcpp::Record const &rec) {
-                                                if (not rec.valid_response()) {
-                                                    return std::optional<Document_Record>{};
-                                                }
-                                                return std::make_optional<Document_Record>(rec);
-                                            },
-                                            [](warcpp::Error const &error) {
-                                                spdlog::warn("Skipped invalid record: {}", error);
-                                                return std::optional<Document_Record>{};
-                                            });
+                auto record = warcpp::match(
+                    warcpp::read_subsequent_record(in),
+                    [](warcpp::Record const &rec) {
+                        if (not rec.valid_response()) {
+                            return std::optional<Document_Record>{};
+                        }
+                        return std::make_optional<Document_Record>(rec);
+                    },
+                    [](warcpp::Error const &error) {
+                        spdlog::warn("Skipped invalid record: {}", error);
+                        return std::optional<Document_Record>{};
+                    });
                 if (record) {
                     return record;
                 }
@@ -78,15 +79,16 @@ std::function<std::string(std::string &&)> term_processor(std::optional<std::str
             std::transform(term.begin(), term.end(), term.begin(), [](unsigned char c) {
                 return std::tolower(c);
             });
-            return stem::Porter2{}.stem(term);
+            return porter2::Stemmer{}.stem(term);
         };
     }
     spdlog::error("Unknown stemmer type: {}", *type);
     std::abort();
 }
 
-std::function<void(std::string &&constent, std::function<void(std::string &&)>)>
-content_parser(std::optional<std::string> const &type) {
+std::function<void(std::string &&constent, std::function<void(std::string &&)>)> content_parser(
+    std::optional<std::string> const &type)
+{
     if (not type) {
         return parse_plaintext_content;
     }
@@ -97,7 +99,8 @@ content_parser(std::optional<std::string> const &type) {
     std::abort();
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
 
     auto valid_basename = [](std::string const &basename) {
         boost::filesystem::path p(basename);
@@ -113,8 +116,8 @@ int main(int argc, char **argv) {
     std::string input_basename;
     std::string output_filename;
     std::string format = "plaintext";
-    size_t      threads = std::thread::hardware_concurrency();
-    ptrdiff_t   batch_size = 100'000;
+    size_t threads = std::thread::hardware_concurrency();
+    ptrdiff_t batch_size = 100'000;
     std::optional<std::string> stemmer = std::nullopt;
     std::optional<std::string> content_parser_type = std::nullopt;
     bool debug = false;

@@ -3,16 +3,15 @@
 #include <cstdio>
 #include <string>
 
-#include <Porter2/Porter2.hpp>
 #include <boost/filesystem.hpp>
 #include <catch2/catch.hpp>
 #include <gsl/span>
 #include <warcpp/warcpp.hpp>
 
-#include "pisa_config.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
 #include "parsing/html.hpp"
+#include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 
 using namespace boost::filesystem;
@@ -34,7 +33,8 @@ TEST_CASE("Write document to stream", "[parsing][forward_index]")
           {9, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0,
            4, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
          {{}, {0, 0, 0, 0}}}));
-    WHEN("List of term IDs is written to stream") {
+    WHEN("List of term IDs is written to stream")
+    {
         Forward_Index_Builder::write_document(os, term_ids.begin(), term_ids.end());
         THEN("Encoded sequence is " << encoded_sequence) { REQUIRE(os.str() == encoded_sequence); }
     }
@@ -44,18 +44,20 @@ TEST_CASE("Write header", "[parsing][forward_index]")
 {
     std::ostringstream os;
 
-    auto [document_count, encoded_header] = GENERATE(table<uint32_t, std::string>(
-        {{0, {1, 0, 0, 0, 0, 0, 0, 0}},
-         {1, {1, 0, 0, 0, 1, 0, 0, 0}},
-         {10, {1, 0, 0, 0, 10, 0, 0, 0}}}));
+    auto [document_count, encoded_header] =
+        GENERATE(table<uint32_t, std::string>({{0, {1, 0, 0, 0, 0, 0, 0, 0}},
+                                               {1, {1, 0, 0, 0, 1, 0, 0, 0}},
+                                               {10, {1, 0, 0, 0, 10, 0, 0, 0}}}));
     GIVEN("Document count is " << document_count)
-    WHEN("Header is written to stream") {
+    WHEN("Header is written to stream")
+    {
         Forward_Index_Builder::write_header(os, document_count);
         THEN("Encoded header is " << encoded_header) { REQUIRE(os.str() == encoded_header); }
     }
 }
 
-[[nodiscard]] std::vector<std::string> load_lines(std::istream &is) {
+[[nodiscard]] std::vector<std::string> load_lines(std::istream &is)
+{
     std::string line;
     std::vector<std::string> vec;
     while (std::getline(is, line)) {
@@ -64,7 +66,8 @@ TEST_CASE("Write header", "[parsing][forward_index]")
     return vec;
 }
 
-[[nodiscard]] std::vector<std::string> load_lines(std::string const &filename) {
+[[nodiscard]] std::vector<std::string> load_lines(std::string const &filename)
+{
     std::ifstream is(filename);
     return load_lines(is);
 }
@@ -72,7 +75,7 @@ TEST_CASE("Write header", "[parsing][forward_index]")
 template <typename T>
 void write_lines(std::ostream &os, gsl::span<T> &&elements)
 {
-    for (auto const& element : elements) {
+    for (auto const &element : elements) {
         os << element << '\n';
     }
 }
@@ -88,7 +91,8 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
 {
     auto identity = [](std::string const &term) -> std::string { return term; };
 
-    GIVEN("a few test records") {
+    GIVEN("a few test records")
+    {
         std::vector<Document_Record> records{
             Plaintext_Record{"Doc10", "lorem ipsum dolor sit amet consectetur adipiscing elit"},
             Plaintext_Record{"Doc11", "integer rutrum felis et sagittis dapibus"},
@@ -96,20 +100,23 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
             Plaintext_Record{"Doc13", "vivamus eu quam vitae lacus porta tempus quis eu metus"},
             Plaintext_Record{"Doc14",
                              "curabitur a justo vitae turpis feugiat molestie eu ac nunc"}};
-        WHEN("write a batch to temp directory") {
+        WHEN("write a batch to temp directory")
+        {
             Temporary_Directory tmpdir;
             auto output_file = tmpdir.path() / "fwd";
             Forward_Index_Builder::Batch_Process bp{
                 7, records, Document_Id{10}, output_file.string()};
             Forward_Index_Builder builder;
             builder.run(bp, identity, parse_plaintext_content);
-            THEN("documents are in check") {
+            THEN("documents are in check")
+            {
                 std::vector<std::string> expected_documents{
                     "Doc10", "Doc11", "Doc12", "Doc13", "Doc14"};
                 auto documents = load_lines(output_file.string() + ".batch.7.documents");
                 REQUIRE(documents == expected_documents);
             }
-            THEN("terms are in check") {
+            THEN("terms are in check")
+            {
                 std::vector<std::string> expected_terms{
                     "lorem",      "ipsum",    "dolor",     "sit",     "amet",  "consectetur",
                     "adipiscing", "elit",     "integer",   "rutrum",  "felis", "et",
@@ -120,7 +127,8 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
                 auto terms = load_lines(output_file.string() + ".batch.7.terms");
                 REQUIRE(terms == expected_terms);
             }
-            THEN("term IDs") {
+            THEN("term IDs")
+            {
                 binary_collection coll((output_file.string() + ".batch.7").c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
@@ -212,18 +220,21 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
                      "nunc"},
                     {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}});
 
-        WHEN("Merging function is called") {
+        WHEN("Merging function is called")
+        {
             auto output_file = (dir / "fwd").string();
             Forward_Index_Builder builder;
             builder.merge(output_file, 5, 3);
 
-            THEN("documents are in check") {
+            THEN("documents are in check")
+            {
                 std::vector<std::string> expected_documents{
                     "Doc10", "Doc11", "Doc12", "Doc13", "Doc14"};
                 auto documents = load_lines(output_file + ".documents");
                 REQUIRE(documents == expected_documents);
             }
-            THEN("terms are in check") {
+            THEN("terms are in check")
+            {
                 std::vector<std::string> expected_terms{
                     "a",         "ac",       "adipiscing", "amet",     "consectetur", "curabitur",
                     "dapibus",   "dolor",    "elit",       "et",       "eu",          "felis",
@@ -234,7 +245,8 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
                 auto terms = load_lines(output_file + ".terms");
                 REQUIRE(terms == expected_terms);
             }
-            THEN("term IDs") {
+            THEN("term IDs")
+            {
                 binary_collection coll((output_file).c_str());
                 std::vector<std::vector<uint32_t>> documents;
                 for (auto seq_iter = ++coll.begin(); seq_iter != coll.end(); ++seq_iter) {
@@ -286,7 +298,8 @@ TEST_CASE("Parse HTML content", "[parsing][forward_index][unit]")
     }
 }
 
-[[nodiscard]] auto load_term_map(std::string const& basename) -> std::vector<std::string> {
+[[nodiscard]] auto load_term_map(std::string const &basename) -> std::vector<std::string>
+{
     std::vector<std::string> map;
     std::ifstream is(basename + ".terms");
     std::string str;
@@ -306,12 +319,14 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
         return std::nullopt;
     };
 
-    GIVEN("A plaintext collection file") {
+    GIVEN("A plaintext collection file")
+    {
         std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
         REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
         int thread_count = GENERATE(2, 8);
-        int batch_size   = GENERATE(123, 1000);
-        WHEN("Build a forward index") {
+        int batch_size = GENERATE(123, 1000);
+        WHEN("Build a forward index")
+        {
             Temporary_Directory tmpdir;
             auto dir = tmpdir.path();
             std::string output = (dir / "fwd").string();
@@ -327,7 +342,8 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 batch_size,
                 thread_count);
 
-            THEN("The collection mapped to terms matches input") {
+            THEN("The collection mapped to terms matches input")
+            {
                 auto term_map = load_term_map(output);
                 binary_collection coll((output).c_str());
                 auto seq_iter = coll.begin();

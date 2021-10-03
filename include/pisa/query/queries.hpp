@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <Porter2/Porter2.hpp>
+#include <Porter2.hpp>
 #include <mio/mmap.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/spdlog.h>
@@ -50,20 +50,19 @@ struct Query {
     while (iline >> term) {
         try {
             parsed_query.push_back(process_term(term));
-        } catch (std::invalid_argument& err) {
+        } catch (std::invalid_argument &err) {
             spdlog::warn("Could not parse `{}` to a number", term);
-        } catch (std::out_of_range& err) {
+        } catch (std::out_of_range &err) {
             spdlog::warn("Term `{}` not found and will be ignored", term);
         }
     }
     return {id, parsed_query};
 }
 
-bool read_query(term_id_vec &ret,
-                std::istream &is = std::cin,
-                std::function<term_id_type(std::string)> process_term = [](auto str) {
-                    return std::stoi(str);
-                })
+bool read_query(
+    term_id_vec &ret,
+    std::istream &is = std::cin,
+    std::function<term_id_type(std::string)> process_term = [](auto str) { return std::stoi(str); })
 {
     ret.clear();
     std::string line;
@@ -74,15 +73,17 @@ bool read_query(term_id_vec &ret,
     return true;
 }
 
-void remove_duplicate_terms(term_id_vec &terms) {
+void remove_duplicate_terms(term_id_vec &terms)
+{
     std::sort(terms.begin(), terms.end());
     terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
 }
 
 typedef std::pair<uint64_t, uint64_t> term_freq_pair;
-typedef std::vector<term_freq_pair>   term_freq_vec;
+typedef std::vector<term_freq_pair> term_freq_vec;
 
-term_freq_vec query_freqs(term_id_vec terms) {
+term_freq_vec query_freqs(term_id_vec terms)
+{
     term_freq_vec query_term_freqs;
     std::sort(terms.begin(), terms.end());
     // count query term frequencies
@@ -111,7 +112,7 @@ namespace query {
             };
             if (stem) {
                 return [=](auto str) {
-                    stem::Porter2 stemmer{};
+                    porter2::Stemmer stemmer{};
                     return to_id(stemmer.stem(str));
                 };
             } else {
@@ -120,7 +121,7 @@ namespace query {
         } else {
             return [](auto str) { return std::stoi(str); };
         }
-}
+    }
 
 } // namespace query
 } // namespace pisa
@@ -130,8 +131,8 @@ namespace query {
 #include "algorithm/block_max_wand_query.hpp"
 #include "algorithm/maxscore_query.hpp"
 #include "algorithm/or_query.hpp"
+#include "algorithm/range_query.hpp"
 #include "algorithm/ranked_and_query.hpp"
 #include "algorithm/ranked_or_query.hpp"
-#include "algorithm/wand_query.hpp"
 #include "algorithm/ranked_or_taat_query.hpp"
-#include "algorithm/range_query.hpp"
+#include "algorithm/wand_query.hpp"

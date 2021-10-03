@@ -1,22 +1,23 @@
+#include <CLI/CLI.hpp>
 #include <numeric>
+#include <tbb/task_scheduler_init.h>
 #include <thread>
-#include "CLI/CLI.hpp"
-#include "pstl/execution"
-#include "tbb/task_scheduler_init.h"
 
+#include "execution.hpp"
 #include "recursive_graph_bisection.hpp"
 #include "util/progress.hpp"
 
 using namespace pisa;
 using iterator_type = std::vector<uint32_t>::iterator;
-using range_type    = document_range<iterator_type>;
-using node_type     = computation_node<iterator_type>;
+using range_type = document_range<iterator_type>;
+using node_type = computation_node<iterator_type>;
 
 inline std::vector<node_type> read_node_config(const std::string &config_file,
-                                               const range_type & initial_range) {
+                                               const range_type &initial_range)
+{
     std::vector<node_type> nodes;
-    std::ifstream          is(config_file);
-    std::string            line;
+    std::ifstream is(config_file);
+    std::string line;
     while (std::getline(is, line)) {
         std::istringstream iss(line);
         nodes.push_back(node_type::from_stream(iss, initial_range));
@@ -24,8 +25,9 @@ inline std::vector<node_type> read_node_config(const std::string &config_file,
     return nodes;
 }
 
-inline void run_with_config(const std::string &config_file, const range_type &initial_range) {
-    auto nodes       = read_node_config(config_file, initial_range);
+inline void run_with_config(const std::string &config_file, const range_type &initial_range)
+{
+    auto nodes = read_node_config(config_file, initial_range);
     auto total_count = std::accumulate(
         nodes.begin(), nodes.end(), std::ptrdiff_t(0), [](auto acc, const auto &node) {
             return acc + node.partition.size();
@@ -35,26 +37,28 @@ inline void run_with_config(const std::string &config_file, const range_type &in
     recursive_graph_bisection(std::move(nodes), bp_progress);
 }
 
-inline void run_default_tree(size_t depth, const range_type &initial_range) {
+inline void run_default_tree(size_t depth, const range_type &initial_range)
+{
     std::cerr << "Default tree with depth " << depth << std::endl;
     pisa::progress bp_progress("Graph bisection", initial_range.size() * depth);
     bp_progress.update(0);
     recursive_graph_bisection(initial_range, depth, depth - 6, bp_progress);
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const *argv[])
+{
 
     std::string input_basename;
     std::string output_basename;
     std::string input_fwd;
     std::string output_fwd;
     std::string config_file;
-    size_t      min_len = 0;
-    size_t      depth   = 0;
-    size_t      threads = std::thread::hardware_concurrency();
-    bool        nogb    = false;
-    bool        print   = false;
-    size_t      prelim  = 0;
+    size_t min_len = 0;
+    size_t depth = 0;
+    size_t threads = std::thread::hardware_concurrency();
+    bool nogb = false;
+    bool print = false;
+    size_t prelim = 0;
 
     CLI::App app{"Recursive graph bisection algorithm used for inverted indexed reordering."};
     app.add_option("-c,--collection", input_basename, "Collection basename")->required();
@@ -73,8 +77,8 @@ int main(int argc, char const *argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     bool config_provided = app.count("--config") > 0u;
-    bool depth_provided  = app.count("--depth") > 0u;
-    bool output_provided  = app.count("--output") > 0u;
+    bool depth_provided = app.count("--depth") > 0u;
+    bool output_provided = app.count("--output") > 0u;
     if (app.count("--output") + app.count("--store-fwdidx") == 0u) {
         std::cerr << "ERROR: Must define at least one output parameter.\n";
         return 1;
@@ -105,7 +109,7 @@ int main(int argc, char const *argv[]) {
         }
 
         if (print) {
-            for (const auto& document : documents) {
+            for (const auto &document : documents) {
                 std::cout << document << '\n';
             }
         }

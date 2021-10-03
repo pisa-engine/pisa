@@ -8,9 +8,6 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 #include <gsl/span>
-#include <pstl/algorithm>
-#include <pstl/execution>
-#include <pstl/numeric>
 #include <range/v3/action/shuffle.hpp>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/algorithm/for_each.hpp>
@@ -22,6 +19,7 @@
 #include <spdlog/spdlog.h>
 #include <tbb/task_scheduler_init.h>
 
+#include "execution.hpp"
 #include "invert.hpp"
 #include "io.hpp"
 #include "type_safe.hpp"
@@ -66,7 +64,8 @@ auto mapping_from_files(std::istream *full_titles, StreamRange &&shard_titles)
     return result;
 }
 
-auto mapping_from_files(std::string const &full_titles, gsl::span<std::string const> shard_titles)
+inline auto mapping_from_files(std::string const &full_titles,
+                               gsl::span<std::string const> shard_titles)
     -> Vector<Document_Id, Shard_Id>
 {
     std::ifstream fis(full_titles);
@@ -78,17 +77,16 @@ auto mapping_from_files(std::string const &full_titles, gsl::span<std::string co
         &fis, shard_is | ranges::view::transform([](auto &is) { return is.get(); }));
 }
 
-auto create_random_mapping(int document_count,
-                           int shard_count,
-                           std::optional<std::uint64_t> seed = std::nullopt)
+inline auto create_random_mapping(int document_count,
+                                  int shard_count,
+                                  std::optional<std::uint64_t> seed = std::nullopt)
     -> Vector<Document_Id, Shard_Id>
 {
     std::random_device rd;
     std::mt19937 g(seed.value_or(rd()));
     Vector<Document_Id, Shard_Id> mapping(document_count);
     auto shard_size = ceil_div(document_count, shard_count);
-    auto documents = ranges::view::iota(0_d, Document_Id{document_count})
-                     | ranges::to_vector
+    auto documents = ranges::view::iota(0_d, Document_Id{document_count}) | ranges::to_vector
                      | ranges::action::shuffle(g);
 
     ranges::for_each(ranges::view::zip(ranges::view::iota(0_s, Shard_Id(shard_count)),
@@ -102,29 +100,29 @@ auto create_random_mapping(int document_count,
     return mapping;
 }
 
-auto create_random_mapping(std::string const &input_basename,
-                           int shard_count,
-                           std::optional<std::uint64_t> seed = std::nullopt)
+inline auto create_random_mapping(std::string const &input_basename,
+                                  int shard_count,
+                                  std::optional<std::uint64_t> seed = std::nullopt)
     -> Vector<Document_Id, Shard_Id>
 {
     auto document_count = *(*binary_collection(input_basename.c_str()).begin()).begin();
     return create_random_mapping(document_count, shard_count, seed);
 }
 
-void copy_sequence(std::istream &is, std::ostream &os)
+inline void copy_sequence(std::istream &is, std::ostream &os)
 {
     uint32_t len;
-    is.read(reinterpret_cast<char*>(&len), sizeof(len));
+    is.read(reinterpret_cast<char *>(&len), sizeof(len));
     os.write(reinterpret_cast<char const *>(&len), sizeof(len));
     std::vector<char> buf(len * sizeof(uint32_t));
     is.read(buf.data(), buf.size());
     os.write(buf.data(), buf.size());
 }
 
-auto rearrange_sequences(std::string const &input_basename,
-                         std::string const &output_basename,
-                         Vector<Document_Id, Shard_Id> &mapping,
-                         std::optional<Shard_Id> shard_count = std::nullopt)
+inline auto rearrange_sequences(std::string const &input_basename,
+                                std::string const &output_basename,
+                                Vector<Document_Id, Shard_Id> &mapping,
+                                std::optional<Shard_Id> shard_count = std::nullopt)
 {
     spdlog::info("Rearranging documents");
     if (not shard_count) {
@@ -138,7 +136,7 @@ auto rearrange_sequences(std::string const &input_basename,
         spdlog::debug("Initializing file for shard {}", shard.as_int());
         auto filename = fmt::format("{}.{:03d}", output_basename, shard.as_int());
         os.emplace_back(filename);
-        constexpr std::array<char, 8> zero {0, 0, 0, 0, 0, 0, 0, 0};
+        constexpr std::array<char, 8> zero{0, 0, 0, 0, 0, 0, 0, 0};
         os.back().write(zero.data(), zero.size());
         dos.emplace_back(fmt::format("{}.documents", filename));
     }
@@ -163,10 +161,10 @@ auto rearrange_sequences(std::string const &input_basename,
     }
 }
 
-auto process_shard(std::string const &input_basename,
-                   std::string const &output_basename,
-                   Shard_Id shard_id,
-                   Vector<Term_Id, std::string> const &terms)
+inline auto process_shard(std::string const &input_basename,
+                          std::string const &output_basename,
+                          Shard_Id shard_id,
+                          Vector<Term_Id, std::string> const &terms)
 {
     auto basename = fmt::format("{}.{:03d}", output_basename, shard_id.as_int());
     auto shard = writable_binary_collection(basename.c_str());
@@ -202,9 +200,9 @@ auto process_shard(std::string const &input_basename,
     spdlog::info("Shard {} finished.", shard_id.as_int());
 }
 
-auto partition_fwd_index(std::string const &input_basename,
-                         std::string const &output_basename,
-                         Vector<Document_Id, Shard_Id> &mapping)
+inline auto partition_fwd_index(std::string const &input_basename,
+                                std::string const &output_basename,
+                                Vector<Document_Id, Shard_Id> &mapping)
 {
     auto terms = io::read_type_safe_string_vector<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;

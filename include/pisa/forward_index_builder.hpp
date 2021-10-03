@@ -14,8 +14,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/te.hpp>
 #include <gsl/gsl_assert>
-#include <pstl/algorithm>
-#include <pstl/execution>
 #include <range/v3/to_container.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
@@ -25,6 +23,7 @@
 #include <tbb/task_group.h>
 
 #include "binary_collection.hpp"
+#include "execution.hpp"
 #include "io.hpp"
 #include "parsing/html.hpp"
 #include "type_safe.hpp"
@@ -37,18 +36,21 @@ using namespace std::string_view_literals;
 struct Document_Record : boost::te::poly<Document_Record> {
     using boost::te::poly<Document_Record>::poly;
 
-    [[nodiscard]] auto content() -> std::string & {
-        std::string * result = nullptr;
+    [[nodiscard]] auto content() -> std::string &
+    {
+        std::string *result = nullptr;
         boost::te::call([](auto &self, auto &result) { result = &self.content(); }, *this, result);
         return *result;
     }
-    [[nodiscard]] auto trecid() const -> std::string const & {
+    [[nodiscard]] auto trecid() const -> std::string const &
+    {
         std::string const *result = nullptr;
         boost::te::call(
             [](auto const &self, auto &result) { result = &self.trecid(); }, *this, result);
         return *result;
     }
-    [[nodiscard]] auto url() const -> std::string const & {
+    [[nodiscard]] auto url() const -> std::string const &
+    {
         std::string const *result = nullptr;
         boost::te::call(
             [](auto const &self, auto &result) { result = &self.url(); }, *this, result);
@@ -60,16 +62,17 @@ using process_term_function_type = std::function<std::string(std::string &&)>;
 using process_content_function_type =
     std::function<void(std::string &&, std::function<void(std::string &&)>)>;
 
-
-void parse_plaintext_content(std::string &&content, std::function<void(std::string &&)> process) {
+void parse_plaintext_content(std::string &&content, std::function<void(std::string &&)> process)
+{
     std::istringstream content_stream(content);
-    std::string        term;
+    std::string term;
     while (content_stream >> term) {
         process(std::move(term));
     }
 }
 
-void parse_html_content(std::string &&content, std::function<void(std::string &&)> process) {
+void parse_html_content(std::string &&content, std::function<void(std::string &&)> process)
+{
     content = parsing::html::cleantext([&]() {
         auto pos = content.begin();
         while (pos != content.end()) {
@@ -119,8 +122,7 @@ class Forward_Index_Builder {
     }
 
     [[nodiscard]] static auto batch_file(std::string const &output_file,
-                                         std::ptrdiff_t     batch_number) noexcept
-        -> std::string
+                                         std::ptrdiff_t batch_number) noexcept -> std::string
     {
         std::ostringstream os;
         os << output_file << ".batch." << batch_number;
@@ -128,14 +130,14 @@ class Forward_Index_Builder {
     }
 
     struct Batch_Process {
-        std::ptrdiff_t               batch_number;
+        std::ptrdiff_t batch_number;
         std::vector<Document_Record> records;
-        Document_Id                  first_document;
-        std::string const &          output_file;
+        Document_Id first_document;
+        std::string const &output_file;
     };
 
-    void run(Batch_Process                 bp,
-             process_term_function_type    process_term,
+    void run(Batch_Process bp,
+             process_term_function_type process_term,
              process_content_function_type process_content) const
     {
         spdlog::debug("[Batch {}] Processing documents [{}, {})",
@@ -264,7 +266,9 @@ class Forward_Index_Builder {
         auto terms = collect_terms(basename, batch_count);
 
         spdlog::info("Writing terms");
-        for (auto const& term : terms) { term_os << term << '\n'; }
+        for (auto const &term : terms) {
+            term_os << term << '\n';
+        }
 
         spdlog::info("Mapping terms");
         auto term_mapping = reverse_mapping(std::move(terms));
@@ -300,29 +304,29 @@ class Forward_Index_Builder {
         spdlog::info("Success.");
     }
 
-    void build(std::istream &                is,
-               std::string const &           output_file,
-               read_record_function_type     next_record,
-               process_term_function_type    process_term,
+    void build(std::istream &is,
+               std::string const &output_file,
+               read_record_function_type next_record,
+               process_term_function_type process_term,
                process_content_function_type process_content,
-               std::ptrdiff_t                batch_size,
-               std::size_t                   threads) const
+               std::ptrdiff_t batch_size,
+               std::size_t threads) const
     {
         if (threads < 2) {
             spdlog::error("Building forward index requires at least 2 threads");
             std::abort();
         }
-        Document_Id    first_document{0};
+        Document_Id first_document{0};
         std::ptrdiff_t batch_number = 0;
 
-        std::vector<Document_Record>       record_batch;
-        tbb::task_group     batch_group;
+        std::vector<Document_Record> record_batch;
+        tbb::task_group batch_group;
         tbb::concurrent_bounded_queue<int> queue;
         queue.set_capacity((threads - 1) * 2);
         while (true) {
             std::optional<Document_Record> record = std::nullopt;
             if (not(record = next_record(is))) {
-                auto          last_batch_size = record_batch.size();
+                auto last_batch_size = record_batch.size();
                 Batch_Process bp{
                     batch_number, std::move(record_batch), first_document, output_file};
                 queue.push(0);
@@ -358,7 +362,7 @@ class Forward_Index_Builder {
         remove_batches(output_file, batch_number);
     }
 
-    void remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const
+    void remove_batches(std::string const &basename, std::ptrdiff_t batch_count) const
     {
         using boost::filesystem::path;
         using boost::filesystem::remove;
@@ -376,7 +380,9 @@ class Plaintext_Record {
    public:
     Plaintext_Record() = default;
     Plaintext_Record(std::string trecid, std::string content)
-        : m_trecid(std::move(trecid)), m_content(std::move(content)) {}
+        : m_trecid(std::move(trecid)), m_content(std::move(content))
+    {
+    }
     [[nodiscard]] auto content() -> std::string & { return m_content; }
     [[nodiscard]] auto content() const -> std::string const & { return m_content; }
     [[nodiscard]] auto trecid() -> std::string & { return m_trecid; }
