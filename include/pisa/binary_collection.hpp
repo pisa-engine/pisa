@@ -92,7 +92,7 @@ class base_binary_collection {
 
         auto const& operator*() const { return m_cur_seq; }
 
-        auto const* operator->() const { return &m_cur_seq; }
+        auto const* operator-> () const { return &m_cur_seq; }
 
         base_iterator& operator++()
         {
