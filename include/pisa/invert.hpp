@@ -15,11 +15,11 @@
 #include "gsl/span"
 #include "memory_source.hpp"
 #include "payload_vector.hpp"
-#include "pstl/algorithm"
-#include "pstl/execution"
 #include "range/v3/view/iota.hpp"
 #include "spdlog/spdlog.h"
+#include "tbb/blocked_range.h"
 #include "tbb/concurrent_queue.h"
+#include "tbb/parallel_reduce.h"
 #include "tbb/task_group.h"
 #include "type_safe.hpp"
 
@@ -197,12 +197,11 @@ namespace invert {
         gsl::span<gsl::span<Term_Id const>> documents, Document_Id first_document_id, size_t threads)
     {
         std::vector<uint32_t> document_sizes(documents.size());
+        // TODO(michal): parallelize with TBB
         std::transform(
-            pstl::execution::par_unseq,
-            documents.begin(),
-            documents.end(),
-            document_sizes.begin(),
-            [](auto const& terms) { return terms.size(); });
+            documents.begin(), documents.end(), document_sizes.begin(), [](auto const& terms) {
+                return terms.size();
+            });
         gsl::index batch_size = (documents.size() + threads - 1) / threads;
         std::vector<Batch> batches;
         for (gsl::index first_idx_in_batch = 0; first_idx_in_batch < documents.size();
@@ -216,17 +215,15 @@ namespace invert {
                 ranges::views::iota(first_document_in_batch, last_document_in_batch)});
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
-        std::transform(
-            pstl::execution::par_unseq,
-            batches.begin(),
-            batches.end(),
-            std::begin(posting_vectors),
-            map_to_postings);
+
+        // TODO(michal): parallelize with TBB
+        std::transform(batches.begin(), batches.end(), std::begin(posting_vectors), map_to_postings);
         auto postings = concatenate(posting_vectors);
         posting_vectors.clear();
         posting_vectors.shrink_to_fit();
 
-        std::sort(pstl::execution::par_unseq, postings.begin(), postings.end());
+        // TODO(michal): parallelize with TBB
+        std::sort(postings.begin(), postings.end());
 
         using iterator_type = decltype(postings.begin());
         invert::Inverted_Index<iterator_type> index;

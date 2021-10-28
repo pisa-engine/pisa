@@ -8,9 +8,6 @@
 #include <boost/filesystem.hpp>
 #include <fmt/format.h>
 #include <gsl/span>
-#include <pstl/algorithm>
-#include <pstl/execution>
-#include <pstl/numeric>
 #include <range/v3/action/shuffle.hpp>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/algorithm/for_each.hpp>
@@ -278,7 +275,8 @@ auto partition_fwd_index(
     auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);
     spdlog::info("Remapping shards");
-    std::for_each(pstl::execution::par_unseq, shard_ids.begin(), shard_ids.end(), [&](auto&& id) {
+    // TODO(michal): parallelize with TBB
+    std::for_each(shard_ids.begin(), shard_ids.end(), [&](auto&& id) {
         process_shard(input_basename, output_basename, id, terms);
     });
 }
