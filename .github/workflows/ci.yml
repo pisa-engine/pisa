@@ -43,8 +43,6 @@ jobs:
       if: runner.os == 'Linux'
       shell: bash
       run: |
-          # Install compiler
-
           cc="${{ matrix.compiler }}-${{ matrix.version }}"
           cc="${cc%-}"
           cxx="${cc/clang/clang++}"
@@ -62,7 +60,7 @@ jobs:
             sudo apt-get remove libstdc++-11-dev libgcc-11-dev cpp-11
           fi
           sudo apt-get update
-          sudo apt-get install -y libtool m4 autoconf
+          sudo apt-get install -y libtool m4 autoconf ccache
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
               sudo apt-get install -y "${cxx}"
           else
@@ -74,7 +72,8 @@ jobs:
     - name: Install (macOS)
       if: runner.os == 'macOS'
       run: |
-          brew install autoconf automake libtool cmake
+          brew install autoconf automake libtool cmake ccache
+          export PATH="/usr/local/opt/ccache/libexec:$PATH";
           if [ "${{ matrix.compiler }}" = "gcc" ]; then
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
@@ -88,7 +87,11 @@ jobs:
     - name: Create Build Environment
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/build
-
+    - name: Cache ccache files
+      uses: actions/cache@v1.1.2
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-${{ matrix.CC }}-${{ hashFiles('**/*.c') }}-${{ hashFiles('**/*.cpp') }}
     - name: Configure
       shell: bash
       working-directory: ${{runner.workspace}}/build
@@ -97,8 +100,9 @@ jobs:
     - name: Build
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug -- -j 4
-
+      run: |
+          [ -d "$HOME/.ccache" ] && sudo chown -R "$USER": "$HOME/.ccache"
+          cmake --build . --config Debug -- -j 4
     - name: Test
       shell: bash
       working-directory: ${{runner.workspace}}/build
