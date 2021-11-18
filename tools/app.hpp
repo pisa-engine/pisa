@@ -11,6 +11,7 @@
 #include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
 
+#include "index_types.hpp"
 #include "io.hpp"
 #include "query/queries.hpp"
 #include "scorer/scorer.hpp"
@@ -26,6 +27,12 @@ namespace arg {
         explicit Encoding(CLI::App* app)
         {
             app->add_option("-e,--encoding", m_encoding, "Index encoding")->required();
+            app->add_flag_callback("--list-encodings", []() {
+                for (auto&& encoding: encodings()) {
+                    std::cout << encoding << '\n';
+                }
+                std::exit(0);
+            });
         }
         [[nodiscard]] auto index_encoding() const -> std::string const& { return m_encoding; }
 
@@ -141,6 +148,21 @@ namespace arg {
         explicit Algorithm(CLI::App* app)
         {
             app->add_option("-a,--algorithm", m_algorithm, "Query processing algorithm")->required();
+            app->add_flag_callback("--list-algorithms", []() {
+                std::cout << "and_query\n";
+                std::cout << "block_max_maxscore_query\n";
+                std::cout << "block_max_ranked_and_query\n";
+                std::cout << "block_max_wand_query\n";
+                std::cout << "maxscore_query\n";
+                std::cout << "or_query\n";
+                std::cout << "range_query\n";
+                std::cout << "range_taat_query\n";
+                std::cout << "ranked_and_query\n";
+                std::cout << "ranked_or_query\n";
+                std::cout << "ranked_or_taat_query\n";
+                std::cout << "wand_query\n";
+                std::exit(0);
+            });
         }
 
         [[nodiscard]] auto algorithm() const -> std::string const& { return m_algorithm; }
@@ -166,6 +188,19 @@ namespace arg {
         app->add_option("--bm25-b", args.m_params.bm25_b, "BM25 b parameter.")->needs(scorer);
         app->add_option("--pl2-c", args.m_params.pl2_c, "PL2 c parameter.")->needs(scorer);
         app->add_option("--qld-mu", args.m_params.qld_mu, "QLD mu parameter.")->needs(scorer);
+        app->add_flag_callback("--list-scorers", []() {
+            std::cout << "bm25"
+                      << "\tOkapi BM25\n";
+            std::cout << "qld"
+                      << "\tQuery Likelihood with Dirichlet Smoothing\n";
+            std::cout << "pl2"
+                      << "\tPL2 probabilistic model\n";
+            std::cout << "dph"
+                      << "\tDPH model\n";
+            std::cout << "quantized"
+                      << "\tQuantized scores are read directly from the index\n";
+            std::exit(0);
+        });
         return scorer;
     }
 

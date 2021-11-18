@@ -21,8 +21,11 @@ namespace pisa { namespace mapper {
 
     using deleter_t = boost::function<void()>;
 
-    template <typename T>  // T must be a POD
+    template <typename T>
     class mappable_vector {
+        static_assert(std::is_standard_layout_v<T>, "T must be a POD");
+        static_assert(std::is_trivial_v<T>, "T must be a POD");
+
       public:
         using value_type = T;
         using iterator = const T*;
@@ -30,7 +33,7 @@ namespace pisa { namespace mapper {
 
         mappable_vector() : m_data(0), m_size(0), m_deleter() {}
         mappable_vector(mappable_vector const&) = delete;
-        mappable_vector(mappable_vector&&) = delete;
+        mappable_vector(mappable_vector&&) = default;
         mappable_vector& operator=(mappable_vector const&) = delete;
         mappable_vector& operator=(mappable_vector&&) = delete;
 

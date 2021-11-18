@@ -9,8 +9,8 @@
 using pisa::do_not_optimize_away;
 using pisa::get_time_usecs;
 
-template <typename IndexType, bool with_freqs>
-void perftest(IndexType const& index, std::string const& type)
+template <bool with_freqs, typename IndexType>
+void perftest(IndexType&& index, std::string const& type)
 {
     std::string freqs_log = with_freqs ? "+freq()" : "";
     {
@@ -103,18 +103,6 @@ void perftest(IndexType const& index, std::string const& type)
     }
 }
 
-template <typename IndexType>
-void perftest(const char* index_filename, std::string const& type)
-{
-    spdlog::info("Loading index from {}", index_filename);
-    IndexType index;
-    mio::mmap_source m(index_filename);
-    pisa::mapper::map(index, m, pisa::mapper::map_flags::warmup);
-
-    perftest<IndexType, false>(index, type);
-    perftest<IndexType, true>(index, type);
-}
-
 int main(int argc, const char** argv)
 {
     using namespace pisa;
@@ -127,17 +115,13 @@ int main(int argc, const char** argv)
     std::string type = argv[1];
     const char* index_filename = argv[2];
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                    \
-    }                                                            \
-    else if (type == BOOST_PP_STRINGIZE(T))                      \
-    {                                                            \
-        perftest<BOOST_PP_CAT(T, _index)>(index_filename, type); \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", type);
+    try {
+        IndexType::resolve(type).load_and_execute(index_filename, [&](auto&& index) {
+            perftest<false>(index, type);
+            perftest<true>(index, type);
+        });
+    } catch (std::exception const& err) {
+        spdlog::error("{}", err.what());
+        return 1;
     }
 }
