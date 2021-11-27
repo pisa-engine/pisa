@@ -30,7 +30,7 @@ jobs:
 
     - name: Create Build Environment
       shell: bash
-      run: docker exec tidy cmake -E make_directory /pisa/build
+      run: docker exec test cmake -E make_directory /pisa/build
 
     - name: Configure
       shell: bash
