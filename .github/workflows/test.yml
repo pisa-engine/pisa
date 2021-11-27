@@ -11,16 +11,14 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        name: [gcc8, gcc9, gcc10, gcc11]
+        name: [gcc8, gcc9, gcc10, gcc11, clang11]
         include:
           - name: gcc8
-            toolchain: ""
           - name: gcc9
-            toolchain: ""
           - name: gcc10
-            toolchain: ""
           - name: gcc11
-            toolchain: ""
+          - name: gcc11
+          - name: clang11
 
     steps:
     - uses: actions/checkout@v2
@@ -34,13 +32,18 @@ jobs:
           docker build . -t test-image
           docker run --name test -v ${{runner.workspace}}/pisa:/pisa -d --rm -it test-image
 
+    - name: Configure toolchain
+      if: startsWith(matrix.name, "clang")
+      shell: bash
+      run: echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=clang.cmake" >> $GITHUB_ENV
+
     - name: Create Build Environment
       shell: bash
       run: docker exec test cmake -E make_directory /pisa/build
 
     - name: Configure
       shell: bash
-      run: docker exec -w /pisa/build test cmake /pisa/build -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_CI_BUILD=ON ${{matrix.toolchain}} ..
+      run: docker exec -w /pisa/build test cmake /pisa/build -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_CI_BUILD=ON $TOOLCHAIN ..
 
     - name: Build
       shell: bash
