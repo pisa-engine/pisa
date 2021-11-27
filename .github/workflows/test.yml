@@ -1,4 +1,4 @@
-name: test
+name: Test
 
 on:
   push:
@@ -11,8 +11,14 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        name: [gcc11]
+        name: [gcc8, gcc9, gcc10, gcc11]
         include:
+          - name: gcc8
+            toolchain: ""
+          - name: gcc9
+            toolchain: ""
+          - name: gcc10
+            toolchain: ""
           - name: gcc11
             toolchain: ""
 

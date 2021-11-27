@@ -1,4 +1,4 @@
-FROM gcc:11
+FROM gcc:8
 
 ENV PISA_SRC="/pisa"
 ENV DEBIAN_FRONTEND=noninteractive
