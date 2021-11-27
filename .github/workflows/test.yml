@@ -33,7 +33,7 @@ jobs:
           docker run --name test -v ${{runner.workspace}}/pisa:/pisa -d --rm -it test-image
 
     - name: Configure toolchain
-      if: startsWith(matrix.name, "clang")
+      if: ${{ startsWith(matrix.name, 'clang') }}
       shell: bash
       run: echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=clang.cmake" >> $GITHUB_ENV
 
