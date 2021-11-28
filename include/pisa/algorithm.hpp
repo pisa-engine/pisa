@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <type_traits>
 
 #if __has_include(<execution>)
     #include <execution>
