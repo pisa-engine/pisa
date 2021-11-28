@@ -23,6 +23,7 @@
 #include "tbb/task_group.h"
 #include "type_safe.hpp"
 
+#include "algorithm.hpp"
 #include "binary_collection.hpp"
 #include "util/util.hpp"
 
@@ -197,11 +198,12 @@ namespace invert {
         gsl::span<gsl::span<Term_Id const>> documents, Document_Id first_document_id, size_t threads)
     {
         std::vector<uint32_t> document_sizes(documents.size());
-        // TODO(michal): parallelize with TBB
-        std::transform(
-            documents.begin(), documents.end(), document_sizes.begin(), [](auto const& terms) {
-                return terms.size();
-            });
+        pisa::transform(
+            pisa::execution::par_unseq,
+            documents.begin(),
+            documents.end(),
+            document_sizes.begin(),
+            [](auto const& terms) { return terms.size(); });
         gsl::index batch_size = (documents.size() + threads - 1) / threads;
         std::vector<Batch> batches;
         for (gsl::index first_idx_in_batch = 0; first_idx_in_batch < documents.size();
