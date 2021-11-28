@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-#if __has_include(<execution>)
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     #include <execution>
 #endif
 
@@ -20,7 +20,7 @@ namespace execution {
     inline constexpr parallel_policy par{};
     inline constexpr parallel_unsequenced_policy par_unseq{};
 
-#if __has_include(<execution>)
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
 
     [[nodiscard]] constexpr auto to_std(pisa::execution::sequenced_policy /* policy */)
         -> std::execution::sequenced_policy
@@ -54,7 +54,7 @@ OutputIt transform(
     OutputIt d_first,
     UnaryOperation unary_op)
 {
-#if __has_include(<execution>)
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     auto std_policy = pisa::execution::to_std(policy);
     return std::transform(std_policy, first, last, d_first, unary_op);
 #else
@@ -73,11 +73,11 @@ OutputIt transform(
     OutputIt d_first,
     BinaryOperation binary_op)
 {
-#if __has_include(<execution>)
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     auto std_policy = pisa::execution::to_std(policy);
     return std::transform(std_policy, first1, last1, first2, d_first, binary_op);
 #else
-    return std::transform(first1, last1, first2, d_first, unary_op);
+    return std::transform(first1, last1, first2, d_first, binary_op);
 #endif
 }
 
