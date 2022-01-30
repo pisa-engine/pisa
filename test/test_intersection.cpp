@@ -5,6 +5,7 @@
 #include <gsl/span>
 
 #include "cursor/scored_cursor.hpp"
+#include "in_memory_index.hpp"
 #include "intersection.hpp"
 
 using namespace pisa;
@@ -37,85 +38,6 @@ TEST_CASE("filter query", "[intersection][unit]")
         }
     }
 }
-
-struct VectorCursor {
-    gsl::span<std::uint32_t const> documents;
-    gsl::span<std::uint32_t const> frequencies;
-    std::uint32_t max_docid;
-
-    std::array<std::uint32_t, 1> sentinel_document;
-
-    [[nodiscard]] auto size() const noexcept -> std::size_t { return documents.size(); }
-    [[nodiscard]] auto docid() const noexcept -> std::uint32_t { return documents[0]; }
-    [[nodiscard]] auto freq() const noexcept -> float { return frequencies[0]; }
-    void next()
-    {
-        if (documents[0] < max_docid) {
-            documents = documents.subspan(1);
-            frequencies = frequencies.subspan(1);
-            try_finish();
-        }
-    }
-    void next_geq(std::uint32_t docid)
-    {
-        if (documents[0] < max_docid) {
-            auto new_pos = std::lower_bound(documents.begin(), documents.end(), docid);
-            auto skip = std::distance(documents.begin(), new_pos);
-            documents = documents.subspan(skip);
-            frequencies = frequencies.subspan(skip);
-            try_finish();
-        }
-    }
-
-  private:
-    void try_finish()
-    {
-        if (documents.empty()) {
-            documents = gsl::make_span(sentinel_document);
-        }
-    }
-};
-
-struct InMemoryIndex {
-    using document_enumerator = VectorCursor;
-
-    std::vector<std::vector<std::uint32_t>> documents;
-    std::vector<std::vector<std::uint32_t>> frequencies;
-    std::uint32_t num_documents;
-
-    [[nodiscard]] auto operator[](std::uint32_t term_id) const -> VectorCursor
-    {
-        if (term_id >= size()) {
-            throw std::out_of_range(
-                fmt::format("Term {} is out of range; index contains {} terms", term_id, size()));
-        }
-        return {gsl::make_span(documents[term_id]),
-                gsl::make_span(frequencies[term_id]),
-                num_documents,
-                {num_documents}};
-    }
-
-    [[nodiscard]] auto size() const noexcept -> std::size_t { return documents.size(); }
-    [[nodiscard]] auto num_docs() const noexcept -> std::size_t { return num_documents; }
-};
-
-struct InMemoryWand {
-    std::vector<float> max_weights;
-    std::uint32_t num_documents;
-
-    [[nodiscard]] auto max_term_weight(std::uint32_t term_id) const noexcept -> float
-    {
-        return max_weights[term_id];
-    }
-    [[nodiscard]] auto term_posting_count(std::uint32_t term_id) const noexcept { return 1; }
-    [[nodiscard]] auto term_occurrence_count(std::uint32_t term_id) const noexcept { return 1; }
-
-    [[nodiscard]] auto norm_len(std::uint32_t docid) const noexcept { return 1.0; }
-    [[nodiscard]] auto doc_len(std::uint32_t docid) const noexcept { return 1; }
-    [[nodiscard]] auto avg_len() const noexcept { return 1.0; }
-    [[nodiscard]] auto num_docs() const noexcept -> std::size_t { return num_documents; }
-    [[nodiscard]] auto collection_len() const noexcept -> std::size_t { return 1; }
-};
 
 TEST_CASE("Vector cursor", "[intersection][unit]")
 {
@@ -177,25 +99,26 @@ TEST_CASE("compute intersection", "[intersection][unit]")
 {
     GIVEN("Four-term query, index, and wand data object")
     {
-        InMemoryIndex index{{
-                                {0},  // 0
-                                {0, 1, 2},  // 1
-                                {0},  // 2
-                                {0},  // 3
-                                {0},  // 4
-                                {0, 1, 4},  // 5
-                                {1, 4, 8},  // 6
-                            },
-                            {
-                                {1},  // 0
-                                {1, 1, 1},  // 1
-                                {1},  // 2
-                                {1},  // 3
-                                {1},  // 4
-                                {1, 1, 1},  // 5
-                                {1, 1, 1},  // 6
-                            },
-                            10};
+        InMemoryIndex index{
+            {
+                {0},  // 0
+                {0, 1, 2},  // 1
+                {0},  // 2
+                {0},  // 3
+                {0},  // 4
+                {0, 1, 4},  // 5
+                {1, 4, 8},  // 6
+            },
+            {
+                {1},  // 0
+                {1, 1, 1},  // 1
+                {1},  // 2
+                {1},  // 3
+                {1},  // 4
+                {1, 1, 1},  // 5
+                {1, 1, 1},  // 6
+            },
+            10};
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
 
         Query query{
@@ -204,13 +127,13 @@ TEST_CASE("compute intersection", "[intersection][unit]")
             {0.1, 0.4, 1.0}  // weights
         };
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
-            {0b001, 3, 1.84583f},
-            {0b010, 3, 1.84583f},
-            {0b100, 3, 1.84583f},
-            {0b011, 1, 3.69165f},
-            {0b101, 2, 3.69165f},
-            {0b110, 2, 3.69165f},
-            {0b111, 1, 5.53748f},
+            {0b001, 3, 1.84583F},
+            {0b010, 3, 1.84583F},
+            {0b100, 3, 1.84583F},
+            {0b011, 1, 3.69165F},
+            {0b101, 2, 3.69165F},
+            {0b110, 2, 3.69165F},
+            {0b111, 1, 5.53748F},
         }));
         WHEN("Computed intersection with mask " << mask)
         {
@@ -263,13 +186,14 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
             {
                 CHECK(
                     masks
-                    == std::vector<Mask>{Mask(0b001),
-                                         Mask(0b010),
-                                         Mask(0b011),
-                                         Mask(0b100),
-                                         Mask(0b101),
-                                         Mask(0b110),
-                                         Mask(0b111)});
+                    == std::vector<Mask>{
+                        Mask(0b001),
+                        Mask(0b010),
+                        Mask(0b011),
+                        Mask(0b100),
+                        Mask(0b101),
+                        Mask(0b110),
+                        Mask(0b111)});
             }
         }
     }

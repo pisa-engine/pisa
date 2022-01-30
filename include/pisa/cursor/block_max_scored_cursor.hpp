@@ -53,7 +53,7 @@ template <typename Index, typename WandType, typename Scorer>
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-            auto term_weight = 1.0f;
+            auto term_weight = 1.0F;
             auto term_id = term.first;
             auto max_weight = wdata.max_term_weight(term_id);
 
