@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
+cmake_policy(SET CMP0074 NEW)
 
 project(PISA CXX C)
 
@@ -37,14 +38,19 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# include(external/external.cmake)
 add_subdirectory(external)
+
+# Add TBB
+set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/tbb/)
+include(${TBB_ROOT}/cmake/TBBBuild.cmake)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR)
+find_package(TBB REQUIRED tbb)
 
 include(ExternalProject)
 ExternalProject_Add(gumbo-external
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
-    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser CFLAGS=${GUMBO_CFLAGS}
+    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser CFLAGS=${GUMBO_CFLAGS} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
 	BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a
     BUILD_COMMAND ${MAKE})
 add_library(gumbo::gumbo STATIC IMPORTED)
@@ -104,13 +110,13 @@ target_link_libraries(pisa
         Boost::boost
         mio
         mio_base
-        ParallelSTL
         GSL
         Boost::filesystem
         spdlog
         fmt::fmt
         range-v3
         taily
+        TBB::tbb
     # These should be made private in the future:
         FastPFor
         streamvbyte

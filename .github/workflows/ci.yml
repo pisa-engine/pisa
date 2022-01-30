@@ -1,4 +1,4 @@
-name: Build and test
+name: Test MacOS
 
 on:
   push:
@@ -11,23 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux-gcc-9, linux-gcc-7, linux-clang-6, linux-clang-10, macos-gcc-9, macos-xcode-11.3]
+        name: [macos-gcc-9, macos-xcode-11.3]
         include:
-          - name: linux-gcc-9
-            os: ubuntu-18.04
-            compiler: "gcc"
-            version: "9"
-          - name: linux-gcc-7
-            os: ubuntu-18.04
-            compiler: "gcc" # default on bionic: gcc-7
-          - name: linux-clang-6
-            os: ubuntu-18.04
-            compiler: "clang"
-            version: "6.0"
-          - name: linux-clang-10
-            os: ubuntu-18.04
-            compiler: "clang"
-            version: "10"
           - name: macos-gcc-9
             os: macos-latest
             compiler: "gcc"
@@ -39,38 +24,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-          # Install compiler
-
-          cc="${{ matrix.compiler }}-${{ matrix.version }}"
-          cc="${cc%-}"
-          cxx="${cc/clang/clang++}"
-          cxx="${cxx/gcc/g++}"
-
-          if [ "${cc}" = "clang-10" ]; then
-            wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-            sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main"
-            sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
-          fi
-          if [ "${cc}" = "clang-6.0" ]; then
-            # Problems compiling with Clang 6 against libstdc++-9/10/11
-            sudo apt-get remove libstdc++-9-dev libgcc-9-dev cpp-9
-            sudo apt-get remove libstdc++-10-dev libgcc-10-dev cpp-10
-            sudo apt-get remove libstdc++-11-dev libgcc-11-dev cpp-11
-          fi
-          sudo apt-get update
-          sudo apt-get install -y libtool m4 autoconf
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-              sudo apt-get install -y "${cxx}"
-          else
-              echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=clang.cmake" >> $GITHUB_ENV
-              sudo apt-get install -y "${cc}"
-          fi
-          echo "CC=${cc}" >> $GITHUB_ENV
-          echo "CXX=${cxx}" >> $GITHUB_ENV
     - name: Install (macOS)
       if: runner.os == 'macOS'
       run: |
@@ -85,6 +38,7 @@ jobs:
             echo "SDKROOT=$(xcodebuild -version -sdk macosx Path)" >> $GITHUB_ENV
             echo "PATH=$(dirname $(xcrun -f clang)):$PATH" >> $GITHUB_ENV
           fi
+
     - name: Create Build Environment
       shell: bash
       run: cmake -E make_directory ${{runner.workspace}}/build
