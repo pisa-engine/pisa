@@ -13,8 +13,6 @@
 
 #include <boost/filesystem.hpp>
 #include <gsl/gsl_assert>
-#include <pstl/algorithm>
-#include <pstl/execution>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/transform.hpp>
@@ -145,8 +143,8 @@ class Forward_Index_Builder {
             auto first = std::next(terms.begin(), lhs.first);
             auto mid = std::next(terms.begin(), lhs.last);
             auto last = std::next(terms.begin(), rhs.last);
-            std::inplace_merge(pstl::execution::par, first, mid, last);
-            terms.erase(std::unique(pstl::execution::par, first, last), last);
+            std::inplace_merge(first, mid, last);
+            terms.erase(std::unique(first, last), last);
             return Term_Span{lhs.first, terms.size(), lhs.lvl + 1};
         };
         auto push_span = [&](Term_Span s) {

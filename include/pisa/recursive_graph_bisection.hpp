@@ -6,8 +6,6 @@
 #include <thread>
 #include <vector>
 
-#include "pstl/algorithm"
-#include "pstl/execution"
 #include "tbb/enumerable_thread_specific.h"
 #include "tbb/task_group.h"
 
@@ -165,7 +163,8 @@ void compute_degrees(document_range<Iterator>& range, single_init_vector<size_t>
     for (const auto& document: range) {
         auto terms = range.terms(document);
         auto deg_map_inc = [&](const auto& t) { deg_map.set(t, deg_map[t] + 1); };
-        std::for_each(pstl::execution::unseq, terms.begin(), terms.end(), deg_map_inc);
+        // TODO(michal): parallelize with TBB
+        std::for_each(terms.begin(), terms.end(), deg_map_inc);
     }
 }
 
@@ -272,18 +271,12 @@ void process_partition(
         compute_gains(partition, degrees, gain_function, thread_local_data);
         tbb::parallel_invoke(
             [&] {
-                std::sort(
-                    pstl::execution::par_unseq,
-                    partition.left.begin(),
-                    partition.left.end(),
-                    partition.left.by_gain());
+                // TODO(michal): parallelize with TBB
+                std::sort(partition.left.begin(), partition.left.end(), partition.left.by_gain());
             },
             [&] {
-                std::sort(
-                    pstl::execution::par_unseq,
-                    partition.right.begin(),
-                    partition.right.end(),
-                    partition.right.by_gain());
+                // TODO(michal): parallelize with TBB
+                std::sort(partition.right.begin(), partition.right.end(), partition.right.by_gain());
             });
         swap(partition, degrees);
     }

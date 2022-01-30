@@ -1,0 +1,49 @@
+name: Test Linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        name: [gcc8, gcc9, gcc10, gcc11, clang11]
+        include:
+          - name: gcc8
+          - name: gcc9
+          - name: gcc10
+          - name: gcc11
+          - name: gcc11
+          - name: clang11
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Bulid docker image
+      working-directory: ${{runner.workspace}}/pisa/test/docker/${{matrix.name}}
+      shell: bash
+      run: |
+          docker build . -t test-image
+          docker run --name test -v ${{runner.workspace}}/pisa:/pisa -d --rm -it test-image
+
+    - name: Create Build Environment
+      shell: bash
+      run: docker exec test cmake -E make_directory /pisa/build
+
+    - name: Configure
+      shell: bash
+      run: docker exec -w /pisa/build test cmake /pisa/build -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_CI_BUILD=ON $TOOLCHAIN ..
+
+    - name: Build
+      shell: bash
+      run: docker exec -w /pisa/build test cmake --build . --config Debug -- -j 4
+
+    - name: Test
+      shell: bash
+      run: docker exec -w /pisa/build test ctest -VV -j 4
