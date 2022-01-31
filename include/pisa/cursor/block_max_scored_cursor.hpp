@@ -29,7 +29,13 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
     BlockMaxScoredCursor& operator=(BlockMaxScoredCursor&&) = default;
     ~BlockMaxScoredCursor() = default;
 
-    [[nodiscard]] PISA_ALWAYSINLINE auto block_max_score() -> float { return m_wdata.score(); }
+    [[nodiscard]] PISA_ALWAYSINLINE auto block_max_score() -> float
+    {
+        // NOTE: we do not multiply because the algorithms explicitly multiply this by the value
+        // taken from `query_weight()` method of `ScoredCursor`. We might want to refactor this to
+        // be more consistent.
+        return m_wdata.score();
+    }
 
     [[nodiscard]] PISA_ALWAYSINLINE auto block_max_docid() -> std::uint32_t
     {
