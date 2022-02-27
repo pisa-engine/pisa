@@ -81,4 +81,37 @@ OutputIt transform(
 #endif
 }
 
+template <class ExecutionPolicy, class RandomIt>
+void sort(ExecutionPolicy&& policy, RandomIt first, RandomIt last)
+{
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
+    auto std_policy = pisa::execution::to_std(policy);
+    return std::sort(std_policy, first, last);
+#else
+    return std::sort(first, last);
+#endif
+}
+
+template <class ExecutionPolicy, class RandomIt, class Compare>
+void sort(ExecutionPolicy&& policy, RandomIt first, RandomIt last, Compare comp)
+{
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
+    auto std_policy = pisa::execution::to_std(policy);
+    return std::sort(std_policy, first, last, comp);
+#else
+    return std::sort(first, last, comp);
+#endif
+}
+
+template <class ExecutionPolicy, class ForwardIt, class UnaryFunction2>
+void for_each(ExecutionPolicy&& policy, ForwardIt first, ForwardIt last, UnaryFunction2 f)
+{
+#if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
+    auto std_policy = pisa::execution::to_std(policy);
+    std::for_each(std_policy, first, last, f);
+#else
+    std::for_each(first, last, f);
+#endif
+}
+
 }  // namespace pisa

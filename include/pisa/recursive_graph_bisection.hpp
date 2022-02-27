@@ -149,7 +149,7 @@ struct computation_node {
 };
 
 auto get_mapping = [](const auto& collection) {
-    std::vector<uint32_t> mapping(collection.size(), 0u);
+    std::vector<uint32_t> mapping(collection.size(), 0U);
     size_t p = 0;
     for (const auto& id: collection) {
         mapping[id] = p++;
@@ -163,8 +163,7 @@ void compute_degrees(document_range<Iterator>& range, single_init_vector<size_t>
     for (const auto& document: range) {
         auto terms = range.terms(document);
         auto deg_map_inc = [&](const auto& t) { deg_map.set(t, deg_map[t] + 1); };
-        // TODO(michal): parallelize with TBB
-        std::for_each(terms.begin(), terms.end(), deg_map_inc);
+        pisa::for_each(pisa::execution::par_unseq, terms.begin(), terms.end(), deg_map_inc);
     }
 }
 
@@ -271,12 +270,18 @@ void process_partition(
         compute_gains(partition, degrees, gain_function, thread_local_data);
         tbb::parallel_invoke(
             [&] {
-                // TODO(michal): parallelize with TBB
-                std::sort(partition.left.begin(), partition.left.end(), partition.left.by_gain());
+                pisa::sort(
+                    pisa::execution::par_unseq,
+                    partition.left.begin(),
+                    partition.left.end(),
+                    partition.left.by_gain());
             },
             [&] {
-                // TODO(michal): parallelize with TBB
-                std::sort(partition.right.begin(), partition.right.end(), partition.right.by_gain());
+                pisa::sort(
+                    pisa::execution::par_unseq,
+                    partition.right.begin(),
+                    partition.right.end(),
+                    partition.right.by_gain());
             });
         swap(partition, degrees);
     }

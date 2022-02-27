@@ -275,8 +275,7 @@ auto partition_fwd_index(
     auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to_vector;
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);
     spdlog::info("Remapping shards");
-    // TODO(michal): parallelize with TBB
-    std::for_each(shard_ids.begin(), shard_ids.end(), [&](auto&& id) {
+    pisa::for_each(pisa::execution::par_unseq, shard_ids.begin(), shard_ids.end(), [&](auto&& id) {
         process_shard(input_basename, output_basename, id, terms);
     });
 }
