@@ -48,7 +48,7 @@ void evaluate_queries(
     WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
-    std::function<std::vector<std::pair<float, uint64_t>>(Query)> query_fun;
+    std::function<std::vector<typename topk_queue::entry_type>(Query)> query_fun;
 
     if (query_type == "wand") {
         query_fun = [&](Query query) {
@@ -134,7 +134,7 @@ void evaluate_queries(
     auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
     auto docmap = Payload_Vector<>::from(*source);
 
-    std::vector<std::vector<std::pair<float, uint64_t>>> raw_results(queries.size());
+    std::vector<std::vector<typename topk_queue::entry_type>> raw_results(queries.size());
     auto start_batch = std::chrono::steady_clock::now();
     tbb::parallel_for(size_t(0), queries.size(), [&, query_fun](size_t query_idx) {
         raw_results[query_idx] = query_fun(queries[query_idx]);
