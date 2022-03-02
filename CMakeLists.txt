@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
+cmake_policy(SET CMP0074 NEW)
 
 project(PISA CXX C)
 
@@ -6,11 +7,24 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
 option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
+option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
+option(PISA_CI_BUILD "Remove debug information from Debug build" ON)
+
+if(PISA_USE_PIC)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    set(GUMBO_CFLAGS "-fPIC")
+endif()
+
+if(PISA_CI_BUILD)
+    set(CMAKE_C_FLAGS_DEBUG "")
+    set(CMAKE_CXX_FLAGS_DEBUG "")
+endif()
 
 configure_file(
   ${PISA_SOURCE_DIR}/include/pisa/pisa_config.hpp.in
@@ -24,14 +38,19 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# include(external/external.cmake)
 add_subdirectory(external)
+
+# Add TBB
+set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/tbb/)
+include(${TBB_ROOT}/cmake/TBBBuild.cmake)
+tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR)
+find_package(TBB REQUIRED tbb)
 
 include(ExternalProject)
 ExternalProject_Add(gumbo-external
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
     BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/gumbo-parser
-    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser
+    CONFIGURE_COMMAND ./autogen.sh && ./configure --prefix=${CMAKE_BINARY_DIR}/gumbo-parser CFLAGS=${GUMBO_CFLAGS} CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER}
 	BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/gumbo-parser/lib/libgumbo.a
     BUILD_COMMAND ${MAKE})
 add_library(gumbo::gumbo STATIC IMPORTED)
@@ -54,7 +73,9 @@ if (UNIX)
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
    endif ()
 
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
+   if(NOT PISA_CI_BUILD)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
+   endif()
 
 endif()
 
@@ -83,29 +104,32 @@ add_library(pisa ${PISA_SRC_FILES})
 target_include_directories(pisa PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/pisa>
 )
-target_link_libraries(pisa PUBLIC # TODO(michal): are there any of these we can switch to PRIVATE?
-    Threads::Threads
-    Boost::boost
-    QMX
-    mio
-    mio_base
-    ParallelSTL
-    GSL
-    FastPFor
-    streamvbyte
-    MaskedVByte
-    simdcomp
-    gumbo::gumbo
-    Boost::filesystem
-    Porter2
-    KrovetzStemmer
-    warcpp
-    wapopp
-    trecpp
-    spdlog
-    fmt::fmt
-    range-v3
-    taily
+target_link_libraries(pisa
+    PUBLIC
+        Threads::Threads
+        Boost::boost
+        mio
+        mio_base
+        GSL
+        Boost::filesystem
+        spdlog
+        fmt::fmt
+        range-v3
+        taily
+        TBB::tbb
+    # These should be made private in the future:
+        FastPFor
+        streamvbyte
+        MaskedVByte
+        simdcomp
+        QMX
+    PRIVATE
+        gumbo::gumbo
+        warcpp
+        wapopp
+        trecpp
+        Porter2
+        KrovetzStemmer
 )
 target_include_directories(pisa PUBLIC external)
 
@@ -135,13 +159,15 @@ if(PISA_COMPILE_HEADERS)
   list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
   get_property(PISA_INTERFACE_LINK_LIBRARIES TARGET pisa PROPERTY INTERFACE_LINK_LIBRARIES)
   foreach(PISA_INTERFACE_LINK_LIBRARY ${PISA_INTERFACE_LINK_LIBRARIES})
-    get_property(PISA_INTERFACE_LINK_LIBRARY_TYPE TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY TYPE)
-    if(PISA_INTERFACE_LINK_LIBRARY_TYPE STREQUAL "INTERFACE_LIBRARY")
-      get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
-      list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
-    else ()
-      get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INCLUDE_DIRECTORIES)
-      list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
+    if(NOT PISA_INTERFACE_LINK_LIBRARY MATCHES ".*LINK_ONLY.*")
+      get_property(PISA_INTERFACE_LINK_LIBRARY_TYPE TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY TYPE)
+      if(PISA_INTERFACE_LINK_LIBRARY_TYPE STREQUAL "INTERFACE_LIBRARY")
+        get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+        list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
+      else ()
+        get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET ${PISA_INTERFACE_LINK_LIBRARY} PROPERTY INCLUDE_DIRECTORIES)
+        list(APPEND PISA_INCLUDE_DIRECTORIES ${PISA_INTERFACE_INCLUDE_DIRECTORIES})
+      endif()
     endif()
   endforeach()
 

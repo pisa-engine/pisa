@@ -6,8 +6,6 @@
 #include <thread>
 #include <vector>
 
-#include "pstl/algorithm"
-#include "pstl/execution"
 #include "tbb/enumerable_thread_specific.h"
 #include "tbb/task_group.h"
 
@@ -151,7 +149,7 @@ struct computation_node {
 };
 
 auto get_mapping = [](const auto& collection) {
-    std::vector<uint32_t> mapping(collection.size(), 0u);
+    std::vector<uint32_t> mapping(collection.size(), 0U);
     size_t p = 0;
     for (const auto& id: collection) {
         mapping[id] = p++;
@@ -165,7 +163,7 @@ void compute_degrees(document_range<Iterator>& range, single_init_vector<size_t>
     for (const auto& document: range) {
         auto terms = range.terms(document);
         auto deg_map_inc = [&](const auto& t) { deg_map.set(t, deg_map[t] + 1); };
-        std::for_each(pstl::execution::unseq, terms.begin(), terms.end(), deg_map_inc);
+        pisa::for_each(pisa::execution::par_unseq, terms.begin(), terms.end(), deg_map_inc);
     }
 }
 
@@ -272,15 +270,15 @@ void process_partition(
         compute_gains(partition, degrees, gain_function, thread_local_data);
         tbb::parallel_invoke(
             [&] {
-                std::sort(
-                    pstl::execution::par_unseq,
+                pisa::sort(
+                    pisa::execution::par_unseq,
                     partition.left.begin(),
                     partition.left.end(),
                     partition.left.by_gain());
             },
             [&] {
-                std::sort(
-                    pstl::execution::par_unseq,
+                pisa::sort(
+                    pisa::execution::par_unseq,
                     partition.right.begin(),
                     partition.right.end(),
                     partition.right.by_gain());

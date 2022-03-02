@@ -9,7 +9,7 @@ in the following configurations:
 - Linux:
     - GCC 9
     - GCC 7
-    - Clang 6
+    - Clang 6 (known issues if linking with GNU libstdc++9 and up)
     - Clang 10
 - MaxOS:
     - GCC 9

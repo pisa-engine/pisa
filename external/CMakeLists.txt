@@ -44,25 +44,6 @@ add_library(simdcomp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdbitpack
                             ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdcomputil.c
 )
 
-
-# Add TBB
-set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/tbb/)
-include(${TBB_ROOT}/cmake/TBBBuild.cmake)
-tbb_build(
-    TBB_ROOT ${TBB_ROOT}
-    CONFIG_DIR TBB_DIR)
-# find_package(TBB REQUIRED tbb)
-
-# Add ParallelSTL
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/parallelstl EXCLUDE_FROM_ALL)
-target_compile_options(ParallelSTL INTERFACE -Wno-unused-parameter
-                                           -Wno-unknown-pragmas
-                                           -Wno-sign-compare
-                                           -Wno-reorder
-                                           -Wno-unused-local-typedefs
-                                           -Wno-unused-variable
-)
-
 # Add GSL
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
 
@@ -75,13 +56,16 @@ set(BOOST_LIBRARYDIR ${CMAKE_BINARY_DIR}/boost-cmake CACHE PATH "Change boost lo
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Catch2)
 
 # Add Porter2
+set(Porter2_ENABLE_TESTING OFF CACHE BOOL "skip Porter2 testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 
 # Add KrovetzStemmer
-set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip trecpp testing")
+set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip KrovetzStemmer testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer)
 
 # Add warcpp
+set(WARCPP_ENABLE_TESTING OFF CACHE BOOL "skip warcpp testing")
+set(WARCPP_BUILD_TOOL OFF CACHE BOOL "skip warcpp testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/warcpp)
 
 # Add trecpp

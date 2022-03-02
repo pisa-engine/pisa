@@ -14,7 +14,7 @@ jobs:
         name: [linux-gcc-9]
         include:
           - name: linux-gcc-9
-            os: ubuntu-latest
+            os: ubuntu-18.04
             compiler: "gcc"
             version: "9"
 
@@ -39,8 +39,8 @@ jobs:
           else
               sudo apt-get install -y "${cc}"
           fi
-          echo "::set-env name=CC::${cc}"
-          echo "::set-env name=CXX::${cxx}"
+          echo "CC=${cc}" >> $GITHUB_ENV
+          echo "CXX=${cxx}" >> $GITHUB_ENV
 
     - name: Install bats
       if: runner.os == 'Linux'
@@ -62,6 +62,7 @@ jobs:
           cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug \
             -DPISA_ENABLE_BENCHMARKING=OFF \
             -DPISA_ENABLE_TESTING=OFF \
+            -DPISA_CI_BUILD=ON \
             -DPISA_BUILD_TOOLS=ON ..
 
     - name: Build
@@ -72,4 +73,6 @@ jobs:
     - name: Test CLI
       shell: bash
       working-directory: ${{runner.workspace}}/build
+      env:
+          TEST_DIR: ../pisa/test
       run: ../pisa/test/cli/run.sh

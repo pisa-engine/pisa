@@ -539,6 +539,34 @@ namespace arg {
         std::optional<std::string> m_node_config{};
     };
 
+    struct Separator {
+        explicit Separator(CLI::App* app, std::string default_separator = "\t")
+            : m_separator(std::move(default_separator))
+        {
+            app->add_option("--sep", m_separator, "Separator string");
+        }
+
+        [[nodiscard]] auto separator() const -> std::string const& { return m_separator; }
+
+      private:
+        std::string m_separator;
+    };
+
+    struct PrintQueryId {
+        explicit PrintQueryId(CLI::App* app)
+        {
+            app->add_flag(
+                "--query-id",
+                m_print_query_id,
+                "Print query ID at the beginning of each line, separated by a colon");
+        }
+
+        [[nodiscard]] auto print_query_id() const -> bool { return m_print_query_id; }
+
+      private:
+        bool m_print_query_id = false;
+    };
+
 }  // namespace arg
 
 template <typename... Args>

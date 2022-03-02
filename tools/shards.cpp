@@ -32,6 +32,18 @@ using pisa::TailyRankArgs;
 using pisa::TailyStatsArgs;
 using pisa::TailyThresholds;
 
+void print_taily_scores(std::vector<double> const& scores, std::chrono::microseconds time)
+{
+    std::cout << R"({"time":)" << time.count() << R"(,"scores":[)";
+    if (!scores.empty()) {
+        std::cout << scores.front();
+        std::for_each(std::next(scores.begin()), scores.end(), [](double score) {
+            std::cout << ',' << score;
+        });
+    }
+    std::cout << "]}\n";
+}
+
 int main(int argc, char** argv)
 {
     spdlog::drop("");
@@ -148,16 +160,7 @@ int main(int argc, char** argv)
                 taily_rank_args.queries(),
                 shard_queries,
                 taily_rank_args.k(),
-                [](auto&& scores) {
-                    std::cout << '[';
-                    if (!scores.empty()) {
-                        std::cout << scores.front();
-                        std::for_each(std::next(scores.begin()), scores.end(), [](double score) {
-                            std::cout << ',' << score;
-                        });
-                    }
-                    std::cout << "]\n";
-                });
+                print_taily_scores);
         }
         if (taily_thresholds->parsed()) {
             auto shards = resolve_shards(taily_thresholds_args.stats());
@@ -169,7 +172,7 @@ int main(int argc, char** argv)
             }
         }
         return 0;
-    } catch (pisa::io::NoSuchFile err) {
+    } catch (pisa::io::NoSuchFile const& err) {
         spdlog::error("{}", err.what());
         return 1;
     } catch (std::exception const& err) {

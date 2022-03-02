@@ -5,11 +5,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
 
     steps:
     - name: Trigger docker build
-      shell: bash	
+      shell: bash
       run: |
             curl -s -X POST \
             -H "Content-Type:application/json" \

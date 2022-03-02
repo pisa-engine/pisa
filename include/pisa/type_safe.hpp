@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <ostream>
 
 namespace pisa {
 

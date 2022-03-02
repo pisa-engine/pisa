@@ -4,8 +4,6 @@
 
 #include "CLI/CLI.hpp"
 #include "gsl/span"
-#include "pstl/algorithm"
-#include "pstl/execution"
 #include "spdlog/spdlog.h"
 #include "tbb/global_control.h"
 #include "tbb/task_group.h"
@@ -30,7 +28,7 @@ int main(int argc, char** argv)
             args.threads(),
             args.term_count());
         return 0;
-    } catch (pisa::io::NoSuchFile err) {
+    } catch (pisa::io::NoSuchFile const& err) {
         spdlog::error("{}", err.what());
         return 1;
     }
