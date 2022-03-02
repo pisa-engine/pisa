@@ -218,14 +218,18 @@ namespace invert {
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
 
-        // TODO(michal): parallelize with TBB
-        std::transform(batches.begin(), batches.end(), std::begin(posting_vectors), map_to_postings);
+        pisa::transform(
+            pisa::execution::par_unseq,
+            batches.begin(),
+            batches.end(),
+            std::begin(posting_vectors),
+            map_to_postings);
+
         auto postings = concatenate(posting_vectors);
         posting_vectors.clear();
         posting_vectors.shrink_to_fit();
 
-        // TODO(michal): parallelize with TBB
-        std::sort(postings.begin(), postings.end());
+        pisa::sort(pisa::execution::par_unseq, postings.begin(), postings.end());
 
         using iterator_type = decltype(postings.begin());
         invert::Inverted_Index<iterator_type> index;

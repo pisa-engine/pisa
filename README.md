@@ -8,7 +8,6 @@
 [![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
 
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/83cbd7128c084994a87fb8394bd91a16)](https://www.codacy.com/app/amallia/pisa?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=pisa-engine/pisa&amp;utm_campaign=Badge_Grade)
 [![GitHub issues](https://img.shields.io/github/issues/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/issues)
 [![GitHub forks](https://img.shields.io/github/forks/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/network)
 [![GitHub stars](https://img.shields.io/github/stars/pisa-engine/pisa.svg)](https://github.com/pisa-engine/pisa/stargazers)

@@ -172,7 +172,7 @@ int main(int argc, char** argv)
             }
         }
         return 0;
-    } catch (pisa::io::NoSuchFile err) {
+    } catch (pisa::io::NoSuchFile const& err) {
         spdlog::error("{}", err.what());
         return 1;
     } catch (std::exception const& err) {
