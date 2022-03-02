@@ -47,11 +47,10 @@ auto InMemoryIndex::operator[](std::uint32_t term_id) const -> VectorCursor
         throw std::out_of_range(
             fmt::format("Term {} is out of range; index contains {} terms", term_id, size()));
     }
-    return {
-        gsl::make_span(documents[term_id]),
-        gsl::make_span(frequencies[term_id]),
-        num_documents,
-        {num_documents}};
+    return {gsl::make_span(documents[term_id]),
+            gsl::make_span(frequencies[term_id]),
+            num_documents,
+            {num_documents}};
 }
 
 auto InMemoryIndex::size() const noexcept -> std::size_t

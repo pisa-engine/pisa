@@ -52,9 +52,8 @@ namespace detail {
 
         [[nodiscard]] constexpr auto operator+(size_type n) const -> Payload_Vector_Iterator
         {
-            return {
-                std::next(offset_iter, n),
-                std::next(payload_iter, *std::next(offset_iter, n) - *offset_iter)};
+            return {std::next(offset_iter, n),
+                    std::next(payload_iter, *std::next(offset_iter, n) - *offset_iter)};
         }
 
         [[nodiscard]] constexpr auto operator+=(size_type n) -> Payload_Vector_Iterator&
@@ -66,9 +65,8 @@ namespace detail {
 
         [[nodiscard]] constexpr auto operator-(size_type n) const -> Payload_Vector_Iterator
         {
-            return {
-                std::prev(offset_iter, n),
-                std::prev(payload_iter, *offset_iter - *std::prev(offset_iter, n))};
+            return {std::prev(offset_iter, n),
+                    std::prev(payload_iter, *offset_iter - *std::prev(offset_iter, n))};
         }
 
         [[nodiscard]] constexpr auto operator-=(size_type n) -> Payload_Vector_Iterator&

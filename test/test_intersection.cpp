@@ -99,26 +99,25 @@ TEST_CASE("compute intersection", "[intersection][unit]")
 {
     GIVEN("Four-term query, index, and wand data object")
     {
-        InMemoryIndex index{
-            {
-                {0},  // 0
-                {0, 1, 2},  // 1
-                {0},  // 2
-                {0},  // 3
-                {0},  // 4
-                {0, 1, 4},  // 5
-                {1, 4, 8},  // 6
-            },
-            {
-                {1},  // 0
-                {1, 1, 1},  // 1
-                {1},  // 2
-                {1},  // 3
-                {1},  // 4
-                {1, 1, 1},  // 5
-                {1, 1, 1},  // 6
-            },
-            10};
+        InMemoryIndex index{{
+                                {0},  // 0
+                                {0, 1, 2},  // 1
+                                {0},  // 2
+                                {0},  // 3
+                                {0},  // 4
+                                {0, 1, 4},  // 5
+                                {1, 4, 8},  // 6
+                            },
+                            {
+                                {1},  // 0
+                                {1, 1, 1},  // 1
+                                {1},  // 2
+                                {1},  // 3
+                                {1},  // 4
+                                {1, 1, 1},  // 5
+                                {1, 1, 1},  // 6
+                            },
+                            10};
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
 
         Query query{
@@ -186,14 +185,13 @@ TEST_CASE("for_all_subsets", "[intersection][unit]")
             {
                 CHECK(
                     masks
-                    == std::vector<Mask>{
-                        Mask(0b001),
-                        Mask(0b010),
-                        Mask(0b011),
-                        Mask(0b100),
-                        Mask(0b101),
-                        Mask(0b110),
-                        Mask(0b111)});
+                    == std::vector<Mask>{Mask(0b001),
+                                         Mask(0b010),
+                                         Mask(0b011),
+                                         Mask(0b100),
+                                         Mask(0b101),
+                                         Mask(0b110),
+                                         Mask(0b111)});
             }
         }
     }
