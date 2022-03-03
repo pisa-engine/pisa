@@ -27,12 +27,11 @@ class MaxScoredCursor: public ScoredCursor<Cursor> {
 
   private:
     float m_max_score;
-    float m_query_weight = 1.0;
 };
 
 template <typename Index, typename WandType, typename Scorer>
-[[nodiscard]] auto
-make_max_scored_cursors(Index const& index, WandType const& wdata, Scorer const& scorer, Query query)
+[[nodiscard]] auto make_max_scored_cursors(
+    Index const& index, WandType const& wdata, Scorer const& scorer, Query query, bool weighted = false)
 {
     auto terms = query.terms;
     auto query_term_freqs = query_freqs(terms);
@@ -41,10 +40,23 @@ make_max_scored_cursors(Index const& index, WandType const& wdata, Scorer const&
     cursors.reserve(query_term_freqs.size());
     std::transform(
         query_term_freqs.begin(), query_term_freqs.end(), std::back_inserter(cursors), [&](auto&& term) {
-            float query_weight = term.second;
-            auto max_weight = query_weight * wdata.max_term_weight(term.first);
+            auto term_weight = 1.0f;
+            auto term_id = term.first;
+            auto max_weight = wdata.max_term_weight(term_id);
+
+            if (weighted) {
+                term_weight = term.second;
+                max_weight = term_weight * max_weight;
+                return MaxScoredCursor<typename Index::document_enumerator>(
+                    index[term_id],
+                    [scorer = scorer.term_scorer(term_id), weight = term_weight](
+                        uint32_t doc, uint32_t freq) { return weight * scorer(doc, freq); },
+                    term_weight,
+                    max_weight);
+            }
+
             return MaxScoredCursor<typename Index::document_enumerator>(
-                index[term.first], scorer.term_scorer(term.first), query_weight, max_weight);
+                index[term_id], scorer.term_scorer(term_id), term_weight, max_weight);
         });
     return cursors;
 }
