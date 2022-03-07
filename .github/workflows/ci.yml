@@ -11,16 +11,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [macos-gcc-9, macos-xcode-11.3]
+        name: [macos-gcc-9, macos-xcode-13.2]
         include:
           - name: macos-gcc-9
             os: macos-latest
             compiler: "gcc"
             version: "9"
-          - name: macos-xcode-11.3
+          - name: macos-xcode-13.2
             os: macos-latest
             compiler: "xcode"
-            version: "11.3"
+            version: "13.2"
     steps:
     - uses: actions/checkout@v2
 
@@ -32,7 +32,7 @@ jobs:
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
           else
-            sudo xcode-select -switch ~/Applications/Xcode_${{ matrix.version }}.app
+            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
             echo "CC=$(xcrun -f clang)" >> $GITHUB_ENV
             echo "CXX=$(xcrun -f clang++)" >> $GITHUB_ENV
             echo "SDKROOT=$(xcodebuild -version -sdk macosx Path)" >> $GITHUB_ENV
