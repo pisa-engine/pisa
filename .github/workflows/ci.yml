@@ -32,7 +32,7 @@ jobs:
             echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
             echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
           else
-            sudo xcode-select -switch /Library/Developer/CommandLineTools
+            sudo xcode-select -switch ~/Applications/Xcode_${{ matrix.version }}.app
             echo "CC=$(xcrun -f clang)" >> $GITHUB_ENV
             echo "CXX=$(xcrun -f clang++)" >> $GITHUB_ENV
             echo "SDKROOT=$(xcodebuild -version -sdk macosx Path)" >> $GITHUB_ENV
