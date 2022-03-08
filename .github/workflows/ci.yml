@@ -11,16 +11,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [macos-gcc-9, macos-xcode-11.3]
+        name: [macos-gcc-9, macos-xcode-13.2]
         include:
           - name: macos-gcc-9
             os: macos-latest
             compiler: "gcc"
             version: "9"
-          - name: macos-xcode-11.3
+          - name: macos-xcode-13.2
             os: macos-latest
             compiler: "xcode"
-            version: "11.3"
+            version: "13.2"
     steps:
     - uses: actions/checkout@v2
 
