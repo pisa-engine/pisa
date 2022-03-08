@@ -6,10 +6,7 @@
 
 namespace pisa {
 
-using term_id_type = uint32_t;
-using Stemmer_t = std::function<std::string(std::string)>;
-
-auto term_processor_builder(std::optional<std::string> const& type) -> std::function<Stemmer_t()>
+auto term_transformer_builder(std::optional<std::string> const& type) -> TermTransformerBuilder
 {
     if (not type) {
         return [] {

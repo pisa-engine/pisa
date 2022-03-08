@@ -8,12 +8,14 @@
 #include <catch2/catch.hpp>
 #include <gsl/span>
 
+#include "binary_collection.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
 #include "parser.hpp"
 #include "parsing/html.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
+#include "tokenizer.hpp"
 
 using namespace boost::filesystem;
 using namespace pisa;

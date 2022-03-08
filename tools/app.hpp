@@ -431,12 +431,11 @@ namespace arg {
                                   "Assign IDs randomly. You can use --seed for deterministic "
                                   "results.")
                               ->needs(output);
-            auto mapping = methods->add_option(
+            methods->add_option(
                 "--from-mapping",
                 m_mapping,
                 "Use the mapping defined in this new-line delimited text file");
-            auto feature =
-                methods->add_option("--by-feature", m_feature, "Order by URLs from this file");
+            methods->add_option("--by-feature", m_feature, "Order by URLs from this file");
             auto bp = methods->add_flag(
                 "--recursive-graph-bisection,--bp", m_bp, "Use recursive graph bisection algorithm");
             methods->require_option(1);
