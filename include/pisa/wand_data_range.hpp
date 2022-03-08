@@ -57,8 +57,8 @@ class wand_data_range {
         template <typename Scorer>
         float add_sequence(
             binary_freq_collection::sequence const& term_seq,
-            binary_freq_collection const& coll,
-            std::vector<uint32_t> const& doc_lens,
+            [[maybe_unused]] binary_freq_collection const& coll,
+            [[maybe_unused]] std::vector<uint32_t> const& doc_lens,
             float avg_len,
             Scorer scorer,
             [[maybe_unused]] BlockSize block_size)

@@ -34,7 +34,7 @@ class wand_data_raw {
         float add_sequence(
             binary_freq_collection::sequence const& seq,
             binary_freq_collection const& coll,
-            std::vector<uint32_t> const& doc_lens,
+            [[maybe_unused]] std::vector<uint32_t> const& doc_lens,
             float avg_len,
             Scorer scorer,
             BlockSize block_size)

@@ -109,7 +109,7 @@ class wand_data_compressed {
         float add_sequence(
             binary_freq_collection::sequence const& seq,
             binary_freq_collection const& coll,
-            std::vector<uint32_t> const& doc_lens,
+            [[maybe_unused]] std::vector<uint32_t> const& doc_lens,
             float avg_len,
             Scorer scorer,
             BlockSize block_size)
@@ -130,7 +130,7 @@ class wand_data_compressed {
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weights(float index_max_term_weight) {}
+        void quantize_block_max_term_weights([[maybe_unused]] float index_max_term_weight) {}
 
         void build(wand_data_compressed& wdata)
         {
@@ -202,10 +202,10 @@ class wand_data_compressed {
         uint64_t PISA_FLATTEN_FUNC docid() const { return m_cur_docid; }
 
       private:
+        compact_elias_fano::enumerator m_docs_enum;
+        float m_max_term_weight{0};
         uint64_t m_cur_docid{0};
         uint64_t m_cur_score_index{0};
-        float m_max_term_weight{0};
-        compact_elias_fano::enumerator m_docs_enum;
     };
 
     uint64_t size() const { return m_docs_sequences.size(); }

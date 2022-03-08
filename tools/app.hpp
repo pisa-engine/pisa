@@ -95,6 +95,7 @@ namespace arg {
                    "--stopwords", m_stop_words, "List of blacklisted stop words to filter out")
                 ->needs(m_terms_option);
             app->add_option("--stemmer", m_stemmer, "Stemmer type")->needs(m_terms_option);
+            app->add_flag("--weighted", m_weighted, "Weights scores by query frequency");
 
             if constexpr (Mode == QueryMode::Ranked) {
                 app->add_option("-k", m_k, "The number of top results to return")->required();
@@ -124,6 +125,8 @@ namespace arg {
 
         [[nodiscard]] auto k() const -> int { return m_k; }
 
+        [[nodiscard]] auto weighted() const -> bool { return m_weighted; }
+
       protected:
         [[nodiscard]] auto terms_option() const -> CLI::Option* { return m_terms_option; }
         void override_term_lexicon(std::string term_lexicon) { m_term_lexicon = term_lexicon; }
@@ -131,6 +134,7 @@ namespace arg {
       private:
         std::optional<std::string> m_query_file;
         int m_k = 0;
+        bool m_weighted = false;
         std::optional<std::string> m_stop_words{std::nullopt};
         std::optional<std::string> m_stemmer{std::nullopt};
         std::optional<std::string> m_term_lexicon{std::nullopt};
@@ -427,12 +431,11 @@ namespace arg {
                                   "Assign IDs randomly. You can use --seed for deterministic "
                                   "results.")
                               ->needs(output);
-            auto mapping = methods->add_option(
+            methods->add_option(
                 "--from-mapping",
                 m_mapping,
                 "Use the mapping defined in this new-line delimited text file");
-            auto feature =
-                methods->add_option("--by-feature", m_feature, "Order by URLs from this file");
+            methods->add_option("--by-feature", m_feature, "Order by URLs from this file");
             auto bp = methods->add_flag(
                 "--recursive-graph-bisection,--bp", m_bp, "Use recursive graph bisection algorithm");
             methods->require_option(1);

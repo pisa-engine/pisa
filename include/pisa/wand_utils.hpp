@@ -55,7 +55,7 @@ std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
 
 template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
-    binary_freq_collection const& coll,
+    [[maybe_unused]] binary_freq_collection const& coll,
     binary_freq_collection::sequence const& seq,
     Scorer scorer,
     const float lambda,

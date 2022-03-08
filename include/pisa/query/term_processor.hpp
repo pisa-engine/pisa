@@ -11,9 +11,10 @@
 namespace pisa {
 
 using term_id_type = uint32_t;
-using Stemmer_t = std::function<std::string(std::string)>;
+using TermTransformer = std::function<std::string(std::string)>;
+using TermTransformerBuilder = std::function<TermTransformer()>;
 
-auto term_processor_builder(std::optional<std::string> const& type) -> std::function<Stemmer_t()>;
+auto term_transformer_builder(std::optional<std::string> const& type) -> TermTransformerBuilder;
 
 class TermProcessor {
   private:
@@ -36,7 +37,7 @@ class TermProcessor {
         };
 
         // Implements '_to_id' method.
-        _to_id = [=](auto str) { return to_id(term_processor_builder(stemmer_type)()(str)); };
+        _to_id = [=](auto str) { return to_id(term_transformer_builder(stemmer_type)()(str)); };
         // Loads stopwords.
         if (stopwords_filename) {
             std::ifstream is(*stopwords_filename);
