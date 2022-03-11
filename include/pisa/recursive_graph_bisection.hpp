@@ -9,6 +9,7 @@
 #include "tbb/enumerable_thread_specific.h"
 #include "tbb/task_group.h"
 
+#include "algorithm.hpp"
 #include "forward_index.hpp"
 #include "payload_vector.hpp"
 #include "util/index_build_utils.hpp"

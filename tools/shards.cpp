@@ -31,6 +31,7 @@ using pisa::Shard_Id;
 using pisa::TailyRankArgs;
 using pisa::TailyStatsArgs;
 using pisa::TailyThresholds;
+using pisa::invert::InvertParams;
 
 void print_taily_scores(std::vector<double> const& scores, std::chrono::microseconds time)
 {
@@ -79,12 +80,16 @@ int main(int argc, char** argv)
                 tbb::global_control::max_allowed_parallelism, invert_args.threads() + 1);
             spdlog::info("Number of worker threads: {}", invert_args.threads());
             Shard_Id shard_id{0};
+
+            InvertParams params;
+            params.batch_size = invert_args.batch_size();
+            params.num_threads = invert_args.threads();
+
             for (auto shard: resolve_shards(invert_args.input_basename())) {
                 invert::invert_forward_index(
                     format_shard(invert_args.input_basename(), shard_id),
                     format_shard(invert_args.output_basename(), shard_id),
-                    invert_args.batch_size(),
-                    invert_args.threads());
+                    params);
                 shard_id += 1;
             }
         }

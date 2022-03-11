@@ -28,9 +28,7 @@ using namespace boost::filesystem;
 using namespace pisa;
 using namespace pisa::literals;
 
-using posting_vector_type = std::vector<std::pair<Term_Id, Document_Id>>;
-using iterator_type = decltype(std::declval<posting_vector_type>().begin());
-using index_type = invert::Inverted_Index<iterator_type>;
+using index_type = invert::Inverted_Index;
 
 [[nodiscard]] auto next_plaintext_record(std::istream& in) -> std::optional<Document_Record>
 {
