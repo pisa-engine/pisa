@@ -8,7 +8,7 @@
 #include <range/v3/view/iota.hpp>
 #include <tbb/blocked_range.h>
 
-#include "pisa/type_safe.hpp"
+#include "type_safe.hpp"
 
 namespace pisa { namespace invert {
 
