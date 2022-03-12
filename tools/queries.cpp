@@ -191,9 +191,9 @@ void perftest(
                 return or_q(make_cursors(index, query), index.num_docs());
             };
         } else if (t == "wand" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 wand_query wand_q(topk);
                 wand_q(
                     make_max_scored_cursors(index, wdata, *scorer, query, weighted),
@@ -202,9 +202,9 @@ void perftest(
                 return topk.topk().size();
             };
         } else if (t == "block_max_wand" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
@@ -213,9 +213,9 @@ void perftest(
                 return topk.topk().size();
             };
         } else if (t == "block_max_maxscore" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 block_max_maxscore_query block_max_maxscore_q(topk);
                 block_max_maxscore_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
@@ -224,18 +224,18 @@ void perftest(
                 return topk.topk().size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(make_scored_cursors(index, *scorer, query, weighted), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "block_max_ranked_and" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
                 block_max_ranked_and_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
@@ -244,18 +244,18 @@ void perftest(
                 return topk.topk().size();
             };
         } else if (t == "ranked_or" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 ranked_or_query ranked_or_q(topk);
                 ranked_or_q(make_scored_cursors(index, *scorer, query, weighted), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
         } else if (t == "maxscore" && wand_data_filename) {
-            query_fun = [&](Query query, Score t) {
+            query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k);
-                topk.set_threshold(t);
+                topk.set_threshold(threshold);
                 maxscore_query maxscore_q(topk);
                 maxscore_q(
                     make_max_scored_cursors(index, wdata, *scorer, query, weighted),
@@ -267,8 +267,8 @@ void perftest(
             Simple_Accumulator accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score t) mutable {
-                topk.set_threshold(t);
+            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
+                topk.set_threshold(threshold);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query, weighted),
                     index.num_docs(),
@@ -280,8 +280,8 @@ void perftest(
             Lazy_Accumulator<4> accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score t) mutable {
-                topk.set_threshold(t);
+            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
+                topk.set_threshold(threshold);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query, weighted),
                     index.num_docs(),
