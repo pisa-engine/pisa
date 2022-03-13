@@ -23,7 +23,7 @@ struct range_query {
         process_range(cursors, max_docid);
     }
 
-    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
+    std::vector<typename topk_queue::entry_type> const& topk() const { return m_topk.topk(); }
 
     template <typename CursorRange>
     void process_range(CursorRange&& cursors, size_t end)

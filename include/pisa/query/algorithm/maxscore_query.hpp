@@ -136,7 +136,7 @@ struct maxscore_query {
         std::swap(cursors, cursors_);
     }
 
-    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
+    std::vector<typename topk_queue::entry_type> const& topk() const { return m_topk.topk(); }
 
   private:
     topk_queue& m_topk;

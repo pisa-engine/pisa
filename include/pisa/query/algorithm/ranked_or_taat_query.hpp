@@ -31,7 +31,7 @@ class ranked_or_taat_query {
         accumulator.aggregate(m_topk);
     }
 
-    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
+    std::vector<typename topk_queue::entry_type> const& topk() const { return m_topk.topk(); }
 
   private:
     topk_queue& m_topk;

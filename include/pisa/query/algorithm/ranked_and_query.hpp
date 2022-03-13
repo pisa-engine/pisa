@@ -54,7 +54,7 @@ struct ranked_and_query {
         }
     }
 
-    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
+    std::vector<typename topk_queue::entry_type> const& topk() const { return m_topk.topk(); }
 
     topk_queue& get_topk() { return m_topk; }
 
