@@ -119,18 +119,18 @@ struct topk_queue {
         m_initial_threshold = initial_threshold;
     }
 
+    /// The maximum number of entries that can fit in the queue.
+    [[nodiscard]] auto capacity() const noexcept -> std::size_t { return m_k; }
+
+    /// The current number of entries in the queue.
+    [[nodiscard]] auto size() const noexcept -> std::size_t { return m_q.size(); }
+
   private:
     [[nodiscard]] constexpr static auto
     min_heap_order(entry_type const& lhs, entry_type const& rhs) noexcept -> bool
     {
         return lhs.first > rhs.first;
     }
-
-    /// The maximum number of entries that can fit in the queue.
-    [[nodiscard]] auto capacity() const noexcept -> std::size_t { return m_k; }
-
-    /// The current number of entries in the queue.
-    [[nodiscard]] auto size() const noexcept -> std::size_t { return m_q.size(); }
 
     std::size_t m_k;
     float m_initial_threshold;
