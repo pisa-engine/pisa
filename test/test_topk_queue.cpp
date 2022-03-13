@@ -131,4 +131,28 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
             REQUIRE(topk.true_threshold() < topk.effective_threshold());
         });
     }
+
+    SECTION("Threshold never decreases")
+    {
+        check([] {
+            auto [scores, docids] = *gen_postings(10, 1000);
+
+            // Pick a document to use as threshold
+            auto n = *gen::inRange<std::size_t>(0, docids.size());
+            auto initial = scores[n];
+            pisa::topk_queue topk(10, initial);
+
+            std::vector<float> thresholds;
+            std::vector<float> true_thresholds;
+            for (int posting = 0; posting < docids.size(); ++posting) {
+                topk.insert(scores[posting], docids[posting]);
+                thresholds.push_back(topk.effective_threshold());
+                true_thresholds.push_back(topk.true_threshold());
+            }
+
+            CAPTURE(thresholds);
+            REQUIRE(std::is_sorted(thresholds.begin(), thresholds.end()));
+            REQUIRE(std::is_sorted(true_thresholds.begin(), true_thresholds.end()));
+        });
+    }
 }
