@@ -157,7 +157,7 @@ struct block_max_wand_query {
         }
     }
 
-    std::vector<std::pair<float, uint64_t>> const& topk() const { return m_topk.topk(); }
+    std::vector<typename topk_queue::entry_type> const& topk() const { return m_topk.topk(); }
 
     void clear_topk() { m_topk.clear(); }
 
