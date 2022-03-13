@@ -165,7 +165,6 @@ int main(int argc, const char** argv)
     std::string query_filename;
     std::optional<std::string> pairs_filename;
     std::optional<std::string> triples_filename;
-    size_t k;
     std::string index_filename;
     std::string wand_data_filename;
     bool quantized = false;

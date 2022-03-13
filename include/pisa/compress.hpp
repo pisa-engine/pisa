@@ -11,7 +11,6 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "configuration.hpp"
 #include "ensure.hpp"
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
@@ -36,8 +35,6 @@ void dump_index_specific_stats(pisa::pefuniform_index const& coll, std::string c
 
 void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const& type)
 {
-    auto const& conf = pisa::configuration::get();
-
     uint64_t length_threshold = 4096;
     double long_postings = 0;
     double docs_partitions = 0;

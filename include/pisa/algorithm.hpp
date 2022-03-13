@@ -66,7 +66,7 @@ OutputIt transform(
 /// execution is not supported.
 template <class ExecutionPolicy, class ForwardIt1, class ForwardIt2, class OutputIt, class BinaryOperation>
 OutputIt transform(
-    ExecutionPolicy&& policy,
+    [[maybe_unused]] ExecutionPolicy&& policy,
     ForwardIt1 first1,
     ForwardIt1 last1,
     ForwardIt2 first2,
@@ -82,7 +82,7 @@ OutputIt transform(
 }
 
 template <class ExecutionPolicy, class RandomIt>
-void sort(ExecutionPolicy&& policy, RandomIt first, RandomIt last)
+void sort([[maybe_unused]] ExecutionPolicy&& policy, RandomIt first, RandomIt last)
 {
 #if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     auto std_policy = pisa::execution::to_std(policy);
@@ -93,7 +93,7 @@ void sort(ExecutionPolicy&& policy, RandomIt first, RandomIt last)
 }
 
 template <class ExecutionPolicy, class RandomIt, class Compare>
-void sort(ExecutionPolicy&& policy, RandomIt first, RandomIt last, Compare comp)
+void sort([[maybe_unused]] ExecutionPolicy&& policy, RandomIt first, RandomIt last, Compare comp)
 {
 #if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     auto std_policy = pisa::execution::to_std(policy);
@@ -104,7 +104,8 @@ void sort(ExecutionPolicy&& policy, RandomIt first, RandomIt last, Compare comp)
 }
 
 template <class ExecutionPolicy, class ForwardIt, class UnaryFunction2>
-void for_each(ExecutionPolicy&& policy, ForwardIt first, ForwardIt last, UnaryFunction2 f)
+void for_each(
+    [[maybe_unused]] ExecutionPolicy&& policy, ForwardIt first, ForwardIt last, UnaryFunction2 f)
 {
 #if defined(_LIBCPP_HAS_PARALLEL_ALGORITHMS)
     auto std_policy = pisa::execution::to_std(policy);

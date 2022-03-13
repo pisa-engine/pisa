@@ -74,7 +74,7 @@ int main(int argc, char** argv)
                 std::cin,
                 output_filename,
                 record_parser(format, std::cin),
-                term_processor_builder(stemmer),
+                term_transformer_builder(stemmer),
                 content_parser(content_parser_type),
                 batch_size,
                 threads);
