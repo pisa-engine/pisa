@@ -18,6 +18,7 @@
 #include <range/v3/view/zip.hpp>
 #include <spdlog/spdlog.h>
 
+#include "algorithm.hpp"
 #include "binary_collection.hpp"
 #include "invert.hpp"
 #include "io.hpp"

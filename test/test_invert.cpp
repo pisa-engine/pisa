@@ -11,6 +11,7 @@
 #include "binary_collection.hpp"
 #include "filesystem.hpp"
 #include "invert.hpp"
+#include "payload_vector.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 
@@ -18,17 +19,14 @@ using namespace boost::filesystem;
 using namespace pisa;
 using namespace pisa::literals;
 
-using posting_vector_type = std::vector<std::pair<Term_Id, Document_Id>>;
-using iterator_type = decltype(std::declval<posting_vector_type>().begin());
-using index_type = invert::Inverted_Index<iterator_type>;
-
 TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][unit]")
 {
     std::vector<std::vector<Term_Id>> documents = {{0_t, 1_t, 2_t, 3_t}, {1_t, 2_t, 3_t, 8_t}};
     std::vector<gsl::span<Term_Id const>> spans = {
         gsl::make_span(documents[0]), gsl::make_span(documents[1])};
 
-    auto postings = invert::map_to_postings(invert::Batch{spans, ranges::views::iota(0_d, 2_d)});
+    auto postings =
+        invert::map_to_postings(invert::ForwardIndexSlice{spans, ranges::views::iota(0_d, 2_d)});
     REQUIRE(
         postings
         == std::vector<std::pair<Term_Id, Document_Id>>{
@@ -71,7 +69,7 @@ TEST_CASE("Accumulate postings to Inverted_Index", "[invert][unit]")
                                                              {1_t, 1_d},
                                                              {2_t, 5_d}};
     using iterator_type = decltype(postings.begin());
-    invert::Inverted_Index<iterator_type> index;
+    invert::Inverted_Index index;
     index(tbb::blocked_range<iterator_type>(postings.begin(), postings.end()));
     REQUIRE(
         index.documents
@@ -92,7 +90,7 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
         {6_t, 4_d}, {6_t, 4_d}, {6_t, 4_d}, {7_t, 1_d}, {8_t, 2_d}, {8_t, 2_d}, {8_t, 2_d},
         {8_t, 3_d}, {8_t, 4_d}, {9_t, 0_d}, {9_t, 2_d}, {9_t, 3_d}, {9_t, 4_d}};
     using iterator_type = decltype(postings.begin());
-    invert::Inverted_Index<iterator_type> index;
+    invert::Inverted_Index index;
     for (auto iter = postings.begin(); iter != postings.end(); ++iter) {
         index(tbb::blocked_range<iterator_type>(iter, std::next(iter)));
     }
@@ -124,6 +122,7 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]")
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
 {
+    using index_type = invert::Inverted_Index;
     auto [lhs, rhs, expected_joined, message] =
         GENERATE(table<index_type, index_type, index_type, std::string>(
             {{index_type(
@@ -202,6 +201,7 @@ TEST_CASE("Join Inverted_Index to another", "[invert][unit]")
 
 TEST_CASE("Invert a range of documents from a collection", "[invert][unit]")
 {
+    using index_type = invert::Inverted_Index;
     std::vector<std::vector<Term_Id>> collection = {
         /* Doc 0 */ {2_t, 0_t, 3_t, 9_t, 0_t},
         /* Doc 1 */ {5_t, 0_t, 3_t, 4_t, 2_t, 6_t, 7_t, 4_t, 5_t},
@@ -252,6 +252,9 @@ TEST_CASE("Invert collection", "[invert][unit]")
         Temporary_Directory tmpdir;
         uint32_t batch_size = GENERATE(1, 2, 3, 4, 5);
         uint32_t threads = GENERATE(1, 2, 3, 4, 5);
+        invert::InvertParams params;
+        params.batch_size = batch_size;
+        params.num_threads = threads;
         bool with_lex = GENERATE(false, true);
         auto collection_filename = (tmpdir.path() / "fwd").string();
         {
@@ -275,12 +278,10 @@ TEST_CASE("Invert collection", "[invert][unit]")
         WHEN("Run inverting with batch size " << batch_size << " and " << threads << " threads")
         {
             auto index_basename = (tmpdir.path() / "idx").string();
-            std::optional<std::uint32_t> term_count{};
             if (not with_lex) {
-                term_count = 10;
+                params.term_count = 10;
             }
-            invert::invert_forward_index(
-                collection_filename, index_basename, batch_size, threads, term_count);
+            invert::invert_forward_index(collection_filename, index_basename, params);
             THEN("Index is stored in binary_freq_collection format")
             {
                 std::vector<uint32_t> document_data{

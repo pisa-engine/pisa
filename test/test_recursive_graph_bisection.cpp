@@ -74,13 +74,16 @@ TEST_CASE("Reorder documents with BP")
         REQUIRE(boost::filesystem::exists(boost::filesystem::path(collection_input)) == true);
         int thread_count = 2;
         int batch_size = 1000;
+        pisa::invert::InvertParams params;
+        params.num_threads = thread_count;
+        params.batch_size = batch_size;
 
         std::ifstream is(collection_input);
         Forward_Index_Builder builder;
         builder.build(
             is, fwd_path, next_record, id, parse_plaintext_content, batch_size, thread_count);
 
-        pisa::invert::invert_forward_index(fwd_path, inv_path, batch_size, thread_count);
+        pisa::invert::invert_forward_index(fwd_path, inv_path, params);
 
         WHEN("Reordered documents with BP")
         {
