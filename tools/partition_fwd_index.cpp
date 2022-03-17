@@ -10,6 +10,7 @@
 #include <gsl/span>
 #include <range/v3/view/chunk.hpp>
 #include <range/v3/view/enumerate.hpp>
+#include <range/v3/view/iota.hpp>
 #include <range/v3/view/zip.hpp>
 #include <spdlog/spdlog.h>
 #include <tbb/global_control.h>

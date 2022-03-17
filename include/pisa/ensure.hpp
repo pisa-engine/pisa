@@ -50,7 +50,7 @@ class Ensure {
     bool m_condition;
 };
 
-[[nodiscard]] auto ensure(bool condition) -> Ensure
+[[nodiscard]] inline auto ensure(bool condition) -> Ensure
 {
     return Ensure(condition);
 }

@@ -22,7 +22,7 @@ struct ScorerParams {
 };
 
 namespace pisa { namespace scorer {
-    auto from_params =
+    inline auto from_params =
         [](const ScorerParams& params,
            auto const& wdata) -> std::unique_ptr<index_scorer<std::decay_t<decltype(wdata)>>> {
         if (params.name == "bm25") {
