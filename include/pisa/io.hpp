@@ -15,7 +15,7 @@ namespace pisa::io {
 /// more informative logging.
 class NoSuchFile: public std::exception {
   public:
-    explicit NoSuchFile(std::string file);
+    explicit NoSuchFile(std::string const& file);
     [[nodiscard]] auto what() const noexcept -> char const*;
 
   private:

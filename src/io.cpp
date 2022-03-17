@@ -4,7 +4,8 @@
 
 namespace pisa::io {
 
-NoSuchFile::NoSuchFile(std::string file) : m_message(fmt::format("No such file: {}", file)) {}
+NoSuchFile::NoSuchFile(std::string const& file) : m_message(fmt::format("No such file: {}", file))
+{}
 
 [[nodiscard]] auto NoSuchFile::what() const noexcept -> char const*
 {
