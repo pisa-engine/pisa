@@ -14,10 +14,12 @@
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/stride.hpp>
+#include <range/v3/view/transform.hpp>
 
 #include "binary_freq_collection.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "invert.hpp"
 #include "parser.hpp"
 #include "payload_vector.hpp"
 #include "pisa_config.hpp"
