@@ -6,6 +6,7 @@
 #include <rapidcheck.h>
 
 #include "bit_vector.hpp"
+#include "bit_vector_builder.hpp"
 #include "mappable/mapper.hpp"
 #include "test_common.hpp"
 #include "test_rank_select_common.hpp"

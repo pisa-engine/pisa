@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bit_vector.hpp"
+#include "bit_vector_builder.hpp"
 
 #include "codec/compact_elias_fano.hpp"
 

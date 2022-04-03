@@ -4,6 +4,7 @@
 #include "test_generic_sequence.hpp"
 
 #include "codec/compact_ranked_bitvector.hpp"
+
 #include <cstdlib>
 #include <vector>
 
