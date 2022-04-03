@@ -2,6 +2,7 @@
 #include "catch2/catch.hpp"
 
 #include "bit_vector.hpp"
+#include "bit_vector_builder.hpp"
 #include "test_common.hpp"
 #include "util/util.hpp"
 
