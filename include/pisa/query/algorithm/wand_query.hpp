@@ -11,7 +11,7 @@ struct wand_query {
     explicit wand_query(topk_queue& topk, topk_queue& secondary) : m_topk(topk), m_secondary(secondary) {}
 
     template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
+    void operator()(CursorRange&& cursors, uint64_t max_docid, const float interpolation_factor = 0.5)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
@@ -68,7 +68,8 @@ struct wand_query {
                 }
 
                 m_topk.insert(score, pivot_id);
-                m_secondary.insert(second_score, pivot_id);
+                // Score a document as: F * BM25 + (1-F) * DeepImpact
+                m_secondary.insert(interpolation_factor * score + (1 - interpolation_factor) * second_score, pivot_id);
                 // resort by docid
                 sort_enums();
             } else {

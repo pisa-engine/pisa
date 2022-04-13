@@ -98,6 +98,8 @@ namespace arg {
 
             if constexpr (Mode == QueryMode::Ranked) {
                 app->add_option("-k", m_k, "The number of top results to return")->required();
+                app->add_option("--interpolation-factor", m_interpolation_factor, 
+                        "The interpolation weight: 0 = DeepImpact, 1 = BM25, 0.5 = Balanced");
             }
         }
 
@@ -124,6 +126,8 @@ namespace arg {
 
         [[nodiscard]] auto k() const -> int { return m_k; }
 
+        [[nodiscard]] auto interpolation_factor() const -> float { return m_interpolation_factor; }
+
       protected:
         [[nodiscard]] auto terms_option() const -> CLI::Option* { return m_terms_option; }
         void override_term_lexicon(std::string term_lexicon) { m_term_lexicon = term_lexicon; }
@@ -131,6 +135,7 @@ namespace arg {
       private:
         std::optional<std::string> m_query_file;
         int m_k = 0;
+        float m_interpolation_factor = 0.5f;
         std::optional<std::string> m_stop_words{std::nullopt};
         std::optional<std::string> m_stemmer{std::nullopt};
         std::optional<std::string> m_term_lexicon{std::nullopt};

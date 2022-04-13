@@ -39,6 +39,7 @@ void evaluate_queries(
     std::string const& type,
     std::string const& query_type,
     uint64_t k,
+    float interpolation_factor,
     std::string const& documents_filename,
     ScorerParams const& scorer_params,
     std::string const& run_id,
@@ -55,7 +56,7 @@ void evaluate_queries(
             topk_queue topk(k);
             topk_queue secondary(k);
             wand_query wand_q(topk, secondary);
-            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs(), interpolation_factor);
             topk.finalize();
             secondary.finalize();
             return secondary.topk();
@@ -66,74 +67,21 @@ void evaluate_queries(
             topk_queue secondary(k);
             block_max_wand_query block_max_wand_q(topk, secondary);
             block_max_wand_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs(), interpolation_factor);
             secondary.finalize();
             return secondary.topk();
-        };
-    } else if (query_type == "block_max_maxscore") {
-        query_fun = [&](Query query) {
-            topk_queue topk(k);
-            topk_queue secondary(k);
-            block_max_maxscore_query block_max_maxscore_q(topk, secondary);
-            block_max_maxscore_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            secondary.finalize();
-            return secondary.topk();
-        };
-    } else if (query_type == "block_max_ranked_and") {
-        query_fun = [&](Query query) {
-            topk_queue topk(k);
-            block_max_ranked_and_query block_max_ranked_and_q(topk);
-            block_max_ranked_and_q(
-                make_block_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
-            topk.finalize();
-            return topk.topk();
-        };
-    } else if (query_type == "ranked_and") {
-        query_fun = [&](Query query) {
-            topk_queue topk(k);
-            ranked_and_query ranked_and_q(topk);
-            ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            topk.finalize();
-            return topk.topk();
-        };
-    } else if (query_type == "ranked_or") {
-        query_fun = [&](Query query) {
-            topk_queue topk(k);
-            ranked_or_query ranked_or_q(topk);
-            ranked_or_q(make_scored_cursors(index, *scorer, query), index.num_docs());
-            topk.finalize();
-            return topk.topk();
         };
     } else if (query_type == "maxscore") {
         query_fun = [&](Query query) {
             topk_queue topk(k);
             topk_queue secondary(k); 
             maxscore_query maxscore_q(topk, secondary);
-            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+            maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs(), interpolation_factor);
             secondary.finalize();
             return secondary.topk();
         };
-    } else if (query_type == "ranked_or_taat") {
-        query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
-            topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            topk.finalize();
-            return topk.topk();
-        };
-    } else if (query_type == "ranked_or_taat_lazy") {
-        query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
-            topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query), index.num_docs(), accumulator);
-            topk.finalize();
-            return topk.topk();
-        };
     } else {
-        spdlog::error("Unsupported query type: {}", query_type);
+        spdlog::error("Unsupported query type for dual-heap processing: {}", query_type);
     }
 
     auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
@@ -213,6 +161,7 @@ int main(int argc, const char** argv)
         app.index_encoding(),
         app.algorithm(),
         app.k(),
+        app.interpolation_factor(),
         documents_file,
         app.scorer_params(),
         run_id,

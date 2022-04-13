@@ -28,7 +28,6 @@ struct ranked_or_query {
             for (size_t i = 0; i < cursors.size(); ++i) {
                 if (cursors[i].docid() == cur_doc) {
                     score += cursors[i].score();
-                    //std::cout << cur_doc << ":" << score << " ";
                     cursors[i].next();
                 }
                 if (cursors[i].docid() < next_doc) {

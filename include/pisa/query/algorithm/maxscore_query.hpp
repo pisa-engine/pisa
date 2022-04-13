@@ -56,7 +56,7 @@ struct maxscore_query {
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
-    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid)
+    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid, const float interpolation_factor = 0.5)
     {
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
@@ -122,7 +122,8 @@ struct maxscore_query {
                     }
                 }
             }
-            m_secondary.insert(second_score, current_docid);
+            // Score a document as: F * BM25 + (1-F) * DeepImpact
+            m_secondary.insert(interpolation_factor * current_score + (1 - interpolation_factor) * second_score, current_docid);
             if (m_topk.insert(current_score, current_docid)
                 && update_non_essential_lists() == UpdateResult::ShortCircuit) {
                 return;
@@ -131,13 +132,13 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
-    void operator()(Cursors&& cursors_, uint64_t max_docid)
+    void operator()(Cursors&& cursors_, uint64_t max_docid, const float interpolation_factor = 0.5)
     {
         if (cursors_.empty()) {
             return;
         }
         auto cursors = sorted(cursors_);
-        run_sorted(cursors, max_docid);
+        run_sorted(cursors, max_docid, interpolation_factor);
         std::swap(cursors, cursors_);
     }
 

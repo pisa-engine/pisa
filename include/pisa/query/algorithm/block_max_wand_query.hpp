@@ -9,7 +9,7 @@ struct block_max_wand_query {
     explicit block_max_wand_query(topk_queue& topk, topk_queue& secondary) : m_topk(topk), m_secondary(secondary) {}
 
     template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
+    void operator()(CursorRange&& cursors, uint64_t max_docid, const float interpolation_factor = 0.5)
     {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
@@ -80,10 +80,11 @@ struct block_max_wand_query {
                         if (en->docid() != pivot_id) {
                             break;
                         }
-                        // XXX: Might consider removing partial scoring
-                        // as there may be cases where we bail out from
+                        // XXX: You might consider removing this partial scoring
+                        // optimization as there may be cases where we bail out from
                         // scoring a document which is a good one according
-                        // to the secondary ranker
+                        // to the secondary ranker. However, this was not a problem
+                        // in the SIGIR paper as we applied MaxScore, not BMW.
                         float part_score = en->score();
                         score += part_score;
                         block_upper_bound -= en->block_max_score() * en->query_weight() - part_score;
@@ -100,7 +101,8 @@ struct block_max_wand_query {
                     }
 
                     m_topk.insert(score, pivot_id);
-                    m_secondary.insert(second_score, pivot_id);
+                    // Score a document as: F * BM25 + (1-F) * DeepImpact
+                    m_secondary.insert(interpolation_factor * score + (1 - interpolation_factor) * second_score, pivot_id);
                     // resort by docid
                     sort_cursors();
 
