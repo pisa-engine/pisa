@@ -14,7 +14,7 @@ def generate_mapping_from_permutations(original_ordering_file, new_ordering_file
 
 def main():
     parser = ArgumentParser(description="Takes two files containing a list of documents and generates a file with mappings between position in the first file to the position in the second according to the standard format '<ID> <new ID>' \
-                            to use with the 'suffle_docids' script.")
+                            to use with the 'shuffle_docids' script.")
     parser.add_argument("original_documents", help="File containing one document per line and \
                         where each line number (starting from zero) represents its docid")
     parser.add_argument("new_documents", help="File containing one document per line and \

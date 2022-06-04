@@ -825,7 +825,7 @@ class Baker(object):
                 # keyword arg
                 if cmd.has_varargs:
                     # keyword params are not replaced by bare args if the func
-                    # also has varags but they must be specified as positional
+                    # also has varargs but they must be specified as positional
                     # args for proper processing of varargs
                     value = cmd.keywords[name]
                     if name in newkwargs:

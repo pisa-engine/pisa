@@ -13,7 +13,7 @@ def dump(output, sorted_docids):
 def main():
     parser = ArgumentParser(description="Take a text file lexicon (e.g. '.documents' or '.urls' \
                             file) and sort it, generating a file mapping '<current ID> <new ID>' \
-                            to use with the 'suffle_docids' script.")
+                            to use with the 'shuffle_docids' script.")
     parser.add_argument("documents", help="File containing one document (or URL) per line and \
                         where each line number (starting from zero) represents its docid")
     parser.add_argument("output", help="Output file mapping '<current ID> <new ID>'")

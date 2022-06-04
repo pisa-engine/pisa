@@ -35,6 +35,6 @@ if __name__ == '__main__':
                         help='Number of document in collection.')
     parser.add_argument('-o', '--output',
                         type=argparse.FileType('w'), default=sys.stdout,
-                        help='Ouptut config file (if absent, write to stdout)')
+                        help='Output config file (if absent, write to stdout)')
     args = parser.parse_args()
     generate(args.ndoc, args.output, args.iterations, args.minsize)
