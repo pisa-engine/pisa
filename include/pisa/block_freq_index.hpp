@@ -321,7 +321,7 @@ class block_freq_index {
      */
     void warmup(std::size_t term_id) const
     {
-        assert(i < size());
+        assert(term_id < size());
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
 
         auto begin = endpoints.move(term_id).second;
