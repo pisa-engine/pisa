@@ -21,6 +21,7 @@ jobs:
       run: |
           docker build . -t tidy-image
           docker run --name tidy -v ${{runner.workspace}}/pisa:/pisa -d --rm -it tidy-image
+          docker exec tidy bash -c "ls -d /pisa/external/*/ | xargs -I{} git config --global --add safe.directory {}"
 
     - name: Create Build Environment
       shell: bash

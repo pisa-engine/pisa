@@ -1,6 +1,5 @@
 FROM ubuntu:20.04
 
-ENV PISA_SRC="/pisa"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
 
