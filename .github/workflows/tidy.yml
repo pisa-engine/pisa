@@ -19,8 +19,9 @@ jobs:
       working-directory: ${{runner.workspace}}/pisa/test/docker/tidy
       shell: bash
       run: |
-          docker build --build-arg USR=travis . -t tidy-image
-          docker run -u travis --name tidy -v ${{runner.workspace}}/pisa:/pisa -d --rm -it tidy-image
+          docker build . -t tidy-image
+          docker run --name tidy -v ${{runner.workspace}}/pisa:/pisa -d --rm -it tidy-image
+          docker exec tidy /safe-dir.sh
 
     - name: Create Build Environment
       shell: bash
