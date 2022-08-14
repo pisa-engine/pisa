@@ -21,16 +21,15 @@ jobs:
       run: |
           docker build . -t tidy-image
           docker run --name tidy -v ${{runner.workspace}}/pisa:/pisa -d --rm -it tidy-image
-          docker exec tidy /safe-dir.sh
 
     - name: Create Build Environment
       shell: bash
-      run: docker exec tidy cmake -E make_directory /home/travis/build
+      run: docker exec tidy cmake -E make_directory /pisa/build
 
     - name: Configure
       shell: bash
-      run: docker exec -w /home/travis/build tidy cmake /pisa -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_ENABLE_CLANG_TIDY=ON -DCMAKE_TOOLCHAIN_FILE=clang.cmake -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy -DPISA_CI_BUILD=ON
+      run: docker exec -w /pisa/build tidy cmake .. -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_ENABLE_CLANG_TIDY=ON -DCMAKE_TOOLCHAIN_FILE=clang.cmake -DPISA_CLANG_TIDY_EXECUTABLE=clang-tidy -DPISA_CI_BUILD=ON
 
     - name: Build
       shell: bash
-      run: docker exec -w /home/travis/build tidy cmake --build . --config Debug -- -j 4
+      run: docker exec -w /pisa/build tidy cmake --build . --config Debug -- -j 4

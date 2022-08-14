@@ -1,9 +1,7 @@
-FROM ubuntu:20.04
-
-ADD safe-dir.sh /safe-dir.sh
+FROM silkeh/clang:12
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
 
 RUN apt-get update -y
-RUN apt-get install -y clang clang-tidy libc++-dev libc++abi-dev libtool cmake git
+RUN apt-get install -y cmake libtool clang-tidy
