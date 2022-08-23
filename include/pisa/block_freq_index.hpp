@@ -1,5 +1,9 @@
 #pragma once
 
+#include <exception>
+
+#include <fmt/format.h>
+
 #include "bit_vector.hpp"
 #include "block_posting_list.hpp"
 #include "codec/compact_elias_fano.hpp"
@@ -297,17 +301,29 @@ class block_freq_index {
 
     using document_enumerator = typename block_posting_list<BlockCodec, Profile>::document_enumerator;
 
+  private:
+    void check_term_range(std::size_t term_id) const
+    {
+        if (term_id >= size()) {
+            throw std::out_of_range(
+                fmt::format("given term ID ({}) is out of range, must be < {}", term_id, size()));
+        }
+    }
+
+  public:
     /**
      * Accesses the given posting list.
      *
      * \params term_id  The term ID, must be a positive integer lower than the index size.
-     *                  Providing invlid value results in an undefined behavior.
+     *
+     * \throws std::out_of_range  Thrown if term ID is greater than or equal to
+     *                            number of terms in the index.
      *
      * \returns  The cursor over the posting list.
      */
     [[nodiscard]] document_enumerator operator[](std::size_t term_id) const
     {
-        assert(term_id < size());
+        check_term_range(term_id);
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
         auto endpoint = endpoints.move(term_id).second;
         return document_enumerator(m_lists.data() + endpoint, num_docs(), term_id);
@@ -317,11 +333,13 @@ class block_freq_index {
      * Iterates over the postings in the given list in order to bring the data to memory cache.
      *
      * \params term_id  The term ID, must be a positive integer lower than the index size.
-     *                  Providing invlid value results in an undefined behavior.
+     *
+     * \throws std::out_of_range  Thrown if term ID is greater than or equal to
+     *                            number of terms in the index.
      */
     void warmup(std::size_t term_id) const
     {
-        assert(term_id < size());
+        check_term_range(term_id);
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
 
         auto begin = endpoints.move(term_id).second;

@@ -229,8 +229,21 @@ namespace pisa { namespace mapper {
 
     }  // namespace detail
 
+    /**
+     * Serializes data to an output stream.
+     *
+     * \tparam T  Type of the serialized value.
+     *
+     * \param val            Value to serialize.
+     * \param fout           Output stream to write to.
+     * \param flags          Map flags, see `pisa::struct::map_flags`.
+     * \param friendly_name  Name used for debug printing.
+     *
+     * \throws std::ios_base::failure  May be thrown on write failure, depending on the
+     *                                 stream configuration.
+     */
     template <typename T>
-    size_t
+    std::size_t
     freeze(T& val, std::ofstream& fout, uint64_t flags = 0, const char* friendly_name = "<TOP>")
     {
         detail::freeze_visitor freezer(fout, flags);
@@ -238,14 +251,40 @@ namespace pisa { namespace mapper {
         return freezer.written();
     }
 
+    /**
+     * Serializes data to a file.
+     *
+     * \tparam T  Type of the serialized value.
+     *
+     * \param val            Value to serialize.
+     * \param filename       Output file.
+     * \param flags          Map flags, see `pisa::struct::map_flags`.
+     * \param friendly_name  Name used for debug printing.
+     *
+     * \throws std::ios_base::failure  Thrown if failed to write to the file.
+     */
     template <typename T>
-    size_t
+    std::size_t
     freeze(T& val, const char* filename, uint64_t flags = 0, const char* friendly_name = "<TOP>")
     {
         std::ofstream fout(filename, std::ios::binary);
+        fout.exceptions(std::ios::badbit | std::ios::failbit);
         return freeze(val, fout, flags, friendly_name);
     }
 
+    /**
+     * Deserializes data from memory.
+     *
+     * \tparam T  Type of the serialized value.
+     *
+     * \param[out] val            Value where the deserialized data will be written.
+     * \param[in]  base_address   The beginning of the meomry of the serialized data.
+     * \param[in]  flags          Map flags, see `pisa::struct::map_flags`.
+     * \param[in]  friendly_name  Name used for debug printing.
+     *
+     * \throws std::ios_base::failure  May be thrown on write failure, depending on the
+     *                                 stream configuration.
+     */
     template <typename T>
     size_t
     map(T& val, const char* base_address, uint64_t flags = 0, const char* friendly_name = "<TOP>")
@@ -255,6 +294,18 @@ namespace pisa { namespace mapper {
         return mapper.bytes_read();
     }
 
+    /**
+     * Deserializes data from memory.
+     *
+     * \tparam T  Type of the serialized value.
+     *
+     * \param[out] val            Value where the deserialized data will be written.
+     * \param[in]  m              Memory-mapped file where the data is serialized.
+     * \param[in]  flags          Map flags, see `pisa::struct::map_flags`.
+     * \param[in]  friendly_name  Name used for debug printing.
+     *
+     * \throws std::ios_base::failure  Thrown if failed to write to the file.
+     */
     template <typename T>
     size_t
     map(T& val, const mio::mmap_source& m, uint64_t flags = 0, const char* friendly_name = "<TOP>")
@@ -263,7 +314,7 @@ namespace pisa { namespace mapper {
     }
 
     template <typename T>
-    size_t size_of(T& val)
+    std::size_t size_of(T& val)
     {
         detail::sizeof_visitor sizer;
         sizer(val, "");
