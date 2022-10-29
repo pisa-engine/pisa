@@ -40,8 +40,14 @@ class binary_freq_collection {
         binary_collection::const_sequence freqs;
     };
 
-    class iterator: public std::iterator<std::forward_iterator_tag, sequence> {
+    class iterator {
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = sequence;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type*;
+        using reference = value_type&;
+
         iterator() = default;
 
         sequence const& operator*() const { return m_cur_seq; }

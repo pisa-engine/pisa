@@ -86,13 +86,19 @@ class base_binary_collection {
     const_iterator cend() const { return const_iterator(this, m_data_size); }
 
     template <typename S>
-    class base_iterator: public std::iterator<std::forward_iterator_tag, S> {
+    class base_iterator {
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = S;
+        using difference_type = std::ptrdiff_t;
+        using pointer = value_type*;
+        using reference = value_type&;
+
         base_iterator() : m_data(nullptr) {}
 
         auto const& operator*() const { return m_cur_seq; }
 
-        auto const* operator-> () const { return &m_cur_seq; }
+        auto const* operator->() const { return &m_cur_seq; }
 
         base_iterator& operator++()
         {
@@ -137,14 +143,14 @@ class base_binary_collection {
             m_cur_seq = S(begin, begin + n);
         }
 
-        const pointer m_data;
+        typename base_binary_collection::pointer const m_data;
         size_t m_data_size = 0, m_pos = 0, m_next_pos = 0;
         S m_cur_seq;
     };
 
   private:
     Source m_file;
-    pointer m_data;
+    typename base_binary_collection::pointer m_data;
     size_t m_data_size;
 };
 
