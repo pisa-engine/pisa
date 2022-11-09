@@ -62,9 +62,14 @@ using if_has_next_geq = std::enable_if_t<has_next_geq<T>::value>;
 // Important: the functors must be stateless, otherwise the behavior is
 // undefined.
 template <typename State, typename AdvanceFunctor, typename ValueFunctor>
-class function_iterator
-    : public std::iterator<std::forward_iterator_tag, typename std::result_of<ValueFunctor(State)>::type> {
+class function_iterator {
   public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = typename std::result_of<ValueFunctor(State)>::type;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type*;
+    using reference = value_type&;
+
     function_iterator() = default;
 
     explicit function_iterator(State initial_state) : m_state(initial_state) {}
@@ -74,9 +79,6 @@ class function_iterator
         using std::swap;
         swap(lhs.m_state, rhs.m_state);
     }
-
-    // XXX why isn't this inherited from std::iterator?
-    using value_type = typename std::result_of<ValueFunctor(State)>::type;
 
     value_type operator*() const
     {

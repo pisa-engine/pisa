@@ -278,7 +278,6 @@ TEST_CASE("partition_fwd_index", "[invert][integration]")
                     shard_terms.push_back(io::read_string_vector(
                         fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str()));
                     shard_iterators.push_back(++shards.back().begin());
-                    shards.back();
                 }
                 Shard_Id shard = 0_s;
                 for (auto doc: ranges::views::iota(0_d, Document_Id{document_count})) {
