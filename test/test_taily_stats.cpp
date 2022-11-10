@@ -75,7 +75,7 @@ TEST_CASE("Extract Taily feature stats", "[taily][unit]")
 {
     GIVEN("Collection")
     {
-        Temporary_Directory tmpdir;
+        pisa::TemporaryDirectory tmpdir;
         write_documents(tmpdir.path() / "coll.docs");
         write_frequencies(tmpdir.path() / "coll.freqs");
         write_sizes(tmpdir.path() / "coll.sizes");
@@ -122,7 +122,7 @@ TEST_CASE("Extract Taily feature stats", "[taily][unit]")
 
 TEST_CASE("Write Taily feature stats", "[taily][unit]")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto stats_path = tmpdir.path() / "taily";
     GIVEN("Feature statistics")
     {

@@ -21,7 +21,7 @@
 template <typename DocsSequence, typename FreqsSequence>
 void test_freq_index()
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto idx_path = (tmpdir.path() / "coll.bin").string();
 
     pisa::global_parameters params;

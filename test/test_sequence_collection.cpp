@@ -30,7 +30,7 @@ void test_sequence_collection()
         b.add_sequence(seq.begin(), seq.back() + 1, n);
     }
 
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto filename = tmpdir.path().string() + "temp.bin";
     {
         collection_type coll;

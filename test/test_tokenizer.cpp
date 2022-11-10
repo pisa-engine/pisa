@@ -26,7 +26,7 @@ TEST_CASE("TermTokenizer")
 
 TEST_CASE("Parse query terms to ids")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
         gsl::make_span(std::vector<std::string>{"lol", "obama", "term2", "tree", "usa"}))
