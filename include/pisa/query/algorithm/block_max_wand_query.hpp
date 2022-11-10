@@ -67,8 +67,7 @@ struct block_max_wand_query {
                     ordered_cursors[i]->block_max_next_geq(pivot_id);
                 }
 
-                block_upper_bound +=
-                    ordered_cursors[i]->block_max_score() * ordered_cursors[i]->query_weight();
+                block_upper_bound += ordered_cursors[i]->block_max_score();
             }
 
             if (m_topk.would_enter(block_upper_bound)) {
@@ -81,7 +80,7 @@ struct block_max_wand_query {
                         }
                         float part_score = en->score();
                         score += part_score;
-                        block_upper_bound -= en->block_max_score() * en->query_weight() - part_score;
+                        block_upper_bound -= en->block_max_score() - part_score;
                         if (!m_topk.would_enter(block_upper_bound)) {
                             break;
                         }
