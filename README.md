@@ -46,9 +46,11 @@ Some features of PISA are listed below:
 * Free and open-source with permissive license;
 * 免费 或 遵循Permissive License作有限度开源
 
-## About PISA 关于PISA
+## About PISA
+## 关于PISA
 
-### What is PISA? 什么是PISA？
+### What is PISA? 
+### 什么是PISA？
 PISA is a text search engine, though the "PISA Project" is a
 set of tools that help experiment with indexing and query processing.
 Given a text collection, PISA can build an *inverted index* over this corpus,
@@ -58,6 +60,7 @@ for each unique term (see [here](https://en.wikipedia.org/wiki/Search_engine_ind
 At query time, PISA stores its index in main memory for rapid retrieval.
 
 #### What does that all mean?
+#### 意思与意义
 In very simple terms, PISA is a text search engine. Starting with a corpus of
 documents, for example, Wikipedia, PISA can build an *inverted index* which allows us
 to rapidly search the Wikipedia collection. At the most basic level, Boolean
@@ -78,6 +81,7 @@ treated equally. The interested reader may wish to examine the [TF/IDF](https://
 Wikipedia article to learn more about this method of ranking.
 
 #### Search vs pattern matching
+#### 搜索 vs 模式匹配
 This is not the same type of search `grep` for example. This is more closely
 related to the popular Lucene search engine, though we don't currently support 
 as many query types as Lucene. As discussed previously, the main underlying data
@@ -87,6 +91,7 @@ traversed to find documents that match the query terms, and these documents can
 then be scored, ranked, and returned to the user.
 
 #### Who should use PISA?
+#### 谁应该使用 PISA
 The primary use-case for PISA is to conduct experiments to further the understanding
 of the field of Information Retrieval (IR). 
 Within the field of IR, there are various
@@ -97,10 +102,12 @@ IR research, and is why PISA stands for "Performant Indexes and Search for Acade
 In short, PISA is a platform for developing new innovations in efficient search.
 
 #### What if I just want to play with a search engine?
+#### 如果我只想把搜索引擎作为工具或模块进行把玩 应该如何做
 While PISA is focused on being a base for experimentation, it is also perfectly
 suitable for use as a simple general purpose indexing and search system.
 
 #### What sort of scale can PISA handle?
+#### PISA搜索引擎能处理多大的数据量
 PISA can handle large text collections. For example, PISA can easily index the
 ClueWeb09B or ClueWeb12B corpora, which each contain over 50 million web
 documents and close to 500 GiB of *compressed* textual data, resulting in 
@@ -114,6 +121,7 @@ queries based on an index residing entirely in main memory. As such, the possibl
 scale will be limited by main memory. 
 
 #### How fast is PISA, really?
+#### PISA搜索引擎究竟有多快？
 A few recent works have benchmarked PISA. For example, 
 *An Experimental Study of Index Compression and DAAT Query Processing Methods*
 by Antonio Mallia, Michal Siedlaczek, and Torsten Suel, which appeared in
@@ -125,12 +133,13 @@ PISA is also included in Tantivy's [search engine benchmark game](https://tantiv
 has [Tantivy](https://github.com/tantivy-search), [Lucene](https://lucene.apache.org/), and [Rucene](https://github.com/zhihu/rucene) as competitors.
 
 ### How did PISA begin?
+### PISA项目是如何开始的
 PISA is a fork of the [ds2i](https://github.com/ot/ds2i/) project started by [Giuseppe Ottaviano](https://github.com/ot).
 The ds2i project contained the source code for a number of important efficiency
 innovations in IR, including the "Partitioned Elias-Fano" compression method.
 
-
 ### Getting Started
+### 开始
 For those interested in working with PISA, we suggest examining the following
 resources:
 
@@ -141,8 +150,8 @@ resources:
 
 If you want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/.github/CONTRIBUTING.md) page.
 
-
 ## Reference
+## 主要参考
 
 If you use PISA in a research paper, please cite the following reference:
 ```
@@ -158,3 +167,11 @@ If you use PISA in a research paper, please cite the following reference:
   url       = {http://ceur-ws.org/Vol-2409/docker08.pdf}
 }
 ```
+
+* Faster Learned Sparse Retrieval with Guided Traversal. A. Mallia, J. Mackenzie, T. Suel, and N. Tonellotto. 44th International ACM SIGIR Conference on Research and Development in Information Retrieval, July 2022
+* Using Conjunctions for Faster Disjunctive Top-k Queries. M. Siedlaczek, A. Mallia, and T. Suel. 15th ACM International Conference on Web Search and Data Mining, March 2022
+* Learning Passage Impacts for Inverted Indexes. A. Mallia, O. Khattab, T. Suel, and N. Tonellotto. 44th International ACM SIGIR Conference on Research and Development in Information Retrieval, July 2021
+* Fast Disjunctive Candidate Generation Using Live Block Filtering. A. Mallia, M. Siedlaczek, and T. Suel. 14th ACM International Conference on Web Search and Data Mining, March 2021
+* GPU-Accelerated Decoding of Integer Lists. Antonio Mallia, Michał Siedlaczek, Torsten Suel, and Mohamed Zahran. 28th International Conference on Information and Knowledge Engineering, November 2019
+* TODO: add more ...
+* 
