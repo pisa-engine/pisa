@@ -1,7 +1,7 @@
 <p align="center"><img src="https://pisa-engine.github.io/images/logo250.png" width="250px"></p>
 
 # PISA: Performant Indexes and Search for Academia v0.8.2
-# PISA: 为学术界所用的预设结构的倒排索引及其上层搜索功能 v0.8.2
+# PISA: 为学术界所用 预设结构的倒排索引及其上层搜索功能 v0.8.2
 
 ![Build and test](https://github.com/pisa-engine/pisa/workflows/Build%20and%20test/badge.svg)
 ![clang-tidy](https://github.com/pisa-engine/pisa/workflows/clang-tidy/badge.svg)
@@ -18,26 +18,37 @@
 ## Join us on Slack
 Get in touch via Slack: [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
 
-## 加入我们的微信群
+## 加入我们的Algmon Pisa微信群
 加入我们的微信群以保持沟通和进行技术讨论
+关于Algmon简介 可见https://algmon.com/docs/about
+
 ![](./docs/source/_static/img/wechat.group.qr.png)
 
-## Overview
+## Overview 概览
 
 PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
 
+PISA是一个文本搜索引擎，为海量文档搜索而设计。她允许研究人员在此架构上试验新的state-of-the-art技术，同时为开发者提供了敏捷开发的理想开发环境。
+
 Some features of PISA are listed below:
+以下列举出PISA搜索的重要特性：
 
 * Written in C++ for performance;
+* 使用 C++ 编写以达到性能优先的设计目标;
 * Parsing, Indexing, and Sharding capabilities;
+* 支持 文本解析 索引 及 分块等核心搜索引擎能力;
 * Many index compression methods implemented;
+* 基于PISA框架 实现了丰富的 索引压缩 算法集;
 * Many query processing algorithms implemented;
+* 基于PISA框架 实现了丰富的 查询处理 算法集;
 * Implementation of document reordering;
+* 基于PISA框架 实现了 基于文档的索引重排算法;
 * Free and open-source with permissive license;
+* 免费 或 遵循Permissive License作有限度开源
 
-## About PISA
+## About PISA 关于PISA
 
-### What is PISA?
+### What is PISA? 什么是PISA？
 PISA is a text search engine, though the "PISA Project" is a
 set of tools that help experiment with indexing and query processing.
 Given a text collection, PISA can build an *inverted index* over this corpus,
