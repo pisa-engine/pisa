@@ -18,6 +18,10 @@
 ## Join us on Slack
 Get in touch via Slack: [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw)
 
+## 加入我们的微信群
+加入我们的微信群以保持沟通和进行技术讨论
+![](./docs/source/_static/img/wechat.group.qr.png)
+
 ## Overview
 
 PISA is a text search engine able to run on large-scale collections of documents. It allows researchers to experiment with state-of-the-art techniques, allowing an ideal environment for rapid development.
