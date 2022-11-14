@@ -1,33 +1,25 @@
 #pragma once
 
-#include <iostream>
+#include <boost/filesystem.hpp>
 
-#include "boost/filesystem.hpp"
+namespace pisa {
 
-struct Temporary_Directory {
-    Temporary_Directory()
-        : dir_(boost::filesystem::temp_directory_path() / boost::filesystem::unique_path())
-    {
-        if (boost::filesystem::exists(dir_)) {
-            boost::filesystem::remove_all(dir_);
-        }
-        boost::filesystem::create_directory(dir_);
-        std::cerr << "Created a tmp dir " << dir_.c_str() << '\n';
-    }
-    Temporary_Directory(Temporary_Directory const&) = default;
-    Temporary_Directory(Temporary_Directory&&) noexcept = default;
-    Temporary_Directory& operator=(Temporary_Directory const&) = default;
-    Temporary_Directory& operator=(Temporary_Directory&&) noexcept = default;
-    ~Temporary_Directory()
-    {
-        if (boost::filesystem::exists(dir_)) {
-            boost::filesystem::remove_all(dir_);
-        }
-        std::cerr << "Removed a tmp dir " << dir_.c_str() << '\n';
-    }
+/**
+ * RAII object that creates a temporary directory at creation and removes it when destructed.
+ */
+struct TemporaryDirectory {
+    TemporaryDirectory();
+    TemporaryDirectory(TemporaryDirectory const&);
+    TemporaryDirectory(TemporaryDirectory&&) noexcept;
+    TemporaryDirectory& operator=(TemporaryDirectory const&);
+    TemporaryDirectory& operator=(TemporaryDirectory&&) noexcept;
+    ~TemporaryDirectory();
 
-    [[nodiscard]] auto path() -> boost::filesystem::path const& { return dir_; }
+    /** Returns the path to the created directory. */
+    [[nodiscard]] auto path() -> boost::filesystem::path const&;
 
   private:
     boost::filesystem::path dir_;
 };
+
+};  // namespace pisa

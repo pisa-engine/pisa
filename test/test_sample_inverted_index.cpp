@@ -17,7 +17,7 @@ TEST_CASE("sample_inverted_index")
     // given
     using pisa::binary_freq_collection;
     std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
 
@@ -63,7 +63,7 @@ TEST_CASE("sample_inverted_index_one_sample")
     // given
     using pisa::binary_freq_collection;
     std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
 
@@ -111,7 +111,7 @@ TEST_CASE("sample_inverted_index_reverse")
     // given
     using pisa::binary_freq_collection;
     std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     std::string output = tmpdir.path().string();
     auto original = binary_freq_collection(input.c_str());
     float rate = 0.1;

@@ -105,7 +105,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
                 "Doc14", "curabitur a justo vitae turpis feugiat molestie eu ac nunc", "")};
         WHEN("write a batch to temp directory")
         {
-            Temporary_Directory tmpdir;
+            pisa::TemporaryDirectory tmpdir;
             auto output_file = tmpdir.path() / "fwd";
             Forward_Index_Builder::Batch_Process bp{
                 7, records, Document_Id{10}, output_file.string()};
@@ -169,7 +169,7 @@ void write_batch(
 
 TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto dir = tmpdir.path();
     GIVEN("Three batches on disk")
     {
@@ -333,7 +333,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
         int batch_size = GENERATE(123, 1000);
         WHEN("Build a forward index")
         {
-            Temporary_Directory tmpdir;
+            pisa::TemporaryDirectory tmpdir;
             auto dir = tmpdir.path();
             std::string output = (dir / "fwd").string();
 

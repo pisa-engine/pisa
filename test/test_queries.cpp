@@ -25,7 +25,7 @@ TEST_CASE("Parse query term ids with query id")
 
 TEST_CASE("Compute parsing function")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
 
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
@@ -78,7 +78,7 @@ TEST_CASE("Compute parsing function")
 
 TEST_CASE("Load stopwords in term processor with all stopwords present in the lexicon")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
         gsl::make_span(std::vector<std::string>{"a", "account", "he", "she", "usa", "world"}))
@@ -96,7 +96,7 @@ TEST_CASE("Load stopwords in term processor with all stopwords present in the le
 
 TEST_CASE("Load stopwords in term processor with some stopwords not present in the lexicon")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
         gsl::make_span(std::vector<std::string>{"account", "coffee", "he", "she", "usa", "world"}))
@@ -114,7 +114,7 @@ TEST_CASE("Load stopwords in term processor with some stopwords not present in t
 
 TEST_CASE("Check if term is stopword")
 {
-    Temporary_Directory tmpdir;
+    pisa::TemporaryDirectory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
         gsl::make_span(std::vector<std::string>{"account", "coffee", "he", "she", "usa", "world"}))

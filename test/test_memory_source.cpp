@@ -24,14 +24,14 @@ TEST_CASE("Empty memory source", "[mmap][io]")
 
 TEST_CASE("Error when mapping non-existent file", "[mmap][io]")
 {
-    Temporary_Directory temp;
+    pisa::TemporaryDirectory temp;
     auto file_path = (temp.path() / "file");
     REQUIRE_THROWS_AS(MemorySource::mapped_file(file_path), NoSuchFile);
 }
 
 TEST_CASE("Non-empty memory source", "[mmap][io]")
 {
-    Temporary_Directory temp;
+    pisa::TemporaryDirectory temp;
     auto file_path = (temp.path() / "file");
     {
         std::ofstream os(file_path.string());

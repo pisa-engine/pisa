@@ -50,7 +50,7 @@ void compare_strcolls(StrColl const& expected, StrColl const& actual)
 
 TEST_CASE("Reorder documents with BP")
 {
-    Temporary_Directory tmp;
+    pisa::TemporaryDirectory tmp;
 
     auto next_record = [](std::istream& in) -> std::optional<Document_Record> {
         Plaintext_Record record;
