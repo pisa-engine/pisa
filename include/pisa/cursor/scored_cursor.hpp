@@ -37,6 +37,7 @@ class ScoredCursor {
     void PISA_ALWAYSINLINE next() { m_base_cursor.next(); }
     void PISA_ALWAYSINLINE next_geq(std::uint32_t docid) { m_base_cursor.next_geq(docid); }
     [[nodiscard]] PISA_ALWAYSINLINE auto size() -> std::size_t { return m_base_cursor.size(); }
+    void PISA_ALWAYSINLINE reset() { m_base_cursor.reset(); }
 
   private:
     Cursor m_base_cursor;
