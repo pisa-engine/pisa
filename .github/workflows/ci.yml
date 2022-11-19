@@ -11,12 +11,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [macos-gcc-9, macos-xcode-13.2]
+        name: [macos-xcode-13.2]
         include:
-          - name: macos-gcc-9
-            os: macos-latest
-            compiler: "gcc"
-            version: "9"
           - name: macos-xcode-13.2
             os: macos-latest
             compiler: "xcode"
@@ -28,16 +24,11 @@ jobs:
       if: runner.os == 'macOS'
       run: |
           brew install autoconf automake libtool cmake
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            echo "CC=gcc-${{ matrix.version }}" >> $GITHUB_ENV
-            echo "CXX=g++-${{ matrix.version }}" >> $GITHUB_ENV
-          else
-            sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
-            echo "CC=$(xcrun -f clang)" >> $GITHUB_ENV
-            echo "CXX=$(xcrun -f clang++)" >> $GITHUB_ENV
-            echo "SDKROOT=$(xcodebuild -version -sdk macosx Path)" >> $GITHUB_ENV
-            echo "PATH=$(dirname $(xcrun -f clang)):$PATH" >> $GITHUB_ENV
-          fi
+          sudo xcode-select -switch /Applications/Xcode_${{ matrix.version }}.app
+          echo "CC=$(xcrun -f clang)" >> $GITHUB_ENV
+          echo "CXX=$(xcrun -f clang++)" >> $GITHUB_ENV
+          echo "SDKROOT=$(xcodebuild -version -sdk macosx Path)" >> $GITHUB_ENV
+          echo "PATH=$(dirname $(xcrun -f clang)):$PATH" >> $GITHUB_ENV
 
     - name: Create Build Environment
       shell: bash

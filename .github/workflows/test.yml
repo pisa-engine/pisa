@@ -17,7 +17,6 @@ jobs:
           - name: gcc9
           - name: gcc10
           - name: gcc11
-          - name: gcc11
           - name: clang11
 
     steps:
