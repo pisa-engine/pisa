@@ -7,13 +7,14 @@
 Currently, our continuous integration pipeline compiles PISA and runs tests
 in the following configurations:
 - Linux:
+    - GCC 8
     - GCC 9
-    - GCC 7
-    - Clang 6 (known issues if linking with GNU libstdc++9 and up)
-    - Clang 10
+    - GCC 10
+    - GCC 11
+    - GCC 11
+    - Clang 11
 - MaxOS:
-    - GCC 9
-    - XCode 11.3
+    - XCode 13.2
 
 Supporting Windows is planned but is currently not being actively worked on,
 mostly due to a combination of man-hour shortage, prioritization, and no
