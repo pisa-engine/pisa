@@ -9,7 +9,7 @@
 
 namespace pisa {
 struct maskedvbyte_block {
-    static const uint64_t block_size = 128;
+    static constexpr std::uint64_t block_size = 128;
     static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
     {
         assert(n <= block_size);
@@ -18,7 +18,7 @@ struct maskedvbyte_block {
             interpolative_block::encode(src, sum_of_values, n, out);
             return;
         }
-        thread_local std::vector<uint8_t> buf(2 * block_size * sizeof(uint32_t));
+        thread_local std::array<std::uint8_t, 2 * block_size * sizeof(std::uint32_t)> buf{};
         size_t out_len = vbyte_encode(src, n, buf.data());
         out.insert(out.end(), buf.data(), buf.data() + out_len);
     }

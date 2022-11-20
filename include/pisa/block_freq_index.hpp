@@ -257,6 +257,7 @@ class block_freq_index {
         void build(std::string const& index_path)
         {
             std::ofstream os(index_path.c_str());
+            std::cout << index_path.c_str() << "\n";
             os.exceptions(std::ios::badbit | std::ios::failbit);
             mapper::detail::freeze_visitor freezer(os, 0);
             freezer(m_params, "m_params");

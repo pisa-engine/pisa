@@ -1,8 +1,11 @@
 #pragma once
-#include "codec/block_codecs.hpp"
+
+#include <array>
 #include <vector>
 
 #include "FastPFor/headers/common.h"
+
+#include "codec/block_codecs.hpp"
 
 using namespace std;
 
@@ -252,7 +255,7 @@ struct varintgb_block {
             interpolative_block::encode(in, sum_of_values, n, out);
             return;
         }
-        thread_local std::vector<uint8_t> buf(2 * block_size * sizeof(uint32_t));
+        thread_local std::array<std::uint8_t, 2 * block_size * sizeof(uint32_t)> buf{};
         size_t out_len = varintgb_codec.encodeArray(in, n, buf.data());
         out.insert(out.end(), buf.data(), buf.data() + out_len);
     }
