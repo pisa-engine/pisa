@@ -148,15 +148,14 @@ struct interpolative_block {
     decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
     {
         assert(n <= block_size);
-        uint8_t const* inbuf = in;
         if (sum_of_values == uint32_t(-1)) {
-            inbuf = TightVariableByte::decode(inbuf, &sum_of_values, 1);
+            in = TightVariableByte::decode(in, &sum_of_values, 1);
         }
 
         out[n - 1] = sum_of_values;
         size_t read_interpolative = 0;
         if (n > 1) {
-            bit_reader br(inbuf);
+            bit_reader br(in);
             br.read_interpolative(out, n - 1, 0, sum_of_values);
             for (size_t i = n - 1; i > 0; --i) {
                 out[i] -= out[i - 1];
@@ -164,7 +163,7 @@ struct interpolative_block {
             read_interpolative = ceil_div(br.position(), 8);
         }
 
-        return inbuf + read_interpolative;
+        return in + read_interpolative;
     }
 };
 
