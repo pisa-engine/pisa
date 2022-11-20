@@ -148,7 +148,7 @@ struct interpolative_block {
     decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
     {
         assert(n <= block_size);
-        if (sum_of_values == uint32_t(-1)) {
+        if (sum_of_values == std::numeric_limits<std::uint32_t>::max()) {
             in = TightVariableByte::decode(in, &sum_of_values, 1);
         }
 
