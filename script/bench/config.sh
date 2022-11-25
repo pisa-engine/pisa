@@ -1,0 +1,19 @@
+index_basename="$HOME/cw12b/cw12b"
+output_basename="$HOME/cw12b/results"
+algorithm='block_max_wand'
+scorer='bm25'
+k=100
+repeat=50
+queries="$HOME/cw12b/trec12-14.txt"
+block_size=64
+encodings=(
+    #block_simple16
+    #block_simple8b
+    #block_maskedvbyte
+    #block_qmx
+    #block_streamvbyte
+    #block_varintgb
+    #block_optpfor
+    #block_varintg8iu
+    block_interpolative
+)
