@@ -1,84 +1,109 @@
 #pragma once
 
-#include <algorithm>
 #include <cctype>
+#include <optional>
 #include <string>
 #include <string_view>
 
-#include <boost/config/warning_disable.hpp>
-#include <boost/iterator/filter_iterator.hpp>
-#include <boost/iterator/transform_iterator.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi.hpp>
-#include <boost/tokenizer.hpp>
 
 namespace pisa {
 
-namespace lex = boost::spirit::lex;
+class Tokenizer;
 
-enum TokenType { Abbreviature = 1, Possessive = 2, Term = 3, NotValid = 4 };
+/**
+ * C++ style iterator wrapping a tokenizer.
+ */
+class TokenizerIterator {
+    Tokenizer* m_tokenizer;
+    std::size_t m_pos;
+    std::optional<std::string> m_token;
 
-template <typename Lexer>
-struct tokens: lex::lexer<Lexer> {
-    tokens()
-    {
-        // Note: parsing process takes the first match from left to right.
-        this->self = lex::token_def<>("([a-zA-Z]+\\.){2,}", TokenType::Abbreviature)
-            | lex::token_def<>("[a-zA-Z0-9]+('[a-zA-Z]+)", TokenType::Possessive)
-            | lex::token_def<>("[a-zA-Z0-9]+", TokenType::Term)
-            | lex::token_def<>(".", TokenType::NotValid);
-    }
+  public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = std::string;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type*;
+    using reference = value_type const&;
+
+    explicit TokenizerIterator(Tokenizer* tokenizer);
+
+    [[nodiscard]] auto operator*() -> value_type;
+    auto operator++() -> TokenizerIterator&;
+    [[nodiscard]] auto operator++(int) -> TokenizerIterator;
+    [[nodiscard]] auto operator==(TokenizerIterator const& other) -> bool;
+    [[nodiscard]] auto operator!=(TokenizerIterator const& other) -> bool;
 };
+
+/**
+ * Tokenizer abstraction. A tokenizer typically takes an input string and produces consecutive
+ * string tokens.
+ */
+class Tokenizer {
+  public:
+    /**
+     * Returns the next token or `std::nullopt` if no more tokens are available.
+     */
+    virtual auto next() -> std::optional<std::string> = 0;
+
+    /**
+     * Returns the iterator pointing to the beginning of the token stream.
+     *
+     * Note that this method should be called only once, as any iterator consumes processed tokens.
+     */
+    [[nodiscard]] virtual auto begin() -> TokenizerIterator;
+
+    /**
+     * Returns the iterator pointing to the end of the token stream.
+     */
+    [[nodiscard]] virtual auto end() -> TokenizerIterator;
+};
+
+/**
+ * Whitespace tokenizer.
+ *
+ * This is a simple tokenizer that splits words on any number of consecutive whitespaces.
+ */
+class WhitespaceTokenizer: public Tokenizer {
+    std::string_view m_input;
+
+  public:
+    explicit WhitespaceTokenizer(std::string_view input);
+    virtual auto next() -> std::optional<std::string> override;
+};
+
+namespace lex = boost::spirit::lex;
 
 using token_type =
     lex::lexertl::token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
 using lexer_type = lex::lexertl::actor_lexer<token_type>;
 
-class TermTokenizer {
+struct Lexer: lex::lexer<lexer_type> {
+    Lexer();
+};
+
+/**
+ * English tokenizer.
+ *
+ * There are three types of valid tokens:
+ *  - abbreviations, such as "U.S.A.", for which periods are removed,
+ *  - possessives, such as "dog's", for which everything up to the apostrophe is returned,
+ *  - any other alphanumeric sequences.
+ */
+class EnglishTokenizer: public Tokenizer {
+    static Lexer const LEXER;
+
+    using iterator = typename lexer_type::iterator_type;
+
+    typename std::string_view::const_iterator m_begin;
+    typename std::string_view::const_iterator m_end;
+    iterator m_pos;
+    iterator m_sentinel;
+
   public:
-    static tokens<lexer_type> const LEXER;
-
-    explicit TermTokenizer(std::string_view text)
-        : text_(text), first_(text_.begin()), last_(text_.end())
-    {}
-
-    [[nodiscard]] auto begin()
-    {
-        first_ = text_.begin();
-        last_ = text_.end();
-        return boost::make_transform_iterator(
-            boost::make_filter_iterator(is_valid, LEXER.begin(first_, last_)), transform);
-    }
-
-    [[nodiscard]] auto end()
-    {
-        return boost::make_transform_iterator(
-            boost::make_filter_iterator(is_valid, LEXER.end()), transform);
-    }
-
-  private:
-    static bool is_valid(token_type const& tok) { return tok.id() != TokenType::NotValid; }
-
-    static std::string transform(token_type const& tok)
-    {
-        auto& val = tok.value();
-        switch (tok.id()) {
-        case TokenType::Abbreviature: {
-            std::string term;
-            std::copy_if(
-                val.begin(), val.end(), std::back_inserter(term), [](char ch) { return ch != '.'; });
-            return term;
-        }
-        case TokenType::Possessive:
-            return std::string(val.begin(), std::find(val.begin(), val.end(), '\''));
-        default: return std::string(val.begin(), val.end());
-        }
-    }
-
-    std::string_view text_;
-    std::string_view::const_iterator first_;
-    std::string_view::const_iterator last_;
+    explicit EnglishTokenizer(std::string_view input);
+    virtual auto next() -> std::optional<std::string> override;
 };
 
 }  // namespace pisa

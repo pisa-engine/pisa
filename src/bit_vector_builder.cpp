@@ -5,7 +5,6 @@
 
 namespace pisa {
 
-
 bit_vector_builder::bit_vector_builder(uint64_t size, bool init) : m_size(size)
 {
     m_bits.resize(detail::words_for(size), init ? std::numeric_limits<std::uint64_t>::max() : 0U);

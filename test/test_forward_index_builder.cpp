@@ -370,7 +370,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                     std::istringstream content_stream(record->content());
                     std::string term;
                     while (content_stream >> term) {
-                        TermTokenizer tok(term);
+                        EnglishTokenizer tok(term);
                         std::for_each(tok.begin(), tok.end(), [&original_body](auto term) {
                             original_body.push_back(std::move(term));
                         });
