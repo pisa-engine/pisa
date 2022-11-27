@@ -2,6 +2,7 @@
 #include <mio/mmap.hpp>
 #include <spdlog/spdlog.h>
 
+#include "app.hpp"
 #include "io.hpp"
 #include "payload_vector.hpp"
 
@@ -14,7 +15,7 @@ int main(int argc, char** argv)
     std::size_t idx;
     std::string value;
 
-    CLI::App app{"Build, print, or query lexicon"};
+    pisa::App<pisa::arg::LogLevel> app{"Build, print, or query lexicon"};
     app.require_subcommand();
     auto build = app.add_subcommand("build", "Build a lexicon");
     build->add_option("input", text_file, "Input text file")->required();
@@ -28,6 +29,8 @@ int main(int argc, char** argv)
     auto print = app.add_subcommand("print", "Print elements line by line");
     print->add_option("lexicon", lexicon_file, "Lexicon file path")->required();
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     try {
         if (*build) {

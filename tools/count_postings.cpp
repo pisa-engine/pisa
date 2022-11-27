@@ -57,14 +57,16 @@ int main(int argc, char** argv)
 
     bool sum = false;
 
-    App<arg::Index, arg::Query<arg::QueryMode::Unranked>, arg::Separator, arg::PrintQueryId> app{
-        "Extracts posting counts from an inverted index."};
+    App<arg::Index, arg::Query<arg::QueryMode::Unranked>, arg::Separator, arg::PrintQueryId, arg::LogLevel>
+        app{"Extracts posting counts from an inverted index."};
     app.add_flag(
         "--sum",
         sum,
         "Sum postings accross the query terms; by default, individual list lengths will be "
         "printed, separated by the separator defined with --sep");
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     /**/
     if (false) {

@@ -86,8 +86,8 @@ int main(int argc, const char** argv)
     bool combinations = false;
     bool header = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>> app{
-        "Computes intersections of posting lists."};
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::LogLevel>
+        app{"Computes intersections of posting lists."};
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query");
     app.add_option(
@@ -99,6 +99,8 @@ int main(int argc, const char** argv)
     app.add_option("--max-query-len", max_query_len, "Maximum query length");
     app.add_flag("--header", header, "Write TSV header");
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     auto queries = app.queries();
     auto filtered_queries = ranges::views::filter(queries, [&](auto&& query) {

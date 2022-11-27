@@ -187,7 +187,8 @@ int main(int argc, const char** argv)
         arg::Algorithm,
         arg::Scorer,
         arg::Thresholds,
-        arg::Threads>
+        arg::Threads,
+        arg::LogLevel>
         app{"Retrieves query results in TREC format."};
     app.add_option("-r,--run", run_id, "Run identifier");
     app.add_option("--documents", documents_file, "Document lexicon")->required();
@@ -195,6 +196,7 @@ int main(int argc, const char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
+    spdlog::set_level(app.log_level());
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
     spdlog::info("Number of worker threads: {}", app.threads());
 

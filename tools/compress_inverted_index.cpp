@@ -25,6 +25,7 @@ int main(int argc, char** argv)
     CLI::App app{"Compresses an inverted index"};
     pisa::CompressArgs args(&app);
     CLI11_PARSE(app, argc, argv);
+    spdlog::set_level(args.log_level());
     pisa::compress(
         args.input_basename(),
         args.wand_data_path(),

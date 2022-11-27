@@ -3,6 +3,7 @@
 #include <CLI/CLI.hpp>
 #include <range/v3/view/iota.hpp>
 
+#include "app.hpp"
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "memory_source.hpp"
@@ -38,7 +39,7 @@ int main(int argc, char** argv)
     std::optional<std::string> lex_file{};
     std::size_t first, last;
 
-    CLI::App app{"Reads binary collection to stdout.", "read_collection"};
+    pisa::App<pisa::arg::LogLevel> app{"Reads binary collection to stdout."};
     app.add_option("-c,--collection", collection_file, "Collection file path.")->required();
     auto maptext = app.add_option(
         "--maptext",
@@ -65,6 +66,8 @@ int main(int argc, char** argv)
         "End reading at this entry. "
         "If not defined, read until the end of the collection.");
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     try {
         auto print = print_function(map_file, lex_file);

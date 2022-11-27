@@ -15,6 +15,7 @@
 #include <spdlog/spdlog.h>
 #include <tbb/global_control.h>
 
+#include "app.hpp"
 #include "binary_collection.hpp"
 #include "io.hpp"
 #include "sharding.hpp"
@@ -33,9 +34,8 @@ int main(int argc, char** argv)
     std::vector<std::string> shard_files;
     int threads = std::thread::hardware_concurrency();
     int shard_count;
-    bool debug = false;
 
-    CLI::App app{"Partition a forward index"};
+    pisa::App<pisa::arg::LogLevel> app{"Partition a forward index"};
     app.add_option("-i,--input", input_basename, "Forward index filename")->required();
     app.add_option("-o,--output", output_basename, "Basename of partitioned shards")->required();
     app.add_option("-j,--threads", threads, "Thread count");
@@ -45,12 +45,9 @@ int main(int argc, char** argv)
         app.add_option("-s,--shard-files", shard_files, "List of files with shard titles");
     random_option->excludes(shard_files_option);
     shard_files_option->excludes(random_option);
-    app.add_flag("--debug", debug, "Print debug messages");
     CLI11_PARSE(app, argc, argv);
 
-    if (debug) {
-        spdlog::set_level(spdlog::level::debug);
-    }
+    spdlog::set_level(app.log_level());
 
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads + 1);
     spdlog::info("Number of worker threads: {}", threads);

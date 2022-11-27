@@ -18,6 +18,9 @@ int main(int argc, const char** argv)
     CLI::App app{"Estimates query thresholds using Taily cut-offs."};
     pisa::TailyThresholds args(&app);
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(args.log_level());
+
     try {
         pisa::estimate_taily_thresholds(args);
     } catch (std::exception const& err) {

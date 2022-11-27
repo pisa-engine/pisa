@@ -571,8 +571,47 @@ namespace arg {
         bool m_print_query_id = false;
     };
 
+    /**
+     * Log level configuration.
+     *
+     * This option takes one of the valid string values and translates it into spdlog log level
+     * values.
+     */
+    struct LogLevel {
+        static const std::set<std::string> VALID_LEVELS;
+        static const std::map<std::string, spdlog::level::level_enum> ENUM_MAP;
+
+        explicit LogLevel(CLI::App* app)
+        {
+            m_option = app->add_option("-L,--log-level", m_level, "Log level", true)
+                           ->check(CLI::IsMember(VALID_LEVELS));
+        }
+
+        [[nodiscard]] auto log_level() const { return ENUM_MAP.at(m_level); }
+
+      private:
+        std::string m_level = "info";
+        CLI::Option* m_option;
+    };
+
+    const std::set<std::string> LogLevel::VALID_LEVELS = {
+        "trace", "debug", "info", "warn", "err", "critical", "off"};
+    const std::map<std::string, spdlog::level::level_enum> LogLevel::ENUM_MAP = {
+        {"trace", spdlog::level::level_enum::trace},
+        {"debug", spdlog::level::level_enum::debug},
+        {"info", spdlog::level::level_enum::info},
+        {"warn", spdlog::level::level_enum::warn},
+        {"err", spdlog::level::level_enum::err},
+        {"critical", spdlog::level::level_enum::critical},
+        {"off", spdlog::level::level_enum::off}};
+
 }  // namespace arg
 
+/**
+ * A declarative way to define CLI interface. This class inherits from `CLI::App` and therefore it
+ * can be used like a regular `CLI::App` object once it is defined. This way, we can have a
+ * declarative base with the ability to customize it.
+ */
 template <typename... Args>
 struct App: public CLI::App, public Args... {
     explicit App(std::string const& description) : CLI::App(description), Args(this)...
@@ -595,15 +634,16 @@ struct Args: public T... {
     }
 };
 
-using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>>;
-using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads>;
+using InvertArgs = Args<arg::Invert, arg::Threads, arg::BatchSize<100'000>, arg::LogLevel>;
+using ReorderDocuments = Args<arg::ReorderDocuments, arg::Threads, arg::LogLevel>;
 using CompressArgs =
-    pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>>;
-using CreateWandDataArgs = pisa::Args<arg::CreateWandData>;
+    pisa::Args<arg::Compress, arg::Encoding, arg::Quantize<arg::ScorerMode::Optional>, arg::LogLevel>;
+using CreateWandDataArgs = pisa::Args<arg::CreateWandData, arg::LogLevel>;
 
-struct TailyStatsArgs: pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer> {
+struct TailyStatsArgs
+    : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer, arg::LogLevel> {
     explicit TailyStatsArgs(CLI::App* app)
-        : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer>(app)
+        : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer, arg::LogLevel>(app)
     {
         app->add_option("-c,--collection", m_collection_path, "Binary collection basename")->required();
         app->add_option("-o,--output", m_output_path, "Output file path")->required();
@@ -652,8 +692,9 @@ struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
     std::string m_shard_term_lexicon;
 };
 
-struct TailyThresholds: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
-    explicit TailyThresholds(CLI::App* app) : pisa::Args<arg::Query<arg::QueryMode::Ranked>>(app)
+struct TailyThresholds: pisa::Args<arg::Query<arg::QueryMode::Ranked>, arg::LogLevel> {
+    explicit TailyThresholds(CLI::App* app)
+        : pisa::Args<arg::Query<arg::QueryMode::Ranked>, arg::LogLevel>(app)
     {
         app->add_option("--stats", m_stats, "Taily statistics file")->required();
         app->set_config("--config", "", "Configuration .ini file", false);

@@ -4,6 +4,7 @@
 #include <CLI/CLI.hpp>
 #include <spdlog/spdlog.h>
 
+#include "app.hpp"
 #include "io.hpp"
 #include "pisa/query/query_stemmer.hpp"
 
@@ -13,12 +14,14 @@ int main(int argc, char const* argv[])
     std::string output_filename;
     std::optional<std::string> stemmer;
 
-    CLI::App app{"A tool for stemming PISA queries."};
+    pisa::App<pisa::arg::LogLevel> app{"A tool for stemming PISA queries."};
     app.add_option("-i,--input", input_filename, "Query input file")->required();
     app.add_option("-o,--output", output_filename, "Query output file")->required();
     app.add_option("--stemmer", stemmer, "Stemmer")->required();
 
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     std::ofstream output_file;
     output_file.open(output_filename);

@@ -19,6 +19,7 @@ int main(int argc, char** argv)
     pisa::InvertArgs args(&app);
     CLI11_PARSE(app, argc, argv);
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, args.threads() + 1);
+    spdlog::set_level(args.log_level());
     spdlog::info("Number of worker threads: {}", args.threads());
     try {
         pisa::invert::InvertParams params;

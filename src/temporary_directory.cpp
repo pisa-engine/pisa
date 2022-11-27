@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <spdlog/spdlog.h>
+
 namespace pisa {
 
 TemporaryDirectory::TemporaryDirectory()
@@ -11,7 +13,7 @@ TemporaryDirectory::TemporaryDirectory()
         boost::filesystem::remove_all(dir_);
     }
     boost::filesystem::create_directory(dir_);
-    std::cerr << "Created a tmp dir " << dir_.c_str() << '\n';
+    spdlog::debug("Created a tmp dir {}", dir_.c_str());
 }
 
 TemporaryDirectory::TemporaryDirectory(TemporaryDirectory const&) = default;
@@ -24,7 +26,7 @@ TemporaryDirectory::~TemporaryDirectory()
     if (boost::filesystem::exists(dir_)) {
         boost::filesystem::remove_all(dir_);
     }
-    std::cerr << "Removed a tmp dir " << dir_.c_str() << '\n';
+    spdlog::debug("Removed a tmp dir {}", dir_.c_str());
 }
 
 auto TemporaryDirectory::path() -> boost::filesystem::path const&
