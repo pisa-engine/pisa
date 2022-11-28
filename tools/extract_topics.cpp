@@ -1,9 +1,11 @@
 #include <fstream>
 #include <string>
 
+#include <spdlog/spdlog.h>
+
+#include "app.hpp"
 #include "pisa/query/aol_reader.hpp"
 #include "pisa/query/trec_topic_reader.hpp"
-#include <spdlog/spdlog.h>
 
 #include "CLI/CLI.hpp"
 
@@ -14,13 +16,16 @@ int main(int argc, char const* argv[])
     std::string format;
     bool unique = false;
 
-    CLI::App app{"A tool for converting queries from several formats to PISA queries."};
+    pisa::App<pisa::arg::LogLevel> app{
+        "A tool for converting queries from several formats to PISA queries."};
     app.add_option("-i,--input", input_filename, "TREC query input file")->required();
     app.add_option("-o,--output", output_basename, "Output basename")->required();
     app.add_option("-f,--format", format, "Input format")->required();
     app.add_flag("-u,--unique", unique, "Unique queries");
 
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     if (format == "trec") {
         std::ofstream title_file;

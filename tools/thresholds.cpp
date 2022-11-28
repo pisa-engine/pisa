@@ -68,11 +68,12 @@ int main(int argc, const char** argv)
 
     bool quantized = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer>
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Ranked>, arg::Scorer, arg::LogLevel>
         app{"Extracts query thresholds."};
     app.add_flag("--quantized", quantized, "Quantizes the scores");
 
     CLI11_PARSE(app, argc, argv);
+    spdlog::set_level(app.log_level());
 
     auto params = std::make_tuple(
         app.index_filename(),

@@ -30,8 +30,9 @@ int main(int argc, const char** argv)
 
     CLI::App app{"Extracts Taily statistics from the index and stores it in a file."};
     pisa::TailyStatsArgs args(&app);
-
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(args.log_level());
 
     try {
         pisa::extract_taily_stats(args);

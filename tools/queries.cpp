@@ -301,7 +301,6 @@ using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType:
 int main(int argc, const char** argv)
 {
     bool extract = false;
-    bool silent = false;
     bool safe = false;
     bool quantized = false;
 
@@ -310,20 +309,17 @@ int main(int argc, const char** argv)
         arg::Query<arg::QueryMode::Ranked>,
         arg::Algorithm,
         arg::Scorer,
-        arg::Thresholds>
+        arg::Thresholds,
+        arg::LogLevel>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--extract", extract, "Extract individual query times");
-    app.add_flag("--silent", silent, "Suppress logging");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
     CLI11_PARSE(app, argc, argv);
 
-    if (silent) {
-        spdlog::set_default_logger(spdlog::create<spdlog::sinks::null_sink_mt>("stderr"));
-    } else {
-        spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
-    }
+    spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
+    spdlog::set_level(app.log_level());
     if (extract) {
         std::cout << "qid\tusec\n";
     }

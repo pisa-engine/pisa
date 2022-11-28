@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include "CLI/CLI.hpp"
+#include "app.hpp"
 #include "binary_freq_collection.hpp"
 #include "invert.hpp"
 #include "util/inverted_index_utils.hpp"
@@ -21,7 +22,7 @@ int main(int argc, char** argv)
     float rate;
     unsigned seed = std::random_device{}();
 
-    CLI::App app{"A tool for sampling an inverted index."};
+    pisa::App<pisa::arg::LogLevel> app{"A tool for sampling an inverted index."};
     app.add_option("-c,--collection", input_basename, "Input collection basename")->required();
     app.add_option("-o,--output", output_basename, "Output collection basename")->required();
     app.add_option("-r,--rate", rate, "Sampling rate (proportional size of the output index)")
@@ -33,6 +34,8 @@ int main(int argc, char** argv)
         "A filename containing a list of term IDs that we want to drop");
     app.add_option("--seed", seed, "Seed state");
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     if (rate <= 0 or rate > 1) {
         spdlog::error("Sampling rate should be greater than 0 and lower than or equal to 1.");

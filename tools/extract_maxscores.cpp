@@ -48,7 +48,11 @@ int main(int argc, char** argv)
 
     bool quantized = false;
 
-    App<arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::Separator, arg::PrintQueryId>
+    App<arg::WandData<arg::WandMode::Required>,
+        arg::Query<arg::QueryMode::Unranked>,
+        arg::Separator,
+        arg::PrintQueryId,
+        arg::LogLevel>
         app{
             R"(
 Extracts max-scores for query terms from an inverted index.
@@ -57,6 +61,8 @@ The max-scores will be printed to the output separated by --sep,
 which is a tab by default.)"};
     app.add_flag("--quantized", quantized, "Quantized scores");
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     auto params =
         std::make_tuple(app.wand_data_path(), app.queries(), app.separator(), app.print_query_id());

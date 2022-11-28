@@ -42,9 +42,11 @@ void selective_queries(
 
 int main(int argc, const char** argv)
 {
-    App<arg::Index, arg::Query<arg::QueryMode::Unranked>> app{
+    App<arg::Index, arg::Query<arg::QueryMode::Unranked>, arg::LogLevel> app{
         "Filters selective queries for a given index."};
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     if (false) {
 #define LOOP_BODY(R, DATA, T)                               \

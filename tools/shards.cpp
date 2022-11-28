@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
-    CLI::App app{"Executes commands for shards."};
+    pisa::App<pisa::arg::LogLevel> app{"Executes commands for shards."};
     auto* invert =
         app.add_subcommand("invert", "Constructs an inverted index from a forward index.");
     auto* reorder = app.add_subcommand("reorder-docids", "Reorder document IDs.");
@@ -74,6 +74,8 @@ int main(int argc, char** argv)
     TailyThresholds taily_thresholds_args(taily_thresholds);
     app.require_subcommand(1);
     CLI11_PARSE(app, argc, argv);
+
+    spdlog::set_level(app.log_level());
 
     try {
         if (invert->parsed()) {
