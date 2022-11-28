@@ -28,7 +28,7 @@ auto split_query_at_colon(std::string const& query_string)
 auto parse_query_terms(std::string const& query_string, TermProcessor term_processor) -> Query
 {
     auto [id, raw_query] = split_query_at_colon(query_string);
-    TermTokenizer tokenizer(raw_query);
+    EnglishTokenizer tokenizer(raw_query);
     std::vector<term_id_type> parsed_query;
     for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
         auto raw_term = *term_iter;

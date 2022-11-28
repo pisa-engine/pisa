@@ -153,7 +153,7 @@ record_parser(std::string const& type, std::istream& is)
 
 void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process)
 {
-    TermTokenizer tokenizer(content);
+    EnglishTokenizer tokenizer(content);
     std::for_each(tokenizer.begin(), tokenizer.end(), process);
 }
 
@@ -188,7 +188,7 @@ void parse_html_content(std::string&& content, std::function<void(std::string&&)
     if (content.empty()) {
         return;
     }
-    TermTokenizer tokenizer(content);
+    EnglishTokenizer tokenizer(content);
     std::for_each(tokenizer.begin(), tokenizer.end(), process);
 }
 
