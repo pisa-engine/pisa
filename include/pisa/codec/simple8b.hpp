@@ -1,17 +1,19 @@
 #pragma once
 #include "FastPFor/headers/simple8b.h"
 
+#include <array>
+
 namespace pisa {
 
 struct simple8b_block {
-    static const uint64_t block_size = 128;
+    static constexpr std::uint64_t block_size = 128;
 
     static void
     encode(uint32_t const* in, uint32_t /* sum_of_values */, size_t n, std::vector<uint8_t>& out)
     {
         assert(n <= block_size);
         thread_local FastPForLib::Simple8b<false> codec;
-        thread_local std::vector<uint8_t> buf(2 * 8 * block_size);
+        thread_local std::array<std::uint8_t, 2 * 8 * block_size> buf{};
         size_t out_len = buf.size();
         codec.encodeArray(in, n, reinterpret_cast<uint32_t*>(buf.data()), out_len);
         out_len *= 4;

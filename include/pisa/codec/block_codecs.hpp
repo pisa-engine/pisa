@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "FastPFor/headers/optpfor.h"
 #include "FastPFor/headers/variablebyte.h"
 
@@ -121,13 +123,14 @@ class TightVariableByte {
 };
 
 struct interpolative_block {
-    static const uint64_t block_size = 128;
+    static constexpr std::uint64_t block_size = 128;
 
     static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
     {
         assert(n <= block_size);
-        thread_local std::vector<uint32_t> inbuf(block_size);
-        thread_local std::vector<uint32_t> outbuf;
+        thread_local std::array<std::uint32_t, block_size> inbuf{};
+        thread_local std::vector<uint32_t> outbuf;  // TODO: Can we use array? How long does it need
+                                                    // to be?
         inbuf[0] = *in;
         for (size_t i = 1; i < n; ++i) {
             inbuf[i] = inbuf[i - 1] + in[i];
@@ -148,15 +151,14 @@ struct interpolative_block {
     decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
     {
         assert(n <= block_size);
-        uint8_t const* inbuf = in;
-        if (sum_of_values == uint32_t(-1)) {
-            inbuf = TightVariableByte::decode(inbuf, &sum_of_values, 1);
+        if (sum_of_values == std::numeric_limits<std::uint32_t>::max()) {
+            in = TightVariableByte::decode(in, &sum_of_values, 1);
         }
 
         out[n - 1] = sum_of_values;
         size_t read_interpolative = 0;
         if (n > 1) {
-            bit_reader br(inbuf);
+            bit_reader br(in);
             br.read_interpolative(out, n - 1, 0, sum_of_values);
             for (size_t i = n - 1; i > 0; --i) {
                 out[i] -= out[i - 1];
@@ -164,7 +166,7 @@ struct interpolative_block {
             read_interpolative = ceil_div(br.position(), 8);
         }
 
-        return inbuf + read_interpolative;
+        return in + read_interpolative;
     }
 };
 
@@ -214,7 +216,7 @@ struct optpfor_block {
         uint8_t const* b = nullptr)  // if non-null forces b
     {
         thread_local codec_type optpfor_codec;
-        thread_local std::vector<uint8_t> buf(2 * 4 * block_size);
+        thread_local std::array<std::uint8_t, 2 * 4 * block_size> buf{};
         assert(n <= block_size);
 
         if (n < block_size) {
@@ -284,7 +286,7 @@ struct varint_G8IU_block {
     static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
     {
         thread_local codec_type varint_codec;
-        thread_local std::vector<uint8_t> buf(2 * 4 * block_size);
+        thread_local std::array<std::uint8_t, 2 * 4 * block_size> buf{};
         assert(n <= block_size);
 
         if (n < block_size) {
