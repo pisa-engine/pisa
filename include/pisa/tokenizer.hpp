@@ -10,13 +10,13 @@
 
 namespace pisa {
 
-class Tokenizer;
+class TokenStream;
 
 /**
  * C++ style iterator wrapping a tokenizer.
  */
-class TokenizerIterator {
-    Tokenizer* m_tokenizer;
+class TokenIterator {
+    TokenStream* m_tokenizer;
     std::size_t m_pos;
     std::optional<std::string> m_token;
 
@@ -27,20 +27,19 @@ class TokenizerIterator {
     using pointer = value_type*;
     using reference = value_type const&;
 
-    explicit TokenizerIterator(Tokenizer* tokenizer);
+    explicit TokenIterator(TokenStream* tokenizer);
 
     [[nodiscard]] auto operator*() -> value_type;
-    auto operator++() -> TokenizerIterator&;
-    [[nodiscard]] auto operator++(int) -> TokenizerIterator;
-    [[nodiscard]] auto operator==(TokenizerIterator const& other) -> bool;
-    [[nodiscard]] auto operator!=(TokenizerIterator const& other) -> bool;
+    auto operator++() -> TokenIterator&;
+    [[nodiscard]] auto operator++(int) -> TokenIterator;
+    [[nodiscard]] auto operator==(TokenIterator const& other) -> bool;
+    [[nodiscard]] auto operator!=(TokenIterator const& other) -> bool;
 };
 
 /**
- * Tokenizer abstraction. A tokenizer typically takes an input string and produces consecutive
- * string tokens.
+ * Token stream abstraction. Typically takes an input string and produces consecutive string tokens.
  */
-class Tokenizer {
+class TokenStream {
   public:
     /**
      * Returns the next token or `std::nullopt` if no more tokens are available.
@@ -52,24 +51,19 @@ class Tokenizer {
      *
      * Note that this method should be called only once, as any iterator consumes processed tokens.
      */
-    [[nodiscard]] virtual auto begin() -> TokenizerIterator;
+    [[nodiscard]] virtual auto begin() -> TokenIterator;
 
     /**
      * Returns the iterator pointing to the end of the token stream.
      */
-    [[nodiscard]] virtual auto end() -> TokenizerIterator;
+    [[nodiscard]] virtual auto end() -> TokenIterator;
 };
 
-/**
- * Whitespace tokenizer.
- *
- * This is a simple tokenizer that splits words on any number of consecutive whitespaces.
- */
-class WhitespaceTokenizer: public Tokenizer {
+class WhitespaceTokenStream: public TokenStream {
     std::string_view m_input;
 
   public:
-    explicit WhitespaceTokenizer(std::string_view input);
+    explicit WhitespaceTokenStream(std::string_view input);
     virtual auto next() -> std::optional<std::string> override;
 };
 
@@ -83,15 +77,7 @@ struct Lexer: lex::lexer<lexer_type> {
     Lexer();
 };
 
-/**
- * English tokenizer.
- *
- * There are three types of valid tokens:
- *  - abbreviations, such as "U.S.A.", for which periods are removed,
- *  - possessives, such as "dog's", for which everything up to the apostrophe is returned,
- *  - any other alphanumeric sequences.
- */
-class EnglishTokenizer: public Tokenizer {
+class EnglishTokenStream: public TokenStream {
     static Lexer const LEXER;
 
     using iterator = typename lexer_type::iterator_type;
@@ -102,8 +88,43 @@ class EnglishTokenizer: public Tokenizer {
     iterator m_sentinel;
 
   public:
-    explicit EnglishTokenizer(std::string_view input);
+    explicit EnglishTokenStream(std::string_view input);
     virtual auto next() -> std::optional<std::string> override;
+};
+
+/**
+ * Tokenizer abstraction.
+ */
+class Tokenizer {
+  public:
+    /**
+     * Constructs a token stream corresponding to the given string input.
+     */
+    [[nodiscard]] virtual auto tokenize(std::string_view input) const
+        -> std::unique_ptr<TokenStream> = 0;
+};
+
+/**
+ * Splits words on any number of consecutive whitespaces.
+ */
+class WhitespaceTokenizer: public Tokenizer {
+  public:
+    [[nodiscard]] virtual auto tokenize(std::string_view input) const
+        -> std::unique_ptr<TokenStream> override;
+};
+
+/**
+ * English token stream.
+ *
+ * There are three types of valid tokens:
+ *  - abbreviations, such as "U.S.A.", for which periods are removed,
+ *  - possessives, such as "dog's", for which everything up to the apostrophe is returned,
+ *  - any other alphanumeric sequences.
+ */
+class EnglishTokenizer: public Tokenizer {
+  public:
+    [[nodiscard]] virtual auto tokenize(std::string_view input) const
+        -> std::unique_ptr<TokenStream> override;
 };
 
 }  // namespace pisa

@@ -16,6 +16,7 @@
 #include "query/queries.hpp"
 #include "scorer/scorer.hpp"
 #include "sharding.hpp"
+#include "tokenizer.hpp"
 #include "type_safe.hpp"
 #include "wand_utils.hpp"
 
@@ -84,11 +85,45 @@ namespace arg {
         std::string m_index;
     };
 
+    /**
+     * Tokenizer to be used for parsing queries and documents.
+     */
+    struct Tokenizer {
+        static constexpr std::string_view WHITESPACE = "whitespace";
+        static constexpr std::string_view ENGLISH = "english";
+        static const std::set<std::string> VALID_TOKENIZERS;
+        static const std::map<std::string, spdlog::level::level_enum> ENUM_MAP;
+
+        explicit Tokenizer(CLI::App* app)
+        {
+            app->add_option("--tokenizer", m_tokenizer, "Tokenizer", true)
+                ->check(CLI::IsMember(VALID_TOKENIZERS));
+        }
+
+        [[nodiscard]] auto tokenizer() const -> std::unique_ptr<pisa::Tokenizer>
+        {
+            if (m_tokenizer == WHITESPACE) {
+                return std::make_unique<WhitespaceTokenizer>();
+            }
+            if (m_tokenizer == ENGLISH) {
+                return std::make_unique<EnglishTokenizer>();
+            }
+            // This should be effectively unreachable because we check for that earlier, but just in
+            // case of a bug, we want it to fail loud and clear, and not to invoke UB.
+            throw std::logic_error("invalid tokenizer");
+        }
+
+      private:
+        std::string m_tokenizer = "english";
+    };
+
+    const std::set<std::string> Tokenizer::VALID_TOKENIZERS = {"whitespace", "english"};
+
     enum class QueryMode : bool { Ranked, Unranked };
 
     template <QueryMode Mode = QueryMode::Ranked>
-    struct Query {
-        explicit Query(CLI::App* app)
+    struct Query: public Tokenizer {
+        explicit Query(CLI::App* app) : Tokenizer(app)
         {
             app->add_option("-q,--queries", m_query_file, "Path to file with queries", false);
             m_terms_option = app->add_option("--terms", m_term_lexicon, "Term lexicon");
@@ -114,7 +149,8 @@ namespace arg {
         [[nodiscard]] auto queries() const -> std::vector<::pisa::Query>
         {
             std::vector<::pisa::Query> q;
-            auto parse_query = resolve_query_parser(q, m_term_lexicon, m_stop_words, m_stemmer);
+            auto parse_query =
+                resolve_query_parser(q, tokenizer(), m_term_lexicon, m_stop_words, m_stemmer);
             if (m_query_file) {
                 std::ifstream is(*m_query_file);
                 io::for_each_line(is, parse_query);
@@ -583,15 +619,14 @@ namespace arg {
 
         explicit LogLevel(CLI::App* app)
         {
-            m_option = app->add_option("-L,--log-level", m_level, "Log level", true)
-                           ->check(CLI::IsMember(VALID_LEVELS));
+            app->add_option("-L,--log-level", m_level, "Log level", true)
+                ->check(CLI::IsMember(VALID_LEVELS));
         }
 
         [[nodiscard]] auto log_level() const { return ENUM_MAP.at(m_level); }
 
       private:
         std::string m_level = "info";
-        CLI::Option* m_option;
     };
 
     const std::set<std::string> LogLevel::VALID_LEVELS = {

@@ -19,19 +19,19 @@ TEST_CASE("WhitespaceTokenizer")
     WHEN("Empty input")
     {
         std::string input = "";
-        WhitespaceTokenizer tok(input);
+        WhitespaceTokenStream tok(input);
         REQUIRE(tok.next() == std::nullopt);
     }
     WHEN("Input with only whitespaces")
     {
         std::string input = " \t  ";
-        WhitespaceTokenizer tok(input);
+        WhitespaceTokenStream tok(input);
         REQUIRE(tok.next() == std::nullopt);
     }
     WHEN("Input without spaces around")
     {
         std::string input = "dog cat";
-        WhitespaceTokenizer tok(input);
+        WhitespaceTokenStream tok(input);
         REQUIRE(tok.next() == "dog");
         REQUIRE(tok.next() == "cat");
         REQUIRE(tok.next() == std::nullopt);
@@ -39,7 +39,7 @@ TEST_CASE("WhitespaceTokenizer")
     WHEN("Input with spaces around")
     {
         std::string input = "\tbling ##ing\tsting  ?*I(*&())  ";
-        WhitespaceTokenizer tok(input);
+        WhitespaceTokenStream tok(input);
         REQUIRE(tok.next() == "bling");
         REQUIRE(tok.next() == "##ing");
         REQUIRE(tok.next() == "sting");
@@ -49,7 +49,7 @@ TEST_CASE("WhitespaceTokenizer")
     SECTION("With iterators")
     {
         std::string input = "\tbling ##ing\tsting  ?*I(*&())  ";
-        WhitespaceTokenizer tok(input);
+        WhitespaceTokenStream tok(input);
         REQUIRE(
             std::vector<std::string>(tok.begin(), tok.end())
             == std::vector<std::string>{"bling", "##ing", "sting", "?*I(*&())"});
@@ -61,7 +61,7 @@ TEST_CASE("EnglishTokenizer")
     SECTION("With next()")
     {
         std::string str("a 1 12 w0rd, token-izer. pup's, U.S.a., us., hel.lo");
-        EnglishTokenizer tok(str);
+        EnglishTokenStream tok(str);
         REQUIRE(tok.next() == "a");
         REQUIRE(tok.next() == "1");
         REQUIRE(tok.next() == "12");
@@ -78,7 +78,7 @@ TEST_CASE("EnglishTokenizer")
     SECTION("With iterators")
     {
         std::string str("a 1 12 w0rd, token-izer. pup's, U.S.a., us., hel.lo");
-        EnglishTokenizer tokenizer(str);
+        EnglishTokenStream tokenizer(str);
         REQUIRE(
             std::vector<std::string>(tokenizer.begin(), tokenizer.end())
             == std::vector<std::string>{
@@ -104,7 +104,8 @@ TEST_CASE("Parse query terms to ids")
              {"U.S.A.!?", std::nullopt, {4}}}));
     CAPTURE(query);
     TermProcessor term_processor(std::make_optional(lexfile.string()), std::nullopt, "krovetz");
-    auto q = parse_query_terms(query, term_processor);
+    EnglishTokenizer tokenizer;
+    auto q = parse_query_terms(query, tokenizer, term_processor);
     REQUIRE(q.id == id);
     REQUIRE(q.terms == parsed);
 }
