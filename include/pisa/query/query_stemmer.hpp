@@ -21,7 +21,7 @@ class QueryStemmer {
         std::stringstream tokenized_query;
         auto [id, raw_query] = split_query_at_colon(query_string);
         std::vector<std::string> stemmed_terms;
-        EnglishTokenizer tokenizer(raw_query);
+        EnglishTokenStream tokenizer(raw_query);
         for (auto token: tokenizer) {
             stemmed_terms.push_back(m_stemmer(token));
         }

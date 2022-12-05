@@ -25,13 +25,13 @@ auto split_query_at_colon(std::string const& query_string)
     return {std::move(id), raw_query};
 }
 
-auto parse_query_terms(std::string const& query_string, TermProcessor term_processor) -> Query
+auto parse_query_terms(
+    std::string const& query_string, Tokenizer const& tokenizer, TermProcessor term_processor) -> Query
 {
     auto [id, raw_query] = split_query_at_colon(query_string);
-    EnglishTokenizer tokenizer(raw_query);
+    auto tokens = tokenizer.tokenize(raw_query);
     std::vector<term_id_type> parsed_query;
-    for (auto term_iter = tokenizer.begin(); term_iter != tokenizer.end(); ++term_iter) {
-        auto raw_term = *term_iter;
+    for (auto raw_term: *tokens) {
         auto term = term_processor(raw_term);
         if (term) {
             if (!term_processor.is_stopword(*term)) {
@@ -69,14 +69,17 @@ auto parse_query_ids(std::string const& query_string) -> Query
 
 std::function<void(const std::string)> resolve_query_parser(
     std::vector<Query>& queries,
+    std::unique_ptr<pisa::Tokenizer> tokenizer,
     std::optional<std::string> const& terms_file,
     std::optional<std::string> const& stopwords_filename,
     std::optional<std::string> const& stemmer_type)
 {
     if (terms_file) {
         auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
-        return [&queries, term_processor = std::move(term_processor)](std::string const& query_line) {
-            queries.push_back(parse_query_terms(query_line, term_processor));
+        return [&queries,
+                tokenizer = std::shared_ptr<Tokenizer>(std::move(tokenizer)),
+                term_processor = std::move(term_processor)](std::string const& query_line) {
+            queries.push_back(parse_query_terms(query_line, *tokenizer, term_processor));
         };
     }
     return [&queries](std::string const& query_line) {

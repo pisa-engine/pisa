@@ -7,17 +7,17 @@ namespace pisa {
 
 enum TokenType { Abbreviature = 1, Possessive = 2, Term = 3, NotValid = 4 };
 
-TokenizerIterator::TokenizerIterator(Tokenizer* tokenizer) : m_tokenizer(tokenizer), m_pos(0)
+TokenIterator::TokenIterator(TokenStream* tokenizer) : m_tokenizer(tokenizer), m_pos(0)
 {
     m_token = m_tokenizer == nullptr ? std::nullopt : m_tokenizer->next();
 }
 
-[[nodiscard]] auto TokenizerIterator::operator*() -> value_type
+[[nodiscard]] auto TokenIterator::operator*() -> value_type
 {
     return *m_token;
 }
 
-auto TokenizerIterator::operator++() -> TokenizerIterator&
+auto TokenIterator::operator++() -> TokenIterator&
 {
     if (m_token.has_value()) {
         m_token = m_tokenizer->next();
@@ -26,14 +26,14 @@ auto TokenizerIterator::operator++() -> TokenizerIterator&
     return *this;
 }
 
-[[nodiscard]] auto TokenizerIterator::operator++(int) -> TokenizerIterator
+[[nodiscard]] auto TokenIterator::operator++(int) -> TokenIterator
 {
     auto copy = *this;
     ++(*this);
     return copy;
 }
 
-[[nodiscard]] auto TokenizerIterator::operator==(TokenizerIterator const& other) -> bool
+[[nodiscard]] auto TokenIterator::operator==(TokenIterator const& other) -> bool
 {
     if (m_token.has_value() && other.m_token.has_value()) {
         return m_pos == other.m_pos;
@@ -41,19 +41,19 @@ auto TokenizerIterator::operator++() -> TokenizerIterator&
     return m_token.has_value() == other.m_token.has_value();
 }
 
-[[nodiscard]] auto TokenizerIterator::operator!=(TokenizerIterator const& other) -> bool
+[[nodiscard]] auto TokenIterator::operator!=(TokenIterator const& other) -> bool
 {
     return !(*this == other);
 }
 
-auto Tokenizer::begin() -> TokenizerIterator
+auto TokenStream::begin() -> TokenIterator
 {
-    return TokenizerIterator(this);
+    return TokenIterator(this);
 }
 
-auto Tokenizer::end() -> TokenizerIterator
+auto TokenStream::end() -> TokenIterator
 {
-    return TokenizerIterator(nullptr);
+    return TokenIterator(nullptr);
 }
 
 [[nodiscard]] auto is_space(char symbol) -> bool
@@ -66,9 +66,9 @@ auto is_valid(token_type const& tok) -> bool
     return tok.id() != TokenType::NotValid;
 }
 
-WhitespaceTokenizer::WhitespaceTokenizer(std::string_view input) : m_input(input) {}
+WhitespaceTokenStream::WhitespaceTokenStream(std::string_view input) : m_input(input) {}
 
-auto WhitespaceTokenizer::next() -> std::optional<std::string>
+auto WhitespaceTokenStream::next() -> std::optional<std::string>
 {
     auto pos = std::find_if_not(m_input.begin(), m_input.end(), is_space);
     m_input = m_input.substr(std::distance(m_input.begin(), pos));
@@ -106,16 +106,16 @@ Lexer::Lexer()
         | lex::token_def<>(".", TokenType::NotValid);
 }
 
-Lexer const EnglishTokenizer::LEXER = Lexer{};
+Lexer const EnglishTokenStream::LEXER = Lexer{};
 
-EnglishTokenizer::EnglishTokenizer(std::string_view input)
+EnglishTokenStream::EnglishTokenStream(std::string_view input)
     : m_begin(input.begin()),
       m_end(input.end()),
       m_pos(LEXER.begin(m_begin, m_end)),
       m_sentinel(LEXER.end())
 {}
 
-auto EnglishTokenizer::next() -> std::optional<std::string>
+auto EnglishTokenStream::next() -> std::optional<std::string>
 {
     while (m_pos != m_sentinel && !is_valid(*m_pos)) {
         ++m_pos;
@@ -126,6 +126,16 @@ auto EnglishTokenizer::next() -> std::optional<std::string>
     auto token = transform_token(*m_pos);
     ++m_pos;
     return token;
+}
+
+auto WhitespaceTokenizer::tokenize(std::string_view input) const -> std::unique_ptr<TokenStream>
+{
+    return std::make_unique<WhitespaceTokenStream>(input);
+}
+
+auto EnglishTokenizer::tokenize(std::string_view input) const -> std::unique_ptr<TokenStream>
+{
+    return std::make_unique<EnglishTokenStream>(input);
 }
 
 }  // namespace pisa
