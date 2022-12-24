@@ -15,6 +15,7 @@
 #include "parsing/html.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
+#include "text_analyzer.hpp"
 #include "tokenizer.hpp"
 
 using namespace boost::filesystem;
@@ -92,8 +93,6 @@ void write_lines(std::string const& filename, gsl::span<T>&& elements)
 
 TEST_CASE("Build forward index batch", "[parsing][forward_index]")
 {
-    auto identity = [](std::string const& term) -> std::string { return term; };
-
     GIVEN("a few test records")
     {
         std::vector<Document_Record> records{
@@ -110,7 +109,7 @@ TEST_CASE("Build forward index batch", "[parsing][forward_index]")
             Forward_Index_Builder::Batch_Process bp{
                 7, records, Document_Id{10}, output_file.string()};
             Forward_Index_Builder builder;
-            builder.run(bp, identity, parse_plaintext_content);
+            builder.run(bp, TextAnalyzer(std::make_unique<WhitespaceTokenizer>()));
             THEN("documents are in check")
             {
                 std::vector<std::string> expected_documents{
@@ -343,12 +342,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
                 is,
                 output,
                 next_record,
-                [] {
-                    return [](std::string&& term) -> std::string {
-                        return std::forward<std::string>(term);
-                    };
-                },
-                parse_plaintext_content,
+                std::make_shared<TextAnalyzer>(std::make_unique<EnglishTokenizer>()),
                 batch_size,
                 thread_count);
 

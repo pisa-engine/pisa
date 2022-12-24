@@ -7,15 +7,19 @@ with a bunch of independent tools performing different tasks.
 This is because we want the flexibility of experimenting with each
 individual step without recomputing the entire pipeline.
 
-![Indexing Pipeline](img/pipeline.png)
+![Indexing Pipeline](_static/img/pipeline.png)
 
 ## External Resources
 
 ### Raw Collection
 
-The raw collection is a dataset containing the documents to index.
-The tool `parse_collection` supports several input formats that
-can be parsed to a forward index (see [Forward Index](#forward-index)).
+The _raw collection_ is a dataset containing the documents to index. A
+collection is encoded in one of the [supported
+formats](parsing.html#supported-formats) that stores a list of document
+contents along with some metadata, such as URL and title. The
+`parse_collection` tool takes a collection as an input and parses it to
+a forward index (see [Forward Index](#forward-index)). See
+[Parsing](parsing.html) for more details.
 
 ### CIFF Index
 
@@ -27,7 +31,7 @@ with the [`ciff2pisa`](https://github.com/pisa-engine/ciff) tool.
 
 A _forward index_ is the output of the `parse_collection` tool.
 It represents each document as a list of tokens (terms) in the order of their appearance.
-To learn more about parsing and the forward index format, read [Parsing](parsing.html).
+To learn more about parsing and the forward index format, see [Parsing](parsing.html).
 
 ## Inverted Index
 
@@ -40,15 +44,16 @@ PISA distinguishes two types of inverted index.
 The uncompressed index stores document IDs and frequencies as 4-byte integers.
 It is an intermediate format between forward index and compressed inverted index.
 It is obtained by running `invert` on a forward index.
-To learn more about inverting a forward index, read [Inverting](inverting.html).
+To learn more about inverting a forward index, see [Inverting](inverting.html).
 Optionally, documents can be reordered with `reorder-docids` to obtain another
 instance of uncompressed inverted index with different assignment of IDs to documents.
 More on reordering can be found in [Document Reordering](document_reordering.html).
 
 ### Compressed
 
-An uncompressed index is large and therefore before running queries, it must be compressed
-with one of many available encoding methods.
+An uncompressed index is large and therefore before running queries, it
+must be compressed with one of many available encoding methods. It is
+this compressed index format that is directly used when issuing queries.
 See [Compress Index](compress-index.html) to learn more.
 
 ## WAND Data

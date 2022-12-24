@@ -20,6 +20,7 @@ target_compile_options(streamvbyte PRIVATE -Wno-cast-align
                                            -Wno-incompatible-pointer-types
                                            -Wno-implicit-function-declaration
 )
+target_compile_options(streamvbyte INTERFACE -Wno-unused-function)
 
 # Add maskedvbyte
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/MaskedVByte/include)
@@ -60,6 +61,7 @@ set(Porter2_ENABLE_TESTING OFF CACHE BOOL "skip Porter2 testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/Porter2)
 
 # Add KrovetzStemmer
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer/include)
 set(KrovetzStemmer_ENABLE_TESTING OFF CACHE BOOL "skip KrovetzStemmer testing")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/KrovetzStemmer)
 
@@ -80,6 +82,7 @@ target_compile_options(wapopp PRIVATE -Wno-error=all -Wno-missing-braces)
 
 # Add fmt
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
+target_compile_options(fmt INTERFACE -Wno-deprecated-declarations)
 
 # Add spdlog
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
@@ -95,3 +98,4 @@ target_compile_options(rapidcheck PRIVATE -Wno-error)
 set(TAILY_ENABLE_TESTING OFF CACHE BOOL "skip taily testing")
 set(TAILY_BUILD_EXAMPLE OFF CACHE BOOL "skip taily example")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/taily)
+target_compile_options(taily INTERFACE -Wno-unused-variable)

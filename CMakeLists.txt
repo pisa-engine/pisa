@@ -123,30 +123,29 @@ target_link_libraries(pisa
         MaskedVByte
         simdcomp
         QMX
+        KrovetzStemmer
+        Porter2
     PRIVATE
         gumbo::gumbo
         warcpp
         wapopp
         trecpp
-        Porter2
-        KrovetzStemmer
 )
 target_include_directories(pisa PUBLIC external)
 
-if (PISA_BUILD_TOOLS)
-    add_subdirectory(tools)
-endif()
-
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
     if (ENABLE_COVERAGE)
-	# Add code coverage
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
-	find_package(codecov)
-	list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
+        # Add code coverage
+        list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CMake-codecov/cmake")
+        find_package(codecov)
+        list(APPEND LCOV_REMOVE_PATTERNS "'${PROJECT_SOURCE_DIR}/external/*'")
     endif()
-
     enable_testing()
     add_subdirectory(test)
+endif()
+
+if (PISA_BUILD_TOOLS)
+    add_subdirectory(tools)
 endif()
 
 if (PISA_ENABLE_BENCHMARKING)

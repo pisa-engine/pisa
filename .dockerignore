@@ -1,0 +1,37 @@
+**/.DS_Store
+
+build*/
+data/
+debug/
+pisa_config.hpp
+
+# Python junk
+*.pyc
+
+# Java junk
+.classpath
+.project
+*.jar
+.settings
+target/
+
+# CMake junk
+CMakeCache.txt
+CMakeFiles/
+Testing/
+
+docs/_build/
+
+node_modules
+
+.clangd/
+
+# Latex in documentation
+*.aux
+*.log
+docs/**/*.pdf
+
+.cache
+.github
+
+Dockerfile

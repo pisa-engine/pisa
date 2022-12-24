@@ -1,29 +1,50 @@
 # Compress Index
 
 ## Usage
-To create an index use the command `create_freq_index`. The available index
-types are listed in `index_types.hpp`. 
 
-    create_freq_index - a tool for creating an index.
-    Usage:
-      create_freq_index [OPTION...]
+To create an index use the command `compress_inverted_index`. The
+available index types are listed in `index_types.hpp`.
 
-      -h, --help                 Print help
-      -t, --type type_name       Index type
-      -c, --collection basename  Collection basename
-      -o, --out filename         Output filename
-          --check                Check the correctness of the index (default:
-                                 false) 
+    Compresses an inverted index
+    Usage: compress_inverted_index [OPTIONS]
 
-For example, to create an index using the
-optimal partitioning algorithm using the test collection, execute the command:
+    Options:
+      -h,--help                   Print this help message and exit
+      -c,--collection TEXT REQUIRED
+                                  Forward index basename
+      -o,--output TEXT REQUIRED   Output inverted index
+      --check                     Check the correctness of the index
+      -e,--encoding TEXT REQUIRED Index encoding
+      -w,--wand TEXT Needs: --scorer
+                                  WAND data filename
+      -s,--scorer TEXT Needs: --wand --quantize
+                                  Scorer function
+      --bm25-k1 FLOAT Needs: --scorer
+                                  BM25 k1 parameter.
+      --bm25-b FLOAT Needs: --scorer
+                                  BM25 b parameter.
+      --pl2-c FLOAT Needs: --scorer
+                                  PL2 c parameter.
+      --qld-mu FLOAT Needs: --scorer
+                                  QLD mu parameter.
+      --quantize Needs: --scorer  Quantizes the scores
+      -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+                                  Log level
+      --config TEXT               Configuration .ini file
 
-    $ ./bin/create_freq_index -t opt -c ../test/test_data/test_collection -o test_collection.index.opt --check
+For example, to create an index using the optimal partitioning
+algorithm, using the test collection, execute the command:
 
-where `test/test_data/test_collection` is the _basename_ of the collection, that
-is the name without the `.{docs,freqs,sizes}` extensions, and
-`test_collection.index.opt` is the filename of the output index. `--check`
-perform a verification step to check the correctness of the index.
+    $ ./bin/compress_inverted_index -t opt \
+        -c ../test/test_data/test_collection \
+        -o test_collection.index.opt \
+        --check
+
+where `test/test_data/test_collection` is the _basename_ of the
+collection, that is the name without the `.{docs,freqs,sizes}`
+extensions, and `test_collection.index.opt` is the filename of the
+output index. `--check` will trigger a verification step to check the
+correctness of the index.
 
 ## Compression Algorithms
 

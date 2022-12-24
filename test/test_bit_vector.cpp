@@ -39,7 +39,7 @@ TEST_CASE("bit_vector")
         }
 
         auto ints = std::array<uint64_t, 15>{uint64_t(-1),
-                                             uint64_t(1) << 63u,
+                                             uint64_t(1) << 63U,
                                              1,
                                              1,
                                              1,
@@ -51,7 +51,7 @@ TEST_CASE("bit_vector")
                                              1,
                                              0xFFFFFF,
                                              0x123456,
-                                             uint64_t(1) << 63u,
+                                             uint64_t(1) << 63U,
                                              uint64_t(-1)};
         {
             pisa::bit_vector_builder bvb;

@@ -4,14 +4,10 @@
 
 ### Requirements
 
-Currently, our continuous integration pipeline compiles PISA and runs tests
-in the following configurations:
+Our continuous integration pipeline compiles PISA and runs tests in the
+following configurations:
 - Linux:
-    - GCC 8
-    - GCC 9
-    - GCC 10
-    - GCC 11
-    - GCC 11
+    - GCC, versions: 9, 10, 11, 12
     - Clang 11
 - MaxOS:
     - XCode 13.2
@@ -25,8 +21,8 @@ some issues with compilation, let us know on our
 
 ### Dependencies
 
-The runtime dependencies are managed automatically with CMake and git submodules.
-However, there are several build dependencies needed:
+Most build dependencies are managed automatically with CMake and git submodules.
+However, several dependencies still need to be manually provided:
 
 - `CMake >= 3.0`
 - `autoconf`,  `automake`, `libtool`, and `m4` (for building `gumbo-parser`)
@@ -53,7 +49,7 @@ $ cd build
 Finally, configure with CMake and compile:
 
 ```shell
-$ cmake .. -DCMAKE_BUILD_TYPE=Release
+$ cmake ..
 $ make
 ```
 
@@ -62,8 +58,12 @@ $ make
 There are two build types available:
 - `Release` (default)
 - `Debug`
+- `RelWithDebInfo`
+- `MinSizeRel`
 
 Use `Debug` only for development, testing, and debugging. It is much slower at runtime.
+
+Learn more from [CMake documentation](https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html).
 
 #### Build Systems
 

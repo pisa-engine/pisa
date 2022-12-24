@@ -31,20 +31,15 @@ int main(int argc, char** argv)
     std::string format = "plaintext";
     size_t threads = std::thread::hardware_concurrency();
     ptrdiff_t batch_size = 100'000;
-    std::optional<std::string> stemmer = std::nullopt;
-    std::optional<std::string> content_parser_type = std::nullopt;
 
-    pisa::App<pisa::arg::LogLevel> app{
+    pisa::App<pisa::arg::LogLevel, pisa::arg::Threads, pisa::arg::Analyzer> app{
         "parse_collection - parse collection and store as forward index."};
     app.add_option("-o,--output", output_filename, "Forward index filename")
         ->required()
         ->check(valid_basename);
-    app.add_option("-j,--threads", threads, "Thread count");
     app.add_option(
         "-b,--batch-size", batch_size, "Number of documents to process in one thread", true);
     app.add_option("-f,--format", format, "Input format", true);
-    app.add_option("--stemmer", stemmer, "Stemmer type");
-    app.add_option("--content-parser", content_parser_type, "Content parser type");
 
     size_t batch_count, document_count;
     CLI::App* merge_cmd = app.add_subcommand(
@@ -72,8 +67,7 @@ int main(int argc, char** argv)
                 std::cin,
                 output_filename,
                 record_parser(format, std::cin),
-                term_transformer_builder(stemmer),
-                content_parser(content_parser_type),
+                std::make_shared<TextAnalyzer>(app.text_analyzer()),
                 batch_size,
                 threads);
         }

@@ -31,7 +31,7 @@ struct qld: public index_scorer<Wand> {
                        * ((float)this->m_wdata.term_occurrence_count(term_id)
                           / this->m_wdata.collection_len()));
             float denominator = this->m_mu / (this->m_wdata.doc_len(doc) + this->m_mu);
-            return std::max(0.f, std::log(numerator) + std::log(denominator));
+            return std::max(0.F, std::log(numerator) + std::log(denominator));
         };
         return s;
     }

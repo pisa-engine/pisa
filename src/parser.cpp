@@ -153,8 +153,8 @@ record_parser(std::string const& type, std::istream& is)
 
 void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process)
 {
-    EnglishTokenStream tokenizer(content);
-    std::for_each(tokenizer.begin(), tokenizer.end(), process);
+    EnglishTokenStream tokens(content);
+    std::for_each(tokens.begin(), tokens.end(), process);
 }
 
 [[nodiscard]] auto is_http(std::string_view content) -> bool
@@ -188,8 +188,8 @@ void parse_html_content(std::string&& content, std::function<void(std::string&&)
     if (content.empty()) {
         return;
     }
-    EnglishTokenStream tokenizer(content);
-    std::for_each(tokenizer.begin(), tokenizer.end(), process);
+    EnglishTokenStream tokens(content);
+    std::for_each(tokens.begin(), tokens.end(), process);
 }
 
 std::function<void(std::string&& constent, std::function<void(std::string&&)>)>

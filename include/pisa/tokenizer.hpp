@@ -8,62 +8,24 @@
 #include <boost/spirit/include/lex_lexertl.hpp>
 #include <boost/spirit/include/qi.hpp>
 
+#include "cow_string.hpp"
+#include "token_stream.hpp"
+
 namespace pisa {
 
-class TokenStream;
-
-/**
- * C++ style iterator wrapping a tokenizer.
- */
-class TokenIterator {
-    TokenStream* m_tokenizer;
-    std::size_t m_pos;
-    std::optional<std::string> m_token;
-
-  public:
-    using iterator_category = std::input_iterator_tag;
-    using value_type = std::string;
-    using difference_type = std::ptrdiff_t;
-    using pointer = value_type*;
-    using reference = value_type const&;
-
-    explicit TokenIterator(TokenStream* tokenizer);
-
-    [[nodiscard]] auto operator*() -> value_type;
-    auto operator++() -> TokenIterator&;
-    [[nodiscard]] auto operator++(int) -> TokenIterator;
-    [[nodiscard]] auto operator==(TokenIterator const& other) -> bool;
-    [[nodiscard]] auto operator!=(TokenIterator const& other) -> bool;
-};
-
-/**
- * Token stream abstraction. Typically takes an input string and produces consecutive string tokens.
- */
-class TokenStream {
-  public:
-    /**
-     * Returns the next token or `std::nullopt` if no more tokens are available.
-     */
-    virtual auto next() -> std::optional<std::string> = 0;
-
-    /**
-     * Returns the iterator pointing to the beginning of the token stream.
-     *
-     * Note that this method should be called only once, as any iterator consumes processed tokens.
-     */
-    [[nodiscard]] virtual auto begin() -> TokenIterator;
-
-    /**
-     * Returns the iterator pointing to the end of the token stream.
-     */
-    [[nodiscard]] virtual auto end() -> TokenIterator;
-};
-
 class WhitespaceTokenStream: public TokenStream {
-    std::string_view m_input;
+    CowString m_input;
+    std::string_view m_view;
 
   public:
     explicit WhitespaceTokenStream(std::string_view input);
+    explicit WhitespaceTokenStream(std::string input);
+    explicit WhitespaceTokenStream(CowString input);
+    WhitespaceTokenStream(WhitespaceTokenStream const&);
+    WhitespaceTokenStream(WhitespaceTokenStream&&);
+    WhitespaceTokenStream& operator=(WhitespaceTokenStream const&);
+    WhitespaceTokenStream& operator=(WhitespaceTokenStream&&);
+    virtual ~WhitespaceTokenStream();
     virtual auto next() -> std::optional<std::string> override;
 };
 
@@ -82,13 +44,21 @@ class EnglishTokenStream: public TokenStream {
 
     using iterator = typename lexer_type::iterator_type;
 
-    typename std::string_view::const_iterator m_begin;
-    typename std::string_view::const_iterator m_end;
+    CowString m_input;
+    typename std::string_view::const_iterator m_begin{};
+    typename std::string_view::const_iterator m_end{};
     iterator m_pos;
     iterator m_sentinel;
 
   public:
     explicit EnglishTokenStream(std::string_view input);
+    explicit EnglishTokenStream(std::string input);
+    explicit EnglishTokenStream(CowString input);
+    EnglishTokenStream(EnglishTokenStream const&);
+    EnglishTokenStream(EnglishTokenStream&&);
+    EnglishTokenStream& operator=(EnglishTokenStream const&);
+    EnglishTokenStream& operator=(EnglishTokenStream&&);
+    virtual ~EnglishTokenStream();
     virtual auto next() -> std::optional<std::string> override;
 };
 
@@ -97,11 +67,19 @@ class EnglishTokenStream: public TokenStream {
  */
 class Tokenizer {
   public:
+    Tokenizer();
+    Tokenizer(Tokenizer const&);
+    Tokenizer(Tokenizer&&);
+    Tokenizer& operator=(Tokenizer const&);
+    Tokenizer& operator=(Tokenizer&&);
+    virtual ~Tokenizer();
     /**
      * Constructs a token stream corresponding to the given string input.
      */
     [[nodiscard]] virtual auto tokenize(std::string_view input) const
         -> std::unique_ptr<TokenStream> = 0;
+    [[nodiscard]] virtual auto tokenize(std::string input) const -> std::unique_ptr<TokenStream> = 0;
+    [[nodiscard]] virtual auto tokenize(CowString input) const -> std::unique_ptr<TokenStream> = 0;
 };
 
 /**
@@ -109,12 +87,23 @@ class Tokenizer {
  */
 class WhitespaceTokenizer: public Tokenizer {
   public:
+    WhitespaceTokenizer();
+    WhitespaceTokenizer(WhitespaceTokenizer const&);
+    WhitespaceTokenizer(WhitespaceTokenizer&&);
+    WhitespaceTokenizer& operator=(WhitespaceTokenizer const&);
+    WhitespaceTokenizer& operator=(WhitespaceTokenizer&&);
+    virtual ~WhitespaceTokenizer();
+
     [[nodiscard]] virtual auto tokenize(std::string_view input) const
+        -> std::unique_ptr<TokenStream> override;
+    [[nodiscard]] virtual auto tokenize(std::string input) const
+        -> std::unique_ptr<TokenStream> override;
+    [[nodiscard]] virtual auto tokenize(CowString input) const
         -> std::unique_ptr<TokenStream> override;
 };
 
 /**
- * English token stream.
+ * English tokenizer.
  *
  * There are three types of valid tokens:
  *  - abbreviations, such as "U.S.A.", for which periods are removed,
@@ -123,7 +112,18 @@ class WhitespaceTokenizer: public Tokenizer {
  */
 class EnglishTokenizer: public Tokenizer {
   public:
+    EnglishTokenizer();
+    EnglishTokenizer(EnglishTokenizer const&);
+    EnglishTokenizer(EnglishTokenizer&&);
+    EnglishTokenizer& operator=(EnglishTokenizer const&);
+    EnglishTokenizer& operator=(EnglishTokenizer&&);
+    virtual ~EnglishTokenizer();
+
     [[nodiscard]] virtual auto tokenize(std::string_view input) const
+        -> std::unique_ptr<TokenStream> override;
+    [[nodiscard]] virtual auto tokenize(std::string input) const
+        -> std::unique_ptr<TokenStream> override;
+    [[nodiscard]] virtual auto tokenize(CowString input) const
         -> std::unique_ptr<TokenStream> override;
 };
 

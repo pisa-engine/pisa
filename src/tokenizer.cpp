@@ -7,55 +7,6 @@ namespace pisa {
 
 enum TokenType { Abbreviature = 1, Possessive = 2, Term = 3, NotValid = 4 };
 
-TokenIterator::TokenIterator(TokenStream* tokenizer) : m_tokenizer(tokenizer), m_pos(0)
-{
-    m_token = m_tokenizer == nullptr ? std::nullopt : m_tokenizer->next();
-}
-
-[[nodiscard]] auto TokenIterator::operator*() -> value_type
-{
-    return *m_token;
-}
-
-auto TokenIterator::operator++() -> TokenIterator&
-{
-    if (m_token.has_value()) {
-        m_token = m_tokenizer->next();
-        ++m_pos;
-    }
-    return *this;
-}
-
-[[nodiscard]] auto TokenIterator::operator++(int) -> TokenIterator
-{
-    auto copy = *this;
-    ++(*this);
-    return copy;
-}
-
-[[nodiscard]] auto TokenIterator::operator==(TokenIterator const& other) -> bool
-{
-    if (m_token.has_value() && other.m_token.has_value()) {
-        return m_pos == other.m_pos;
-    }
-    return m_token.has_value() == other.m_token.has_value();
-}
-
-[[nodiscard]] auto TokenIterator::operator!=(TokenIterator const& other) -> bool
-{
-    return !(*this == other);
-}
-
-auto TokenStream::begin() -> TokenIterator
-{
-    return TokenIterator(this);
-}
-
-auto TokenStream::end() -> TokenIterator
-{
-    return TokenIterator(nullptr);
-}
-
 [[nodiscard]] auto is_space(char symbol) -> bool
 {
     return std::isspace(static_cast<unsigned char>(symbol)) != 0;
@@ -66,20 +17,41 @@ auto is_valid(token_type const& tok) -> bool
     return tok.id() != TokenType::NotValid;
 }
 
-WhitespaceTokenStream::WhitespaceTokenStream(std::string_view input) : m_input(input) {}
+WhitespaceTokenStream::WhitespaceTokenStream(WhitespaceTokenStream const&) = default;
+WhitespaceTokenStream::WhitespaceTokenStream(WhitespaceTokenStream&&) = default;
+WhitespaceTokenStream& WhitespaceTokenStream::operator=(WhitespaceTokenStream const&) = default;
+WhitespaceTokenStream& WhitespaceTokenStream::operator=(WhitespaceTokenStream&&) = default;
+WhitespaceTokenStream::~WhitespaceTokenStream() = default;
+
+WhitespaceTokenStream::WhitespaceTokenStream(std::string_view input)
+    : m_input(input), m_view(m_input.as_view())
+{}
+WhitespaceTokenStream::WhitespaceTokenStream(std::string input)
+    : m_input(std::move(input)), m_view(m_input.as_view())
+{}
+WhitespaceTokenStream::WhitespaceTokenStream(CowString input)
+    : m_input(std::move(input)), m_view(m_input.as_view())
+{}
 
 auto WhitespaceTokenStream::next() -> std::optional<std::string>
 {
-    auto pos = std::find_if_not(m_input.begin(), m_input.end(), is_space);
-    m_input = m_input.substr(std::distance(m_input.begin(), pos));
-    if (m_input.empty()) {
+    auto pos = std::find_if_not(m_view.begin(), m_view.end(), is_space);
+    m_view = m_view.substr(std::distance(m_view.begin(), pos));
+    if (m_view.empty()) {
         return std::nullopt;
     }
-    pos = std::find_if(m_input.begin(), m_input.end(), is_space);
-    auto token = m_input.substr(0, std::distance(m_input.begin(), pos));
-    m_input = m_input.substr(std::distance(m_input.begin(), pos));
+    pos = std::find_if(m_view.begin(), m_view.end(), is_space);
+    auto token = m_view.substr(0, std::distance(m_view.begin(), pos));
+    m_view = m_view.substr(std::distance(m_view.begin(), pos));
     return std::string(token);
 }
+
+WhitespaceTokenizer::WhitespaceTokenizer() = default;
+WhitespaceTokenizer::WhitespaceTokenizer(WhitespaceTokenizer const&) = default;
+WhitespaceTokenizer::WhitespaceTokenizer(WhitespaceTokenizer&&) = default;
+WhitespaceTokenizer& WhitespaceTokenizer::operator=(WhitespaceTokenizer const&) = default;
+WhitespaceTokenizer& WhitespaceTokenizer::operator=(WhitespaceTokenizer&&) = default;
+WhitespaceTokenizer::~WhitespaceTokenizer() = default;
 
 auto transform_token(token_type const& tok) -> std::string
 {
@@ -109,11 +81,34 @@ Lexer::Lexer()
 Lexer const EnglishTokenStream::LEXER = Lexer{};
 
 EnglishTokenStream::EnglishTokenStream(std::string_view input)
-    : m_begin(input.begin()),
+    : m_input(input),
+      m_begin(input.begin()),
       m_end(input.end()),
       m_pos(LEXER.begin(m_begin, m_end)),
       m_sentinel(LEXER.end())
 {}
+
+EnglishTokenStream::EnglishTokenStream(std::string input)
+    : m_input(std::move(input)),
+      m_begin(m_input.as_view().begin()),
+      m_end(m_input.as_view().end()),
+      m_pos(LEXER.begin(m_begin, m_end)),
+      m_sentinel(LEXER.end())
+{}
+
+EnglishTokenStream::EnglishTokenStream(CowString input)
+    : m_input(std::move(input)),
+      m_begin(m_input.as_view().begin()),
+      m_end(m_input.as_view().end()),
+      m_pos(LEXER.begin(m_begin, m_end)),
+      m_sentinel(LEXER.end())
+{}
+
+EnglishTokenStream::EnglishTokenStream(EnglishTokenStream const&) = default;
+EnglishTokenStream::EnglishTokenStream(EnglishTokenStream&&) = default;
+EnglishTokenStream& EnglishTokenStream::operator=(EnglishTokenStream const&) = default;
+EnglishTokenStream& EnglishTokenStream::operator=(EnglishTokenStream&&) = default;
+EnglishTokenStream::~EnglishTokenStream() = default;
 
 auto EnglishTokenStream::next() -> std::optional<std::string>
 {
@@ -128,14 +123,48 @@ auto EnglishTokenStream::next() -> std::optional<std::string>
     return token;
 }
 
+Tokenizer::Tokenizer() = default;
+Tokenizer::Tokenizer(Tokenizer const&) = default;
+Tokenizer::Tokenizer(Tokenizer&&) = default;
+Tokenizer& Tokenizer::operator=(Tokenizer const&) = default;
+Tokenizer& Tokenizer::operator=(Tokenizer&&) = default;
+Tokenizer::~Tokenizer() = default;
+
 auto WhitespaceTokenizer::tokenize(std::string_view input) const -> std::unique_ptr<TokenStream>
 {
     return std::make_unique<WhitespaceTokenStream>(input);
+}
+
+auto WhitespaceTokenizer::tokenize(std::string input) const -> std::unique_ptr<TokenStream>
+{
+    return std::make_unique<WhitespaceTokenStream>(std::move(input));
+}
+
+auto WhitespaceTokenizer::tokenize(CowString input) const -> std::unique_ptr<TokenStream>
+{
+    return std::make_unique<WhitespaceTokenStream>(std::move(input));
 }
 
 auto EnglishTokenizer::tokenize(std::string_view input) const -> std::unique_ptr<TokenStream>
 {
     return std::make_unique<EnglishTokenStream>(input);
 }
+
+auto EnglishTokenizer::tokenize(std::string input) const -> std::unique_ptr<TokenStream>
+{
+    return std::make_unique<EnglishTokenStream>(std::move(input));
+}
+
+auto EnglishTokenizer::tokenize(CowString input) const -> std::unique_ptr<TokenStream>
+{
+    return std::make_unique<EnglishTokenStream>(std::move(input));
+}
+
+EnglishTokenizer::EnglishTokenizer() = default;
+EnglishTokenizer::EnglishTokenizer(EnglishTokenizer const&) = default;
+EnglishTokenizer::EnglishTokenizer(EnglishTokenizer&&) = default;
+EnglishTokenizer& EnglishTokenizer::operator=(EnglishTokenizer const&) = default;
+EnglishTokenizer& EnglishTokenizer::operator=(EnglishTokenizer&&) = default;
+EnglishTokenizer::~EnglishTokenizer() = default;
 
 }  // namespace pisa
