@@ -13,42 +13,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install lcov
+    - name: Bulid docker image
       shell: bash
-      run: |
-          echo "CC=gcc-7" >> $GITHUB_ENV
-          echo "CXX=g++-7" >> $GITHUB_ENV
-          sudo apt-get install -y lcov
-    - name: Create Build Environment
-      shell: bash
-      run: cmake -E make_directory ${{runner.workspace}}/build
+      run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/coverage/Dockerfile"
 
-    - name: Configure
+    - name: Generate and upload coverage
       shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=OFF -DENABLE_COVERAGE=ON -DPISA_CI_BUILD=ON ..
-
-    - name: Build
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: cmake --build . --config Debug -- -j 4
-
-    - name: Test
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: ctest -j 4
-
-    - name: Generate Coverage repport
-      shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: |
-          lcov --capture --directory . --output-file coverage.info
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info # filter system-files
-          lcov --remove coverage.info '**/external/*' --output-file coverage.info # filter external folder
-          lcov --remove coverage.info '**/test/*' --output-file coverage.info # filter tests
-          lcov --list coverage.info # debug info
-    - name: Upload to codecov.io
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        file: ${{runner.workspace}}/build/coverage.info
+      run: docker run --env CODECOV_TOKEN="${{ secrets.CODECOV_TOKEN }}" --rm pisa

@@ -9,7 +9,9 @@
 #include <boost/filesystem.hpp>
 
 #include "document_record.hpp"
+#include "forward_index_builder.hpp"
 #include "query/term_processor.hpp"
+#include "text_analyzer.hpp"
 #include "type_safe.hpp"
 
 namespace pisa {
@@ -53,10 +55,7 @@ class Forward_Index_Builder {
         -> std::vector<std::string>;
 
     /// Processes a single batch.
-    void
-    run(Batch_Process bp,
-        TermTransformer process_term,
-        process_content_function_type process_content) const;
+    void run(Batch_Process bp, TextAnalyzer const& text_analyzer) const;
 
     /// Merges batches.
     void
@@ -67,8 +66,7 @@ class Forward_Index_Builder {
         std::istream& is,
         std::string const& output_file,
         read_record_function_type next_record,
-        TermTransformerBuilder term_transformer_builder,
-        process_content_function_type process_content,
+        std::shared_ptr<TextAnalyzer> text_analyzer,
         std::ptrdiff_t batch_size,
         std::size_t threads) const;
 

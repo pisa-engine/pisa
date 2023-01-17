@@ -26,8 +26,7 @@ auto Forward_Index_Builder::batch_file(std::string const& output_file, std::ptrd
     return os.str();
 }
 
-void Forward_Index_Builder::run(
-    Batch_Process bp, TermTransformer process_term, process_content_function_type process_content) const
+void Forward_Index_Builder::run(Batch_Process bp, TextAnalyzer const& text_analyzer) const
 {
     spdlog::debug(
         "[Batch {}] Processing documents [{}, {})",
@@ -48,21 +47,20 @@ void Forward_Index_Builder::run(
         title_os << record.title() << '\n';
         url_os << record.url() << '\n';
 
-        std::vector<uint32_t> term_ids;
+        std::vector<std::uint32_t> term_ids;
 
-        auto process = [&](auto&& term) {
-            term = process_term(std::move(term));
-            uint32_t id = 0;
-            if (auto pos = map.find(term); pos != map.end()) {
-                id = pos->second;
+        auto tokens = text_analyzer.analyze(record.content());
+        for (auto&& token: *tokens) {
+            if (auto pos = map.find(token); pos != map.end()) {
+                term_ids.push_back(pos->second);
             } else {
-                id = map.size();
-                map[term] = id;
-                term_os << term << '\n';
+                auto const id = map.size();
+                map[token] = id;
+                term_os << token << '\n';
+                term_ids.push_back(id);
             }
-            term_ids.push_back(id);
-        };
-        process_content(std::move(record.content()), process);
+        }
+
         write_document(os, term_ids.begin(), term_ids.end());
     }
     spdlog::info(
@@ -211,8 +209,7 @@ void Forward_Index_Builder::build(
     std::istream& is,
     std::string const& output_file,
     read_record_function_type next_record,
-    TermTransformerBuilder term_transformer_builder,
-    process_content_function_type process_content,
+    std::shared_ptr<TextAnalyzer> text_analyzer,
     std::ptrdiff_t batch_size,
     std::size_t threads) const
 {
@@ -236,12 +233,8 @@ void Forward_Index_Builder::build(
                     batch_number, std::move(record_batch), first_document, output_file};
             };
             queue.push(0);
-            batch_group.run([bp = batch_process(),
-                             term_processor = term_transformer_builder(),
-                             this,
-                             &queue,
-                             &process_content]() {
-                run(bp, term_processor, process_content);
+            batch_group.run([bp = batch_process(), this, &queue, text_analyzer]() {
+                run(bp, *text_analyzer);
                 int x;
                 queue.try_pop(x);
             });
@@ -258,12 +251,8 @@ void Forward_Index_Builder::build(
                     batch_number, std::move(record_batch), first_document, output_file};
             };
             queue.push(0);
-            batch_group.run([bp = batch_process(),
-                             term_processor = term_transformer_builder(),
-                             this,
-                             &queue,
-                             &process_content]() {
-                run(bp, term_processor, process_content);
+            batch_group.run([bp = batch_process(), this, &queue, text_analyzer]() {
+                run(bp, *text_analyzer);
                 int x;
                 queue.try_pop(x);
             });

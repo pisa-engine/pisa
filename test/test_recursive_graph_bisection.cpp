@@ -59,9 +59,6 @@ TEST_CASE("Reorder documents with BP")
         }
         return std::nullopt;
     };
-    auto id = [] {
-        return [](std::string&& term) -> std::string { return std::forward<std::string>(term); };
-    };
 
     auto fwd_path = (tmp.path() / "fwd").string();
     auto inv_path = (tmp.path() / "inv").string();
@@ -81,7 +78,12 @@ TEST_CASE("Reorder documents with BP")
         std::ifstream is(collection_input);
         Forward_Index_Builder builder;
         builder.build(
-            is, fwd_path, next_record, id, parse_plaintext_content, batch_size, thread_count);
+            is,
+            fwd_path,
+            next_record,
+            std::make_shared<TextAnalyzer>(std::make_unique<WhitespaceTokenizer>()),
+            batch_size,
+            thread_count);
 
         pisa::invert::invert_forward_index(fwd_path, inv_path, params);
 

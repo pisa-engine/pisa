@@ -80,7 +80,7 @@ write_sizes () {
 
 @test "Extract Taily features for shards and score" {
     cat "$BATS_TEST_DIRNAME/../test_data/clueweb1k.plaintext" | parse_collection \
-        --stemmer porter2 \
+        -F lowercase porter2 \
         --output "$BATS_TMPDIR/fwd" \
         --format plaintext
 
@@ -142,7 +142,7 @@ write_sizes () {
         -k 10 \
         --terms "$BATS_TMPDIR/fwd.termlex" \
         --shard-terms "$BATS_TMPDIR/fwd.shard.{}.termlex" \
-        --stemmer porter2 \
+        -F lowercase porter2 \
         -q "$BATS_TMPDIR/queries" \
         > "$BATS_TMPDIR/scores"
 

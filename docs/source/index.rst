@@ -15,14 +15,14 @@ PISA is a text search engine able to run on large-scale collections of documents
 
 Some features of PISA are listed below:
 
-* Written in C++ for performance;
-* Indexing & Parsing & Sharding capabilities;
-* Many index compression methods implemented;
-* Many query processing algorithms implemented;
-* Implementation of document reordering;
-* Free and open-source with permissive license;
+* Written in C++ for performance
+* Indexing, parsing & sharding capabilities
+* Many index compression methods supported
+* Many query processing algorithms supported
+* Implementation of document reordering
+* Free and open-source with permissive license
 
-.. note:: PISA is still in its **initial release** and many new features are going to come in the next versions. Contributions are also welcome!
+.. note:: PISA is still in its **unstable release**, and no stability or backwards-compatibility is guaranteed with each new version. New features are constantly added, and contributions are welcome!
 
 
 .. toctree::

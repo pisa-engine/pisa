@@ -130,10 +130,7 @@ void build_fwd_index(std::string const& output)
         is,
         output,
         next_plaintext_record,
-        [] {
-            return [](std::string&& term) -> std::string { return std::forward<std::string>(term); };
-        },
-        pisa::parse_plaintext_content,
+        std::make_shared<TextAnalyzer>(std::make_unique<WhitespaceTokenizer>()),
         20'000,
         2);
 }
