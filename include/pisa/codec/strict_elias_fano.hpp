@@ -27,11 +27,11 @@ struct strict_elias_fano {
         using value_type = typename std::iterator_traits<Iterator>::value_type;
         auto new_begin = make_function_iterator(
             std::make_pair(value_type(0), begin),
-            [](std::pair<value_type, Iterator>& state) {
+            +[](std::pair<value_type, Iterator>& state) {
                 ++state.first;
                 ++state.second;
             },
-            [](std::pair<value_type, Iterator> const& state) { return *state.second - state.first; });
+            +[](std::pair<value_type, Iterator> const& state) { return *state.second - state.first; });
         compact_elias_fano::write(bvb, new_begin, new_universe, n, params);
     }
 
