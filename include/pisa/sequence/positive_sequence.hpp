@@ -22,8 +22,8 @@ struct positive_sequence {
         assert(n > 0);
         auto cumulative_begin = make_function_iterator(
             std::make_pair(uint64_t(0), begin),
-            [](std::pair<uint64_t, Iterator>& state) { state.first += *state.second++; },
-            [](std::pair<uint64_t, Iterator> const& state) { return state.first + *state.second; });
+            +[](std::pair<uint64_t, Iterator>& state) { state.first += *state.second++; },
+            +[](std::pair<uint64_t, Iterator> const& state) { return state.first + *state.second; });
         base_sequence_type::write(bvb, cumulative_begin, universe, n, params);
     }
 

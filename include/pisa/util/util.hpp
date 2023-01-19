@@ -72,7 +72,12 @@ class function_iterator {
 
     function_iterator() = default;
 
-    explicit function_iterator(State initial_state) : m_state(initial_state) {}
+    explicit function_iterator(
+        State&& initial_state, AdvanceFunctor&& advance_functor, ValueFunctor&& value_functor)
+        : m_state(std::forward<State>(initial_state)),
+          m_advance_functor(std::forward<AdvanceFunctor>(advance_functor)),
+          m_value_functor(std::forward<ValueFunctor>(value_functor))
+    {}
 
     friend inline void swap(function_iterator& lhs, function_iterator& rhs)
     {
@@ -80,16 +85,11 @@ class function_iterator {
         swap(lhs.m_state, rhs.m_state);
     }
 
-    value_type operator*() const
-    {
-        // XXX I do not know if this trick is legal for stateless lambdas,
-        // but it seems to work on GCC and Clang
-        return (*static_cast<ValueFunctor*>(nullptr))(m_state);
-    }
+    value_type operator*() const { return m_value_functor(m_state); }
 
     function_iterator& operator++()
     {
-        (*static_cast<AdvanceFunctor*>(nullptr))(m_state);
+        m_advance_functor(m_state);
         return *this;
     }
 
@@ -106,13 +106,18 @@ class function_iterator {
 
   private:
     State m_state;
+    AdvanceFunctor m_advance_functor;
+    ValueFunctor m_value_functor;
 };
 
 template <typename State, typename AdvanceFunctor, typename ValueFunctor>
-function_iterator<State, AdvanceFunctor, ValueFunctor>
-make_function_iterator(State initial_state, AdvanceFunctor, ValueFunctor)
+function_iterator<State, AdvanceFunctor, ValueFunctor> make_function_iterator(
+    State&& initial_state, AdvanceFunctor&& advance_functor, ValueFunctor&& value_functor)
 {
-    return function_iterator<State, AdvanceFunctor, ValueFunctor>(initial_state);
+    return function_iterator<State, AdvanceFunctor, ValueFunctor>(
+        std::forward<State>(initial_state),
+        std::forward<AdvanceFunctor>(advance_functor),
+        std::forward<ValueFunctor>(value_functor));
 }
 
 struct stats_line {
