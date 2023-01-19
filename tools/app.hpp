@@ -148,7 +148,10 @@ namespace arg {
 
       protected:
         [[nodiscard]] auto terms_option() const -> CLI::Option* { return m_terms_option; }
-        void override_term_lexicon(std::string term_lexicon) { m_term_lexicon = term_lexicon; }
+        void override_term_lexicon(std::string term_lexicon)
+        {
+            m_term_lexicon = std::move(term_lexicon);
+        }
 
       private:
         std::optional<std::string> m_query_file;
