@@ -10,6 +10,7 @@
 
 #include "binary_freq_collection.hpp"
 #include "util/index_build_utils.hpp"
+#include "util/log.hpp"
 #include "util/util.hpp"
 
 int main(int argc, const char** argv)
@@ -26,10 +27,7 @@ int main(int argc, const char** argv)
 
     spdlog::info("Computing statistics about document ID space");
 
-    std::vector<float> log2_data(256);
-    for (size_t i = 0; i < 256; ++i) {
-        log2_data[i] = log2f(i);
-    }
+    pisa::Log2<256> log2;
 
     double all_log_gaps = 0.0F;
     size_t no_gaps = 0;
@@ -38,11 +36,7 @@ int main(int argc, const char** argv)
         all_log_gaps += log2f(seq.docs.begin()[0] + 1);
         for (size_t i = 1; i < seq.docs.size(); ++i) {
             auto gap = seq.docs.begin()[i] - seq.docs.begin()[i - 1];
-            if (gap < 256) {
-                all_log_gaps += log2_data[gap];
-            } else {
-                all_log_gaps += log2f(gap);
-            }
+            all_log_gaps += log2(gap);
         }
     }
     double average_log_gap = all_log_gaps / no_gaps;
