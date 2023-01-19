@@ -55,8 +55,9 @@ struct topk_queue {
                 m_effective_threshold = m_q.front().first;
             }
         } else {
-            std::pop_heap(m_q.begin(), m_q.end(), min_heap_order);
+            std::iter_swap(m_q.begin(), std::prev(m_q.end()));
             m_q.pop_back();
+            sift_down(m_q.begin(), m_q.end());
             m_effective_threshold = m_q.front().first;
         }
         return true;
@@ -130,6 +131,45 @@ struct topk_queue {
     min_heap_order(entry_type const& lhs, entry_type const& rhs) noexcept -> bool
     {
         return lhs.first > rhs.first;
+    }
+
+    using entry_iterator_type = typename std::vector<entry_type>::iterator;
+
+    /// Sifts down the top element of the heap in `[first, last)`.
+    ///
+    /// For justification for using it instead of STL functions, see
+    /// https://github.com/pisa-engine/pisa/issues/504.
+    static void sift_down(entry_iterator_type first, entry_iterator_type last)
+    {
+        auto cmp = [first](std::size_t lhs, std::size_t rhs) {
+            return (first + lhs)->first > (first + rhs)->first;
+        };
+        auto swap = [first](std::size_t lhs, std::size_t rhs) {
+            return std::iter_swap(first + lhs, first + rhs);
+        };
+
+        auto len = std::distance(first, last);
+        std::size_t idx = 0;
+        std::size_t right, left;
+
+        while ((right = 2 * (idx + 1)) < len) {
+            left = right - 1;
+            auto next = idx;
+            if (cmp(next, left)) {
+                next = left;
+            }
+            if (cmp(next, right)) {
+                next = right;
+            }
+            if (next == idx) {
+                return;
+            }
+            swap(idx, next);
+            idx = next;
+        }
+        if ((left = 2 * idx + 1) < len && cmp(idx, left)) {
+            swap(idx, left);
+        }
     }
 
     std::size_t m_k;

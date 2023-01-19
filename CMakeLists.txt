@@ -14,7 +14,9 @@ option(PISA_ENABLE_BENCHMARKING "Enable benchmarking of the library." ON)
 option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
 option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
-option(PISA_CI_BUILD "Remove debug information from Debug build" ON)
+option(PISA_CI_BUILD "Remove debug information from Debug build" OFF)
+
+option(PISA_SYSTEM_GOOGLE_BENCHMARK "Use system installation of Google benchmark library" OFF)
 
 if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -149,7 +151,8 @@ if (PISA_BUILD_TOOLS)
 endif()
 
 if (PISA_ENABLE_BENCHMARKING)
-  add_subdirectory(benchmarks)
+    add_subdirectory(microbench)
+    add_subdirectory(benchmarks)
 endif()
 
 
