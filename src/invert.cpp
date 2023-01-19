@@ -280,13 +280,11 @@ namespace pisa { namespace invert {
                 first = last;
             }
             while (first != r.end()) {
-                auto [current_term, current_doc] = *first;
-                auto last = std::find_if(
-                    first,
-                    r.end(),
-                    [&, current_term = current_term, current_doc = current_doc](auto const& posting) {
-                        return posting.first != current_term || posting.second != current_doc;
-                    });
+                auto current_term = first->first;
+                auto current_doc = first->second;
+                auto last = std::find_if(first, r.end(), [&](auto const& posting) {
+                    return posting.first != current_term || posting.second != current_doc;
+                });
                 auto freq = Frequency(std::distance(first, last));
                 documents[current_term].push_back(current_doc);
                 frequencies[current_term].push_back(freq);
