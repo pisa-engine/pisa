@@ -123,6 +123,8 @@ resources:
 3. The [documentation](https://pisa.readthedocs.io/en/latest/).
 4. Drop in to our [Slack channel](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw) and say hi!
 
+## Contributing
+
 If you want to get involved with PISA, please check out our [Contributing](https://github.com/pisa-engine/pisa/blob/master/.github/CONTRIBUTING.md) page.
 
 

@@ -68,7 +68,7 @@ struct IndexData {
 };
 
 template <typename Index>
-std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
+std::unordered_map<std::string, std::unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
 
 template <typename Acc>
 class ranked_or_taat_query_acc: public ranked_or_taat_query {

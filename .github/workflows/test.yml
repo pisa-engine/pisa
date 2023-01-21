@@ -11,13 +11,11 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        name: [gcc9, gcc10, gcc11, gcc12, clang11]
+        compiler: [gcc9, gcc10, gcc11, gcc12, clang11]
+        standard: [17]
         include:
-          - name: gcc9
-          - name: gcc10
-          - name: gcc11
-          - name: gcc12
-          - name: clang11
+          - compiler: gcc12 # Extra test for C++20
+            standard: 20
 
     steps:
     - uses: actions/checkout@v2
@@ -26,7 +24,9 @@ jobs:
 
     - name: Bulid docker image
       shell: bash
-      run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.name}}/Dockerfile"
+      run: |
+        docker build --build-arg CXX_STANDARD=${{matrix.standard}} \
+          -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.compiler}}/Dockerfile"
 
     - name: Test
       shell: bash

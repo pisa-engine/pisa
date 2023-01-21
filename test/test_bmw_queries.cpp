@@ -1,6 +1,7 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <memory>
 #include <unordered_map>
 
 #include "test_common.hpp"
@@ -70,7 +71,7 @@ struct IndexData {
 };
 
 template <typename Index>
-std::unordered_map<std::string, unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
+std::unordered_map<std::string, std::unique_ptr<IndexData<Index>>> IndexData<Index>::data = {};
 
 template <typename Wand>
 auto test(Wand& wdata, std::string const& s_name)

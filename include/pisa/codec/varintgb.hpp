@@ -7,8 +7,6 @@
 
 #include "codec/block_codecs.hpp"
 
-using namespace std;
-
 namespace pisa {
 
 template <bool delta = false>

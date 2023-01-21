@@ -4,6 +4,7 @@
 
 #include <range/v3/action/shuffle.hpp>
 #include <range/v3/algorithm/for_each.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/chunk.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/take.hpp>
@@ -97,8 +98,8 @@ auto mapping_from_files(std::string const& full_titles, gsl::span<std::string co
         }
         shard_is.push_back(std::make_unique<std::ifstream>(shard_file));
     }
-    auto title_files =
-        shard_is | ranges::views::transform([](auto& is) { return is.get(); }) | ranges::to_vector;
+    auto title_files = shard_is | ranges::views::transform([](auto& is) { return is.get(); })
+        | ranges::to<std::vector>();
     return mapping_from_files(&fis, gsl::make_span(title_files));
 }
 
@@ -109,8 +110,8 @@ auto create_random_mapping(int document_count, int shard_count, std::optional<st
     std::mt19937 g(seed.value_or(rd()));
     VecMap<Document_Id, Shard_Id> mapping(document_count);
     auto shard_size = ceil_div(document_count, shard_count);
-    auto documents = ranges::views::iota(0_d, Document_Id{document_count}) | ranges::to_vector
-        | ranges::actions::shuffle(g);
+    auto documents = ranges::views::iota(0_d, Document_Id{document_count})
+        | ranges::to<std::vector> | ranges::actions::shuffle(g);
 
     ranges::for_each(
         ranges::views::zip(
@@ -259,7 +260,7 @@ void partition_fwd_index(
 {
     auto terms = read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
-    auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to_vector;
+    auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to<std::vector>();
     rearrange_sequences(input_basename, output_basename, mapping, shard_count);
     spdlog::info("Remapping shards");
     pisa::for_each(pisa::execution::par_unseq, shard_ids.begin(), shard_ids.end(), [&](auto&& id) {

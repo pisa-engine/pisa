@@ -11,6 +11,7 @@
 #include <gsl/span>
 #include <range/v3/action/transform.hpp>
 #include <range/v3/algorithm/stable_sort.hpp>
+#include <range/v3/range/conversion.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/stride.hpp>
@@ -82,8 +83,8 @@ TEST_CASE("mapping_from_files", "[invert][unit]")
     shards.push_back(std::make_unique<std::istringstream>("D00\nD01\nD02"));
     shards.push_back(std::make_unique<std::istringstream>("D02\nD03\nD04"));
     shards.push_back(std::make_unique<std::istringstream>("D06\nD07\nD08\nD09\nD010\nD11"));
-    auto stream_pointers =
-        ranges::views::transform(shards, [](auto const& s) { return s.get(); }) | ranges::to_vector;
+    auto stream_pointers = ranges::views::transform(shards, [](auto const& s) { return s.get(); })
+        | ranges::to<std::vector>();
     REQUIRE(
         mapping_from_files(&full, gsl::span<std::istream*>(stream_pointers)).as_vector()
         == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s});
@@ -103,7 +104,7 @@ TEST_CASE("create_random_mapping", "[invert][unit]")
 
     REQUIRE(
         documents.as_vector()
-        == ranges::to_vector(ranges::views::iota(Document_Id{}, Document_Id{1000U})));
+        == ranges::to<std::vector>(ranges::views::iota(Document_Id{}, Document_Id{1000U})));
     REQUIRE(
         counts.as_vector() == std::vector<int>{77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 77, 76});
 }
@@ -211,7 +212,7 @@ TEST_CASE("Rearrange sequences", "[invert][integration]")
                 expected =
                     ranges::views::transform(
                         sorted_mapping, [&](auto&& entry) { return expected[entry.first.as_int()]; })
-                    | ranges::to_vector;
+                    | ranges::to<std::vector>();
 
                 auto pos = expected.begin();
                 for (auto shard: shard_ids) {
