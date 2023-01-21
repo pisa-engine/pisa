@@ -88,6 +88,7 @@ target_compile_options(fmt INTERFACE -Wno-deprecated-declarations)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 
 # Add range-v3
+set(RANGES_CXX_STD ${CMAKE_CXX_STANDARD})
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 
 # Add RapidCheck
