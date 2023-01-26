@@ -155,7 +155,7 @@ void evaluate_queries(
                 qid.value_or(std::to_string(query_idx)),
                 iteration,
                 docmap[result.second],
-                rank,
+                rank + 1,
                 result.first,
                 run_id);
         }
