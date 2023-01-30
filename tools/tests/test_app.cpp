@@ -38,7 +38,7 @@ struct Arguments {
     {
         if (argv != nullptr) {
             while (argc-- > 0) {
-                delete argv[argc];
+                delete[] argv[argc];
             }
             delete[] argv;
         }
