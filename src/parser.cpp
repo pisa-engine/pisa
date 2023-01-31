@@ -14,6 +14,17 @@
 
 namespace pisa {
 
+// This is a quick workaround to the changes in libfmt API.
+// Changes should be made to the upstream libraries to support the new API,
+// which also means upgrading fmt version upstream.
+template <typename T>
+[[nodiscard]] auto to_string(T&& value) -> std::string
+{
+    std::ostringstream os;
+    os << value;
+    return os.str();
+}
+
 using namespace std::string_view_literals;
 
 template <typename ReadSubsequentRecordFn>
@@ -28,7 +39,7 @@ template <typename ReadSubsequentRecordFn>
                         std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
                 },
                 [](trecpp::Error const& error) {
-                    spdlog::warn("Skipped invalid record: {}", error);
+                    spdlog::warn("Skipped invalid record: {}", to_string(error));
                     return std::optional<Document_Record>{};
                 });
             if (record) {
@@ -66,7 +77,7 @@ record_parser(std::string const& type, std::istream& is)
                             rec.trecid(), rec.content(), rec.url());
                     },
                     [](trecpp::Error const& error) {
-                        spdlog::warn("Skipped invalid record: {}", error);
+                        spdlog::warn("Skipped invalid record: {}", to_string(error));
                         return std::optional<Document_Record>{};
                     });
                 if (record) {
@@ -100,7 +111,7 @@ record_parser(std::string const& type, std::istream& is)
                         return std::optional<Document_Record>{};
                     },
                     [](warcpp::Error const& error) {
-                        spdlog::warn("Skipped invalid record: {}", error);
+                        spdlog::warn("Skipped invalid record: {}", to_string(error));
                         return std::optional<Document_Record>{};
                     });
                 if (record) {
@@ -117,7 +128,7 @@ record_parser(std::string const& type, std::istream& is)
                 if (std::get_if<wapopp::Error>(&result) != nullptr) {
                     spdlog::warn(
                         "Skpped invalid record. Reason: {}",
-                        std::get_if<wapopp::Error>(&result)->msg);
+                        to_string(std::get_if<wapopp::Error>(&result)->msg));
                     spdlog::debug("Invalid record: {}", std::get_if<wapopp::Error>(&result)->json);
                 } else {
                     std::ostringstream os;
