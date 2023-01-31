@@ -11,7 +11,7 @@
 
 namespace pisa {
 
-auto split_query_at_colon(std::string const& query_string)
+auto split_query_at_colon(std::string_view query_string)
     -> std::pair<std::optional<std::string>, std::string_view>
 {
     // query id : terms (or ids)
