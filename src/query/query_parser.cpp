@@ -9,7 +9,7 @@ QueryParser::QueryParser(TextAnalyzer analyzer, std::unique_ptr<TermMap> term_ma
 
 auto QueryParser::parse(std::string_view query) -> Query
 {
-    auto [id, raw_query] = split_query_at_colon(std::string(query));  // TODO
+    auto [id, raw_query] = split_query_at_colon(query);
     auto tokens = m_analyzer.analyze(raw_query);
     std::vector<std::uint32_t> query_ids;
     for (auto token: *tokens) {

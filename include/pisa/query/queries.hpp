@@ -23,7 +23,7 @@ struct Query {
     std::vector<float> term_weights;
 };
 
-[[nodiscard]] auto split_query_at_colon(std::string const& query_string)
+[[nodiscard]] auto split_query_at_colon(std::string_view query_string)
     -> std::pair<std::optional<std::string>, std::string_view>;
 
 [[nodiscard]] auto parse_query_terms(
