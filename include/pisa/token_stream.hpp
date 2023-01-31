@@ -26,11 +26,11 @@ class TokenIterator {
 
     explicit TokenIterator(TokenStream* tokenizer);
 
-    [[nodiscard]] auto operator*() -> value_type;
+    [[nodiscard]] auto operator*() const -> value_type;
     auto operator++() -> TokenIterator&;
     [[nodiscard]] auto operator++(int) -> TokenIterator;
-    [[nodiscard]] auto operator==(TokenIterator const&) -> bool;
-    [[nodiscard]] auto operator!=(TokenIterator const&) -> bool;
+    [[nodiscard]] auto operator==(TokenIterator const&) const -> bool;
+    [[nodiscard]] auto operator!=(TokenIterator const&) const -> bool;
 };
 
 /**

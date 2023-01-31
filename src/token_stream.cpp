@@ -7,7 +7,7 @@ TokenIterator::TokenIterator(TokenStream* tokenizer) : m_tokenizer(tokenizer), m
     m_token = m_tokenizer == nullptr ? std::nullopt : m_tokenizer->next();
 }
 
-[[nodiscard]] auto TokenIterator::operator*() -> value_type
+[[nodiscard]] auto TokenIterator::operator*() const -> value_type
 {
     return *m_token;
 }
@@ -28,7 +28,7 @@ auto TokenIterator::operator++() -> TokenIterator&
     return copy;
 }
 
-[[nodiscard]] auto TokenIterator::operator==(TokenIterator const& other) -> bool
+[[nodiscard]] auto TokenIterator::operator==(TokenIterator const& other) const -> bool
 {
     if (m_token.has_value() && other.m_token.has_value()) {
         return m_pos == other.m_pos;
@@ -36,7 +36,7 @@ auto TokenIterator::operator++() -> TokenIterator&
     return m_token.has_value() == other.m_token.has_value();
 }
 
-[[nodiscard]] auto TokenIterator::operator!=(TokenIterator const& other) -> bool
+[[nodiscard]] auto TokenIterator::operator!=(TokenIterator const& other) const -> bool
 {
     return !(*this == other);
 }
