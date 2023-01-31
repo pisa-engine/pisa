@@ -65,7 +65,7 @@ template <typename State, typename AdvanceFunctor, typename ValueFunctor>
 class function_iterator {
   public:
     using iterator_category = std::forward_iterator_tag;
-    using value_type = typename std::result_of<ValueFunctor(State)>::type;
+    using value_type = typename std::invoke_result_t<ValueFunctor, State>;
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
     using reference = value_type&;
