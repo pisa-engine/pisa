@@ -103,6 +103,7 @@ target_compile_options(taily INTERFACE -Wno-unused-variable)
 
 if (PISA_ENABLE_TESTING AND NOT PISA_SYSTEM_GOOGLE_BENCHMARK)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "skip Google Benchmark testing")
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "skip Google Benchmark testing")
+    set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "disable -Werror")
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/benchmark)
-    target_compile_options(benchmark PRIVATE -Wno-error=all -Wno-unused-but-set-variable)
 endif()
