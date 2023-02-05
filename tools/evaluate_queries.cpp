@@ -15,6 +15,7 @@
 #include <tbb/parallel_for.h>
 
 #include "accumulator/lazy_accumulator.hpp"
+#include "accumulator/simple_accumulator.hpp"
 #include "app.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
@@ -115,7 +116,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "ranked_or_taat") {
-        query_fun = [&, accumulator = Simple_Accumulator(index.num_docs())](Query query) mutable {
+        query_fun = [&, accumulator = SimpleAccumulator(index.num_docs())](Query query) mutable {
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
@@ -124,7 +125,7 @@ void evaluate_queries(
             return topk.topk();
         };
     } else if (query_type == "ranked_or_taat_lazy") {
-        query_fun = [&, accumulator = Lazy_Accumulator<4>(index.num_docs())](Query query) mutable {
+        query_fun = [&, accumulator = LazyAccumulator<4>(index.num_docs())](Query query) mutable {
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(

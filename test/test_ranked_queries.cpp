@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "accumulator/lazy_accumulator.hpp"
+#include "accumulator/simple_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
@@ -99,14 +100,14 @@ class range_query_128: public range_query<T> {
 TEMPLATE_TEST_CASE(
     "Ranked query test",
     "[query][ranked][integration]",
-    ranked_or_taat_query_acc<Simple_Accumulator>,
-    ranked_or_taat_query_acc<Lazy_Accumulator<4>>,
+    ranked_or_taat_query_acc<SimpleAccumulator>,
+    ranked_or_taat_query_acc<LazyAccumulator<4>>,
     wand_query,
     maxscore_query,
     block_max_wand_query,
     block_max_maxscore_query,
-    range_query_128<ranked_or_taat_query_acc<Simple_Accumulator>>,
-    range_query_128<ranked_or_taat_query_acc<Lazy_Accumulator<4>>>,
+    range_query_128<ranked_or_taat_query_acc<SimpleAccumulator>>,
+    range_query_128<ranked_or_taat_query_acc<LazyAccumulator<4>>>,
     range_query_128<wand_query>,
     range_query_128<maxscore_query>,
     range_query_128<block_max_wand_query>,

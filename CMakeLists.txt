@@ -9,6 +9,9 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if(NOT CMAKE_CXX_STANDARD EQUAL 17)
+    add_compile_definitions(PISA_ENABLE_CONCEPTS=1)
+endif()
 
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
