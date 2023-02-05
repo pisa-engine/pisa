@@ -1,5 +1,7 @@
 #pragma once
 
+#include "accumulator/partial_score_accumulator.hpp"
+#include "concepts.hpp"
 #include "query/queries.hpp"
 #include "topk_queue.hpp"
 
@@ -10,13 +12,14 @@ struct range_taat_query {
     explicit range_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
+    PISA_REQUIRES(PartialScoreAccumulator<Acc>)
     void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator)
     {
         if (cursors.empty()) {
             return;
         }
 
-        accumulator.init();
+        accumulator.reset();
 
         for (size_t end = range_size; end + range_size < max_docid; end += range_size) {
             process_range(cursors, end, accumulator);

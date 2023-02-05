@@ -5,12 +5,22 @@
 #include <cstddef>
 #include <vector>
 
+#include "concepts.hpp"
+#include "partial_score_accumulator.hpp"
 #include "topk_queue.hpp"
 
 namespace pisa {
 
+/**
+ * Lazy accumulator fully resets the entire array only (1 << counter_bit_size) call to `reset()`.
+ * For example, if `counter_bit_size = 3`, then all values are set to 0 every 8th reset. To allow
+ * for that, the array is partitioned into blocks, each of which has a number of accumulators and
+ * a descriptor that encodes when was the last time the block was in use. If it was used before
+ * the current query (according to a counter that is reset each cycle), the block is wiped out
+ * before accumulating another score.
+ */
 template <int counter_bit_size, typename Descriptor = std::uint64_t>
-struct Lazy_Accumulator {
+class LazyAccumulator {
     using reference = float&;
 
     static_assert(
@@ -46,11 +56,14 @@ struct Lazy_Accumulator {
         }
     };
 
-    explicit Lazy_Accumulator(std::size_t size)
+  public:
+    explicit LazyAccumulator(std::size_t size)
         : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor)
-    {}
+    {
+        PISA_ASSERT_CONCEPT(PartialScoreAccumulator<decltype(*this)>);
+    }
 
-    void init()
+    void reset()
     {
         if (m_counter == 0) {
             auto first = reinterpret_cast<std::byte*>(&m_accumulators.front());
@@ -60,7 +73,7 @@ struct Lazy_Accumulator {
         }
     }
 
-    void accumulate(std::ptrdiff_t const document, float score)
+    void accumulate(std::size_t document, float score)
     {
         auto const block = document / counters_in_descriptor;
         auto const pos_in_block = document % counters_in_descriptor;
@@ -70,7 +83,7 @@ struct Lazy_Accumulator {
         m_accumulators[block].accumulators[pos_in_block] += score;
     }
 
-    void aggregate(topk_queue& topk)
+    void collect(topk_queue& topk)
     {
         uint64_t docid = 0U;
         for (auto const& block: m_accumulators) {
@@ -86,8 +99,6 @@ struct Lazy_Accumulator {
     }
 
     [[nodiscard]] auto size() const noexcept -> std::size_t { return m_size; }
-    [[nodiscard]] auto blocks() noexcept -> std::vector<Block>& { return m_accumulators; }
-    [[nodiscard]] auto counter() const noexcept -> int { return m_counter; }
 
   private:
     std::size_t m_size;

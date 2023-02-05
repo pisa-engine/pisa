@@ -13,6 +13,7 @@
 #include <spdlog/spdlog.h>
 
 #include "accumulator/lazy_accumulator.hpp"
+#include "accumulator/simple_accumulator.hpp"
 #include "app.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/cursor.hpp"
@@ -257,7 +258,7 @@ void perftest(
                 return topk.topk().size();
             };
         } else if (t == "ranked_or_taat" && wand_data_filename) {
-            Simple_Accumulator accumulator(index.num_docs());
+            SimpleAccumulator accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
@@ -270,7 +271,7 @@ void perftest(
                 return topk.topk().size();
             };
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
-            Lazy_Accumulator<4> accumulator(index.num_docs());
+            LazyAccumulator<4> accumulator(index.num_docs());
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
