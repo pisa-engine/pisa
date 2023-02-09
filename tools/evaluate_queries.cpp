@@ -152,7 +152,7 @@ void evaluate_queries(
         auto qid = queries[query_idx].id;
         for (auto&& [rank, result]: enumerate(results)) {
             std::cout << fmt::format(
-                "{}\t{}\t{}\t{}\t{}\t{}\n",
+                "{} {} {} {} {} {}\n",
                 qid.value_or(std::to_string(query_idx)),
                 iteration,
                 docmap[result.second],
