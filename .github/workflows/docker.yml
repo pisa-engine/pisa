@@ -1,10 +1,10 @@
-name: Docker
+name: Publish Docker
 on:
   push:
     branches: [ master ]
 
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-18.04
 
     steps:

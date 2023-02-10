@@ -1,13 +1,38 @@
-name: Test MacOS
+name: Trunk
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
-  build:
+  test:
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        compiler: [gcc9, gcc10, gcc11, gcc12, clang11, clang12]
+        standard: [17]
+        include:
+          - compiler: gcc12 # Extra test for C++20
+            standard: 20
+          - compiler: clang12 # Extra test for C++20
+            standard: 20
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Bulid docker image
+      shell: bash
+      run: |
+        docker build --build-arg CXX_STANDARD=${{matrix.standard}} \
+          -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.compiler}}/Dockerfile"
+
+    - name: Test
+      shell: bash
+      run: docker run pisa ctest -VV -j 4
+
+  mac_tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -48,3 +73,15 @@ jobs:
       shell: bash
       working-directory: ${{runner.workspace}}/build
       run: ctest -VV -j 4
+
+  tidy:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Bulid docker image
+      shell: bash
+      run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/tidy/Dockerfile"
