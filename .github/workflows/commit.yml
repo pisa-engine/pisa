@@ -1,4 +1,4 @@
-name: CLI Test
+name: Commit
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  test_cli:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -76,3 +76,53 @@ jobs:
       env:
           TEST_DIR: ../pisa/test
       run: ../pisa/test/cli/run.sh
+
+  coverage:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Bulid docker image
+      shell: bash
+      run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/coverage/Dockerfile"
+
+    - name: Generate and upload coverage
+      shell: bash
+      run: docker run --env CODECOV_TOKEN="${{ secrets.CODECOV_TOKEN }}" --rm pisa
+
+  format:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install clang-format
+      shell: bash
+      run: |
+          sudo apt-get install -y clang-format-9
+
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+
+    - name: Run clang-format
+      shell: bash
+      run: |
+        wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py
+        python run-clang-format.py \
+            --clang-format-executable clang-format-9 \
+            -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
+
+  headers:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Bulid docker image
+      shell: bash
+      run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/headers/Dockerfile"
