@@ -69,6 +69,10 @@ auto transform_token(token_type const& tok) -> std::string
     }
 }
 
+struct Lexer: lex::lexer<lexer_type> {
+    Lexer();
+};
+
 Lexer::Lexer()
 {
     // Note: parsing process takes the first match from left to right.
@@ -78,7 +82,7 @@ Lexer::Lexer()
         | lex::token_def<>(".", TokenType::NotValid);
 }
 
-Lexer const EnglishTokenStream::LEXER = Lexer{};
+thread_local Lexer const LEXER = Lexer{};
 
 EnglishTokenStream::EnglishTokenStream(std::string_view input)
     : m_input(input),

@@ -35,12 +35,7 @@ using token_type =
     lex::lexertl::token<std::string_view::const_iterator, boost::mpl::vector<>, boost::mpl::false_>;
 using lexer_type = lex::lexertl::actor_lexer<token_type>;
 
-struct Lexer: lex::lexer<lexer_type> {
-    Lexer();
-};
-
 class EnglishTokenStream: public TokenStream {
-    static Lexer const LEXER;
 
     using iterator = typename lexer_type::iterator_type;
 
