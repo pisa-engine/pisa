@@ -342,7 +342,7 @@ void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, pr
         bool last_level = last == end;
         tbb::task_group level_group;
         std::for_each(first, last, [&thread_local_data, &level_group, last_level, &p](auto& node) {
-            level_group.run([&]() {
+            level_group.run([&, last_level]() {
                 std::sort(node.partition.left.begin(), node.partition.left.end());
                 std::sort(node.partition.right.begin(), node.partition.right.end());
                 if (node.cache) {
