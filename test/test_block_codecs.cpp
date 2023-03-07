@@ -44,14 +44,14 @@ void test_block_codec()
 
 TEST_CASE("block_codecs")
 {
-    test_block_codec<pisa::optpfor_block>();
-    test_block_codec<pisa::varint_G8IU_block>();
-    test_block_codec<pisa::streamvbyte_block>();
-    test_block_codec<pisa::maskedvbyte_block>();
-    test_block_codec<pisa::interpolative_block>();
-    test_block_codec<pisa::qmx_block>();
-    test_block_codec<pisa::varintgb_block>();
-    test_block_codec<pisa::simple8b_block>();
-    test_block_codec<pisa::simdbp_block>();
-    test_block_codec<pisa::simple16_block>();
+    SECTION("optpfor") { test_block_codec<pisa::optpfor_block>(); }
+    SECTION("varintG8IU") { test_block_codec<pisa::varint_G8IU_block>(); }
+    SECTION("streamvbyte") { test_block_codec<pisa::streamvbyte_block>(); }
+    SECTION("maskedvbyte") { test_block_codec<pisa::maskedvbyte_block>(); }
+    SECTION("interepolative") { test_block_codec<pisa::interpolative_block>(); }
+    SECTION("qmx") { test_block_codec<pisa::qmx_block>(); }
+    SECTION("varintGB") { test_block_codec<pisa::varintgb_block>(); }
+    SECTION("simple8b") { test_block_codec<pisa::simple8b_block>(); }
+    SECTION("simdbp") { test_block_codec<pisa::simdbp_block>(); }
+    SECTION("simple16") { test_block_codec<pisa::simple16_block>(); }
 }
