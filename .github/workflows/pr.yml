@@ -10,7 +10,10 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc12, clang12]
-        standard: [17, 20]
+        standard: [17]
+        include:
+          - compiler: gcc12 # Extra test for C++20
+            standard: 20
 
     steps:
     - uses: actions/checkout@v2
