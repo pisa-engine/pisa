@@ -1,10 +1,13 @@
 #pragma once
 
-#include "util/util.hpp"
 #include <algorithm>
 #include <deque>
 #include <iterator>
+#include <utility>
 #include <vector>
+
+#include "concepts.hpp"
+#include "util/util.hpp"
 
 namespace pisa {
 
@@ -67,7 +70,7 @@ struct score_opt_partition {
             sum -= v;
             ++start;
             ++start_it;
-            if (std::get<1>(*start_it) != 0) {
+            if (start < end_sequence && std::get<1>(*start_it) != 0) {
                 ++element_count;
             }
         }
@@ -85,7 +88,7 @@ struct score_opt_partition {
             // max_p = *end_it;
             ++end;
             ++end_it;
-            if (std::get<1>(*end_it) != 0) {
+            if (end < end_sequence && std::get<1>(*end_it) != 0) {
                 --element_count;
             }
         }
@@ -103,9 +106,14 @@ struct score_opt_partition {
 
     score_opt_partition() = default;
 
-    template <typename ForwardIterator>
+    template <typename I>
     score_opt_partition(
-        ForwardIterator begin, uint32_t base, uint64_t size, double eps1, double eps2, float fixed_cost)
+        I begin, std::uint32_t base, std::uint64_t size, double eps1, double eps2, float fixed_cost)
+        PISA_REQUIRES(
+            std::forward_iterator<I>
+            && (std::convertible_to<
+                typename std::iterator_traits<I>::value_type,
+                std::pair<std::uint64_t, float>>))
     {
         // compute cost of single block.
         float max = 0;
@@ -120,7 +128,7 @@ struct score_opt_partition {
         min_cost[0] = 0;
 
         // create the required window: one for each power of approx_factor
-        std::vector<score_window<ForwardIterator>> windows;
+        std::vector<score_window<I>> windows;
         wand_cost_t cost_lb = fixed_cost;
         wand_cost_t cost_bound = cost_lb;
         while (eps1 == 0 || cost_bound < cost_lb / eps1) {
