@@ -16,6 +16,8 @@ limitations under the License. */
 
 #ifdef PISA_ENABLE_CONCEPTS
 
+#include <concepts>
+
 #define PISA_REQUIRES(x) \
     requires (x)
 
