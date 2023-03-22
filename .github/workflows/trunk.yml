@@ -9,12 +9,12 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        compiler: [gcc9, gcc10, gcc11, gcc12, clang11, clang12]
+        compiler: [gcc9, gcc10, gcc11, gcc12, clang12, clang15]
         standard: [17]
         include:
           - compiler: gcc12 # Extra test for C++20
             standard: 20
-          - compiler: clang12 # Extra test for C++20
+          - compiler: clang15 # Extra test for C++20
             standard: 20
 
     steps:
