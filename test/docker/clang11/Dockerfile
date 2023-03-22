@@ -1,23 +1,18 @@
-FROM silkeh/clang:11
+FROM debian:bullseye
 
-ENV TOOLCHAIN="-DCMAKE_TOOLCHAIN_FILE=clang.cmake"
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=America/New_York
-
-RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    cmake=3.18.* \
-    libtool=2.4.* \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+ARG CXX_STANDARD=17
+ARG DEBIAN_FRONTEND=noninteractive
 
 COPY . /pisa
+RUN ./pisa/test/docker/install-clang.sh 11
+
 RUN mkdir /pisa/build
 WORKDIR /pisa/build
+
 RUN cmake \
     -DCMAKE_BUILD_TYPE='Debug' \
     -DPISA_BUILD_TOOLS='OFF' \
     -DPISA_ENABLE_BENCHMARKING='OFF' \
-    -DCMAKE_TOOLCHAIN_FILE='clang.cmake' \
     .. \
     && cmake --build . --config Debug -- -j 4
 
