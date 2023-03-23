@@ -1,6 +1,7 @@
 FROM debian:bullseye
 
 ARG CXX_STANDARD=17
+ARG USE_SANITIZERS=OFF
 ARG DEBIAN_FRONTEND=noninteractive
 
 COPY /test/docker/install-clang.sh /
@@ -15,6 +16,7 @@ RUN cmake \
     -DPISA_BUILD_TOOLS='OFF' \
     -DPISA_ENABLE_BENCHMARKING='OFF' \
     -DCMAKE_TOOLCHAIN_FILE='clang.cmake' \
+    "-DUSE_SANITIZERS=$USE_SANITIZERS" \
     "-DCMAKE_CXX_STANDARD=$CXX_STANDARD" \
     .. \
     && cmake --build . --config Debug -- -j 4

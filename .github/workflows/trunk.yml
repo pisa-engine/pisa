@@ -11,11 +11,13 @@ jobs:
       matrix:
         compiler: [gcc9, gcc10, gcc11, gcc12, clang12, clang15]
         standard: [17]
+        sanitizers: [OFF]
         include:
-          - compiler: gcc12 # Extra test for C++20
+          - compiler: gcc12   # Extra test for C++20
             standard: 20
           - compiler: clang15 # Extra test for C++20
             standard: 20
+            sanitizers: ON    # Also run with sanitizers
 
     steps:
     - uses: actions/checkout@v2
@@ -25,7 +27,9 @@ jobs:
     - name: Bulid docker image
       shell: bash
       run: |
-        docker build --build-arg CXX_STANDARD=${{matrix.standard}} \
+        docker build \
+          --build-arg CXX_STANDARD=${{matrix.standard}} \
+          --build-arg USE_SANITIZERS=${{matrix.sanitizers}} \
           -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.compiler}}/Dockerfile"
 
     - name: Test
