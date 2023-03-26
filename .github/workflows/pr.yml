@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        compiler: [gcc12, clang12]
+        compiler: [gcc12, clang15]
         standard: [17]
         include:
           - compiler: gcc12 # Extra test for C++20

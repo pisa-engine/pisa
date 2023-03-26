@@ -1,7 +1,10 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <limits>
+
 #include <cstdlib>
+#include <rapidcheck.h>
 #include <vector>
 
 #include "codec/block_codecs.hpp"
@@ -15,43 +18,80 @@
 
 #include "test_common.hpp"
 
+using namespace rc;
+
+template <typename BlockCodec>
+void test_case(std::vector<std::uint32_t> values, bool use_sum_of_values)
+{
+    std::uint32_t sum_of_values =
+        use_sum_of_values ? std::accumulate(values.begin(), values.end(), 0) : std::uint32_t(-1);
+
+    std::vector<uint8_t> encoded;
+    BlockCodec::encode(values.data(), sum_of_values, values.size(), encoded);
+
+    std::vector<uint32_t> decoded(values.size());
+    uint8_t const* out =
+        BlockCodec::decode(encoded.data(), decoded.data(), sum_of_values, values.size());
+
+    REQUIRE(encoded.size() == out - encoded.data());
+    REQUIRE(values == decoded);
+}
+
 template <typename BlockCodec>
 void test_block_codec()
 {
-    std::vector<size_t> sizes = {1, 16, BlockCodec::block_size - 1, BlockCodec::block_size};
-    for (auto size: sizes) {
-        std::vector<uint32_t> values(size);
-        std::generate(values.begin(), values.end(), []() { return (uint32_t)rand() % (1 << 12); });
+    const auto lengths = gen::elementOf(
+        std::vector<std::size_t>{1, 2, BlockCodec::block_size - 1, BlockCodec::block_size});
+    const auto genlist = gen::mapcat(lengths, [](std::size_t len) {
+        return gen::container<std::vector<std::uint32_t>>(
+            len, gen::inRange<std::uint32_t>(1, 1 << 12));
+    });
 
-        for (size_t tcase = 0; tcase < 2; ++tcase) {
-            // test both undefined and given sum_of_values
-            uint32_t sum_of_values(-1);
-            if (tcase == 1) {
-                sum_of_values = std::accumulate(values.begin(), values.end(), 0);
-            }
-            std::vector<uint8_t> encoded;
-            BlockCodec::encode(values.data(), sum_of_values, values.size(), encoded);
+    std::size_t use_sum_of_values = GENERATE(true, false);
 
-            std::vector<uint32_t> decoded(values.size());
-            uint8_t const* out =
-                BlockCodec::decode(encoded.data(), decoded.data(), sum_of_values, values.size());
-
-            REQUIRE(encoded.size() == out - encoded.data());
-            REQUIRE(std::equal(values.begin(), values.end(), decoded.begin()));
-        }
-    }
+    rc::check([&]() { test_case<BlockCodec>(*genlist, use_sum_of_values); });
 }
 
-TEST_CASE("block_codecs")
+// NOLINTNEXTLINE(hicpp-explicit-conversions)
+TEMPLATE_TEST_CASE(
+    "Example test case",
+    "[codec]",
+    pisa::optpfor_block,
+    pisa::varint_G8IU_block,
+    pisa::streamvbyte_block,
+    pisa::maskedvbyte_block,
+    pisa::interpolative_block,
+    pisa::qmx_block,
+    pisa::varintgb_block,
+    pisa::simple8b_block,
+    pisa::simple16_block,
+    pisa::simdbp_block)
 {
-    SECTION("optpfor") { test_block_codec<pisa::optpfor_block>(); }
-    SECTION("varintG8IU") { test_block_codec<pisa::varint_G8IU_block>(); }
-    SECTION("streamvbyte") { test_block_codec<pisa::streamvbyte_block>(); }
-    SECTION("maskedvbyte") { test_block_codec<pisa::maskedvbyte_block>(); }
-    SECTION("interepolative") { test_block_codec<pisa::interpolative_block>(); }
-    SECTION("qmx") { test_block_codec<pisa::qmx_block>(); }
-    SECTION("varintGB") { test_block_codec<pisa::varintgb_block>(); }
-    SECTION("simple8b") { test_block_codec<pisa::simple8b_block>(); }
-    SECTION("simdbp") { test_block_codec<pisa::simdbp_block>(); }
-    SECTION("simple16") { test_block_codec<pisa::simple16_block>(); }
+    std::size_t use_sum_of_values = GENERATE(true, false);
+    std::vector<std::uint32_t> values{
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 259};
+    test_case<TestType>(values, use_sum_of_values);
+}
+
+// NOLINTNEXTLINE(hicpp-explicit-conversions)
+TEMPLATE_TEST_CASE(
+    "Property test",
+    "[codec]",
+    pisa::optpfor_block,
+    pisa::varint_G8IU_block,
+    pisa::streamvbyte_block,
+    pisa::maskedvbyte_block,
+    pisa::interpolative_block,
+    pisa::qmx_block,
+    pisa::varintgb_block,
+    pisa::simple8b_block,
+    pisa::simple16_block,
+    pisa::simdbp_block)
+{
+    std::size_t use_sum_of_values = GENERATE(true, false);
+    test_block_codec<TestType>();
 }

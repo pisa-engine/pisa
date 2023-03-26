@@ -36,7 +36,7 @@ class ReinterpretProxy {
 
     [[nodiscard]] auto operator*() const -> T
     {
-        T dst;
+        T dst{0};
         std::memcpy(&dst, m_ptr, m_len);
         return dst;
     }
