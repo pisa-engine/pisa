@@ -12,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(NOT CMAKE_CXX_STANDARD EQUAL 17)
     add_compile_definitions(PISA_ENABLE_CONCEPTS=1)
 endif()
+add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE=1)
 
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
