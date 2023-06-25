@@ -1,7 +1,5 @@
 #pragma once
 
-#include "boost/variant.hpp"
-
 #include "binary_freq_collection.hpp"
 #include "configuration.hpp"
 #include "score_opt_partition.hpp"
@@ -18,7 +16,7 @@ struct VariableBlock {
     explicit VariableBlock(const float in_lambda) : lambda(in_lambda) {}
 };
 
-using BlockSize = boost::variant<FixedBlock, VariableBlock>;
+using BlockSize = std::variant<FixedBlock, VariableBlock>;
 
 template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(

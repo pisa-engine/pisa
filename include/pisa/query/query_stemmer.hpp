@@ -28,8 +28,7 @@ class QueryStemmer {
         if (id) {
             tokenized_query << *(id) << ":";
         }
-        using boost::algorithm::join;
-        tokenized_query << join(stemmed_terms, " ");
+        tokenized_query << boost::algorithm::join(stemmed_terms, " ");
         return tokenized_query.str();
     }
 

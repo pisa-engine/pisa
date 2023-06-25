@@ -1,13 +1,13 @@
 #pragma once
 
-#include "boost/variant.hpp"
-#include "spdlog/spdlog.h"
+#include <variant>
 
-#include "mappable/mappable_vector.hpp"
+#include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"
 #include "global_parameters.hpp"
 #include "linear_quantizer.hpp"
+#include "mappable/mappable_vector.hpp"
 #include "util/compiler_attribute.hpp"
 #include "wand_utils.hpp"
 
@@ -39,10 +39,10 @@ class wand_data_raw {
             Scorer scorer,
             BlockSize block_size)
         {
-            auto t = block_size.type() == typeid(FixedBlock)
-                ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
+            auto t = std::holds_alternative<FixedBlock>(block_size)
+                ? static_block_partition(seq, scorer, std::get<FixedBlock>(block_size).size)
                 : variable_block_partition(
-                    coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
+                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda);
 
             block_max_term_weight.insert(
                 block_max_term_weight.end(), t.second.begin(), t.second.end());
