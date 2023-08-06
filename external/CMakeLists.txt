@@ -101,6 +101,14 @@ set(TAILY_BUILD_EXAMPLE OFF CACHE BOOL "skip taily example")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/taily)
 target_compile_options(taily INTERFACE -Wno-unused-variable)
 
+if (NOT PISA_SYSTEM_ONETBB)
+    # Add TBB
+    set(TBB_TEST OFF CACHE BOOL "skip TBB testing")
+    set(TBB_STRICT OFF CACHE BOOL "don't fail on warnings")
+    set(TBB_SANITIZE OFF CACHE BOOL "don't sanitize TBB")
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/oneTBB)
+endif()
+
 if (PISA_ENABLE_TESTING AND NOT PISA_SYSTEM_GOOGLE_BENCHMARK)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "skip Google Benchmark testing")
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "skip Google Benchmark testing")
