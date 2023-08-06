@@ -22,6 +22,7 @@ option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
 option(PISA_CI_BUILD "Remove debug information from Debug build" OFF)
 
 option(PISA_SYSTEM_GOOGLE_BENCHMARK "Use system installation of Google benchmark library" OFF)
+option(PISA_SYSTEM_ONETBB "Use system installation of oneTBB" OFF)
 
 if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -46,12 +47,6 @@ MESSAGE( STATUS "CMAKE_BUILD_TYPE: " ${CMAKE_BUILD_TYPE} )
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(external)
-
-# Add TBB
-set(TBB_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/external/tbb/)
-include(${TBB_ROOT}/cmake/TBBBuild.cmake)
-tbb_build(TBB_ROOT ${TBB_ROOT} CONFIG_DIR TBB_DIR)
-find_package(TBB REQUIRED tbb)
 
 include(ExternalProject)
 ExternalProject_Add(gumbo-external

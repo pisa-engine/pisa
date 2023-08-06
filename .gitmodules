@@ -73,3 +73,6 @@
 [submodule "external/benchmark"]
 	path = external/benchmark
 	url = https://github.com/google/benchmark.git
+[submodule "external/oneTBB"]
+	path = external/oneTBB
+	url = https://github.com/oneapi-src/oneTBB.git

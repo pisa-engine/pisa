@@ -3,9 +3,9 @@
 
 #include <functional>
 
+#include <oneapi/tbb/global_control.h>
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/zip.hpp>
-#include <tbb/task_scheduler_init.h>
 
 #include "test_common.hpp"
 
@@ -21,7 +21,7 @@ using namespace pisa;
 
 TEST_CASE("wand_data_range")
 {
-    tbb::task_scheduler_init init;
+    tbb::global_control c(oneapi::tbb::global_control::max_allowed_parallelism, 2);
     using WandTypeRange = wand_data_range<64, 1024>;
     using WandType = wand_data<WandTypeRange>;
 
