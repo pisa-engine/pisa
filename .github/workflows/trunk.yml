@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         compiler: [gcc9, gcc10, gcc11, gcc12, gcc13, clang12, clang15]
@@ -79,7 +79,7 @@ jobs:
       run: ctest -VV -j 4
 
   tidy:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2

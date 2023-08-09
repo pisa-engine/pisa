@@ -1,10 +1,10 @@
-FROM gcc:12
+FROM gcc:13
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    cmake=3.18.* \
+    cmake=3.25.* \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
