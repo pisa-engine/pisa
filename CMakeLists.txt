@@ -12,6 +12,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 if(NOT CMAKE_CXX_STANDARD EQUAL 17)
     add_compile_definitions(PISA_ENABLE_CONCEPTS=1)
 endif()
+add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE=1)
 
 option(PISA_BUILD_TOOLS "Build command line tools." ON)
 option(PISA_ENABLE_TESTING "Enable testing of the library." ON)
@@ -23,6 +24,7 @@ option(PISA_CI_BUILD "Remove debug information from Debug build" OFF)
 
 option(PISA_SYSTEM_GOOGLE_BENCHMARK "Use system installation of Google benchmark library" OFF)
 option(PISA_SYSTEM_ONETBB "Use system installation of oneTBB" OFF)
+option(PISA_SYSTEM_BOOST "Use system installation of Boost" OFF)
 
 if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -153,6 +155,10 @@ endif()
 if (PISA_ENABLE_BENCHMARKING)
     add_subdirectory(microbench)
     add_subdirectory(benchmarks)
+endif()
+
+if (PISA_SYSTEM_BOOST)
+    find_package(Boost REQUIRED COMPONENTS filesystem)
 endif()
 
 

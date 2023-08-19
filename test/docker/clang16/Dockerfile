@@ -5,7 +5,7 @@ ARG USE_SANITIZERS=OFF
 ARG DEBIAN_FRONTEND=noninteractive
 
 COPY /test/docker/install-clang.sh /
-RUN /install-clang.sh 15
+RUN /install-clang.sh 16
 RUN apt-get update -y \
      && apt-get install libboost-filesystem-dev=1.74.* libboost-dev=1.74.* -y --no-install-recommends \
      && apt-get clean \

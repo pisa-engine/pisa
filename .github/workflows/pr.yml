@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        compiler: [gcc13, clang15]
+        compiler: [gcc13, clang16]
         standard: [17]
         include:
           - compiler: gcc13 # Extra test for C++20
