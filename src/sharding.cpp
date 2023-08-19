@@ -40,8 +40,8 @@ auto resolve_shards(std::string_view basename, std::string_view suffix) -> std::
     Shard_Id shard{0};
     std::vector<Shard_Id> shards;
     while (true) {
-        boost::filesystem::path p(fmt::format("{}{}", expand_shard(basename, shard), suffix));
-        if (boost::filesystem::exists(p)) {
+        std::filesystem::path p(fmt::format("{}{}", expand_shard(basename, shard), suffix));
+        if (std::filesystem::exists(p)) {
             shards.push_back(shard);
             shard += 1;
         } else {
@@ -93,7 +93,7 @@ auto mapping_from_files(std::string const& full_titles, gsl::span<std::string co
     std::ifstream fis(full_titles);
     std::vector<std::unique_ptr<std::istream>> shard_is;
     for (auto const& shard_file: shard_titles) {
-        if (!boost::filesystem::exists(shard_file)) {
+        if (!std::filesystem::exists(shard_file)) {
             throw std::invalid_argument(fmt::format("Shard file does not exist: {}", shard_file));
         }
         shard_is.push_back(std::make_unique<std::ifstream>(shard_file));

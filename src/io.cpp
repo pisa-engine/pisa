@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include <fmt/format.h>
 
 #include "io.hpp"
@@ -12,10 +14,10 @@ NoSuchFile::NoSuchFile(std::string const& file) : m_message(fmt::format("No such
     return m_message.c_str();
 }
 
-auto resolve_path(std::string const& file) -> boost::filesystem::path
+auto resolve_path(std::string const& file) -> std::filesystem::path
 {
-    boost::filesystem::path p(file);
-    if (not boost::filesystem::exists(p)) {
+    std::filesystem::path p(file);
+    if (not std::filesystem::exists(p)) {
         throw NoSuchFile(file);
     }
     return p;

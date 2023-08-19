@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <string>
 
 #include <CLI/CLI.hpp>
@@ -15,9 +16,9 @@ using namespace pisa;
 int main(int argc, char** argv)
 {
     auto valid_basename = [](std::string const& basename) {
-        boost::filesystem::path p(basename);
+        std::filesystem::path p(basename);
         auto parent = p.parent_path();
-        if (not boost::filesystem::exists(parent) or not boost::filesystem::is_directory(parent)) {
+        if (not std::filesystem::exists(parent) or not std::filesystem::is_directory(parent)) {
             return fmt::format(
                 "Basename {} invalid: path {} is not an existing directory",
                 basename,

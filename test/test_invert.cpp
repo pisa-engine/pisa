@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <string>
 
-#include <boost/filesystem.hpp>
 #include <gsl/span>
 #include <range/v3/view/iota.hpp>
 
@@ -15,7 +14,6 @@
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 
-using namespace boost::filesystem;
 using namespace pisa;
 using namespace pisa::literals;
 

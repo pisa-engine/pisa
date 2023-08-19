@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 namespace pisa {
 
@@ -16,10 +16,10 @@ struct TemporaryDirectory {
     ~TemporaryDirectory();
 
     /** Returns the path to the created directory. */
-    [[nodiscard]] auto path() -> boost::filesystem::path const&;
+    [[nodiscard]] auto path() -> std::filesystem::path const&;
 
   private:
-    boost::filesystem::path dir_;
+    std::filesystem::path dir_;
 };
 
 };  // namespace pisa

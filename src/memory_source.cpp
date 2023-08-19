@@ -23,9 +23,9 @@ auto MemorySource::mapped_file(std::string const& file) -> MemorySource
     return MemorySource::mapped_file(io::resolve_path(file));
 }
 
-auto MemorySource::mapped_file(boost::filesystem::path file) -> MemorySource
+auto MemorySource::mapped_file(std::filesystem::path file) -> MemorySource
 {
-    if (not boost::filesystem::exists(file)) {
+    if (not std::filesystem::exists(file)) {
         throw io::NoSuchFile(file.string());
     }
     return MemorySource(mio::mmap_source(file.string().c_str()));

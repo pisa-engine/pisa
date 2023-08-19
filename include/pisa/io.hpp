@@ -1,10 +1,11 @@
 #pragma once
 
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <string>
+#include <vector>
 
-#include <boost/filesystem.hpp>
 #include <gsl/span>
 
 namespace pisa::io {
@@ -23,7 +24,7 @@ class NoSuchFile: public std::exception {
 };
 
 /// Resolves string as a path; throws NoSuchFile if the file does not exist.
-[[nodiscard]] auto resolve_path(std::string const& file) -> boost::filesystem::path;
+[[nodiscard]] auto resolve_path(std::string const& file) -> std::filesystem::path;
 
 class Line: public std::string {
     friend std::istream& operator>>(std::istream& is, Line& line) { return std::getline(is, line); }

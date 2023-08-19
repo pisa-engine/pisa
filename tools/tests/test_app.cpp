@@ -179,7 +179,7 @@ void test_analyzer(
     REQUIRE(actual == expected);
 }
 
-void write_lines(boost::filesystem::path const& path, std::vector<std::string> const& lines)
+void write_lines(std::filesystem::path const& path, std::vector<std::string> const& lines)
 {
     std::ofstream out(path.c_str());
     for (auto const& line: lines) {
@@ -256,7 +256,7 @@ TEST_CASE("Ranked Query", "[cli]")
 
     GIVEN("Non-existend input file path")
     {
-        auto queries = boost::filesystem::path("queries.txt");
+        auto queries = std::filesystem::path("queries.txt");
         THEN("File cannot be read and it throws")
         {
             REQUIRE_THROWS(parse(app, {"--queries", queries.string()}));
