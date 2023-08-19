@@ -68,7 +68,7 @@ TEST_CASE("Reorder documents with BP")
     GIVEN("Built a forward index and inverted")
     {
         std::string collection_input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
-        REQUIRE(boost::filesystem::exists(boost::filesystem::path(collection_input)) == true);
+        REQUIRE(std::filesystem::exists(std::filesystem::path(collection_input)) == true);
         int thread_count = 2;
         int batch_size = 1000;
         pisa::invert::InvertParams params;

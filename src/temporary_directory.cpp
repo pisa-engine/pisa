@@ -1,18 +1,27 @@
 #include "pisa/temporary_directory.hpp"
 
+#include <algorithm>
 #include <iostream>
+#include <random>
 
 #include <spdlog/spdlog.h>
 
 namespace pisa {
 
-TemporaryDirectory::TemporaryDirectory()
-    : dir_(boost::filesystem::temp_directory_path() / boost::filesystem::unique_path())
+auto random_name(std::size_t length = 64UL) -> std::string
 {
-    if (boost::filesystem::exists(dir_)) {
-        boost::filesystem::remove_all(dir_);
-    }
-    boost::filesystem::create_directory(dir_);
+    thread_local std::random_device rd{};
+    thread_local std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib('a', 'z');
+    std::string name;
+    std::generate_n(std::back_inserter(name), length, [&]() { return distrib(gen); });
+    return name;
+}
+
+TemporaryDirectory::TemporaryDirectory()
+    : dir_(std::filesystem::temp_directory_path() / random_name())
+{
+    std::filesystem::create_directory(dir_);
     spdlog::debug("Created a tmp dir {}", dir_.c_str());
 }
 
@@ -23,13 +32,13 @@ TemporaryDirectory& TemporaryDirectory::operator=(TemporaryDirectory&&) noexcept
 
 TemporaryDirectory::~TemporaryDirectory()
 {
-    if (boost::filesystem::exists(dir_)) {
-        boost::filesystem::remove_all(dir_);
+    if (std::filesystem::exists(dir_)) {
+        std::filesystem::remove_all(dir_);
     }
     spdlog::debug("Removed a tmp dir {}", dir_.c_str());
 }
 
-auto TemporaryDirectory::path() -> boost::filesystem::path const&
+auto TemporaryDirectory::path() -> std::filesystem::path const&
 {
     return dir_;
 }

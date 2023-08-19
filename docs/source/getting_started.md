@@ -8,8 +8,8 @@ To compile PISA, you will need a compiler supporting at least the C++17
 standard. Our continuous integration pipeline compiles PISA and runs
 tests in the following configurations:
 - Linux:
-    - GCC, versions: 9, 10, 11, 12
-    - Clang 11
+    - GCC, versions: 10, 11, 12, 13
+    - Clang 15, 16
 - MaxOS:
     - XCode 13.2
 

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
+#include <vector>
 
-#include <boost/filesystem/path.hpp>
 #include <gsl/span>
 #include <mio/mmap.hpp>
 
@@ -40,7 +41,7 @@ class MemorySource {
     ///
     /// \throws NoSuchFile          if the file doesn't exist
     /// \throws std::system_error   if fails to map the file.
-    [[nodiscard]] static auto mapped_file(boost::filesystem::path file) -> MemorySource;
+    [[nodiscard]] static auto mapped_file(std::filesystem::path file) -> MemorySource;
 
     /// Checks if memory is mapped.
     [[nodiscard]] auto is_mapped() noexcept -> bool;

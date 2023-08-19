@@ -1,14 +1,17 @@
 #pragma once
 
-#include "boost/filesystem.hpp"
+#include <filesystem>
+#include <functional>
+#include <string>
+#include <vector>
 
 namespace pisa {
 
-[[nodiscard]] auto ls(boost::filesystem::path dir, std::function<bool(std::string const&)> predicate)
+[[nodiscard]] auto ls(std::filesystem::path dir, std::function<bool(std::string const&)> predicate)
 {
-    std::vector<boost::filesystem::path> files;
-    for (auto it = boost::filesystem::directory_iterator(dir);
-         it != boost::filesystem::directory_iterator{};
+    std::vector<std::filesystem::path> files;
+    for (auto it = std::filesystem::directory_iterator(dir);
+         it != std::filesystem::directory_iterator{};
          ++it) {
         if (predicate(it->path().string())) {
             files.push_back(*it);

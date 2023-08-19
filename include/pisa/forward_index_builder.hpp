@@ -6,8 +6,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <boost/filesystem.hpp>
-
 #include "document_record.hpp"
 #include "forward_index_builder.hpp"
 #include "query/term_processor.hpp"

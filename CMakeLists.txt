@@ -115,7 +115,6 @@ target_link_libraries(pisa
         mio
         mio_base
         GSL
-        Boost::filesystem
         spdlog
         fmt::fmt
         range-v3
@@ -158,7 +157,7 @@ if (PISA_ENABLE_BENCHMARKING)
 endif()
 
 if (PISA_SYSTEM_BOOST)
-    find_package(Boost REQUIRED COMPONENTS filesystem)
+    find_package(Boost REQUIRED)
 endif()
 
 

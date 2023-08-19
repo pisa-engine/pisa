@@ -1,8 +1,9 @@
 #pragma once
 
+#include <filesystem>
+#include <fstream>
 #include <unordered_set>
 
-#include <boost/filesystem.hpp>
 #include <gsl/span>
 
 #include "binary_freq_collection.hpp"
@@ -39,10 +40,10 @@ void sample_inverted_index(
 {
     binary_freq_collection input(input_basename.c_str());
 
-    boost::filesystem::copy_file(
+    std::filesystem::copy_file(
         fmt::format("{}.sizes", input_basename),
         fmt::format("{}.sizes", output_basename),
-        boost::filesystem::copy_option::overwrite_if_exists);
+        std::filesystem::copy_options::overwrite_existing);
 
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");

@@ -20,7 +20,7 @@
 
 using taily::Feature_Statistics;
 
-void write_documents(boost::filesystem::path const& path)
+void write_documents(std::filesystem::path const& path)
 {
     pisa::io::write_data(
         path.string(),
@@ -39,7 +39,7 @@ void write_documents(boost::filesystem::path const& path)
         }));
 }
 
-void write_frequencies(boost::filesystem::path const& path)
+void write_frequencies(std::filesystem::path const& path)
 {
     pisa::io::write_data(
         path.string(),
@@ -56,7 +56,7 @@ void write_frequencies(boost::filesystem::path const& path)
         }));
 }
 
-void write_sizes(boost::filesystem::path const& path)
+void write_sizes(std::filesystem::path const& path)
 {
     pisa::io::write_data(
         path.string(),

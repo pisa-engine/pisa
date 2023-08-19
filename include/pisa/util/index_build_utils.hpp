@@ -2,7 +2,6 @@
 
 #include "spdlog/spdlog.h"
 
-#include "boost/filesystem.hpp"
 #include "gsl/span"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"

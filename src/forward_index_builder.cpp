@@ -266,11 +266,10 @@ void Forward_Index_Builder::build(
     remove_batches(output_file, batch_number);
 }
 
-void try_remove(boost::filesystem::path const& file)
+void try_remove(std::filesystem::path const& file)
 {
-    using boost::filesystem::remove;
     try {
-        remove(file);
+        std::filesystem::remove(file);
     } catch (...) {
         spdlog::warn("Unable to remove temporary batch file {}", file.c_str());
     }
@@ -278,13 +277,12 @@ void try_remove(boost::filesystem::path const& file)
 
 void Forward_Index_Builder::remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const
 {
-    using boost::filesystem::path;
     for (auto batch: ranges::views::iota(0, batch_count)) {
         auto batch_basename = batch_file(basename, batch);
-        try_remove(path{batch_basename + ".documents"});
-        try_remove(path{batch_basename + ".terms"});
-        try_remove(path{batch_basename + ".urls"});
-        try_remove(path{batch_basename});
+        try_remove(std::filesystem::path{batch_basename + ".documents"});
+        try_remove(std::filesystem::path{batch_basename + ".terms"});
+        try_remove(std::filesystem::path{batch_basename + ".urls"});
+        try_remove(std::filesystem::path{batch_basename});
     }
 }
 

@@ -6,7 +6,6 @@
 #include <iostream>
 #include <string>
 
-#include <boost/filesystem.hpp>
 #include <fmt/ostream.h>
 #include <gsl/span>
 #include <range/v3/action/transform.hpp>
@@ -27,7 +26,6 @@
 #include "sharding.hpp"
 #include "temporary_directory.hpp"
 
-using namespace boost::filesystem;
 using namespace pisa;
 using namespace pisa::literals;
 

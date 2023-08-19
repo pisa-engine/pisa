@@ -2,7 +2,6 @@
 #include <sstream>
 #include <vector>
 
-#include <boost/filesystem.hpp>
 #include <spdlog/spdlog.h>
 #include <tbb/parallel_reduce.h>
 
@@ -253,9 +252,9 @@ namespace pisa { namespace invert {
             std::ostringstream batch_name_stream;
             batch_name_stream << output_basename << ".batch." << batch;
             auto batch_basename = batch_name_stream.str();
-            boost::filesystem::remove(boost::filesystem::path{batch_basename + ".docs"});
-            boost::filesystem::remove(boost::filesystem::path{batch_basename + ".freqs"});
-            boost::filesystem::remove(boost::filesystem::path{batch_basename + ".sizes"});
+            std::filesystem::remove(std::filesystem::path{batch_basename + ".docs"});
+            std::filesystem::remove(std::filesystem::path{batch_basename + ".freqs"});
+            std::filesystem::remove(std::filesystem::path{batch_basename + ".sizes"});
         }
     }
 

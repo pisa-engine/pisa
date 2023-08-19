@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <filesystem>
 #include <string>
 
-#include <boost/filesystem.hpp>
 #include <catch2/catch.hpp>
 #include <gsl/span>
 
@@ -18,7 +18,6 @@
 #include "text_analyzer.hpp"
 #include "tokenizer.hpp"
 
-using namespace boost::filesystem;
 using namespace pisa;
 
 TEST_CASE("Batch file name", "[parsing][forward_index]")
@@ -172,7 +171,8 @@ TEST_CASE("Merge forward index batches", "[parsing][forward_index]")
     auto dir = tmpdir.path();
     GIVEN("Three batches on disk")
     {
-        std::vector<path> batch_paths{dir / "fwd.batch.0", dir / "fwd.batch.1", dir / "fwd.batch.2"};
+        std::vector<std::filesystem::path> batch_paths{
+            dir / "fwd.batch.0", dir / "fwd.batch.1", dir / "fwd.batch.2"};
         write_batch(
             batch_paths[0].string(),
             {"Doc10", "Doc11"},
@@ -327,7 +327,7 @@ TEST_CASE("Build forward index", "[parsing][forward_index][integration]")
     GIVEN("A plaintext collection file")
     {
         std::string input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
-        REQUIRE(boost::filesystem::exists(boost::filesystem::path(input)) == true);
+        REQUIRE(std::filesystem::exists(std::filesystem::path(input)) == true);
         int thread_count = GENERATE(2, 8);
         int batch_size = GENERATE(123, 1000);
         WHEN("Build a forward index")
