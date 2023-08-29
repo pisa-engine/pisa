@@ -18,12 +18,14 @@ std::vector<std::string> search(const std::string& query) {
 
 void handle_request(http::request<http::string_body> const& req, http::response<http::string_body>& res)
 {
-    auto target = req.target().to_string();
-    auto query_pos = target.find("query=");
     std::string query;
-    if (query_pos != std::string::npos) {
-        query = target.substr(query_pos + 6);
+    if (req.method() == http::verb::post) {
+        std::istringstream is(req.body());
+        boost::property_tree::ptree pt;
+        boost::property_tree::read_json(is, pt);
+        query = pt.get<std::string>("query", "");
     }
+    
     auto search_results = search(query);
     boost::property_tree::ptree pt;
     pt.put("query", query);
