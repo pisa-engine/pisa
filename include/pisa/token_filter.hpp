@@ -41,8 +41,6 @@ class TokenFilter {
 };
 
 class Porter2Stemmer final: public TokenFilter {
-    porter2::Stemmer m_stemmer{};
-
   public:
     [[nodiscard]] auto filter(std::string_view input) const -> std::unique_ptr<TokenStream> override;
     [[nodiscard]] auto filter(std::string input) const -> std::unique_ptr<TokenStream> override;

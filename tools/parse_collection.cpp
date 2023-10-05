@@ -30,7 +30,6 @@ int main(int argc, char** argv)
     std::string input_basename;
     std::string output_filename;
     std::string format = "plaintext";
-    size_t threads = std::thread::hardware_concurrency();
     ptrdiff_t batch_size = 100'000;
 
     pisa::App<pisa::arg::LogLevel, pisa::arg::Threads, pisa::arg::Analyzer> app{
@@ -56,8 +55,8 @@ int main(int argc, char** argv)
 
     spdlog::set_level(app.log_level());
 
-    tbb::global_control control(tbb::global_control::max_allowed_parallelism, threads + 1);
-    spdlog::info("Number of worker threads: {}", threads);
+    tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
+    spdlog::info("Number of worker threads: {}", app.threads());
 
     try {
         Forward_Index_Builder builder;
@@ -70,7 +69,7 @@ int main(int argc, char** argv)
                 record_parser(format, std::cin),
                 std::make_shared<TextAnalyzer>(app.text_analyzer()),
                 batch_size,
-                threads);
+                app.threads() + 1);
         }
     } catch (std::exception& err) {
         spdlog::error(err.what());
