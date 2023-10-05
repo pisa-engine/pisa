@@ -1,7 +1,9 @@
 #pragma once
 
-#include "tbb/task_group.h"
+#include <deque>
 #include <stdexcept>
+
+#include <tbb/task_group.h>
 
 #include "codec/compact_elias_fano.hpp"
 #include "codec/integer_codes.hpp"

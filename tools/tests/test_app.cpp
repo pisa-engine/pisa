@@ -684,7 +684,7 @@ TEST_CASE("CreateWandData", "[cli]")
         REQUIRE_FALSE(args.quantize());
         REQUIRE_FALSE(args.range());
         REQUIRE(args.dropped_term_ids().empty());
-        REQUIRE(boost::get<pisa::FixedBlock>(args.block_size()).size == 10);
+        REQUIRE(std::get<pisa::FixedBlock>(args.block_size()).size == 10);
     }
     SECTION("With lambda and other options")
     {
@@ -707,7 +707,7 @@ TEST_CASE("CreateWandData", "[cli]")
         REQUIRE(args.quantize());
         REQUIRE_FALSE(args.range());
         REQUIRE(args.dropped_term_ids().empty());
-        REQUIRE(boost::get<pisa::VariableBlock>(args.block_size()).lambda == 0.5);
+        REQUIRE(std::get<pisa::VariableBlock>(args.block_size()).lambda == 0.5);
     }
     SECTION("With range")
     {

@@ -1,18 +1,18 @@
 #pragma once
 
-#include "boost/variant.hpp"
-#include "spdlog/spdlog.h"
+#include <variant>
+
 #include <range/v3/view/zip.hpp>
+#include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"
 #include "bitvector_collection.hpp"
 #include "configuration.hpp"
-#include "util/util.hpp"
-
 #include "global_parameters.hpp"
 #include "linear_quantizer.hpp"
 #include "sequence/positive_sequence.hpp"
 #include "util/index_build_utils.hpp"
+#include "util/util.hpp"
 #include "wand_utils.hpp"
 
 namespace pisa {
@@ -114,10 +114,10 @@ class wand_data_compressed {
             Scorer scorer,
             BlockSize block_size)
         {
-            auto t = block_size.type() == typeid(FixedBlock)
-                ? static_block_partition(seq, scorer, boost::get<FixedBlock>(block_size).size)
+            auto t = std::holds_alternative<FixedBlock>(block_size)
+                ? static_block_partition(seq, scorer, std::get<FixedBlock>(block_size).size)
                 : variable_block_partition(
-                    coll, seq, scorer, boost::get<VariableBlock>(block_size).lambda);
+                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda);
 
             float max_score = *(std::max_element(t.second.begin(), t.second.end()));
             max_term_weight.push_back(max_score);
