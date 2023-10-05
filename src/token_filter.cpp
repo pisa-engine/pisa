@@ -20,7 +20,8 @@ auto Porter2Stemmer::filter(std::string_view input) const -> std::unique_ptr<Tok
 
 auto Porter2Stemmer::filter(std::string input) const -> std::unique_ptr<TokenStream>
 {
-    return std::make_unique<SingleTokenStream>(m_stemmer.stem(input));
+    thread_local porter2::Stemmer stemmer{};
+    return std::make_unique<SingleTokenStream>(stemmer.stem(input));
 }
 
 auto Porter2Stemmer::filter(CowString input) const -> std::unique_ptr<TokenStream>
