@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <numeric>
 #include <unordered_set>
+#include <variant>
 
-#include "boost/variant.hpp"
 #include "spdlog/spdlog.h"
 
 #include "binary_collection.hpp"
