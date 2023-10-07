@@ -37,9 +37,9 @@ int main(int argc, char** argv)
     app.add_option("-o,--output", output_filename, "Forward index filename")
         ->required()
         ->check(valid_basename);
-    app.add_option(
-        "-b,--batch-size", batch_size, "Number of documents to process in one thread", true);
-    app.add_option("-f,--format", format, "Input format", true);
+    app.add_option("-b,--batch-size", batch_size, "Number of documents to process in one thread")
+        ->capture_default_str();
+    app.add_option("-f,--format", format, "Input format")->capture_default_str();
 
     size_t batch_count, document_count;
     CLI::App* merge_cmd = app.add_subcommand(
