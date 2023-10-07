@@ -106,7 +106,8 @@ namespace arg {
     struct Query: public Analyzer {
         explicit Query(CLI::App* app) : Analyzer(app)
         {
-            app->add_option("-q,--queries", m_query_file, "Path to file with queries", false);
+            app->add_option("-q,--queries", m_query_file, "Path to file with queries")
+                ->capture_default_str();
             m_terms_option = app->add_option("--terms", m_term_lexicon, "Term lexicon");
             app->add_flag("--weighted", m_weighted, "Weights scores by query frequency");
             if constexpr (Mode == QueryMode::Ranked) {
@@ -247,8 +248,8 @@ namespace arg {
     struct BatchSize {
         explicit BatchSize(CLI::App* app)
         {
-            app->add_option(
-                "--batch-size", m_batch_size, "Number of documents to process at a time", true);
+            app->add_option("--batch-size", m_batch_size, "Number of documents to process at a time")
+                ->capture_default_str();
         }
 
         [[nodiscard]] auto batch_size() const -> std::size_t { return m_batch_size; }

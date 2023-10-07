@@ -23,9 +23,10 @@ auto Index::index_filename() const -> std::string const&
 
 Analyzer::Analyzer(CLI::App* app)
 {
-    app->add_option("--tokenizer", m_tokenizer, "Tokenizer", true)
+    app->add_option("--tokenizer", m_tokenizer, "Tokenizer")
+        ->capture_default_str()
         ->check(CLI::IsMember(VALID_TOKENIZERS));
-    app->add_option("-H,--html", m_strip_html, "Strip HTML", true);
+    app->add_option("-H,--html", m_strip_html, "Strip HTML")->capture_default_str();
     app->add_option("-F,--token-filters", m_token_filters, "Token filters")
         ->check(CLI::IsMember(VALID_TOKEN_FILTERS));
     app->add_option(
@@ -71,7 +72,9 @@ const std::set<std::string> Analyzer::VALID_TOKEN_FILTERS = {"lowercase", "porte
 
 LogLevel::LogLevel(CLI::App* app)
 {
-    app->add_option("-L,--log-level", m_level, "Log level", true)->check(CLI::IsMember(VALID_LEVELS));
+    app->add_option("-L,--log-level", m_level, "Log level")
+        ->capture_default_str()
+        ->check(CLI::IsMember(VALID_LEVELS));
 }
 
 auto LogLevel::log_level() const -> spdlog::level::level_enum
