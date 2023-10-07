@@ -16,7 +16,7 @@ RUN cmake \
     -DPISA_BUILD_TOOLS='OFF' \
     -DPISA_ENABLE_BENCHMARKING='OFF' \
     -DCMAKE_TOOLCHAIN_FILE='clang.cmake' \
-    "-DUSE_SANITIZERS=$USE_SANITIZERS" \
+    "-DPISA_SANITIZERS=$USE_SANITIZERS" \
     "-DCMAKE_CXX_STANDARD=$CXX_STANDARD" \
     .. \
     && cmake --build . --config Debug -- -j 4

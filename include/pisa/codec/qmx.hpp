@@ -23,6 +23,13 @@ struct qmx_block {
         TightVariableByte::encode_single(out_len, out);
         out.insert(out.end(), buf.data(), buf.data() + out_len);
     }
+
+    /**
+     * NOTE: In order to be sure to avoid undefined behavior, `in` must be padded with 15 bytes
+     * because of 16-byte SIMD reads that could be called with the address of the last byte.
+     * This is NOT enforced by `encode`, because it would be very wasteful to add 15 bytes to each
+     * block. Instead, the padding is added to the index, after all postings.
+     */
     static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
     {
         static QMX::compress_integer_qmx_improved qmx_codec;  // decodeBlock is thread-safe
