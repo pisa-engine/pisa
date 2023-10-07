@@ -26,6 +26,7 @@ option(PISA_SANITIZERS "Compile with address and UB sanitizers" OFF)
 option(PISA_SYSTEM_GOOGLE_BENCHMARK "Use system installation of Google benchmark library" OFF)
 option(PISA_SYSTEM_ONETBB "Use system installation of oneTBB" OFF)
 option(PISA_SYSTEM_BOOST "Use system installation of Boost" OFF)
+option(PISA_SYSTEM_CLI11 "Use system headers for CLI11" OFF)
 
 if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -149,6 +150,9 @@ if (PISA_ENABLE_TESTING AND BUILD_TESTING)
 endif()
 
 if (PISA_BUILD_TOOLS)
+    if (PISA_SYSTEM_CLI11)
+        find_package(CLI11 2 REQUIRED)
+    endif()
     add_subdirectory(tools)
 endif()
 
