@@ -1,10 +1,11 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
-#include <limits>
-
+#include <array>
 #include <cstdlib>
+#include <limits>
 #include <rapidcheck.h>
+#include <type_traits>
 #include <vector>
 
 #include "codec/block_codecs.hpp"
@@ -29,11 +30,21 @@ void test_case(std::vector<std::uint32_t> values, bool use_sum_of_values)
     std::vector<uint8_t> encoded;
     BlockCodec::encode(values.data(), sum_of_values, values.size(), encoded);
 
+    // Needed for QMX, see `include/pisa/codec/qmx.hpp` for more details.
+    if constexpr (std::is_same_v<BlockCodec, pisa::qmx_block>) {
+        std::array<char, 15> padding{};
+        encoded.insert(encoded.end(), padding.begin(), padding.end());
+    }
+
     std::vector<uint32_t> decoded(values.size());
     uint8_t const* out =
         BlockCodec::decode(encoded.data(), decoded.data(), sum_of_values, values.size());
 
-    REQUIRE(encoded.size() == out - encoded.data());
+    if constexpr (std::is_same_v<BlockCodec, pisa::qmx_block>) {
+        REQUIRE(encoded.size() == out - encoded.data() + 15);
+    } else {
+        REQUIRE(encoded.size() == out - encoded.data());
+    }
     REQUIRE(values == decoded);
 }
 

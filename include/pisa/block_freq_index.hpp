@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <exception>
 
 #include <fmt/format.h>
@@ -134,6 +135,11 @@ class block_freq_index {
             sq.m_params = m_params;
             sq.m_size = m_endpoints.size() - 1;
             sq.m_num_docs = m_num_docs;
+
+            // This is a workaround to QMS codex having to sometimes look beyond the buffer
+            // due to some SIMD loads.
+            std::array<char, 15> padding{};
+            m_lists.insert(m_lists.end(), padding.begin(), padding.end());
             sq.m_lists.steal(m_lists);
 
             bit_vector_builder bvb;
@@ -256,6 +262,12 @@ class block_freq_index {
          */
         void build(std::string const& index_path)
         {
+            // This is a workaround to QMS codex having to sometimes look beyond the buffer
+            // due to some SIMD loads.
+            std::array<char, 15> padding{};
+            m_postings_output.write(padding.data(), padding.size());
+            m_postings_bytes_written += padding.size();
+
             std::ofstream os(index_path.c_str());
             std::cout << index_path.c_str() << "\n";
             os.exceptions(std::ios::badbit | std::ios::failbit);

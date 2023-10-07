@@ -21,6 +21,7 @@ option(PISA_ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 option(PISA_CLANG_TIDY_EXECUTABLE "clang-tidy executable path" "clang-tidy")
 option(PISA_USE_PIC "Enable Position-Independent code globally" ON)
 option(PISA_CI_BUILD "Remove debug information from Debug build" OFF)
+option(PISA_SANITIZERS "Compile with address and UB sanitizers" OFF)
 
 option(PISA_SYSTEM_GOOGLE_BENCHMARK "Use system installation of Google benchmark library" OFF)
 option(PISA_SYSTEM_ONETBB "Use system installation of oneTBB" OFF)
@@ -73,7 +74,7 @@ if (UNIX)
    # Extensive warnings
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-missing-braces")
 
-   if (USE_SANITIZERS)
+   if (PISA_SANITIZERS)
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=undefined -fsanitize=address -fno-omit-frame-pointer")
    endif ()
 
