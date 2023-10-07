@@ -92,3 +92,19 @@ jobs:
     - name: Bulid docker image
       shell: bash
       run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/tidy/Dockerfile"
+
+  system-deps:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Bulid docker image
+      shell: bash
+      run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/system-deps/Dockerfile"
+
+    - name: Test
+      shell: bash
+      run: docker run pisa ctest -VV -j 4
