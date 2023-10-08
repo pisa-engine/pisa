@@ -1,0 +1,312 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Document Reordering - PISA Guide</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="../guide/requirements.html"><strong aria-hidden="true">1.</strong> Requirements</a></li><li class="chapter-item expanded "><a href="../guide/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="../guide/indexing-pipeline.html"><strong aria-hidden="true">3.</strong> Indexing Pipeline</a></li><li class="chapter-item expanded "><a href="../guide/parsing.html"><strong aria-hidden="true">4.</strong> Parsing</a></li><li class="chapter-item expanded "><a href="../guide/inverting.html"><strong aria-hidden="true">5.</strong> Inverting</a></li><li class="chapter-item expanded "><a href="../guide/compressing.html"><strong aria-hidden="true">6.</strong> Compressing</a></li><li class="chapter-item expanded "><a href="../guide/querying.html"><strong aria-hidden="true">7.</strong> Querying</a></li><li class="chapter-item expanded "><a href="../guide/reordering.html" class="active"><strong aria-hidden="true">8.</strong> Document Reordering</a></li><li class="chapter-item expanded "><a href="../guide/sharding.html"><strong aria-hidden="true">9.</strong> Sharding</a></li><li class="chapter-item expanded "><a href="../guide/threshold-estimation.html"><strong aria-hidden="true">10.</strong> Threshold Estimation</a></li><li class="chapter-item expanded affix "><li class="part-title">CLI Reference</li><li class="chapter-item expanded "><a href="../cli/compress_inverted_index.html"><strong aria-hidden="true">11.</strong> compress_inverted_index</a></li><li class="chapter-item expanded "><a href="../cli/compute_intersection.html"><strong aria-hidden="true">12.</strong> compute_intersection</a></li><li class="chapter-item expanded "><a href="../cli/count-postings.html"><strong aria-hidden="true">13.</strong> count-postings</a></li><li class="chapter-item expanded "><a href="../cli/create_wand_data.html"><strong aria-hidden="true">14.</strong> create_wand_data</a></li><li class="chapter-item expanded "><a href="../cli/evaluate_queries.html"><strong aria-hidden="true">15.</strong> evaluate_queries</a></li><li class="chapter-item expanded "><a href="../cli/extract-maxscores.html"><strong aria-hidden="true">16.</strong> extract-maxscores</a></li><li class="chapter-item expanded "><a href="../cli/extract_topics.html"><strong aria-hidden="true">17.</strong> extract_topics</a></li><li class="chapter-item expanded "><a href="../cli/invert.html"><strong aria-hidden="true">18.</strong> invert</a></li><li class="chapter-item expanded "><a href="../cli/kth_threshold.html"><strong aria-hidden="true">19.</strong> kth_threshold</a></li><li class="chapter-item expanded "><a href="../cli/lexicon.html"><strong aria-hidden="true">20.</strong> lexicon</a></li><li class="chapter-item expanded "><a href="../cli/map_queries.html"><strong aria-hidden="true">21.</strong> map_queries</a></li><li class="chapter-item expanded "><a href="../cli/parse_collection.html"><strong aria-hidden="true">22.</strong> parse_collection</a></li><li class="chapter-item expanded "><a href="../cli/partition_fwd_index.html"><strong aria-hidden="true">23.</strong> partition_fwd_index</a></li><li class="chapter-item expanded "><a href="../cli/queries.html"><strong aria-hidden="true">24.</strong> queries</a></li><li class="chapter-item expanded "><a href="../cli/read_collection.html"><strong aria-hidden="true">25.</strong> read_collection</a></li><li class="chapter-item expanded "><a href="../cli/reorder-docids.html"><strong aria-hidden="true">26.</strong> reorder-docids</a></li><li class="chapter-item expanded "><a href="../cli/sample_inverted_index.html"><strong aria-hidden="true">27.</strong> sample_inverted_index</a></li><li class="chapter-item expanded "><a href="../cli/selective_queries.html"><strong aria-hidden="true">28.</strong> selective_queries</a></li><li class="chapter-item expanded "><a href="../cli/shards.html"><strong aria-hidden="true">29.</strong> shards</a></li><li class="chapter-item expanded "><a href="../cli/stem_queries.html"><strong aria-hidden="true">30.</strong> stem_queries</a></li><li class="chapter-item expanded "><a href="../cli/taily-stats.html"><strong aria-hidden="true">31.</strong> taily-stats</a></li><li class="chapter-item expanded "><a href="../cli/taily-thresholds.html"><strong aria-hidden="true">32.</strong> taily-thresholds</a></li><li class="chapter-item expanded "><a href="../cli/thresholds.html"><strong aria-hidden="true">33.</strong> thresholds</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">PISA Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="document-reordering"><a class="header" href="#document-reordering">Document Reordering</a></h1>
+<p>PISA supports reassigning document IDs that were initially assigned in order of parsing.
+The point of doing it is usually to decrease the index size or speed up query processing.
+This part is done on an uncompressed inverted index.
+Depending on the method, you might also need access to some parts of the forward index.
+We support the following ways of reordering:</p>
+<ul>
+<li>random,</li>
+<li>by a feature (such as URL or document TREC ID),</li>
+<li>with a custom-defined mapping, and</li>
+<li>recursive graph bisection.
+All of the above are supported by a single command <code>reorder-docids</code>.
+Below, we explain each method and show some examples of running the command.</li>
+</ul>
+<h2 id="reordering-document-lexicon"><a class="header" href="#reordering-document-lexicon">Reordering document lexicon</a></h2>
+<p>All methods can optionally take a path to a document lexicon and make a copy of it that reflects
+the produced reordering.</p>
+<pre><code class="language-bash">reorder-docids \
+    --documents /path/to/original/doclex \
+    --reordered-documents /path/to/reordered/doclex \
+    ...
+</code></pre>
+<p>Typically, you will want to do that if you plan to evaluate queries, which will need access to
+a correct document lexicon.</p>
+<blockquote>
+<p><strong>NOTE</strong>: Because these options are common to all reordering methods, we ignore them below for brevity.</p>
+</blockquote>
+<h2 id="random"><a class="header" href="#random">Random</a></h2>
+<p>Random document reordering, as the name suggests, randomly shuffles all document IDs.
+Additionally, it can take a random seed. Two executions of the command with the same seed
+will produce the same final ordering.</p>
+<pre><code class="language-bash">reorder-docids --random \
+    --collection /path/to/inv \
+    --output /path/to/inv.random \
+    --seed 123456789 # optional
+</code></pre>
+<h2 id="by-feature-eg-url-or-trecid"><a class="header" href="#by-feature-eg-url-or-trecid">By feature (e.g., URL or TRECID)</a></h2>
+<p>An index can be reordered according to any single document feature, such as URL or TRECID,
+as long as it is stored in a text file line by line, where line <code>n</code> is the feature of
+document <code>n</code> in the original order.</p>
+<p>In particular, our collection parsing command produces two such feature files:</p>
+<ul>
+<li><code>*.documents</code>, which is typically a list of TRECIDs,</li>
+<li><code>*.urls</code>, which is a list of document URLs.</li>
+</ul>
+<p>To use either, you simply need to run:</p>
+<pre><code class="language-bash">reorder-docids \
+    --collection /path/to/inv \
+    --output /path/to/inv.random \
+    --by-feature /path/to/feature/file
+</code></pre>
+<h2 id="from-custom-mapping"><a class="header" href="#from-custom-mapping">From custom mapping</a></h2>
+<p>You can also produce a mapping yourself and feed it to the command.
+Such mapping is a text file with two columns separated by a whitespace:</p>
+<pre><code>&lt;original ID&gt; &lt;new ID&gt;
+</code></pre>
+<p>Having that, reordering is as simple as running:</p>
+<pre><code class="language-bash">reorder-docids \
+    --collection /path/to/inv \
+    --output /path/to/inv.random \
+    --from-mapping /path/to/custom/mapping
+</code></pre>
+<h2 id="recursive-graph-bisection"><a class="header" href="#recursive-graph-bisection">Recursive Graph Bisection</a></h2>
+<p>We provide an implementation of the <em>Recursive Graph Bisection</em> (aka <em>BP</em>) algorithm,
+which is currently the state-of-the-art for minimizing the compressed space used
+by an inverted index (or graph) through document reordering.
+The algorithm tries to minimize an objective function directly related to the number
+of bits needed to store a graph or an index using a delta-encoding scheme.</p>
+<p>Learn more from the original paper:</p>
+<blockquote>
+<p>L. Dhulipala, I. Kabiljo, B. Karrer, G. Ottaviano, S. Pupyrev, and A. Shalita.
+Compressing  graphs  and  indexes  with  recursive  graph  bisection.
+In Proc. SIGKDD, pages 1535–1544, 2016.</p>
+</blockquote>
+<p>In PISA, you simply need to pass <code>--recursive-graph-bisection</code> option (or its alias <code>--bp</code>)
+to the <code>reorder-docids</code> command.</p>
+<pre><code class="language-bash">reorder-docids --bp \
+    --collection /path/to/inv \
+    --output /path/to/inv.random
+</code></pre>
+<p>Note that <code>--bp</code> allows for some additional options.
+For example, the algorithm constructs a forward index in memory, which is in a special format
+<strong>separate from the PISA forward index</strong> that you obtain from the <code>parse_collection</code> tool.
+You can instruct <code>reorder-docids</code> to store that intermediate structure (<code>--store-fwdidx</code>),
+as well as provide a previously constructed one (<code>--fwdidx</code>), which can be useful if you
+want to reuse it for several runs with different algorithm parameters.
+To see all available parameters, run <code>reorder-docids --help</code>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../guide/querying.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../guide/sharding.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../guide/querying.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../guide/sharding.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
