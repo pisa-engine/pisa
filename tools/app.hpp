@@ -275,7 +275,8 @@ namespace arg {
     struct Compress {
         explicit Compress(CLI::App* app)
         {
-            app->add_option("-c,--collection", m_input_basename, "Forward index basename")->required();
+            app->add_option("-c,--collection", m_input_basename, "Uncompressed index basename")
+                ->required();
             app->add_option("-o,--output", m_output, "Output inverted index")->required();
             app->add_flag("--check", m_check, "Check the correctness of the index");
         }
