@@ -15,6 +15,10 @@
 - [Sharding](guide/sharding.md)
 - [Threshold Estimation](guide/threshold-estimation.md)
 
+# Tutorials
+
+- [Regression test for Robust04](tutorial/robust04.md)
+
 # CLI Reference
 
 - [`compress_inverted_index`](cli/compress_inverted_index.md)
