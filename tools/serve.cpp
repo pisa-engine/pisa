@@ -35,7 +35,7 @@ namespace beast = boost::beast;
 namespace http = beast::http;
 using tcp = asio::ip::tcp;
 
-std::function<std::vector<std::string>(std::string& line)> g_query_fun;
+std::function<std::vector<std::tuple<std::string, float>>(std::string& line)> g_query_fun;
 
 void handle_request(http::request<http::string_body> const& req, http::response<http::string_body>& res)
 {
@@ -46,13 +46,18 @@ void handle_request(http::request<http::string_body> const& req, http::response<
         boost::property_tree::read_json(is, pt);
         query = pt.get<std::string>("query", "");
     }
-    
+
     auto search_results = g_query_fun(query);
+
     boost::property_tree::ptree pt;
     pt.put("query", query);
+    boost::property_tree::ptree results;
+
     for (const auto& result : search_results) {
-        pt.add("results.result", result);
+        results.put(std::get<0>(result), std::get<1>(result));
     }
+    pt.add_child("results", results);
+
     std::ostringstream buf;
     boost::property_tree::write_json(buf, pt, false);
     auto json_str = buf.str();
@@ -112,46 +117,39 @@ private:
 
 template <typename IndexType, typename WandType>
 void prepare_handle_request(
-    const std::string& index_filename,
-    const std::string& wand_data_filename,
+    IndexType& index,
+    WandType& wdata,
     std::string const& type,
     std::string const& query_type,
-    std::string const& documents_filename,
-    std::string const& term_lexicon,
+    Payload_Vector<std::string_view>& docmap,
+    TermProcessor& term_processor,
     std::string const& _tokenizer,
-    ScorerParams const& scorer_params,
+    std::unique_ptr<index_scorer<WandType>>& scorer,
     const bool weighted) {
     auto k = 1000;
-    IndexType index(MemorySource::mapped_file(index_filename));
-    WandType const wdata(MemorySource::mapped_file(wand_data_filename));
-
-    auto scorer = scorer::from_params(scorer_params, wdata);
-    std::function<std::vector<typename topk_queue::entry_type>(Query)> query_fun;
-
     
 
-    TermProcessor term_processor(std::make_optional(term_lexicon), std::nullopt, std::nullopt);
+
     WhitespaceTokenizer tokenizer;
 
-    auto source = std::make_shared<mio::mmap_source>(documents_filename.c_str());
-    auto docmap = Payload_Vector<>::from(*source);
+
 
     if (query_type == "wand") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             wand_query wand_q(topk);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
-            std::vector<std::string> output;
+            spdlog::info("Query: {}",line);
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;
         };
     } else if (query_type == "block_max_wand") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
@@ -159,15 +157,14 @@ void prepare_handle_request(
                 make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
                 index.num_docs());
             topk.finalize();
-            std::vector<std::string> output;
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;
         };
     } else if (query_type == "block_max_maxscore") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
@@ -175,15 +172,14 @@ void prepare_handle_request(
                 make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
                 index.num_docs());
             topk.finalize();
-            std::vector<std::string> output;
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;
         };
     } else if (query_type == "block_max_ranked_and") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
@@ -191,54 +187,50 @@ void prepare_handle_request(
                 make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
                 index.num_docs());
             topk.finalize();
-            std::vector<std::string> output;
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;        
         };
     } else if (query_type == "ranked_and") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             ranked_and_query ranked_and_q(topk);
             ranked_and_q(make_scored_cursors(index, *scorer, query, weighted), index.num_docs());
             topk.finalize();
 
-            std::vector<std::string> output;
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;
         };
     } else if (query_type == "ranked_or") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             ranked_or_query ranked_or_q(topk);
             ranked_or_q(make_scored_cursors(index, *scorer, query, weighted), index.num_docs());
             topk.finalize();
-            std::vector<std::string> output;
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;
         };
     } else if (query_type == "maxscore") {
-        g_query_fun = [&](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
             maxscore_q(
                 make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
-            std::vector<std::string> output;
+            std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
-                output.push_back(fmt::format(
-                "{}: {}",docmap[result.second], result.first));
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
             }
             return output;
         };
@@ -271,7 +263,7 @@ int main(int argc, const char** argv) {
         app{"HTTP endpoint to retrieve query results."};
     app.add_option("--documents", documents_file, "Document lexicon")->required();
     app.add_flag("--quantized", quantized, "Quantized scores");
-    app.add_option("--terms", term_lexicon, "Term lexicon");
+    app.add_option("--terms", term_lexicon, "Term lexicon")->required();
     app.add_flag("--weighted", weighted, "Weights scores by query frequency");
     app.add_option("--tokenizer", tokenizer, "Tokenizer", true)->check(CLI::IsMember(VALID_TOKENIZERS));
 
@@ -279,45 +271,18 @@ int main(int argc, const char** argv) {
     app.add_option("--port", port, "Port (8080 default)");
 
     CLI11_PARSE(app, argc, argv);
-
     spdlog::set_level(app.log_level());
-    auto params = std::make_tuple(
-        app.index_filename(),
-        app.wand_data_path(),
-        app.index_encoding(),
-        app.algorithm(),
-        documents_file,
-        term_lexicon,
-        tokenizer, 
-        app.scorer_params(),
-        weighted);
 
+    TermProcessor term_processor(std::make_optional(term_lexicon), std::nullopt, std::nullopt);
+    auto source = std::make_shared<mio::mmap_source>(documents_file.c_str());
+    auto docmap = Payload_Vector<std::string_view>::from(*source);
 
-    /**/
-    if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    }                                                                                              \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \
-    {                                                                                              \
-        if (app.is_wand_compressed()) {                                                            \
-            if (quantized) {                                                                       \
-                std::apply(                                                                        \
-                    prepare_handle_request<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,       \
-                    params);                                                                       \
-            } else {                                                                               \
-                std::apply(prepare_handle_request<BOOST_PP_CAT(T, _index), wand_uniform_index>, params); \
-            }                                                                                      \
-        } else {                                                                                   \
-            std::apply(prepare_handle_request<BOOST_PP_CAT(T, _index), wand_raw_index>, params);         \
-        }                                                                                          \
-        /**/
+    block_simdbp_index index(MemorySource::mapped_file(app.index_filename()));                       
+    wand_raw_index wdata(MemorySource::mapped_file(app.wand_data_path()));                        
+    auto scorer = scorer::from_params(app.scorer_params(), wdata);                                
+    prepare_handle_request<block_simdbp_index, wand_raw_index>( index, wdata, app.index_encoding(), app.algorithm(),docmap,term_processor,tokenizer, scorer,weighted);  
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
-    }
-
+    spdlog::info("Starting the server. IP: {}, port: {}",ip, port);
 
     auto address = asio::ip::make_address(ip);
     asio::io_context ioc{1};
