@@ -262,7 +262,7 @@ class block_freq_index {
          */
         void build(std::string const& index_path)
         {
-            // This is a workaround to QMS codex having to sometimes look beyond the buffer
+            // This is a workaround to QMX codex having to sometimes look beyond the buffer
             // due to some SIMD loads.
             std::array<char, 15> padding{};
             m_postings_output.write(padding.data(), padding.size());
