@@ -195,18 +195,17 @@ Options:
   --range Excludes: --block-size --lambda
                               Create docid-range based data
   --terms-to-drop TEXT        A filename containing a list of term IDs that we want to drop
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 [Option Group: blocks]
    
   [At least 1 of the following options are required]
   Options:
-    -b,--block-size FLOAT Excludes: --lambda --range
+    -b,--block-size UINT Excludes: --lambda --range
                                 Block size for fixed-length blocks
     -l,--lambda FLOAT Excludes: --block-size --range
                                 Lambda parameter for variable blocks
-
 </code></pre>
 <h2 id="description"><a class="header" href="#description">Description</a></h2>
 <p>Creates additional data needed for certain query algorithms.</p>

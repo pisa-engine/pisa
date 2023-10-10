@@ -812,10 +812,9 @@ Options:
   --qld-mu FLOAT Needs: --scorer
                               QLD mu parameter.
   --quantize Needs: --scorer  Quantizes the scores
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
-
 </code></pre>
 <h2 id="description"><a class="header" href="#description">Description</a></h2>
 <p>Compresses an inverted index from the uncompressed format using one of
@@ -865,25 +864,24 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
   -q,--queries TEXT           Path to file with queries
   --terms TEXT                Term lexicon
   --weighted                  Weights scores by query frequency
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --combinations              Compute intersections for combinations of terms in query
-  --max-term-count,--mtc FLOAT Needs: --combinations
+  --max-term-count,--mtc UINT Needs: --combinations
                               Max number of terms when computing combinations
   --min-query-len UINT        Minimum query length
   --max-query-len UINT        Maximum query length
   --header                    Write TSV header
-
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1">Description</a></h2>
 <p>Computes an intersection of posting lists given by the input queries.</p>
@@ -899,9 +897,9 @@ Options:
   -h,--help                   Print this help message and exit
   -e,--encoding TEXT REQUIRED Index encoding
   -i,--index TEXT REQUIRED    Inverted index filename
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -910,11 +908,10 @@ Options:
   --weighted                  Weights scores by query frequency
   --sep TEXT                  Separator string
   --query-id                  Print query ID at the beginning of each line, separated by a colon
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --sum                       Sum postings accross the query terms; by default, individual list lengths will be printed, separated by the separator defined with --sep
-
 </code></pre>
 <h2 id="description-2"><a class="header" href="#description-2">Description</a></h2>
 <p>Extracts posting counts from an inverted index.</p>
@@ -944,18 +941,17 @@ Options:
   --range Excludes: --block-size --lambda
                               Create docid-range based data
   --terms-to-drop TEXT        A filename containing a list of term IDs that we want to drop
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 [Option Group: blocks]
    
   [At least 1 of the following options are required]
   Options:
-    -b,--block-size FLOAT Excludes: --lambda --range
+    -b,--block-size UINT Excludes: --lambda --range
                                 Block size for fixed-length blocks
     -l,--lambda FLOAT Excludes: --block-size --range
                                 Lambda parameter for variable blocks
-
 </code></pre>
 <h2 id="description-3"><a class="header" href="#description-3">Description</a></h2>
 <p>Creates additional data needed for certain query algorithms.</p>
@@ -981,9 +977,9 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1004,13 +1000,12 @@ Options:
                               QLD mu parameter.
   -T,--thresholds TEXT        File containing query thresholds
   -j,--threads UINT           Number of threads
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -r,--run TEXT               Run identifier
   --documents TEXT REQUIRED   Document lexicon
   --quantized                 Quantized scores
-
 </code></pre>
 <h2 id="description-4"><a class="header" href="#description-4">Description</a></h2>
 <p>Returns results for the given queries. The results are printed in the
@@ -1032,9 +1027,9 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1043,11 +1038,10 @@ Options:
   --weighted                  Weights scores by query frequency
   --sep TEXT                  Separator string
   --query-id                  Print query ID at the beginning of each line, separated by a colon
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --quantized                 Quantized scores
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="extract_topics"><a class="header" href="#extract_topics">extract_topics</a></h1>
 <h2 id="usage-6"><a class="header" href="#usage-6">Usage</a></h2>
@@ -1056,14 +1050,13 @@ Usage: ../../../build/bin/extract_topics [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -i,--input TEXT REQUIRED    TREC query input file
   -o,--output TEXT REQUIRED   Output basename
   -f,--format TEXT REQUIRED   Input format
   -u,--unique                 Unique queries
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="invert"><a class="header" href="#invert">invert</a></h1>
 <h2 id="usage-7"><a class="header" href="#usage-7">Usage</a></h2>
@@ -1074,13 +1067,12 @@ Options:
   -h,--help                   Print this help message and exit
   -i,--input TEXT REQUIRED    Forward index basename
   -o,--output TEXT REQUIRED   Output inverted index basename
-  --term-count FLOAT          Number of distinct terms in the forward index
+  --term-count UINT           Number of distinct terms in the forward index
   -j,--threads UINT           Number of threads
-  --batch-size UINT=100000    Number of documents to process at a time
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  --batch-size UINT [100000]  Number of documents to process at a time
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="kth_threshold"><a class="header" href="#kth_threshold">kth_threshold</a></h1>
 <h2 id="usage-8"><a class="header" href="#usage-8">Usage</a></h2>
@@ -1094,9 +1086,9 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1113,7 +1105,7 @@ Options:
                               PL2 c parameter.
   --qld-mu FLOAT Needs: --scorer
                               QLD mu parameter.
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -p,--pairs TEXT Excludes: --all-pairs
@@ -1125,7 +1117,6 @@ Options:
   --all-triples Excludes: --triples
                               Consider all term triples of a query
   --quantized                 Quantizes the scores
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="lexicon"><a class="header" href="#lexicon">lexicon</a></h1>
 <h2 id="usage-9"><a class="header" href="#usage-9">Usage</a></h2>
@@ -1134,7 +1125,7 @@ Usage: ../../../build/bin/lexicon [OPTIONS] SUBCOMMAND
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 
@@ -1143,7 +1134,6 @@ Subcommands:
   lookup                      Retrieve the payload at index
   rlookup                     Retrieve the index of payload
   print                       Print elements line by line
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="map_queries"><a class="header" href="#map_queries">map_queries</a></h1>
 <h2 id="usage-10"><a class="header" href="#usage-10">Usage</a></h2>
@@ -1152,9 +1142,9 @@ Usage: ../../../build/bin/map_queries [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1163,10 +1153,9 @@ Options:
   --weighted                  Weights scores by query frequency
   --sep TEXT                  Separator string
   --query-id                  Print query ID at the beginning of each line, separated by a colon
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="parse_collection"><a class="header" href="#parse_collection">parse_collection</a></h1>
 <h2 id="usage-11"><a class="header" href="#usage-11">Usage</a></h2>
@@ -1175,23 +1164,24 @@ Usage: ../../../build/bin/parse_collection [OPTIONS] [SUBCOMMAND]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   -j,--threads UINT           Number of threads
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
   --config                    Configuration .ini file
   -o,--output TEXT REQUIRED   Forward index filename
-  -b,--batch-size INT=100000  Number of documents to process in one thread
-  -f,--format TEXT=plaintext  Input format
+  -b,--batch-size INT [100000] 
+                              Number of documents to process in one thread
+  -f,--format TEXT [plaintext] 
+                              Input format
 
 Subcommands:
   merge                       Merge previously produced batch files. When parsing process was killed during merging, use this command to finish merging without having to restart building batches.
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="partition_fwd_index"><a class="header" href="#partition_fwd_index">partition_fwd_index</a></h1>
 <h2 id="usage-12"><a class="header" href="#usage-12">Usage</a></h2>
@@ -1200,7 +1190,7 @@ Usage: ../../../build/bin/partition_fwd_index [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -i,--input TEXT REQUIRED    Forward index filename
@@ -1210,7 +1200,6 @@ Options:
                               Number of random shards
   -s,--shard-files TEXT ... Excludes: --random-shards
                               List of files with shard titles
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="queries"><a class="header" href="#queries">queries</a></h1>
 <h2 id="usage-13"><a class="header" href="#usage-13">Usage</a></h2>
@@ -1224,9 +1213,9 @@ Options:
   -w,--wand TEXT              WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1246,13 +1235,12 @@ Options:
   --qld-mu FLOAT Needs: --scorer
                               QLD mu parameter.
   -T,--thresholds TEXT        File containing query thresholds
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --quantized                 Quantized scores
   --extract                   Extract individual query times
   --safe Needs: --thresholds  Rerun if not enough results with pruning.
-
 </code></pre>
 <h2 id="description-5"><a class="header" href="#description-5">Description</a></h2>
 <p>Runs query benchmarks.</p>
@@ -1306,7 +1294,7 @@ Usage: ../../../build/bin/read_collection [OPTIONS] [SUBCOMMAND]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -c,--collection TEXT REQUIRED
@@ -1319,7 +1307,6 @@ Options:
 Subcommands:
   entry                       Reads single entry.
   range                       Reads a range of entries.
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="reorder-docids"><a class="header" href="#reorder-docids">reorder-docids</a></h1>
 <h2 id="usage-15"><a class="header" href="#usage-15">Usage</a></h2>
@@ -1341,7 +1328,7 @@ Options:
                               Use this forward index
   -m,--min-len UINT Needs: --recursive-graph-bisection
                               Minimum list threshold
-  -d,--depth FLOAT:INT in [1 - 64] Needs: --recursive-graph-bisection Excludes: --node-config
+  -d,--depth UINT:INT in [1 - 64] Needs: --recursive-graph-bisection Excludes: --node-config
                               Recursion depth
   --node-config TEXT Needs: --recursive-graph-bisection Excludes: --depth
                               Node configuration file
@@ -1350,7 +1337,7 @@ Options:
   -p,--print Needs: --recursive-graph-bisection
                               Print ordering to standard output
   -j,--threads UINT           Number of threads
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 [Option Group: methods]
@@ -1362,7 +1349,6 @@ Options:
     --by-feature TEXT           Order by URLs from this file
     --recursive-graph-bisection,--bp
                                 Use recursive graph bisection algorithm
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sample_inverted_index"><a class="header" href="#sample_inverted_index">sample_inverted_index</a></h1>
 <h2 id="usage-16"><a class="header" href="#usage-16">Usage</a></h2>
@@ -1371,7 +1357,7 @@ Usage: ../../../build/bin/sample_inverted_index [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -c,--collection TEXT REQUIRED
@@ -1381,7 +1367,6 @@ Options:
   -t,--type TEXT REQUIRED     Sampling type
   --terms-to-drop TEXT        A filename containing a list of term IDs that we want to drop
   --seed UINT                 Seed state
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="selective_queries"><a class="header" href="#selective_queries">selective_queries</a></h1>
 <h2 id="usage-17"><a class="header" href="#usage-17">Usage</a></h2>
@@ -1392,19 +1377,18 @@ Options:
   -h,--help                   Print this help message and exit
   -e,--encoding TEXT REQUIRED Index encoding
   -i,--index TEXT REQUIRED    Inverted index filename
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
   -q,--queries TEXT           Path to file with queries
   --terms TEXT                Term lexicon
   --weighted                  Weights scores by query frequency
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="shards-1"><a class="header" href="#shards-1">shards</a></h1>
 <h2 id="usage-18"><a class="header" href="#usage-18">Usage</a></h2>
@@ -1413,7 +1397,7 @@ Usage: ../../../build/bin/shards [OPTIONS] SUBCOMMAND
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 
@@ -1425,7 +1409,6 @@ Subcommands:
   taily-stats                 Extracts Taily statistics from the index and stores it in a file.
   taily-score                 Computes Taily shard ranks for queries. NOTE: as term IDs need to be resolved individually for each shard, DO NOT provide already parsed and resolved queries (with IDs instead of terms).
   taily-thresholds            Computes Taily thresholds.
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="stem_queries"><a class="header" href="#stem_queries">stem_queries</a></h1>
 <h2 id="usage-19"><a class="header" href="#usage-19">Usage</a></h2>
@@ -1434,13 +1417,12 @@ Usage: ../../../build/bin/stem_queries [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   -i,--input TEXT REQUIRED    Query input file
   -o,--output TEXT REQUIRED   Query output file
   --stemmer TEXT REQUIRED     Stemmer
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="taily-stats"><a class="header" href="#taily-stats">taily-stats</a></h1>
 <h2 id="usage-20"><a class="header" href="#usage-20">Usage</a></h2>
@@ -1461,13 +1443,12 @@ Options:
                               PL2 c parameter.
   --qld-mu FLOAT Needs: --scorer
                               QLD mu parameter.
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   -c,--collection TEXT REQUIRED
                               Binary collection basename
   -o,--output TEXT REQUIRED   Output file path
   --config                    Configuration .ini file
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="taily-thresholds"><a class="header" href="#taily-thresholds">taily-thresholds</a></h1>
 <h2 id="usage-21"><a class="header" href="#usage-21">Usage</a></h2>
@@ -1476,9 +1457,9 @@ Usage: ../../../build/bin/taily-thresholds [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1486,11 +1467,10 @@ Options:
   --terms TEXT                Term lexicon
   --weighted                  Weights scores by query frequency
   -k INT REQUIRED             The number of top results to return
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --stats TEXT REQUIRED       Taily statistics file
   --config                    Configuration .ini file
-
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="thresholds-1"><a class="header" href="#thresholds-1">thresholds</a></h1>
 <h2 id="usage-22"><a class="header" href="#usage-22">Usage</a></h2>
@@ -1504,9 +1484,9 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -1523,11 +1503,10 @@ Options:
                               PL2 c parameter.
   --qld-mu FLOAT Needs: --scorer
                               QLD mu parameter.
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --quantized                 Quantizes the scores
-
 </code></pre>
 
                     </main>

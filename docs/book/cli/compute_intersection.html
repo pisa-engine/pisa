@@ -183,25 +183,24 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
   -q,--queries TEXT           Path to file with queries
   --terms TEXT                Term lexicon
   --weighted                  Weights scores by query frequency
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --combinations              Compute intersections for combinations of terms in query
-  --max-term-count,--mtc FLOAT Needs: --combinations
+  --max-term-count,--mtc UINT Needs: --combinations
                               Max number of terms when computing combinations
   --min-query-len UINT        Minimum query length
   --max-query-len UINT        Maximum query length
   --header                    Write TSV header
-
 </code></pre>
 <h2 id="description"><a class="header" href="#description">Description</a></h2>
 <p>Computes an intersection of posting lists given by the input queries.</p>

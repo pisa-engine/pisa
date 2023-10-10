@@ -183,9 +183,9 @@ Options:
   -w,--wand TEXT REQUIRED     WAND data filename
   --compressed-wand Needs: --wand
                               Compressed WAND data file
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -202,11 +202,10 @@ Options:
                               PL2 c parameter.
   --qld-mu FLOAT Needs: --scorer
                               QLD mu parameter.
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --quantized                 Quantizes the scores
-
 </code></pre>
 
                     </main>
