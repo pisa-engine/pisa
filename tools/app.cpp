@@ -26,7 +26,7 @@ Analyzer::Analyzer(CLI::App* app)
     app->add_option("--tokenizer", m_tokenizer, "Tokenizer")
         ->capture_default_str()
         ->check(CLI::IsMember(VALID_TOKENIZERS));
-    app->add_option("-H,--html", m_strip_html, "Strip HTML")->capture_default_str();
+    app->add_flag("-H,--html", m_strip_html, "Strip HTML")->capture_default_str();
     app->add_option("-F,--token-filters", m_token_filters, "Token filters")
         ->check(CLI::IsMember(VALID_TOKEN_FILTERS));
     app->add_option(

@@ -180,9 +180,9 @@ Options:
   -h,--help                   Print this help message and exit
   -e,--encoding TEXT REQUIRED Index encoding
   -i,--index TEXT REQUIRED    Inverted index filename
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -191,11 +191,10 @@ Options:
   --weighted                  Weights scores by query frequency
   --sep TEXT                  Separator string
   --query-id                  Print query ID at the beginning of each line, separated by a colon
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --sum                       Sum postings accross the query terms; by default, individual list lengths will be printed, separated by the separator defined with --sep
-
 </code></pre>
 <h2 id="description"><a class="header" href="#description">Description</a></h2>
 <p>Extracts posting counts from an inverted index.</p>

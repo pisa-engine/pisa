@@ -191,7 +191,7 @@ Options:
                               Use this forward index
   -m,--min-len UINT Needs: --recursive-graph-bisection
                               Minimum list threshold
-  -d,--depth FLOAT:INT in [1 - 64] Needs: --recursive-graph-bisection Excludes: --node-config
+  -d,--depth UINT:INT in [1 - 64] Needs: --recursive-graph-bisection Excludes: --node-config
                               Recursion depth
   --node-config TEXT Needs: --recursive-graph-bisection Excludes: --depth
                               Node configuration file
@@ -200,7 +200,7 @@ Options:
   -p,--print Needs: --recursive-graph-bisection
                               Print ordering to standard output
   -j,--threads UINT           Number of threads
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 [Option Group: methods]
@@ -212,7 +212,6 @@ Options:
     --by-feature TEXT           Order by URLs from this file
     --recursive-graph-bisection,--bp
                                 Use recursive graph bisection algorithm
-
 </code></pre>
 
                     </main>

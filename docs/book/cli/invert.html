@@ -180,13 +180,12 @@ Options:
   -h,--help                   Print this help message and exit
   -i,--input TEXT REQUIRED    Forward index basename
   -o,--output TEXT REQUIRED   Output inverted index basename
-  --term-count FLOAT          Number of distinct terms in the forward index
+  --term-count UINT           Number of distinct terms in the forward index
   -j,--threads UINT           Number of threads
-  --batch-size UINT=100000    Number of documents to process at a time
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  --batch-size UINT [100000]  Number of documents to process at a time
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
-
 </code></pre>
 
                     </main>

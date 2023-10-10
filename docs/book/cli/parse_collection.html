@@ -178,23 +178,24 @@ Usage: ../../../build/bin/parse_collection [OPTIONS] [SUBCOMMAND]
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   -j,--threads UINT           Number of threads
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
   --config                    Configuration .ini file
   -o,--output TEXT REQUIRED   Forward index filename
-  -b,--batch-size INT=100000  Number of documents to process in one thread
-  -f,--format TEXT=plaintext  Input format
+  -b,--batch-size INT [100000] 
+                              Number of documents to process in one thread
+  -f,--format TEXT [plaintext] 
+                              Input format
 
 Subcommands:
   merge                       Merge previously produced batch files. When parsing process was killed during merging, use this command to finish merging without having to restart building batches.
-
 </code></pre>
 
                     </main>

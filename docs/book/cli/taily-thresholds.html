@@ -178,9 +178,9 @@ Usage: ../../../build/bin/taily-thresholds [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  --tokenizer TEXT:{english,whitespace}=english
+  --tokenizer TEXT:{english,whitespace} [english] 
                               Tokenizer
-  -H,--html BOOLEAN=0         Strip HTML
+  -H,--html                   Strip HTML
   -F,--token-filters TEXT:{krovetz,lowercase,porter2} ...
                               Token filters
   --stopwords TEXT            Path to file containing a list of stop words to filter out
@@ -188,11 +188,10 @@ Options:
   --terms TEXT                Term lexicon
   --weighted                  Weights scores by query frequency
   -k INT REQUIRED             The number of top results to return
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --stats TEXT REQUIRED       Taily statistics file
   --config                    Configuration .ini file
-
 </code></pre>
 
                     </main>

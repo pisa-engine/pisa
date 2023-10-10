@@ -178,7 +178,7 @@ Usage: ../../../build/bin/shards [OPTIONS] SUBCOMMAND
 
 Options:
   -h,--help                   Print this help message and exit
-  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn}=info
+  -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
 
@@ -190,7 +190,6 @@ Subcommands:
   taily-stats                 Extracts Taily statistics from the index and stores it in a file.
   taily-score                 Computes Taily shard ranks for queries. NOTE: as term IDs need to be resolved individually for each shard, DO NOT provide already parsed and resolved queries (with IDs instead of terms).
   taily-thresholds            Computes Taily thresholds.
-
 </code></pre>
 
                     </main>
