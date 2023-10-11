@@ -35,19 +35,22 @@ namespace beast = boost::beast;
 namespace http = beast::http;
 using tcp = asio::ip::tcp;
 
-std::function<std::vector<std::tuple<std::string, float>>(std::string& line)> g_query_fun;
+std::function<std::vector<std::tuple<std::string, float>>(std::string& line, size_t k)> g_query_fun;
 
 void handle_request(http::request<http::string_body> const& req, http::response<http::string_body>& res)
 {
     std::string query;
+    size_t k;
     if (req.method() == http::verb::post) {
         std::istringstream is(req.body());
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(is, pt);
         query = pt.get<std::string>("query", "");
+        k = pt.get<size_t>("k");
+
     }
 
-    auto search_results = g_query_fun(query);
+    auto search_results = g_query_fun(query, k);
 
     boost::property_tree::ptree pt;
     pt.put("query", query);
@@ -126,8 +129,6 @@ void prepare_handle_request(
     std::string const& _tokenizer,
     std::unique_ptr<index_scorer<WandType>>& scorer,
     const bool weighted) {
-    auto k = 1000;
-    
 
 
     WhitespaceTokenizer tokenizer;
@@ -135,13 +136,14 @@ void prepare_handle_request(
 
 
     if (query_type == "wand") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             wand_query wand_q(topk);
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
             topk.finalize();
-            spdlog::info("Query: {}",line);
+
+            spdlog::info("Query: {}",topk.size());
             std::vector<std::tuple<std::string, float>> output;
             for (auto&& [rank, result]: enumerate(topk.topk())) {
                 output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
@@ -149,7 +151,7 @@ void prepare_handle_request(
             return output;
         };
     } else if (query_type == "block_max_wand") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             block_max_wand_query block_max_wand_q(topk);
@@ -164,7 +166,7 @@ void prepare_handle_request(
             return output;
         };
     } else if (query_type == "block_max_maxscore") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             block_max_maxscore_query block_max_maxscore_q(topk);
@@ -179,7 +181,7 @@ void prepare_handle_request(
             return output;
         };
     } else if (query_type == "block_max_ranked_and") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             block_max_ranked_and_query block_max_ranked_and_q(topk);
@@ -194,7 +196,7 @@ void prepare_handle_request(
             return output;        
         };
     } else if (query_type == "ranked_and") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             ranked_and_query ranked_and_q(topk);
@@ -208,7 +210,7 @@ void prepare_handle_request(
             return output;
         };
     } else if (query_type == "ranked_or") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             ranked_or_query ranked_or_q(topk);
@@ -221,7 +223,7 @@ void prepare_handle_request(
             return output;
         };
     } else if (query_type == "maxscore") {
-        g_query_fun = [&, tokenizer](std::string& line) {
+        g_query_fun = [&, tokenizer](std::string& line, size_t k) {
             Query query = parse_query_terms(line, tokenizer, term_processor);
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
