@@ -19,6 +19,8 @@ struct sequence_initialization {
         params.ef_log_sampling1 = 5;
         pisa::bit_vector_builder bvb;
         pisa::compact_elias_fano::write(bvb, seq.begin(), universe, seq.size(), params);
+        // padding is necessary to not read after buffer
+        bvb.append_bits(0, 64);
         pisa::bit_vector(&bvb).swap(bv);
     }
 

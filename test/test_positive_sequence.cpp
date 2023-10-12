@@ -25,6 +25,8 @@ void test_positive_sequence()
     using sequence_type = pisa::positive_sequence<BaseSequence>;
     pisa::bit_vector_builder bvb;
     sequence_type::write(bvb, values.begin(), universe, values.size(), params);
+    // padding is necessary to not read after buffer
+    bvb.append_bits(0, 64);
     pisa::bit_vector bv(&bvb);
     typename sequence_type::enumerator r(bv, 0, universe, values.size(), params);
 

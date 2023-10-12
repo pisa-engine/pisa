@@ -49,6 +49,8 @@ void test_partitioned_sequence(uint64_t universe, std::vector<uint64_t> const& s
 
     pisa::bit_vector_builder bvb;
     sequence_type::write(bvb, seq.begin(), universe, seq.size(), params);
+    // padding is necessary to not read after buffer
+    bvb.append_bits(0, 64);
     pisa::bit_vector bv(&bvb);
 
     typename sequence_type::enumerator r(bv, 0, universe, seq.size(), params);
