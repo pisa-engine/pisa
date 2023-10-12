@@ -101,7 +101,9 @@ class bit_vector {
     {
         // XXX check endianness?
         const char* ptr = reinterpret_cast<const char*>(m_bits.data());
-        return *(reinterpret_cast<uint64_t const*>(ptr + pos / 8)) >> (pos % 8);
+        std::uint64_t word;
+        std::memcpy(&word, ptr + pos / 8, 8);
+        return word >> (pos % 8);
     }
 
     inline uint64_t predecessor0(uint64_t pos) const

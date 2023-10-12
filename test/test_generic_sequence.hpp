@@ -182,6 +182,8 @@ inline void test_sequence(
 {
     pisa::bit_vector_builder bvb;
     SequenceType::write(bvb, seq.begin(), universe, seq.size(), params);
+    // padding is necessary to not read after buffer
+    bvb.append_bits(0, 64);
     pisa::bit_vector bv(&bvb);
     typename SequenceType::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
