@@ -10,11 +10,14 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc10, gcc11, gcc12, gcc13, clang15, clang16]
+        build_type: [Debug]
         standard: [17]
         sanitizers: [OFF]
         include:
           - compiler: gcc13   # Extra test for C++20
             standard: 20
+          - compiler: gcc13   # Extra test for Release
+            standard: Release
           - compiler: clang16 # Extra test for C++20
             standard: 20
             sanitizers: ON    # Also run with sanitizers
