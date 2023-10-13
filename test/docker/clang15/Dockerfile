@@ -3,6 +3,7 @@ FROM debian:bullseye
 ARG CXX_STANDARD=17
 ARG USE_SANITIZERS=OFF
 ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_TYPE=Debug
 
 COPY /test/docker/install-clang.sh /
 RUN /install-clang.sh 15
@@ -16,7 +17,7 @@ RUN mkdir /pisa/build
 WORKDIR /pisa/build
 
 RUN cmake \
-    -DCMAKE_BUILD_TYPE='Debug' \
+    "-DCMAKE_BUILD_TYPE=$BUILD_TYPE" \
     -DPISA_BUILD_TOOLS='OFF' \
     -DPISA_ENABLE_BENCHMARKING='OFF' \
     -DPISA_SYSTEM_BOOST='ON' \
