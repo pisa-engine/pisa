@@ -93,6 +93,14 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+if (PISA_SYSTEM_BOOST)
+    find_package(Boost REQUIRED)
+endif()
+
+if (PISA_SYSTEM_ONETBB)
+    find_package(TBB REQUIRED)
+endif()
+
 file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
 list(SORT PISA_SRC_FILES)
 
@@ -160,11 +168,6 @@ if (PISA_ENABLE_BENCHMARKING)
     add_subdirectory(microbench)
     add_subdirectory(benchmarks)
 endif()
-
-if (PISA_SYSTEM_BOOST)
-    find_package(Boost REQUIRED)
-endif()
-
 
 if(PISA_COMPILE_HEADERS)
   get_property(PISA_INTERFACE_INCLUDE_DIRECTORIES TARGET pisa PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
