@@ -9,6 +9,13 @@
 
 namespace pisa {
 
+/**
+ * Conjunctive query (intersection).
+ *
+ * Performs an intersection of documents across all query terms. Returns a vector of all IDs
+ * in the intersection. This particular algorithm does no scoring. For the scored version,
+ * see `scored_and_query`.
+ */
 struct and_query {
     template <typename CursorRange>
     auto operator()(CursorRange&& cursors, uint32_t max_docid) const
@@ -58,6 +65,11 @@ struct and_query {
     }
 };
 
+/**
+ * Scored conjunctive query.
+ *
+ * Similar to `and_query` but scores the documents. Returns a vector of pairs (docID, score).
+ */
 struct scored_and_query {
     template <typename CursorRange>
     auto operator()(CursorRange&& cursors, uint32_t max_docid) const

@@ -11,6 +11,7 @@
 - [Inverting](guide/inverting.md)
 - [Compressing](guide/compressing.md)
 - [Querying](guide/querying.md)
+- [Retrieval Algorithms](guide/algorithms.md)
 - [Document Reordering](guide/reordering.md)
 - [Sharding](guide/sharding.md)
 - [Threshold Estimation](guide/threshold-estimation.md)
