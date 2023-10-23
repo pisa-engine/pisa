@@ -9,6 +9,7 @@ We support the following ways of reordering:
 - by a feature (such as URL or document TREC ID),
 - with a custom-defined mapping, and
 - recursive graph bisection.
+
 All of the above are supported by a single command `reorder-docids`.
 Below, we explain each method and show some examples of running the command.
 
