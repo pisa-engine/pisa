@@ -1,5 +1,4 @@
 #include <iostream>
-#include <optional>
 #include <tuple>
 
 #include <CLI/CLI.hpp>
@@ -11,14 +10,11 @@
 
 #include "app.hpp"
 #include "cursor/max_scored_cursor.hpp"
-#include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
-#include "io.hpp"
-#include "mappable/mapper.hpp"
 #include "memory_source.hpp"
-#include "query/algorithm.hpp"
+#include "query/algorithm/wand_query.hpp"
 #include "scorer/scorer.hpp"
-#include "util/util.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 

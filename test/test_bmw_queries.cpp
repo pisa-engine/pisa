@@ -1,3 +1,4 @@
+#include <optional>
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
@@ -34,7 +35,7 @@ struct IndexData {
               collection,
               ScorerParams(scorer_name),
               BlockSize(VariableBlock(12.0)),
-              false,
+              std::nullopt,
               dropped_term_ids)
 
     {
@@ -119,7 +120,7 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                 data->collection,
                 ScorerParams(s_name),
                 BlockSize(FixedBlock(5)),
-                false,
+                std::nullopt,
                 dropped_term_ids);
             test(wdata_fixed, s_name);
         }
@@ -132,7 +133,7 @@ TEST_CASE("block_max_wand", "[bmw][query][ranked][integration]", )
                 data->collection,
                 ScorerParams(s_name),
                 BlockSize(VariableBlock(12.0)),
-                false,
+                Size(8),
                 dropped_term_ids);
             test(wdata_uniform, s_name);
         }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
 
@@ -50,7 +51,7 @@ namespace pisa { namespace mapper {
             ~freeze_visitor() = default;
 
             template <typename T>
-            typename std::enable_if<!std::is_pod<T>::value, freeze_visitor&>::type
+            typename std::enable_if<!std::is_trivially_copyable<T>::value, freeze_visitor&>::type
             operator()(T& val, const char* /* friendly_name */)
             {
                 val.map(*this);
@@ -58,7 +59,7 @@ namespace pisa { namespace mapper {
             }
 
             template <typename T>
-            typename std::enable_if<std::is_pod<T>::value, freeze_visitor&>::type
+            typename std::enable_if<std::is_trivially_copyable<T>::value, freeze_visitor&>::type
             operator()(T& val, const char* /* friendly_name */)
             {
                 m_fout.write(reinterpret_cast<const char*>(&val), sizeof(T));
@@ -102,7 +103,7 @@ namespace pisa { namespace mapper {
             ~map_visitor() = default;
 
             template <typename T>
-            typename std::enable_if<!std::is_pod<T>::value, map_visitor&>::type
+            typename std::enable_if<!std::is_trivially_copyable<T>::value, map_visitor&>::type
             operator()(T& val, const char* /* friendly_name */)
             {
                 val.map(*this);
@@ -110,10 +111,10 @@ namespace pisa { namespace mapper {
             }
 
             template <typename T>
-            typename std::enable_if<std::is_pod<T>::value, map_visitor&>::type
+            typename std::enable_if<std::is_trivially_copyable<T>::value, map_visitor&>::type
             operator()(T& val, const char* /* friendly_name */)
             {
-                val = *reinterpret_cast<const T*>(m_cur);
+                std::memmove(&val, m_cur, sizeof(T));
                 m_cur += sizeof(T);
                 return *this;
             }
@@ -164,7 +165,7 @@ namespace pisa { namespace mapper {
             ~sizeof_visitor() = default;
 
             template <typename T>
-            typename std::enable_if<!std::is_pod<T>::value, sizeof_visitor&>::type
+            typename std::enable_if<!std::is_trivially_copyable<T>::value, sizeof_visitor&>::type
             operator()(T& val, const char* friendly_name)
             {
                 size_t checkpoint = m_size;
@@ -184,7 +185,7 @@ namespace pisa { namespace mapper {
             }
 
             template <typename T>
-            typename std::enable_if<std::is_pod<T>::value, sizeof_visitor&>::type
+            typename std::enable_if<std::is_trivially_copyable<T>::value, sizeof_visitor&>::type
             operator()(T& /* val */, const char* /* friendly_name */)
             {
                 // don't track PODs in the size tree (they are constant sized)

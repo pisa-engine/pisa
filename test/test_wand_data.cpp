@@ -7,11 +7,8 @@
 #include <range/v3/view/iota.hpp>
 #include <range/v3/view/zip.hpp>
 
-#include "test_common.hpp"
-
 #include "index_types.hpp"
 #include "pisa_config.hpp"
-#include "query/queries.hpp"
 #include "wand_data.hpp"
 #include "wand_data_range.hpp"
 
@@ -36,7 +33,7 @@ TEST_CASE("wand_data_range")
         collection,
         ScorerParams(scorer_name),
         BlockSize(FixedBlock(5)),
-        false,
+        std::nullopt,
         dropped_term_ids);
 
     auto scorer = scorer::from_params(ScorerParams(scorer_name), wdata_range);

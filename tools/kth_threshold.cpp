@@ -15,13 +15,11 @@
 #include "app.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "index_types.hpp"
-#include "io.hpp"
-#include "query/algorithm.hpp"
-#include "util/util.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
-#include "query/algorithm.hpp"
+#include "query/algorithm/wand_query.hpp"
 #include "scorer/scorer.hpp"
 
 #include "CLI/CLI.hpp"

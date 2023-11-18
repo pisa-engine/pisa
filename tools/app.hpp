@@ -194,7 +194,7 @@ namespace arg {
         explicit Quantize(CLI::App* app);
         [[nodiscard]] auto scorer_params() const -> ScorerParams;
         [[nodiscard]] auto wand_data_path() const -> std::optional<std::string> const&;
-        [[nodiscard]] auto quantize() const -> bool;
+        [[nodiscard]] auto quantization_bits() const -> std::optional<Size>;
 
         template <typename T>
         friend CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode);
@@ -202,7 +202,7 @@ namespace arg {
       private:
         ScorerParams m_params;
         std::optional<std::string> m_wand_data_path;
-        bool m_quantize = false;
+        std::optional<std::size_t> m_quantization_bits = std::nullopt;
     };
 
     struct Scorer {
@@ -309,7 +309,7 @@ namespace arg {
         [[nodiscard]] auto lambda() const -> std::optional<float>;
         [[nodiscard]] auto compress() const -> bool;
         [[nodiscard]] auto range() const -> bool;
-        [[nodiscard]] auto quantize() const -> bool;
+        [[nodiscard]] auto quantization_bits() const -> std::optional<Size>;
 
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard);
@@ -325,7 +325,7 @@ namespace arg {
         ScorerParams m_params;
         bool m_compress = false;
         bool m_range = false;
-        bool m_quantize = false;
+        std::optional<std::size_t> m_quantization_bits = std::nullopt;
         std::optional<std::string> m_terms_to_drop_filename;
     };
 

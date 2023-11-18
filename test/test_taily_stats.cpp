@@ -1,3 +1,4 @@
+#include "type_safe.hpp"
 #include <taily.hpp>
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
@@ -8,10 +9,8 @@
 #include <gsl/span>
 
 #include "binary_freq_collection.hpp"
-#include "filesystem.hpp"
 #include "io.hpp"
 #include "memory_source.hpp"
-#include "pisa_config.hpp"
 #include "scorer/scorer.hpp"
 #include "taily_stats.hpp"
 #include "temporary_directory.hpp"
@@ -89,7 +88,7 @@ TEST_CASE("Extract Taily feature stats", "[taily][unit]")
             ScorerParams("quantized"),
             false,
             false,
-            true,
+            pisa::Size(8),
             {});
 
         pisa::binary_freq_collection collection(collection_path.c_str());

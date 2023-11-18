@@ -5,10 +5,11 @@
 #include <spdlog/spdlog.h>
 
 #include "compress.hpp"
-#include "configuration.hpp"
 #include "ensure.hpp"
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
+#include "type_safe.hpp"
+#include "util/index_build_utils.hpp"
 #include "util/progress.hpp"
 #include "util/verify_collection.hpp"
 #include "wand_data.hpp"
@@ -121,13 +122,13 @@ void compress_index(
     std::string const& seq_type,
     std::optional<std::string> const& wand_data_filename,
     ScorerParams const& scorer_params,
-    bool quantized)
+    std::optional<Size> quantization_bits)
 {
     if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
         std::optional<QuantizedScorer<WandType>> quantized_scorer{};
         WandType wdata;
         mio::mmap_source wdata_source;
-        if (quantized) {
+        if (quantization_bits.has_value()) {
             ensure(wand_data_filename.has_value())
                 .or_panic("Bug: Asked for quantized but no wand data");
             std::error_code error;
@@ -138,8 +139,7 @@ void compress_index(
             }
             mapper::map(wdata, wdata_source, mapper::map_flags::warmup);
             auto scorer = scorer::from_params(scorer_params, wdata);
-            LinearQuantizer quantizer(
-                wdata.index_max_term_weight(), configuration::get().quantization_bits);
+            LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
             quantized_scorer = QuantizedScorer(std::move(scorer), quantizer);
         }
         compress_index_streaming<CollectionType, WandType>(
@@ -163,16 +163,15 @@ void compress_index(
 
         std::unique_ptr<index_scorer<WandType>> scorer;
 
-        if (quantized) {
+        if (quantization_bits.has_value()) {
             scorer = scorer::from_params(scorer_params, wdata);
         }
 
         size_t term_id = 0;
         for (auto const& plist: input) {
             size_t size = plist.docs.size();
-            if (quantized) {
-                LinearQuantizer quantizer(
-                    wdata.index_max_term_weight(), configuration::get().quantization_bits);
+            if (quantization_bits.has_value()) {
+                LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
                 auto term_scorer = scorer->term_scorer(term_id);
                 std::vector<uint64_t> quants;
                 for (size_t pos = 0; pos < size; ++pos) {
@@ -211,10 +210,10 @@ void compress_index(
 
     if (output_filename) {
         mapper::freeze(coll, (*output_filename).c_str());
-        if (check and quantized) {
+        if (check and quantization_bits.has_value()) {
             spdlog::warn("Index construction cannot be verified for quantized indexes.");
         }
-        if (check and not quantized) {
+        if (check and not quantization_bits.has_value()) {
             verify_collection<binary_freq_collection, CollectionType>(
                 input, (*output_filename).c_str());
         }
@@ -227,7 +226,7 @@ void compress(
     std::string const& index_encoding,
     std::string const& output_filename,
     ScorerParams const& scorer_params,
-    bool quantize,
+    std::optional<Size> quantization_bits,
     bool check)
 {
     binary_freq_collection input(input_basename.c_str());
@@ -246,7 +245,7 @@ void compress(
             index_encoding,                                                      \
             wand_data_filename,                                                  \
             scorer_params,                                                       \
-            quantize);                                                           \
+            quantization_bits);                                                  \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

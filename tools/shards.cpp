@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <thread>
 #include <vector>
 
 #include <CLI/CLI.hpp>
@@ -12,12 +11,10 @@
 #include "./taily_stats.hpp"
 #include "./taily_thresholds.hpp"
 #include "app.hpp"
-#include "binary_collection.hpp"
 #include "compress.hpp"
 #include "invert.hpp"
 #include "reorder_docids.hpp"
 #include "sharding.hpp"
-#include "util/util.hpp"
 #include "vec_map.hpp"
 #include "wand_data.hpp"
 
@@ -120,7 +117,7 @@ int main(int argc, char** argv)
                     shard_args.index_encoding(),
                     shard_args.output(),
                     shard_args.scorer_params(),
-                    shard_args.quantize(),
+                    shard_args.quantization_bits(),
                     shard_args.check());
             }
             return 0;
@@ -138,7 +135,7 @@ int main(int argc, char** argv)
                     shard_args.scorer_params(),
                     shard_args.range(),
                     shard_args.compress(),
-                    shard_args.quantize(),
+                    shard_args.quantization_bits(),
                     shard_args.dropped_term_ids());
             }
         }

@@ -4,7 +4,6 @@
 
 #include "pisa/forward_index_builder.hpp"
 #include "pisa/invert.hpp"
-#include "pisa/parser.hpp"
 #include "pisa/reorder_docids.hpp"
 #include "pisa/temporary_directory.hpp"
 #include "pisa_config.hpp"

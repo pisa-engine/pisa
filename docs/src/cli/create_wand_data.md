@@ -9,11 +9,7 @@
 ## Description
 
 Creates additional data needed for certain query algorithms.
-
-Algorithms such as WAND and MaxScore (among others) need more data than
-available in posting lists alone. This includes max scores for each
-term, as well as max scores for ranges of posting lists that can be used
-as skip lists.
+See [`"WAND" Data`](../guide/wand_data.md) for more details.
 
 Refer to [`queries`](queries.html) for details about scoring functions.
 

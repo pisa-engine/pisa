@@ -1,7 +1,6 @@
 #include <limits>
 #include <optional>
 #include <string>
-#include <vector>
 
 #include "mappable/mapper.hpp"
 #include <CLI/CLI.hpp>
@@ -13,8 +12,7 @@
 #include "app.hpp"
 #include "index_types.hpp"
 #include "intersection.hpp"
-#include "pisa/cursor/scored_cursor.hpp"
-#include "pisa/query/queries.hpp"
+#include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 
 using namespace pisa;

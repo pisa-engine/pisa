@@ -1,4 +1,3 @@
-#include "CLI/CLI.hpp"
 #include "app.hpp"
 #include "wand_data.hpp"
 
@@ -14,6 +13,6 @@ int main(int argc, const char** argv)
         args.scorer_params(),
         args.range(),
         args.compress(),
-        args.quantize(),
+        args.quantization_bits(),
         args.dropped_term_ids());
 }

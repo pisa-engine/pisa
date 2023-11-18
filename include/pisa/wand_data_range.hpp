@@ -5,7 +5,8 @@
 #include "binary_freq_collection.hpp"
 #include "global_parameters.hpp"
 #include "linear_quantizer.hpp"
-#include "mappable/mapper.hpp"
+#include "mappable/mappable_vector.hpp"
+#include "type_safe.hpp"
 #include "util/compiler_attribute.hpp"
 #include "util/util.hpp"
 #include "wand_utils.hpp"
@@ -37,11 +38,15 @@ class wand_data_range {
 
     class builder {
       public:
-        builder(binary_freq_collection const& coll, [[maybe_unused]] global_parameters const& params)
+        builder(
+            binary_freq_collection const& coll,
+            [[maybe_unused]] global_parameters const& params,
+            std::optional<Size> quantization_bits)
             : blocks_num(ceil_div(coll.num_docs(), range_size)),
               total_elements(0),
               blocks_start{0},
-              block_max_term_weight{}
+              block_max_term_weight{},
+              m_quantization_bits(quantization_bits)
         {
             auto posting_lists = std::distance(coll.begin(), coll.end());
             spdlog::info("Storing max weight for each list and for each block...");
@@ -87,7 +92,7 @@ class wand_data_range {
 
         void quantize_block_max_term_weights(float index_max_term_weight)
         {
-            LinearQuantizer quantizer(index_max_term_weight, configuration::get().quantization_bits);
+            LinearQuantizer quantizer(index_max_term_weight, m_quantization_bits->as_int());
             for (auto&& w: block_max_term_weight) {
                 w = quantizer(w);
             }
@@ -107,6 +112,7 @@ class wand_data_range {
         uint64_t total_elements;
         std::vector<uint64_t> blocks_start;
         std::vector<float> block_max_term_weight;
+        std::optional<Size> m_quantization_bits;
     };
 
     class enumerator {

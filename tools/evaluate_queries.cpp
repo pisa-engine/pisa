@@ -1,6 +1,5 @@
 #include <iostream>
 #include <optional>
-#include <thread>
 
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -21,10 +20,16 @@
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
-#include "io.hpp"
-#include "query/algorithm.hpp"
+#include "query/algorithm/block_max_maxscore_query.hpp"
+#include "query/algorithm/block_max_ranked_and_query.hpp"
+#include "query/algorithm/block_max_wand_query.hpp"
+#include "query/algorithm/maxscore_query.hpp"
+#include "query/algorithm/ranked_and_query.hpp"
+#include "query/algorithm/ranked_or_query.hpp"
+#include "query/algorithm/ranked_or_taat_query.hpp"
+#include "query/algorithm/wand_query.hpp"
 #include "scorer/scorer.hpp"
-#include "util/util.hpp"
+#include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
 
