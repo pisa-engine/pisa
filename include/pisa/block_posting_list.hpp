@@ -112,9 +112,15 @@ struct block_posting_list {
             }
         }
 
+        /**
+         * Moves to the next document, counting from the current position,
+         * with the ID equal to or greater than `lower_bound`.
+         *
+         * In particular, if called with a value that is less than or equal
+         * to the current document ID, the position will not change.
+         */
         void PISA_ALWAYSINLINE next_geq(uint64_t lower_bound)
         {
-            assert(lower_bound >= m_cur_docid || position() == 0);
             if (PISA_UNLIKELY(lower_bound > m_cur_block_max)) {
                 // binary search seems to perform worse here
                 if (lower_bound > block_max(m_blocks - 1)) {
