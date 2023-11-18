@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string_view>
 #include <utility>
 
@@ -53,6 +54,15 @@ class Ensure {
 [[nodiscard]] inline auto ensure(bool condition) -> Ensure
 {
     return Ensure(condition);
+}
+
+template <typename T>
+[[nodiscard]] inline auto unwrap(std::optional<T> value, const char* msg = "no value to unwrap") -> T
+{
+    if (!value.has_value()) {
+        throw std::domain_error(msg);
+    }
+    return *value;
 }
 
 }  // namespace pisa

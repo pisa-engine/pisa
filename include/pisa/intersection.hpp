@@ -1,9 +1,9 @@
 #include <bitset>
 #include <cstddef>
 #include <optional>
-#include <variant>
 #include <vector>
 
+#include "cursor/scored_cursor.hpp"
 #include "query/algorithm/and_query.hpp"
 #include "query/queries.hpp"
 #include "scorer/scorer.hpp"

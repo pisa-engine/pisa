@@ -1,17 +1,29 @@
+#include "type_safe.hpp"
 #define CATCH_CONFIG_MAIN
 
+#include <memory>
+
 #include <catch2/catch.hpp>
-#include <functional>
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "accumulator/simple_accumulator.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "pisa_config.hpp"
-#include "query/algorithm.hpp"
-#include "test_common.hpp"
+#include "query/algorithm/block_max_maxscore_query.hpp"
+#include "query/algorithm/block_max_ranked_and_query.hpp"
+#include "query/algorithm/block_max_wand_query.hpp"
+#include "query/algorithm/maxscore_query.hpp"
+#include "query/algorithm/range_query.hpp"
+#include "query/algorithm/ranked_and_query.hpp"
+#include "query/algorithm/ranked_or_query.hpp"
+#include "query/algorithm/ranked_or_taat_query.hpp"
+#include "query/algorithm/wand_query.hpp"
+#include "scorer/scorer.hpp"
+#include "wand_data.hpp"
+#include "wand_data_raw.hpp"
+#include "wand_utils.hpp"
 
 using namespace pisa;
 
@@ -28,7 +40,7 @@ struct IndexData {
               collection,
               ScorerParams(scorer_name),
               BlockSize(FixedBlock(5)),
-              quantized,
+              quantized ? std::optional<Size>(Size(8)) : std::nullopt,
               dropped_term_ids)
 
     {

@@ -3,7 +3,6 @@
 #include <variant>
 
 #include "binary_freq_collection.hpp"
-#include "configuration.hpp"
 #include "score_opt_partition.hpp"
 
 namespace pisa {

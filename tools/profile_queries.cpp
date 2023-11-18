@@ -4,7 +4,6 @@
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
-#include "boost/lexical_cast.hpp"
 #include "spdlog/spdlog.h"
 
 #include "mio/mmap.hpp"
@@ -15,10 +14,13 @@
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
 #include "memory_source.hpp"
-#include "query/algorithm.hpp"
+#include "query/algorithm/and_query.hpp"
+#include "query/algorithm/maxscore_query.hpp"
+#include "query/algorithm/ranked_and_query.hpp"
+#include "query/algorithm/wand_query.hpp"
 #include "scorer/scorer.hpp"
-#include "util/util.hpp"
-#include "wand_data_compressed.hpp"
+#include "wand_data.hpp"
+#include "wand_data_raw.hpp"
 
 using namespace pisa;
 

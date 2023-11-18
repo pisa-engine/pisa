@@ -5,6 +5,7 @@
 #include <ostream>
 
 #include <fmt/format.h>
+#include <type_traits>
 
 namespace pisa {
 
@@ -21,8 +22,17 @@ class Integer {
     Integer& operator=(Integer&&) noexcept = default;
     ~Integer() = default;
 
-    explicit operator T() const { return m_val; }
+    // SFINAE to remove for when T = std::size_t, because it conflicts with the method below.
+    template <
+        typename U,
+        typename std::enable_if<std::is_same_v<U, T> && !std::is_same_v<U, std::size_t>, bool>::type = true>
+    explicit operator U() const
+    {
+        return m_val;
+    }
+
     explicit operator std::size_t() const { return static_cast<std::size_t>(m_val); }
+
     [[nodiscard]] T get() const { return m_val; }
     [[nodiscard]] T as_int() const { return m_val; }
 
@@ -88,18 +98,17 @@ std::ostream& operator<<(std::ostream& os, Integer<Tag, T, default_value> id)
     return os << static_cast<T>(id);
 }
 
-struct document_id_tag {
-};
+struct document_id_tag {};
 using Document_Id = Integer<document_id_tag, std::int32_t>;
-struct term_id_tag {
-};
+struct term_id_tag {};
 using Term_Id = Integer<term_id_tag, std::int32_t>;
-struct frequency_tag {
-};
+struct frequency_tag {};
 using Frequency = Integer<frequency_tag, std::int32_t>;
-struct shard_id_tag {
-};
+struct shard_id_tag {};
 using Shard_Id = Integer<shard_id_tag, std::int32_t>;
+
+struct size_tag {};
+using Size = Integer<size_tag, std::size_t>;
 
 namespace literals {
 

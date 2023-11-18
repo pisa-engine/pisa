@@ -8,7 +8,7 @@ workdir='/opt/workdir'
 gzip -dc $(find "$collection_path" -type f -name '*.*z' \
     \( -path '*/disk4/fr94/[0-9]*/*' -o -path '*/disk4/ft/ft*' \
     -o -path '*/disk5/fbis/fb*' -o -path '*/disk5/latimes/la*' \)) \
-    | ./bin/parse_collection -f trectext -b 10000 -F lowercase -F porter2 --html 1 -o "$workdir/fwd"
+    | ./bin/parse_collection -f trectext -b 10000 -F lowercase -F porter2 --html -o "$workdir/fwd"
 
 ./bin/invert \
     -i "$workdir/fwd" \

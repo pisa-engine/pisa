@@ -4,7 +4,7 @@
 
 #include "query/queries.hpp"
 #include "scorer/index_scorer.hpp"
-#include "wand_data.hpp"
+#include "util/compiler_attribute.hpp"
 
 namespace pisa {
 

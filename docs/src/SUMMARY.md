@@ -10,6 +10,7 @@
 - [Parsing](guide/parsing.md)
 - [Inverting](guide/inverting.md)
 - [Compressing](guide/compressing.md)
+- ["WAND" Data](guide/wand_data.md)
 - [Querying](guide/querying.md)
 - [Retrieval Algorithms](guide/algorithms.md)
 - [Document Reordering](guide/reordering.md)

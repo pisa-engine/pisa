@@ -8,6 +8,7 @@
 #include "global_parameters.hpp"
 #include "linear_quantizer.hpp"
 #include "mappable/mappable_vector.hpp"
+#include "type_safe.hpp"
 #include "util/compiler_attribute.hpp"
 #include "wand_utils.hpp"
 
@@ -19,7 +20,11 @@ class wand_data_raw {
 
     class builder {
       public:
-        builder(binary_freq_collection const& coll, global_parameters const& params)
+        builder(
+            binary_freq_collection const& coll,
+            global_parameters const& params,
+            std::optional<Size> quantization_bits)
+            : m_quantization_bits(quantization_bits)
         {
             (void)coll;
             (void)params;
@@ -58,7 +63,7 @@ class wand_data_raw {
 
         void quantize_block_max_term_weights(float index_max_term_weight)
         {
-            LinearQuantizer quantizer(index_max_term_weight, configuration::get().quantization_bits);
+            LinearQuantizer quantizer(index_max_term_weight, m_quantization_bits->as_int());
             for (auto&& w: block_max_term_weight) {
                 w = quantizer(w);
             }
@@ -74,6 +79,7 @@ class wand_data_raw {
                 static_cast<float>(total_elements) / static_cast<float>(total_blocks));
         }
 
+        std::optional<Size> m_quantization_bits;
         uint64_t total_elements;
         uint64_t total_blocks;
         uint64_t effective_list;

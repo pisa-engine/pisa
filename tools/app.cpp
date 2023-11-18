@@ -1,4 +1,5 @@
 #include "app.hpp"
+#include "type_safe.hpp"
 
 namespace pisa::arg {
 
@@ -107,7 +108,8 @@ Quantize::Quantize(CLI::App* app) : m_params("")
 {
     auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
     auto* scorer = add_scorer_options(app, *this, ScorerMode::Optional);
-    auto* quant = app->add_flag("--quantize", m_quantize, "Quantizes the scores");
+    auto* quant = app->add_option(
+        "--quantize", m_quantization_bits, "Quantizes the scores using this many bits");
     wand->needs(scorer);
     scorer->needs(wand);
     scorer->needs(quant);
@@ -124,9 +126,12 @@ auto Quantize::wand_data_path() const -> std::optional<std::string> const&
     return m_wand_data_path;
 }
 
-auto Quantize::quantize() const -> bool
+auto Quantize::quantization_bits() const -> std::optional<Size>
 {
-    return m_quantize;
+    if (m_quantization_bits.has_value()) {
+        return Size(*m_quantization_bits);
+    }
+    return std::nullopt;
 }
 
 Scorer::Scorer(CLI::App* app) : m_params("")
@@ -228,8 +233,9 @@ CreateWandData::CreateWandData(CLI::App* app) : m_params("")
             ->excludes(block_size_opt);
     block_group->require_option();
 
-    app->add_flag("--compress", m_compress, "Compress additional data");
-    app->add_flag("--quantize", m_quantize, "Quantize scores");
+    auto* quant = app->add_option(
+        "--quantize", m_quantization_bits, "Quantizes the scores using this many bits");
+    app->add_flag("--compress", m_compress, "Compress additional data")->needs(quant);
     add_scorer_options(app, *this, ScorerMode::Required);
     app->add_flag("--range", m_range, "Create docid-range based data")
         ->excludes(block_size_opt)
@@ -294,9 +300,12 @@ auto CreateWandData::range() const -> bool
     return m_range;
 }
 
-auto CreateWandData::quantize() const -> bool
+auto CreateWandData::quantization_bits() const -> std::optional<Size>
 {
-    return m_quantize;
+    if (m_quantization_bits.has_value()) {
+        return Size(*m_quantization_bits);
+    }
+    return std::nullopt;
 }
 
 /// Transform paths for `shard`.

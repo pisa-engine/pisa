@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <numeric>
 #include <unordered_set>
-#include <variant>
 
 #include "spdlog/spdlog.h"
 
@@ -12,8 +11,8 @@
 #include "mappable/mappable_vector.hpp"
 #include "mappable/mapper.hpp"
 #include "memory_source.hpp"
+#include "type_safe.hpp"
 #include "util/progress.hpp"
-#include "util/util.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_range.hpp"
 #include "wand_data_raw.hpp"
@@ -42,7 +41,7 @@ class wand_data {
         binary_freq_collection const& coll,
         const ScorerParams& scorer_params,
         BlockSize block_size,
-        bool is_quantized,
+        std::optional<Size> quantization_bits,
         std::unordered_set<size_t> const& terms_to_drop)
         : m_num_docs(num_docs)
     {
@@ -61,7 +60,7 @@ class wand_data {
 
         m_avg_len = float(m_collection_len / double(num_docs));
 
-        typename block_wand_type::builder builder(coll, params);
+        typename block_wand_type::builder builder(coll, params, quantization_bits);
 
         {
             pisa::progress progress("Storing terms statistics", coll.size());
@@ -103,9 +102,8 @@ class wand_data {
                 new_term_id += 1;
                 progress.update(1);
             }
-            if (is_quantized) {
-                LinearQuantizer quantizer(
-                    m_index_max_term_weight, configuration::get().quantization_bits);
+            if (quantization_bits.has_value()) {
+                LinearQuantizer quantizer(m_index_max_term_weight, quantization_bits->as_int());
                 for (auto&& w: max_term_weight) {
                     w = quantizer(w);
                 }
@@ -176,7 +174,7 @@ inline void create_wand_data(
     const ScorerParams& scorer_params,
     bool range,
     bool compress,
-    bool quantize,
+    std::optional<Size> quantization_bits,
     std::unordered_set<size_t> const& dropped_term_ids)
 {
     spdlog::info("Dropping {} terms", dropped_term_ids.size());
@@ -190,7 +188,7 @@ inline void create_wand_data(
             coll,
             scorer_params,
             block_size,
-            quantize,
+            quantization_bits,
             dropped_term_ids);
         mapper::freeze(wdata, output.c_str());
     } else if (range) {
@@ -200,7 +198,7 @@ inline void create_wand_data(
             coll,
             scorer_params,
             block_size,
-            quantize,
+            quantization_bits,
             dropped_term_ids);
         mapper::freeze(wdata, output.c_str());
     } else {
@@ -210,7 +208,7 @@ inline void create_wand_data(
             coll,
             scorer_params,
             block_size,
-            quantize,
+            quantization_bits,
             dropped_term_ids);
         mapper::freeze(wdata, output.c_str());
     }
