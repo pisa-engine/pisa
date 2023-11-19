@@ -49,6 +49,28 @@ auto kth(std::vector<float> scores, int k) -> float
     return scores.at(k - 1);
 }
 
+auto sort_order = [](auto const& lhs, auto const& rhs) {
+    if (lhs.first == rhs.first) {
+        return lhs.second < rhs.second;
+    }
+    return lhs.first > rhs.first;
+};
+
+TEST_CASE("Top-k ordering", "[topk_queue][prop]")
+{
+    SECTION("Final elements are always sorted")
+    {
+        check([] {
+            auto [scores, docids] = *gen_postings(10, 1000);
+
+            pisa::topk_queue topk(10);
+            accumulate(topk, scores, docids);
+            topk.finalize();
+            REQUIRE(std::is_sorted(topk.topk().begin(), topk.topk().end(), sort_order));
+        });
+    }
+}
+
 TEST_CASE("Threshold", "[topk_queue][prop]")
 {
     SECTION("When initial = 0.0, the final threshold is the k-th score")

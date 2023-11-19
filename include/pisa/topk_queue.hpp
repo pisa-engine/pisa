@@ -16,6 +16,13 @@ namespace pisa {
 /// min element. Because it is a binary heap, the elements are not sorted;
 /// use `finalize()` member function to sort it before accessing it with
 /// `topk()`.
+///
+/// Note that `finalize()` breaks ties between entries with equal scores by
+/// sorting them by document ID. However, this is not true for insertion, and
+/// thus it may happen that a document with identical score as the k-th
+/// document in the heap but with a lower document ID is _not_ in the top-k
+/// results. In such case, which entry makes it to top k is determined by the
+/// order in which elements are pushed to the heap.
 struct topk_queue {
     using entry_type = std::pair<Score, DocId>;
 
@@ -50,7 +57,7 @@ struct topk_queue {
         }
         m_q.emplace_back(score, docid);
         if (PISA_UNLIKELY(m_q.size() <= m_k)) {
-            std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
+            push_heap(m_q.begin(), m_q.end());
             if (PISA_UNLIKELY(m_q.size() == m_k)) {
                 m_effective_threshold = m_q.front().first;
             }
@@ -69,17 +76,25 @@ struct topk_queue {
 
     /// Sorts the results in the heap container in the descending score order.
     ///
-    /// After calling this function, the heap should be no longer modified, as
-    /// the heap order will not be preserved.
+    /// If multiple entries have equal score, they are sorted by document ID. Notice that this only
+    /// happens in the finalization step; due to performance considerations, inserting is done with
+    /// score-only order. After calling this function, the heap should be no longer modified, as the
+    /// heap order will not be preserved.
     void finalize()
     {
-        std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
-        size_t size = std::lower_bound(
-                          m_q.begin(),
-                          m_q.end(),
-                          0,
-                          [](std::pair<Score, DocId> l, Score r) { return l.first > r; })
-            - m_q.begin();
+        auto sort_order = [](auto const& lhs, auto const& rhs) {
+            if (lhs.first == rhs.first) {
+                return lhs.second < rhs.second;
+            }
+            return lhs.first > rhs.first;
+        };
+        // We have to do a full sort because it is not the exact same ordering as when pushing
+        // elements to the heap.
+        std::sort(m_q.begin(), m_q.end(), sort_order);
+
+        auto search_order = [](auto entry, auto score) { return entry.first > score; };
+        auto first_zero_score = std::lower_bound(m_q.begin(), m_q.end(), 0, search_order);
+        std::size_t size = std::distance(m_q.begin(), first_zero_score);
         m_q.resize(size);
     }
 
@@ -127,12 +142,6 @@ struct topk_queue {
     [[nodiscard]] auto size() const noexcept -> std::size_t { return m_q.size(); }
 
   private:
-    [[nodiscard]] constexpr static auto
-    min_heap_order(entry_type const& lhs, entry_type const& rhs) noexcept -> bool
-    {
-        return lhs.first > rhs.first;
-    }
-
     using entry_iterator_type = typename std::vector<entry_type>::iterator;
 
     /// Sifts down the top element of the heap in `[first, last)`.
@@ -170,6 +179,26 @@ struct topk_queue {
         if ((left = 2 * idx + 1) < len && cmp(idx, left)) {
             swap(idx, left);
         }
+    }
+
+    // We use our own function (as opposed to `std::heap_push`), to ensure that
+    // heap implementation is consistent across standard libraries.
+    void push_heap(entry_iterator_type first, entry_iterator_type last)
+    {
+        std::size_t hole_idx = std::distance(first, last) - 1;
+        std::size_t top_idx = 0;
+        auto cmp = [](entry_iterator_type const& lhs, entry_type const& rhs) {
+            return lhs->first > rhs.first;
+        };
+        auto value = *std::next(first, hole_idx);
+
+        auto parent = (hole_idx - 1) / 2;
+        while (hole_idx > top_idx && cmp(first + parent, value)) {
+            *(first + hole_idx) = *(first + parent);
+            hole_idx = parent;
+            parent = (hole_idx - 1) / 2;
+        }
+        *(first + hole_idx) = value;
     }
 
     std::size_t m_k;
