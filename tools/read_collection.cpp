@@ -14,8 +14,7 @@ using namespace pisa;
 
 [[nodiscard]] auto
 print_function(std::optional<std::string> const& map_file, std::optional<std::string> const& lex_file)
-    -> std::function<void(std::uint32_t)>
-{
+    -> std::function<void(std::uint32_t)> {
     if (map_file) {
         return [loaded_map = pisa::io::read_string_vector(*map_file)](std::uint32_t term) {
             std::cout << loaded_map.at(term) << ' ';
@@ -32,8 +31,7 @@ print_function(std::optional<std::string> const& map_file, std::optional<std::st
     return [](auto const& term) { std::cout << term << " "; };
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     std::string collection_file;
     std::optional<std::string> map_file{};
     std::optional<std::string> lex_file{};
@@ -47,13 +45,15 @@ int main(int argc, char** argv)
         "ID to string mapping in text file format. "
         "Line n is the string associated with ID n. "
         "E.g., if used to read a document from a forward index, this would be the `.terms` "
-        "file, which maps term IDs to their string reperesentations.");
+        "file, which maps term IDs to their string reperesentations."
+    );
     auto maplex = app.add_option(
         "--maplex",
         lex_file,
         "ID to string mapping in lexicon binary file format. "
         "E.g., if used to read a document from a forward index, this would be the `.termlex` "
-        "file, which maps term IDs to their string reperesentations.");
+        "file, which maps term IDs to their string reperesentations."
+    );
     maptext->excludes(maplex);
     maplex->excludes(maptext);
     auto* entry_cmd = app.add_subcommand("entry", "Reads single entry.");
@@ -64,7 +64,8 @@ int main(int argc, char** argv)
         "last",
         last,
         "End reading at this entry. "
-        "If not defined, read until the end of the collection.");
+        "If not defined, read until the end of the collection."
+    );
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_level(app.log_level());
@@ -85,7 +86,8 @@ int main(int argc, char** argv)
                 }
                 if (last < first) {
                     throw std::invalid_argument(
-                        "Last entry index must be greater or equal to first.");
+                        "Last entry index must be greater or equal to first."
+                    );
                 }
                 return std::next(iter, last - first + 1);
             }

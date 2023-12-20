@@ -15,8 +15,7 @@ struct maxscore_query {
 
     template <typename Cursors>
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
-        -> std::vector<typename std::decay_t<Cursors>::value_type>
-    {
+        -> std::vector<typename std::decay_t<Cursors>::value_type> {
         std::vector<std::size_t> term_positions(cursors.size());
         std::iota(term_positions.begin(), term_positions.end(), 0);
         std::sort(term_positions.begin(), term_positions.end(), [&](auto&& lhs, auto&& rhs) {
@@ -30,8 +29,7 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
-    [[nodiscard]] PISA_ALWAYSINLINE auto calc_upper_bounds(Cursors&& cursors) -> std::vector<float>
-    {
+    [[nodiscard]] PISA_ALWAYSINLINE auto calc_upper_bounds(Cursors&& cursors) -> std::vector<float> {
         std::vector<float> upper_bounds(cursors.size());
         auto out = upper_bounds.rbegin();
         float bound = 0.0;
@@ -43,21 +41,19 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
-    [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t
-    {
+    [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t {
         return std::min_element(
                    cursors.begin(),
                    cursors.end(),
-                   [](auto&& lhs, auto&& rhs) { return lhs.docid() < rhs.docid(); })
-            ->docid();
+                   [](auto&& lhs, auto&& rhs) { return lhs.docid() < rhs.docid(); }
+        )->docid();
     }
 
     enum class UpdateResult : bool { Continue, ShortCircuit };
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
-    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid)
-    {
+    PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid) {
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
 
@@ -126,8 +122,7 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
-    void operator()(Cursors&& cursors_, uint64_t max_docid)
-    {
+    void operator()(Cursors&& cursors_, uint64_t max_docid) {
         if (cursors_.empty()) {
             return;
         }

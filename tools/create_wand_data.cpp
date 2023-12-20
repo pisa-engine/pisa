@@ -1,8 +1,7 @@
 #include "app.hpp"
 #include "wand_data.hpp"
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     CLI::App app{"Creates additional data for query processing."};
     pisa::CreateWandDataArgs args(&app);
     CLI11_PARSE(app, argc, argv);
@@ -14,5 +13,6 @@ int main(int argc, const char** argv)
         args.range(),
         args.compress(),
         args.quantization_bits(),
-        args.dropped_term_ids());
+        args.dropped_term_ids()
+    );
 }

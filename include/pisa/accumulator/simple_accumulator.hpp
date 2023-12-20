@@ -32,8 +32,7 @@ namespace pisa {
  */
 class SimpleAccumulator: public std::vector<float> {
   public:
-    explicit SimpleAccumulator(std::size_t size) : std::vector<float>(size)
-    {
+    explicit SimpleAccumulator(std::size_t size) : std::vector<float>(size) {
         PISA_ASSERT_CONCEPT(PartialScoreAccumulator<decltype(*this)>);
     }
 
@@ -41,8 +40,7 @@ class SimpleAccumulator: public std::vector<float> {
 
     void accumulate(std::uint32_t doc, float score) { operator[](doc) += score; }
 
-    void collect(topk_queue& topk)
-    {
+    void collect(topk_queue& topk) {
         std::uint32_t docid = 0U;
         std::for_each(begin(), end(), [&](auto score) {
             if (topk.would_enter(score)) {

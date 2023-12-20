@@ -11,15 +11,13 @@ class Log2 {
     static_assert(N >= 1, "number of precomputed values must be positive");
 
   public:
-    constexpr Log2()
-    {
+    constexpr Log2() {
         m_values[0] = -std::numeric_limits<double>::infinity();
         for (std::size_t n = 1; n < N; ++n) {
             m_values[n] = std::log2(n);
         }
     }
-    constexpr double operator()(std::size_t n) const
-    {
+    constexpr double operator()(std::size_t n) const {
         if (n >= m_values.size()) {
             return std::log2(n);
         }

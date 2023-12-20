@@ -27,15 +27,13 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
         : std::vector<entry_type>(document_count),
           m_term_count(term_count),
           m_term_counts(document_count),
-          m_compressed(compressed)
-    {}
+          m_compressed(compressed) {}
 
     const std::size_t& term_count() const { return m_term_count; }
     const std::size_t& term_count(id_type document) const { return m_term_counts[document]; }
 
     //! Compresses each document in `fwd` with a faster codec.
-    static forward_index read(const std::string& input_file)
-    {
+    static forward_index read(const std::string& input_file) {
         std::ifstream in(input_file.c_str());
         bool compressed;
         size_t term_count, docs_count;
@@ -54,8 +52,7 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
         return fwd;
     }
 
-    static forward_index& compress(forward_index& fwd)
-    {
+    static forward_index& compress(forward_index& fwd) {
         progress p("Compressing forward index", fwd.size());
         for (id_type doc = 0U; doc < fwd.size(); ++doc) {
             auto& encoded_terms = fwd[doc];
@@ -75,8 +72,7 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
     }
 
     static forward_index
-    from_inverted_index(const std::string& input_basename, size_t min_len, bool use_compression)
-    {
+    from_inverted_index(const std::string& input_basename, size_t min_len, bool use_compression) {
         binary_collection coll((input_basename + ".docs").c_str());
 
         auto firstseq = *coll.begin();
@@ -110,8 +106,7 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
         return fwd;
     }
 
-    static void write(const forward_index& fwd, const std::string& output_file)
-    {
+    static void write(const forward_index& fwd, const std::string& output_file) {
         std::ofstream out(output_file.c_str());
         size_t size = fwd.size();
         out.write(reinterpret_cast<const char*>(&fwd.m_compressed), sizeof(fwd.m_compressed));
@@ -120,16 +115,15 @@ class forward_index: public std::vector<std::vector<std::uint8_t>> {
         for (id_type doc = 0; doc < fwd.size(); ++doc) {
             size = fwd[doc].size();
             out.write(
-                reinterpret_cast<const char*>(&fwd.m_term_counts[doc]),
-                sizeof(fwd.m_term_counts[doc]));
+                reinterpret_cast<const char*>(&fwd.m_term_counts[doc]), sizeof(fwd.m_term_counts[doc])
+            );
             out.write(reinterpret_cast<const char*>(&size), sizeof(size));
             out.write(reinterpret_cast<const char*>(fwd[doc].data()), size);
         }
     }
 
     //! Decodes and returns the list of terms for a given document.
-    std::vector<id_type> terms(id_type document) const
-    {
+    std::vector<id_type> terms(id_type document) const {
         const entry_type& encoded_terms = (*this)[document];
         std::vector<uint32_t> terms;
         if (m_compressed) {

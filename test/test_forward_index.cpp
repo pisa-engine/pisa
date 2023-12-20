@@ -7,8 +7,7 @@
 
 #include <vector>
 
-TEST_CASE("write_and_read")
-{
+TEST_CASE("write_and_read") {
     // given
     using namespace pisa;
     std::string invind_input("test_data/test_collection");

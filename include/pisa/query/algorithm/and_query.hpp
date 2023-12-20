@@ -18,8 +18,7 @@ namespace pisa {
  */
 struct and_query {
     template <typename CursorRange>
-    auto operator()(CursorRange&& cursors, uint32_t max_docid) const
-    {
+    auto operator()(CursorRange&& cursors, uint32_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
         using Result_t = uint32_t;
@@ -72,8 +71,7 @@ struct and_query {
  */
 struct scored_and_query {
     template <typename CursorRange>
-    auto operator()(CursorRange&& cursors, uint32_t max_docid) const
-    {
+    auto operator()(CursorRange&& cursors, uint32_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 
         using Document = uint32_t;

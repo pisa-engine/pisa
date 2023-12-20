@@ -8,8 +8,7 @@
 #include <cstdlib>
 #include <vector>
 
-TEST_CASE("uniform_partitioned_sequence")
-{
+TEST_CASE("uniform_partitioned_sequence") {
     pisa::global_parameters params;
     using pisa::indexed_sequence;
     using pisa::strict_sequence;

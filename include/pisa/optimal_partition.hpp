@@ -28,22 +28,23 @@ struct optimal_partition {
         cost_t cost_upper_bound;  // The maximum cost for this window
 
         cost_window(ForwardIterator begin, posting_t base, cost_t cost_upper_bound)
-            : start_it(begin), end_it(begin), min_p(base), max_p(0), cost_upper_bound(cost_upper_bound)
-        {}
+            : start_it(begin),
+              end_it(begin),
+              min_p(base),
+              max_p(0),
+              cost_upper_bound(cost_upper_bound) {}
 
         uint64_t universe() const { return max_p - min_p + 1; }
 
         uint64_t size() const { return end - start; }
 
-        void advance_start()
-        {
+        void advance_start() {
             min_p = *start_it + 1;
             ++start;
             ++start_it;
         }
 
-        void advance_end()
-        {
+        void advance_end() {
             max_p = *end_it;
             ++end;
             ++end_it;
@@ -60,8 +61,8 @@ struct optimal_partition {
         uint64_t size,
         CostFunction cost_fun,
         double eps1,
-        double eps2)
-    {
+        double eps2
+    ) {
         cost_t single_block_cost = cost_fun(universe - base, size);
         std::vector<cost_t> min_cost(size + 1, single_block_cost);
         min_cost[0] = 0;

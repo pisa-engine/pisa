@@ -7,8 +7,7 @@
 
 namespace pisa {
 
-[[nodiscard]] auto ls(std::filesystem::path dir, std::function<bool(std::string const&)> predicate)
-{
+[[nodiscard]] auto ls(std::filesystem::path dir, std::function<bool(std::string const&)> predicate) {
     std::vector<std::filesystem::path> files;
     for (auto it = std::filesystem::directory_iterator(dir);
          it != std::filesystem::directory_iterator{};

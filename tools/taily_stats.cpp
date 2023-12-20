@@ -23,8 +23,7 @@ using pisa::wand_data;
 using pisa::wand_data_compressed;
 using pisa::wand_data_raw;
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 

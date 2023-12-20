@@ -8,8 +8,7 @@ namespace pisa {
 
 struct Document_Record {
     Document_Record(std::string title, std::string content, std::string url)
-        : title_(std::move(title)), content_(std::move(content)), url_(std::move(url))
-    {}
+        : title_(std::move(title)), content_(std::move(content)), url_(std::move(url)) {}
     [[nodiscard]] auto title() noexcept -> std::string& { return title_; }
     [[nodiscard]] auto title() const noexcept -> std::string const& { return title_; }
     [[nodiscard]] auto content() noexcept -> std::string& { return content_; }
@@ -27,8 +26,7 @@ class Plaintext_Record {
   public:
     Plaintext_Record() = default;
     Plaintext_Record(std::string trecid, std::string content)
-        : m_trecid(std::move(trecid)), m_content(std::move(content))
-    {}
+        : m_trecid(std::move(trecid)), m_content(std::move(content)) {}
     [[nodiscard]] auto content() -> std::string& { return m_content; }
     [[nodiscard]] auto content() const -> std::string const& { return m_content; }
     [[nodiscard]] auto trecid() -> std::string& { return m_trecid; }
@@ -46,8 +44,7 @@ class Plaintext_Record {
 
 }  // namespace pisa
 
-inline auto operator>>(std::istream& is, pisa::Plaintext_Record& record) -> std::istream&
-{
+inline auto operator>>(std::istream& is, pisa::Plaintext_Record& record) -> std::istream& {
     is >> record.trecid();
     std::getline(is, record.content());
     return is;

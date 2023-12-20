@@ -25,8 +25,8 @@ struct partitioned_sequence {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         assert(n > 0);
         auto partition = compute_partition(begin, universe, n, params);
 
@@ -60,7 +60,8 @@ struct partitioned_sequence {
             }
 
             base_sequence_type::write(
-                bvb, cur_partition.begin(), cur_partition.back() + 1, cur_partition.size(), params);
+                bvb, cur_partition.begin(), cur_partition.back() + 1, cur_partition.size(), params
+            );
         } else {
             bit_vector_builder bv_sequences;
             std::vector<uint64_t> endpoints;
@@ -86,7 +87,8 @@ struct partitioned_sequence {
                     cur_partition.begin(),
                     cur_partition.back() + 1,
                     cur_partition.size(),  // XXX skip last one?
-                    params);
+                    params
+                );
                 endpoints.push_back(bv_sequences.size());
                 upper_bounds.push_back(upper_bound);
                 cur_base = upper_bound + 1;
@@ -97,7 +99,8 @@ struct partitioned_sequence {
 
             bit_vector_builder bv_upper_bounds;
             compact_elias_fano::write(
-                bv_upper_bounds, upper_bounds.begin(), universe, partitions + 1, params);
+                bv_upper_bounds, upper_bounds.begin(), universe, partitions + 1, params
+            );
 
             uint64_t endpoint_bits = ceil_log2(bv_sequences.size() + 1);
             write_gamma(bvb, endpoint_bits);
@@ -124,9 +127,9 @@ struct partitioned_sequence {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-            : m_params(params), m_size(n), m_universe(universe), m_bv(&bv)
-        {
+            global_parameters const& params
+        )
+            : m_params(params), m_size(n), m_universe(universe), m_bv(&bv) {
             bit_vector::enumerator it(bv, offset);
             m_partitions = read_gamma_nonzero(it);
             if (m_partitions == 1) {
@@ -153,8 +156,8 @@ struct partitioned_sequence {
                 m_sizes = compact_elias_fano::enumerator(bv, cur_offset, n, m_partitions - 1, params);
                 cur_offset += compact_elias_fano::bitsize(params, n, m_partitions - 1);
 
-                m_upper_bounds = compact_elias_fano::enumerator(
-                    bv, cur_offset, universe, m_partitions + 1, params);
+                m_upper_bounds =
+                    compact_elias_fano::enumerator(bv, cur_offset, universe, m_partitions + 1, params);
                 cur_offset += compact_elias_fano::bitsize(params, universe, m_partitions + 1);
 
                 m_endpoints_offset = cur_offset;
@@ -168,8 +171,7 @@ struct partitioned_sequence {
             slow_move();
         }
 
-        value_type PISA_ALWAYSINLINE move(uint64_t position)
-        {
+        value_type PISA_ALWAYSINLINE move(uint64_t position) {
             assert(position <= size());
             m_position = position;
 
@@ -183,8 +185,7 @@ struct partitioned_sequence {
 
         // note: this is instantiated oly if BaseSequence has next_geq
         template <typename Q = base_sequence_enumerator, typename = if_has_next_geq<Q>>
-        value_type PISA_ALWAYSINLINE next_geq(uint64_t lower_bound)
-        {
+        value_type PISA_ALWAYSINLINE next_geq(uint64_t lower_bound) {
             if (PISA_LIKELY(lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound)) {
                 auto val = m_partition_enum.next_geq(lower_bound - m_cur_base);
                 m_position = m_cur_begin + val.first;
@@ -193,8 +194,7 @@ struct partitioned_sequence {
             return slow_next_geq(lower_bound);
         }
 
-        value_type PISA_ALWAYSINLINE next()
-        {
+        value_type PISA_ALWAYSINLINE next() {
             ++m_position;
 
             if (PISA_LIKELY(m_position < m_cur_end)) {
@@ -206,8 +206,7 @@ struct partitioned_sequence {
 
         uint64_t size() const { return m_size; }
 
-        uint64_t prev_value() const
-        {
+        uint64_t prev_value() const {
             if (PISA_UNLIKELY(m_position == m_cur_begin)) {
                 return m_cur_partition != 0U ? m_cur_base - 1 : 0;
             }
@@ -224,8 +223,7 @@ struct partitioned_sequence {
         // next(), causing the code to grow. Since next is called in very
         // tight loops, on microbenchmarks this causes an improvement of
         // about 3ns on my i7 3Ghz
-        value_type PISA_NOINLINE slow_next()
-        {
+        value_type PISA_NOINLINE slow_next() {
             if (PISA_UNLIKELY(m_position == m_size)) {
                 assert(m_cur_partition == m_partitions - 1);
                 auto val = m_partition_enum.next();
@@ -239,8 +237,7 @@ struct partitioned_sequence {
             return value_type(m_position, val);
         }
 
-        value_type PISA_NOINLINE slow_move()
-        {
+        value_type PISA_NOINLINE slow_move() {
             if (m_position == size()) {
                 if (m_partitions > 1) {
                     switch_partition(m_partitions - 1);
@@ -254,8 +251,7 @@ struct partitioned_sequence {
             return value_type(m_position, val);
         }
 
-        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
-        {
+        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound) {
             if (m_partitions == 1) {
                 if (lower_bound < m_cur_base) {
                     return move(0);
@@ -276,8 +272,7 @@ struct partitioned_sequence {
             return next_geq(lower_bound);
         }
 
-        void switch_partition(uint64_t partition)
-        {
+        void switch_partition(uint64_t partition) {
             assert(m_partitions > 1);
 
             uint64_t endpoint = partition != 0U
@@ -298,11 +293,8 @@ struct partitioned_sequence {
             m_cur_base = m_upper_bounds.prev_value() + (partition != 0U ? 1 : 0);
 
             m_partition_enum = base_sequence_enumerator(
-                *m_bv,
-                partition_begin,
-                m_cur_upper_bound - m_cur_base + 1,
-                m_cur_end - m_cur_begin,
-                m_params);
+                *m_bv, partition_begin, m_cur_upper_bound - m_cur_base + 1, m_cur_end - m_cur_begin, m_params
+            );
         }
 
         global_parameters m_params;
@@ -338,8 +330,8 @@ struct partitioned_sequence {
         uint64_t fix_cost = 64,
         double eps1 = 0.03,
         double eps2 = 0.3,
-        double eps3 = 0.01)
-    {
+        double eps3 = 0.01
+    ) {
         std::vector<uint32_t> partition;
 
         if (base_sequence_type::bitsize(params, universe, n) < 2 * fix_cost) {
@@ -386,7 +378,8 @@ struct partitioned_sequence {
                     superblock_size,
                     cost_fun,
                     eps1,
-                    eps2);
+                    eps2
+                );
 
                 superblock_partition.reserve(opt.partition.size());
                 for (auto& endpoint: opt.partition) {
@@ -402,7 +395,8 @@ struct partitioned_sequence {
 
         for (const auto& superblock_partition: superblock_partitions) {
             partition.insert(
-                partition.end(), superblock_partition.begin(), superblock_partition.end());
+                partition.end(), superblock_partition.begin(), superblock_partition.end()
+            );
         }
 
         return partition;

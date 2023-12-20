@@ -25,8 +25,8 @@ void test_block_posting_list_ops(
     uint64_t n,
     uint64_t universe,
     std::vector<uint64_t> const& docs,
-    std::vector<uint64_t> const& freqs)
-{
+    std::vector<uint64_t> const& freqs
+) {
     typename PostingList::document_enumerator e(data, universe);
     REQUIRE(n == e.size());
     for (size_t i = 0; i < n; ++i, e.next()) {
@@ -49,16 +49,15 @@ void test_block_posting_list_ops(
 }
 
 void random_posting_data(
-    uint64_t n, uint64_t universe, std::vector<uint64_t>& docs, std::vector<uint64_t>& freqs)
-{
+    uint64_t n, uint64_t universe, std::vector<uint64_t>& docs, std::vector<uint64_t>& freqs
+) {
     docs = random_sequence(universe, n, true);
     freqs.resize(n);
     std::generate(freqs.begin(), freqs.end(), []() { return (rand() % 256) + 1; });
 }
 
 template <typename BlockCodec>
-void test_block_posting_list()
-{
+void test_block_posting_list() {
     using posting_list_type = pisa::block_posting_list<BlockCodec>;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
@@ -75,8 +74,7 @@ void test_block_posting_list()
 }
 
 template <typename BlockCodec>
-void test_block_posting_list_reordering()
-{
+void test_block_posting_list_reordering() {
     using posting_list_type = pisa::block_posting_list<BlockCodec>;
     uint64_t universe = 20000;
     for (size_t t = 0; t < 20; ++t) {
@@ -94,18 +92,17 @@ void test_block_posting_list_reordering()
         std::shuffle(
             blocks.begin() + 1,
             blocks.end(),
-            std::mt19937(std::random_device()()));  // leave first block in place
+            std::mt19937(std::random_device()())
+        );  // leave first block in place
 
         std::vector<uint8_t> reordered_data;
         posting_list_type::write_blocks(reordered_data, n, blocks);
 
-        test_block_posting_list_ops<posting_list_type>(
-            reordered_data.data(), n, universe, docs, freqs);
+        test_block_posting_list_ops<posting_list_type>(reordered_data.data(), n, universe, docs, freqs);
     }
 }
 
-TEST_CASE("block_posting_list")
-{
+TEST_CASE("block_posting_list") {
     test_block_posting_list<pisa::optpfor_block>();
     test_block_posting_list<pisa::varint_G8IU_block>();
     test_block_posting_list<pisa::streamvbyte_block>();
@@ -117,7 +114,6 @@ TEST_CASE("block_posting_list")
     test_block_posting_list<pisa::simple16_block>();
     test_block_posting_list<pisa::simdbp_block>();
 }
-TEST_CASE("block_posting_list_reordering")
-{
+TEST_CASE("block_posting_list_reordering") {
     test_block_posting_list_reordering<pisa::optpfor_block>();
 }

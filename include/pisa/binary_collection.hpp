@@ -24,8 +24,7 @@ class base_binary_collection {
     using pointer = typename std::
         conditional<std::is_same<Source, mio::mmap_source>::value, posting_type const, posting_type>::type*;
 
-    explicit base_binary_collection(const char* filename)
-    {
+    explicit base_binary_collection(const char* filename) {
         std::error_code error;
         m_file.map(filename, error);
         if (error) {
@@ -56,8 +55,7 @@ class base_binary_collection {
         pointer end() const { return m_end; }
         size_t size() const { return m_end - m_begin; }
 
-        posting_type back() const
-        {
+        posting_type back() const {
             assert(size());
             return *(m_end - 1);
         }
@@ -100,15 +98,13 @@ class base_binary_collection {
 
         auto const* operator->() const { return &m_cur_seq; }
 
-        base_iterator& operator++()
-        {
+        base_iterator& operator++() {
             m_pos = m_next_pos;
             read();
             return *this;
         }
 
-        bool operator==(base_iterator const& other) const
-        {
+        bool operator==(base_iterator const& other) const {
             assert(m_data == other.m_data);
             assert(m_data_size == other.m_data_size);
             return m_pos == other.m_pos;
@@ -120,13 +116,11 @@ class base_binary_collection {
         friend class base_binary_collection;
 
         base_iterator(base_binary_collection const* coll, size_t pos)
-            : m_data(coll->m_data), m_data_size(coll->m_data_size), m_pos(pos)
-        {
+            : m_data(coll->m_data), m_data_size(coll->m_data_size), m_pos(pos) {
             read();
         }
 
-        void read()
-        {
+        void read() {
             assert(m_pos <= m_data_size);
             if (m_pos == m_data_size) {
                 return;

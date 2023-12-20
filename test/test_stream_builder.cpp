@@ -17,8 +17,7 @@
 using namespace pisa;
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
-TEST_CASE("Stream builder for block index", "[index]")
-{
+TEST_CASE("Stream builder for block index", "[index]") {
     using index_type = block_simdbp_index;
 
     binary_freq_collection collection(PISA_SOURCE_DIR "/test/test_data/test_collection");
@@ -30,8 +29,7 @@ TEST_CASE("Stream builder for block index", "[index]")
     typename index_type::builder builder(collection.num_docs(), global_parameters{});
     for (auto const& plist: collection) {
         uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
-        builder.add_posting_list(
-            plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+        builder.add_posting_list(plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
     }
     index_type index;
     builder.build(index);
@@ -42,7 +40,8 @@ TEST_CASE("Stream builder for block index", "[index]")
     for (auto const& plist: collection) {
         uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
         sbuilder.add_posting_list(
-            plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+            plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum
+        );
     }
     sbuilder.build(actual_path.string());
 

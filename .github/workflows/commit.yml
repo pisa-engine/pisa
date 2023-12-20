@@ -100,7 +100,7 @@ jobs:
     - name: Install clang-format
       shell: bash
       run: |
-          sudo apt-get install -y clang-format-9
+          sudo apt-get install -y clang-format
 
     - name: Set up Python
       uses: actions/setup-python@v1
@@ -112,7 +112,7 @@ jobs:
       run: |
         wget https://raw.githubusercontent.com/Sarcasm/run-clang-format/master/run-clang-format.py
         python run-clang-format.py \
-            --clang-format-executable clang-format-9 \
+            --clang-format-executable clang-format \
             -r src/**/*.cpp include/pisa/**/*.hpp tools/*.cpp tools/*.hpp test/*.cpp
 
   headers:

@@ -16,18 +16,16 @@ limitations under the License. */
 
 #ifdef PISA_ENABLE_CONCEPTS
 
-#include <concepts>
+    #include <concepts>
 
-#define PISA_REQUIRES(x) \
-    requires (x)
+    #define PISA_REQUIRES(x) requires(x)
 
-#define PISA_ASSERT_CONCEPT(x) \
-    static_assert(x)
+    #define PISA_ASSERT_CONCEPT(x) static_assert(x)
 
 #else
 
-#define PISA_REQUIRES(x) /**/
+    #define PISA_REQUIRES(x) /**/
 
-#define PISA_ASSERT_CONCEPT(x) /**/
+    #define PISA_ASSERT_CONCEPT(x) /**/
 
 #endif

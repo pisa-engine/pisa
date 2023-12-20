@@ -19,8 +19,7 @@
 #include "temporary_directory.hpp"
 
 template <typename DocsSequence, typename FreqsSequence>
-void test_freq_index()
-{
+void test_freq_index() {
     pisa::TemporaryDirectory tmpdir;
     auto idx_path = (tmpdir.path() / "coll.bin").string();
 
@@ -63,8 +62,7 @@ void test_freq_index()
     }
 }
 
-TEST_CASE("freq_index")
-{
+TEST_CASE("freq_index") {
     using pisa::indexed_sequence;
     using pisa::partitioned_sequence;
     using pisa::positive_sequence;

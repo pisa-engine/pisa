@@ -11,8 +11,7 @@ TextFilter& TextFilter::operator=(TextFilter const&) = default;
 TextFilter& TextFilter::operator=(TextFilter&&) = default;
 TextFilter::~TextFilter() = default;
 
-[[nodiscard]] auto cleantext(GumboNode* node) -> std::string
-{
+[[nodiscard]] auto cleantext(GumboNode* node) -> std::string {
     if (node->type == GUMBO_NODE_TEXT) {
         return std::string(node->v.text.text);
     }
@@ -32,8 +31,7 @@ TextFilter::~TextFilter() = default;
     return std::string();
 }
 
-auto StripHtmlFilter::filter(std::string_view input) -> std::string
-{
+auto StripHtmlFilter::filter(std::string_view input) -> std::string {
     GumboOptions options = kGumboDefaultOptions;
     options.max_errors = 1000;
     GumboOutput* output = gumbo_parse_with_options(&options, input.data(), input.size());

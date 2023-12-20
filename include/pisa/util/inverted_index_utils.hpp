@@ -12,21 +12,18 @@
 namespace pisa {
 
 template <typename T>
-std::ostream& write_sequence(std::ostream& os, gsl::span<T> sequence)
-{
+std::ostream& write_sequence(std::ostream& os, gsl::span<T> sequence) {
     auto length = static_cast<uint32_t>(sequence.size());
     os.write(reinterpret_cast<const char*>(&length), sizeof(length));
     os.write(reinterpret_cast<const char*>(sequence.data()), length * sizeof(T));
     return os;
 }
 
-inline void emit(std::ostream& os, const uint32_t* vals, size_t n)
-{
+inline void emit(std::ostream& os, const uint32_t* vals, size_t n) {
     os.write(reinterpret_cast<const char*>(vals), sizeof(*vals) * n);
 }
 
-inline void emit(std::ostream& os, uint32_t val)
-{
+inline void emit(std::ostream& os, uint32_t val) {
     emit(os, &val, 1);
 }
 
@@ -36,14 +33,15 @@ void sample_inverted_index(
     std::string const& input_basename,
     std::string const& output_basename,
     SampleFn&& sample_fn,
-    std::unordered_set<size_t>& terms_to_drop)
-{
+    std::unordered_set<size_t>& terms_to_drop
+) {
     binary_freq_collection input(input_basename.c_str());
 
     std::filesystem::copy_file(
         fmt::format("{}.sizes", input_basename),
         fmt::format("{}.sizes", output_basename),
-        std::filesystem::copy_options::overwrite_existing);
+        std::filesystem::copy_options::overwrite_existing
+    );
 
     std::ofstream dos(output_basename + ".docs");
     std::ofstream fos(output_basename + ".freqs");
@@ -80,8 +78,8 @@ void sample_inverted_index(
 inline void reorder_inverted_index(
     const std::string& input_basename,
     const std::string& output_basename,
-    const std::vector<uint32_t>& mapping)
-{
+    const std::vector<uint32_t>& mapping
+) {
     std::ofstream output_mapping(output_basename + ".mapping");
     emit(output_mapping, mapping.data(), mapping.size());
 
@@ -107,7 +105,8 @@ inline void reorder_inverted_index(
 
     std::vector<std::pair<uint32_t, uint32_t>> pl;
     pisa::progress reorder_progress(
-        "Reorder inverted index", std::distance(input.begin(), input.end()));
+        "Reorder inverted index", std::distance(input.begin(), input.end())
+    );
 
     for (const auto& seq: input) {
         for (size_t i = 0; i < seq.docs.size(); ++i) {

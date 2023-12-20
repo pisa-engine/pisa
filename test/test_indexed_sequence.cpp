@@ -7,8 +7,7 @@
 #include <cstdlib>
 #include <vector>
 
-TEST_CASE("indexed_sequence")
-{
+TEST_CASE("indexed_sequence") {
     pisa::global_parameters params;
 
     std::vector<double> avg_gaps = {1.1, 1.9, 2.5, 3, 4, 5, 10};

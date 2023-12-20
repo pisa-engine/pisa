@@ -9,8 +9,7 @@
 namespace pisa {
 
 template <typename InputCollection, typename Collection>
-void verify_collection(InputCollection const& input, const char* filename)
-{
+void verify_collection(InputCollection const& input, const char* filename) {
     Collection coll;
     auto source = MemorySource::mapped_file(std::filesystem::path(filename));
     pisa::mapper::map(coll, source.data());

@@ -17,8 +17,7 @@ class aol_reader {
   public:
     explicit aol_reader(std::istream& is) : m_is(is) {}
 
-    std::optional<std::string> next_query()
-    {
+    std::optional<std::string> next_query() {
         m_is >> std::ws;
         while (not m_is.eof()) {
             std::string line;

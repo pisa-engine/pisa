@@ -22,8 +22,7 @@ struct pl2: public index_scorer<Wand> {
 
     pl2(const Wand& wdata, const float c) : index_scorer<Wand>(wdata), m_c(c) {}
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
-    {
+    term_scorer_t term_scorer(uint64_t term_id) const override {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float tfn =
                 freq * std::log2(1.F + (m_c * this->m_wdata.avg_len()) / this->m_wdata.doc_len(doc));

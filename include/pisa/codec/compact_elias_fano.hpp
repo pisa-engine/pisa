@@ -12,8 +12,7 @@
 
 namespace pisa {
 
-[[nodiscard]] constexpr auto positive(std::uint64_t n) -> std::uint64_t
-{
+[[nodiscard]] constexpr auto positive(std::uint64_t n) -> std::uint64_t {
     if (n == 0) {
         throw std::logic_error("argument must be positive");
     }
@@ -40,8 +39,7 @@ struct compact_elias_fano {
               pointers1_offset(pointers0_offset + pointers0 * pointer_size),
               higher_bits_offset(pointers1_offset + pointers1 * pointer_size),
               lower_bits_offset(higher_bits_offset + higher_bits_length),
-              end(lower_bits_offset + n * lower_bits)
-        {}
+              end(lower_bits_offset + n * lower_bits) {}
 
         uint64_t universe;
         uint64_t n;
@@ -63,8 +61,7 @@ struct compact_elias_fano {
     };
 
     static PISA_FLATTEN_FUNC uint64_t
-    bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
-    {
+    bitsize(global_parameters const& params, uint64_t universe, uint64_t n) {
         return offsets(0, universe, n, params).end;
     }
 
@@ -74,8 +71,8 @@ struct compact_elias_fano {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         uint64_t base_offset = bvb.size();
         offsets of(base_offset, universe, n, params);
         // initialize all the bits to 0
@@ -151,12 +148,14 @@ struct compact_elias_fano {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-            : m_bv(&bv), m_of(offset, universe, n, params), m_position(size()), m_value(m_of.universe)
-        {}
+            global_parameters const& params
+        )
+            : m_bv(&bv),
+              m_of(offset, universe, n, params),
+              m_position(size()),
+              m_value(m_of.universe) {}
 
-        value_type move(uint64_t position)
-        {
+        value_type move(uint64_t position) {
             assert(position <= m_of.n);
 
             if (position == m_position) {
@@ -185,8 +184,7 @@ struct compact_elias_fano {
             return slow_move(position);
         }
 
-        value_type next_geq(uint64_t lower_bound)
-        {
+        value_type next_geq(uint64_t lower_bound) {
             if (lower_bound == m_value) {
                 return value();
             }
@@ -218,8 +216,7 @@ struct compact_elias_fano {
 
         uint64_t size() const { return m_of.n; }
 
-        value_type next()
-        {
+        value_type next() {
             m_position += 1;
             assert(m_position <= size());
 
@@ -231,8 +228,7 @@ struct compact_elias_fano {
             return value();
         }
 
-        uint64_t prev_value() const
-        {
+        uint64_t prev_value() const {
             if (m_position == 0) {
                 return 0;
             }
@@ -256,8 +252,7 @@ struct compact_elias_fano {
         inline value_type value() const { return value_type(m_position, m_value); }
 
       private:
-        value_type PISA_NOINLINE slow_move(uint64_t position)
-        {
+        value_type PISA_NOINLINE slow_move(uint64_t position) {
             if (PISA_UNLIKELY(position == size())) {
                 m_position = position;
                 m_value = m_of.universe;
@@ -283,8 +278,7 @@ struct compact_elias_fano {
             return value();
         }
 
-        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
-        {
+        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound) {
             if (PISA_UNLIKELY(lower_bound >= m_of.universe)) {
                 return move(size());
             }
@@ -330,14 +324,12 @@ struct compact_elias_fano {
 
         static const uint64_t linear_scan_threshold = 8;
 
-        inline uint64_t read_low()
-        {
+        inline uint64_t read_low() {
             return m_bv->get_word56(m_of.lower_bits_offset + m_position * m_of.lower_bits)
                 & m_of.mask;
         }
 
-        inline uint64_t read_next()
-        {
+        inline uint64_t read_next() {
             assert(m_position < size());
             uint64_t high = m_high_enumerator.next() - m_of.higher_bits_offset;
             return ((high - m_position - 1) << m_of.lower_bits) | read_low();
@@ -351,16 +343,14 @@ struct compact_elias_fano {
                   lower_bits(e.m_of.lower_bits),
                   lower_base(e.m_of.lower_bits_offset + position * lower_bits),
                   mask(e.m_of.mask),
-                  bv(*e.m_bv)
-            {}
+                  bv(*e.m_bv) {}
             next_reader(next_reader const&) = delete;
             next_reader(next_reader&&) = delete;
             next_reader& operator=(next_reader const&) = delete;
             next_reader& operator=(next_reader&&) = delete;
             ~next_reader() { e.m_high_enumerator = high_enumerator; }
 
-            uint64_t operator()()
-            {
+            uint64_t operator()() {
                 uint64_t high = high_enumerator.next() - high_base;
                 uint64_t low = bv.get_word56(lower_base) & mask;
                 high_base += 1;
@@ -374,8 +364,7 @@ struct compact_elias_fano {
             bit_vector const& bv;
         };
 
-        inline uint64_t pointer(uint64_t offset, uint64_t i) const
-        {
+        inline uint64_t pointer(uint64_t offset, uint64_t i) const {
             if (i == 0) {
                 return 0;
             }

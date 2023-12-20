@@ -13,8 +13,7 @@ class block_profiler {
     block_profiler(block_profiler&&) = delete;
     block_profiler operator=(block_profiler const&) = delete;
     block_profiler operator=(block_profiler&&) = delete;
-    ~block_profiler()
-    {
+    ~block_profiler() {
         std::lock_guard<std::mutex> lock(m_mutex);
         for (auto const& it: m_block_freqs) {
             delete[] it.second.second;
@@ -23,14 +22,12 @@ class block_profiler {
 
     using counter_type = std::atomic_uint_fast32_t;
 
-    static block_profiler& get()
-    {
+    static block_profiler& get() {
         static block_profiler instance;
         return instance;
     }
 
-    static counter_type* open_list(uint32_t term_id, uint32_t blocks)
-    {
+    static counter_type* open_list(uint32_t term_id, uint32_t blocks) {
         block_profiler& instance = get();
         std::lock_guard<std::mutex> lock(instance.m_mutex);
         auto& v = instance.m_block_freqs[term_id];
@@ -42,8 +39,7 @@ class block_profiler {
         return v.second;
     }
 
-    static void dump(std::ostream& os)
-    {
+    static void dump(std::ostream& os) {
         block_profiler& instance = get();
         std::lock_guard<std::mutex> lock(instance.m_mutex);
 

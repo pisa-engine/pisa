@@ -7,8 +7,7 @@
 
 #include "mappable/mapper.hpp"
 
-TEST_CASE("basic_map")
-{
+TEST_CASE("basic_map") {
     pisa::mapper::mappable_vector<int> vec;
     REQUIRE(vec.size() == 0U);
 
@@ -36,16 +35,14 @@ class complex_struct {
   public:
     complex_struct() : m_a(0) {}
 
-    void init()
-    {
+    void init() {
         m_a = 42;
         uint32_t b[] = {1, 2};
         m_b.assign(b);
     }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_a, "m_a")(m_b, "m_b");
     }
 
@@ -53,8 +50,7 @@ class complex_struct {
     pisa::mapper::mappable_vector<uint32_t> m_b;
 };
 
-TEST_CASE("complex_struct_map")
-{
+TEST_CASE("complex_struct_map") {
     complex_struct s;
     s.init();
     pisa::mapper::freeze(s, "temp.bin");

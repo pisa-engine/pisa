@@ -13,19 +13,16 @@ class bitvector_collection {
 
     class builder {
       public:
-        explicit builder(global_parameters const& params) : m_params(params)
-        {
+        explicit builder(global_parameters const& params) : m_params(params) {
             m_endpoints.push_back(0);
         }
 
-        void append(bit_vector_builder& bvb)
-        {
+        void append(bit_vector_builder& bvb) {
             m_bitvectors.append(bvb);
             m_endpoints.push_back(m_bitvectors.size());
         }
 
-        void build(bitvector_collection& sq)
-        {
+        void build(bitvector_collection& sq) {
             sq.m_size = m_endpoints.size() - 1;
             // padding is necessary to not read after buffer
             m_bitvectors.append_bits(0, 64);
@@ -33,7 +30,8 @@ class bitvector_collection {
 
             bit_vector_builder bvb;
             compact_elias_fano::write(
-                bvb, m_endpoints.begin(), m_bitvectors.size(), sq.m_size, m_params);
+                bvb, m_endpoints.begin(), m_bitvectors.size(), sq.m_size, m_params
+            );
             // padding is necessary to not read after buffer
             bvb.append_bits(0, 64);
             bit_vector(&bvb).swap(sq.m_endpoints);
@@ -49,8 +47,7 @@ class bitvector_collection {
 
     bit_vector const& bits() const { return m_bitvectors; }
 
-    bit_vector::enumerator get(global_parameters const& params, size_t i) const
-    {
+    bit_vector::enumerator get(global_parameters const& params, size_t i) const {
         assert(i < size());
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_bitvectors.size(), m_size, params);
 
@@ -58,16 +55,14 @@ class bitvector_collection {
         return bit_vector::enumerator(m_bitvectors, endpoint);
     }
 
-    void swap(bitvector_collection& other)
-    {
+    void swap(bitvector_collection& other) {
         std::swap(m_size, other.m_size);
         m_endpoints.swap(other.m_endpoints);
         m_bitvectors.swap(other.m_bitvectors);
     }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_size, "m_size")(m_endpoints, "m_endpoints")(m_bitvectors, "m_bitvectors");
     }
 

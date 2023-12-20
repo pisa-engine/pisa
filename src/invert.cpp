@@ -13,12 +13,13 @@
 #include "pisa/util/inverted_index_utils.hpp"
 
 template <typename T>
-std::vector<T> concatenate(std::vector<std::vector<T>> const& containers)
-{
+std::vector<T> concatenate(std::vector<std::vector<T>> const& containers) {
     auto full_size = std::accumulate(
-        containers.begin(), containers.end(), 0, [](auto const& acc, auto const& container) {
-            return acc + container.size();
-        });
+        containers.begin(),
+        containers.end(),
+        0,
+        [](auto const& acc, auto const& container) { return acc + container.size(); }
+    );
     std::vector<T> vec(full_size);
     auto next_begin = std::begin(vec);
     for (auto const& container: containers) {
@@ -29,8 +30,7 @@ std::vector<T> concatenate(std::vector<std::vector<T>> const& containers)
 }
 
 template <typename T>
-std::istream& read_sequence(std::istream& is, std::vector<T>& out)
-{
+std::istream& read_sequence(std::istream& is, std::vector<T>& out) {
     uint32_t length;
     is.read(reinterpret_cast<char*>(&length), sizeof(length));
     auto size = out.size();
@@ -41,8 +41,7 @@ std::istream& read_sequence(std::istream& is, std::vector<T>& out)
 
 namespace pisa { namespace invert {
 
-    auto map_to_postings(ForwardIndexSlice batch) -> std::vector<Posting>
-    {
+    auto map_to_postings(ForwardIndexSlice batch) -> std::vector<Posting> {
         auto docid = batch.document_ids.begin();
         std::vector<std::pair<Term_Id, Document_Id>> postings;
         for (auto const& document: batch.documents) {
@@ -58,8 +57,8 @@ namespace pisa { namespace invert {
         std::vector<Document_Id>& lower_doc,
         std::vector<Frequency>& lower_freq,
         std::vector<Document_Id>& higher_doc,
-        std::vector<Frequency>& higher_freq)
-    {
+        std::vector<Frequency>& higher_freq
+    ) {
         if (lower_doc.back() == higher_doc.front()) {
             lower_freq.back() += higher_freq.front();
             lower_doc.insert(lower_doc.end(), std::next(higher_doc.begin()), higher_doc.end());
@@ -71,15 +70,15 @@ namespace pisa { namespace invert {
     }
 
     auto invert_range(DocumentRange documents, Document_Id first_document_id, size_t threads)
-        -> Inverted_Index
-    {
+        -> Inverted_Index {
         std::vector<uint32_t> document_sizes(documents.size());
         pisa::transform(
             pisa::execution::par_unseq,
             documents.begin(),
             documents.end(),
             document_sizes.begin(),
-            [](auto const& terms) { return terms.size(); });
+            [](auto const& terms) { return terms.size(); }
+        );
         gsl::index batch_size = (documents.size() + threads - 1) / threads;
         std::vector<ForwardIndexSlice> batches;
         for (gsl::index first_idx_in_batch = 0; first_idx_in_batch < documents.size();
@@ -90,16 +89,14 @@ namespace pisa { namespace invert {
             auto current_batch_size = last_idx_in_batch - first_idx_in_batch;
             batches.push_back(ForwardIndexSlice{
                 documents.subspan(first_idx_in_batch, current_batch_size),
-                ranges::views::iota(first_document_in_batch, last_document_in_batch)});
+                ranges::views::iota(first_document_in_batch, last_document_in_batch)
+            });
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
 
         pisa::transform(
-            pisa::execution::par_unseq,
-            batches.begin(),
-            batches.end(),
-            std::begin(posting_vectors),
-            map_to_postings);
+            pisa::execution::par_unseq, batches.begin(), batches.end(), std::begin(posting_vectors), map_to_postings
+        );
 
         auto postings = concatenate(posting_vectors);
         posting_vectors.clear();
@@ -114,8 +111,7 @@ namespace pisa { namespace invert {
     }
 
     void
-    write(std::string const& basename, invert::Inverted_Index const& index, std::uint32_t term_count)
-    {
+    write(std::string const& basename, invert::Inverted_Index const& index, std::uint32_t term_count) {
         std::ofstream dstream(basename + ".docs");
         std::ofstream fstream(basename + ".freqs");
         std::ofstream sstream(basename + ".sizes");
@@ -136,10 +132,8 @@ namespace pisa { namespace invert {
     }
 
     [[nodiscard]] auto build_batches(
-        std::string const& input_basename,
-        std::string const& output_basename,
-        InvertParams const& params) -> uint32_t
-    {
+        std::string const& input_basename, std::string const& output_basename, InvertParams const& params
+    ) -> uint32_t {
         uint32_t batch = 0;
         binary_collection coll(input_basename.c_str());
         auto doc_iter = ++coll.begin();
@@ -150,10 +144,12 @@ namespace pisa { namespace invert {
                 auto document_sequence = *doc_iter;
                 documents.emplace_back(
                     reinterpret_cast<Term_Id const*>(document_sequence.begin()),
-                    document_sequence.size());
+                    document_sequence.size()
+                );
             }
             spdlog::info(
-                "Inverting [{}, {})", documents_processed, documents_processed + documents.size());
+                "Inverting [{}, {})", documents_processed, documents_processed + documents.size()
+            );
             auto index =
                 invert_range(documents, Document_Id(documents_processed), params.num_threads);
             write(fmt::format("{}.batch.{}", output_basename, batch), index, *params.term_count);
@@ -163,8 +159,7 @@ namespace pisa { namespace invert {
         return batch;
     }
 
-    void merge_batches(std::string const& output_basename, uint32_t batch_count, uint32_t term_count)
-    {
+    void merge_batches(std::string const& output_basename, uint32_t batch_count, uint32_t term_count) {
         std::vector<binary_collection> doc_collections;
         std::vector<binary_collection> freq_collections;
         std::vector<uint32_t> document_sizes;
@@ -186,12 +181,14 @@ namespace pisa { namespace invert {
             doc_collections.begin(),
             doc_collections.end(),
             std::back_inserter(doc_iterators),
-            [](auto const& coll) { return ++coll.begin(); });
+            [](auto const& coll) { return ++coll.begin(); }
+        );
         std::transform(
             freq_collections.begin(),
             freq_collections.end(),
             std::back_inserter(freq_iterators),
-            [](auto const& coll) { return coll.begin(); });
+            [](auto const& coll) { return coll.begin(); }
+        );
 
         std::ofstream dos(output_basename + ".docs");
         std::ofstream fos(output_basename + ".freqs");
@@ -217,7 +214,8 @@ namespace pisa { namespace invert {
                     "but are {} and {} (term {})",
                     dlist.size(),
                     flist.size(),
-                    term_id);
+                    term_id
+                );
                 spdlog::error(msg);
                 throw std::runtime_error(msg);
             }
@@ -237,8 +235,8 @@ namespace pisa { namespace invert {
     }
 
     void invert_forward_index(
-        std::string const& input_basename, std::string const& output_basename, InvertParams params)
-    {
+        std::string const& input_basename, std::string const& output_basename, InvertParams params
+    ) {
         if (not params.term_count) {
             auto source = MemorySource::mapped_file(fmt::format("{}.termlex", input_basename));
             auto terms = Payload_Vector<>::from(source);
@@ -260,14 +258,13 @@ namespace pisa { namespace invert {
 
     Inverted_Index::Inverted_Index(Inverted_Index&, tbb::split) {}
     Inverted_Index::Inverted_Index(
-        Documents documents, Frequencies frequencies, std::vector<std::uint32_t> document_sizes)
+        Documents documents, Frequencies frequencies, std::vector<std::uint32_t> document_sizes
+    )
         : documents(std::move(documents)),
           frequencies(std::move(frequencies)),
-          document_sizes(std::move(document_sizes))
-    {}
+          document_sizes(std::move(document_sizes)) {}
 
-    void Inverted_Index::operator()(tbb::blocked_range<PostingIterator> const& r)
-    {
+    void Inverted_Index::operator()(tbb::blocked_range<PostingIterator> const& r) {
         if (auto first = r.begin(); first != r.end()) {
             if (auto current_term = first->first; not documents[current_term].empty()) {
                 auto current_doc = documents[current_term].back();
@@ -292,10 +289,10 @@ namespace pisa { namespace invert {
         }
     }
 
-    void Inverted_Index::join(Inverted_Index& rhs)
-    {
+    void Inverted_Index::join(Inverted_Index& rhs) {
         document_sizes.insert(
-            document_sizes.end(), rhs.document_sizes.begin(), rhs.document_sizes.end());
+            document_sizes.end(), rhs.document_sizes.begin(), rhs.document_sizes.end()
+        );
         for (auto&& [term_id, document_ids]: rhs.documents) {
             if (auto pos = documents.find(term_id); pos == documents.end()) {
                 std::swap(documents[term_id], document_ids);

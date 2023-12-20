@@ -32,8 +32,7 @@ namespace bp {
         ThreadLocalDegrees right_degrees;
     };
 
-    PISA_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2)
-    {
+    PISA_ALWAYSINLINE double expb(double logn1, double logn2, size_t deg1, size_t deg2) {
         __m128 _deg = _mm_cvtepi32_ps(_mm_set_epi32(deg1, deg1, deg2, deg2));
         __m128 _log = _mm_set_ps(logn1, log2(deg1 + 1), logn2, log2(deg2 + 1));
         __m128 _result = _mm_mul_ps(_deg, _log);
@@ -44,8 +43,7 @@ namespace bp {
 
     template <typename ThreadLocalContainer>
     [[nodiscard]] PISA_ALWAYSINLINE auto&
-    clear_or_init(ThreadLocalContainer&& container, std::size_t size)
-    {
+    clear_or_init(ThreadLocalContainer&& container, std::size_t size) {
         bool exists = false;
         auto& ref = container.local(exists);
         if (exists) {
@@ -70,39 +68,37 @@ class document_range {
         Iterator first,
         Iterator last,
         std::reference_wrapper<const forward_index> fwdidx,
-        std::reference_wrapper<std::vector<double>> gains)
-        : m_first(first), m_last(last), m_fwdidx(fwdidx), m_gains(gains)
-    {}
+        std::reference_wrapper<std::vector<double>> gains
+    )
+        : m_first(first), m_last(last), m_fwdidx(fwdidx), m_gains(gains) {}
 
     Iterator begin() { return m_first; }
     Iterator end() { return m_last; }
     std::ptrdiff_t size() const { return std::distance(m_first, m_last); }
 
-    PISA_ALWAYSINLINE document_partition<Iterator> split() const
-    {
+    PISA_ALWAYSINLINE document_partition<Iterator> split() const {
         Iterator mid = std::next(m_first, size() / 2);
-        return {document_range(m_first, mid, m_fwdidx, m_gains),
-                document_range(mid, m_last, m_fwdidx, m_gains),
-                term_count()};
+        return {
+            document_range(m_first, mid, m_fwdidx, m_gains),
+            document_range(mid, m_last, m_fwdidx, m_gains),
+            term_count()
+        };
     }
 
-    PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const
-    {
+    PISA_ALWAYSINLINE document_range operator()(std::ptrdiff_t left, std::ptrdiff_t right) const {
         assert(left < right);
         assert(right <= size());
         return document_range(std::next(m_first, left), std::next(m_first, right), m_fwdidx, m_gains);
     }
 
     std::size_t term_count() const { return m_fwdidx.get().term_count(); }
-    std::vector<uint32_t> terms(value_type document) const
-    {
+    std::vector<uint32_t> terms(value_type document) const {
         return m_fwdidx.get().terms(document);
     }
     double gain(value_type document) const { return m_gains.get()[document]; }
     double& gain(value_type document) { return m_gains.get()[document]; }
 
-    auto by_gain()
-    {
+    auto by_gain() {
         return [this](const value_type& lhs, const value_type& rhs) {
             return m_gains.get()[lhs] > m_gains.get()[rhs];
         };
@@ -131,14 +127,14 @@ struct computation_node {
     document_partition<Iterator> partition;
     bool cache;
 
-    static computation_node from_stream(std::istream& is, const document_range<Iterator>& range)
-    {
+    static computation_node from_stream(std::istream& is, const document_range<Iterator>& range) {
         int level, iteration_count;
         std::ptrdiff_t left_first, right_first, left_last, right_last;
         bool cache;
         is >> level >> iteration_count >> left_first >> left_last >> right_first >> right_last;
         document_partition<Iterator> partition{
-            range(left_first, left_last), range(right_first, right_last), range.term_count()};
+            range(left_first, left_last), range(right_first, right_last), range.term_count()
+        };
         if (not(is >> std::noboolalpha >> cache)) {
             cache = partition.size() > 64;
         }
@@ -158,8 +154,7 @@ auto get_mapping = [](const auto& collection) {
 };
 
 template <class Iterator>
-void compute_degrees(document_range<Iterator>& range, single_init_vector<size_t>& deg_map)
-{
+void compute_degrees(document_range<Iterator>& range, single_init_vector<size_t>& deg_map) {
     for (const auto& document: range) {
         auto terms = range.terms(document);
         auto deg_map_inc = [&](const auto& t) { deg_map.set(t, deg_map[t] + 1); };
@@ -174,8 +169,8 @@ void compute_move_gains_caching(
     const std::ptrdiff_t to_n,
     const single_init_vector<size_t>& from_lex,
     const single_init_vector<size_t>& to_lex,
-    bp::ThreadLocal& thread_local_data)
-{
+    bp::ThreadLocal& thread_local_data
+) {
     const auto logn1 = log2(from_n);
     const auto logn2 = log2(to_n);
 
@@ -213,8 +208,8 @@ void compute_gains(
     document_partition<Iterator>& partition,
     const degree_map_pair& degrees,
     GainF gain_function,
-    bp::ThreadLocal& thread_local_data)
-{
+    bp::ThreadLocal& thread_local_data
+) {
     auto n1 = partition.left.size();
     auto n2 = partition.right.size();
     gain_function(partition.left, n1, n2, degrees.left, degrees.right, thread_local_data);
@@ -222,8 +217,7 @@ void compute_gains(
 }
 
 template <class Iterator>
-void swap(document_partition<Iterator>& partition, degree_map_pair& degrees)
-{
+void swap(document_partition<Iterator>& partition, degree_map_pair& degrees) {
     auto left = partition.left;
     auto right = partition.right;
     auto lit = left.begin();
@@ -256,8 +250,8 @@ void process_partition(
     document_partition<Iterator>& partition,
     GainF gain_function,
     bp::ThreadLocal& thread_local_data,
-    int iterations = 20)
-{
+    int iterations = 20
+) {
     auto& left_degree =
         bp::clear_or_init(thread_local_data.left_degrees, partition.left.term_count());
     auto& right_degree =
@@ -274,15 +268,18 @@ void process_partition(
                     pisa::execution::par_unseq,
                     partition.left.begin(),
                     partition.left.end(),
-                    partition.left.by_gain());
+                    partition.left.by_gain()
+                );
             },
             [&] {
                 pisa::sort(
                     pisa::execution::par_unseq,
                     partition.right.begin(),
                     partition.right.end(),
-                    partition.right.by_gain());
-            });
+                    partition.right.by_gain()
+                );
+            }
+        );
         swap(partition, degrees);
     }
 }
@@ -293,8 +290,8 @@ void recursive_graph_bisection(
     size_t depth,
     size_t cache_depth,
     progress& p,
-    std::shared_ptr<bp::ThreadLocal> thread_local_data = nullptr)
-{
+    std::shared_ptr<bp::ThreadLocal> thread_local_data = nullptr
+) {
     if (thread_local_data == nullptr) {
         thread_local_data = std::make_shared<bp::ThreadLocal>();
     }
@@ -311,13 +308,14 @@ void recursive_graph_bisection(
     if (depth > 1 && documents.size() > 2) {
         tbb::parallel_invoke(
             [&, thread_local_data] {
-                recursive_graph_bisection(
-                    partition.left, depth - 1, cache_depth, p, thread_local_data);
+                recursive_graph_bisection(partition.left, depth - 1, cache_depth, p, thread_local_data);
             },
             [&, thread_local_data] {
                 recursive_graph_bisection(
-                    partition.right, depth - 1, cache_depth, p, thread_local_data);
-            });
+                    partition.right, depth - 1, cache_depth, p, thread_local_data
+                );
+            }
+        );
     } else {
         std::sort(partition.left.begin(), partition.left.end());
         std::sort(partition.right.begin(), partition.right.end());
@@ -330,15 +328,15 @@ void recursive_graph_bisection(
 /// The caller must ensure that no range on the same level intersects with another.
 /// Failure to do so leads to undefined behavior.
 template <class Iterator>
-void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, progress& p)
-{
+void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, progress& p) {
     bp::ThreadLocal thread_local_data;
     std::sort(nodes.begin(), nodes.end());
     auto first = nodes.begin();
     auto end = nodes.end();
     while (first != end) {
-        auto last = std::find_if(
-            first, end, [&first](const auto& node) { return node.level > first->level; });
+        auto last = std::find_if(first, end, [&first](const auto& node) {
+            return node.level > first->level;
+        });
         bool last_level = last == end;
         tbb::task_group level_group;
         std::for_each(first, last, [&thread_local_data, &level_group, last_level, &p](auto& node) {
@@ -350,13 +348,15 @@ void recursive_graph_bisection(std::vector<computation_node<Iterator>> nodes, pr
                         node.partition,
                         compute_move_gains_caching<true, Iterator>,
                         thread_local_data,
-                        node.iteration_count);
+                        node.iteration_count
+                    );
                 } else {
                     process_partition(
                         node.partition,
                         compute_move_gains_caching<false, Iterator>,
                         thread_local_data,
-                        node.iteration_count);
+                        node.iteration_count
+                    );
                 }
                 if (last_level) {
                     std::sort(node.partition.left.begin(), node.partition.left.end());

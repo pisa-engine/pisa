@@ -12,8 +12,7 @@
 #include "temporary_directory.hpp"
 #include "util/inverted_index_utils.hpp"
 
-TEST_CASE("sample_inverted_index")
-{
+TEST_CASE("sample_inverted_index") {
     // given
     using pisa::binary_freq_collection;
     std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
@@ -31,7 +30,8 @@ TEST_CASE("sample_inverted_index")
             std::iota(sample.begin(), sample.end(), 0);
             return sample;
         },
-        terms_to_drop);
+        terms_to_drop
+    );
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -58,8 +58,7 @@ TEST_CASE("sample_inverted_index")
     }
 }
 
-TEST_CASE("sample_inverted_index_one_sample")
-{
+TEST_CASE("sample_inverted_index_one_sample") {
     // given
     using pisa::binary_freq_collection;
     std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
@@ -77,7 +76,8 @@ TEST_CASE("sample_inverted_index_one_sample")
             std::iota(sample.begin(), sample.end(), 0);
             return sample;
         },
-        terms_to_drop);
+        terms_to_drop
+    );
     auto sampled = binary_freq_collection(output.c_str());
 
     // then
@@ -106,8 +106,7 @@ TEST_CASE("sample_inverted_index_one_sample")
     }
 }
 
-TEST_CASE("sample_inverted_index_reverse")
-{
+TEST_CASE("sample_inverted_index_reverse") {
     // given
     using pisa::binary_freq_collection;
     std::string input(PISA_SOURCE_DIR "/test/test_data/test_collection");
@@ -129,7 +128,8 @@ TEST_CASE("sample_inverted_index_reverse")
             std::sort(sample.begin(), sample.end());
             return sample;
         },
-        terms_to_drop);
+        terms_to_drop
+    );
     auto sampled = binary_freq_collection(output.c_str());
 
     // then

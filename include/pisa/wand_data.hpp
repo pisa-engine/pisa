@@ -29,8 +29,7 @@ class wand_data {
     using wand_data_enumerator = typename block_wand_type::enumerator;
 
     wand_data() = default;
-    explicit wand_data(MemorySource source) : m_source(std::move(source))
-    {
+    explicit wand_data(MemorySource source) : m_source(std::move(source)) {
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
@@ -42,9 +41,9 @@ class wand_data {
         const ScorerParams& scorer_params,
         BlockSize block_size,
         std::optional<Size> quantization_bits,
-        std::unordered_set<size_t> const& terms_to_drop)
-        : m_num_docs(num_docs)
-    {
+        std::unordered_set<size_t> const& terms_to_drop
+    )
+        : m_num_docs(num_docs) {
         std::vector<uint32_t> doc_lens(num_docs);
         std::vector<float> max_term_weight;
         std::vector<uint32_t> term_occurrence_counts;
@@ -95,7 +94,8 @@ class wand_data {
                     continue;
                 }
                 auto v = builder.add_sequence(
-                    seq, coll, doc_lens, m_avg_len, scorer->term_scorer(new_term_id), block_size);
+                    seq, coll, doc_lens, m_avg_len, scorer->term_scorer(new_term_id), block_size
+                );
                 max_term_weight.push_back(v);
                 m_index_max_term_weight = std::max(m_index_max_term_weight, v);
                 term_id += 1;
@@ -118,8 +118,7 @@ class wand_data {
 
     size_t doc_len(uint64_t doc_id) const { return m_doc_lens[doc_id]; }
 
-    size_t term_occurrence_count(uint64_t term_id) const
-    {
+    size_t term_occurrence_count(uint64_t term_id) const {
         return m_term_occurrence_counts[term_id];
     }
 
@@ -135,16 +134,14 @@ class wand_data {
 
     float max_term_weight(uint64_t list) const { return m_max_term_weight[list]; }
 
-    wand_data_enumerator getenum(size_t i) const
-    {
+    wand_data_enumerator getenum(size_t i) const {
         return m_block_wand.get_enum(i, index_max_term_weight());
     }
 
     const block_wand_type& get_block_wand() const { return m_block_wand; }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_block_wand, "m_block_wand")(m_doc_lens, "m_doc_lens")(
 
             m_term_occurrence_counts, "m_term_occurrence_counts")(
@@ -175,8 +172,8 @@ inline void create_wand_data(
     bool range,
     bool compress,
     std::optional<Size> quantization_bits,
-    std::unordered_set<size_t> const& dropped_term_ids)
-{
+    std::unordered_set<size_t> const& dropped_term_ids
+) {
     spdlog::info("Dropping {} terms", dropped_term_ids.size());
     binary_collection sizes_coll((input_basename + ".sizes").c_str());
     binary_freq_collection coll(input_basename.c_str());
@@ -189,7 +186,8 @@ inline void create_wand_data(
             scorer_params,
             block_size,
             quantization_bits,
-            dropped_term_ids);
+            dropped_term_ids
+        );
         mapper::freeze(wdata, output.c_str());
     } else if (range) {
         wand_data<wand_data_range<128, 1024>> wdata(
@@ -199,7 +197,8 @@ inline void create_wand_data(
             scorer_params,
             block_size,
             quantization_bits,
-            dropped_term_ids);
+            dropped_term_ids
+        );
         mapper::freeze(wdata, output.c_str());
     } else {
         wand_data<wand_data_raw> wdata(
@@ -209,7 +208,8 @@ inline void create_wand_data(
             scorer_params,
             block_size,
             quantization_bits,
-            dropped_term_ids);
+            dropped_term_ids
+        );
         mapper::freeze(wdata, output.c_str());
     }
 }

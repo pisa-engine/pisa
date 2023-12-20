@@ -21,8 +21,8 @@ void extract(
     std::string const& wand_data_path,
     std::vector<pisa::Query> const& queries,
     std::string const& separator,
-    bool print_query_id)
-{
+    bool print_query_id
+) {
     Wand wdata(MemorySource::mapped_file(wand_data_path));
     for (auto const& query: queries) {
         if (print_query_id and query.id) {
@@ -32,7 +32,8 @@ void extract(
             query.terms | boost::adaptors::transformed([&wdata](auto term_id) {
                 return std::to_string(wdata.max_term_weight(term_id));
             }),
-            separator);
+            separator
+        );
         std::cout << '\n';
     }
 }
@@ -41,8 +42,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
@@ -58,7 +58,8 @@ int main(int argc, char** argv)
 Extracts max-scores for query terms from an inverted index.
 
 The max-scores will be printed to the output separated by --sep,
-which is a tab by default.)"};
+which is a tab by default.)"
+        };
     app.add_flag("--quantized", quantized, "Quantized scores");
     CLI11_PARSE(app, argc, argv);
 

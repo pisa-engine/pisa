@@ -19,8 +19,7 @@
 
 using taily::Feature_Statistics;
 
-void write_documents(std::filesystem::path const& path)
-{
+void write_documents(std::filesystem::path const& path) {
     pisa::io::write_data(
         path.string(),
         gsl::span<std::byte const>(std::array<std::byte, 44>{
@@ -35,11 +34,11 @@ void write_documents(std::filesystem::path const& path)
             std::byte{4}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 1
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
             std::byte{5}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
-        }));
+        })
+    );
 }
 
-void write_frequencies(std::filesystem::path const& path)
-{
+void write_frequencies(std::filesystem::path const& path) {
     pisa::io::write_data(
         path.string(),
         gsl::span<std::byte const>(std::array<std::byte, 36>{
@@ -52,11 +51,11 @@ void write_frequencies(std::filesystem::path const& path)
             std::byte{5}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 1
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
             std::byte{4}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 2
-        }));
+        })
+    );
 }
 
-void write_sizes(std::filesystem::path const& path)
-{
+void write_sizes(std::filesystem::path const& path) {
     pisa::io::write_data(
         path.string(),
         gsl::span<std::byte const>(std::array<std::byte, 28>{
@@ -67,13 +66,12 @@ void write_sizes(std::filesystem::path const& path)
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
-        }));
+        })
+    );
 }
 
-TEST_CASE("Extract Taily feature stats", "[taily][unit]")
-{
-    GIVEN("Collection")
-    {
+TEST_CASE("Extract Taily feature stats", "[taily][unit]") {
+    GIVEN("Collection") {
         pisa::TemporaryDirectory tmpdir;
         write_documents(tmpdir.path() / "coll.docs");
         write_frequencies(tmpdir.path() / "coll.freqs");
@@ -89,18 +87,18 @@ TEST_CASE("Extract Taily feature stats", "[taily][unit]")
             false,
             false,
             pisa::Size(8),
-            {});
+            {}
+        );
 
         pisa::binary_freq_collection collection(collection_path.c_str());
         pisa::wand_data<pisa::wand_data_raw> wdata(pisa::MemorySource::mapped_file(wand_data_path));
 
-        WHEN("Extract feature stats")
-        {
+        WHEN("Extract feature stats") {
             auto stats = pisa::extract_feature_stats(
-                collection, pisa::scorer::from_params(ScorerParams("quantized"), wdata));
+                collection, pisa::scorer::from_params(ScorerParams("quantized"), wdata)
+            );
 
-            THEN("Correct stats")
-            {
+            THEN("Correct stats") {
                 REQUIRE(stats.size() == 3);
 
                 REQUIRE(stats[0].frequency == 2);
@@ -119,22 +117,20 @@ TEST_CASE("Extract Taily feature stats", "[taily][unit]")
     }
 }
 
-TEST_CASE("Write Taily feature stats", "[taily][unit]")
-{
+TEST_CASE("Write Taily feature stats", "[taily][unit]") {
     pisa::TemporaryDirectory tmpdir;
     auto stats_path = tmpdir.path() / "taily";
-    GIVEN("Feature statistics")
-    {
-        std::vector<Feature_Statistics> stats{Feature_Statistics{1.0, 2.0, 10},
-                                              Feature_Statistics{3.0, 4.0, 20},
-                                              Feature_Statistics{5.0, 6.0, 30}};
+    GIVEN("Feature statistics") {
+        std::vector<Feature_Statistics> stats{
+            Feature_Statistics{1.0, 2.0, 10},
+            Feature_Statistics{3.0, 4.0, 20},
+            Feature_Statistics{5.0, 6.0, 30}
+        };
 
-        WHEN("Stats written to a file")
-        {
+        WHEN("Stats written to a file") {
             pisa::write_feature_stats(stats, 10, stats_path.string());
 
-            THEN("Stats can be read back")
-            {
+            THEN("Stats can be read back") {
                 auto stats = pisa::TailyStats::from_mapped(stats_path.string());
                 REQUIRE(stats.num_documents() == 10);
                 REQUIRE(stats.num_terms() == 3);

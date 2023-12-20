@@ -6,8 +6,7 @@
 
 namespace pisa {
 
-auto term_transformer_builder(std::optional<std::string> const& type) -> TermTransformerBuilder
-{
+auto term_transformer_builder(std::optional<std::string> const& type) -> TermTransformerBuilder {
     if (not type) {
         return [] {
             return [](std::string&& term) -> std::string {
@@ -26,8 +25,8 @@ auto term_transformer_builder(std::optional<std::string> const& type) -> TermTra
     }
     if (*type == "krovetz") {
         return []() {
-            return [kstemmer = std::make_shared<stem::KrovetzStemmer>()](
-                       std::string&& term) mutable -> std::string {
+            return [kstemmer = std::make_shared<stem::KrovetzStemmer>()](std::string&& term
+                   ) mutable -> std::string {
                 boost::algorithm::to_lower(term);
                 return kstemmer->kstem_stemmer(term);
             };

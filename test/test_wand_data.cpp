@@ -16,8 +16,7 @@
 
 using namespace pisa;
 
-TEST_CASE("wand_data_range")
-{
+TEST_CASE("wand_data_range") {
     tbb::global_control c(oneapi::tbb::global_control::max_allowed_parallelism, 2);
     using WandTypeRange = wand_data_range<64, 1024>;
     using WandType = wand_data<WandTypeRange>;
@@ -34,12 +33,12 @@ TEST_CASE("wand_data_range")
         ScorerParams(scorer_name),
         BlockSize(FixedBlock(5)),
         std::nullopt,
-        dropped_term_ids);
+        dropped_term_ids
+    );
 
     auto scorer = scorer::from_params(ScorerParams(scorer_name), wdata_range);
 
-    SECTION("Precomputed block-max scores")
-    {
+    SECTION("Precomputed block-max scores") {
         size_t term_id = 0;
         for (auto const& seq: collection) {
             if (seq.docs.size() >= 1024) {
@@ -49,11 +48,11 @@ TEST_CASE("wand_data_range")
                 for (auto&& [docid, freq]: ranges::views::zip(seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     w.next_geq(docid);
-                    CHECKED_ELSE(w.score() >= score)
-                    {
+                    CHECKED_ELSE(w.score() >= score) {
                         FAIL(
                             "Term: " << term_id << " docid: " << docid
-                                     << ", block docid: " << w.docid());
+                                     << ", block docid: " << w.docid()
+                        );
                     }
                     REQUIRE(w.score() <= max);
                 }
@@ -67,13 +66,11 @@ TEST_CASE("wand_data_range")
     index_type::builder builder(collection.num_docs(), params);
     for (auto const& plist: collection) {
         uint64_t freqs_sum = std::accumulate(plist.freqs.begin(), plist.freqs.end(), uint64_t(0));
-        builder.add_posting_list(
-            plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
+        builder.add_posting_list(plist.docs.size(), plist.docs.begin(), plist.freqs.begin(), freqs_sum);
     }
     builder.build(index);
 
-    SECTION("Compute at run time")
-    {
+    SECTION("Compute at run time") {
         size_t term_id = 0;
         for (auto const& seq: collection) {
             auto list = index[term_id];
@@ -87,11 +84,11 @@ TEST_CASE("wand_data_range")
                      ranges::views::zip(ranges::views::iota(0), seq.docs, seq.freqs)) {
                     float score = s(docid, freq);
                     we.next_geq(docid);
-                    CHECKED_ELSE(we.score() >= score)
-                    {
+                    CHECKED_ELSE(we.score() >= score) {
                         FAIL(
                             "Term: " << term_id << " docid: " << docid << ", pos: " << pos
-                                     << ", block docid: " << we.docid());
+                                     << ", block docid: " << we.docid()
+                        );
                     }
                     REQUIRE(we.score() <= max);
                 }
@@ -100,8 +97,7 @@ TEST_CASE("wand_data_range")
         }
     }
 
-    SECTION("Live block computation")
-    {
+    SECTION("Live block computation") {
         size_t i = 0;
         std::vector<WandTypeRange::enumerator> enums;
         for (auto const& seq: collection) {

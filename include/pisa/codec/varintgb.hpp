@@ -14,8 +14,7 @@ namespace pisa {
 template <bool delta = false>
 class VarIntGB {
   public:
-    size_t encodeArray(const uint32_t* in, const size_t length, uint8_t* out)
-    {
+    size_t encodeArray(const uint32_t* in, const size_t length, uint8_t* out) {
         uint32_t prev = 0;  // for delta
         const uint8_t* const initbout = out;
 
@@ -144,8 +143,7 @@ class VarIntGB {
         return storageinbytes;
     }
 
-    size_t decodeArray(const uint8_t* in, const size_t n, uint32_t* out)
-    {
+    size_t decodeArray(const uint8_t* in, const size_t n, uint32_t* out) {
         uint32_t prev = 0;  // for delta
         const uint8_t* initin = in;
         uint32_t val;
@@ -179,8 +177,7 @@ class VarIntGB {
     }
 
   protected:
-    const uint8_t* decodeGroupVarInt(const uint8_t* in, uint32_t* out)
-    {
+    const uint8_t* decodeGroupVarInt(const uint8_t* in, uint32_t* out) {
         const uint32_t sel = *in++;
 
         if (sel == 0) {
@@ -205,8 +202,7 @@ class VarIntGB {
         return in;
     }
 
-    const uint8_t* decodeGroupVarIntDelta(const uint8_t* in, uint32_t* val, uint32_t* out)
-    {
+    const uint8_t* decodeGroupVarIntDelta(const uint8_t* in, uint32_t* val, uint32_t* out) {
         const uint32_t sel = *in++;
         if (sel == 0) {
             out[0] = (*val += static_cast<uint32_t>(in[0]));
@@ -238,8 +234,8 @@ class VarIntGB {
 struct varintgb_block {
     static const uint64_t block_size = 128;
 
-    static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
-    {
+    static void
+    encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out) {
         thread_local VarIntGB<false> varintgb_codec;
         assert(n <= block_size);
         if (n < block_size) {
@@ -251,8 +247,7 @@ struct varintgb_block {
         out.insert(out.end(), buf.data(), buf.data() + out_len);
     }
 
-    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
-    {
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) {
         thread_local VarIntGB<false> varintgb_codec;
         assert(n <= block_size);
         if (PISA_UNLIKELY(n < block_size)) {

@@ -31,8 +31,7 @@ using pisa::TailyStatsArgs;
 using pisa::TailyThresholds;
 using pisa::invert::InvertParams;
 
-void print_taily_scores(std::vector<double> const& scores, std::chrono::microseconds time)
-{
+void print_taily_scores(std::vector<double> const& scores, std::chrono::microseconds time) {
     std::cout << R"({"time":)" << time.count() << R"(,"scores":[)";
     if (!scores.empty()) {
         std::cout << scores.front();
@@ -43,24 +42,24 @@ void print_taily_scores(std::vector<double> const& scores, std::chrono::microsec
     std::cout << "]}\n";
 }
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     pisa::App<pisa::arg::LogLevel> app{"Executes commands for shards."};
-    auto* invert =
-        app.add_subcommand("invert", "Constructs an inverted index from a forward index.");
+    auto* invert = app.add_subcommand("invert", "Constructs an inverted index from a forward index.");
     auto* reorder = app.add_subcommand("reorder-docids", "Reorder document IDs.");
     auto* compress = app.add_subcommand("compress", "Compresses an inverted index");
     auto* wand = app.add_subcommand("wand-data", "Creates additional data for query processing.");
     auto* taily = app.add_subcommand(
-        "taily-stats", "Extracts Taily statistics from the index and stores it in a file.");
+        "taily-stats", "Extracts Taily statistics from the index and stores it in a file."
+    );
     auto* taily_rank = app.add_subcommand(
         "taily-score",
         "Computes Taily shard ranks for queries."
         " NOTE: as term IDs need to be resolved individually for each shard,"
-        " DO NOT provide already parsed and resolved queries (with IDs instead of terms).");
+        " DO NOT provide already parsed and resolved queries (with IDs instead of terms)."
+    );
     auto* taily_thresholds = app.add_subcommand("taily-thresholds", "Computes Taily thresholds.");
     InvertArgs invert_args(invert);
     ReorderDocuments reorder_args(reorder);
@@ -77,7 +76,8 @@ int main(int argc, char** argv)
     try {
         if (invert->parsed()) {
             tbb::global_control control(
-                tbb::global_control::max_allowed_parallelism, invert_args.threads() + 1);
+                tbb::global_control::max_allowed_parallelism, invert_args.threads() + 1
+            );
             spdlog::info("Number of worker threads: {}", invert_args.threads());
             Shard_Id shard_id{0};
 
@@ -89,7 +89,8 @@ int main(int argc, char** argv)
                 invert::invert_forward_index(
                     format_shard(invert_args.input_basename(), shard_id),
                     format_shard(invert_args.output_basename(), shard_id),
-                    params);
+                    params
+                );
                 shard_id += 1;
             }
         }
@@ -118,7 +119,8 @@ int main(int argc, char** argv)
                     shard_args.output(),
                     shard_args.scorer_params(),
                     shard_args.quantization_bits(),
-                    shard_args.check());
+                    shard_args.check()
+                );
             }
             return 0;
         }
@@ -136,7 +138,8 @@ int main(int argc, char** argv)
                     shard_args.range(),
                     shard_args.compress(),
                     shard_args.quantization_bits(),
-                    shard_args.dropped_term_ids());
+                    shard_args.dropped_term_ids()
+                );
             }
         }
         if (taily->parsed()) {
@@ -165,7 +168,8 @@ int main(int argc, char** argv)
                 taily_rank_args.queries(),
                 shard_queries,
                 taily_rank_args.k(),
-                print_taily_scores);
+                print_taily_scores
+            );
         }
         if (taily_thresholds->parsed()) {
             auto shards = resolve_shards(taily_thresholds_args.stats());

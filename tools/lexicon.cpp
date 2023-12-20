@@ -8,8 +8,7 @@
 
 using namespace pisa;
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     std::string text_file;
     std::string lexicon_file;
     std::size_t idx;
@@ -36,7 +35,8 @@ int main(int argc, char** argv)
         if (*build) {
             std::ifstream is(text_file);
             encode_payload_vector(
-                std::istream_iterator<io::Line>(is), std::istream_iterator<io::Line>())
+                std::istream_iterator<io::Line>(is), std::istream_iterator<io::Line>()
+            )
                 .to_file(lexicon_file);
             return 0;
         }

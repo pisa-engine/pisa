@@ -9,15 +9,15 @@
 
 #include "CLI/CLI.hpp"
 
-int main(int argc, char const* argv[])
-{
+int main(int argc, char const* argv[]) {
     std::string input_filename;
     std::string output_basename;
     std::string format;
     bool unique = false;
 
     pisa::App<pisa::arg::LogLevel> app{
-        "A tool for converting queries from several formats to PISA queries."};
+        "A tool for converting queries from several formats to PISA queries."
+    };
     app.add_option("-i,--input", input_filename, "TREC query input file")->required();
     app.add_option("-o,--output", output_basename, "Output basename")->required();
     app.add_option("-f,--format", format, "Input format")->required();

@@ -24,7 +24,8 @@ class LazyAccumulator {
     using reference = float&;
 
     static_assert(
-        std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>, "must be unsigned number");
+        std::is_integral_v<Descriptor> && std::is_unsigned_v<Descriptor>, "must be unsigned number"
+    );
     constexpr static auto descriptor_size_in_bits = sizeof(Descriptor) * 8;
     constexpr static auto counters_in_descriptor = descriptor_size_in_bits / counter_bit_size;
     constexpr static auto cycle = (1U << counter_bit_size);
@@ -34,8 +35,7 @@ class LazyAccumulator {
         Descriptor descriptor{};
         std::array<float, counters_in_descriptor> accumulators{};
 
-        [[nodiscard]] auto counter(int pos) const noexcept -> int
-        {
+        [[nodiscard]] auto counter(int pos) const noexcept -> int {
             if constexpr (counter_bit_size == 8) {  // NOLINT(readability-braces-around-statements)
                 return static_cast<int>(*(reinterpret_cast<uint8_t const*>(&descriptor) + pos));
             } else {
@@ -43,8 +43,7 @@ class LazyAccumulator {
             }
         }
 
-        void reset_counter(int pos, int counter)
-        {
+        void reset_counter(int pos, int counter) {
             if constexpr (counter_bit_size == 8) {  // NOLINT(readability-braces-around-statements)
                 *(reinterpret_cast<uint8_t*>(&descriptor) + pos) = static_cast<uint8_t>(counter);
             } else {
@@ -58,13 +57,11 @@ class LazyAccumulator {
 
   public:
     explicit LazyAccumulator(std::size_t size)
-        : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor)
-    {
+        : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor) {
         PISA_ASSERT_CONCEPT(PartialScoreAccumulator<decltype(*this)>);
     }
 
-    void reset()
-    {
+    void reset() {
         if (m_counter == 0) {
             auto first = reinterpret_cast<std::byte*>(&m_accumulators.front());
             auto last =
@@ -73,8 +70,7 @@ class LazyAccumulator {
         }
     }
 
-    void accumulate(std::size_t document, float score)
-    {
+    void accumulate(std::size_t document, float score) {
         auto const block = document / counters_in_descriptor;
         auto const pos_in_block = document % counters_in_descriptor;
         if (m_accumulators[block].counter(pos_in_block) != m_counter) {
@@ -83,8 +79,7 @@ class LazyAccumulator {
         m_accumulators[block].accumulators[pos_in_block] += score;
     }
 
-    void collect(topk_queue& topk)
-    {
+    void collect(topk_queue& topk) {
         uint64_t docid = 0U;
         for (auto const& block: m_accumulators) {
             int pos = 0;

@@ -4,8 +4,7 @@
 
 namespace pisa::parsing::html {
 
-[[nodiscard]] auto cleantext(GumboNode* node) -> std::string
-{
+[[nodiscard]] auto cleantext(GumboNode* node) -> std::string {
     if (node->type == GUMBO_NODE_TEXT) {
         return std::string(node->v.text.text);
     }
@@ -25,8 +24,7 @@ namespace pisa::parsing::html {
     return std::string();
 }
 
-[[nodiscard]] auto cleantext(std::string_view html) -> std::string
-{
+[[nodiscard]] auto cleantext(std::string_view html) -> std::string {
     GumboOptions options = kGumboDefaultOptions;
     options.max_errors = 1000;
     GumboOutput* output = gumbo_parse_with_options(&options, html.data(), html.size());

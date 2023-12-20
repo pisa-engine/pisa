@@ -9,8 +9,7 @@ namespace pisa {
 
 struct strict_elias_fano {
     static PISA_FLATTEN_FUNC uint64_t
-    bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
-    {
+    bitsize(global_parameters const& params, uint64_t universe, uint64_t n) {
         assert(universe >= n);
         return compact_elias_fano::bitsize(params, universe - n + 1, n);
     }
@@ -21,8 +20,8 @@ struct strict_elias_fano {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         uint64_t new_universe = universe - n + 1;
         using value_type = typename std::iterator_traits<Iterator>::value_type;
         auto new_begin = make_function_iterator(
@@ -31,7 +30,8 @@ struct strict_elias_fano {
                 ++state.first;
                 ++state.second;
             },
-            +[](std::pair<value_type, Iterator> const& state) { return *state.second - state.first; });
+            +[](std::pair<value_type, Iterator> const& state) { return *state.second - state.first; }
+        );
         compact_elias_fano::write(bvb, new_begin, new_universe, n, params);
     }
 
@@ -46,26 +46,23 @@ struct strict_elias_fano {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-            : m_ef_enum(bv, offset, universe - n + 1, n, params)
-        {}
+            global_parameters const& params
+        )
+            : m_ef_enum(bv, offset, universe - n + 1, n, params) {}
 
-        value_type move(uint64_t position)
-        {
+        value_type move(uint64_t position) {
             auto val = m_ef_enum.move(position);
             return value_type(val.first, val.second + val.first);
         }
 
-        value_type next()
-        {
+        value_type next() {
             auto val = m_ef_enum.next();
             return value_type(val.first, val.second + val.first);
         }
 
         uint64_t size() const { return m_ef_enum.size(); }
 
-        uint64_t prev_value() const
-        {
+        uint64_t prev_value() const {
             if (m_ef_enum.position() != 0U) {
                 return m_ef_enum.prev_value() + m_ef_enum.position() - 1;
             }

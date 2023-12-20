@@ -15,8 +15,7 @@
 #include <vector>
 
 template <typename BaseSequence>
-void test_sequence_collection()
-{
+void test_sequence_collection() {
     pisa::global_parameters params;
     uint64_t universe = 10000;
     using collection_type = pisa::sequence_collection<BaseSequence>;
@@ -49,8 +48,7 @@ void test_sequence_collection()
     }
 }
 
-TEST_CASE("sequence_collection")
-{
+TEST_CASE("sequence_collection") {
     test_sequence_collection<pisa::indexed_sequence>();
     test_sequence_collection<pisa::partitioned_sequence<>>();
     test_sequence_collection<pisa::uniform_partitioned_sequence<>>();

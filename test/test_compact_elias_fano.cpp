@@ -8,8 +8,7 @@
 #include <vector>
 
 struct sequence_initialization {
-    sequence_initialization()
-    {
+    sequence_initialization() {
         n = 100000;
         universe = n * 1024;
         seq = random_sequence(universe, n);
@@ -31,8 +30,7 @@ struct sequence_initialization {
     pisa::bit_vector bv;
 };
 
-TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_singleton")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_singleton") {
     // test singleton sequences
     std::vector<uint64_t> short_seq;
     short_seq.push_back(0);
@@ -41,8 +39,7 @@ TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_singleton")
     test_sequence(pisa::compact_elias_fano(), params, 2, short_seq);
 }
 
-TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction") {
     // test pointers and low-level values
     pisa::compact_elias_fano::offsets of(0, universe, seq.size(), params);
     uint64_t rank = 0;
@@ -71,14 +68,12 @@ TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_construction")
     }
 }
 
-TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_enumerator")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_enumerator") {
     pisa::compact_elias_fano::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
 }
 
-TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_weakly_monotone")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_elias_fano_weakly_monotone") {
     n = 100000;
     universe = n * 3;
     std::vector<uint64_t> seq = random_sequence(universe, n, false);

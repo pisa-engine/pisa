@@ -34,8 +34,7 @@ class Line: public std::string {
 [[nodiscard]] auto read_string_vector(std::string const& filename) -> std::vector<std::string>;
 
 template <typename Function>
-void for_each_line(std::istream& is, Function fn)
-{
+void for_each_line(std::istream& is, Function fn) {
     std::string line;
     while (std::getline(is, line)) {
         fn(line);

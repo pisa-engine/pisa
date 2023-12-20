@@ -40,8 +40,7 @@ namespace arg {
 
     template <WandMode Mode = WandMode::Required>
     struct WandData {
-        explicit WandData(CLI::App* app)
-        {
+        explicit WandData(CLI::App* app) {
             auto* wand = app->add_option("-w,--wand", m_wand_data_path, "WAND data filename");
             app->add_flag("--compressed-wand", m_wand_compressed, "Compressed WAND data file")
                 ->needs(wand);
@@ -51,8 +50,7 @@ namespace arg {
             }
         }
 
-        [[nodiscard]] auto wand_data_path() const
-        {
+        [[nodiscard]] auto wand_data_path() const {
             if constexpr (Mode == WandMode::Required) {
                 return *m_wand_data_path;
             } else {
@@ -62,8 +60,7 @@ namespace arg {
         [[nodiscard]] auto is_wand_compressed() const -> bool { return m_wand_compressed; }
 
         /// Transform paths for `shard`.
-        void apply_shard(Shard_Id shard)
-        {
+        void apply_shard(Shard_Id shard) {
             if (m_wand_data_path) {
                 m_wand_data_path = expand_shard(*m_wand_data_path, shard);
             }
@@ -104,8 +101,7 @@ namespace arg {
 
     template <QueryMode Mode = QueryMode::Ranked>
     struct Query: public Analyzer {
-        explicit Query(CLI::App* app) : Analyzer(app)
-        {
+        explicit Query(CLI::App* app) : Analyzer(app) {
             app->add_option("-q,--queries", m_query_file, "Path to file with queries")
                 ->capture_default_str();
             m_terms_option = app->add_option("--terms", m_term_lexicon, "Term lexicon");
@@ -115,16 +111,14 @@ namespace arg {
             }
         }
 
-        [[nodiscard]] auto query_file() -> std::optional<std::reference_wrapper<std::string const>>
-        {
+        [[nodiscard]] auto query_file() -> std::optional<std::reference_wrapper<std::string const>> {
             if (m_query_file) {
                 return m_query_file.value();
             }
             return std::nullopt;
         }
 
-        [[nodiscard]] auto queries() const -> std::vector<::pisa::Query>
-        {
+        [[nodiscard]] auto queries() const -> std::vector<::pisa::Query> {
             std::vector<::pisa::Query> q;
             std::unique_ptr<TermMap> term_map = [this]() -> std::unique_ptr<TermMap> {
                 if (this->m_term_lexicon) {
@@ -149,8 +143,7 @@ namespace arg {
 
       protected:
         [[nodiscard]] auto terms_option() const -> CLI::Option* { return m_terms_option; }
-        void override_term_lexicon(std::string term_lexicon)
-        {
+        void override_term_lexicon(std::string term_lexicon) {
             m_term_lexicon = std::move(term_lexicon);
         }
 
@@ -173,8 +166,7 @@ namespace arg {
     enum class ScorerMode : bool { Required, Optional };
 
     template <typename T>
-    CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode)
-    {
+    CLI::Option* add_scorer_options(CLI::App* app, T& args, ScorerMode scorer_mode) {
         CLI::Option* scorer;
         if (scorer_mode == ScorerMode::Required) {
             scorer =
@@ -246,8 +238,7 @@ namespace arg {
 
     template <std::size_t Default = 100'000>
     struct BatchSize {
-        explicit BatchSize(CLI::App* app)
-        {
+        explicit BatchSize(CLI::App* app) {
             app->add_option("--batch-size", m_batch_size, "Number of documents to process at a time")
                 ->capture_default_str();
         }
@@ -274,8 +265,7 @@ namespace arg {
     };
 
     struct Compress {
-        explicit Compress(CLI::App* app)
-        {
+        explicit Compress(CLI::App* app) {
             app->add_option("-c,--collection", m_input_basename, "Uncompressed index basename")
                 ->required();
             app->add_option("-o,--output", m_output, "Output inverted index")->required();
@@ -287,8 +277,7 @@ namespace arg {
         [[nodiscard]] auto check() const -> bool { return m_check; }
 
         /// Transform paths for `shard`.
-        void apply_shard(Shard_Id shard)
-        {
+        void apply_shard(Shard_Id shard) {
             m_input_basename = expand_shard(m_input_basename, shard);
             m_output = expand_shard(m_output, shard);
         }
@@ -417,21 +406,18 @@ namespace arg {
  */
 template <typename... Args>
 struct App: public CLI::App, public Args... {
-    explicit App(std::string const& description) : CLI::App(description), Args(this)...
-    {
+    explicit App(std::string const& description) : CLI::App(description), Args(this)... {
         this->set_config("--config", "", "Configuration .ini file", false);
     }
 };
 
 template <typename... T>
 struct Args: public T... {
-    explicit Args(CLI::App* app) : T(app)...
-    {
+    explicit Args(CLI::App* app) : T(app)... {
         app->set_config("--config", "", "Configuration .ini file", false);
     }
 
-    auto print_args(std::ostream& os) const -> std::ostream&
-    {
+    auto print_args(std::ostream& os) const -> std::ostream& {
         (T::print_args(os), ...);
         return os;
     }
@@ -445,8 +431,7 @@ using CreateWandDataArgs = pisa::Args<arg::CreateWandData, arg::LogLevel>;
 struct TailyStatsArgs
     : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer, arg::LogLevel> {
     explicit TailyStatsArgs(CLI::App* app)
-        : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer, arg::LogLevel>(app)
-    {
+        : pisa::Args<arg::WandData<arg::WandMode::Required>, arg::Scorer, arg::LogLevel>(app) {
         app->add_option("-c,--collection", m_collection_path, "Binary collection basename")->required();
         app->add_option("-o,--output", m_output_path, "Output file path")->required();
         app->set_config("--config", "", "Configuration .ini file", false);
@@ -456,8 +441,7 @@ struct TailyStatsArgs
     [[nodiscard]] auto output_path() const -> std::string const& { return m_output_path; }
 
     /// Transform paths for `shard`.
-    void apply_shard(Shard_Id shard)
-    {
+    void apply_shard(Shard_Id shard) {
         arg::WandData<arg::WandMode::Required>::apply_shard(shard);
         m_collection_path = expand_shard(m_collection_path, shard);
         m_output_path = expand_shard(m_output_path, shard);
@@ -469,8 +453,7 @@ struct TailyStatsArgs
 };
 
 struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
-    explicit TailyRankArgs(CLI::App* app) : pisa::Args<arg::Query<arg::QueryMode::Ranked>>(app)
-    {
+    explicit TailyRankArgs(CLI::App* app) : pisa::Args<arg::Query<arg::QueryMode::Ranked>>(app) {
         arg::Query<arg::QueryMode::Ranked>::terms_option()->required(true);
         app->add_option("--global-stats", m_global_stats, "Global Taily statistics")->required();
         app->add_option("--shard-stats", m_shard_stats, "Shard-level Taily statistics")->required();
@@ -481,8 +464,7 @@ struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
     [[nodiscard]] auto global_stats() const -> std::string const& { return m_global_stats; }
     [[nodiscard]] auto shard_stats() const -> std::string const& { return m_shard_stats; }
 
-    void apply_shard(Shard_Id shard)
-    {
+    void apply_shard(Shard_Id shard) {
         m_shard_term_lexicon = expand_shard(m_shard_term_lexicon, shard);
         override_term_lexicon(m_shard_term_lexicon);
         m_shard_stats = expand_shard(m_shard_stats, shard);
@@ -496,8 +478,7 @@ struct TailyRankArgs: pisa::Args<arg::Query<arg::QueryMode::Ranked>> {
 
 struct TailyThresholds: pisa::Args<arg::Query<arg::QueryMode::Ranked>, arg::LogLevel> {
     explicit TailyThresholds(CLI::App* app)
-        : pisa::Args<arg::Query<arg::QueryMode::Ranked>, arg::LogLevel>(app)
-    {
+        : pisa::Args<arg::Query<arg::QueryMode::Ranked>, arg::LogLevel>(app) {
         app->add_option("--stats", m_stats, "Taily statistics file")->required();
         app->set_config("--config", "", "Configuration .ini file", false);
     }

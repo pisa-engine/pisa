@@ -16,27 +16,23 @@
 namespace pisa {
 
 template <typename IntType1, typename IntType2>
-inline IntType1 ceil_div(IntType1 dividend, IntType2 divisor)
-{
+inline IntType1 ceil_div(IntType1 dividend, IntType2 divisor) {
     // XXX(ot): put some static check that IntType1 >= IntType2
     auto d = IntType1(divisor);
     return IntType1(dividend + d - 1) / d;
 }
 
 template <typename T>
-inline void dispose(T& t)
-{
+inline void dispose(T& t) {
     T().swap(t);
 }
 
-inline uint64_t ceil_log2(const uint64_t x)
-{
+inline uint64_t ceil_log2(const uint64_t x) {
     assert(x > 0);
     return (x > 1) ? broadword::msb(x - 1) + 1 : 0;
 }
 
-inline double get_time_usecs()
-{
+inline double get_time_usecs() {
     auto now = std::chrono::system_clock::now();
     auto duration = now.time_since_epoch();
     return std::chrono::duration_cast<std::chrono::microseconds>(duration).count();
@@ -73,28 +69,25 @@ class function_iterator {
     function_iterator() = default;
 
     explicit function_iterator(
-        State&& initial_state, AdvanceFunctor&& advance_functor, ValueFunctor&& value_functor)
+        State&& initial_state, AdvanceFunctor&& advance_functor, ValueFunctor&& value_functor
+    )
         : m_state(std::forward<State>(initial_state)),
           m_advance_functor(std::forward<AdvanceFunctor>(advance_functor)),
-          m_value_functor(std::forward<ValueFunctor>(value_functor))
-    {}
+          m_value_functor(std::forward<ValueFunctor>(value_functor)) {}
 
-    friend inline void swap(function_iterator& lhs, function_iterator& rhs)
-    {
+    friend inline void swap(function_iterator& lhs, function_iterator& rhs) {
         using std::swap;
         swap(lhs.m_state, rhs.m_state);
     }
 
     value_type operator*() const { return m_value_functor(m_state); }
 
-    function_iterator& operator++()
-    {
+    function_iterator& operator++() {
         m_advance_functor(m_state);
         return *this;
     }
 
-    function_iterator operator++(int)
-    {
+    function_iterator operator++(int) {
         function_iterator it(*this);
         operator++();
         return it;
@@ -112,12 +105,13 @@ class function_iterator {
 
 template <typename State, typename AdvanceFunctor, typename ValueFunctor>
 function_iterator<State, AdvanceFunctor, ValueFunctor> make_function_iterator(
-    State&& initial_state, AdvanceFunctor&& advance_functor, ValueFunctor&& value_functor)
-{
+    State&& initial_state, AdvanceFunctor&& advance_functor, ValueFunctor&& value_functor
+) {
     return function_iterator<State, AdvanceFunctor, ValueFunctor>(
         std::forward<State>(initial_state),
         std::forward<AdvanceFunctor>(advance_functor),
-        std::forward<ValueFunctor>(value_functor));
+        std::forward<ValueFunctor>(value_functor)
+    );
 }
 
 struct stats_line {
@@ -129,8 +123,7 @@ struct stats_line {
     ~stats_line() { std::cout << "}" << std::endl; }
 
     template <typename K, typename T>
-    stats_line& operator()(K const& key, T const& value)
-    {
+    stats_line& operator()(K const& key, T const& value) {
         if (!first) {
             std::cout << ", ";
         } else {
@@ -144,15 +137,13 @@ struct stats_line {
     }
 
     template <typename T>
-    stats_line& operator()(T const& obj)
-    {
+    stats_line& operator()(T const& obj) {
         return obj.dump(*this);
     }
 
   private:
     template <typename T>
-    void emit(T const& v) const
-    {
+    void emit(T const& v) const {
         std::cout << v;
     }
 
@@ -162,8 +153,7 @@ struct stats_line {
     void emit(std::string const& s) const { emit(s.c_str()); }
 
     template <typename T>
-    void emit(std::vector<T> const& v) const
-    {
+    void emit(std::vector<T> const& v) const {
         std::cout << "[";
         bool first = true;
         for (auto const& i: v) {
@@ -178,37 +168,32 @@ struct stats_line {
     }
 
     template <typename K, typename V>
-    void emit(std::map<K, V> const& m) const
-    {
+    void emit(std::map<K, V> const& m) const {
         std::vector<std::pair<K, V>> v(m.begin(), m.end());
         emit(v);
     }
 
     template <typename Tuple, size_t Pos>
-    typename std::enable_if<Pos != 0, void>::type emit_tuple_helper(Tuple const& t) const
-    {
+    typename std::enable_if<Pos != 0, void>::type emit_tuple_helper(Tuple const& t) const {
         emit_tuple_helper<Tuple, Pos - 1>(t);
         std::cout << ", ";
         emit(std::get<Pos>(t));
     }
 
     template <typename Tuple, size_t Pos>
-    typename std::enable_if<Pos == 0, void>::type emit_tuple_helper(Tuple const& t) const
-    {
+    typename std::enable_if<Pos == 0, void>::type emit_tuple_helper(Tuple const& t) const {
         emit(std::get<0>(t));
     }
 
     template <typename... Tp>
-    void emit(std::tuple<Tp...> const& t) const
-    {
+    void emit(std::tuple<Tp...> const& t) const {
         std::cout << "[";
         emit_tuple_helper<std::tuple<Tp...>, sizeof...(Tp) - 1>(t);
         std::cout << "]";
     }
 
     template <typename T1, typename T2>
-    void emit(std::pair<T1, T2> const& p) const
-    {
+    void emit(std::pair<T1, T2> const& p) const {
         emit(std::make_tuple(p.first, p.second));
     }
 

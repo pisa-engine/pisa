@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include <cstring>
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 namespace pisa {
@@ -34,8 +34,7 @@ class ReinterpretProxy {
 
     void operator=(T const& value) { std::memcpy(m_ptr, &value, m_len); }
 
-    [[nodiscard]] auto operator*() const -> T
-    {
+    [[nodiscard]] auto operator*() const -> T {
         T dst{0};
         std::memcpy(&dst, m_ptr, m_len);
         return dst;
@@ -55,8 +54,7 @@ class ReinterpretProxy {
  * It will copy 4 bytes representing 789 to the memory location starting at `byte_ptr`.
  */
 template <typename T>
-auto bitwise_reinterpret(std::uint8_t* dst) -> ReinterpretProxy<T, std::uint8_t>
-{
+auto bitwise_reinterpret(std::uint8_t* dst) -> ReinterpretProxy<T, std::uint8_t> {
     return ReinterpretProxy<T, std::uint8_t>{dst, sizeof(T)};
 }
 
@@ -76,8 +74,7 @@ auto bitwise_reinterpret(std::uint8_t* dst) -> ReinterpretProxy<T, std::uint8_t>
  */
 template <typename T>
 auto bitwise_reinterpret(std::uint8_t const* dst, std::size_t len = sizeof(T))
-    -> ReinterpretProxy<T, std::uint8_t const>
-{
+    -> ReinterpretProxy<T, std::uint8_t const> {
     return ReinterpretProxy<T, std::uint8_t const>{dst, len};
 }
 

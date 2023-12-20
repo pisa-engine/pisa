@@ -14,10 +14,8 @@ namespace pisa {
 class QueryStemmer {
   public:
     explicit QueryStemmer(std::optional<std::string> const& stemmer_name)
-        : m_stemmer(term_transformer_builder(stemmer_name)())
-    {}
-    std::string operator()(std::string const& query_string)
-    {
+        : m_stemmer(term_transformer_builder(stemmer_name)()) {}
+    std::string operator()(std::string const& query_string) {
         std::stringstream tokenized_query;
         auto [id, raw_query] = split_query_at_colon(query_string);
         std::vector<std::string> stemmed_terms;

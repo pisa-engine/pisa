@@ -26,8 +26,7 @@ class Integer {
     template <
         typename U,
         typename std::enable_if<std::is_same_v<U, T> && !std::is_same_v<U, std::size_t>, bool>::type = true>
-    explicit operator U() const
-    {
+    explicit operator U() const {
         return m_val;
     }
 
@@ -43,31 +42,26 @@ class Integer {
     [[nodiscard]] bool operator>(Integer const& other) const { return m_val > other.m_val; }
     [[nodiscard]] bool operator>=(Integer const& other) const { return m_val >= other.m_val; }
 
-    Integer& operator++()
-    {
+    Integer& operator++() {
         ++m_val;
         return *this;
     }
     Integer operator++(int) { return Integer{m_val++}; }
 
     [[nodiscard]] Integer operator+(T difference) const { return Integer(m_val + difference); }
-    Integer& operator+=(T difference)
-    {
+    Integer& operator+=(T difference) {
         m_val += difference;
         return *this;
     }
-    [[nodiscard]] Integer operator+(Integer const& other) const
-    {
+    [[nodiscard]] Integer operator+(Integer const& other) const {
         return Integer(m_val + other.m_val);
     }
-    Integer& operator+=(Integer const& other)
-    {
+    Integer& operator+=(Integer const& other) {
         m_val += other.m_val;
         return *this;
     }
     Integer operator-(Integer const& other) const { return Integer(m_val - other.m_val); }
-    Integer& operator-=(Integer const& other)
-    {
+    Integer& operator-=(Integer const& other) {
         m_val -= other.m_val;
         return *this;
     }
@@ -82,8 +76,7 @@ namespace std {
 
 template <class Tag, class T, T default_value>
 struct hash<pisa::Integer<Tag, T, default_value>> {
-    constexpr auto operator()(pisa::Integer<Tag, T, default_value> const& key) const noexcept
-    {
+    constexpr auto operator()(pisa::Integer<Tag, T, default_value> const& key) const noexcept {
         return hash<T>{}(static_cast<T>(key));
     }
 };
@@ -93,8 +86,7 @@ struct hash<pisa::Integer<Tag, T, default_value>> {
 namespace pisa {
 
 template <class Tag, class T, T default_value>
-std::ostream& operator<<(std::ostream& os, Integer<Tag, T, default_value> id)
-{
+std::ostream& operator<<(std::ostream& os, Integer<Tag, T, default_value> id) {
     return os << static_cast<T>(id);
 }
 
@@ -139,8 +131,7 @@ namespace literals {
 template <class Tag, class T, T default_value>
 struct fmt::formatter<pisa::Integer<Tag, T, default_value>>: public fmt::formatter<T> {
     template <typename FormatContext>
-    auto format(pisa::Integer<Tag, T, default_value> value, FormatContext& ctx) const
-    {
+    auto format(pisa::Integer<Tag, T, default_value> value, FormatContext& ctx) const {
         return formatter<T>::format(value.as_int(), ctx);
     }
 };

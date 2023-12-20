@@ -8,8 +8,7 @@ inline void do_not_optimize_dependency_sink(const void*) {}
     #pragma optimize("", on)
 
 template <class T>
-void do_not_optimize_away(const T& datum)
-{
+void do_not_optimize_away(const T& datum) {
     doNotOptimizeDependencySink(&datum);
 }
 
@@ -26,15 +25,13 @@ namespace detail {
 
 template <typename T>
 auto do_not_optimize_away(const T& datum) ->
-    typename std::enable_if<!detail::do_not_optimize_away_needs_indirect<T>::value>::type
-{
+    typename std::enable_if<!detail::do_not_optimize_away_needs_indirect<T>::value>::type {
     asm volatile("" ::"r"(datum));
 }
 
 template <typename T>
 auto do_not_optimize_away(const T& datum) ->
-    typename std::enable_if<detail::do_not_optimize_away_needs_indirect<T>::value>::type
-{
+    typename std::enable_if<detail::do_not_optimize_away_needs_indirect<T>::value>::type {
     asm volatile("" ::"m"(datum) : "memory");
 }
 #endif

@@ -5,8 +5,7 @@
 
 namespace pisa {
 
-bit_vector_builder::bit_vector_builder(uint64_t size, bool init) : m_size(size)
-{
+bit_vector_builder::bit_vector_builder(uint64_t size, bool init) : m_size(size) {
     m_bits.resize(detail::words_for(size), init ? std::numeric_limits<std::uint64_t>::max() : 0U);
     if (size != 0U) {
         m_cur_word = &m_bits.back();
@@ -17,13 +16,11 @@ bit_vector_builder::bit_vector_builder(uint64_t size, bool init) : m_size(size)
     }
 }
 
-void bit_vector_builder::reserve(uint64_t size)
-{
+void bit_vector_builder::reserve(uint64_t size) {
     m_bits.reserve(detail::words_for(size));
 }
 
-void bit_vector_builder::append(bit_vector_builder const& rhs)
-{
+void bit_vector_builder::append(bit_vector_builder const& rhs) {
     if (rhs.size() == 0U) {
         return;
     }
@@ -50,8 +47,7 @@ void bit_vector_builder::append(bit_vector_builder const& rhs)
     m_cur_word = &m_bits.back();
 }
 
-void bit_vector_builder::reverse()
-{
+void bit_vector_builder::reverse() {
     uint64_t shift = 64 - (size() % 64);
 
     uint64_t remainder = 0;
@@ -69,8 +65,7 @@ void bit_vector_builder::reverse()
     std::reverse(m_bits.begin(), m_bits.end());
 }
 
-void bit_vector_builder::swap(bit_vector_builder& other)
-{
+void bit_vector_builder::swap(bit_vector_builder& other) {
     m_bits.swap(other.m_bits);
     std::swap(m_size, other.m_size);
     std::swap(m_cur_word, other.m_cur_word);

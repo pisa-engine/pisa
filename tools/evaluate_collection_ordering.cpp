@@ -13,8 +13,7 @@
 #include "util/log.hpp"
 #include "util/util.hpp"
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     using namespace pisa;
 
     if (argc != 2) {

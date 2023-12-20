@@ -13,8 +13,7 @@
 #include "invert.hpp"
 #include "util/util.hpp"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     CLI::App app{"Constructs an inverted index from a forward index."};
     pisa::InvertArgs args(&app);
     CLI11_PARSE(app, argc, argv);

@@ -9,8 +9,7 @@ struct simple8b_block {
     static constexpr std::uint64_t block_size = 128;
 
     static void
-    encode(uint32_t const* in, uint32_t /* sum_of_values */, size_t n, std::vector<uint8_t>& out)
-    {
+    encode(uint32_t const* in, uint32_t /* sum_of_values */, size_t n, std::vector<uint8_t>& out) {
         assert(n <= block_size);
         thread_local FastPForLib::Simple8b<false> codec;
         thread_local std::array<std::uint8_t, 2 * 8 * block_size> buf{};
@@ -21,12 +20,12 @@ struct simple8b_block {
     }
 
     static uint8_t const*
-    decode(uint8_t const* in, uint32_t* out, uint32_t /* sum_of_values */, size_t n)
-    {
+    decode(uint8_t const* in, uint32_t* out, uint32_t /* sum_of_values */, size_t n) {
         assert(n <= block_size);
         FastPForLib::Simple8b<false> codec;
         return reinterpret_cast<uint8_t const*>(
-            codec.decodeArray(reinterpret_cast<uint32_t const*>(in), 8 * n, out, n));
+            codec.decodeArray(reinterpret_cast<uint32_t const*>(in), 8 * n, out, n)
+        );
     }
 };
 }  // namespace pisa

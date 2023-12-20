@@ -29,8 +29,7 @@ class Forward_Index_Builder {
     };
 
     template <typename Iterator>
-    static std::ostream& write_document(std::ostream& os, Iterator first, Iterator last)
-    {
+    static std::ostream& write_document(std::ostream& os, Iterator first, Iterator last) {
         std::uint32_t length = std::distance(first, last);
         os.write(reinterpret_cast<const char*>(&length), sizeof(length));
         os.write(reinterpret_cast<const char*>(&(*first)), length * sizeof(*first));
@@ -66,7 +65,8 @@ class Forward_Index_Builder {
         read_record_function_type next_record,
         std::shared_ptr<TextAnalyzer> text_analyzer,
         std::ptrdiff_t batch_size,
-        std::size_t threads) const;
+        std::size_t threads
+    ) const;
 
     /// Removes all intermediate batches.
     void remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const;

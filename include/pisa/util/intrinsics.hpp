@@ -18,8 +18,7 @@
 
 namespace pisa { namespace intrinsics {
 
-    __INTRIN_INLINE uint64_t byteswap64(uint64_t value)
-    {
+    __INTRIN_INLINE uint64_t byteswap64(uint64_t value) {
 #if defined(__GNUC__) || defined(__clang__)
         return __builtin_bswap64(value);
 #elif defined(_MSC_VER)
@@ -29,8 +28,7 @@ namespace pisa { namespace intrinsics {
 #endif
     }
 
-    __INTRIN_INLINE bool bsf64(unsigned long* const index, const uint64_t mask)
-    {
+    __INTRIN_INLINE bool bsf64(unsigned long* const index, const uint64_t mask) {
 #if defined(__GNUC__) || defined(__clang__)
         if (mask != 0U) {
             *index = (unsigned long)__builtin_ctzll(mask);
@@ -45,8 +43,7 @@ namespace pisa { namespace intrinsics {
 #endif
     }
 
-    __INTRIN_INLINE bool bsr64(unsigned long* const index, const uint64_t mask)
-    {
+    __INTRIN_INLINE bool bsr64(unsigned long* const index, const uint64_t mask) {
 #if defined(__GNUC__) || defined(__clang__)
         if (mask != 0U) {
             *index = (unsigned long)(63 - __builtin_clzll(mask));
@@ -61,8 +58,7 @@ namespace pisa { namespace intrinsics {
     }
 
     template <typename T>
-    __INTRIN_INLINE void prefetch(T const* ptr)
-    {
+    __INTRIN_INLINE void prefetch(T const* ptr) {
 #if defined(__SSE__)
         _mm_prefetch((const char*)ptr, _MM_HINT_T0);
 #endif
@@ -70,7 +66,9 @@ namespace pisa { namespace intrinsics {
 
 #if USE_POPCNT
 
-    __INTRIN_INLINE uint64_t popcount(uint64_t x) { return uint64_t(_mm_popcnt_u64(x)); }
+    __INTRIN_INLINE uint64_t popcount(uint64_t x) {
+        return uint64_t(_mm_popcnt_u64(x));
+    }
 
 #endif /* USE_POPCNT */
 

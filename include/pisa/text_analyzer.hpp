@@ -21,14 +21,12 @@ class TextAnalyzer {
     void add_token_filter(std::unique_ptr<TokenFilter> token_filter);
 
     template <typename T, typename... Args>
-    void emplace_text_filter(Args... args)
-    {
+    void emplace_text_filter(Args... args) {
         m_text_filters.emplace_back(std::make_unique<T>(args...));
     }
 
     template <typename T, typename... Args>
-    void emplace_token_filter(Args... args)
-    {
+    void emplace_token_filter(Args... args) {
         m_token_filters.emplace_back(std::make_unique<T>(args...));
     }
 

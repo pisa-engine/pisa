@@ -30,8 +30,7 @@ struct compact_ranked_bitvector {
               rank1_samples_offset(base_offset),
               pointers1_offset(rank1_samples_offset + rank1_samples * rank1_sample_size),
               bits_offset(pointers1_offset + pointers1 * pointer_size),
-              end(bits_offset + universe)
-        {}
+              end(bits_offset + universe) {}
 
         uint64_t universe;
         uint64_t n;
@@ -51,8 +50,7 @@ struct compact_ranked_bitvector {
     };
 
     static PISA_FLATTEN_FUNC uint64_t
-    bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
-    {
+    bitsize(global_parameters const& params, uint64_t universe, uint64_t n) {
         return offsets(0, universe, n, params).end;
     }
 
@@ -62,8 +60,8 @@ struct compact_ranked_bitvector {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         uint64_t base_offset = bvb.size();
         offsets of(base_offset, universe, n, params);
         // initialize all the bits to 0
@@ -125,12 +123,14 @@ struct compact_ranked_bitvector {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-            : m_bv(&bv), m_of(offset, universe, n, params), m_position(size()), m_value(m_of.universe)
-        {}
+            global_parameters const& params
+        )
+            : m_bv(&bv),
+              m_of(offset, universe, n, params),
+              m_position(size()),
+              m_value(m_of.universe) {}
 
-        value_type move(uint64_t position)
-        {
+        value_type move(uint64_t position) {
             assert(position <= size());
 
             if (position == m_position) {
@@ -158,8 +158,7 @@ struct compact_ranked_bitvector {
             return slow_move(position);
         }
 
-        value_type next_geq(uint64_t lower_bound)
-        {
+        value_type next_geq(uint64_t lower_bound) {
             if (lower_bound == m_value) {
                 return value();
             }
@@ -187,8 +186,7 @@ struct compact_ranked_bitvector {
             return slow_next_geq(lower_bound);
         }
 
-        value_type next()
-        {
+        value_type next() {
             m_position += 1;
             assert(m_position <= size());
 
@@ -202,8 +200,7 @@ struct compact_ranked_bitvector {
 
         uint64_t size() const { return m_of.n; }
 
-        uint64_t prev_value() const
-        {
+        uint64_t prev_value() const {
             if (m_position == 0) {
                 return 0;
             }
@@ -219,8 +216,7 @@ struct compact_ranked_bitvector {
         }
 
       private:
-        value_type PISA_NOINLINE slow_move(uint64_t position)
-        {
+        value_type PISA_NOINLINE slow_move(uint64_t position) {
             uint64_t skip = position - m_position;
             if (PISA_UNLIKELY(position == size())) {
                 m_position = position;
@@ -246,8 +242,7 @@ struct compact_ranked_bitvector {
             return value();
         }
 
-        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
-        {
+        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound) {
             using broadword::popcount;
 
             if (PISA_UNLIKELY(lower_bound >= m_of.universe)) {
@@ -297,21 +292,18 @@ struct compact_ranked_bitvector {
 
         inline uint64_t read_next() { return m_enumerator.next() - m_of.bits_offset; }
 
-        inline uint64_t pointer(uint64_t offset, uint64_t i, uint64_t size) const
-        {
+        inline uint64_t pointer(uint64_t offset, uint64_t i, uint64_t size) const {
             if (i == 0) {
                 return 0;
             }
             return m_bv->get_word56(offset + (i - 1) * size) & ((uint64_t(1) << size) - 1);
         }
 
-        inline uint64_t pointer1(uint64_t i) const
-        {
+        inline uint64_t pointer1(uint64_t i) const {
             return pointer(m_of.pointers1_offset, i, m_of.pointer_size);
         }
 
-        inline uint64_t rank1_sample(uint64_t i) const
-        {
+        inline uint64_t rank1_sample(uint64_t i) const {
             return pointer(m_of.rank1_samples_offset, i, m_of.rank1_sample_size);
         }
 

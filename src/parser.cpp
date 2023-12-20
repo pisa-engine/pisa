@@ -18,8 +18,7 @@ namespace pisa {
 // Changes should be made to the upstream libraries to support the new API,
 // which also means upgrading fmt version upstream.
 template <typename T>
-[[nodiscard]] auto to_string(T&& value) -> std::string
-{
+[[nodiscard]] auto to_string(T&& value) -> std::string {
     std::ostringstream os;
     os << value;
     return os.str();
@@ -28,20 +27,21 @@ template <typename T>
 using namespace std::string_view_literals;
 
 template <typename ReadSubsequentRecordFn>
-[[nodiscard]] auto trec_record_parser(ReadSubsequentRecordFn read_subsequent_record)
-{
+[[nodiscard]] auto trec_record_parser(ReadSubsequentRecordFn read_subsequent_record) {
     return [=](std::istream& in) -> std::optional<Document_Record> {
         while (not in.eof()) {
             auto record = trecpp::match(
                 read_subsequent_record(in),
                 [](trecpp::Record rec) {
                     return std::make_optional<Document_Record>(
-                        std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url()));
+                        std::move(rec.trecid()), std::move(rec.content()), std::move(rec.url())
+                    );
                 },
                 [](trecpp::Error const& error) {
                     spdlog::warn("Skipped invalid record: {}", to_string(error));
                     return std::optional<Document_Record>{};
-                });
+                }
+            );
             if (record) {
                 return record;
             }
@@ -51,14 +51,14 @@ template <typename ReadSubsequentRecordFn>
 }
 
 std::function<std::optional<Document_Record>(std::istream&)>
-record_parser(std::string const& type, std::istream& is)
-{
+record_parser(std::string const& type, std::istream& is) {
     if (type == "plaintext") {
         return [](std::istream& in) -> std::optional<Document_Record> {
             Plaintext_Record record;
             if (in >> record) {
                 return std::make_optional<Document_Record>(
-                    std::move(record.trecid()), std::move(record.content()), std::move(record.url()));
+                    std::move(record.trecid()), std::move(record.content()), std::move(record.url())
+                );
             }
             return std::nullopt;
         };
@@ -67,19 +67,21 @@ record_parser(std::string const& type, std::istream& is)
         return trec_record_parser(trecpp::text::read_subsequent_record);
     }
     if (type == "trecweb") {
-        return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](
-                   std::istream& in) -> std::optional<Document_Record> {
+        return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](std::istream& in
+               ) -> std::optional<Document_Record> {
             while (not in.eof()) {
                 auto record = trecpp::match(
                     parser->read_record(),
                     [](trecpp::Record rec) {
                         return std::make_optional<Document_Record>(
-                            rec.trecid(), rec.content(), rec.url());
+                            rec.trecid(), rec.content(), rec.url()
+                        );
                     },
                     [](trecpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", to_string(error));
                         return std::optional<Document_Record>{};
-                    });
+                    }
+                );
                 if (record) {
                     return record;
                 }
@@ -99,21 +101,23 @@ record_parser(std::string const& type, std::istream& is)
                         // TODO(michal): use std::move
                         if (rec.has_trecid()) {
                             return std::make_optional<Document_Record>(
-                                rec.trecid(), rec.content(), rec.url());
+                                rec.trecid(), rec.content(), rec.url()
+                            );
                         }
                         if (rec.has_recordid()) {
                             return std::make_optional<Document_Record>(
-                                rec.recordid(), rec.content(), rec.url());
+                                rec.recordid(), rec.content(), rec.url()
+                            );
                         }
                         // This should be unreachable
-                        spdlog::warn(
-                            "Skipped invalid record: No warc-trec-id or warc-record-id...");
+                        spdlog::warn("Skipped invalid record: No warc-trec-id or warc-record-id...");
                         return std::optional<Document_Record>{};
                     },
                     [](warcpp::Error const& error) {
                         spdlog::warn("Skipped invalid record: {}", to_string(error));
                         return std::optional<Document_Record>{};
-                    });
+                    }
+                );
                 if (record) {
                     return record;
                 }
@@ -128,7 +132,8 @@ record_parser(std::string const& type, std::istream& is)
                 if (std::get_if<wapopp::Error>(&result) != nullptr) {
                     spdlog::warn(
                         "Skpped invalid record. Reason: {}",
-                        to_string(std::get_if<wapopp::Error>(&result)->msg));
+                        to_string(std::get_if<wapopp::Error>(&result)->msg)
+                    );
                     spdlog::debug("Invalid record: {}", std::get_if<wapopp::Error>(&result)->json);
                 } else {
                     std::ostringstream os;
@@ -162,24 +167,22 @@ record_parser(std::string const& type, std::istream& is)
     std::abort();
 }
 
-void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process)
-{
+void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process) {
     EnglishTokenStream tokens(content);
     std::for_each(tokens.begin(), tokens.end(), process);
 }
 
-[[nodiscard]] auto is_http(std::string_view content) -> bool
-{
-    auto start = std::find_if(
-        content.begin(), content.end(), [](unsigned char c) { return std::isspace(c) == 0; });
+[[nodiscard]] auto is_http(std::string_view content) -> bool {
+    auto start = std::find_if(content.begin(), content.end(), [](unsigned char c) {
+        return std::isspace(c) == 0;
+    });
     if (start == content.end()) {
         return false;
     }
     return std::string_view(&*start, 4) == "HTTP"sv;
 }
 
-void parse_html_content(std::string&& content, std::function<void(std::string&&)> process)
-{
+void parse_html_content(std::string&& content, std::function<void(std::string&&)> process) {
     content = parsing::html::cleantext([&]() {
         auto pos = content.begin();
         if (is_http(content)) {
@@ -204,8 +207,7 @@ void parse_html_content(std::string&& content, std::function<void(std::string&&)
 }
 
 std::function<void(std::string&& constent, std::function<void(std::string&&)>)>
-content_parser(std::optional<std::string> const& type)
-{
+content_parser(std::optional<std::string> const& type) {
     if (not type) {
         return parse_plaintext_content;
     }

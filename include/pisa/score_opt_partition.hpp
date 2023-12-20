@@ -40,11 +40,8 @@ struct score_opt_partition {
         uint64_t element_count;
 
         score_window(
-            ForwardIterator begin,
-            posting_t base,
-            wand_cost_t cost_upper_bound,
-            float fixed_cost,
-            size_t size)
+            ForwardIterator begin, posting_t base, wand_cost_t cost_upper_bound, float fixed_cost, size_t size
+        )
             : start_it(begin),
               end_it(begin),
               min_p(base),
@@ -53,15 +50,13 @@ struct score_opt_partition {
               m_fixed_cost(fixed_cost),
               sum(0),
               end_sequence(size),
-              element_count(0)
-        {}
+              element_count(0) {}
 
         uint64_t universe() const { return max_p - min_p + 1; }
 
         uint64_t size() const { return end - start; }
 
-        void advance_start()
-        {
+        void advance_start() {
             float v = std::get<1>(*start_it);
             if (std::get<1>(*start_it) == max_queue.front()) {
                 max_queue.pop_front();
@@ -75,8 +70,7 @@ struct score_opt_partition {
             }
         }
 
-        void advance_end()
-        {
+        void advance_end() {
             float v = std::get<1>(*end_it);
             sum += v;
 
@@ -93,8 +87,7 @@ struct score_opt_partition {
             }
         }
 
-        float cost()
-        {
+        float cost() {
             if (size() < 2) {
                 return m_fixed_cost;
             }
@@ -108,13 +101,12 @@ struct score_opt_partition {
 
     template <typename I>
     score_opt_partition(
-        I begin, std::uint32_t base, std::uint64_t size, double eps1, double eps2, float fixed_cost)
+        I begin, std::uint32_t base, std::uint64_t size, double eps1, double eps2, float fixed_cost
+    )
         PISA_REQUIRES(
             std::forward_iterator<I>
-            && (std::convertible_to<
-                typename std::iterator_traits<I>::value_type,
-                std::pair<std::uint64_t, float>>))
-    {
+            && (std::convertible_to<typename std::iterator_traits<I>::value_type, std::pair<std::uint64_t, float>>)
+        ) {
         // compute cost of single block.
         float max = 0;
         float sum = 0;
@@ -142,8 +134,8 @@ struct score_opt_partition {
         std::vector<posting_t> path(size + 1, 0);
         std::vector<float> maxs(size + 1, 0);
 
-        auto max1 = std::max_element(
-            begin, begin + size, [](const auto& lhs, const auto& rhs) -> auto {
+        auto max1 =
+            std::max_element(begin, begin + size, [](const auto& lhs, const auto& rhs) -> auto {
                 return std::get<1>(lhs) < std::get<1>(rhs);
             });
         maxs[size] = std::get<1>(*max1);

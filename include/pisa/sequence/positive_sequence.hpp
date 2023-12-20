@@ -17,13 +17,14 @@ struct positive_sequence {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         assert(n > 0);
         auto cumulative_begin = make_function_iterator(
             std::make_pair(uint64_t(0), begin),
             +[](std::pair<uint64_t, Iterator>& state) { state.first += *state.second++; },
-            +[](std::pair<uint64_t, Iterator> const& state) { return state.first + *state.second; });
+            +[](std::pair<uint64_t, Iterator> const& state) { return state.first + *state.second; }
+        );
         base_sequence_type::write(bvb, cumulative_begin, universe, n, params);
     }
 
@@ -38,12 +39,11 @@ struct positive_sequence {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-            : m_base_enum(bv, offset, universe, n, params), m_position(m_base_enum.size())
-        {}
+            global_parameters const& params
+        )
+            : m_base_enum(bv, offset, universe, n, params), m_position(m_base_enum.size()) {}
 
-        value_type move(uint64_t position)
-        {
+        value_type move(uint64_t position) {
             // we cache m_position and m_cur to avoid the call overhead in
             // the most common cases
             uint64_t prev = m_cur;

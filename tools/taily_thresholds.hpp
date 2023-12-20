@@ -6,8 +6,7 @@
 
 namespace pisa {
 
-void estimate_taily_thresholds(pisa::TailyThresholds const& args)
-{
+void estimate_taily_thresholds(pisa::TailyThresholds const& args) {
     auto stats = pisa::TailyStats::from_mapped(args.stats());
     for (auto const& query: args.queries()) {
         auto threshold = taily::estimate_cutoff(stats.query_stats(query), args.k());
