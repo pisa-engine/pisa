@@ -49,8 +49,8 @@ void evaluate_queries(
     ScorerParams const& scorer_params,
     const bool weighted,
     std::string const& run_id,
-    std::string const& iteration)
-{
+    std::string const& iteration
+) {
     IndexType index(MemorySource::mapped_file(index_filename));
     WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
@@ -71,7 +71,8 @@ void evaluate_queries(
             block_max_wand_query block_max_wand_q(topk);
             block_max_wand_q(
                 make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                index.num_docs());
+                index.num_docs()
+            );
             topk.finalize();
             return topk.topk();
         };
@@ -81,7 +82,8 @@ void evaluate_queries(
             block_max_maxscore_query block_max_maxscore_q(topk);
             block_max_maxscore_q(
                 make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                index.num_docs());
+                index.num_docs()
+            );
             topk.finalize();
             return topk.topk();
         };
@@ -91,7 +93,8 @@ void evaluate_queries(
             block_max_ranked_and_query block_max_ranked_and_q(topk);
             block_max_ranked_and_q(
                 make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                index.num_docs());
+                index.num_docs()
+            );
             topk.finalize();
             return topk.topk();
         };
@@ -116,7 +119,8 @@ void evaluate_queries(
             topk_queue topk(k);
             maxscore_query maxscore_q(topk);
             maxscore_q(
-                make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs());
+                make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs()
+            );
             topk.finalize();
             return topk.topk();
         };
@@ -125,7 +129,8 @@ void evaluate_queries(
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
+                make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
+            );
             topk.finalize();
             return topk.topk();
         };
@@ -134,7 +139,8 @@ void evaluate_queries(
             topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
             ranked_or_taat_q(
-                make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
+                make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
+            );
             topk.finalize();
             return topk.topk();
         };
@@ -163,7 +169,8 @@ void evaluate_queries(
                 docmap[result.second],
                 rank + 1,
                 result.first,
-                run_id);
+                run_id
+            );
         }
     }
     auto end_print = std::chrono::steady_clock::now();
@@ -179,8 +186,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     spdlog::set_default_logger(spdlog::stderr_color_mt("default"));
 
     std::string documents_file;
@@ -224,25 +230,25 @@ int main(int argc, const char** argv)
         app.scorer_params(),
         app.weighted(),
         run_id,
-        iteration);
+        iteration
+    );
 
     /**/
     if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    }                                                                                              \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \
-    {                                                                                              \
-        if (app.is_wand_compressed()) {                                                            \
-            if (quantized) {                                                                       \
-                std::apply(                                                                        \
-                    evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>,       \
-                    params);                                                                       \
-            } else {                                                                               \
-                std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>, params); \
-            }                                                                                      \
-        } else {                                                                                   \
-            std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>, params);         \
-        }                                                                                          \
+#define LOOP_BODY(R, DATA, T)                                                                       \
+    }                                                                                               \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                                       \
+        if (app.is_wand_compressed()) {                                                             \
+            if (quantized) {                                                                        \
+                std::apply(                                                                         \
+                    evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params \
+                );                                                                                  \
+            } else {                                                                                \
+                std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
+            }                                                                                       \
+        } else {                                                                                    \
+            std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
+        }                                                                                           \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

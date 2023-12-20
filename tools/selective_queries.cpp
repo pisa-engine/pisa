@@ -16,8 +16,8 @@ using namespace pisa;
 
 template <typename IndexType>
 void selective_queries(
-    const std::string& index_filename, std::string const& encoding, std::vector<Query> const& queries)
-{
+    const std::string& index_filename, std::string const& encoding, std::vector<Query> const& queries
+) {
     IndexType index;
     spdlog::info("Loading index from {}", index_filename);
     mio::mmap_source m(index_filename.c_str());
@@ -40,21 +40,21 @@ void selective_queries(
     }
 }
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     App<arg::Index, arg::Query<arg::QueryMode::Unranked>, arg::LogLevel> app{
-        "Filters selective queries for a given index."};
+        "Filters selective queries for a given index."
+    };
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_level(app.log_level());
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                               \
-    }                                                       \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) \
-    {                                                       \
-        selective_queries<BOOST_PP_CAT(T, _index)>(         \
-            app.index_filename(), app.index_encoding(), app.queries());
+#define LOOP_BODY(R, DATA, T)                                         \
+    }                                                                 \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {         \
+        selective_queries<BOOST_PP_CAT(T, _index)>(                   \
+            app.index_filename(), app.index_encoding(), app.queries() \
+        );
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

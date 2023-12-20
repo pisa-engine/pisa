@@ -11,8 +11,7 @@
 #include "test_common.hpp"
 #include "test_rank_select_common.hpp"
 
-TEST_CASE("bit_vector")
-{
+TEST_CASE("bit_vector") {
     rc::check([](std::vector<bool> v) {
         {
             pisa::bit_vector_builder bvb;
@@ -38,21 +37,23 @@ TEST_CASE("bit_vector")
             test_equal_bits(v, bitmap, "Random bits (set)");
         }
 
-        auto ints = std::array<uint64_t, 15>{uint64_t(-1),
-                                             uint64_t(1) << 63U,
-                                             1,
-                                             1,
-                                             1,
-                                             3,
-                                             5,
-                                             7,
-                                             0xFFF,
-                                             0xF0F,
-                                             1,
-                                             0xFFFFFF,
-                                             0x123456,
-                                             uint64_t(1) << 63U,
-                                             uint64_t(-1)};
+        auto ints = std::array<uint64_t, 15>{
+            uint64_t(-1),
+            uint64_t(1) << 63U,
+            1,
+            1,
+            1,
+            3,
+            5,
+            7,
+            0xFFF,
+            0xF0F,
+            1,
+            0xFFFFFF,
+            0x123456,
+            uint64_t(1) << 63U,
+            uint64_t(-1)
+        };
         {
             pisa::bit_vector_builder bvb;
             for (uint64_t i: ints) {
@@ -93,8 +94,7 @@ TEST_CASE("bit_vector")
     });
 }
 
-TEST_CASE("bit_vector_enumerator")
-{
+TEST_CASE("bit_vector_enumerator") {
     rc::check([](std::vector<bool> v) {
         pisa::bit_vector bitmap(v);
 
@@ -114,8 +114,7 @@ TEST_CASE("bit_vector_enumerator")
     });
 }
 
-TEST_CASE("bit_vector_unary_enumerator")
-{
+TEST_CASE("bit_vector_unary_enumerator") {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::bernoulli_distribution d(0.5);
@@ -131,7 +130,8 @@ TEST_CASE("bit_vector_unary_enumerator")
             posv.end(),
             std::back_inserter(intervals),
             40,
-            std::mt19937{std::random_device{}()});
+            std::mt19937{std::random_device{}()}
+        );
         REQUIRE(intervals.size() % 2 == 0);
         for (auto left = intervals.begin(); left != intervals.end(); std::advance(left, 2)) {
             auto right = std::next(left);
@@ -212,8 +212,7 @@ TEST_CASE("bit_vector_unary_enumerator")
     }
 }
 
-TEST_CASE("bvb_reverse")
-{
+TEST_CASE("bvb_reverse") {
     rc::check([](std::vector<bool> v) {
         pisa::bit_vector_builder bvb;
         for (auto elem: v) {

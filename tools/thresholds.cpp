@@ -28,8 +28,8 @@ void thresholds(
     std::string const& type,
     ScorerParams const& scorer_params,
     uint64_t k,
-    bool quantized)
-{
+    bool quantized
+) {
     IndexType index(MemorySource::mapped_file(index_filename));
     WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
@@ -54,8 +54,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
@@ -78,23 +77,22 @@ int main(int argc, const char** argv)
         app.index_encoding(),
         app.scorer_params(),
         app.k(),
-        quantized);
+        quantized
+    );
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                   \
-    }                                                                                           \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                     \
-    {                                                                                           \
-        if (app.is_wand_compressed()) {                                                         \
-            if (quantized) {                                                                    \
-                std::apply(                                                                     \
-                    thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                            \
-                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);    \
-            }                                                                                   \
-        } else {                                                                                \
-            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);            \
+#define LOOP_BODY(R, DATA, T)                                                                          \
+    }                                                                                                  \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                                          \
+        if (app.is_wand_compressed()) {                                                                \
+            if (quantized) {                                                                           \
+                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
+            } else {                                                                                   \
+                std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);           \
+            }                                                                                          \
+        } else {                                                                                       \
+            std::apply(thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);                   \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

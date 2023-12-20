@@ -19,14 +19,12 @@ namespace pisa { namespace time_prediction {
 
     enum class feature_type { BOOST_PP_SEQ_ENUM(PISA_FEATURE_TYPES), end };
 
-    inline feature_type parse_feature_type(std::string const& name)
-    {
+    inline feature_type parse_feature_type(std::string const& name) {
         if (false) {
-#define LOOP_BODY(R, DATA, T)               \
-    }                                       \
-    else if (name == BOOST_PP_STRINGIZE(T)) \
-    {                                       \
-        return feature_type::T;             \
+#define LOOP_BODY(R, DATA, T)                 \
+    }                                         \
+    else if (name == BOOST_PP_STRINGIZE(T)) { \
+        return feature_type::T;               \
         /**/
             BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_FEATURE_TYPES);
 #undef LOOP_BODY
@@ -35,8 +33,7 @@ namespace pisa { namespace time_prediction {
         }
     }
 
-    inline std::string feature_name(feature_type f)
-    {
+    inline std::string feature_name(feature_type f) {
         switch (f) {
 #define LOOP_BODY(R, DATA, T)         \
     case feature_type::T:             \
@@ -56,8 +53,7 @@ namespace pisa { namespace time_prediction {
         float& operator[](feature_type f) { return m_features[(size_t)f]; }
         float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
 
-        stats_line& dump(stats_line& sl) const
-        {
+        stats_line& dump(stats_line& sl) const {
             for (size_t i = 0; i < num_features; ++i) {
                 auto ft = static_cast<feature_type>(i);
                 sl(feature_name(ft), (*this)[ft]);
@@ -73,8 +69,7 @@ namespace pisa { namespace time_prediction {
       public:
         predictor() = default;
 
-        explicit predictor(std::vector<std::pair<std::string, float>> const& values)
-        {
+        explicit predictor(std::vector<std::pair<std::string, float>> const& values) {
             for (auto const& kv: values) {
                 if (kv.first == "bias") {
                     bias() = kv.second;
@@ -87,8 +82,7 @@ namespace pisa { namespace time_prediction {
         float& bias() { return m_bias; }
         float const& bias() const { return m_bias; }
 
-        float operator()(feature_vector const& f) const
-        {
+        float operator()(feature_vector const& f) const {
             float result = bias();
             for (size_t i = 0; i < num_features; ++i) {
                 auto ft = static_cast<feature_type>(i);
@@ -101,8 +95,7 @@ namespace pisa { namespace time_prediction {
         float m_bias{0.0};
     };
 
-    inline void values_statistics(std::vector<uint32_t> values, feature_vector& f)
-    {
+    inline void values_statistics(std::vector<uint32_t> values, feature_vector& f) {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
         if (values.empty()) {
@@ -141,8 +134,7 @@ namespace pisa { namespace time_prediction {
     }
 
     inline bool
-    read_block_stats(std::istream& is, uint32_t& list_id, std::vector<uint32_t>& block_counts)
-    {
+    read_block_stats(std::istream& is, uint32_t& list_id, std::vector<uint32_t>& block_counts) {
         thread_local std::string line;
         uint32_t count;
         block_counts.clear();

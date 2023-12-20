@@ -22,8 +22,7 @@
 #include <vector>
 
 template <typename BlockCodec>
-void test_block_freq_index()
-{
+void test_block_freq_index() {
     pisa::global_parameters params;
     uint64_t universe = 20000;
     using collection_type = pisa::block_freq_index<BlockCodec>;
@@ -64,8 +63,7 @@ void test_block_freq_index()
     }
 }
 
-TEST_CASE("block_freq_index")
-{
+TEST_CASE("block_freq_index") {
     test_block_freq_index<pisa::optpfor_block>();
     test_block_freq_index<pisa::varint_G8IU_block>();
     test_block_freq_index<pisa::streamvbyte_block>();

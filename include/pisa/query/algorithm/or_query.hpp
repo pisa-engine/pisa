@@ -8,8 +8,7 @@ namespace pisa {
 template <bool with_freqs>
 struct or_query {
     template <typename CursorRange>
-    uint64_t operator()(CursorRange&& cursors, uint64_t max_docid) const
-    {
+    uint64_t operator()(CursorRange&& cursors, uint64_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
             return 0;

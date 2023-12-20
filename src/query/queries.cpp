@@ -12,8 +12,7 @@
 namespace pisa {
 
 auto split_query_at_colon(std::string_view query_string)
-    -> std::pair<std::optional<std::string>, std::string_view>
-{
+    -> std::pair<std::optional<std::string>, std::string_view> {
     // query id : terms (or ids)
     auto colon = std::find(query_string.begin(), query_string.end(), ':');
     std::optional<std::string> id;
@@ -26,8 +25,8 @@ auto split_query_at_colon(std::string_view query_string)
 }
 
 auto parse_query_terms(
-    std::string const& query_string, Tokenizer const& tokenizer, TermProcessor term_processor) -> Query
-{
+    std::string const& query_string, Tokenizer const& tokenizer, TermProcessor term_processor
+) -> Query {
     auto [id, raw_query] = split_query_at_colon(query_string);
     auto tokens = tokenizer.tokenize(raw_query);
     std::vector<term_id_type> parsed_query;
@@ -46,8 +45,7 @@ auto parse_query_terms(
     return {std::move(id), std::move(parsed_query), {}};
 }
 
-auto parse_query_ids(std::string const& query_string) -> Query
-{
+auto parse_query_ids(std::string const& query_string) -> Query {
     auto [id, raw_query] = split_query_at_colon(query_string);
     std::vector<term_id_type> parsed_query;
     std::vector<std::string> term_ids;
@@ -72,8 +70,8 @@ std::function<void(const std::string)> resolve_query_parser(
     std::unique_ptr<pisa::Tokenizer> tokenizer,
     std::optional<std::string> const& terms_file,
     std::optional<std::string> const& stopwords_filename,
-    std::optional<std::string> const& stemmer_type)
-{
+    std::optional<std::string> const& stemmer_type
+) {
     if (terms_file) {
         auto term_processor = TermProcessor(terms_file, stopwords_filename, stemmer_type);
         return [&queries,
@@ -87,8 +85,7 @@ std::function<void(const std::string)> resolve_query_parser(
     };
 }
 
-bool read_query(term_id_vec& ret, std::istream& is)
-{
+bool read_query(term_id_vec& ret, std::istream& is) {
     ret.clear();
     std::string line;
     if (!std::getline(is, line)) {
@@ -98,14 +95,12 @@ bool read_query(term_id_vec& ret, std::istream& is)
     return true;
 }
 
-void remove_duplicate_terms(term_id_vec& terms)
-{
+void remove_duplicate_terms(term_id_vec& terms) {
     std::sort(terms.begin(), terms.end());
     terms.erase(std::unique(terms.begin(), terms.end()), terms.end());
 }
 
-term_freq_vec query_freqs(term_id_vec terms)
-{
+term_freq_vec query_freqs(term_id_vec terms) {
     term_freq_vec query_term_freqs;
     std::sort(terms.begin(), terms.end());
     // count query term frequencies

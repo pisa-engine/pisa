@@ -19,19 +19,16 @@ namespace pisa {
 class TightVariableByte {
   public:
     template <uint32_t i>
-    static uint8_t extract7bits(const uint32_t val)
-    {
+    static uint8_t extract7bits(const uint32_t val) {
         return static_cast<uint8_t>((val >> (7 * i)) & ((1U << 7) - 1));
     }
 
     template <uint32_t i>
-    static uint8_t extract7bitsmaskless(const uint32_t val)
-    {
+    static uint8_t extract7bitsmaskless(const uint32_t val) {
         return static_cast<uint8_t>((val >> (7 * i)));
     }
 
-    static void encode(const uint32_t* in, const size_t length, uint8_t* out, size_t& nvalue)
-    {
+    static void encode(const uint32_t* in, const size_t length, uint8_t* out, size_t& nvalue) {
         uint8_t* bout = out;
         for (size_t k = 0; k < length; ++k) {
             const uint32_t val(in[k]);
@@ -79,16 +76,14 @@ class TightVariableByte {
         nvalue = bout - out;
     }
 
-    static void encode_single(uint32_t val, std::vector<uint8_t>& out)
-    {
+    static void encode_single(uint32_t val, std::vector<uint8_t>& out) {
         uint8_t buf[5];
         size_t nvalue;
         encode(&val, 1, buf, nvalue);
         out.insert(out.end(), buf, buf + nvalue);
     }
 
-    static uint8_t const* decode(const uint8_t* in, uint32_t* out, size_t n)
-    {
+    static uint8_t const* decode(const uint8_t* in, uint32_t* out, size_t n) {
         const uint8_t* inbyte = in;
         for (size_t i = 0; i < n; ++i) {
             unsigned int shift = 0;
@@ -104,8 +99,7 @@ class TightVariableByte {
         return inbyte;
     }
 
-    static void decode(const uint8_t* in, uint32_t* out, size_t len, size_t& n)
-    {
+    static void decode(const uint8_t* in, uint32_t* out, size_t len, size_t& n) {
         const uint8_t* inbyte = in;
         while (inbyte < in + len) {
             unsigned int shift = 0;
@@ -125,8 +119,8 @@ class TightVariableByte {
 struct interpolative_block {
     static constexpr std::uint64_t block_size = 128;
 
-    static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
-    {
+    static void
+    encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out) {
         assert(n <= block_size);
         thread_local std::array<std::uint32_t, block_size> inbuf{};
         thread_local std::vector<uint32_t> outbuf;  // TODO: Can we use array? How long does it need
@@ -148,8 +142,7 @@ struct interpolative_block {
     }
 
     static uint8_t const* PISA_NOINLINE
-    decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
-    {
+    decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) {
         assert(n <= block_size);
         if (sum_of_values == std::numeric_limits<std::uint32_t>::max()) {
             in = TightVariableByte::decode(in, &sum_of_values, 1);
@@ -174,8 +167,7 @@ struct optpfor_block {
     struct codec_type: FastPForLib::OPTPFor<4, FastPForLib::Simple16<false>> {
         uint8_t const* force_b{nullptr};
 
-        uint32_t findBestB(const uint32_t* in, uint32_t len)
-        {
+        uint32_t findBestB(const uint32_t* in, uint32_t len) {
             // trick to force the choice of b from a parameter
             if (force_b != nullptr) {
                 return *force_b;
@@ -213,7 +205,8 @@ struct optpfor_block {
         uint32_t sum_of_values,
         size_t n,
         std::vector<uint8_t>& out,
-        uint8_t const* b = nullptr)  // if non-null forces b
+        uint8_t const* b = nullptr
+    )  // if non-null forces b
     {
         thread_local codec_type optpfor_codec;
         thread_local std::array<std::uint8_t, 2 * 4 * block_size> buf{};
@@ -233,8 +226,7 @@ struct optpfor_block {
     }
 
     static uint8_t const* PISA_NOINLINE
-    decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
-    {
+    decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) {
         thread_local codec_type optpfor_codec;  // pfor decoding is *not* thread-safe
         assert(n <= block_size);
 
@@ -246,7 +238,8 @@ struct optpfor_block {
         uint8_t const* ret;
 
         ret = reinterpret_cast<uint8_t const*>(
-            optpfor_codec.decodeBlock(reinterpret_cast<uint32_t const*>(in), out, out_len));
+            optpfor_codec.decodeBlock(reinterpret_cast<uint32_t const*>(in), out, out_len)
+        );
         assert(out_len == n);
         return ret;
     }
@@ -260,8 +253,7 @@ struct varint_G8IU_block {
         // size is known rather than the input
         // the buffers pointed by src and dst must be respectively at least
         // 9 and 8 elements large
-        uint32_t decodeBlock(uint8_t const*& src, uint32_t* dst) const
-        {
+        uint32_t decodeBlock(uint8_t const*& src, uint32_t* dst) const {
             uint8_t desc = *src;
             src += 1;
             const __m128i data = _mm_lddqu_si128(reinterpret_cast<__m128i const*>(src));
@@ -275,16 +267,17 @@ struct varint_G8IU_block {
                     _mm_shuffle_epi8(data, vecmask[desc][1]);  //__builtin_ia32_pshufb128(data,
                                                                // shf2);
                 _mm_storeu_si128(
-                    reinterpret_cast<__m128i*>(dst + 4), result2);  //__builtin_ia32_storedqu(dst
-                                                                    //+ (16), result2);
+                    reinterpret_cast<__m128i*>(dst + 4), result2
+                );  //__builtin_ia32_storedqu(dst
+                    //+ (16), result2);
             }
 
             return readSize;
         }
     };
 
-    static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
-    {
+    static void
+    encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out) {
         thread_local codec_type varint_codec;
         thread_local std::array<std::uint8_t, 2 * 4 * block_size> buf{};
         assert(n <= block_size);
@@ -309,8 +302,7 @@ struct varint_G8IU_block {
     }
 
     // we only allow varint to be inlined (others have PISA_NOILINE)
-    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
-    {
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) {
         static codec_type varint_codec;  // decodeBlock is thread-safe
         assert(n <= block_size);
 

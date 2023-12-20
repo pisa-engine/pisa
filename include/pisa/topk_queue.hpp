@@ -25,8 +25,7 @@ struct topk_queue {
     /// the k-th highest score would be, then some top-k result will be missing
     /// from the final result, replaced by lower-scoring documents.
     explicit topk_queue(std::size_t k, Score initial_threshold = 0.0F)
-        : m_k(k), m_initial_threshold(initial_threshold)
-    {
+        : m_k(k), m_initial_threshold(initial_threshold) {
         m_effective_threshold = std::nextafter(m_initial_threshold, 0.0F);
         m_q.reserve(m_k + 1);
     }
@@ -43,8 +42,7 @@ struct topk_queue {
     /// will be returned. Otherwise, the entry will be inserted, and `true` returned.
     /// If the heap is full, the entry with the lowest value will be removed, i.e.,
     /// the heap will maintain its size.
-    auto insert(Score score, DocId docid = 0) -> bool
-    {
+    auto insert(Score score, DocId docid = 0) -> bool {
         if (PISA_UNLIKELY(not would_enter(score))) {
             return false;
         }
@@ -71,14 +69,14 @@ struct topk_queue {
     ///
     /// After calling this function, the heap should be no longer modified, as
     /// the heap order will not be preserved.
-    void finalize()
-    {
+    void finalize() {
         std::sort_heap(m_q.begin(), m_q.end(), min_heap_order);
         size_t size = std::lower_bound(
                           m_q.begin(),
                           m_q.end(),
                           0,
-                          [](std::pair<Score, DocId> l, Score r) { return l.first > r; })
+                          [](std::pair<Score, DocId> l, Score r) { return l.first > r; }
+                      )
             - m_q.begin();
         m_q.resize(size);
     }
@@ -91,30 +89,26 @@ struct topk_queue {
 
     /// Returns the threshold based on the heap state, defined as the score of the `k`-th document,
     /// or 0.0 if the heap is not full.
-    [[nodiscard]] auto true_threshold() const noexcept -> Score
-    {
+    [[nodiscard]] auto true_threshold() const noexcept -> Score {
         return capacity() == size() ? m_q.front().first : 0.0;
     }
     /// Returns the threshold set at the start (by default 0.0).
     [[nodiscard]] auto initial_threshold() const noexcept -> Score { return m_initial_threshold; }
 
     /// Returns the maximum of `true_threshold()` and `initial_threshold()`.
-    [[nodiscard]] auto effective_threshold() const noexcept -> Score
-    {
+    [[nodiscard]] auto effective_threshold() const noexcept -> Score {
         return m_effective_threshold;
     }
 
     /// Returns `true` if no documents have been missed up to this point.
     /// The reason why document could be missed is forcing a threshold that is too high
     /// (overestimated).
-    [[nodiscard]] auto is_safe() noexcept -> bool
-    {
+    [[nodiscard]] auto is_safe() noexcept -> bool {
         return m_effective_threshold >= m_initial_threshold;
     }
 
     /// Empties the queue and resets the threshold to 0 (or the given value).
-    void clear(Score initial_threshold = 0.0) noexcept
-    {
+    void clear(Score initial_threshold = 0.0) noexcept {
         m_q.clear();
         m_effective_threshold = std::nextafter(m_initial_threshold, 0.0);
         m_initial_threshold = initial_threshold;
@@ -128,8 +122,7 @@ struct topk_queue {
 
   private:
     [[nodiscard]] constexpr static auto
-    min_heap_order(entry_type const& lhs, entry_type const& rhs) noexcept -> bool
-    {
+    min_heap_order(entry_type const& lhs, entry_type const& rhs) noexcept -> bool {
         return lhs.first > rhs.first;
     }
 
@@ -139,8 +132,7 @@ struct topk_queue {
     ///
     /// For justification for using it instead of STL functions, see
     /// https://github.com/pisa-engine/pisa/issues/504.
-    static void sift_down(entry_iterator_type first, entry_iterator_type last)
-    {
+    static void sift_down(entry_iterator_type first, entry_iterator_type last) {
         auto cmp = [first](std::size_t lhs, std::size_t rhs) {
             return (first + lhs)->first > (first + rhs)->first;
         };

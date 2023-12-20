@@ -2,8 +2,7 @@
 
 namespace pisa {
 
-progress::progress(std::string const& name, size_t goal, bool always_enable) : m_name(name)
-{
+progress::progress(std::string const& name, size_t goal, bool always_enable) : m_name(name) {
     if (goal == 0) {
         throw std::runtime_error("Progress bar must have a positive goal but 0 given");
     }
@@ -13,8 +12,7 @@ progress::progress(std::string const& name, size_t goal, bool always_enable) : m
     }
 }
 
-progress::~progress()
-{
+progress::~progress() {
     if (!m_disabled) {
         m_status.notify_one();
         std::unique_lock<std::mutex> lock(m_mut);
@@ -23,8 +21,7 @@ progress::~progress()
     }
 }
 
-void progress::update(std::size_t inc)
-{
+void progress::update(std::size_t inc) {
     if (!m_disabled) {
         std::unique_lock<std::mutex> lock(m_mut);
         m_count += inc;
@@ -32,8 +29,7 @@ void progress::update(std::size_t inc)
     }
 }
 
-void progress::print_status()
-{
+void progress::print_status() {
     size_t progress = (100 * m_count) / m_goal;
     std::chrono::seconds elapsed =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - m_start);
@@ -46,8 +42,7 @@ void progress::print_status()
     }
 }
 
-std::ostream& progress::format_interval(std::ostream& out, std::chrono::seconds time)
-{
+std::ostream& progress::format_interval(std::ostream& out, std::chrono::seconds time) {
     using std::chrono::hours;
     using std::chrono::minutes;
     using std::chrono::seconds;

@@ -16,8 +16,7 @@ class bit_vector {
     bit_vector() = default;
 
     template <class Range>
-    explicit bit_vector(Range const& from)
-    {
+    explicit bit_vector(Range const& from) {
         std::vector<uint64_t> bits;
         auto const first_mask = uint64_t(1);
         uint64_t mask = first_mask;
@@ -44,21 +43,18 @@ class bit_vector {
     explicit bit_vector(bit_vector_builder* from);
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_size, "m_size")(m_bits, "m_bits");
     }
 
-    void swap(bit_vector& other)
-    {
+    void swap(bit_vector& other) {
         std::swap(other.m_size, m_size);
         other.m_bits.swap(m_bits);
     }
 
     inline size_t size() const { return m_size; }
 
-    inline bool operator[](uint64_t pos) const
-    {
+    inline bool operator[](uint64_t pos) const {
         assert(pos < m_size);
         uint64_t block = pos / 64;
         assert(block < m_bits.size());
@@ -66,8 +62,7 @@ class bit_vector {
         return ((m_bits[block] >> shift) & 1) != 0U;
     }
 
-    inline uint64_t get_bits(uint64_t pos, uint64_t len) const
-    {
+    inline uint64_t get_bits(uint64_t pos, uint64_t len) const {
         assert(pos + len <= size());
         assert(len <= 64);
         if (len == 0U) {
@@ -84,8 +79,7 @@ class bit_vector {
     }
 
     // same as get_bits(pos, 64) but it can extend further size(), padding with zeros
-    inline uint64_t get_word(uint64_t pos) const
-    {
+    inline uint64_t get_word(uint64_t pos) const {
         assert(pos < size());
         uint64_t block = pos / 64;
         uint64_t shift = pos % 64;
@@ -97,8 +91,7 @@ class bit_vector {
     }
 
     // unsafe and fast version of get_word, it retrieves at least 56 bits
-    inline uint64_t get_word56(uint64_t pos) const
-    {
+    inline uint64_t get_word56(uint64_t pos) const {
         // XXX check endianness?
         const char* ptr = reinterpret_cast<const char*>(m_bits.data());
         std::uint64_t word;
@@ -106,8 +99,7 @@ class bit_vector {
         return word >> (pos % 8);
     }
 
-    inline uint64_t predecessor0(uint64_t pos) const
-    {
+    inline uint64_t predecessor0(uint64_t pos) const {
         assert(pos < m_size);
         uint64_t block = pos / 64;
         uint64_t shift = 64 - pos % 64 - 1;
@@ -122,8 +114,7 @@ class bit_vector {
         return block * 64 + ret;
     }
 
-    inline uint64_t successor0(uint64_t pos) const
-    {
+    inline uint64_t successor0(uint64_t pos) const {
         assert(pos < m_size);
         uint64_t block = pos / 64;
         uint64_t shift = pos % 64;
@@ -138,8 +129,7 @@ class bit_vector {
         return block * 64 + ret;
     }
 
-    inline uint64_t predecessor1(uint64_t pos) const
-    {
+    inline uint64_t predecessor1(uint64_t pos) const {
         assert(pos < m_size);
         uint64_t block = pos / 64;
         uint64_t shift = 64 - pos % 64 - 1;
@@ -154,8 +144,7 @@ class bit_vector {
         return block * 64 + ret;
     }
 
-    inline uint64_t successor1(uint64_t pos) const
-    {
+    inline uint64_t successor1(uint64_t pos) const {
         assert(pos < m_size);
         uint64_t block = pos / 64;
         uint64_t shift = pos % 64;
@@ -175,13 +164,11 @@ class bit_vector {
     struct enumerator {
         enumerator() = default;
 
-        enumerator(bit_vector const& bv, size_t pos) : m_bv(&bv), m_pos(pos), m_buf(0), m_avail(0)
-        {
+        enumerator(bit_vector const& bv, size_t pos) : m_bv(&bv), m_pos(pos), m_buf(0), m_avail(0) {
             m_bv->data().prefetch(m_pos / 64);
         }
 
-        inline bool next()
-        {
+        inline bool next() {
             if (m_avail == 0U) {
                 fill_buf();
             }
@@ -192,8 +179,7 @@ class bit_vector {
             return b;
         }
 
-        inline uint64_t take(size_t l)
-        {
+        inline uint64_t take(size_t l) {
             if (m_avail < l) {
                 fill_buf();
             }
@@ -209,8 +195,7 @@ class bit_vector {
             return val;
         }
 
-        inline uint64_t skip_zeros()
-        {
+        inline uint64_t skip_zeros() {
             uint64_t zs = 0;
             // XXX the loop may be optimized by aligning access
             while (m_buf == 0U) {
@@ -231,8 +216,7 @@ class bit_vector {
         inline uint64_t position() const { return m_pos; }
 
       private:
-        inline void fill_buf()
-        {
+        inline void fill_buf() {
             m_buf = m_bv->get_word(m_pos);
             m_avail = 64;
         }
@@ -246,8 +230,7 @@ class bit_vector {
     struct unary_enumerator {
         unary_enumerator() : m_data(0), m_position(0), m_buf(0) {}
 
-        unary_enumerator(bit_vector const& bv, uint64_t pos)
-        {
+        unary_enumerator(bit_vector const& bv, uint64_t pos) {
             m_data = bv.data().data();
             m_position = pos;
             m_buf = m_data[pos / 64];
@@ -257,8 +240,7 @@ class bit_vector {
 
         uint64_t position() const { return m_position; }
 
-        uint64_t next()
-        {
+        uint64_t next() {
             unsigned long pos_in_word;
             uint64_t buf = m_buf;
             while (broadword::lsb(buf, pos_in_word) == 0U) {
@@ -272,8 +254,7 @@ class bit_vector {
         }
 
         // skip to the k-th one after the current position
-        void skip(uint64_t k)
-        {
+        void skip(uint64_t k) {
             uint64_t skipped = 0;
             uint64_t buf = m_buf;
             uint64_t w = 0;
@@ -289,8 +270,7 @@ class bit_vector {
         }
 
         // return the position of the k-th one after the current position.
-        uint64_t skip_no_move(uint64_t k)
-        {
+        uint64_t skip_no_move(uint64_t k) {
             uint64_t position = m_position;
             uint64_t skipped = 0;
             uint64_t buf = m_buf;
@@ -307,8 +287,7 @@ class bit_vector {
         }
 
         // skip to the k-th zero after the current position
-        void skip0(uint64_t k)
-        {
+        void skip0(uint64_t k) {
             uint64_t skipped = 0;
             uint64_t pos_in_word = m_position % 64;
             uint64_t buf = ~m_buf & (uint64_t(-1) << pos_in_word);

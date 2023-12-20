@@ -21,8 +21,8 @@ struct uniform_partitioned_sequence {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         assert(n > 0);
         uint64_t partition_size = uint64_t(1) << params.log_partition_size;
         size_t partitions = ceil_div(n, partition_size);
@@ -51,7 +51,8 @@ struct uniform_partitioned_sequence {
             }
 
             base_sequence_type::write(
-                bvb, cur_partition.begin(), cur_partition.back() + 1, cur_partition.size(), params);
+                bvb, cur_partition.begin(), cur_partition.back() + 1, cur_partition.size(), params
+            );
         } else {
             bit_vector_builder bv_sequences;
             std::vector<uint64_t> endpoints;
@@ -79,7 +80,8 @@ struct uniform_partitioned_sequence {
                     cur_partition.begin(),
                     cur_partition.back() + 1,
                     cur_partition.size(),  // XXX skip last one?
-                    params);
+                    params
+                );
                 endpoints.push_back(bv_sequences.size());
                 upper_bounds.push_back(upper_bound);
                 cur_base = upper_bound + 1;
@@ -87,7 +89,8 @@ struct uniform_partitioned_sequence {
 
             bit_vector_builder bv_upper_bounds;
             compact_elias_fano::write(
-                bv_upper_bounds, upper_bounds.begin(), universe, partitions + 1, params);
+                bv_upper_bounds, upper_bounds.begin(), universe, partitions + 1, params
+            );
 
             uint64_t endpoint_bits = ceil_log2(bv_sequences.size() + 1);
             write_gamma(bvb, endpoint_bits);
@@ -112,9 +115,9 @@ struct uniform_partitioned_sequence {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-            : m_params(params), m_size(n), m_universe(universe), m_bv(&bv)
-        {
+            global_parameters const& params
+        )
+            : m_params(params), m_size(n), m_universe(universe), m_bv(&bv) {
             bit_vector::enumerator it(bv, offset);
             m_partitions = read_gamma_nonzero(it);
             if (m_partitions == 1) {
@@ -138,8 +141,8 @@ struct uniform_partitioned_sequence {
                 m_endpoint_bits = read_gamma(it);
                 uint64_t cur_offset = it.position();
 
-                m_upper_bounds = compact_elias_fano::enumerator(
-                    bv, cur_offset, universe, m_partitions + 1, params);
+                m_upper_bounds =
+                    compact_elias_fano::enumerator(bv, cur_offset, universe, m_partitions + 1, params);
                 cur_offset += compact_elias_fano::offsets(0, universe, m_partitions + 1, params).end;
 
                 m_endpoints_offset = cur_offset;
@@ -153,8 +156,7 @@ struct uniform_partitioned_sequence {
             slow_move();
         }
 
-        value_type PISA_ALWAYSINLINE move(uint64_t position)
-        {
+        value_type PISA_ALWAYSINLINE move(uint64_t position) {
             assert(position <= size());
             m_position = position;
 
@@ -168,8 +170,7 @@ struct uniform_partitioned_sequence {
 
         // note: this is instantiated oly if BaseSequence has next_geq
         template <typename Q = base_sequence_enumerator, typename = if_has_next_geq<Q>>
-        value_type PISA_ALWAYSINLINE next_geq(uint64_t lower_bound)
-        {
+        value_type PISA_ALWAYSINLINE next_geq(uint64_t lower_bound) {
             if (PISA_LIKELY(lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound)) {
                 auto val = m_partition_enum.next_geq(lower_bound - m_cur_base);
                 m_position = m_cur_begin + val.first;
@@ -178,8 +179,7 @@ struct uniform_partitioned_sequence {
             return slow_next_geq(lower_bound);
         }
 
-        value_type PISA_ALWAYSINLINE next()
-        {
+        value_type PISA_ALWAYSINLINE next() {
             ++m_position;
 
             if (PISA_LIKELY(m_position < m_cur_end)) {
@@ -191,8 +191,7 @@ struct uniform_partitioned_sequence {
 
         uint64_t size() const { return m_size; }
 
-        uint64_t prev_value() const
-        {
+        uint64_t prev_value() const {
             if (PISA_UNLIKELY(m_position == m_cur_begin)) {
                 return m_cur_partition != 0U ? m_cur_base - 1 : 0;
             }
@@ -205,8 +204,7 @@ struct uniform_partitioned_sequence {
         // next(), causing the code to grow. Since next is called in very
         // tight loops, on microbenchmarks this causes an improvement of
         // about 3ns on my i7 3Ghz
-        value_type PISA_NOINLINE slow_next()
-        {
+        value_type PISA_NOINLINE slow_next() {
             if (PISA_UNLIKELY(m_position == m_size)) {
                 assert(m_cur_partition == m_partitions - 1);
                 auto val = m_partition_enum.next();
@@ -220,8 +218,7 @@ struct uniform_partitioned_sequence {
             return value_type(m_position, val);
         }
 
-        value_type PISA_NOINLINE slow_move()
-        {
+        value_type PISA_NOINLINE slow_move() {
             if (m_position == size()) {
                 if (m_partitions > 1) {
                     switch_partition(m_partitions - 1);
@@ -235,8 +232,7 @@ struct uniform_partitioned_sequence {
             return value_type(m_position, val);
         }
 
-        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound)
-        {
+        value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound) {
             if (m_partitions == 1) {
                 if (lower_bound < m_cur_base) {
                     return move(0);
@@ -257,13 +253,11 @@ struct uniform_partitioned_sequence {
             return next_geq(lower_bound);
         }
 
-        void switch_partition(uint64_t partition)
-        {
+        void switch_partition(uint64_t partition) {
             assert(m_partitions > 1);
 
             uint64_t endpoint = partition != 0U
-                ? m_bv->get_bits(
-                    m_endpoints_offset + (partition - 1) * m_endpoint_bits, m_endpoint_bits)
+                ? m_bv->get_bits(m_endpoints_offset + (partition - 1) * m_endpoint_bits, m_endpoint_bits)
                 : 0;
             m_bv->data().prefetch((m_sequences_offset + endpoint) / 64);
 
@@ -280,7 +274,8 @@ struct uniform_partitioned_sequence {
                 m_sequences_offset + endpoint,
                 m_cur_upper_bound - m_cur_base + 1,
                 m_cur_end - m_cur_begin,
-                m_params);
+                m_params
+            );
         }
 
         global_parameters m_params;

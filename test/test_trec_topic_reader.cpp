@@ -6,8 +6,7 @@
 
 using namespace pisa;
 
-TEST_CASE("Read topic", "[unit]")
-{
+TEST_CASE("Read topic", "[unit]") {
     std::istringstream is(
         "<top>\n"
         "<num> Number: 301 \n"
@@ -16,7 +15,8 @@ TEST_CASE("Read topic", "[unit]")
         "Some description here. \n"
         "<narr> Narrative:\n"
         "Some narrative content. \n"
-        "</top>\n");
+        "</top>\n"
+    );
 
     pisa::trec_topic_reader reader(is);
     auto topic = reader.next_topic();
@@ -28,8 +28,7 @@ TEST_CASE("Read topic", "[unit]")
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
-TEST_CASE("Read multiple topics", "[unit]")
-{
+TEST_CASE("Read multiple topics", "[unit]") {
     std::istringstream is(
         "<top>\n"
         "<num> Number: 301 \n"
@@ -49,7 +48,8 @@ TEST_CASE("Read multiple topics", "[unit]")
         "Some other description. \n"
         "<narr>\n"
         "Some other narrative\n... narrative"
-        "</top>\n");
+        "</top>\n"
+    );
 
     pisa::trec_topic_reader reader(is);
     auto topic = reader.next_topic();
@@ -67,8 +67,7 @@ TEST_CASE("Read multiple topics", "[unit]")
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
-TEST_CASE("Read topic with closing tags", "[unit]")
-{
+TEST_CASE("Read topic with closing tags", "[unit]") {
     std::istringstream is(
         "<top>\n"
         "<num> Number: 301 \n"
@@ -79,7 +78,8 @@ TEST_CASE("Read topic with closing tags", "[unit]")
         "<narr> Narrative:\n"
         "Some narrative content. \n"
         "</narr>"
-        "</top>\n");
+        "</top>\n"
+    );
 
     pisa::trec_topic_reader reader(is);
     auto topic = reader.next_topic();
@@ -91,13 +91,13 @@ TEST_CASE("Read topic with closing tags", "[unit]")
     REQUIRE(reader.next_topic() == std::nullopt);
 }
 
-TEST_CASE("Invalid topic", "[unit]")
-{
+TEST_CASE("Invalid topic", "[unit]") {
     {
         std::istringstream is(
             "<top>\n"
             "Number: 301 \n"
-            "</top>\n");
+            "</top>\n"
+        );
 
         pisa::trec_topic_reader reader(is);
         REQUIRE_THROWS(reader.next_topic());
@@ -106,7 +106,8 @@ TEST_CASE("Invalid topic", "[unit]")
         std::istringstream is(
             "<top>\n"
             "<num>Number: 301 \n"
-            "</top>\n");
+            "</top>\n"
+        );
 
         pisa::trec_topic_reader reader(is);
         REQUIRE_THROWS(reader.next_topic());
@@ -116,18 +117,8 @@ TEST_CASE("Invalid topic", "[unit]")
             "<top>\n"
             "<num>Number: 301 \n"
             "<title> title here. \n"
-            "</top>\n");
-
-        pisa::trec_topic_reader reader(is);
-        REQUIRE_THROWS(reader.next_topic());
-    }
-    {
-        std::istringstream is(
-            "<top>\n"
-            "<num>Number: 301 \n"
-            "<title> title here. \n"
-            "<desc> description here. \n"
-            "</top>\n");
+            "</top>\n"
+        );
 
         pisa::trec_topic_reader reader(is);
         REQUIRE_THROWS(reader.next_topic());
@@ -138,7 +129,20 @@ TEST_CASE("Invalid topic", "[unit]")
             "<num>Number: 301 \n"
             "<title> title here. \n"
             "<desc> description here. \n"
-            "<narr> narrative here. \n");
+            "</top>\n"
+        );
+
+        pisa::trec_topic_reader reader(is);
+        REQUIRE_THROWS(reader.next_topic());
+    }
+    {
+        std::istringstream is(
+            "<top>\n"
+            "<num>Number: 301 \n"
+            "<title> title here. \n"
+            "<desc> description here. \n"
+            "<narr> narrative here. \n"
+        );
 
         pisa::trec_topic_reader reader(is);
         REQUIRE_THROWS(reader.next_topic());

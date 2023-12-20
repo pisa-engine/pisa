@@ -33,9 +33,8 @@ namespace pisa { namespace invert {
         Inverted_Index() = default;
         Inverted_Index(Inverted_Index&, tbb::split);
         Inverted_Index(
-            Documents documents,
-            Frequencies frequencies,
-            std::vector<std::uint32_t> document_sizes = {});
+            Documents documents, Frequencies frequencies, std::vector<std::uint32_t> document_sizes = {}
+        );
 
         void operator()(tbb::blocked_range<PostingIterator> const& r);
         void join(Inverted_Index& rhs);
@@ -58,7 +57,8 @@ namespace pisa { namespace invert {
         std::vector<Document_Id>& lower_doc,
         std::vector<Frequency>& lower_freq,
         std::vector<Document_Id>& higher_doc,
-        std::vector<Frequency>& higher_freq);
+        std::vector<Frequency>& higher_freq
+    );
 
     /// Creates an in-memory inverted index for a single document range.
     auto invert_range(DocumentRange documents, Document_Id first_document_id, size_t threads)
@@ -73,6 +73,7 @@ namespace pisa { namespace invert {
 
     /// Creates an inverted index (simple, uncompressed binary format) from a forward index.
     void invert_forward_index(
-        std::string const& input_basename, std::string const& output_basename, InvertParams params);
+        std::string const& input_basename, std::string const& output_basename, InvertParams params
+    );
 
 }}  // namespace pisa::invert

@@ -40,8 +40,7 @@ class freq_index {
      *                throughout the life of the index. Once the source gets deallocated,
      *                any index operations may result in undefined behavior.
      */
-    explicit freq_index(MemorySource source) : m_source(std::move(source))
-    {
+    explicit freq_index(MemorySource source) : m_source(std::move(source)) {
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
@@ -59,8 +58,7 @@ class freq_index {
             : m_params(params),
               m_num_docs(num_docs),
               m_docs_sequences(params),
-              m_freqs_sequences(params)
-        {}
+              m_freqs_sequences(params) {}
 
         /**
          * Records a new posting list.
@@ -76,8 +74,8 @@ class freq_index {
          */
         template <typename DocsIterator, typename FreqsIterator>
         void add_posting_list(
-            uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, uint64_t occurrences)
-        {
+            uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, uint64_t occurrences
+        ) {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
@@ -96,7 +94,8 @@ class freq_index {
                     bit_vector_builder freqs_bits;
                     FreqsSequence::write(freqs_bits, freqs_begin, occurrences + 1, n, m_params);
                     m_freqs_sequences.append(freqs_bits);
-                });
+                }
+            );
         }
 
         /**
@@ -104,8 +103,7 @@ class freq_index {
          *
          * \param sq  Inverted index object that will take ownership of the data.
          */
-        void build(freq_index& sq)
-        {
+        void build(freq_index& sq) {
             sq.m_num_docs = m_num_docs;
             sq.m_params = m_params;
 
@@ -132,28 +130,24 @@ class freq_index {
 
     class document_enumerator {
       public:
-        void reset()
-        {
+        void reset() {
             m_cur_pos = 0;
             m_cur_docid = m_docs_enum.move(0).second;
         }
 
-        void PISA_FLATTEN_FUNC next()
-        {
+        void PISA_FLATTEN_FUNC next() {
             auto val = m_docs_enum.next();
             m_cur_pos = val.first;
             m_cur_docid = val.second;
         }
 
-        void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound)
-        {
+        void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
             auto val = m_docs_enum.next_geq(lower_bound);
             m_cur_pos = val.first;
             m_cur_docid = val.second;
         }
 
-        void PISA_FLATTEN_FUNC move(uint64_t position)
-        {
+        void PISA_FLATTEN_FUNC move(uint64_t position) {
             auto val = m_docs_enum.move(position);
             m_cur_pos = val.first;
             m_cur_docid = val.second;
@@ -175,9 +169,9 @@ class freq_index {
         friend class freq_index;
 
         document_enumerator(
-            typename DocsSequence::enumerator docs_enum, typename FreqsSequence::enumerator freqs_enum)
-            : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum)
-        {
+            typename DocsSequence::enumerator docs_enum, typename FreqsSequence::enumerator freqs_enum
+        )
+            : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum) {
             reset();
         }
 
@@ -197,11 +191,11 @@ class freq_index {
      *
      * \returns  The cursor over the posting list.
      */
-    [[nodiscard]] document_enumerator operator[](size_t term_id) const
-    {
+    [[nodiscard]] document_enumerator operator[](size_t term_id) const {
         if (term_id >= size()) {
             throw std::out_of_range(
-                fmt::format("given term ID ({}) is out of range, must be < {}", term_id, size()));
+                fmt::format("given term ID ({}) is out of range, must be < {}", term_id, size())
+            );
         }
         auto docs_it = m_docs_sequences.get(m_params, term_id);
         uint64_t occurrences = read_gamma_nonzero(docs_it);
@@ -211,11 +205,13 @@ class freq_index {
         }
 
         typename DocsSequence::enumerator docs_enum(
-            m_docs_sequences.bits(), docs_it.position(), num_docs(), n, m_params);
+            m_docs_sequences.bits(), docs_it.position(), num_docs(), n, m_params
+        );
 
         auto freqs_it = m_freqs_sequences.get(m_params, term_id);
         typename FreqsSequence::enumerator freqs_enum(
-            m_freqs_sequences.bits(), freqs_it.position(), occurrences + 1, n, m_params);
+            m_freqs_sequences.bits(), freqs_it.position(), occurrences + 1, n, m_params
+        );
 
         return document_enumerator(docs_enum, freqs_enum);
     }
@@ -223,8 +219,7 @@ class freq_index {
     /**
      * No-op.
      */
-    void warmup(size_t /* i */) const
-    {
+    void warmup(size_t /* i */) const {
         // XXX implement this
     }
 
@@ -233,8 +228,7 @@ class freq_index {
     /**
      * Swaps all data with another index.
      */
-    void swap(freq_index& other)
-    {
+    void swap(freq_index& other) {
         std::swap(m_params, other.m_params);
         std::swap(m_num_docs, other.m_num_docs);
         m_docs_sequences.swap(other.m_docs_sequences);
@@ -242,8 +236,7 @@ class freq_index {
     }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_params, "m_params")  //
             (m_num_docs, "m_num_docs")  //
             (m_docs_sequences, "m_docs_sequences")  //

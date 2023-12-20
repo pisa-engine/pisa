@@ -7,8 +7,7 @@
 
 namespace pisa {
 
-auto reorder_docids(ReorderDocuments args) -> int
-{
+auto reorder_docids(ReorderDocuments args) -> int {
     tbb::global_control c(oneapi::tbb::global_control::max_allowed_parallelism, 2);
     try {
         if (args.bp()) {
@@ -26,10 +25,12 @@ auto reorder_docids(ReorderDocuments args) -> int
                 .print_args = args.print(),
             });
         }
-        ReorderOptions options{.input_basename = args.input_basename(),
-                               .output_basename = *args.output_basename(),
-                               .document_lexicon = args.document_lexicon(),
-                               .reordered_document_lexicon = args.reordered_document_lexicon()};
+        ReorderOptions options{
+            .input_basename = args.input_basename(),
+            .output_basename = *args.output_basename(),
+            .document_lexicon = args.document_lexicon(),
+            .reordered_document_lexicon = args.reordered_document_lexicon()
+        };
         if (args.random()) {
             return reorder_random(options, args.seed());
         }

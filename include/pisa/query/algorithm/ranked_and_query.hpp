@@ -10,8 +10,7 @@ struct ranked_and_query {
     explicit ranked_and_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
-    void operator()(CursorRange&& cursors, uint64_t max_docid)
-    {
+    void operator()(CursorRange&& cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
             return;

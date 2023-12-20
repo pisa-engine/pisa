@@ -23,8 +23,7 @@ namespace intersection {
     using Mask = std::bitset<MAX_QUERY_LEN_EXP>;
 
     /// Returns a filtered copy of `query` containing only terms indicated by ones in the bit mask.
-    [[nodiscard]] inline auto filter(Query const& query, Mask mask) -> Query
-    {
+    [[nodiscard]] inline auto filter(Query const& query, Mask mask) -> Query {
         if (query.terms.size() > MAX_QUERY_LEN) {
             throw std::invalid_argument("Queries can be at most 2^32 terms long");
         }
@@ -54,14 +53,14 @@ struct Intersection {
         Index const& index,
         Wand const& wand,
         Query const& query,
-        std::optional<intersection::Mask> term_mask = std::nullopt) -> Intersection;
+        std::optional<intersection::Mask> term_mask = std::nullopt
+    ) -> Intersection;
 };
 
 template <typename Index, typename Wand>
 inline auto Intersection::compute(
-    Index const& index, Wand const& wand, Query const& query, std::optional<intersection::Mask> term_mask)
-    -> Intersection
-{
+    Index const& index, Wand const& wand, Query const& query, std::optional<intersection::Mask> term_mask
+) -> Intersection {
     auto filtered_query = term_mask ? intersection::filter(query, *term_mask) : query;
     scored_and_query retrieve{};
     auto scorer = scorer::from_params(ScorerParams("bm25"), wand);
@@ -80,8 +79,7 @@ inline auto Intersection::compute(
 /// Do `func` for all intersections in a query that have a given maximum number of terms.
 /// `Fn` takes `Query` and `Mask`.
 template <typename Fn>
-auto for_all_subsets(Query const& query, std::optional<std::uint8_t> max_term_count, Fn func)
-{
+auto for_all_subsets(Query const& query, std::optional<std::uint8_t> max_term_count, Fn func) {
     auto subset_count = 1U << query.terms.size();
     for (auto subset = 1U; subset < subset_count; ++subset) {
         auto mask = intersection::Mask(subset);

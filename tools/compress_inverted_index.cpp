@@ -4,8 +4,7 @@
 #include "app.hpp"
 #include "compress.hpp"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
     CLI::App app{"Compresses an inverted index"};
@@ -19,5 +18,6 @@ int main(int argc, char** argv)
         args.output(),
         args.scorer_params(),
         args.quantization_bits(),
-        args.check());
+        args.check()
+    );
 }

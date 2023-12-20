@@ -15,6 +15,7 @@ void compress(
     std::string const& output_filename,
     ScorerParams const& scorer_params,
     std::optional<Size> quantization_bits,
-    bool check);
+    bool check
+);
 
 }  // namespace pisa

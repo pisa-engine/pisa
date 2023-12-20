@@ -9,8 +9,7 @@
 #include <vector>
 
 struct sequence_initialization {
-    sequence_initialization() : seq(random_sequence(universe, n, true))
-    {
+    sequence_initialization() : seq(random_sequence(universe, n, true)) {
         // high granularity to test more corner cases
         params.rb_log_rank1_sampling = 6;
         params.rb_log_sampling1 = 5;
@@ -26,8 +25,7 @@ struct sequence_initialization {
     pisa::bit_vector bv;
 };
 
-TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction") {
     // test pointers and rank samples
     pisa::compact_ranked_bitvector::offsets of(0, universe, seq.size(), params);
     uint64_t rank = 0;
@@ -54,8 +52,7 @@ TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_construction
     }
 }
 
-TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_singleton")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_singleton") {
     // test singleton sequences
     std::vector<uint64_t> short_seq;
     short_seq.push_back(0);
@@ -64,8 +61,7 @@ TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_singleton")
     test_sequence(pisa::compact_ranked_bitvector(), params, 2, short_seq);
 }
 
-TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_enumerator")
-{
+TEST_CASE_METHOD(sequence_initialization, "compact_ranked_bitvector_enumerator") {
     pisa::compact_ranked_bitvector::enumerator r(bv, 0, universe, seq.size(), params);
     test_sequence(r, seq);
 }

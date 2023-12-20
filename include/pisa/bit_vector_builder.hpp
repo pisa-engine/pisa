@@ -10,7 +10,9 @@ namespace pisa {
 namespace detail {
 
     /// Returns the number of 64-bit words needed to store `n` bits.
-    inline std::size_t words_for(uint64_t n) { return ceil_div(n, 64); }
+    inline std::size_t words_for(uint64_t n) {
+        return ceil_div(n, 64);
+    }
 
 }  // namespace detail
 
@@ -30,8 +32,7 @@ class bit_vector_builder {
     void reserve(uint64_t size);
 
     /// Appends one bit to the end of the vector.
-    inline void push_back(bool b)
-    {
+    inline void push_back(bool b) {
         uint64_t pos_in_word = m_size % 64;
         if (pos_in_word == 0) {
             m_bits.push_back(0);
@@ -42,8 +43,7 @@ class bit_vector_builder {
     }
 
     /// Sets a bit at the position `pos` to the given value.
-    inline void set(uint64_t pos, bool b)
-    {
+    inline void set(uint64_t pos, bool b) {
         uint64_t word = pos / 64;
         uint64_t pos_in_word = pos % 64;
 
@@ -52,8 +52,7 @@ class bit_vector_builder {
     }
 
     /// Overrides `len` bits, starting from `pos`, with the first `len` bits from `bits`.
-    inline void set_bits(uint64_t pos, uint64_t bits, size_t len)
-    {
+    inline void set_bits(uint64_t pos, uint64_t bits, size_t len) {
         assert(pos + len <= size());
         // check there are no spurious bits
         assert(len == 64 || (bits >> len) == 0);
@@ -75,8 +74,7 @@ class bit_vector_builder {
     }
 
     /// Appends the first `len` bits from `bits`.
-    inline void append_bits(uint64_t bits, size_t len)
-    {
+    inline void append_bits(uint64_t bits, size_t len) {
         // check there are no spurious bits
         assert(len == 64 || (bits >> len) == 0);
         if (len == 0U) {
@@ -96,8 +94,7 @@ class bit_vector_builder {
     }
 
     /// Extends the vector with n zeroes.
-    inline void zero_extend(uint64_t n)
-    {
+    inline void zero_extend(uint64_t n) {
         m_size += n;
         uint64_t needed = detail::words_for(m_size) - m_bits.size();
         if (needed != 0U) {
@@ -107,8 +104,7 @@ class bit_vector_builder {
     }
 
     /// Extends the vector with n ones.
-    inline void one_extend(uint64_t n)
-    {
+    inline void one_extend(uint64_t n) {
         while (n >= 64) {
             append_bits(uint64_t(-1), 64);
             n -= 64;
@@ -125,8 +121,7 @@ class bit_vector_builder {
     void reverse();
 
     /// Returns a reference to the underlying data buffer.
-    bits_type& move_bits()
-    {
+    bits_type& move_bits() {
         assert(detail::words_for(m_size) == m_bits.size());
         return m_bits;
     }

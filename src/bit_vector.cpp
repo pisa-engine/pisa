@@ -3,8 +3,7 @@
 
 namespace pisa {
 
-bit_vector::bit_vector(bit_vector_builder* from)
-{
+bit_vector::bit_vector(bit_vector_builder* from) {
     m_size = from->size();
     m_bits.steal(from->move_bits());
 }

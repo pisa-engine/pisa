@@ -36,7 +36,6 @@ using token_type =
 using lexer_type = lex::lexertl::actor_lexer<token_type>;
 
 class EnglishTokenStream: public TokenStream {
-
     using iterator = typename lexer_type::iterator_type;
 
     CowString m_input;

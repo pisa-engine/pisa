@@ -27,8 +27,8 @@ struct Query {
     -> std::pair<std::optional<std::string>, std::string_view>;
 
 [[nodiscard]] auto parse_query_terms(
-    std::string const& query_string, Tokenizer const& tokenizer, TermProcessor term_processor)
-    -> Query;
+    std::string const& query_string, Tokenizer const& tokenizer, TermProcessor term_processor
+) -> Query;
 
 [[nodiscard]] auto parse_query_ids(std::string const& query_string) -> Query;
 
@@ -37,7 +37,8 @@ struct Query {
     std::unique_ptr<pisa::Tokenizer> tokenizer,
     std::optional<std::string> const& terms_file,
     std::optional<std::string> const& stopwords_filename,
-    std::optional<std::string> const& stemmer_type);
+    std::optional<std::string> const& stemmer_type
+);
 
 bool read_query(term_id_vec& ret, std::istream& is = std::cin);
 

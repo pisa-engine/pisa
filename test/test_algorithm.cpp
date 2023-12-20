@@ -12,25 +12,24 @@ using namespace rc;
 const auto genlists = gen::mapcat(gen::inRange<std::size_t>(0, 1000), [](std::size_t length) {
     return gen::pair(
         gen::container<std::vector<int>>(length, gen::arbitrary<int>()),
-        gen::container<std::vector<int>>(length, gen::arbitrary<int>()));
+        gen::container<std::vector<int>>(length, gen::arbitrary<int>())
+    );
 });
 
-TEST_CASE("pisa::transform", "[algorithm][prop]")
-{
-    SECTION("Add 1")
-    {
+TEST_CASE("pisa::transform", "[algorithm][prop]") {
+    SECTION("Add 1") {
         rc::check([](std::vector<int> vals) {
             auto inc = [](auto val) { return val + 1; };
             std::vector<int> actual;
             pisa::transform(
-                pisa::execution::par_unseq, vals.begin(), vals.end(), std::back_inserter(actual), inc);
+                pisa::execution::par_unseq, vals.begin(), vals.end(), std::back_inserter(actual), inc
+            );
             std::vector<int> expected;
             std::transform(vals.begin(), vals.end(), std::back_inserter(expected), inc);
             REQUIRE(actual == expected);
         });
     }
-    SECTION("Add two sequences")
-    {
+    SECTION("Add two sequences") {
         rc::check([&]() {
             auto [lhs, rhs] = *genlists;
             std::vector<int> actual;
@@ -40,19 +39,19 @@ TEST_CASE("pisa::transform", "[algorithm][prop]")
                 lhs.end(),
                 rhs.begin(),
                 std::back_inserter(actual),
-                std::plus<>{});
+                std::plus<>{}
+            );
             std::vector<int> expected;
             std::transform(
-                lhs.begin(), lhs.end(), rhs.begin(), std::back_inserter(expected), std::plus<>{});
+                lhs.begin(), lhs.end(), rhs.begin(), std::back_inserter(expected), std::plus<>{}
+            );
             REQUIRE(actual == expected);
         });
     }
 }
 
-TEST_CASE("pisa::sort", "[algorithm][prop]")
-{
-    SECTION("Default sort")
-    {
+TEST_CASE("pisa::sort", "[algorithm][prop]") {
+    SECTION("Default sort") {
         rc::check([](std::vector<int> vals) {
             std::vector<int> actual = vals;
             pisa::sort(pisa::execution::par_unseq, actual.begin(), actual.end());
@@ -61,8 +60,7 @@ TEST_CASE("pisa::sort", "[algorithm][prop]")
             REQUIRE(actual == expected);
         });
     }
-    SECTION("Reverse sort")
-    {
+    SECTION("Reverse sort") {
         rc::check([](std::vector<int> vals) {
             std::vector<int> actual = vals;
             pisa::sort(pisa::execution::par_unseq, actual.begin(), actual.end(), std::greater<>{});
@@ -73,8 +71,7 @@ TEST_CASE("pisa::sort", "[algorithm][prop]")
     }
 }
 
-TEST_CASE("pisa::for_each", "[algorithm][prop]")
-{
+TEST_CASE("pisa::for_each", "[algorithm][prop]") {
     rc::check([](std::vector<int> vals) {
         auto inc = [](auto& val) { return val += 1; };
         std::vector<int> actual = vals;

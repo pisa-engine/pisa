@@ -8,8 +8,8 @@ struct qmx_block {
     static constexpr std::uint64_t block_size = 128;
     static constexpr std::uint64_t overflow = 512;
 
-    static void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
-    {
+    static void
+    encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out) {
         assert(n <= block_size);
         auto* src = const_cast<uint32_t*>(in);
         if (n < block_size) {
@@ -30,8 +30,7 @@ struct qmx_block {
      * This is NOT enforced by `encode`, because it would be very wasteful to add 15 bytes to each
      * block. Instead, the padding is added to the index, after all postings.
      */
-    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n)
-    {
+    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) {
         static QMX::compress_integer_qmx_improved qmx_codec;  // decodeBlock is thread-safe
         assert(n <= block_size);
         if (PISA_UNLIKELY(n < block_size)) {

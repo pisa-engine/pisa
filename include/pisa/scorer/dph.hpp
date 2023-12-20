@@ -21,8 +21,7 @@ template <typename Wand>
 struct dph: public index_scorer<Wand> {
     using index_scorer<Wand>::index_scorer;
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
-    {
+    term_scorer_t term_scorer(uint64_t term_id) const override {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float f = (float)freq / this->m_wdata.doc_len(doc);
             float norm = (1.F - f) * (1.F - f) / (freq + 1.F);
@@ -31,7 +30,8 @@ struct dph: public index_scorer<Wand> {
                        * std::log2(
                            (freq * this->m_wdata.avg_len() / this->m_wdata.doc_len(doc))
                            * ((float)this->m_wdata.num_docs()
-                              / this->m_wdata.term_occurrence_count(term_id)))
+                              / this->m_wdata.term_occurrence_count(term_id))
+                       )
                    + .5F * std::log2(2.F * M_PI * freq * (1.F - f)));
         };
         return s;

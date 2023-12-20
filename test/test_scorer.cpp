@@ -7,19 +7,16 @@
 using namespace pisa;
 
 struct WandData {
-    [[nodiscard]] auto term_posting_count(std::uint32_t term_id) const -> std::size_t
-    {
+    [[nodiscard]] auto term_posting_count(std::uint32_t term_id) const -> std::size_t {
         switch (term_id) {
         case 0: return 10;
         default: return 20;
         }
     }
-    [[nodiscard]] auto norm_len(std::uint32_t docid) const -> float
-    {
+    [[nodiscard]] auto norm_len(std::uint32_t docid) const -> float {
         return doc_len(docid) / avg_len();
     }
-    [[nodiscard]] auto doc_len(std::uint32_t docid) const -> std::size_t
-    {
+    [[nodiscard]] auto doc_len(std::uint32_t docid) const -> std::size_t {
         switch (docid) {
         case 0: return 50;
         case 1: return 40;
@@ -27,8 +24,7 @@ struct WandData {
         default: return 50;
         }
     }
-    [[nodiscard]] auto term_occurrence_count(std::uint32_t term_id) const -> std::size_t
-    {
+    [[nodiscard]] auto term_occurrence_count(std::uint32_t term_id) const -> std::size_t {
         return 100;
     }
     [[nodiscard]] auto num_docs() const -> std::size_t { return 1000; }
@@ -36,8 +32,7 @@ struct WandData {
     [[nodiscard]] auto collection_len() const -> std::size_t { return 10000; }
 };
 
-TEST_CASE("BM25", "[scorer][unit]")
-{
+TEST_CASE("BM25", "[scorer][unit]") {
     WandData wdata;
     auto scorer = scorer::from_params(ScorerParams("bm25"), wdata);
     auto term_scorer = scorer->term_scorer(0);
@@ -47,8 +42,7 @@ TEST_CASE("BM25", "[scorer][unit]")
     CHECK(term_scorer(1, 20) == Approx(8.29555));
 }
 
-TEST_CASE("QLD", "[scorer][unit]")
-{
+TEST_CASE("QLD", "[scorer][unit]") {
     WandData wdata;
     auto scorer = scorer::from_params(ScorerParams("qld"), wdata);
     auto term_scorer = scorer->term_scorer(0);
@@ -58,8 +52,7 @@ TEST_CASE("QLD", "[scorer][unit]")
     CHECK(term_scorer(1, 20) == Approx(1.05939));
 }
 
-TEST_CASE("PL2", "[scorer][unit]")
-{
+TEST_CASE("PL2", "[scorer][unit]") {
     WandData wdata;
     auto scorer = scorer::from_params(ScorerParams("pl2"), wdata);
     auto term_scorer = scorer->term_scorer(0);
@@ -69,8 +62,7 @@ TEST_CASE("PL2", "[scorer][unit]")
     CHECK(term_scorer(1, 20) == Approx(8.35714));
 }
 
-TEST_CASE("DPH", "[scorer][unit]")
-{
+TEST_CASE("DPH", "[scorer][unit]") {
     WandData wdata;
     auto scorer = scorer::from_params(ScorerParams("dph"), wdata);
     auto term_scorer = scorer->term_scorer(0);
@@ -80,8 +72,7 @@ TEST_CASE("DPH", "[scorer][unit]")
     CHECK(term_scorer(1, 20) == Approx(1.93217));
 }
 
-TEST_CASE("Quantized", "[scorer][unit]")
-{
+TEST_CASE("Quantized", "[scorer][unit]") {
     WandData wdata;
     auto scorer = scorer::from_params(ScorerParams("quantized"), wdata);
     auto term_scorer = scorer->term_scorer(0);

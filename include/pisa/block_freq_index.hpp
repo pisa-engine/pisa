@@ -43,8 +43,7 @@ class block_freq_index {
      *                throughout the life of the index. Once the source gets deallocated,
      *                any index operations may result in undefined behavior.
      */
-    explicit block_freq_index(MemorySource source) : m_source(std::move(source))
-    {
+    explicit block_freq_index(MemorySource source) : m_source(std::move(source)) {
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
@@ -58,8 +57,7 @@ class block_freq_index {
         /**
          * Constructs a builder for an index containing the given number of documents.
          */
-        builder(std::uint64_t num_docs, global_parameters const& params) : m_params(params)
-        {
+        builder(std::uint64_t num_docs, global_parameters const& params) : m_params(params) {
             m_num_docs = num_docs;
             m_endpoints.push_back(0);
         }
@@ -77,12 +75,8 @@ class block_freq_index {
          * \throws std::invalid_argument   Thrown if `n == 0`.
          */
         template <typename DocsIterator, typename FreqsIterator>
-        void add_posting_list(
-            std::uint64_t n,
-            DocsIterator docs_begin,
-            FreqsIterator freqs_begin,
-            std::uint64_t /* occurrences */)
-        {
+        void
+        add_posting_list(std::uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, std::uint64_t /* occurrences */) {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
@@ -102,8 +96,7 @@ class block_freq_index {
          * \throws std::invalid_argument   Thrown if `n == 0`.
          */
         template <typename BlockDataRange>
-        void add_posting_list(std::uint64_t n, BlockDataRange const& blocks)
-        {
+        void add_posting_list(std::uint64_t n, BlockDataRange const& blocks) {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
@@ -119,8 +112,7 @@ class block_freq_index {
          * \param data  Encoded data.
          */
         template <typename BytesRange>
-        void add_posting_list(BytesRange const& data)
-        {
+        void add_posting_list(BytesRange const& data) {
             m_lists.insert(m_lists.end(), std::begin(data), std::end(data));
             m_endpoints.push_back(m_lists.size());
         }
@@ -130,8 +122,7 @@ class block_freq_index {
          *
          * \param sq  Inverted index object that will take ownership of the data.
          */
-        void build(block_freq_index& sq)
-        {
+        void build(block_freq_index& sq) {
             sq.m_params = m_params;
             sq.m_size = m_endpoints.size() - 1;
             sq.m_num_docs = m_num_docs;
@@ -143,8 +134,7 @@ class block_freq_index {
             sq.m_lists.steal(m_lists);
 
             bit_vector_builder bvb;
-            compact_elias_fano::write(
-                bvb, m_endpoints.begin(), sq.m_lists.size(), sq.m_size, m_params);
+            compact_elias_fano::write(bvb, m_endpoints.begin(), sq.m_lists.size(), sq.m_size, m_params);
             bit_vector(&bvb).swap(sq.m_endpoints);
         }
 
@@ -172,8 +162,7 @@ class block_freq_index {
          * \throws std::ios_base::failure Thrown if the the temporary buffer file cannot be opened.
          */
         stream_builder(std::uint64_t num_docs, global_parameters const& params)
-            : m_params(params), m_postings_output((tmp.path() / "buffer").c_str())
-        {
+            : m_params(params), m_postings_output((tmp.path() / "buffer").c_str()) {
             m_postings_output.exceptions(std::ios::badbit | std::ios::failbit);
             m_num_docs = num_docs;
             m_endpoints.push_back(0);
@@ -194,12 +183,8 @@ class block_freq_index {
          * \throws std::ios_base::failure  Thrown if failed to write to the temporary file buffer.
          */
         template <typename DocsIterator, typename FreqsIterator>
-        void add_posting_list(
-            std::uint64_t n,
-            DocsIterator docs_begin,
-            FreqsIterator freqs_begin,
-            std::uint64_t /* occurrences */)
-        {
+        void
+        add_posting_list(std::uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, std::uint64_t /* occurrences */) {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
@@ -223,8 +208,7 @@ class block_freq_index {
          * \throws std::ios_base::failure  Thrown if failed to write to the temporary file buffer.
          */
         template <typename BlockDataRange>
-        void add_posting_list(std::uint64_t n, BlockDataRange const& blocks)
-        {
+        void add_posting_list(std::uint64_t n, BlockDataRange const& blocks) {
             if (!n) {
                 throw std::invalid_argument("List must be nonempty");
             }
@@ -245,8 +229,7 @@ class block_freq_index {
          * \throws std::ios_base::failure  Thrown if failed to write to the temporary file buffer.
          */
         template <typename BytesRange>
-        void add_posting_list(BytesRange const& data)
-        {
+        void add_posting_list(BytesRange const& data) {
             m_postings_bytes_written += data.size();
             m_postings_output.write(reinterpret_cast<char const*>(data.data()), data.size());
             m_endpoints.push_back(m_postings_bytes_written);
@@ -260,8 +243,7 @@ class block_freq_index {
          * \throws std::ios_base::failure  Thrown if failed to write to any file
          *                                 or failed to read from the temporary buffer.
          */
-        void build(std::string const& index_path)
-        {
+        void build(std::string const& index_path) {
             // This is a workaround to QMX codex having to sometimes look beyond the buffer
             // due to some SIMD loads.
             std::array<char, 15> padding{};
@@ -279,7 +261,8 @@ class block_freq_index {
 
             bit_vector_builder bvb;
             compact_elias_fano::write(
-                bvb, m_endpoints.begin(), m_postings_bytes_written, size, m_params);
+                bvb, m_endpoints.begin(), m_postings_bytes_written, size, m_params
+            );
             bit_vector endpoints(&bvb);
             freezer(endpoints, "endpoints");
 
@@ -288,7 +271,8 @@ class block_freq_index {
             buf.exceptions(std::ios::badbit);
             os.write(
                 reinterpret_cast<char const*>(&m_postings_bytes_written),
-                sizeof(m_postings_bytes_written));
+                sizeof(m_postings_bytes_written)
+            );
             os << buf.rdbuf();
         }
 
@@ -315,11 +299,11 @@ class block_freq_index {
     using document_enumerator = typename block_posting_list<BlockCodec, Profile>::document_enumerator;
 
   private:
-    void check_term_range(std::size_t term_id) const
-    {
+    void check_term_range(std::size_t term_id) const {
         if (term_id >= size()) {
             throw std::out_of_range(
-                fmt::format("given term ID ({}) is out of range, must be < {}", term_id, size()));
+                fmt::format("given term ID ({}) is out of range, must be < {}", term_id, size())
+            );
         }
     }
 
@@ -334,8 +318,7 @@ class block_freq_index {
      *
      * \returns  The cursor over the posting list.
      */
-    [[nodiscard]] document_enumerator operator[](std::size_t term_id) const
-    {
+    [[nodiscard]] document_enumerator operator[](std::size_t term_id) const {
         check_term_range(term_id);
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
         auto endpoint = endpoints.move(term_id).second;
@@ -350,8 +333,7 @@ class block_freq_index {
      * \throws std::out_of_range  Thrown if term ID is greater than or equal to
      *                            number of terms in the index.
      */
-    void warmup(std::size_t term_id) const
-    {
+    void warmup(std::size_t term_id) const {
         check_term_range(term_id);
         compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
 
@@ -371,8 +353,7 @@ class block_freq_index {
     /**
      * Swaps all data with another index.
      */
-    void swap(block_freq_index& other)
-    {
+    void swap(block_freq_index& other) {
         std::swap(m_params, other.m_params);
         std::swap(m_size, other.m_size);
         m_endpoints.swap(other.m_endpoints);
@@ -380,8 +361,7 @@ class block_freq_index {
     }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_params, "m_params")(m_size, "m_size")(m_num_docs, "m_num_docs")(
             m_endpoints, "m_endpoints")(m_lists, "m_lists");
     }

@@ -10,49 +10,46 @@
 using namespace rc;
 
 /// Scale scores to (0, 1] to get smaller score differences.
-auto scale_unit(float score) -> float
-{
+auto scale_unit(float score) -> float {
     return std::max(score / std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
 }
 
-auto gen_postings(int min_length, int max_length)
-{
+auto gen_postings(int min_length, int max_length) {
     return gen::mapcat(gen::inRange(min_length, max_length), [](int length) {
         return rc::gen::pair(
             gen::container<std::vector<float>>(length, gen::map(gen::positive<float>(), scale_unit)),
-            gen::unique<std::vector<std::uint32_t>>(length, gen::positive<std::uint32_t>()));
+            gen::unique<std::vector<std::uint32_t>>(length, gen::positive<std::uint32_t>())
+        );
     });
 }
 
-auto gen_quantized_postings(int min_length, int max_length)
-{
+auto gen_quantized_postings(int min_length, int max_length) {
     return gen::mapcat(gen::inRange(min_length, max_length), [](int length) {
         return rc::gen::pair(
             gen::container<std::vector<float>>(
                 length,
-                gen::map(gen::positive<std::uint8_t>(), [](auto i) { return static_cast<float>(i); })),
-            gen::unique<std::vector<std::uint32_t>>(length, gen::positive<std::uint32_t>()));
+                gen::map(gen::positive<std::uint8_t>(), [](auto i) { return static_cast<float>(i); })
+            ),
+            gen::unique<std::vector<std::uint32_t>>(length, gen::positive<std::uint32_t>())
+        );
     });
 }
 
 void accumulate(
-    pisa::topk_queue& topk, std::vector<float> const& scores, std::vector<std::uint32_t> const& docids)
-{
+    pisa::topk_queue& topk, std::vector<float> const& scores, std::vector<std::uint32_t> const& docids
+) {
     for (int posting = 0; posting < docids.size(); ++posting) {
         topk.insert(scores[posting], docids[posting]);
     }
 }
 
-auto kth(std::vector<float> scores, int k) -> float
-{
+auto kth(std::vector<float> scores, int k) -> float {
     std::sort(scores.begin(), scores.end(), std::greater{});
     return scores.at(k - 1);
 }
 
-TEST_CASE("Threshold", "[topk_queue][prop]")
-{
-    SECTION("When initial = 0.0, the final threshold is the k-th score")
-    {
+TEST_CASE("Threshold", "[topk_queue][prop]") {
+    SECTION("When initial = 0.0, the final threshold is the k-th score") {
         check([] {
             auto [scores, docids] = *gen_postings(10, 1000);
 
@@ -66,8 +63,7 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
         });
     }
 
-    SECTION("When too few postings, then final threshold 0.0")
-    {
+    SECTION("When too few postings, then final threshold 0.0") {
         check([] {
             auto [scores, docids] = *gen_postings(1, 9);
             pisa::topk_queue topk(10);
@@ -78,8 +74,7 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
         });
     }
 
-    SECTION("When too few postings and initial threshold, then final threshold equal to initial")
-    {
+    SECTION("When too few postings and initial threshold, then final threshold equal to initial") {
         check([] {
             auto [scores, docids] = *gen_postings(1, 9);
             auto initial = *gen::positive<float>();
@@ -91,10 +86,8 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
         });
     }
 
-    SECTION("When initial is exact, final is the same")
-    {
-        SECTION("floats")
-        {
+    SECTION("When initial is exact, final is the same") {
+        SECTION("floats") {
             check([] {
                 auto [scores, docids] = *gen_postings(10, 1000);
                 auto initial = kth(scores, 10);
@@ -105,8 +98,7 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
                 REQUIRE(topk.effective_threshold() == topk.initial_threshold());
             });
         }
-        SECTION("quantized")
-        {
+        SECTION("quantized") {
             check([] {
                 auto [scores, docids] = *gen_quantized_postings(10, 1000);
                 auto initial = kth(scores, 10);
@@ -119,8 +111,7 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
         }
     }
 
-    SECTION("When initial is too high, true is lower than effective")
-    {
+    SECTION("When initial is too high, true is lower than effective") {
         check([] {
             auto [scores, docids] = *gen_postings(10, 1000);
             auto initial = std::nextafter(kth(scores, 10), std::numeric_limits<float>::max());
@@ -132,8 +123,7 @@ TEST_CASE("Threshold", "[topk_queue][prop]")
         });
     }
 
-    SECTION("Threshold never decreases")
-    {
+    SECTION("Threshold never decreases") {
         check([] {
             auto [scores, docids] = *gen_postings(10, 1000);
 

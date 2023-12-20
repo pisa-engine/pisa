@@ -24,8 +24,7 @@ namespace pisa { namespace mapper {
         size_t size;
         std::vector<size_node_ptr> children;
 
-        void dump(std::ostream& os = std::cerr, size_t depth = 0)
-        {
+        void dump(std::ostream& os = std::cerr, size_t depth = 0) {
             os << std::string(depth * 4, ' ') << name << ": " << size << '\n';
             for (auto&& child: children) {
                 child->dump(os, depth + 1);
@@ -37,8 +36,7 @@ namespace pisa { namespace mapper {
         class freeze_visitor {
           public:
             freeze_visitor(std::ofstream& fout, uint64_t flags)
-                : m_fout(fout), m_flags(flags), m_written(0)
-            {
+                : m_fout(fout), m_flags(flags), m_written(0) {
                 // Save freezing flags
                 m_fout.write(reinterpret_cast<const char*>(&m_flags), sizeof(m_flags));
                 m_written += sizeof(m_flags);
@@ -52,24 +50,21 @@ namespace pisa { namespace mapper {
 
             template <typename T>
             typename std::enable_if<!std::is_trivially_copyable<T>::value, freeze_visitor&>::type
-            operator()(T& val, const char* /* friendly_name */)
-            {
+            operator()(T& val, const char* /* friendly_name */) {
                 val.map(*this);
                 return *this;
             }
 
             template <typename T>
             typename std::enable_if<std::is_trivially_copyable<T>::value, freeze_visitor&>::type
-            operator()(T& val, const char* /* friendly_name */)
-            {
+            operator()(T& val, const char* /* friendly_name */) {
                 m_fout.write(reinterpret_cast<const char*>(&val), sizeof(T));
                 m_written += sizeof(T);
                 return *this;
             }
 
             template <typename T>
-            freeze_visitor& operator()(mappable_vector<T>& vec, const char* /* friendly_name */)
-            {
+            freeze_visitor& operator()(mappable_vector<T>& vec, const char* /* friendly_name */) {
                 (*this)(vec.m_size, "size");
 
                 auto n_bytes = static_cast<size_t>(vec.m_size * sizeof(T));
@@ -90,8 +85,7 @@ namespace pisa { namespace mapper {
         class map_visitor {
           public:
             map_visitor(const char* base_address, uint64_t flags)
-                : m_base(base_address), m_cur(m_base), m_flags(flags)
-            {
+                : m_base(base_address), m_cur(m_base), m_flags(flags) {
                 m_freeze_flags = *reinterpret_cast<const uint64_t*>(m_cur);
                 m_cur += sizeof(m_freeze_flags);
             }
@@ -104,24 +98,21 @@ namespace pisa { namespace mapper {
 
             template <typename T>
             typename std::enable_if<!std::is_trivially_copyable<T>::value, map_visitor&>::type
-            operator()(T& val, const char* /* friendly_name */)
-            {
+            operator()(T& val, const char* /* friendly_name */) {
                 val.map(*this);
                 return *this;
             }
 
             template <typename T>
             typename std::enable_if<std::is_trivially_copyable<T>::value, map_visitor&>::type
-            operator()(T& val, const char* /* friendly_name */)
-            {
+            operator()(T& val, const char* /* friendly_name */) {
                 std::memmove(&val, m_cur, sizeof(T));
                 m_cur += sizeof(T);
                 return *this;
             }
 
             template <typename T>
-            map_visitor& operator()(mappable_vector<T>& vec, const char* /* friendly_name */)
-            {
+            map_visitor& operator()(mappable_vector<T>& vec, const char* /* friendly_name */) {
                 vec.clear();
                 (*this)(vec.m_size, "size");
 
@@ -151,8 +142,7 @@ namespace pisa { namespace mapper {
 
         class sizeof_visitor {
           public:
-            explicit sizeof_visitor(bool with_tree = false) : m_size(0)
-            {
+            explicit sizeof_visitor(bool with_tree = false) : m_size(0) {
                 if (with_tree) {
                     m_cur_size_node = std::make_shared<size_node>();
                 }
@@ -166,8 +156,7 @@ namespace pisa { namespace mapper {
 
             template <typename T>
             typename std::enable_if<!std::is_trivially_copyable<T>::value, sizeof_visitor&>::type
-            operator()(T& val, const char* friendly_name)
-            {
+            operator()(T& val, const char* friendly_name) {
                 size_t checkpoint = m_size;
                 size_node_ptr parent_node;
                 if (m_cur_size_node) {
@@ -186,16 +175,14 @@ namespace pisa { namespace mapper {
 
             template <typename T>
             typename std::enable_if<std::is_trivially_copyable<T>::value, sizeof_visitor&>::type
-            operator()(T& /* val */, const char* /* friendly_name */)
-            {
+            operator()(T& /* val */, const char* /* friendly_name */) {
                 // don't track PODs in the size tree (they are constant sized)
                 m_size += sizeof(T);
                 return *this;
             }
 
             template <typename T>
-            sizeof_visitor& operator()(mappable_vector<T>& vec, const char* friendly_name)
-            {
+            sizeof_visitor& operator()(mappable_vector<T>& vec, const char* friendly_name) {
                 size_t checkpoint = m_size;
                 (*this)(vec.m_size, "size");
                 m_size += static_cast<size_t>(vec.m_size * sizeof(T));
@@ -209,15 +196,13 @@ namespace pisa { namespace mapper {
 
             size_t size() const { return m_size; }
 
-            size_node_ptr size_tree() const
-            {
+            size_node_ptr size_tree() const {
                 assert(m_cur_size_node);
                 return m_cur_size_node;
             }
 
           protected:
-            size_node_ptr make_node(const char* name)
-            {
+            size_node_ptr make_node(const char* name) {
                 size_node_ptr node = std::make_shared<size_node>();
                 m_cur_size_node->children.push_back(node);
                 node->name = name;
@@ -245,8 +230,7 @@ namespace pisa { namespace mapper {
      */
     template <typename T>
     std::size_t
-    freeze(T& val, std::ofstream& fout, uint64_t flags = 0, const char* friendly_name = "<TOP>")
-    {
+    freeze(T& val, std::ofstream& fout, uint64_t flags = 0, const char* friendly_name = "<TOP>") {
         detail::freeze_visitor freezer(fout, flags);
         freezer(val, friendly_name);
         return freezer.written();
@@ -266,8 +250,7 @@ namespace pisa { namespace mapper {
      */
     template <typename T>
     std::size_t
-    freeze(T& val, const char* filename, uint64_t flags = 0, const char* friendly_name = "<TOP>")
-    {
+    freeze(T& val, const char* filename, uint64_t flags = 0, const char* friendly_name = "<TOP>") {
         std::ofstream fout(filename, std::ios::binary);
         fout.exceptions(std::ios::badbit | std::ios::failbit);
         return freeze(val, fout, flags, friendly_name);
@@ -288,8 +271,7 @@ namespace pisa { namespace mapper {
      */
     template <typename T>
     size_t
-    map(T& val, const char* base_address, uint64_t flags = 0, const char* friendly_name = "<TOP>")
-    {
+    map(T& val, const char* base_address, uint64_t flags = 0, const char* friendly_name = "<TOP>") {
         detail::map_visitor mapper(base_address, flags);
         mapper(val, friendly_name);
         return mapper.bytes_read();
@@ -309,22 +291,19 @@ namespace pisa { namespace mapper {
      */
     template <typename T>
     size_t
-    map(T& val, const mio::mmap_source& m, uint64_t flags = 0, const char* friendly_name = "<TOP>")
-    {
+    map(T& val, const mio::mmap_source& m, uint64_t flags = 0, const char* friendly_name = "<TOP>") {
         return map(val, m.data(), flags, friendly_name);
     }
 
     template <typename T>
-    std::size_t size_of(T& val)
-    {
+    std::size_t size_of(T& val) {
         detail::sizeof_visitor sizer;
         sizer(val, "");
         return sizer.size();
     }
 
     template <typename T>
-    size_node_ptr size_tree_of(T& val, const char* friendly_name = "<TOP>")
-    {
+    size_node_ptr size_tree_of(T& val, const char* friendly_name = "<TOP>") {
         detail::sizeof_visitor sizer(true);
         sizer(val, friendly_name);
         assert(not sizer.size_tree()->children.empty());

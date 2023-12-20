@@ -7,8 +7,7 @@
 #include "app.hpp"
 #include "taily_thresholds.hpp"
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 

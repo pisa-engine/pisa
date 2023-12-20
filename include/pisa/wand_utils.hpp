@@ -21,8 +21,8 @@ using BlockSize = std::variant<FixedBlock, VariableBlock>;
 
 template <typename Scorer>
 std::pair<std::vector<uint32_t>, std::vector<float>> static_block_partition(
-    binary_freq_collection::sequence const& seq, Scorer scorer, const uint64_t block_size)
-{
+    binary_freq_collection::sequence const& seq, Scorer scorer, const uint64_t block_size
+) {
     std::vector<uint32_t> block_docid;
     std::vector<float> block_max_term_weight;
 
@@ -61,8 +61,8 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
     // Antonio Mallia, Giuseppe Ottaviano, Elia Porciani, Nicola Tonellotto, and Rossano Venturini.
     // 2017. Faster BlockMax WAND with Variable-sized Blocks. In Proc. SIGIR
     double eps1 = 0.01,
-    double eps2 = 0.4)
-{
+    double eps2 = 0.4
+) {
     // Auxiliary vector
     using doc_score_t = std::pair<uint64_t, float>;
     std::vector<doc_score_t> doc_score;
@@ -74,7 +74,8 @@ std::pair<std::vector<uint32_t>, std::vector<float>> variable_block_partition(
         std::back_inserter(doc_score),
         [&](const uint64_t& doc, const uint64_t& freq) -> doc_score_t {
             return {doc, scorer(doc, freq)};
-        });
+        }
+    );
 
     auto p = score_opt_partition(doc_score.begin(), 0, doc_score.size(), eps1, eps2, lambda);
 

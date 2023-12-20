@@ -9,13 +9,11 @@ namespace pisa {
 
 class bit_writer {
   public:
-    explicit bit_writer(std::vector<uint32_t>& buf) : m_buf(buf), m_size(0), m_cur_word(nullptr)
-    {
+    explicit bit_writer(std::vector<uint32_t>& buf) : m_buf(buf), m_size(0), m_cur_word(nullptr) {
         m_buf.clear();
     }
 
-    void write(uint32_t bits, uint32_t len)
-    {
+    void write(uint32_t bits, uint32_t len) {
         if (len == 0U) {
             return;
         }
@@ -34,8 +32,7 @@ class bit_writer {
 
     size_t size() const { return m_size; }
 
-    void write_int(uint32_t val, uint32_t u)
-    {
+    void write_int(uint32_t val, uint32_t u) {
         assert(u > 0);
         assert(val < u);
         auto b = broadword::msb(u);
@@ -51,8 +48,7 @@ class bit_writer {
         }
     }
 
-    void write_interpolative(uint32_t const* in, size_t n, uint32_t low, uint32_t high)
-    {
+    void write_interpolative(uint32_t const* in, size_t n, uint32_t low, uint32_t high) {
         if (n == 0U) {
             return;
         }
@@ -77,8 +73,7 @@ class bit_reader {
 
     size_t position() const { return m_pos; }
 
-    uint32_t read(uint32_t len)
-    {
+    uint32_t read(uint32_t len) {
         if (len == 0U) {
             return 0;
         }
@@ -96,8 +91,7 @@ class bit_reader {
         return val;
     }
 
-    uint32_t read_int(uint32_t u)
-    {
+    uint32_t read_int(uint32_t u) {
         assert(u > 0);
         auto b = broadword::msb(u);
         uint64_t m = (uint64_t(1) << (b + 1)) - u;
@@ -111,8 +105,7 @@ class bit_reader {
         return val;
     }
 
-    void read_interpolative(uint32_t* out, size_t n, uint32_t low, uint32_t high)
-    {
+    void read_interpolative(uint32_t* out, size_t n, uint32_t low, uint32_t high) {
         assert(low <= high);
         assert(n > 0);
 

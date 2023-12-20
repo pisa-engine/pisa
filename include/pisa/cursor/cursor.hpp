@@ -6,8 +6,7 @@
 namespace pisa {
 
 template <typename Index>
-[[nodiscard]] auto make_cursors(Index const& index, Query query)
-{
+[[nodiscard]] auto make_cursors(Index const& index, Query query) {
     auto terms = query.terms;
     remove_duplicate_terms(terms);
     using cursor = typename Index::document_enumerator;

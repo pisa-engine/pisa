@@ -51,15 +51,15 @@ void extract_times(
     std::string const& index_type,
     std::string const& query_type,
     size_t runs,
-    std::ostream& os)
-{
+    std::ostream& os
+) {
     std::vector<std::size_t> times(runs);
     for (auto&& [qid, query]: enumerate(queries)) {
         do_not_optimize_away(fn(query, thresholds[qid]));
         std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
             return run_with_timer<std::chrono::microseconds>(
-                       [&]() { do_not_optimize_away(fn(q, t)); })
-                .count();
+                       [&]() { do_not_optimize_away(fn(q, t)); }
+            ).count();
         });
         auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
         os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
@@ -75,8 +75,8 @@ void op_perftest(
     std::string const& query_type,
     size_t runs,
     std::uint64_t k,
-    bool safe)
-{
+    bool safe
+) {
     std::vector<double> query_times;
     std::size_t num_reruns = 0;
     spdlog::info("Safe: {}", safe);
@@ -137,8 +137,8 @@ void perftest(
     const ScorerParams& scorer_params,
     const bool weighted,
     bool extract,
-    bool safe)
-{
+    bool safe
+) {
     spdlog::info("Loading index from {}", index_filename);
     IndexType index(MemorySource::mapped_file(index_filename));
 
@@ -205,8 +205,8 @@ void perftest(
                 topk_queue topk(k, threshold);
                 wand_query wand_q(topk);
                 wand_q(
-                    make_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                    index.num_docs());
+                    make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -216,7 +216,8 @@ void perftest(
                 block_max_wand_query block_max_wand_q(topk);
                 block_max_wand_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                    index.num_docs());
+                    index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -226,7 +227,8 @@ void perftest(
                 block_max_maxscore_query block_max_maxscore_q(topk);
                 block_max_maxscore_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                    index.num_docs());
+                    index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -244,7 +246,8 @@ void perftest(
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
                 block_max_ranked_and_q(
                     make_block_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                    index.num_docs());
+                    index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -261,8 +264,8 @@ void perftest(
                 topk_queue topk(k, threshold);
                 maxscore_query maxscore_q(topk);
                 maxscore_q(
-                    make_max_scored_cursors(index, wdata, *scorer, query, weighted),
-                    index.num_docs());
+                    make_max_scored_cursors(index, wdata, *scorer, query, weighted), index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -273,9 +276,8 @@ void perftest(
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
                 topk.clear(threshold);
                 ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query, weighted),
-                    index.num_docs(),
-                    accumulator);
+                    make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -286,9 +288,8 @@ void perftest(
             query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
                 topk.clear(threshold);
                 ranked_or_taat_q(
-                    make_scored_cursors(index, *scorer, query, weighted),
-                    index.num_docs(),
-                    accumulator);
+                    make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -308,8 +309,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     bool extract = false;
     bool safe = false;
     bool quantized = false;
@@ -345,13 +345,13 @@ int main(int argc, const char** argv)
         app.scorer_params(),
         app.weighted(),
         extract,
-        safe);
+        safe
+    );
     /**/
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                        \
     }                                                                                                \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                          \
-    {                                                                                                \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                                        \
         if (app.is_wand_compressed()) {                                                              \
             if (quantized) {                                                                         \
                 std::apply(perftest<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \

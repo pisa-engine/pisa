@@ -6,16 +6,14 @@
 
 namespace pisa::io {
 
-NoSuchFile::NoSuchFile(std::string const& file) : m_message(fmt::format("No such file: {}", file))
-{}
+NoSuchFile::NoSuchFile(std::string const& file)
+    : m_message(fmt::format("No such file: {}", file)) {}
 
-[[nodiscard]] auto NoSuchFile::what() const noexcept -> char const*
-{
+[[nodiscard]] auto NoSuchFile::what() const noexcept -> char const* {
     return m_message.c_str();
 }
 
-auto resolve_path(std::string const& file) -> std::filesystem::path
-{
+auto resolve_path(std::string const& file) -> std::filesystem::path {
     std::filesystem::path p(file);
     if (not std::filesystem::exists(p)) {
         throw NoSuchFile(file);
@@ -23,8 +21,7 @@ auto resolve_path(std::string const& file) -> std::filesystem::path
     return p;
 }
 
-auto read_string_vector(std::string const& filename) -> std::vector<std::string>
-{
+auto read_string_vector(std::string const& filename) -> std::vector<std::string> {
     std::vector<std::string> vec;
     std::ifstream is(filename);
     std::string line;
@@ -34,8 +31,7 @@ auto read_string_vector(std::string const& filename) -> std::vector<std::string>
     return vec;
 }
 
-auto load_data(std::string const& data_file) -> std::vector<char>
-{
+auto load_data(std::string const& data_file) -> std::vector<char> {
     std::vector<char> data;
     std::ifstream in(data_file.c_str(), std::ios::binary);
     in.seekg(0, std::ios::end);
@@ -48,8 +44,7 @@ auto load_data(std::string const& data_file) -> std::vector<char>
     return data;
 }
 
-void write_data(std::string const& data_file, gsl::span<std::byte const> bytes)
-{
+void write_data(std::string const& data_file, gsl::span<std::byte const> bytes) {
     std::ofstream os(data_file);
     os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
 }

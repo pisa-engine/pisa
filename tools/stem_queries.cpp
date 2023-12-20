@@ -8,8 +8,7 @@
 #include "io.hpp"
 #include "pisa/query/query_stemmer.hpp"
 
-int main(int argc, char const* argv[])
-{
+int main(int argc, char const* argv[]) {
     std::string input_filename;
     std::string output_filename;
     std::optional<std::string> stemmer;

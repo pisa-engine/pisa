@@ -13,8 +13,7 @@
 #include "sequence/uniform_partitioned_sequence.hpp"
 
 template <typename BaseSequence>
-void test_positive_sequence()
-{
+void test_positive_sequence() {
     srand(42);
     pisa::global_parameters params;
     size_t n = 50000;
@@ -37,8 +36,7 @@ void test_positive_sequence()
     }
 }
 
-TEST_CASE("positive_sequence")
-{
+TEST_CASE("positive_sequence") {
     test_positive_sequence<pisa::strict_sequence>();
     test_positive_sequence<pisa::partitioned_sequence<pisa::strict_sequence>>();
     test_positive_sequence<pisa::uniform_partitioned_sequence<pisa::strict_sequence>>();

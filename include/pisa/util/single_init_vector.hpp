@@ -9,8 +9,7 @@ class single_init_entry {
 
     const T& value() const { return m_value; }
     bool has_value(std::size_t generation) const { return m_generation == generation; }
-    void set(std::size_t generation, const T& v)
-    {
+    void set(std::size_t generation, const T& v) {
         m_value = v;
         m_generation = generation;
     }
@@ -37,21 +36,19 @@ template <class T>
 class single_init_vector: public std::vector<single_init_entry<T>> {
   public:
     using std::vector<single_init_entry<T>>::vector;
-    const T& operator[](std::size_t i) const
-    {
+    const T& operator[](std::size_t i) const {
         return (
             std::vector<single_init_entry<T>>::operator[](i).has_value(m_generation)
                 ? std::vector<single_init_entry<T>>::operator[](i).value()
-                : m_defaultValue);
+                : m_defaultValue
+        );
     }
 
-    bool has_value(std::size_t i) const
-    {
+    bool has_value(std::size_t i) const {
         return (std::vector<single_init_entry<T>>::operator[](i).has_value(m_generation));
     }
 
-    void set(std::size_t i, const T& v)
-    {
+    void set(std::size_t i, const T& v) {
         std::vector<single_init_entry<T>>::operator[](i).set(m_generation, v);
     }
 

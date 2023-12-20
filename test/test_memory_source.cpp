@@ -10,8 +10,7 @@
 using pisa::MemorySource;
 using pisa::io::NoSuchFile;
 
-TEST_CASE("Empty memory source", "[mmap][io]")
-{
+TEST_CASE("Empty memory source", "[mmap][io]") {
     MemorySource source;
     REQUIRE_FALSE(source.is_mapped());
     REQUIRE(source.size() == 0);
@@ -22,15 +21,13 @@ TEST_CASE("Empty memory source", "[mmap][io]")
     REQUIRE_THROWS_AS(source.subspan(1), std::out_of_range);
 }
 
-TEST_CASE("Error when mapping non-existent file", "[mmap][io]")
-{
+TEST_CASE("Error when mapping non-existent file", "[mmap][io]") {
     pisa::TemporaryDirectory temp;
     auto file_path = (temp.path() / "file");
     REQUIRE_THROWS_AS(MemorySource::mapped_file(file_path), NoSuchFile);
 }
 
-TEST_CASE("Non-empty memory source", "[mmap][io]")
-{
+TEST_CASE("Non-empty memory source", "[mmap][io]") {
     pisa::TemporaryDirectory temp;
     auto file_path = (temp.path() / "file");
     {

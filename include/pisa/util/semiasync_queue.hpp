@@ -12,8 +12,7 @@ namespace pisa {
 class semiasync_queue {
   public:
     explicit semiasync_queue(double work_per_thread)
-        : m_expected_work(0), m_work_per_thread(work_per_thread)
-    {
+        : m_expected_work(0), m_work_per_thread(work_per_thread) {
         m_max_threads = std::thread::hardware_concurrency();
         spdlog::info("semiasync_queue using {} worker threads", m_max_threads);
     }
@@ -32,8 +31,7 @@ class semiasync_queue {
 
     using job_ptr_type = std::shared_ptr<job>;
 
-    void add_job(job_ptr_type j, double expected_work)
-    {
+    void add_job(job_ptr_type j, double expected_work) {
         if (m_max_threads != 0U) {
             m_next_thread.first.push_back(j);
             m_expected_work += expected_work;
@@ -47,8 +45,7 @@ class semiasync_queue {
         }
     }
 
-    void complete()
-    {
+    void complete() {
         if (!m_next_thread.first.empty()) {
             spawn_next_thread();
         }
@@ -58,8 +55,7 @@ class semiasync_queue {
     }
 
   private:
-    void spawn_next_thread()
-    {
+    void spawn_next_thread() {
         if (m_running_threads.size() == m_max_threads) {
             commit_thread();
         }
@@ -77,8 +73,7 @@ class semiasync_queue {
         m_expected_work = 0;
     }
 
-    void commit_thread()
-    {
+    void commit_thread() {
         assert(!m_running_threads.empty());
         m_running_threads.front().second.join();
         for (auto& j: m_running_threads.front().first) {

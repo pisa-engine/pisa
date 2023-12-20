@@ -7,8 +7,7 @@
 #include <cstdlib>
 #include <vector>
 
-TEST_CASE("strict_elias_fano")
-{
+TEST_CASE("strict_elias_fano") {
     pisa::global_parameters params;
 
     uint64_t n = 10000;

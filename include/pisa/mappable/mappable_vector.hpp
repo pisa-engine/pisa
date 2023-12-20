@@ -35,8 +35,7 @@ namespace pisa { namespace mapper {
         mappable_vector& operator=(mappable_vector&&) = delete;
 
         template <typename Range>
-        explicit mappable_vector(Range const& from) : m_data(0), m_size(0)
-        {
+        explicit mappable_vector(Range const& from) : m_data(0), m_size(0) {
             size_t size = boost::size(from);
             T* data = new T[size];
             m_deleter = boost::lambda::bind(boost::lambda::delete_array(), data);
@@ -46,15 +45,13 @@ namespace pisa { namespace mapper {
             m_size = size;
         }
 
-        ~mappable_vector()
-        {
+        ~mappable_vector() {
             if (not m_deleter.empty()) {
                 m_deleter();
             }
         }
 
-        void swap(mappable_vector& other)
-        {
+        void swap(mappable_vector& other) {
             using std::swap;
             swap(m_data, other.m_data);
             swap(m_size, other.m_size);
@@ -63,8 +60,7 @@ namespace pisa { namespace mapper {
 
         void clear() { mappable_vector().swap(*this); }
 
-        void steal(std::vector<T>& vec)
-        {
+        void steal(std::vector<T>& vec) {
             clear();
             m_size = vec.size();
             if (m_size > 0) {
@@ -76,8 +72,7 @@ namespace pisa { namespace mapper {
         }
 
         template <typename Range>
-        void assign(Range const& from)
-        {
+        void assign(Range const& from) {
             clear();
             mappable_vector(from).swap(*this);
         }
@@ -88,8 +83,7 @@ namespace pisa { namespace mapper {
 
         inline const_iterator end() const { return m_data + m_size; }
 
-        inline T const& operator[](uint64_t i) const
-        {
+        inline T const& operator[](uint64_t i) const {
             assert(i < m_size);
             return m_data[i];
         }

@@ -8,16 +8,14 @@
 
 using namespace pisa;
 
-TEST_CASE("Lowercase filter")
-{
+TEST_CASE("Lowercase filter") {
     LowercaseFilter lowercase;
     auto stream = lowercase.filter(std::string_view("WoRd"));
     REQUIRE(stream->next() == "word");
     REQUIRE(stream->next() == std::nullopt);
 }
 
-TEST_CASE("Stop word remover")
-{
+TEST_CASE("Stop word remover") {
     std::unordered_set<std::string> stopwords;
     stopwords.insert("the");
     stopwords.insert("a");
@@ -28,59 +26,49 @@ TEST_CASE("Stop word remover")
     REQUIRE(remover.filter(std::string_view("word"))->collect() == std::vector<std::string>{"word"});
 }
 
-TEST_CASE("Porter2")
-{
+TEST_CASE("Porter2") {
     Porter2Stemmer stemmer;
-    SECTION("word")
-    {
+    SECTION("word") {
         auto stream = stemmer.filter(std::string_view("word"));
         REQUIRE(stream->next() == "word");
         REQUIRE(stream->next() == std::nullopt);
     }
-    SECTION("playing")
-    {
+    SECTION("playing") {
         auto stream = stemmer.filter(std::string_view("playing"));
         REQUIRE(stream->next() == "play");
         REQUIRE(stream->next() == std::nullopt);
     }
-    SECTION("I")
-    {
+    SECTION("I") {
         auto stream = stemmer.filter(std::string_view("I"));
         REQUIRE(stream->next() == "I");
         REQUIRE(stream->next() == std::nullopt);
     }
-    SECTION("flying")
-    {
+    SECTION("flying") {
         auto stream = stemmer.filter(std::string_view("flying"));
         REQUIRE(stream->next() == "fli");
         REQUIRE(stream->next() == std::nullopt);
     }
 }
 
-TEST_CASE("Krovetz")
-{
+TEST_CASE("Krovetz") {
     KrovetzStemmer stemmer;
-    SECTION("word")
-    {
+    SECTION("word") {
         auto stream = stemmer.filter(std::string_view("word"));
         REQUIRE(stream->next() == "word");
         REQUIRE(stream->next() == std::nullopt);
     }
-    SECTION("playing")
-    {
+    SECTION("playing") {
         auto stream = stemmer.filter(std::string_view("playing"));
         REQUIRE(stream->next() == "play");
         REQUIRE(stream->next() == std::nullopt);
     }
     // Notice the difference between Porter2 and Krovetz in the following two tests
-    SECTION("I")
-    {
+    SECTION("I") {
         auto stream = stemmer.filter(std::string_view("I"));
         REQUIRE(stream->next() == "i");
         REQUIRE(stream->next() == std::nullopt);
     }
-    SECTION("flying")
-    {
+    SECTION("flying") {
         auto stream = stemmer.filter(std::string_view("flying"));
         REQUIRE(stream->next() == "flying");
         REQUIRE(stream->next() == std::nullopt);

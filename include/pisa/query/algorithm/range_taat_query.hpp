@@ -13,8 +13,7 @@ struct range_taat_query {
 
     template <typename CursorRange, typename Acc>
     PISA_REQUIRES(PartialScoreAccumulator<Acc>)
-    void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator)
-    {
+    void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator) {
         if (cursors.empty()) {
             return;
         }
@@ -30,8 +29,7 @@ struct range_taat_query {
     std::vector<typename topk_queue::entry_type> const& topk() const { return m_topk.topk(); }
 
     template <typename CursorRange, typename Acc>
-    void process_range(CursorRange&& cursors, size_t end, Acc&& accumulator)
-    {
+    void process_range(CursorRange&& cursors, size_t end, Acc&& accumulator) {
         QueryAlg query_alg(m_topk);
         query_alg(cursors, end, accumulator);
     }

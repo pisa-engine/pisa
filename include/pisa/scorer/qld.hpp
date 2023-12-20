@@ -22,8 +22,7 @@ struct qld: public index_scorer<Wand> {
 
     qld(const Wand& wdata, const float mu) : index_scorer<Wand>(wdata), m_mu(mu) {}
 
-    term_scorer_t term_scorer(uint64_t term_id) const override
-    {
+    term_scorer_t term_scorer(uint64_t term_id) const override {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float numerator = 1
                 + freq

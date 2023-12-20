@@ -25,35 +25,33 @@ class TailyStats {
   public:
     explicit TailyStats(MemorySource source) : m_source(std::move(source)) {}
 
-    static auto from_mapped(std::string const& path) -> TailyStats
-    {
+    static auto from_mapped(std::string const& path) -> TailyStats {
         return TailyStats(MemorySource::mapped_file(path));
     }
 
     [[nodiscard]] auto num_documents() const -> std::uint64_t { return read_at<std::uint64_t>(0); }
     [[nodiscard]] auto num_terms() const -> std::uint64_t { return read_at<std::uint64_t>(8); }
-    [[nodiscard]] auto term_stats(term_id_type term_id) const -> taily::Feature_Statistics
-    {
+    [[nodiscard]] auto term_stats(term_id_type term_id) const -> taily::Feature_Statistics {
         std::size_t offset = 16 + term_id * 24;
         auto expected_value = read_at<double>(offset);
         auto variance = read_at<double>(offset + sizeof(double));
         auto frequency = read_at<std::int64_t>(offset + 2 * sizeof(double));
         return taily::Feature_Statistics{expected_value, variance, frequency};
     }
-    [[nodiscard]] auto query_stats(pisa::Query const& query) const -> taily::Query_Statistics
-    {
+    [[nodiscard]] auto query_stats(pisa::Query const& query) const -> taily::Query_Statistics {
         std::vector<taily::Feature_Statistics> stats;
         std::transform(
-            query.terms.begin(), query.terms.end(), std::back_inserter(stats), [this](auto&& term_id) {
-                return this->term_stats(term_id);
-            });
+            query.terms.begin(),
+            query.terms.end(),
+            std::back_inserter(stats),
+            [this](auto&& term_id) { return this->term_stats(term_id); }
+        );
         return taily::Query_Statistics{std::move(stats), static_cast<std::int64_t>(num_documents())};
     }
 
   private:
     template <typename T>
-    [[nodiscard]] PISA_ALWAYSINLINE auto read_at(std::size_t pos) const -> T
-    {
+    [[nodiscard]] PISA_ALWAYSINLINE auto read_at(std::size_t pos) const -> T {
         static_assert(std::is_pod<T>::value, "The value type must be POD.");
         T value{};
         auto bytes = this->bytes(pos, sizeof(T));
@@ -62,8 +60,7 @@ class TailyStats {
     }
 
     [[nodiscard]] PISA_ALWAYSINLINE auto bytes(std::size_t start, std::size_t size) const
-        -> gsl::span<char const>
-    {
+        -> gsl::span<char const> {
         try {
             return m_source.subspan(start, size);
         } catch (std::out_of_range const&) {
@@ -71,7 +68,8 @@ class TailyStats {
                 "Tried to read bytes {}-{} but memory source is of size {}",
                 start,
                 start + size,
-                m_source.size()));
+                m_source.size()
+            ));
         }
     }
 
@@ -82,8 +80,7 @@ class TailyStats {
 /// `scorer`.
 template <typename Scorer>
 [[nodiscard]] auto extract_feature_stats(pisa::binary_freq_collection const& collection, Scorer scorer)
-    -> std::vector<taily::Feature_Statistics>
-{
+    -> std::vector<taily::Feature_Statistics> {
     std::vector<taily::Feature_Statistics> term_stats;
     {
         pisa::progress progress("Processing posting lists", collection.size());
@@ -108,10 +105,8 @@ template <typename Scorer>
 }
 
 void write_feature_stats(
-    gsl::span<taily::Feature_Statistics> stats,
-    std::size_t num_documents,
-    std::string const& output_path)
-{
+    gsl::span<taily::Feature_Statistics> stats, std::size_t num_documents, std::string const& output_path
+) {
     std::ofstream ofs(output_path);
     ofs.write(reinterpret_cast<const char*>(&num_documents), sizeof(num_documents));
     std::size_t num_terms = stats.size();
@@ -129,19 +124,21 @@ void taily_score_shards(
     std::vector<::pisa::Query> const& global_queries,
     VecMap<Shard_Id, std::vector<::pisa::Query>> const& shard_queries,
     std::size_t k,
-    Fn func)
-{
+    Fn func
+) {
     if (shard_stats_paths.size() != shard_queries.size()) {
         throw std::invalid_argument(fmt::format(
             "Number of discovered shard stats paths ({}) does not match number of "
             "parsed query lists ({})",
             shard_stats_paths.size(),
-            shard_queries.size()));
+            shard_queries.size()
+        ));
     }
     std::for_each(shard_queries.begin(), shard_queries.end(), [&global_queries](auto&& sq) {
         if (global_queries.size() != sq.size()) {
             throw std::invalid_argument(
-                "Global queries and shard queries do not all have the same size.");
+                "Global queries and shard queries do not all have the same size."
+            );
         }
     });
 
@@ -151,7 +148,8 @@ void taily_score_shards(
         shard_stats_paths.begin(),
         shard_stats_paths.end(),
         std::back_inserter(shard_stats),
-        [](auto&& path) { return pisa::TailyStats::from_mapped(path); });
+        [](auto&& path) { return pisa::TailyStats::from_mapped(path); }
+    );
     for (std::size_t query_idx = 0; query_idx < global_queries.size(); query_idx += 1) {
         auto global = global_stats.query_stats(global_queries[query_idx]);
         std::vector<taily::Query_Statistics> shards;
@@ -160,10 +158,13 @@ void taily_score_shards(
             shard_stats.end(),
             shard_queries.begin(),
             std::back_inserter(shards),
-            [query_idx](
-                auto&& shard, auto&& queries) { return shard.query_stats(queries[query_idx]); });
-        auto [scores, time] = run_with_timer_ret<std::chrono::microseconds>(
-            [&] { return taily::score_shards(global, shards, k); });
+            [query_idx](auto&& shard, auto&& queries) {
+                return shard.query_stats(queries[query_idx]);
+            }
+        );
+        auto [scores, time] = run_with_timer_ret<std::chrono::microseconds>([&] {
+            return taily::score_shards(global, shards, k);
+        });
         func(scores, time);
     }
 }

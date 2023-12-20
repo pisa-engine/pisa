@@ -22,8 +22,7 @@ struct indexed_sequence {
     static const uint64_t type_bits = 1;  // all_ones is implicit
 
     static PISA_FLATTEN_FUNC uint64_t
-    bitsize(global_parameters const& params, uint64_t universe, uint64_t n)
-    {
+    bitsize(global_parameters const& params, uint64_t universe, uint64_t n) {
         uint64_t best_cost = all_ones_sequence::bitsize(params, universe, n);
 
         uint64_t ef_cost = compact_elias_fano::bitsize(params, universe, n) + type_bits;
@@ -45,8 +44,8 @@ struct indexed_sequence {
         Iterator begin,
         uint64_t universe,
         uint64_t n,
-        global_parameters const& params)
-    {
+        global_parameters const& params
+    ) {
         uint64_t best_cost = all_ones_sequence::bitsize(params, universe, n);
         int best_type = all_ones;
 
@@ -87,8 +86,8 @@ struct indexed_sequence {
             uint64_t offset,
             uint64_t universe,
             uint64_t n,
-            global_parameters const& params)
-        {
+            global_parameters const& params
+        ) {
             if (all_ones_sequence::bitsize(params, universe, n) == 0) {
                 m_type = all_ones;
             } else {
@@ -101,8 +100,8 @@ struct indexed_sequence {
                     compact_elias_fano::enumerator(bv, offset + type_bits, universe, n, params);
                 break;
             case ranked_bitvector:
-                m_enumerator = compact_ranked_bitvector::enumerator(
-                    bv, offset + type_bits, universe, n, params);
+                m_enumerator =
+                    compact_ranked_bitvector::enumerator(bv, offset + type_bits, universe, n, params);
                 break;
             case all_ones:
                 m_enumerator =
@@ -112,27 +111,23 @@ struct indexed_sequence {
             }
         }
 
-        value_type move(uint64_t position)
-        {
+        value_type move(uint64_t position) {
             return std::visit([&position](auto&& e) { return e.move(position); }, m_enumerator);
         }
-        value_type next_geq(uint64_t lower_bound)
-        {
+        value_type next_geq(uint64_t lower_bound) {
             return std::visit(
-                [&lower_bound](auto&& e) { return e.next_geq(lower_bound); }, m_enumerator);
+                [&lower_bound](auto&& e) { return e.next_geq(lower_bound); }, m_enumerator
+            );
         }
-        value_type next()
-        {
+        value_type next() {
             return std::visit([](auto&& e) { return e.next(); }, m_enumerator);
         }
 
-        uint64_t size() const
-        {
+        uint64_t size() const {
             return std::visit([](auto&& e) { return e.size(); }, m_enumerator);
         }
 
-        uint64_t prev_value() const
-        {
+        uint64_t prev_value() const {
             return std::visit([](auto&& e) { return e.prev_value(); }, m_enumerator);
         }
 

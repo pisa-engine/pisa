@@ -13,26 +13,24 @@
 
 namespace pisa {
 
-std::ostream& Forward_Index_Builder::write_header(std::ostream& os, uint32_t document_count)
-{
+std::ostream& Forward_Index_Builder::write_header(std::ostream& os, uint32_t document_count) {
     return Forward_Index_Builder::write_document(os, &document_count, std::next(&document_count));
 }
 
 auto Forward_Index_Builder::batch_file(std::string const& output_file, std::ptrdiff_t batch_number) noexcept
-    -> std::string
-{
+    -> std::string {
     std::ostringstream os;
     os << output_file << ".batch." << batch_number;
     return os.str();
 }
 
-void Forward_Index_Builder::run(Batch_Process bp, TextAnalyzer const& text_analyzer) const
-{
+void Forward_Index_Builder::run(Batch_Process bp, TextAnalyzer const& text_analyzer) const {
     spdlog::debug(
         "[Batch {}] Processing documents [{}, {})",
         bp.batch_number,
         bp.first_document,
-        bp.first_document + bp.records.size());
+        bp.first_document + bp.records.size()
+    );
     auto basename = batch_file(bp.output_file, bp.batch_number);
 
     std::ofstream os(basename);
@@ -67,12 +65,12 @@ void Forward_Index_Builder::run(Batch_Process bp, TextAnalyzer const& text_analy
         "[Batch {}] Processed documents [{}, {})",
         bp.batch_number,
         bp.first_document,
-        bp.first_document + bp.records.size());
+        bp.first_document + bp.records.size()
+    );
 }
 
 auto Forward_Index_Builder::reverse_mapping(std::vector<std::string>&& terms)
-    -> std::unordered_map<std::string, Term_Id>
-{
+    -> std::unordered_map<std::string, Term_Id> {
     std::unordered_map<std::string, Term_Id> mapping;
     Term_Id term_id{0};
     for (std::string& term: terms) {
@@ -83,8 +81,7 @@ auto Forward_Index_Builder::reverse_mapping(std::vector<std::string>&& terms)
 }
 
 auto Forward_Index_Builder::collect_terms(std::string const& basename, std::ptrdiff_t batch_count)
-    -> std::vector<std::string>
-{
+    -> std::vector<std::string> {
     struct Term_Span {
         size_t first;
         size_t last;
@@ -133,8 +130,8 @@ auto Forward_Index_Builder::collect_terms(std::string const& basename, std::ptrd
 }
 
 void Forward_Index_Builder::merge(
-    std::string const& basename, std::ptrdiff_t document_count, std::ptrdiff_t batch_count) const
-{
+    std::string const& basename, std::ptrdiff_t document_count, std::ptrdiff_t batch_count
+) const {
     std::ofstream term_os(basename + ".terms");
 
     {
@@ -150,7 +147,8 @@ void Forward_Index_Builder::merge(
         spdlog::info("Creating document lexicon");
         std::ifstream title_is(basename + ".documents");
         encode_payload_vector(
-            std::istream_iterator<io::Line>(title_is), std::istream_iterator<io::Line>())
+            std::istream_iterator<io::Line>(title_is), std::istream_iterator<io::Line>()
+        )
             .to_file(basename + ".doclex");
     }
     {
@@ -179,10 +177,9 @@ void Forward_Index_Builder::merge(
         spdlog::debug("[Remapping IDs] Batch {}/{}", batch, batch_count);
         auto batch_terms = io::read_string_vector(batch_file(basename, batch) + ".terms");
         std::vector<Term_Id> mapping(batch_terms.size());
-        std::transform(
-            batch_terms.begin(), batch_terms.end(), mapping.begin(), [&](auto const& bterm) {
-                return term_mapping[bterm];
-            });
+        std::transform(batch_terms.begin(), batch_terms.end(), mapping.begin(), [&](auto const& bterm) {
+            return term_mapping[bterm];
+        });
         writable_binary_collection coll(batch_file(basename, batch).c_str());
         for (auto doc_iter = ++coll.begin(); doc_iter != coll.end(); ++doc_iter) {
             for (auto& term_id: *doc_iter) {
@@ -211,8 +208,8 @@ void Forward_Index_Builder::build(
     read_record_function_type next_record,
     std::shared_ptr<TextAnalyzer> text_analyzer,
     std::ptrdiff_t batch_size,
-    std::size_t threads) const
-{
+    std::size_t threads
+) const {
     if (threads < 2) {
         spdlog::error("Building forward index requires at least 2 threads");
         std::abort();
@@ -230,7 +227,8 @@ void Forward_Index_Builder::build(
             auto last_batch_size = record_batch.size();
             auto batch_process = [&] {
                 return Batch_Process{
-                    batch_number, std::move(record_batch), first_document, output_file};
+                    batch_number, std::move(record_batch), first_document, output_file
+                };
             };
             queue.push(0);
             batch_group.run([bp = batch_process(), this, &queue, text_analyzer]() {
@@ -248,7 +246,8 @@ void Forward_Index_Builder::build(
         if (record_batch.size() == batch_size) {
             auto batch_process = [&] {
                 return Batch_Process{
-                    batch_number, std::move(record_batch), first_document, output_file};
+                    batch_number, std::move(record_batch), first_document, output_file
+                };
             };
             queue.push(0);
             batch_group.run([bp = batch_process(), this, &queue, text_analyzer]() {
@@ -266,8 +265,7 @@ void Forward_Index_Builder::build(
     remove_batches(output_file, batch_number);
 }
 
-void try_remove(std::filesystem::path const& file)
-{
+void try_remove(std::filesystem::path const& file) {
     try {
         std::filesystem::remove(file);
     } catch (...) {
@@ -275,8 +273,7 @@ void try_remove(std::filesystem::path const& file)
     }
 }
 
-void Forward_Index_Builder::remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const
-{
+void Forward_Index_Builder::remove_batches(std::string const& basename, std::ptrdiff_t batch_count) const {
     for (auto batch: ranges::views::iota(0, batch_count)) {
         auto batch_basename = batch_file(basename, batch);
         try_remove(std::filesystem::path{batch_basename + ".documents"});

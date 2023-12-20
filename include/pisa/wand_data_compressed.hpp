@@ -25,11 +25,9 @@ class uniform_score_compressor {
             : m_params(params),
               m_quantization_bits(quantization_bits),
               m_num_docs((num_docs + 1) << quantization_bits.as_int()),
-              m_docs_sequences(params)
-        {}
+              m_docs_sequences(params) {}
 
-        std::vector<uint32_t> compress_data(std::vector<float> effective_scores, float max_score)
-        {
+        std::vector<uint32_t> compress_data(std::vector<float> effective_scores, float max_score) {
             // Partition scores.
             LinearQuantizer quantizer(max_score, m_quantization_bits.as_int());
             std::vector<uint32_t> score_indexes;
@@ -41,8 +39,7 @@ class uniform_score_compressor {
         }
 
         template <typename Sequence = compact_elias_fano, typename DocsIterator>
-        void add_posting_list(uint64_t n, DocsIterator docs_begin, DocsIterator score_begin)
-        {
+        void add_posting_list(uint64_t n, DocsIterator docs_begin, DocsIterator score_begin) {
             std::vector<uint64_t> temp;
             for (size_t pos = 0; pos < n; ++pos) {
                 uint64_t elem = *(docs_begin + pos);
@@ -54,7 +51,8 @@ class uniform_score_compressor {
                         "({}) lower than its predecessor ({})",
                         pos,
                         elem,
-                        temp.back()));
+                        temp.back()
+                    ));
                 }
                 temp.push_back(elem);
             }
@@ -81,8 +79,7 @@ class uniform_score_compressor {
         bitvector_collection::builder m_docs_sequences;
     };
 
-    static float inline score(uint32_t quantized_score, Size quantization_bits)
-    {
+    static float inline score(uint32_t quantized_score, Size quantization_bits) {
         const float quant = 1.F / (1U << quantization_bits.as_int());
         return quant * (quantized_score + 1);
     }
@@ -98,14 +95,15 @@ class wand_data_compressed {
         builder(
             binary_freq_collection const& coll,
             global_parameters const& params,
-            std::optional<Size> quantization_bits)
+            std::optional<Size> quantization_bits
+        )
             : total_elements(0),
               total_blocks(0),
               params(params),
               m_quantization_bits(
-                  unwrap(quantization_bits, "compressed wand data needs quantization bits")),
-              compressor_builder(coll.num_docs(), params, m_quantization_bits)
-        {
+                  unwrap(quantization_bits, "compressed wand data needs quantization bits")
+              ),
+              compressor_builder(coll.num_docs(), params, m_quantization_bits) {
             spdlog::info("Storing max weight for each list and for each block...");
         }
 
@@ -116,12 +114,13 @@ class wand_data_compressed {
             [[maybe_unused]] std::vector<uint32_t> const& doc_lens,
             float avg_len,
             Scorer scorer,
-            BlockSize block_size)
-        {
+            BlockSize block_size
+        ) {
             auto t = std::holds_alternative<FixedBlock>(block_size)
                 ? static_block_partition(seq, scorer, std::get<FixedBlock>(block_size).size)
                 : variable_block_partition(
-                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda);
+                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda
+                );
 
             float max_score = *(std::max_element(t.second.begin(), t.second.end()));
             max_term_weight.push_back(max_score);
@@ -136,8 +135,7 @@ class wand_data_compressed {
 
         void quantize_block_max_term_weights([[maybe_unused]] float index_max_term_weight) {}
 
-        void build(wand_data_compressed& wdata)
-        {
+        void build(wand_data_compressed& wdata) {
             auto index_max_term_weight =
                 *(std::max_element(max_term_weight.begin(), max_term_weight.end()));
             for (auto&& [docs, scores]:
@@ -145,15 +143,16 @@ class wand_data_compressed {
                 auto quantized_scores =
                     compressor_builder.compress_data(scores, index_max_term_weight);
                 compressor_builder.add_posting_list(
-                    quantized_scores.size(), docs.begin(), quantized_scores.begin());
+                    quantized_scores.size(), docs.begin(), quantized_scores.begin()
+                );
             }
             wdata.m_num_docs = compressor_builder.num_docs();
             wdata.m_params = compressor_builder.params();
             wdata.m_quantization_bits = m_quantization_bits;
             compressor_builder.build(wdata.m_docs_sequences);
             spdlog::info(
-                "number of elements / number of blocks: {}",
-                (float)total_elements / (float)total_blocks);
+                "number of elements / number of blocks: {}", (float)total_elements / (float)total_blocks
+            );
         }
 
         uint64_t total_elements;
@@ -171,26 +170,22 @@ class wand_data_compressed {
 
       public:
         enumerator(
-            compact_elias_fano::enumerator const& docs_enum,
-            float max_term_weight,
-            Size quantization_bits)
+            compact_elias_fano::enumerator const& docs_enum, float max_term_weight, Size quantization_bits
+        )
             : m_docs_enum(docs_enum),
               m_max_term_weight(max_term_weight),
-              m_quantization_bits(quantization_bits)
-        {
+              m_quantization_bits(quantization_bits) {
             reset();
         }
 
-        void reset()
-        {
+        void reset() {
             uint64_t val = m_docs_enum.move(0).second;
             m_cur_docid = val >> m_quantization_bits.as_int();
             uint64_t mask = (1U << m_quantization_bits.as_int()) - 1;
             m_cur_score_index = (val & mask);
         }
 
-        void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound)
-        {
+        void PISA_FLATTEN_FUNC next_geq(uint64_t lower_bound) {
             if (docid() != lower_bound) {
                 lower_bound = lower_bound << m_quantization_bits.as_int();
                 auto val = m_docs_enum.next_geq(lower_bound);
@@ -200,8 +195,7 @@ class wand_data_compressed {
             }
         }
 
-        float PISA_FLATTEN_FUNC score()
-        {
+        float PISA_FLATTEN_FUNC score() {
             // NOLINTNEXTLINE(readability-braces-around-statements)
             if constexpr (IndexPayloadType == PayloadType::Quantized) {
                 return m_cur_score_index;
@@ -225,23 +219,23 @@ class wand_data_compressed {
 
     uint64_t num_docs() const { return m_num_docs; }
 
-    enumerator get_enum(size_t i, float max_term_weight) const
-    {
+    enumerator get_enum(size_t i, float max_term_weight) const {
         assert(i < size());
         auto docs_it = m_docs_sequences.get(m_params, i);
 
         uint64_t n = read_gamma_nonzero(docs_it);
         typename compact_elias_fano::enumerator docs_enum(
-            m_docs_sequences.bits(), docs_it.position(), num_docs(), n, m_params);
+            m_docs_sequences.bits(), docs_it.position(), num_docs(), n, m_params
+        );
 
         return enumerator(docs_enum, max_term_weight, m_quantization_bits);
     }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_params, "m_params")(m_num_docs, "m_num_docs")(m_docs_sequences, "m_docs_sequences")(
-            m_quantization_bits, "m_quantization_bits");
+            m_quantization_bits, "m_quantization_bits"
+        );
     }
 
   private:

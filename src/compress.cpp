@@ -18,16 +18,13 @@
 namespace pisa {
 
 template <typename Collection>
-void dump_index_specific_stats(Collection const&, std::string const&)
-{}
+void dump_index_specific_stats(Collection const&, std::string const&) {}
 
-void dump_index_specific_stats(pisa::pefuniform_index const& coll, std::string const& type)
-{
+void dump_index_specific_stats(pisa::pefuniform_index const& coll, std::string const& type) {
     pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
 }
 
-void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const& type)
-{
+void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const& type) {
     std::uint64_t length_threshold = 4096;
     double long_postings = 0;
     double docs_partitions = 0;
@@ -43,14 +40,14 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
     }
 
     pisa::stats_line()("type", type)("docs_avg_part", long_postings / docs_partitions)(
-        "freqs_avg_part", long_postings / freqs_partitions);
+        "freqs_avg_part", long_postings / freqs_partitions
+    );
 }
 
 template <typename Wand>
 struct QuantizedScorer {
     QuantizedScorer(std::unique_ptr<index_scorer<Wand>> scorer, LinearQuantizer quantizer)
-        : scorer(std::move(scorer)), quantizer(quantizer)
-    {}
+        : scorer(std::move(scorer)), quantizer(quantizer) {}
     std::unique_ptr<index_scorer<Wand>> scorer;
     LinearQuantizer quantizer;
 };
@@ -61,8 +58,8 @@ void compress_index_streaming(
     pisa::global_parameters const& params,
     std::string const& output_filename,
     std::optional<QuantizedScorer<Wand>> quantized_scorer,
-    bool check)
-{
+    bool check
+) {
     spdlog::info("Processing {} documents (streaming)", input.num_docs());
     double tick = get_time_usecs();
 
@@ -84,7 +81,8 @@ void compress_index_streaming(
                     quantized_scores.push_back(quantizer(score));
                 }
                 auto sum = std::accumulate(
-                    quantized_scores.begin(), quantized_scores.end(), std::uint64_t(0));
+                    quantized_scores.begin(), quantized_scores.end(), std::uint64_t(0)
+                );
                 builder.add_posting_list(size, plist.docs.begin(), quantized_scores.begin(), sum);
                 term_id += 1;
                 quantized_scores.clear();
@@ -122,8 +120,8 @@ void compress_index(
     std::string const& seq_type,
     std::optional<std::string> const& wand_data_filename,
     ScorerParams const& scorer_params,
-    std::optional<Size> quantization_bits)
-{
+    std::optional<Size> quantization_bits
+) {
     if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
         std::optional<QuantizedScorer<WandType>> quantized_scorer{};
         WandType wdata;
@@ -143,7 +141,8 @@ void compress_index(
             quantized_scorer = QuantizedScorer(std::move(scorer), quantizer);
         }
         compress_index_streaming<CollectionType, WandType>(
-            input, params, *output_filename, std::move(quantized_scorer), check);
+            input, params, *output_filename, std::move(quantized_scorer), check
+        );
         return;
     }
 
@@ -203,7 +202,8 @@ void compress_index(
     spdlog::info("{} collection built in {} seconds", seq_type, elapsed_secs);
 
     stats_line()("type", seq_type)("worker_threads", std::thread::hardware_concurrency())(
-        "construction_time", elapsed_secs);
+        "construction_time", elapsed_secs
+    );
 
     dump_stats(coll, seq_type, postings);
     dump_index_specific_stats(coll, seq_type);
@@ -215,7 +215,8 @@ void compress_index(
         }
         if (check and not quantization_bits.has_value()) {
             verify_collection<binary_freq_collection, CollectionType>(
-                input, (*output_filename).c_str());
+                input, (*output_filename).c_str()
+            );
         }
     }
 }
@@ -227,25 +228,18 @@ void compress(
     std::string const& output_filename,
     ScorerParams const& scorer_params,
     std::optional<Size> quantization_bits,
-    bool check)
-{
+    bool check
+) {
     binary_freq_collection input(input_basename.c_str());
     global_parameters params;
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                    \
-    }                                                                            \
-    else if (index_encoding == BOOST_PP_STRINGIZE(T))                            \
-    {                                                                            \
-        compress_index<pisa::BOOST_PP_CAT(T, _index), wand_data<wand_data_raw>>( \
-            input,                                                               \
-            params,                                                              \
-            output_filename,                                                     \
-            check,                                                               \
-            index_encoding,                                                      \
-            wand_data_filename,                                                  \
-            scorer_params,                                                       \
-            quantization_bits);                                                  \
+#define LOOP_BODY(R, DATA, T)                                                                                           \
+    }                                                                                                                   \
+    else if (index_encoding == BOOST_PP_STRINGIZE(T)) {                                                                 \
+        compress_index<pisa::BOOST_PP_CAT(T, _index), wand_data<wand_data_raw>>(                                        \
+            input, params, output_filename, check, index_encoding, wand_data_filename, scorer_params, quantization_bits \
+        );                                                                                                              \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
 #undef LOOP_BODY

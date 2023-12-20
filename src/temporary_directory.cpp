@@ -8,8 +8,7 @@
 
 namespace pisa {
 
-auto random_name(std::size_t length = 64UL) -> std::string
-{
+auto random_name(std::size_t length = 64UL) -> std::string {
     thread_local std::random_device rd{};
     thread_local std::mt19937 gen(rd());
     std::uniform_int_distribution<> distrib('a', 'z');
@@ -19,8 +18,7 @@ auto random_name(std::size_t length = 64UL) -> std::string
 }
 
 TemporaryDirectory::TemporaryDirectory()
-    : dir_(std::filesystem::temp_directory_path() / random_name())
-{
+    : dir_(std::filesystem::temp_directory_path() / random_name()) {
     std::filesystem::create_directory(dir_);
     spdlog::debug("Created a tmp dir {}", dir_.c_str());
 }
@@ -30,16 +28,14 @@ TemporaryDirectory::TemporaryDirectory(TemporaryDirectory&&) noexcept = default;
 TemporaryDirectory& TemporaryDirectory::operator=(TemporaryDirectory const&) = default;
 TemporaryDirectory& TemporaryDirectory::operator=(TemporaryDirectory&&) noexcept = default;
 
-TemporaryDirectory::~TemporaryDirectory()
-{
+TemporaryDirectory::~TemporaryDirectory() {
     if (std::filesystem::exists(dir_)) {
         std::filesystem::remove_all(dir_);
     }
     spdlog::debug("Removed a tmp dir {}", dir_.c_str());
 }
 
-auto TemporaryDirectory::path() -> std::filesystem::path const&
-{
+auto TemporaryDirectory::path() -> std::filesystem::path const& {
     return dir_;
 }
 

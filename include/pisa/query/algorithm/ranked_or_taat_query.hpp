@@ -13,8 +13,7 @@ class ranked_or_taat_query {
 
     template <typename CursorRange, typename Acc>
     PISA_REQUIRES(PartialScoreAccumulator<Acc>)
-    void operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator)
-    {
+    void operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator) {
         if (cursors.empty()) {
             return;
         }

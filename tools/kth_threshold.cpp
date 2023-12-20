@@ -26,13 +26,13 @@
 
 using namespace pisa;
 
-std::set<uint32_t> parse_tuple(std::string const& line, size_t k)
-{
+std::set<uint32_t> parse_tuple(std::string const& line, size_t k) {
     std::vector<std::string> term_ids;
     boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
     if (term_ids.size() != k) {
         throw std::runtime_error(fmt::format(
-            "Wrong number of terms in line: {} (expected {} but found {})", line, k, term_ids.size()));
+            "Wrong number of terms in line: {} (expected {} but found {})", line, k, term_ids.size()
+        ));
     }
 
     std::set<uint32_t> term_ids_int;
@@ -40,8 +40,8 @@ std::set<uint32_t> parse_tuple(std::string const& line, size_t k)
         try {
             term_ids_int.insert(std::stoi(term_id));
         } catch (...) {
-            throw std::runtime_error(
-                fmt::format("Cannot convert {} to int in line: {}", term_id, line));
+            throw std::runtime_error(fmt::format("Cannot convert {} to int in line: {}", term_id, line)
+            );
         }
     }
     return term_ids_int;
@@ -59,8 +59,8 @@ void kt_thresholds(
     std::optional<std::string> pairs_filename,
     std::optional<std::string> triples_filename,
     bool all_pairs,
-    bool all_triples)
-{
+    bool all_triples
+) {
     IndexType index;
     mio::mmap_source m(index_filename.c_str());
     mapper::map(index, m);
@@ -139,7 +139,8 @@ void kt_thresholds(
                         Query query;
                         query.terms = {terms[i], terms[j], terms[s]};
                         wand_q(
-                            make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
+                            make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs()
+                        );
                         threshold =
                             std::max(threshold, topk.size() == k ? topk.true_threshold() : 0.0F);
                         topk.clear();
@@ -155,8 +156,7 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     spdlog::drop("");
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
@@ -175,11 +175,13 @@ int main(int argc, const char** argv)
             "term, pair or triple of a query. Pairs and triples are only used if provided with "
             "--pairs and --triples respectively."};
     auto pairs = app.add_option(
-        "-p,--pairs", pairs_filename, "A tab separated file containing all the cached term pairs");
+        "-p,--pairs", pairs_filename, "A tab separated file containing all the cached term pairs"
+    );
     auto triples = app.add_option(
         "-t,--triples",
         triples_filename,
-        "A tab separated file containing all the cached term triples");
+        "A tab separated file containing all the cached term triples"
+    );
     app.add_flag("--all-pairs", all_pairs, "Consider all term pairs of a query")->excludes(pairs);
     app.add_flag("--all-triples", all_triples, "Consider all term triples of a query")->excludes(triples);
     app.add_flag("--quantized", quantized, "Quantizes the scores");
@@ -199,23 +201,24 @@ int main(int argc, const char** argv)
         pairs_filename,
         triples_filename,
         all_pairs,
-        all_triples);
+        all_triples
+    );
 
     /**/
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                      \
-    }                                                                                              \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T))                                        \
-    {                                                                                              \
-        if (app.is_wand_compressed()) {                                                            \
-            if (quantized) {                                                                       \
-                std::apply(                                                                        \
-                    kt_thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params); \
-            } else {                                                                               \
-                std::apply(kt_thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);    \
-            }                                                                                      \
-        } else {                                                                                   \
-            std::apply(kt_thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);            \
+#define LOOP_BODY(R, DATA, T)                                                                    \
+    }                                                                                            \
+    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                                    \
+        if (app.is_wand_compressed()) {                                                          \
+            if (quantized) {                                                                     \
+                std::apply(                                                                      \
+                    kt_thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params \
+                );                                                                               \
+            } else {                                                                             \
+                std::apply(kt_thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
+            }                                                                                    \
+        } else {                                                                                 \
+            std::apply(kt_thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
         }
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

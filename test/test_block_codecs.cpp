@@ -22,8 +22,7 @@
 using namespace rc;
 
 template <typename BlockCodec>
-void test_case(std::vector<std::uint32_t> values, bool use_sum_of_values)
-{
+void test_case(std::vector<std::uint32_t> values, bool use_sum_of_values) {
     std::uint32_t sum_of_values =
         use_sum_of_values ? std::accumulate(values.begin(), values.end(), 0) : std::uint32_t(-1);
 
@@ -49,13 +48,14 @@ void test_case(std::vector<std::uint32_t> values, bool use_sum_of_values)
 }
 
 template <typename BlockCodec>
-void test_block_codec()
-{
+void test_block_codec() {
     const auto lengths = gen::elementOf(
-        std::vector<std::size_t>{1, 2, BlockCodec::block_size - 1, BlockCodec::block_size});
+        std::vector<std::size_t>{1, 2, BlockCodec::block_size - 1, BlockCodec::block_size}
+    );
     const auto genlist = gen::mapcat(lengths, [](std::size_t len) {
         return gen::container<std::vector<std::uint32_t>>(
-            len, gen::inRange<std::uint32_t>(1, 1 << 12));
+            len, gen::inRange<std::uint32_t>(1, 1 << 12)
+        );
     });
 
     std::size_t use_sum_of_values = GENERATE(true, false);
@@ -76,15 +76,16 @@ TEMPLATE_TEST_CASE(
     pisa::varintgb_block,
     pisa::simple8b_block,
     pisa::simple16_block,
-    pisa::simdbp_block)
-{
+    pisa::simdbp_block
+) {
     std::size_t use_sum_of_values = GENERATE(true, false);
-    std::vector<std::uint32_t> values{
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 259};
+    std::vector<std::uint32_t> values{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
+                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
+                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
+                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
+                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
+                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
+                                      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 259};
     test_case<TestType>(values, use_sum_of_values);
 }
 
@@ -101,8 +102,8 @@ TEMPLATE_TEST_CASE(
     pisa::varintgb_block,
     pisa::simple8b_block,
     pisa::simple16_block,
-    pisa::simdbp_block)
-{
+    pisa::simdbp_block
+) {
     std::size_t use_sum_of_values = GENERATE(true, false);
     test_block_codec<TestType>();
 }

@@ -1,6 +1,6 @@
 ---
 AccessModifierOffset: '-2'
-AlignAfterOpenBracket: AlwaysBreak
+AlignAfterOpenBracket: BlockIndent
 AlignConsecutiveAssignments: 'false'
 AlignConsecutiveDeclarations: 'false'
 AlignEscapedNewlines: Left
@@ -26,7 +26,7 @@ BreakBeforeTernaryOperators: 'true'
 BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
 BraceWrapping:
-    AfterFunction: true
+    AfterFunction: false
     SplitEmptyFunction: false
 ColumnLimit: '100'
 CompactNamespaces: 'true'

@@ -23,9 +23,9 @@ class wand_data_raw {
         builder(
             binary_freq_collection const& coll,
             global_parameters const& params,
-            std::optional<Size> quantization_bits)
-            : m_quantization_bits(quantization_bits)
-        {
+            std::optional<Size> quantization_bits
+        )
+            : m_quantization_bits(quantization_bits) {
             (void)coll;
             (void)params;
             spdlog::info("Storing max weight for each list and for each block...");
@@ -42,15 +42,17 @@ class wand_data_raw {
             [[maybe_unused]] std::vector<uint32_t> const& doc_lens,
             float avg_len,
             Scorer scorer,
-            BlockSize block_size)
-        {
+            BlockSize block_size
+        ) {
             auto t = std::holds_alternative<FixedBlock>(block_size)
                 ? static_block_partition(seq, scorer, std::get<FixedBlock>(block_size).size)
                 : variable_block_partition(
-                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda);
+                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda
+                );
 
             block_max_term_weight.insert(
-                block_max_term_weight.end(), t.second.begin(), t.second.end());
+                block_max_term_weight.end(), t.second.begin(), t.second.end()
+            );
             block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
             max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
             blocks_start.push_back(t.first.size() + blocks_start.back());
@@ -61,22 +63,21 @@ class wand_data_raw {
             return max_term_weight.back();
         }
 
-        void quantize_block_max_term_weights(float index_max_term_weight)
-        {
+        void quantize_block_max_term_weights(float index_max_term_weight) {
             LinearQuantizer quantizer(index_max_term_weight, m_quantization_bits->as_int());
             for (auto&& w: block_max_term_weight) {
                 w = quantizer(w);
             }
         }
 
-        void build(wand_data_raw& wdata)
-        {
+        void build(wand_data_raw& wdata) {
             wdata.m_block_max_term_weight.steal(block_max_term_weight);
             wdata.m_blocks_start.steal(blocks_start);
             wdata.m_block_docid.steal(block_docid);
             spdlog::info(
                 "number of elements / number of blocks: {}",
-                static_cast<float>(total_elements) / static_cast<float>(total_blocks));
+                static_cast<float>(total_elements) / static_cast<float>(total_blocks)
+            );
         }
 
         std::optional<Size> m_quantization_bits;
@@ -96,23 +97,21 @@ class wand_data_raw {
             uint32_t _block_start,
             uint32_t _block_number,
             mapper::mappable_vector<float> const& max_term_weight,
-            mapper::mappable_vector<uint32_t> const& block_docid)
+            mapper::mappable_vector<uint32_t> const& block_docid
+        )
             : cur_pos(0),
               block_start(_block_start),
               block_number(_block_number),
               m_block_max_term_weight(max_term_weight),
-              m_block_docid(block_docid)
-        {}
+              m_block_docid(block_docid) {}
 
-        void PISA_NOINLINE next_geq(uint64_t lower_bound)
-        {
+        void PISA_NOINLINE next_geq(uint64_t lower_bound) {
             while (cur_pos + 1 < block_number && m_block_docid[block_start + cur_pos] < lower_bound) {
                 cur_pos++;
             }
         }
 
-        float PISA_FLATTEN_FUNC score() const
-        {
+        float PISA_FLATTEN_FUNC score() const {
             return m_block_max_term_weight[block_start + cur_pos];
         }
 
@@ -128,20 +127,17 @@ class wand_data_raw {
         mapper::mappable_vector<uint32_t> const& m_block_docid;
     };
 
-    enumerator get_enum(uint32_t i, float) const
-    {
+    enumerator get_enum(uint32_t i, float) const {
         return enumerator(
-            m_blocks_start[i],
-            m_blocks_start[i + 1] - m_blocks_start[i],
-            m_block_max_term_weight,
-            m_block_docid);
+            m_blocks_start[i], m_blocks_start[i + 1] - m_blocks_start[i], m_block_max_term_weight, m_block_docid
+        );
     }
 
     template <typename Visitor>
-    void map(Visitor& visit)
-    {
+    void map(Visitor& visit) {
         visit(m_blocks_start, "m_blocks_start")(m_block_max_term_weight, "m_block_max_term_weight")(
-            m_block_docid, "m_block_docid");
+            m_block_docid, "m_block_docid"
+        );
     }
 
   private:

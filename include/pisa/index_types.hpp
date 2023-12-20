@@ -45,10 +45,9 @@ using block_simdbp_index = block_freq_index<pisa::simdbp_block>;
 
 }  // namespace pisa
 
-#define PISA_INDEX_TYPES                                                                    \
-    (ef)(single)(pefuniform)(pefopt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(   \
-        block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)( \
-        block_simple16)(block_simdbp)
-#define PISA_BLOCK_INDEX_TYPES                                                                    \
-    (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)( \
-        block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp)
+#define PISA_INDEX_TYPES                                                                                                                                                                                 \
+    (ef)(single)(pefuniform)(pefopt)(block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp \
+    )
+#define PISA_BLOCK_INDEX_TYPES                                                                                                                                           \
+    (block_optpfor)(block_varintg8iu)(block_streamvbyte)(block_maskedvbyte)(block_interpolative)(block_qmx)(block_varintgb)(block_simple8b)(block_simple16)(block_simdbp \
+    )

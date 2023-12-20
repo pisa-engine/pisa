@@ -25,8 +25,7 @@
 using namespace pisa;
 
 template <typename QueryOperator>
-void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries)
-{
+void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries) {
     using namespace pisa;
 
     size_t n_threads = std::thread::hardware_concurrency();
@@ -69,8 +68,8 @@ void profile(
     const std::optional<std::string>& wand_data_filename,
     std::vector<Query> const& queries,
     std::string const& type,
-    std::string const& query_type)
-{
+    std::string const& query_type
+) {
     using namespace pisa;
 
     typename add_profiling<IndexType>::type index;
@@ -101,7 +100,8 @@ void profile(
                 and_query and_q;
                 return and_q(
                            make_cursors<typename add_profiling<IndexType>::type>(index, query),
-                           index.num_docs())
+                           index.num_docs()
+                )
                     .size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
@@ -109,9 +109,9 @@ void profile(
                 topk_queue topk(10);
                 ranked_and_query ranked_and_q(topk);
                 ranked_and_q(
-                    make_scored_cursors<typename add_profiling<IndexType>::type>(
-                        index, *scorer, query),
-                    index.num_docs());
+                    make_scored_cursors<typename add_profiling<IndexType>::type>(index, *scorer, query),
+                    index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -121,8 +121,10 @@ void profile(
                 wand_query wand_q(topk);
                 wand_q(
                     make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                        index, wdata, *scorer, query),
-                    index.num_docs());
+                        index, wdata, *scorer, query
+                    ),
+                    index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -132,8 +134,10 @@ void profile(
                 maxscore_query maxscore_q(topk);
                 maxscore_q(
                     make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                        index, wdata, *scorer, query),
-                    index.num_docs());
+                        index, wdata, *scorer, query
+                    ),
+                    index.num_docs()
+                );
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -146,8 +150,7 @@ void profile(
     block_profiler::dump(std::cout);
 }
 
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     using namespace pisa;
 
     std::string type = argv[1];
@@ -179,12 +182,12 @@ int main(int argc, const char** argv)
     }
 
     if (false) {
-#define LOOP_BODY(R, DATA, T)                                               \
-    }                                                                       \
-    else if (type == BOOST_PP_STRINGIZE(T))                                 \
-    {                                                                       \
-        profile<BOOST_PP_CAT(T, _index)>(                                   \
-            index_filename, wand_data_filename, queries, type, query_type); \
+#define LOOP_BODY(R, DATA, T)                                             \
+    }                                                                     \
+    else if (type == BOOST_PP_STRINGIZE(T)) {                             \
+        profile<BOOST_PP_CAT(T, _index)>(                                 \
+            index_filename, wand_data_filename, queries, type, query_type \
+        );                                                                \
         /**/
 
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

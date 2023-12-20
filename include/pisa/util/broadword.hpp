@@ -25,38 +25,34 @@ namespace pisa { namespace broadword {
     static const uint64_t magic_mask_5 = 0x0000FFFF0000FFFFULL;
     static const uint64_t magic_mask_6 = 0x00000000FFFFFFFFULL;
 
-    inline uint64_t leq_step_8(uint64_t x, uint64_t y)
-    {
+    inline uint64_t leq_step_8(uint64_t x, uint64_t y) {
         return ((((y | msbs_step_8) - (x & ~msbs_step_8)) ^ (x ^ y)) & msbs_step_8) >> 7;
     }
 
-    inline uint64_t uleq_step_8(uint64_t x, uint64_t y)
-    {
+    inline uint64_t uleq_step_8(uint64_t x, uint64_t y) {
         return (((((y | msbs_step_8) - (x & ~msbs_step_8)) ^ (x ^ y)) ^ (x & ~y)) & msbs_step_8) >> 7;
     }
 
-    inline uint64_t zcompare_step_8(uint64_t x)
-    {
+    inline uint64_t zcompare_step_8(uint64_t x) {
         return ((x | ((x | msbs_step_8) - ones_step_8)) & msbs_step_8) >> 7;
     }
 
-    inline uint64_t uleq_step_9(uint64_t x, uint64_t y)
-    {
+    inline uint64_t uleq_step_9(uint64_t x, uint64_t y) {
         return (((((y | msbs_step_9) - (x & ~msbs_step_9)) | (x ^ y)) ^ (x & ~y)) & msbs_step_9) >> 8;
     }
 
-    inline uint64_t byte_counts(uint64_t x)
-    {
+    inline uint64_t byte_counts(uint64_t x) {
         x = x - ((x & 0xa * ones_step_4) >> 1);
         x = (x & 3 * ones_step_4) + ((x >> 2) & 3 * ones_step_4);
         x = (x + (x >> 4)) & 0x0f * ones_step_8;
         return x;
     }
 
-    inline uint64_t bytes_sum(uint64_t x) { return x * ones_step_8 >> 56; }
+    inline uint64_t bytes_sum(uint64_t x) {
+        return x * ones_step_8 >> 56;
+    }
 
-    inline uint64_t popcount(uint64_t x)
-    {
+    inline uint64_t popcount(uint64_t x) {
 #if USE_POPCNT
         return intrinsics::popcount(x);
 #else
@@ -64,18 +60,18 @@ namespace pisa { namespace broadword {
 #endif
     }
 
-    inline uint64_t reverse_bytes(uint64_t x) { return intrinsics::byteswap64(x); }
+    inline uint64_t reverse_bytes(uint64_t x) {
+        return intrinsics::byteswap64(x);
+    }
 
-    inline uint64_t reverse_bits(uint64_t x)
-    {
+    inline uint64_t reverse_bits(uint64_t x) {
         x = ((x >> 1) & magic_mask_1) | ((x & magic_mask_1) << 1);
         x = ((x >> 2) & magic_mask_2) | ((x & magic_mask_2) << 2);
         x = ((x >> 4) & magic_mask_3) | ((x & magic_mask_3) << 4);
         return reverse_bytes(x);
     }
 
-    inline uint64_t select_in_word(const uint64_t x, const uint64_t k)
-    {
+    inline uint64_t select_in_word(const uint64_t x, const uint64_t k) {
         assert(k < popcount(x));
 
         uint64_t byte_sums = byte_counts(x) * ones_step_8;
@@ -91,8 +87,7 @@ namespace pisa { namespace broadword {
         return place + tables::select_in_byte[((x >> place) & 0xFF) | (byte_rank << 8)];
     }
 
-    inline uint64_t same_msb(uint64_t x, uint64_t y)
-    {
+    inline uint64_t same_msb(uint64_t x, uint64_t y) {
         return static_cast<uint64_t>((x ^ y) <= (x & y));
     }
 
@@ -101,37 +96,33 @@ namespace pisa { namespace broadword {
         static const uint8_t debruijn64_mapping[64] = {
             63, 0,  58, 1,  59, 47, 53, 2,  60, 39, 48, 27, 54, 33, 42, 3,  61, 51, 37, 40, 49, 18,
             28, 20, 55, 30, 34, 11, 43, 14, 22, 4,  62, 57, 46, 52, 38, 26, 32, 41, 50, 36, 17, 19,
-            29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5};
+            29, 10, 13, 21, 56, 45, 25, 31, 35, 16, 9,  12, 44, 24, 15, 8,  23, 7,  6,  5
+        };
         static const uint64_t debruijn64 = 0x07EDD5E59A4E28C2ULL;
     }  // namespace detail
 
     // return the position of the single bit set in the word x
-    inline uint8_t bit_position(uint64_t x)
-    {
+    inline uint8_t bit_position(uint64_t x) {
         assert(popcount(x) == 1);
         return detail::debruijn64_mapping[(x * detail::debruijn64) >> 58];
     }
 
-    inline uint8_t msb(uint64_t x, unsigned long& ret)
-    {
+    inline uint8_t msb(uint64_t x, unsigned long& ret) {
         return static_cast<uint8_t>(intrinsics::bsr64(&ret, x));
     }
 
-    inline uint8_t msb(uint64_t x)
-    {
+    inline uint8_t msb(uint64_t x) {
         assert(x);
         unsigned long ret = -1U;
         msb(x, ret);
         return (uint8_t)ret;
     }
 
-    inline uint8_t lsb(uint64_t x, unsigned long& ret)
-    {
+    inline uint8_t lsb(uint64_t x, unsigned long& ret) {
         return static_cast<uint8_t>(intrinsics::bsf64(&ret, x));
     }
 
-    inline uint8_t lsb(uint64_t x)
-    {
+    inline uint8_t lsb(uint64_t x) {
         assert(x);
         unsigned long ret = -1U;
         lsb(x, ret);

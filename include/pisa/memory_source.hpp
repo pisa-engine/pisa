@@ -106,8 +106,7 @@ class MemorySource {
 
   private:
     template <typename T>
-    explicit MemorySource(T source) : m_source(std::make_unique<Impl<T>>(std::move(source)))
-    {}
+    explicit MemorySource(T source) : m_source(std::make_unique<Impl<T>>(std::move(source))) {}
 
     std::unique_ptr<Interface> m_source;
 };

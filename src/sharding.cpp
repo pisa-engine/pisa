@@ -21,22 +21,20 @@ namespace pisa {
 using pisa::literals::operator""_d;
 using pisa::literals::operator""_s;
 
-auto format_shard(std::string_view basename, Shard_Id shard, std::string_view suffix) -> std::string
-{
+auto format_shard(std::string_view basename, Shard_Id shard, std::string_view suffix) -> std::string {
     return fmt::format("{}.{:03d}{}", basename, shard.as_int(), suffix);
 }
 
-auto expand_shard(std::string_view basename, Shard_Id shard) -> std::string
-{
+auto expand_shard(std::string_view basename, Shard_Id shard) -> std::string {
     if (auto pos = basename.find("{}"); pos != std::string_view::npos) {
         return fmt::format(
-            "{}{:03d}{}", basename.substr(0, pos), shard.as_int(), basename.substr(pos + 2));
+            "{}{:03d}{}", basename.substr(0, pos), shard.as_int(), basename.substr(pos + 2)
+        );
     }
     return format_shard(basename, shard);
 }
 
-auto resolve_shards(std::string_view basename, std::string_view suffix) -> std::vector<Shard_Id>
-{
+auto resolve_shards(std::string_view basename, std::string_view suffix) -> std::vector<Shard_Id> {
     Shard_Id shard{0};
     std::vector<Shard_Id> shards;
     while (true) {
@@ -55,8 +53,7 @@ auto resolve_shards(std::string_view basename, std::string_view suffix) -> std::
 }
 
 auto mapping_from_files(std::istream* full_titles, gsl::span<std::istream*> shard_titles)
-    -> VecMap<Document_Id, Shard_Id>
-{
+    -> VecMap<Document_Id, Shard_Id> {
     std::unordered_map<std::string, Shard_Id> map;
     auto shard_id = Shard_Id(0);
     for (auto* is: shard_titles) {
@@ -68,7 +65,8 @@ auto mapping_from_files(std::istream* full_titles, gsl::span<std::istream*> shar
                     "Document {} already belongs to shard {}: mapping for shard {} ignored",
                     title,
                     pos->second.as_int(),
-                    shard_id.as_int());
+                    shard_id.as_int()
+                );
             }
         });
         shard_id += 1;
@@ -88,8 +86,7 @@ auto mapping_from_files(std::istream* full_titles, gsl::span<std::istream*> shar
 }
 
 auto mapping_from_files(std::string const& full_titles, gsl::span<std::string const> shard_titles)
-    -> VecMap<Document_Id, Shard_Id>
-{
+    -> VecMap<Document_Id, Shard_Id> {
     std::ifstream fis(full_titles);
     std::vector<std::unique_ptr<std::istream>> shard_is;
     for (auto const& shard_file: shard_titles) {
@@ -104,8 +101,7 @@ auto mapping_from_files(std::string const& full_titles, gsl::span<std::string co
 }
 
 auto create_random_mapping(int document_count, int shard_count, std::optional<std::uint64_t> seed)
-    -> VecMap<Document_Id, Shard_Id>
-{
+    -> VecMap<Document_Id, Shard_Id> {
     std::random_device rd;
     std::mt19937 g(seed.value_or(rd()));
     VecMap<Document_Id, Shard_Id> mapping(document_count);
@@ -115,27 +111,26 @@ auto create_random_mapping(int document_count, int shard_count, std::optional<st
 
     ranges::for_each(
         ranges::views::zip(
-            ranges::views::iota(0_s, Shard_Id(shard_count)),
-            ranges::views::chunk(documents, shard_size)),
+            ranges::views::iota(0_s, Shard_Id(shard_count)), ranges::views::chunk(documents, shard_size)
+        ),
         [&](auto&& entry) {
             auto&& [shard_id, shard_documents] = entry;
             for (auto document: shard_documents) {
                 mapping[document] = shard_id;
             }
-        });
+        }
+    );
     return mapping;
 }
 
 auto create_random_mapping(
-    std::string const& input_basename, int shard_count, std::optional<std::uint64_t> seed)
-    -> VecMap<Document_Id, Shard_Id>
-{
+    std::string const& input_basename, int shard_count, std::optional<std::uint64_t> seed
+) -> VecMap<Document_Id, Shard_Id> {
     auto document_count = *(*binary_collection(input_basename.c_str()).begin()).begin();
     return create_random_mapping(document_count, shard_count, seed);
 }
 
-void copy_sequence(std::istream& is, std::ostream& os)
-{
+void copy_sequence(std::istream& is, std::ostream& os) {
     uint32_t len;
     is.read(reinterpret_cast<char*>(&len), sizeof(len));
     os.write(reinterpret_cast<char const*>(&len), sizeof(len));
@@ -148,8 +143,8 @@ void rearrange_sequences(
     std::string const& input_basename,
     std::string const& output_basename,
     VecMap<Document_Id, Shard_Id>& mapping,
-    std::optional<Shard_Id> shard_count)
-{
+    std::optional<Shard_Id> shard_count
+) {
     spdlog::info("Rearranging documents");
     if (not shard_count) {
         *shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
@@ -201,8 +196,8 @@ void process_shard(
     std::string const& input_basename,
     std::string const& output_basename,
     Shard_Id shard_id,
-    VecMap<Term_Id, std::string> const& terms)
-{
+    VecMap<Term_Id, std::string> const& terms
+) {
     auto basename = fmt::format("{}.{:03d}", output_basename, shard_id.as_int());
     auto shard = writable_binary_collection(basename.c_str());
 
@@ -228,7 +223,8 @@ void process_shard(
         spdlog::debug("[Shard {}] Creating term lexicon", shard_id.as_int());
         std::ifstream title_is(fmt::format("{}.terms", basename));
         encode_payload_vector(
-            std::istream_iterator<io::Line>(title_is), std::istream_iterator<io::Line>())
+            std::istream_iterator<io::Line>(title_is), std::istream_iterator<io::Line>()
+        )
             .to_file(fmt::format("{}.termlex", basename));
     }
 
@@ -256,8 +252,8 @@ void process_shard(
 void partition_fwd_index(
     std::string const& input_basename,
     std::string const& output_basename,
-    VecMap<Document_Id, Shard_Id>& mapping)
-{
+    VecMap<Document_Id, Shard_Id>& mapping
+) {
     auto terms = read_string_vec_map<Term_Id>(fmt::format("{}.terms", input_basename));
     auto shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
     auto shard_ids = ranges::views::iota(0_s, shard_count) | ranges::to<std::vector>();

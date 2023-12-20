@@ -13,8 +13,7 @@ using namespace pisa;
 using StrColl = std::vector<std::vector<std::pair<std::string, std::uint32_t>>>;
 
 [[nodiscard]] auto coll_to_strings(std::string const& coll_file, std::string const& doclex_file)
-    -> StrColl
-{
+    -> StrColl {
     auto doclex_buf = Payload_Vector_Buffer::from_file(doclex_file);
     pisa::Payload_Vector<> doclex(doclex_buf);
     pisa::binary_freq_collection coll(coll_file.c_str());
@@ -28,15 +27,15 @@ using StrColl = std::vector<std::vector<std::pair<std::string, std::uint32_t>>>;
             std::back_inserter(pl),
             [&doclex](auto&& doc, auto&& freq) {
                 return std::pair<std::string, std::uint32_t>(doclex[doc], freq);
-            });
+            }
+        );
         std::sort(pl.begin(), pl.end());
         strcoll.push_back(pl);
     }
     return strcoll;
 }
 
-void compare_strcolls(StrColl const& expected, StrColl const& actual)
-{
+void compare_strcolls(StrColl const& expected, StrColl const& actual) {
     REQUIRE(expected.size() == actual.size());
     for (int list_idx = 0; list_idx < expected.size(); list_idx += 1) {
         REQUIRE(expected[list_idx].size() == actual[list_idx].size());
@@ -47,8 +46,7 @@ void compare_strcolls(StrColl const& expected, StrColl const& actual)
     }
 }
 
-TEST_CASE("Reorder documents with BP")
-{
+TEST_CASE("Reorder documents with BP") {
     pisa::TemporaryDirectory tmp;
 
     auto next_record = [](std::istream& in) -> std::optional<Document_Record> {
@@ -64,8 +62,7 @@ TEST_CASE("Reorder documents with BP")
     auto bp_fwd_path = (tmp.path() / "fwd.bp").string();
     auto bp_inv_path = (tmp.path() / "inv.bp").string();
 
-    GIVEN("Built a forward index and inverted")
-    {
+    GIVEN("Built a forward index and inverted") {
         std::string collection_input(PISA_SOURCE_DIR "/test/test_data/clueweb1k.plaintext");
         REQUIRE(std::filesystem::exists(std::filesystem::path(collection_input)) == true);
         int thread_count = 2;
@@ -82,16 +79,17 @@ TEST_CASE("Reorder documents with BP")
             next_record,
             std::make_shared<TextAnalyzer>(std::make_unique<WhitespaceTokenizer>()),
             batch_size,
-            thread_count);
+            thread_count
+        );
 
         pisa::invert::invert_forward_index(fwd_path, inv_path, params);
 
-        WHEN("Reordered documents with BP")
-        {
+        WHEN("Reordered documents with BP") {
             auto cache_depth = GENERATE(
                 std::optional<std::size_t>{},
                 std::make_optional<std::size_t>(1),
-                std::make_optional<std::size_t>(2));
+                std::make_optional<std::size_t>(2)
+            );
             int code = recursive_graph_bisection(RecursiveGraphBisectionOptions{
                 .input_basename = inv_path,
                 .output_basename = bp_inv_path,
@@ -106,16 +104,14 @@ TEST_CASE("Reorder documents with BP")
                 .print_args = false,
             });
             REQUIRE(code == 0);
-            THEN("Both collections are equal when mapped to strings")
-            {
+            THEN("Both collections are equal when mapped to strings") {
                 auto expected = coll_to_strings(inv_path, fmt::format("{}.doclex", fwd_path));
                 auto actual = coll_to_strings(bp_inv_path, fmt::format("{}.doclex", bp_fwd_path));
                 compare_strcolls(expected, actual);
             }
         }
 
-        WHEN("Reordered documents with BP node version")
-        {
+        WHEN("Reordered documents with BP node version") {
             int code = recursive_graph_bisection(RecursiveGraphBisectionOptions{
                 .input_basename = inv_path,
                 .output_basename = bp_inv_path,
@@ -130,8 +126,7 @@ TEST_CASE("Reorder documents with BP")
                 .print_args = false,
             });
             REQUIRE(code == 0);
-            THEN("Both collections are equal when mapped to strings")
-            {
+            THEN("Both collections are equal when mapped to strings") {
                 auto expected = coll_to_strings(inv_path, fmt::format("{}.doclex", fwd_path));
                 auto actual = coll_to_strings(bp_inv_path, fmt::format("{}.doclex", bp_fwd_path));
                 compare_strcolls(expected, actual);

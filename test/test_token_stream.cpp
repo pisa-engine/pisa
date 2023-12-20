@@ -6,14 +6,12 @@
 
 using namespace pisa;
 
-TEST_CASE("EmptyTokenStream")
-{
+TEST_CASE("EmptyTokenStream") {
     EmptyTokenStream empty;
     REQUIRE(empty.next() == std::nullopt);
 }
 
-TEST_CASE("SingleTokenStream")
-{
+TEST_CASE("SingleTokenStream") {
     SingleTokenStream single("token");
     REQUIRE(single.next() == "token");
     REQUIRE(single.next() == std::nullopt);
