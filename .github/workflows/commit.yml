@@ -100,7 +100,7 @@ jobs:
     - name: Install clang-format
       shell: bash
       run: |
-          sudo apt-get install -y clang-format
+          sudo pip install clang-format
 
     - name: Set up Python
       uses: actions/setup-python@v1
