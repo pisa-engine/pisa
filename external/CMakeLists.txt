@@ -1,4 +1,4 @@
-EXECUTE_PROCESS(COMMAND git submodule update --init
+EXECUTE_PROCESS(COMMAND git submodule update --init --recursive
                 WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/..
                 OUTPUT_QUIET
         )
