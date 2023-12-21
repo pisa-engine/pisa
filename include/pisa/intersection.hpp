@@ -23,7 +23,7 @@ namespace intersection {
     using Mask = std::bitset<MAX_QUERY_LEN_EXP>;
 
     /// Returns a filtered copy of `query` containing only terms indicated by ones in the bit mask.
-    [[nodiscard]] inline auto filter(Query const& query, Mask mask) -> Query {
+    [[nodiscard]] inline auto filter(Query const& query, Mask const& mask) -> Query {
         if (query.terms.size() > MAX_QUERY_LEN) {
             throw std::invalid_argument("Queries can be at most 2^32 terms long");
         }

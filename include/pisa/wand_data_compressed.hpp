@@ -27,7 +27,8 @@ class uniform_score_compressor {
               m_num_docs((num_docs + 1) << quantization_bits.as_int()),
               m_docs_sequences(params) {}
 
-        std::vector<uint32_t> compress_data(std::vector<float> effective_scores, float max_score) {
+        std::vector<uint32_t>
+        compress_data(std::vector<float> const& effective_scores, float max_score) {
             // Partition scores.
             LinearQuantizer quantizer(max_score, m_quantization_bits.as_int());
             std::vector<uint32_t> score_indexes;

@@ -7,7 +7,7 @@
 
 namespace pisa {
 
-auto reorder_docids(ReorderDocuments args) -> int {
+auto reorder_docids(ReorderDocuments const& args) -> int {
     tbb::global_control c(oneapi::tbb::global_control::max_allowed_parallelism, 2);
     try {
         if (args.bp()) {
