@@ -144,6 +144,11 @@ target_link_libraries(pisa
         wapopp
         trecpp
 )
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
+        target_link_libraries(pisa PUBLIC stdc++fs)
+    endif()
+endif()
 target_include_directories(pisa PUBLIC external)
 
 if (PISA_ENABLE_TESTING AND BUILD_TESTING)
