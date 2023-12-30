@@ -1,11 +1,11 @@
 #include <bitset>
 #include <cstddef>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "cursor/scored_cursor.hpp"
 #include "query/algorithm/and_query.hpp"
-#include "query/queries.hpp"
 #include "scorer/scorer.hpp"
 
 namespace pisa {
@@ -24,20 +24,23 @@ namespace intersection {
 
     /// Returns a filtered copy of `query` containing only terms indicated by ones in the bit mask.
     [[nodiscard]] inline auto filter(Query const& query, Mask const& mask) -> Query {
-        if (query.terms.size() > MAX_QUERY_LEN) {
+        if (query.terms().size() > MAX_QUERY_LEN) {
             throw std::invalid_argument("Queries can be at most 2^32 terms long");
         }
         std::vector<std::uint32_t> terms;
         std::vector<float> weights;
-        for (std::size_t bitpos = 0; bitpos < query.terms.size(); ++bitpos) {
+        for (std::size_t bitpos = 0; bitpos < query.terms().size(); ++bitpos) {
             if (((1U << bitpos) & mask.to_ulong()) > 0) {
-                terms.push_back(query.terms.at(bitpos));
-                if (bitpos < query.term_weights.size()) {
-                    weights.push_back(query.term_weights[bitpos]);
-                }
+                auto term = query.terms().at(bitpos);
+                terms.push_back(term.id);
+                weights.push_back(term.weight);
             }
         }
-        return Query{query.id, terms, weights};
+        return Query(
+            query.id().has_value() ? std::make_optional<std::string>(*query.id()) : std::nullopt,
+            terms,
+            weights
+        );
     }
 }  // namespace intersection
 
@@ -80,7 +83,7 @@ inline auto Intersection::compute(
 /// `Fn` takes `Query` and `Mask`.
 template <typename Fn>
 auto for_all_subsets(Query const& query, std::optional<std::uint8_t> max_term_count, Fn func) {
-    auto subset_count = 1U << query.terms.size();
+    auto subset_count = 1U << query.terms().size();
     for (auto subset = 1U; subset < subset_count; ++subset) {
         auto mask = intersection::Mask(subset);
         if (!max_term_count || mask.count() <= *max_term_count) {

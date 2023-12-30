@@ -22,8 +22,6 @@
 #include "query/algorithm/wand_query.hpp"
 #include "scorer/scorer.hpp"
 
-#include "CLI/CLI.hpp"
-
 using namespace pisa;
 
 std::set<uint32_t> parse_tuple(std::string const& line, size_t k) {
@@ -110,22 +108,20 @@ void kt_thresholds(
     for (auto const& query: queries) {
         float threshold = 0;
 
-        auto terms = query.terms;
+        auto terms = query.terms();
         topk_queue topk(k);
         wand_query wand_q(topk);
 
         for (auto&& term: terms) {
-            Query query;
-            query.terms.push_back(term);
+            Query query{std::nullopt, std::array<std::uint32_t, 1>{term.id}};
             wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
             threshold = std::max(threshold, topk.size() == k ? topk.true_threshold() : 0.0F);
             topk.clear();
         }
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
-                if (pairs_set.count({terms[i], terms[j]}) > 0 or all_pairs) {
-                    Query query;
-                    query.terms = {terms[i], terms[j]};
+                if (pairs_set.count({terms[i].id, terms[j].id}) > 0 or all_pairs) {
+                    Query query{std::nullopt, std::array<std::uint32_t, 2>{terms[i].id, terms[j].id}};
                     wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                     threshold = std::max(threshold, topk.size() == k ? topk.true_threshold() : 0.0F);
                     topk.clear();
@@ -135,9 +131,12 @@ void kt_thresholds(
         for (size_t i = 0; i < terms.size(); ++i) {
             for (size_t j = i + 1; j < terms.size(); ++j) {
                 for (size_t s = j + 1; s < terms.size(); ++s) {
-                    if (triples_set.count({terms[i], terms[j], terms[s]}) > 0 or all_triples) {
-                        Query query;
-                        query.terms = {terms[i], terms[j], terms[s]};
+                    if (triples_set.count({terms[i].id, terms[j].id, terms[s].id}) > 0
+                        or all_triples) {
+                        Query query{
+                            std::nullopt,
+                            std::array<std::uint32_t, 3>{terms[i].id, terms[j].id, terms[s].id}
+                        };
                         wand_q(
                             make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs()
                         );

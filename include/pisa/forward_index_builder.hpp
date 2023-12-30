@@ -1,14 +1,11 @@
 #pragma once
 
-#include <cctype>
 #include <functional>
 #include <optional>
 #include <string>
 #include <unordered_map>
 
 #include "document_record.hpp"
-#include "forward_index_builder.hpp"
-#include "query/term_processor.hpp"
 #include "text_analyzer.hpp"
 #include "type_safe.hpp"
 

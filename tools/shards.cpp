@@ -154,8 +154,8 @@ int main(int argc, char** argv) {
         if (taily_rank->parsed()) {
             auto shards = resolve_shards(taily_rank_args.shard_stats());
             pisa::VecMap<Shard_Id, std::string> shard_stats;
-            std::vector<::pisa::Query> global_queries;
-            pisa::VecMap<Shard_Id, std::vector<::pisa::Query>> shard_queries;
+            std::vector<pisa::Query> global_queries;
+            pisa::VecMap<Shard_Id, std::vector<pisa::Query>> shard_queries;
             for (auto shard: shards) {
                 auto shard_args = taily_rank_args;
                 shard_args.apply_shard(shard);

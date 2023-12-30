@@ -1,7 +1,10 @@
 #pragma once
 
-#include "query/queries.hpp"
-#include <vector>
+#include <algorithm>
+#include <cstdint>
+#include <type_traits>
+
+#include "util/do_not_optimize_away.hpp"
 
 namespace pisa {
 

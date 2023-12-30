@@ -73,4 +73,6 @@ class StopWordRemover final: public TokenFilter {
     [[nodiscard]] auto filter(CowString input) const -> std::unique_ptr<TokenStream> override;
 };
 
+[[nodiscard]] auto stemmer_from_name(std::string_view name) -> std::unique_ptr<TokenFilter>;
+
 }  // namespace pisa

@@ -14,10 +14,10 @@
 #include <unordered_set>
 
 #include "io.hpp"
+#include "pisa/query.hpp"
 #include "pisa/query/query_parser.hpp"
 #include "pisa/term_map.hpp"
 #include "pisa/text_analyzer.hpp"
-#include "query/queries.hpp"
 #include "scorer/scorer.hpp"
 #include "sharding.hpp"
 #include "tokenizer.hpp"
@@ -119,7 +119,7 @@ namespace arg {
         }
 
         [[nodiscard]] auto queries() const -> std::vector<::pisa::Query> {
-            std::vector<::pisa::Query> q;
+            std::vector<::pisa::Query> qs;
             std::unique_ptr<TermMap> term_map = [this]() -> std::unique_ptr<TermMap> {
                 if (this->m_term_lexicon) {
                     return std::make_unique<LexiconMap>(*this->m_term_lexicon);
@@ -127,14 +127,14 @@ namespace arg {
                 return std::make_unique<IntMap>();
             }();
             QueryParser parser(text_analyzer(), std::move(term_map));
-            auto parse_query = [&q, &parser](auto&& line) { q.push_back(parser.parse(line)); };
+            auto parse_query = [&qs, &parser](auto&& line) { qs.push_back(parser.parse(line)); };
             if (m_query_file) {
                 std::ifstream is(*m_query_file);
                 io::for_each_line(is, parse_query);
             } else {
                 io::for_each_line(std::cin, parse_query);
             }
-            return q;
+            return qs;
         }
 
         [[nodiscard]] auto k() const -> int { return m_k; }

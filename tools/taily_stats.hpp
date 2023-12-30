@@ -4,7 +4,9 @@
 
 #include "app.hpp"
 #include "pisa/taily_stats.hpp"
-#include "pisa/util/compiler_attribute.hpp"
+#include "pisa/wand_data.hpp"
+#include "pisa/wand_data_compressed.hpp"
+#include "pisa/wand_data_raw.hpp"
 
 namespace pisa {
 

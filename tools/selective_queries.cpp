@@ -3,12 +3,11 @@
 #include "mappable/mapper.hpp"
 #include "mio/mmap.hpp"
 
-#include "CLI/CLI.hpp"
 #include "app.hpp"
 #include "cursor/cursor.hpp"
 #include "index_types.hpp"
-#include "query/algorithm.hpp"
-#include "query/queries.hpp"
+#include "query/algorithm/and_query.hpp"
+#include "query/algorithm/or_query.hpp"
 #include <boost/algorithm/string/join.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
@@ -34,7 +33,7 @@ void selective_queries(
         double selectiveness = double(and_results) / double(or_results);
         if (selectiveness < 0.005) {
             std::cout
-                << join(query.terms | transformed([](auto d) { return std::to_string(d); }), " ")
+                << join(query.terms() | transformed([](auto d) { return std::to_string(d.id); }), " ")
                 << '\n';
         }
     }

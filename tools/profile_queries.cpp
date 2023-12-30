@@ -4,6 +4,7 @@
 
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
+#include "query/query_parser.hpp"
 #include "spdlog/spdlog.h"
 
 #include "mio/mmap.hpp"
@@ -19,6 +20,7 @@
 #include "query/algorithm/ranked_and_query.hpp"
 #include "query/algorithm/wand_query.hpp"
 #include "scorer/scorer.hpp"
+#include "tokenizer.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 
@@ -164,20 +166,21 @@ int main(int argc, const char** argv) {
     }
 
     std::vector<Query> queries;
-    term_id_vec q;
+    std::string line;
+    QueryParser parser(TextAnalyzer(std::make_unique<WhitespaceTokenizer>()));
     if (std::string(argv[args]) == "--file") {
         args++;
         args++;
         std::filebuf fb;
         if (fb.open(argv[args], std::ios::in) != nullptr) {
             std::istream is(&fb);
-            while (read_query(q, is)) {
-                queries.push_back({std::nullopt, q, {}});
+            while (std::getline(is, line)) {
+                queries.push_back(parser.parse(line));
             }
         }
     } else {
-        while (read_query(q)) {
-            queries.push_back({std::nullopt, q, {}});
+        while (std::getline(std::cin, line)) {
+            queries.push_back(parser.parse(line));
         }
     }
 

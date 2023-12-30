@@ -9,7 +9,6 @@
 #include <spdlog/spdlog.h>
 
 #include "app.hpp"
-#include "binary_collection.hpp"
 #include "index_types.hpp"
 
 using namespace pisa;
@@ -17,7 +16,7 @@ using namespace pisa;
 template <typename Index>
 void extract(
     std::string const& index_filename,
-    std::vector<pisa::Query> const& queries,
+    std::vector<Query> const& queries,
     std::string const& separator,
     bool sum,
     bool print_qid
@@ -27,18 +26,18 @@ void extract(
         if (sum) {
             return std::function<void(Query const&)>([&](auto const& query) {
                 auto count = std::accumulate(
-                    query.terms.begin(),
-                    query.terms.end(),
+                    query.terms().begin(),
+                    query.terms().end(),
                     0,
-                    [&](auto s, auto term_id) { return s + index[term_id].size(); }
+                    [&](auto s, auto term) { return s + index[term.id].size(); }
                 );
                 std::cout << count << '\n';
             });
         }
         return std::function<void(Query const&)>([&](auto const& query) {
             std::cout << boost::algorithm::join(
-                query.terms | boost::adaptors::transformed([&index](auto term_id) {
-                    return std::to_string(index[term_id].size());
+                query.terms() | boost::adaptors::transformed([&index](auto term) {
+                    return std::to_string(index[term.id].size());
                 }),
                 separator
             );
@@ -46,8 +45,8 @@ void extract(
         });
     }();
     for (auto const& query: queries) {
-        if (print_qid && query.id) {
-            std::cout << *query.id << ":";
+        if (print_qid && query.id()) {
+            std::cout << *query.id() << ":";
         }
         body(query);
     }

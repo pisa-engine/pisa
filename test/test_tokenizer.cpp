@@ -1,15 +1,17 @@
 #define CATCH_CONFIG_MAIN
 
 #include <catch2/catch.hpp>
-#include <functional>
 
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
 #include <gsl/span>
 
 #include "payload_vector.hpp"
-#include "query/queries.hpp"
+#include "query.hpp"
+#include "query/query_parser.hpp"
 #include "temporary_directory.hpp"
+#include "term_map.hpp"
+#include "token_filter.hpp"
 #include "tokenizer.hpp"
 
 using namespace pisa;
@@ -88,18 +90,20 @@ TEST_CASE("Parse query terms to ids") {
         .to_file(lexfile.string());
 
     auto [query, id, parsed] =
-        GENERATE(table<std::string, std::optional<std::string>, std::vector<term_id_type>>(
-            {{"17:obama family tree", "17", {1, 3}},
-             {"obama family tree", std::nullopt, {1, 3}},
-             {"obama, family, trees", std::nullopt, {1, 3}},
-             {"obama + family + tree", std::nullopt, {1, 3}},
-             {"lol's", std::nullopt, {0}},
-             {"U.S.A.!?", std::nullopt, {4}}}
+        GENERATE(table<std::string, std::optional<std::string>, std::vector<WeightedTerm>>(
+            {{"17:obama family tree", "17", {{1, 1.0}, {3, 1.0}}},
+             {"obama family tree", std::nullopt, {{1, 1.0}, {3, 1.0}}},
+             {"obama, family, trees", std::nullopt, {{1, 1.0}, {3, 1.0}}},
+             {"obama + family + tree", std::nullopt, {{1, 1.0}, {3, 1.0}}},
+             {"lol's", std::nullopt, {{0, 1.0}}},
+             {"U.S.A.!?", std::nullopt, {{4, 1.0}}}}
         ));
     CAPTURE(query);
-    TermProcessor term_processor(std::make_optional(lexfile.string()), std::nullopt, "krovetz");
-    EnglishTokenizer tokenizer;
-    auto q = parse_query_terms(query, tokenizer, term_processor);
-    REQUIRE(q.id == id);
-    REQUIRE(q.terms == parsed);
+
+    auto analyzer = TextAnalyzer(std::make_unique<EnglishTokenizer>());
+    analyzer.emplace_token_filter<KrovetzStemmer>();
+    QueryParser parser(std::move(analyzer), std::make_unique<LexiconMap>(lexfile.string()));
+    auto q = parser.parse(query);
+    REQUIRE(q.id() == id);
+    REQUIRE(q.terms() == parsed);
 }

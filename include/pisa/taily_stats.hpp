@@ -1,23 +1,17 @@
 #pragma once
 
-#include <iostream>
-#include <optional>
-
 #include <gsl/span>
 #include <mio/mmap.hpp>
 #include <taily.hpp>
 
 #include "binary_freq_collection.hpp"
 #include "memory_source.hpp"
-#include "query/queries.hpp"
-#include "scorer/scorer.hpp"
+#include "query.hpp"
 #include "timer.hpp"
 #include "type_safe.hpp"
+#include "util/compiler_attribute.hpp"
 #include "util/progress.hpp"
 #include "vec_map.hpp"
-#include "wand_data.hpp"
-#include "wand_data_compressed.hpp"
-#include "wand_data_raw.hpp"
 
 namespace pisa {
 
@@ -31,20 +25,20 @@ class TailyStats {
 
     [[nodiscard]] auto num_documents() const -> std::uint64_t { return read_at<std::uint64_t>(0); }
     [[nodiscard]] auto num_terms() const -> std::uint64_t { return read_at<std::uint64_t>(8); }
-    [[nodiscard]] auto term_stats(term_id_type term_id) const -> taily::Feature_Statistics {
+    [[nodiscard]] auto term_stats(TermId term_id) const -> taily::Feature_Statistics {
         std::size_t offset = 16 + term_id * 24;
         auto expected_value = read_at<double>(offset);
         auto variance = read_at<double>(offset + sizeof(double));
         auto frequency = read_at<std::int64_t>(offset + 2 * sizeof(double));
         return taily::Feature_Statistics{expected_value, variance, frequency};
     }
-    [[nodiscard]] auto query_stats(pisa::Query const& query) const -> taily::Query_Statistics {
+    [[nodiscard]] auto query_stats(Query const& query) const -> taily::Query_Statistics {
         std::vector<taily::Feature_Statistics> stats;
         std::transform(
-            query.terms.begin(),
-            query.terms.end(),
+            query.terms().begin(),
+            query.terms().end(),
             std::back_inserter(stats),
-            [this](auto&& term_id) { return this->term_stats(term_id); }
+            [this](auto&& term) { return this->term_stats(term.id); }
         );
         return taily::Query_Statistics{std::move(stats), static_cast<std::int64_t>(num_documents())};
     }
@@ -121,8 +115,8 @@ template <typename Fn>
 void taily_score_shards(
     std::string const& global_stats_path,
     VecMap<Shard_Id, std::string> const& shard_stats_paths,
-    std::vector<::pisa::Query> const& global_queries,
-    VecMap<Shard_Id, std::vector<::pisa::Query>> const& shard_queries,
+    std::vector<Query> const& global_queries,
+    VecMap<Shard_Id, std::vector<Query>> const& shard_queries,
     std::size_t k,
     Fn func
 ) {

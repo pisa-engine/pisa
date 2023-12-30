@@ -3,13 +3,16 @@
 #include <map>
 #include <sstream>
 
+#include <gsl/gsl_assert>
 #include <range/v3/view/iota.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task_group.h>
 
-#include "binary_collection.hpp"
+#include "pisa/binary_collection.hpp"
+#include "pisa/io.hpp"
+#include "pisa/payload_vector.hpp"
 
 namespace pisa {
 

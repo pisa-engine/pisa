@@ -13,25 +13,25 @@ using namespace pisa::intersection;
 
 TEST_CASE("filter query", "[intersection][unit]") {
     GIVEN("Four-term query") {
-        Query query{
+        Query query(
             "Q1",  // query ID
-            {6, 1, 5},  // terms
-            {0.1, 0.4, 1.0}  // weights
-        };
+            std::vector<std::uint32_t>{6, 1, 5},  // terms
+            std::vector<float>{0.1, 0.4, 1.0}  // weights
+        );
         auto [mask, expected] = GENERATE(table<Mask, Query>({
-            {0b001, Query{"Q1", {6}, {0.1}}},
-            {0b010, Query{"Q1", {1}, {0.4}}},
-            {0b100, Query{"Q1", {5}, {1.0}}},
-            {0b011, Query{"Q1", {6, 1}, {0.1, 0.4}}},
-            {0b101, Query{"Q1", {6, 5}, {0.1, 1.0}}},
-            {0b110, Query{"Q1", {1, 5}, {0.4, 1.0}}},
-            {0b111, Query{"Q1", {6, 1, 5}, {0.1, 0.4, 1.0}}},
+            {0b001, Query{"Q1", std::vector<std::uint32_t>{6}, std::vector<float>{0.1}}},
+            {0b010, Query{"Q1", std::vector<std::uint32_t>{1}, std::vector<float>{0.4}}},
+            {0b100, Query{"Q1", std::vector<std::uint32_t>{5}, std::vector<float>{1.0}}},
+            {0b011, Query{"Q1", std::vector<std::uint32_t>{6, 1}, std::vector<float>{0.1, 0.4}}},
+            {0b101, Query{"Q1", std::vector<std::uint32_t>{6, 5}, std::vector<float>{0.1, 1.0}}},
+            {0b110, Query{"Q1", std::vector<std::uint32_t>{1, 5}, std::vector<float>{0.4, 1.0}}},
+            {0b111,
+             Query{"Q1", std::vector<std::uint32_t>{6, 1, 5}, std::vector<float>{0.1, 0.4, 1.0}}},
         }));
         WHEN("Filtered with mask " << mask) {
             auto actual = filter(query, mask);
-            CHECK(actual.id == expected.id);
-            CHECK(actual.terms == expected.terms);
-            CHECK(actual.term_weights == expected.term_weights);
+            CHECK(actual.id() == expected.id());
+            CHECK(actual.terms() == expected.terms());
         }
     }
 }
@@ -118,8 +118,8 @@ TEST_CASE("compute intersection", "[intersection][unit]") {
 
         Query query{
             "Q1",  // query ID
-            {6, 1, 5},  // terms
-            {0.1, 0.4, 1.0}  // weights
+            std::vector<std::uint32_t>{6, 1, 5},  // terms
+            std::vector<float>{0.1, 0.4, 1.0}  // weights
         };
         auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
             {0b001, 3, 1.84583F},
@@ -144,8 +144,8 @@ TEST_CASE("for_all_subsets", "[intersection][unit]") {
         auto accumulate = [&](Query const&, Mask const& mask) { masks.push_back(mask); };
         Query query{
             "Q1",  // query ID
-            {6, 1, 5},  // terms
-            {0.1, 0.4, 1.0}  // weights
+            std::vector<std::uint32_t>{6, 1, 5},  // terms
+            std::vector<float>{0.1, 0.4, 1.0}  // weights
         };
         WHEN("Executed with limit 0") {
             for_all_subsets(query, 0, accumulate);

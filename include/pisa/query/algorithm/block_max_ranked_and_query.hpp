@@ -1,8 +1,8 @@
 #pragma once
 
-#include "query/queries.hpp"
-#include "topk_queue.hpp"
 #include <vector>
+
+#include "topk_queue.hpp"
 
 namespace pisa {
 

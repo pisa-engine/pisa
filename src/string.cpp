@@ -12,14 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#pragma once
+#include <algorithm>
+#include <string_view>
 
-#include <cstdint>
+#include "pisa/string.hpp"
 
 namespace pisa {
 
-using DocId = std::uint32_t;
-using TermId = std::uint32_t;
-using Score = float;
+auto split_at_colon(std::string_view str)
+    -> std::pair<std::optional<std::string_view>, std::string_view> {
+    auto colon = std::find(str.begin(), str.end(), ':');
+    std::optional<std::string_view> id;
+    if (colon != str.end()) {
+        id = std::string_view(str.begin(), std::distance(str.begin(), colon));
+    }
+    auto pos = colon == str.end() ? str.begin() : std::next(colon);
+    auto raw_query = std::string_view(&*pos, std::distance(pos, str.end()));
+    return {id, raw_query};
+}
 
 }  // namespace pisa

@@ -160,7 +160,7 @@ void evaluate_queries(
 
     for (size_t query_idx = 0; query_idx < raw_results.size(); ++query_idx) {
         auto results = raw_results[query_idx];
-        auto qid = queries[query_idx].id;
+        auto qid = queries[query_idx].id();
         for (auto&& [rank, result]: enumerate(results)) {
             std::cout << fmt::format(
                 "{} {} {} {} {} {}\n",

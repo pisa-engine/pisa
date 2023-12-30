@@ -1,16 +1,18 @@
+#include "query/query_parser.hpp"
+#include "term_map.hpp"
 #include <optional>
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
+#include <boost/algorithm/string.hpp>
 #include <memory>
 #include <unordered_map>
 
-#include "test_common.hpp"
-
+#include "binary_collection.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
-#include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
+#include "io.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm.hpp"
 #include "wand_data.hpp"
@@ -48,10 +50,13 @@ struct IndexData {
             );
         }
         builder.build(index);
-        term_id_vec q;
+        std::vector<TermId> q;
+        QueryParser parser(
+            TextAnalyzer(std::make_unique<WhitespaceTokenizer>()), std::make_unique<IntMap>()
+        );
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         auto push_query = [&](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
+            queries.push_back(parser.parse(query_line));
         };
         io::for_each_line(qfile, push_query);
     }
