@@ -11,6 +11,7 @@
 #include "binary_freq_collection.hpp"
 #include "io.hpp"
 #include "memory_source.hpp"
+#include "query.hpp"
 #include "scorer/scorer.hpp"
 #include "taily_stats.hpp"
 #include "temporary_directory.hpp"
@@ -149,7 +150,8 @@ TEST_CASE("Write Taily feature stats", "[taily][unit]") {
 
                 REQUIRE_THROWS_AS(stats.term_stats(3), std::out_of_range);
 
-                auto query_stats = stats.query_stats(pisa::Query{{}, {0, 1, 2}, {}});
+                auto query_stats =
+                    stats.query_stats(pisa::Query{std::nullopt, std::vector<std::uint32_t>{0, 1, 2}});
 
                 REQUIRE(query_stats.collection_size == 10);
 

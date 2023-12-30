@@ -1,7 +1,6 @@
 #define CATCH_CONFIG_MAIN
 
 #include <algorithm>
-#include <cstdio>
 #include <filesystem>
 #include <string>
 
@@ -11,8 +10,9 @@
 #include "binary_collection.hpp"
 #include "filesystem.hpp"
 #include "forward_index_builder.hpp"
+#include "io.hpp"
 #include "parser.hpp"
-#include "parsing/html.hpp"
+#include "payload_vector.hpp"
 #include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 #include "text_analyzer.hpp"

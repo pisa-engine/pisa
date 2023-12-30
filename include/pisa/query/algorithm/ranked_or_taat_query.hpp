@@ -2,7 +2,6 @@
 
 #include "accumulator/partial_score_accumulator.hpp"
 #include "concepts.hpp"
-#include "query/queries.hpp"
 #include "topk_queue.hpp"
 
 namespace pisa {

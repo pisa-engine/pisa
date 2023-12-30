@@ -2,9 +2,9 @@
 
 #include <algorithm>
 #include <numeric>
+#include <utility>
 #include <vector>
 
-#include "query/queries.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
 

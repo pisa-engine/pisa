@@ -1,6 +1,4 @@
-#include <algorithm>
 #include <iostream>
-#include <numeric>
 #include <vector>
 
 #include <CLI/CLI.hpp>
@@ -19,18 +17,18 @@ using namespace pisa;
 template <typename Wand>
 void extract(
     std::string const& wand_data_path,
-    std::vector<pisa::Query> const& queries,
+    std::vector<Query> const& queries,
     std::string const& separator,
     bool print_query_id
 ) {
     Wand wdata(MemorySource::mapped_file(wand_data_path));
     for (auto const& query: queries) {
-        if (print_query_id and query.id) {
-            std::cout << *(query.id) << ":";
+        if (print_query_id and query.id()) {
+            std::cout << *(query.id()) << ":";
         }
         std::cout << boost::algorithm::join(
-            query.terms | boost::adaptors::transformed([&wdata](auto term_id) {
-                return std::to_string(wdata.max_term_weight(term_id));
+            query.terms() | boost::adaptors::transformed([&wdata](auto term) {
+                return std::to_string(wdata.max_term_weight(term.id));
             }),
             separator
         );

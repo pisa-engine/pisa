@@ -35,6 +35,7 @@
 #include "timer.hpp"
 #include "topk_queue.hpp"
 #include "type_alias.hpp"
+#include "util/do_not_optimize_away.hpp"
 #include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
@@ -62,7 +63,7 @@ void extract_times(
             ).count();
         });
         auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id.value_or(std::to_string(qid)), mean);
+        os << fmt::format("{}\t{}\n", query.id().value_or(std::to_string(qid)), mean);
     }
 }
 
@@ -143,9 +144,9 @@ void perftest(
     IndexType index(MemorySource::mapped_file(index_filename));
 
     spdlog::info("Warming up posting lists");
-    std::unordered_set<term_id_type> warmed_up;
+    std::unordered_set<TermId> warmed_up;
     for (auto const& q: queries) {
-        for (auto t: q.terms) {
+        for (auto [t, _]: q.terms()) {
             if (!warmed_up.count(t)) {
                 index.warmup(t);
                 warmed_up.insert(t);

@@ -2,7 +2,6 @@
 #include <optional>
 #include <string>
 
-#include "mappable/mapper.hpp"
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
 #include <range/v3/view/filter.hpp>
@@ -12,6 +11,7 @@
 #include "app.hpp"
 #include "index_types.hpp"
 #include "intersection.hpp"
+#include "mappable/mapper.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 
@@ -50,7 +50,7 @@ void intersect(
         auto intersection = Intersection::compute(index, wdata, query, mask);
         std::cout << fmt::format(
             "{}\t{}\t{}\t{}\n",
-            query.id ? *query.id : std::to_string(qid),
+            query.id() ? *query.id() : std::to_string(qid),
             mask.to_ulong(),
             intersection.length,
             intersection.max_score
@@ -64,7 +64,7 @@ void intersect(
             auto intersection = Intersection::compute(index, wdata, query);
             std::cout << fmt::format(
                 "{}\t{}\t{}\n",
-                query.id ? *query.id : std::to_string(qid),
+                query.id() ? *query.id() : std::to_string(qid),
                 intersection.length,
                 intersection.max_score
             );
@@ -105,7 +105,7 @@ int main(int argc, const char** argv) {
 
     auto queries = app.queries();
     auto filtered_queries = ranges::views::filter(queries, [&](auto&& query) {
-        auto size = query.terms.size();
+        auto size = query.terms().size();
         return size < min_query_len || size > max_query_len;
     });
 

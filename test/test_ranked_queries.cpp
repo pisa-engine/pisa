@@ -1,3 +1,4 @@
+#include "query/query_parser.hpp"
 #include "type_safe.hpp"
 #define CATCH_CONFIG_MAIN
 
@@ -10,6 +11,7 @@
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
+#include "io.hpp"
 #include "pisa_config.hpp"
 #include "query/algorithm/block_max_maxscore_query.hpp"
 #include "query/algorithm/block_max_ranked_and_query.hpp"
@@ -54,10 +56,13 @@ struct IndexData {
         }
         builder.build(index);
 
-        term_id_vec q;
+        std::vector<TermId> q;
+        QueryParser parser(
+            TextAnalyzer(std::make_unique<WhitespaceTokenizer>()), std::make_unique<IntMap>()
+        );
         std::ifstream qfile(PISA_SOURCE_DIR "/test/test_data/queries");
         auto push_query = [&](std::string const& query_line) {
-            queries.push_back(parse_query_ids(query_line));
+            queries.push_back(parser.parse(query_line));
         };
         io::for_each_line(qfile, push_query);
 

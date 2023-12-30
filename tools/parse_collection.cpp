@@ -9,7 +9,6 @@
 #include "app.hpp"
 #include "forward_index_builder.hpp"
 #include "parser.hpp"
-#include "query/term_processor.hpp"
 
 using namespace pisa;
 

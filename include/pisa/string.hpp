@@ -14,12 +14,16 @@
 
 #pragma once
 
-#include <cstdint>
+#include <optional>
+#include <string_view>
 
 namespace pisa {
 
-using DocId = std::uint32_t;
-using TermId = std::uint32_t;
-using Score = float;
+/** Splits the given string at a colon.
+ *
+ * If there is no colon, the first element of the pair is std::nullopt.
+ */
+[[nodiscard]] auto split_at_colon(std::string_view str)
+    -> std::pair<std::optional<std::string_view>, std::string_view>;
 
 }  // namespace pisa

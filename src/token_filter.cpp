@@ -1,4 +1,5 @@
 #include <boost/algorithm/string.hpp>
+#include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
 #include "pisa/token_filter.hpp"
@@ -67,6 +68,16 @@ auto StopWordRemover::filter(std::string input) const -> std::unique_ptr<TokenSt
 
 auto StopWordRemover::filter(CowString input) const -> std::unique_ptr<TokenStream> {
     return filter(std::move(input).to_owned());
+}
+
+auto stemmer_from_name(std::string_view name) -> std::unique_ptr<TokenFilter> {
+    if (name == "porter2") {
+        return std::make_unique<Porter2Stemmer>();
+    }
+    if (name == "krovetz") {
+        return std::make_unique<KrovetzStemmer>();
+    }
+    throw std::domain_error(fmt::format("invalid stemmer name: %s", name));
 }
 
 }  // namespace pisa

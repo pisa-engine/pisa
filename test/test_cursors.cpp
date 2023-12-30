@@ -2,8 +2,6 @@
 
 #include <catch2/catch.hpp>
 
-#include "pisa/cursor/block_max_scored_cursor.hpp"
-#include "pisa/cursor/cursor.hpp"
 #include "pisa/cursor/max_scored_cursor.hpp"
 #include "pisa/cursor/scored_cursor.hpp"
 #include "pisa/scorer/quantized.hpp"
@@ -36,7 +34,7 @@ TEST_CASE("TODO") {
     };
     InMemoryWand wand{{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 10};
     quantized<InMemoryWand> scorer(wand);
-    Query query{"Q1", {0, 1, 1, 2}, {}};
+    Query query("Q1", std::vector<std::uint32_t>{0, 1, 1, 2});
 
     auto collect_scores = [&index](auto&& cursor) {
         std::vector<float> scores;

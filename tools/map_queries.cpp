@@ -3,7 +3,7 @@
 #include <boost/range/adaptor/transformed.hpp>
 
 #include "app.hpp"
-#include "query/queries.hpp"
+#include "query.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
@@ -23,11 +23,11 @@ int main(int argc, const char** argv) {
     using boost::adaptors::transformed;
     using boost::algorithm::join;
     for (auto&& q: app.queries()) {
-        if (app.print_query_id() and q.id) {
-            std::cout << *(q.id) << ":";
+        if (app.print_query_id() and q.id()) {
+            std::cout << *(q.id()) << ":";
         }
-        std::cout
-            << join(q.terms | transformed([](auto d) { return std::to_string(d); }), app.separator())
-            << '\n';
+        std::cout << join(
+            q.terms() | transformed([](auto d) { return std::to_string(d.id); }), app.separator()
+        ) << '\n';
     }
 }
