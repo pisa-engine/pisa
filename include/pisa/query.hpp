@@ -60,9 +60,15 @@ namespace query {
      * occurrence.
      *
      * This policy can be modified with the following options:
-     *  - `keep_duplicates`: duplicates will be preserved, each with weight 1.0;
+     *  - `keep_duplicates`: duplicates will be preserved, each with weight 1.0
+     *    (inefficient -- see below);
      *  - `unweighted`: forces each weight to be 1.0 even if duplicates are removed;
      *  - `sort`: sorts terms by ID.
+     *
+     * !! Note that `keep_duplicates` is very inefficient if used for retrieval because some posting:
+     * lists will have to be traversed multiple times if duplicate terms exist. Do not use it unless
+     * you know exactly what you are doing (e.g. if you use Query outside of the standard query
+     * processing and you rely on duplicates).
      *
      * Policies can be combined similar to bitsets. For example, `unweighted | sort` will both
      * force unit weights and sort the terms.
@@ -77,7 +83,8 @@ namespace query {
     /** Merges two policies; the resulting policy will policies from both arguments. */
     [[nodiscard]] auto operator|(TermPolicy lhs, TermPolicy rhs) noexcept -> TermPolicy;
 
-    /** Keep duplicates. */
+    /** Duplicates are removed and weights are equal to number of occurrences of each term in the
+     * query. Terms are not sorted. */
     static constexpr TermPolicy default_policy = {0b000};
 
     /** Keep duplicates. */
