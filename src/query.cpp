@@ -43,7 +43,7 @@ auto Query::terms() const noexcept -> std::vector<WeightedTerm> const& {
 }
 
 /** The first occurrence of each term is assigned the accumulated weight. */
-void accumualte_weights(std::vector<WeightedTerm>& terms) {
+void accumulate_weights(std::vector<WeightedTerm>& terms) {
     std::unordered_map<TermId, decltype(terms.begin())> positions;
     for (auto it = terms.begin(); it != terms.end(); ++it) {
         if (auto pos = positions.find(it->id); pos != positions.end()) {
@@ -69,7 +69,7 @@ void dedup_by_term_id(std::vector<WeightedTerm>& terms) {
 void Query::postprocess(query::TermPolicy policy) {
     if (!policy.contains(query::keep_duplicates)) {
         if (!policy.contains(query::unweighted)) {
-            accumualte_weights(m_terms);
+            accumulate_weights(m_terms);
         }
         dedup_by_term_id(m_terms);
     }
