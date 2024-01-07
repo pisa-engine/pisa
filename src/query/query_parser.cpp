@@ -1,5 +1,7 @@
-#include "query/query_parser.hpp"
+#include <spdlog/spdlog.h>
+
 #include "query/queries.hpp"
+#include "query/query_parser.hpp"
 
 namespace pisa {
 
@@ -13,6 +15,8 @@ auto QueryParser::parse(std::string_view query) -> Query {
     for (auto token: *tokens) {
         if (auto id = (*m_term_map)(token); id) {
             query_ids.push_back(*id);
+        } else {
+            spdlog::warn("Term `{}` not found and will be ignored", token);
         }
     }
     return {std::move(id), std::move(query_ids), {}};
