@@ -1,8 +1,7 @@
-#include "pisa/token_filter.hpp"
-
-#include <cctype>
-
 #include <boost/algorithm/string.hpp>
+#include <spdlog/spdlog.h>
+
+#include "pisa/token_filter.hpp"
 
 namespace pisa {
 
@@ -60,6 +59,7 @@ auto StopWordRemover::filter(std::string_view input) const -> std::unique_ptr<To
 
 auto StopWordRemover::filter(std::string input) const -> std::unique_ptr<TokenStream> {
     if (m_stopwords.find(input) != m_stopwords.end()) {
+        spdlog::warn("Term `{}` is a stopword and will be ignored", input);
         return std::make_unique<EmptyTokenStream>();
     }
     return std::make_unique<SingleTokenStream>(std::move(input));
