@@ -5,6 +5,8 @@ ARG USE_SANITIZERS=OFF
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
+ENV COLLECTION_PATH=/opt/disk45
+ENV WORKDIR=/opt/workdir
 
 COPY . /pisa
 RUN ./pisa/test/docker/install-cmake.sh
@@ -22,5 +24,10 @@ RUN cmake \
     && cmake --build . --config Debug -- -j 4
 
 COPY ./test/docker/benchmark/run.sh /pisa/build
+COPY ./test/docker/benchmark/build.sh /pisa/build
+COPY ./test/docker/benchmark/evaluate.sh /pisa/build
+COPY ./test/docker/benchmark/bench.sh /pisa/build
+COPY ./test/docker/benchmark/setup.sh /pisa/build
+COPY ./test/docker/benchmark/expected-eval.txt /pisa/build
 
 CMD ["bash", "/pisa/test/docker/benchmark/run.sh"]
