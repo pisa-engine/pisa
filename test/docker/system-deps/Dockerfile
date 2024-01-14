@@ -15,7 +15,7 @@ RUN apt-get -y update \
     && apt-get install -y \
     libbenchmark-dev \
     libboost-dev \
-    intel-oneapi-tbb-devel \
+    intel-oneapi-tbb-devel-2021.10.0 \
     libcli11-dev
 
 COPY . /pisa
