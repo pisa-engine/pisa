@@ -23,7 +23,7 @@ RUN ./pisa/test/docker/install-cmake.sh
 
 RUN mkdir /pisa/build
 WORKDIR /pisa/build
-RUN cmake \
+RUN . /opt/intel/oneapi/setvars.sh && cmake \
     "-DCMAKE_BUILD_TYPE=Debug" \
     "-DPISA_BUILD_TOOLS=ON" \
     "-DPISA_ENABLE_BENCHMARKING=ON" \
