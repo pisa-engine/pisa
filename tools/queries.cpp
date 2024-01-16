@@ -273,8 +273,8 @@ void perftest(
         } else if (t == "ranked_or_taat" && wand_data_filename) {
             SimpleAccumulator accumulator(index.num_docs());
             topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
+            query_fun = [&, topk, accumulator](Query query, Score threshold) mutable {
+                ranked_or_taat_query ranked_or_taat_q(topk);            
                 topk.clear(threshold);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
@@ -285,8 +285,8 @@ void perftest(
         } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
             LazyAccumulator<4> accumulator(index.num_docs());
             topk_queue topk(k);
-            ranked_or_taat_query ranked_or_taat_q(topk);
-            query_fun = [&, ranked_or_taat_q, accumulator](Query query, Score threshold) mutable {
+            query_fun = [&, topk, accumulator](Query query, Score threshold) mutable {
+                ranked_or_taat_query ranked_or_taat_q(topk);
                 topk.clear(threshold);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
