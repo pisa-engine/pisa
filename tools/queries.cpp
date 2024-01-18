@@ -274,7 +274,7 @@ void perftest(
             SimpleAccumulator accumulator(index.num_docs());
             topk_queue topk(k);
             query_fun = [&, topk, accumulator](Query query, Score threshold) mutable {
-                ranked_or_taat_query ranked_or_taat_q(topk);            
+                ranked_or_taat_query ranked_or_taat_q(topk);
                 topk.clear(threshold);
                 ranked_or_taat_q(
                     make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator
