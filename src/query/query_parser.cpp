@@ -30,7 +30,7 @@ auto QueryParser::parse(std::string_view query) -> Query {
     auto tokens = m_analyzer.analyze(raw_query);
     std::vector<TermId> term_ids;
     for (auto token: *tokens) {
-        if (auto tid = (*m_term_map)(token); tid) {
+        if (auto tid = m_term_map->find(token); tid) {
             term_ids.push_back(*tid);
         } else {
             spdlog::warn("Term `{}` not found and will be ignored", token);
