@@ -15,7 +15,7 @@ TermMap& TermMap::operator=(TermMap const&) = default;
 TermMap& TermMap::operator=(TermMap&&) = default;
 TermMap::~TermMap() = default;
 
-auto IntMap::operator()(std::string_view term) -> std::optional<std::uint32_t> {
+auto IntMap::find(std::string_view term) const -> std::optional<std::uint32_t> {
     std::uint32_t value;
     auto [ptr, ec] = std::from_chars(term.begin(), term.end(), value, 10);
     if (ec == std::errc::result_out_of_range || ec == std::errc::invalid_argument
@@ -25,8 +25,8 @@ auto IntMap::operator()(std::string_view term) -> std::optional<std::uint32_t> {
     return value;
 }
 
-auto IntMap::operator()(std::string const& term) -> std::optional<std::uint32_t> {
-    return (*this)(std::string_view(term));
+auto IntMap::find(std::string const& term) const -> std::optional<std::uint32_t> {
+    return this->find(std::string_view(term));
 }
 
 LexiconMap::LexiconMap(std::string const& file)
@@ -35,12 +35,20 @@ LexiconMap::LexiconMap(std::string const& file)
 LexiconMap::LexiconMap(Payload_Vector<std::string_view> lexicon)
     : m_buffer(std::nullopt), m_lexicon(lexicon) {}
 
-auto LexiconMap::operator()(std::string_view term) -> std::optional<std::uint32_t> {
+auto LexiconMap::find(std::string_view term) const -> std::optional<std::uint32_t> {
     return pisa::binary_search(m_lexicon.begin(), m_lexicon.end(), term);
 }
 
-auto LexiconMap::operator()(std::string const& term) -> std::optional<std::uint32_t> {
+auto LexiconMap::find(std::string const& term) const -> std::optional<std::uint32_t> {
     return pisa::binary_search(m_lexicon.begin(), m_lexicon.end(), term);
+}
+
+auto LexiconMap::operator[](std::uint32_t term_id) const -> std::string_view {
+    return m_lexicon[term_id];
+}
+
+auto LexiconMap::size() const noexcept -> std::size_t {
+    return m_lexicon.size();
 }
 
 }  // namespace pisa
