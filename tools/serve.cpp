@@ -212,14 +212,18 @@ void prepare_handle_request(
         };
     } else if (query_type == "ranked_or_taat") {
         SimpleAccumulator accumulator(index.num_docs());
-        topk_queue topk(k);
-        query_fun = [&, topk, accumulator](Query query, Score threshold) mutable {
+        g_query_fun = [&, tokenizer, accumulator](std::string& line, size_t k) mutable {
+            Query query = parse_query_terms(line, tokenizer, term_processor);
+            topk_queue topk(k);
             ranked_or_taat_query ranked_or_taat_q(topk);
-            topk.clear(threshold);
             ranked_or_taat_q(
                 make_scored_cursors(index, *scorer, query, weighted), index.num_docs(), accumulator);
             topk.finalize();
-            return topk.topk().size();
+            std::vector<std::tuple<std::string, float>> output;
+            for (auto&& [rank, result]: enumerate(topk.topk())) {
+                output.push_back(std::make_tuple(std::string(docmap[result.second]), result.first));
+            }
+            return output;
         };
     } else if (query_type == "ranked_or") {
         g_query_fun = [&, tokenizer](std::string& line, size_t k) {
