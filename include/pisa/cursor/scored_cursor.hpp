@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include "concepts.hpp"
+#include "concepts/posting_cursor.hpp"
 #include "query.hpp"
 #include "scorer/index_scorer.hpp"
 #include "util/compiler_attribute.hpp"
@@ -18,6 +20,7 @@ auto resolve_term_scorer(Scorer scorer, float weight) -> TermScorer {
 }
 
 template <typename Cursor>
+PISA_REQUIRES((concepts::FrequencyPostingCursor<Cursor> && concepts::SortedPostingCursor<Cursor>))
 class ScoredCursor {
   public:
     using base_cursor_type = Cursor;
@@ -25,7 +28,12 @@ class ScoredCursor {
     ScoredCursor(Cursor cursor, TermScorer term_scorer, float weight)
         : m_base_cursor(std::move(cursor)),
           m_weight(weight),
-          m_term_scorer(resolve_term_scorer(term_scorer, weight)) {}
+          m_term_scorer(resolve_term_scorer(term_scorer, weight)) {
+        PISA_ASSERT_CONCEPT(
+            (concepts::ScoredPostingCursor<ScoredCursor>
+             && concepts::SortedPostingCursor<ScoredCursor>)
+        );
+    }
     ScoredCursor(ScoredCursor const&) = delete;
     ScoredCursor(ScoredCursor&&) = default;
     ScoredCursor& operator=(ScoredCursor const&) = delete;
@@ -40,7 +48,9 @@ class ScoredCursor {
     [[nodiscard]] PISA_ALWAYSINLINE auto score() -> float { return m_term_scorer(docid(), freq()); }
     void PISA_ALWAYSINLINE next() { m_base_cursor.next(); }
     void PISA_ALWAYSINLINE next_geq(std::uint32_t docid) { m_base_cursor.next_geq(docid); }
-    [[nodiscard]] PISA_ALWAYSINLINE auto size() -> std::size_t { return m_base_cursor.size(); }
+    [[nodiscard]] PISA_ALWAYSINLINE auto size() const noexcept -> std::size_t {
+        return m_base_cursor.size();
+    }
 
   private:
     Cursor m_base_cursor;

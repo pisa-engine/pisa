@@ -9,13 +9,19 @@
 namespace pisa {
 
 template <typename Cursor>
+PISA_REQUIRES((concepts::FrequencyPostingCursor<Cursor> && concepts::SortedPostingCursor<Cursor>))
 class MaxScoredCursor: public ScoredCursor<Cursor> {
   public:
     using base_cursor_type = Cursor;
 
     MaxScoredCursor(Cursor cursor, TermScorer term_scorer, float weight, float max_score)
         : ScoredCursor<Cursor>(std::move(cursor), std::move(term_scorer), weight),
-          m_max_score(max_score) {}
+          m_max_score(max_score) {
+        PISA_ASSERT_CONCEPT(
+            (concepts::MaxScorePostingCursor<MaxScoredCursor>
+             && concepts::SortedPostingCursor<MaxScoredCursor>)
+        );
+    }
     MaxScoredCursor(MaxScoredCursor const&) = delete;
     MaxScoredCursor(MaxScoredCursor&&) = default;
     MaxScoredCursor& operator=(MaxScoredCursor const&) = delete;

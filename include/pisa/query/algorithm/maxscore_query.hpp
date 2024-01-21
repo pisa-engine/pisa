@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include "concepts.hpp"
+#include "concepts/posting_cursor.hpp"
 #include "topk_queue.hpp"
 #include "util/compiler_attribute.hpp"
 
@@ -14,14 +16,18 @@ struct maxscore_query {
     explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename Cursors>
+    PISA_REQUIRES(
+        (concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>
+         && concepts::SortedPostingCursor<pisa::val_t<Cursors>>)
+    )
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
-        -> std::vector<typename std::decay_t<Cursors>::value_type> {
+        -> std::vector<pisa::val_t<Cursors>> {
         std::vector<std::size_t> term_positions(cursors.size());
         std::iota(term_positions.begin(), term_positions.end(), 0);
         std::sort(term_positions.begin(), term_positions.end(), [&](auto&& lhs, auto&& rhs) {
             return cursors[lhs].max_score() > cursors[rhs].max_score();
         });
-        std::vector<typename std::decay_t<Cursors>::value_type> sorted;
+        std::vector<pisa::val_t<Cursors>> sorted;
         for (auto pos: term_positions) {
             sorted.push_back(std::move(cursors[pos]));
         };
@@ -29,6 +35,7 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
+    PISA_REQUIRES((concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>))
     [[nodiscard]] PISA_ALWAYSINLINE auto calc_upper_bounds(Cursors&& cursors) -> std::vector<float> {
         std::vector<float> upper_bounds(cursors.size());
         auto out = upper_bounds.rbegin();
@@ -41,6 +48,7 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
+    PISA_REQUIRES((concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>))
     [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t {
         return std::min_element(
                    cursors.begin(),
@@ -53,6 +61,7 @@ struct maxscore_query {
     enum class DocumentStatus : bool { Insert, Skip };
 
     template <typename Cursors>
+    PISA_REQUIRES((concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>))
     PISA_ALWAYSINLINE void run_sorted(Cursors&& cursors, uint64_t max_docid) {
         auto upper_bounds = calc_upper_bounds(cursors);
         auto above_threshold = [&](auto score) { return m_topk.would_enter(score); };
@@ -122,6 +131,7 @@ struct maxscore_query {
     }
 
     template <typename Cursors>
+    PISA_REQUIRES((concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>))
     void operator()(Cursors&& cursors_, uint64_t max_docid) {
         if (cursors_.empty()) {
             return;

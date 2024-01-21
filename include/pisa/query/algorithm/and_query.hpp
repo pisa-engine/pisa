@@ -4,6 +4,9 @@
 #include <cstdint>
 #include <vector>
 
+#include "concepts.hpp"
+#include "concepts/posting_cursor.hpp"
+
 namespace pisa {
 
 /**
@@ -15,6 +18,7 @@ namespace pisa {
  */
 struct and_query {
     template <typename CursorRange>
+    PISA_REQUIRES((concepts::SortedPostingCursor<typename CursorRange::value_type>))
     auto operator()(CursorRange&& cursors, uint32_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
 

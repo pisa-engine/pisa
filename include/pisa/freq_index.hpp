@@ -6,6 +6,8 @@
 #include "bitvector_collection.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "codec/integer_codes.hpp"
+#include "concepts.hpp"
+#include "concepts/posting_cursor.hpp"
 #include "global_parameters.hpp"
 #include "mappable/mapper.hpp"
 #include "memory_source.hpp"
@@ -157,9 +159,11 @@ class freq_index {
 
         uint64_t PISA_FLATTEN_FUNC freq() { return m_freqs_enum.move(m_cur_pos).second; }
 
+        uint64_t PISA_FLATTEN_FUNC value() { return freq(); }
+
         uint64_t position() const { return m_cur_pos; }
 
-        uint64_t size() const { return m_docs_enum.size(); }
+        uint64_t size() const noexcept { return m_docs_enum.size(); }
 
         typename DocsSequence::enumerator const& docs_enum() const { return m_docs_enum; }
 
@@ -172,6 +176,10 @@ class freq_index {
             typename DocsSequence::enumerator docs_enum, typename FreqsSequence::enumerator freqs_enum
         )
             : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum) {
+            PISA_ASSERT_CONCEPT(
+                (concepts::FrequencyPostingCursor<document_enumerator>
+                 && concepts::SortedPostingCursor<document_enumerator>)
+            );
             reset();
         }
 

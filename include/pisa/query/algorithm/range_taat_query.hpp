@@ -2,6 +2,7 @@
 
 #include "accumulator/partial_score_accumulator.hpp"
 #include "concepts.hpp"
+#include "concepts/posting_cursor.hpp"
 #include "topk_queue.hpp"
 
 namespace pisa {
@@ -11,8 +12,12 @@ struct range_taat_query {
     explicit range_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
-    PISA_REQUIRES(PartialScoreAccumulator<Acc>)
-    void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator) {
+    PISA_REQUIRES(
+        (PartialScoreAccumulator<Acc>
+         && pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>)
+    )
+    void
+    operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator) {
         if (cursors.empty()) {
             return;
         }

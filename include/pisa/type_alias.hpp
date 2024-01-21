@@ -15,11 +15,15 @@
 #pragma once
 
 #include <cstdint>
+#include <type_traits>
 
 namespace pisa {
 
 using DocId = std::uint32_t;
 using TermId = std::uint32_t;
 using Score = float;
+
+template <typename Container>
+using val_t = typename std::decay_t<Container>::value_type;
 
 }  // namespace pisa

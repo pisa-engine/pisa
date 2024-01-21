@@ -14,7 +14,7 @@ struct VectorCursor {
 
     [[nodiscard]] auto size() const noexcept -> std::size_t;
     [[nodiscard]] auto docid() const noexcept -> std::uint32_t;
-    [[nodiscard]] auto freq() const noexcept -> float;
+    [[nodiscard]] auto freq() const noexcept -> std::uint32_t;
     void next();
     void next_geq(std::uint32_t docid);
 
