@@ -4,9 +4,9 @@
 #include <tbb/parallel_invoke.h>
 
 #include "bitvector_collection.hpp"
-#include "codec/compact_elias_fano.hpp"
 #include "codec/integer_codes.hpp"
 #include "concepts.hpp"
+#include "concepts/inverted_index.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "global_parameters.hpp"
 #include "mappable/mapper.hpp"
@@ -43,6 +43,9 @@ class freq_index {
      *                any index operations may result in undefined behavior.
      */
     explicit freq_index(MemorySource source) : m_source(std::move(source)) {
+        PISA_ASSERT_CONCEPT(
+            (concepts::SortedInvertedIndex<freq_index, typename freq_index::document_enumerator>)
+        );
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 

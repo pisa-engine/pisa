@@ -8,6 +8,8 @@
 #include "bit_vector.hpp"
 #include "block_posting_list.hpp"
 #include "codec/compact_elias_fano.hpp"
+#include "concepts.hpp"
+#include "concepts/inverted_index.hpp"
 #include "mappable/mappable_vector.hpp"
 #include "mappable/mapper.hpp"
 #include "memory_source.hpp"
@@ -44,6 +46,9 @@ class block_freq_index {
      *                any index operations may result in undefined behavior.
      */
     explicit block_freq_index(MemorySource source) : m_source(std::move(source)) {
+        PISA_ASSERT_CONCEPT((concepts::SortedInvertedIndex<
+                             block_freq_index,
+                             typename block_posting_list<BlockCodec, Profile>::document_enumerator>));
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
