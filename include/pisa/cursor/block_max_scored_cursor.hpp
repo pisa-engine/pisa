@@ -10,6 +10,7 @@
 namespace pisa {
 
 template <typename Cursor, typename Wand>
+PISA_REQUIRES((concepts::FrequencyPostingCursor<Cursor> && concepts::SortedPostingCursor<Cursor>))
 class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
   public:
     using base_cursor_type = Cursor;
@@ -22,7 +23,9 @@ class BlockMaxScoredCursor: public MaxScoredCursor<Cursor> {
         typename Wand::wand_data_enumerator wdata
     )
         : MaxScoredCursor<Cursor>(std::move(cursor), std::move(term_scorer), weight, max_score),
-          m_wdata(std::move(wdata)) {}
+          m_wdata(std::move(wdata)) {
+        PISA_ASSERT_CONCEPT((concepts::BlockMaxPostingCursor<BlockMaxScoredCursor>));
+    }
     BlockMaxScoredCursor(BlockMaxScoredCursor const&) = delete;
     BlockMaxScoredCursor(BlockMaxScoredCursor&&) = default;
     BlockMaxScoredCursor& operator=(BlockMaxScoredCursor const&) = delete;

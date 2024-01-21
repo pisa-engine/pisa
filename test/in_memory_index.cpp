@@ -8,7 +8,7 @@ auto VectorCursor::docid() const noexcept -> std::uint32_t {
     return documents[0];
 }
 
-auto VectorCursor::freq() const noexcept -> float {
+auto VectorCursor::freq() const noexcept -> std::uint32_t {
     return frequencies[0];
 }
 

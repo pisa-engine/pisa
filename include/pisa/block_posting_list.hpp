@@ -1,6 +1,8 @@
 #pragma once
 
 #include "codec/block_codecs.hpp"
+#include "concepts.hpp"
+#include "concepts/posting_cursor.hpp"
 #include "util/block_profiler.hpp"
 #include "util/util.hpp"
 
@@ -86,6 +88,11 @@ struct block_posting_list {
               m_block_endpoints(m_block_maxs + 4 * m_blocks),
               m_blocks_data(m_block_endpoints + 4 * (m_blocks - 1)),
               m_universe(universe) {
+            PISA_ASSERT_CONCEPT(
+                (concepts::FrequencyPostingCursor<document_enumerator>
+                 && concepts::SortedPostingCursor<document_enumerator>)
+            );
+
             if (Profile) {
                 // std::cout << "OPEN\t" << m_term_id << "\t" << m_blocks << "\n";
                 m_block_profile = block_profiler::open_list(term_id, m_blocks);
@@ -159,9 +166,11 @@ struct block_posting_list {
             return m_freqs_buf[m_pos_in_block] + 1;
         }
 
+        uint64_t PISA_ALWAYSINLINE value() { return freq(); }
+
         uint64_t position() const { return m_cur_block * BlockCodec::block_size + m_pos_in_block; }
 
-        uint64_t size() const { return m_n; }
+        uint64_t size() const noexcept { return m_n; }
 
         uint64_t num_blocks() const { return m_blocks; }
 
