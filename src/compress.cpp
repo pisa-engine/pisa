@@ -44,20 +44,12 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
     );
 }
 
-template <typename Wand>
-struct QuantizedScorer {
-    QuantizedScorer(std::unique_ptr<index_scorer<Wand>> scorer, LinearQuantizer quantizer)
-        : scorer(std::move(scorer)), quantizer(quantizer) {}
-    std::unique_ptr<index_scorer<Wand>> scorer;
-    LinearQuantizer quantizer;
-};
-
 template <typename CollectionType, typename Wand>
 void compress_index_streaming(
     binary_freq_collection const& input,
     pisa::global_parameters const& params,
     std::string const& output_filename,
-    std::optional<QuantizedScorer<Wand>> quantized_scorer,
+    std::optional<QuantizingScorer<Wand>> quantizing_scorer,
     bool check
 ) {
     spdlog::info("Processing {} documents (streaming)", input.num_docs());
@@ -68,17 +60,16 @@ void compress_index_streaming(
         pisa::progress progress("Create index", input.size());
 
         size_t term_id = 0;
-        if (quantized_scorer) {
-            auto&& [scorer, quantizer] = *quantized_scorer;
+        if (quantizing_scorer) {
             std::vector<std::uint64_t> quantized_scores;
             for (auto const& plist: input) {
-                auto term_scorer = scorer->term_scorer(term_id);
+                auto term_scorer = quantizing_scorer->term_scorer(term_id);
                 std::size_t size = plist.docs.size();
                 for (size_t pos = 0; pos < size; ++pos) {
                     auto doc = *(plist.docs.begin() + pos);
                     auto freq = *(plist.freqs.begin() + pos);
                     auto score = term_scorer(doc, freq);
-                    quantized_scores.push_back(quantizer(score));
+                    quantized_scores.push_back(score);
                 }
                 auto sum = std::accumulate(
                     quantized_scores.begin(), quantized_scores.end(), std::uint64_t(0)
@@ -104,8 +95,10 @@ void compress_index_streaming(
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Index compressed in {} seconds", elapsed_secs);
 
-    if (check && not quantized_scorer) {
-        verify_collection<binary_freq_collection, CollectionType>(input, output_filename.c_str());
+    if (check) {
+        verify_collection<binary_freq_collection, CollectionType>(
+            input, output_filename.c_str(), std::move(quantizing_scorer)
+        );
     }
 }
 
@@ -122,8 +115,8 @@ void compress_index(
     ScorerParams const& scorer_params,
     std::optional<Size> quantization_bits
 ) {
+    std::optional<QuantizingScorer<WandType>> quantizing_scorer{};
     if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
-        std::optional<QuantizedScorer<WandType>> quantized_scorer{};
         WandType wdata;
         mio::mmap_source wdata_source;
         if (quantization_bits.has_value()) {
@@ -138,10 +131,10 @@ void compress_index(
             mapper::map(wdata, wdata_source, mapper::map_flags::warmup);
             auto scorer = scorer::from_params(scorer_params, wdata);
             LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
-            quantized_scorer = QuantizedScorer(std::move(scorer), quantizer);
+            quantizing_scorer = QuantizingScorer(std::move(scorer), quantizer);
         }
         compress_index_streaming<CollectionType, WandType>(
-            input, params, *output_filename, std::move(quantized_scorer), check
+            input, params, *output_filename, std::move(quantizing_scorer), check
         );
         return;
     }
@@ -149,35 +142,34 @@ void compress_index(
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 
+    WandType const wdata = [&] {
+        if (wand_data_filename) {
+            return WandType(MemorySource::mapped_file(*wand_data_filename));
+        }
+        return WandType{};
+    }();
+
+    if (quantization_bits.has_value()) {
+        std::unique_ptr<index_scorer<WandType>> scorer = scorer::from_params(scorer_params, wdata);
+        LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
+        quantizing_scorer = QuantizingScorer(std::move(scorer), quantizer);
+    }
+
     typename CollectionType::builder builder(input.num_docs(), params);
     size_t postings = 0;
     {
         pisa::progress progress("Create index", input.size());
-        WandType const wdata = [&] {
-            if (wand_data_filename) {
-                return WandType(MemorySource::mapped_file(*wand_data_filename));
-            }
-            return WandType{};
-        }();
-
-        std::unique_ptr<index_scorer<WandType>> scorer;
-
-        if (quantization_bits.has_value()) {
-            scorer = scorer::from_params(scorer_params, wdata);
-        }
 
         size_t term_id = 0;
         for (auto const& plist: input) {
             size_t size = plist.docs.size();
-            if (quantization_bits.has_value()) {
-                LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
-                auto term_scorer = scorer->term_scorer(term_id);
+            if (quantizing_scorer.has_value()) {
+                auto term_scorer = quantizing_scorer->term_scorer(term_id);
                 std::vector<uint64_t> quants;
                 for (size_t pos = 0; pos < size; ++pos) {
                     uint64_t doc = *(plist.docs.begin() + pos);
                     uint64_t freq = *(plist.freqs.begin() + pos);
-                    float score = term_scorer(doc, freq);
-                    uint64_t quant_score = quantizer(score);
+                    uint64_t quant_score = term_scorer(doc, freq);
                     quants.push_back(quant_score);
                 }
                 assert(quants.size() == size);
@@ -210,12 +202,9 @@ void compress_index(
 
     if (output_filename) {
         mapper::freeze(coll, (*output_filename).c_str());
-        if (check and quantization_bits.has_value()) {
-            spdlog::warn("Index construction cannot be verified for quantized indexes.");
-        }
-        if (check and not quantization_bits.has_value()) {
+        if (check) {
             verify_collection<binary_freq_collection, CollectionType>(
-                input, (*output_filename).c_str()
+                input, (*output_filename).c_str(), std::move(quantizing_scorer)
             );
         }
     }

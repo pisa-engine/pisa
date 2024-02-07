@@ -1,18 +1,11 @@
 #define CATCH_CONFIG_MAIN
 
 #include <catch2/catch.hpp>
-#include <functional>
 
-#include "accumulator/lazy_accumulator.hpp"
-#include "cursor/block_max_scored_cursor.hpp"
-#include "cursor/max_scored_cursor.hpp"
-#include "cursor/scored_cursor.hpp"
 #include "index_types.hpp"
 #include "io.hpp"
 #include "pisa_config.hpp"
-#include "query/algorithm.hpp"
 #include "temporary_directory.hpp"
-#include "test_common.hpp"
 
 using namespace pisa;
 
