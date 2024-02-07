@@ -1,15 +1,21 @@
 #pragma once
 
+#include <optional>
+
 #include "spdlog/spdlog.h"
 
 #include "mappable/mapper.hpp"
 #include "memory_source.hpp"
-#include "util/util.hpp"
+#include "scorer/quantized.hpp"
 
 namespace pisa {
 
-template <typename InputCollection, typename Collection>
-void verify_collection(InputCollection const& input, const char* filename) {
+template <typename InputCollection, typename Collection, typename Wand>
+void verify_collection(
+    InputCollection const& input,
+    const char* filename,
+    std::optional<QuantizingScorer<Wand>> quantizing_scorer = std::nullopt
+) {
     Collection coll;
     auto source = MemorySource::mapped_file(std::filesystem::path(filename));
     pisa::mapper::map(coll, source.data());
@@ -21,8 +27,13 @@ void verify_collection(InputCollection const& input, const char* filename) {
         auto e = coll[s];
         if (e.size() != size) {
             spdlog::error("sequence {} has wrong length! ({} != {})", s, e.size(), size);
-            exit(1);
+            throw std::runtime_error("oops");
         }
+        auto term_scorer = quantizing_scorer.has_value()
+            ? std::make_optional<std::function<std::uint32_t(std::uint32_t, std::uint32_t)>>(
+                quantizing_scorer->term_scorer(s)
+            )
+            : std::nullopt;
         for (size_t i = 0; i < e.size(); ++i, e.next()) {
             uint64_t docid = *(seq.docs.begin() + i);
             uint64_t freq = *(seq.freqs.begin() + i);
@@ -31,16 +42,23 @@ void verify_collection(InputCollection const& input, const char* filename) {
                 spdlog::error("docid in sequence {} differs at position {}!", s, i);
                 spdlog::error("{} != {}", e.docid(), docid);
                 spdlog::error("sequence length: {}", seq.docs.size());
-
-                exit(1);
+                throw std::runtime_error("oops");
             }
 
-            if (freq != e.freq()) {
+            if (!term_scorer.has_value() && freq != e.freq()) {
                 spdlog::error("freq in sequence {} differs at position {}!", s, i);
                 spdlog::error("{} != {}", e.freq(), freq);
                 spdlog::error("sequence length: {}", seq.docs.size());
+                throw std::runtime_error("oops");
+            }
 
-                exit(1);
+            if (term_scorer.has_value()) {
+                if ((*term_scorer)(docid, freq) != e.freq()) {
+                    spdlog::error("quantized score in sequence {} differs at position {}!", s, i);
+                    spdlog::error("{} != {}", e.freq(), (*term_scorer)(docid, freq));
+                    spdlog::error("sequence length: {}", seq.docs.size());
+                    throw std::runtime_error("oops");
+                }
             }
         }
         s += 1;
