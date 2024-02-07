@@ -23,14 +23,16 @@ struct qld: public index_scorer<Wand> {
     qld(const Wand& wdata, const float mu) : index_scorer<Wand>(wdata), m_mu(mu) {}
 
     term_scorer_t term_scorer(uint64_t term_id) const override {
-        auto s = [&, term_id](uint32_t doc, uint32_t freq) {
-            float numerator = 1
-                + freq
-                    / (this->m_mu
-                       * ((float)this->m_wdata.term_occurrence_count(term_id)
-                          / this->m_wdata.collection_len()));
-            float denominator = this->m_mu / (this->m_wdata.doc_len(doc) + this->m_mu);
-            return std::max(0.F, std::log(numerator) + std::log(denominator));
+        float mu = this->m_mu;
+        float collection_len = this->m_wdata.collection_len();
+        float term_occurrences = this->m_wdata.term_occurrence_count(term_id);
+        float term_component = collection_len / (mu * term_occurrences);
+
+        auto s = [this, mu, term_component, term_id](uint32_t doc, uint32_t freq) {
+            float doclen = this->m_wdata.doc_len(doc);
+            float a = std::log(mu / (doclen + mu));
+            float b = std::log1p(freq * term_component);
+            return std::max(0.F, a + b);
         };
         return s;
     }

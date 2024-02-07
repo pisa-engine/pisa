@@ -37,7 +37,9 @@ class QuantizingScorer {
         -> std::function<std::uint32_t(std::uint32_t, std::uint32_t)> {
         return
             [this, scorer = m_scorer->term_scorer(term_id)](std::uint32_t doc, std::uint32_t freq) {
-                return this->m_quantizer(scorer(doc, freq));
+                auto score = scorer(doc, freq);
+                assert(score >= 0.0);
+                return this->m_quantizer(score);
             };
     }
 };
