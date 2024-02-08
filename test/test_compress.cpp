@@ -9,7 +9,7 @@
 #include "type_safe.hpp"
 #include "wand_utils.hpp"
 
-TEST_CASE("Compress block index", "[index][compress]") {
+TEST_CASE("Compress index", "[index][compress]") {
     std::string encoding = GENERATE(
         "ef",
         "single",
@@ -38,10 +38,10 @@ TEST_CASE("Compress block index", "[index][compress]") {
     );
 }
 
-TEST_CASE("Compress quantized block index", "[index][compress]") {
+TEST_CASE("Compress quantized index", "[index][compress]") {
     auto input = PISA_SOURCE_DIR "/test/test_data/test_collection";
 
-    std::string scorer = GENERATE("bm25");
+    std::string scorer = GENERATE("bm25", "qld");
     CAPTURE(scorer);
     auto scorer_params = ScorerParams(scorer);
 
