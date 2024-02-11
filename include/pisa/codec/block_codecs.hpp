@@ -230,7 +230,7 @@ struct optpfor_block {
         thread_local codec_type optpfor_codec;  // pfor decoding is *not* thread-safe
         assert(n <= block_size);
 
-        if (PISA_UNLIKELY(n < block_size)) {
+        if PISA_UNLIKELY (n < block_size) {
             return interpolative_block::decode(in, out, sum_of_values, n);
         }
 
@@ -306,7 +306,7 @@ struct varint_G8IU_block {
         static codec_type varint_codec;  // decodeBlock is thread-safe
         assert(n <= block_size);
 
-        if (PISA_UNLIKELY(n < block_size)) {
+        if PISA_UNLIKELY (n < block_size) {
             return interpolative_block::decode(in, out, sum_of_values, n);
         }
 

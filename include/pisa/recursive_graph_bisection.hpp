@@ -180,7 +180,7 @@ void compute_move_gains_caching(
         auto terms = range.terms(d);
         for (const auto& t: terms) {
             if constexpr (isLikelyCached) {  // NOLINT(readability-braces-around-statements)
-                if (PISA_UNLIKELY(not gain_cache.has_value(t))) {
+                if PISA_UNLIKELY (not gain_cache.has_value(t)) {
                     const auto& from_deg = from_lex[t];
                     const auto& to_deg = to_lex[t];
                     const auto term_gain = bp::expb(logn1, logn2, from_deg, to_deg)
@@ -188,7 +188,7 @@ void compute_move_gains_caching(
                     gain_cache.set(t, term_gain);
                 }
             } else {
-                if (PISA_LIKELY(not gain_cache.has_value(t))) {
+                if PISA_LIKELY (not gain_cache.has_value(t)) {
                     const auto& from_deg = from_lex[t];
                     const auto& to_deg = to_lex[t];
                     const auto term_gain = bp::expb(logn1, logn2, from_deg, to_deg)
@@ -223,7 +223,7 @@ void swap(document_partition<Iterator>& partition, degree_map_pair& degrees) {
     auto lit = left.begin();
     auto rit = right.begin();
     for (; lit != left.end() && rit != right.end(); ++lit, ++rit) {
-        if (PISA_UNLIKELY(left.gain(*lit) + right.gain(*rit) <= 0)) {
+        if PISA_UNLIKELY (left.gain(*lit) + right.gain(*rit) <= 0) {
             break;
         }
         {

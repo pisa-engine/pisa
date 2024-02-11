@@ -99,7 +99,7 @@ struct block_posting_list {
 
         void PISA_ALWAYSINLINE next() {
             ++m_pos_in_block;
-            if (PISA_UNLIKELY(m_pos_in_block == m_cur_block_size)) {
+            if PISA_UNLIKELY (m_pos_in_block == m_cur_block_size) {
                 if (m_cur_block + 1 == m_blocks) {
                     m_cur_docid = m_universe;
                     return;
@@ -118,7 +118,7 @@ struct block_posting_list {
          * to the current document ID, the position will not change.
          */
         void PISA_ALWAYSINLINE next_geq(uint64_t lower_bound) {
-            if (PISA_UNLIKELY(lower_bound > m_cur_block_max)) {
+            if PISA_UNLIKELY (lower_bound > m_cur_block_max) {
                 // binary search seems to perform worse here
                 if (lower_bound > block_max(m_blocks - 1)) {
                     m_cur_docid = m_universe;
@@ -142,7 +142,7 @@ struct block_posting_list {
         void PISA_ALWAYSINLINE move(uint64_t pos) {
             assert(pos >= position());
             uint64_t block = pos / BlockCodec::block_size;
-            if (PISA_UNLIKELY(block != m_cur_block)) {
+            if PISA_UNLIKELY (block != m_cur_block) {
                 decode_docs_block(block);
             }
             while (position() < pos) {

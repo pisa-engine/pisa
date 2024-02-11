@@ -11,6 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT CMAKE_CXX_STANDARD EQUAL 17)
     add_compile_definitions(PISA_ENABLE_CONCEPTS=1)
+    add_compile_definitions(PISA_CXX20=1)
 endif()
 add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE=1)
 
