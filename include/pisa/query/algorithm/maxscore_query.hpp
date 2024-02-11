@@ -83,7 +83,7 @@ struct maxscore_query {
         while (current_docid < max_docid) {
             auto status = DocumentStatus::Skip;
             while (status == DocumentStatus::Skip) {
-                if (PISA_UNLIKELY(next_docid >= max_docid)) {
+                if PISA_UNLIKELY (next_docid >= max_docid) {
                     return;
                 }
 

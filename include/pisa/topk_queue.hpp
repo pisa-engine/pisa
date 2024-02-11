@@ -43,13 +43,13 @@ struct topk_queue {
     /// If the heap is full, the entry with the lowest value will be removed, i.e.,
     /// the heap will maintain its size.
     auto insert(Score score, DocId docid = 0) -> bool {
-        if (PISA_UNLIKELY(not would_enter(score))) {
+        if PISA_UNLIKELY (not would_enter(score)) {
             return false;
         }
         m_q.emplace_back(score, docid);
-        if (PISA_UNLIKELY(m_q.size() <= m_k)) {
+        if PISA_UNLIKELY (m_q.size() <= m_k) {
             std::push_heap(m_q.begin(), m_q.end(), min_heap_order);
-            if (PISA_UNLIKELY(m_q.size() == m_k)) {
+            if PISA_UNLIKELY (m_q.size() == m_k) {
                 m_effective_threshold = m_q.front().first;
             }
         } else {
