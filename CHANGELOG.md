@@ -1,9 +1,98 @@
-### Version 0.8.2
+# Change Log
+
+All notable changes to PISA will be documented in this file.
+The format of the changes starting from 0.9.0 is based on
+[Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## [0.9.0](https://github.com/pisa-engine/pisa/releases/tag/v0.9.0)
+
+### Added
+
+- Produce URLs and lexicons when partitioning (#356)
+- Shard tools (#358)
+- Verbose flag for BP (#362)
+- `stem_queries` tool (#365)
+- Allow for defining scorer parameters (#366)
+- Compile Headers workflow (#375)
+- Streaming index compression for block index (#384)
+- Stream builder for quantized case (#391)
+- Added kth_threshold tool (#406)
+- Catch and log NoSuchFile error (#428)
+- AOL query extractor (#296)
+- Taily stats tool (#430)
+- Return times when extracting taily scores (#452)
+- Enable counting postings by term (#453)
+- Extract maxscores (#454)
+- Add patch for accepting non-trec identifiers from WARC files (#468)
+- Whitespace tokenizer (#496)
+- CLI option to configure log level (#497)
+- Implement TextAnalyzer (#503)
+- Selecting tokenizer at query time (#499)
+- Support C++20 build
+- Accumulator concept
+- Allow for usage of system oneTBB library through `PISA_SYSTEM_ONETBB`
+  CMake option
+- Allow for system Boost installation
+- Allow system CLI11
+
+### Fixed
+
+- Append sourcing setvars.sh to .bashrc
+- Source setvars.sh when installing TBB from package
+- Use TBB thread local storage (#378)
+- Fix deprecated TBB calls (#387)
+- Fix CLI issue where quantization is not considered (#389)
+- Krovetz thread-safety #390
+- Fix bug of top-k threshold task (#426)
+- Fix BP memory issue (#424)
+- Fix reading bytes from bit vector (#443)
+- Add inline to free function in header (#466)
+- Obey query term weights (#467)
+- Fix threshold logic (#429)
+- Fix log of zero (#510)
+- Custom sift down for binary heap (#507)
+- Rank start from 1 instead of 0 (#516)
+- Use thread local, as opposed to static, lexer (#528)
+- Remove UB and read-after-buffer in varintgb
+- Migrate to mdBook documentation
+- Fix unaligned read in bitvector
+- Add stdc++fs to target_link_libraries for gcc < 9
+
+### Changed
+
+- Update TBB to the newest version of oneTBB
+- Unify document reordering in one tool (#363)
+- Refactor cursor interface (#376)
+- Maxscore performance improvements (#395)
+- More robust memory mapping (#370)
+- Read collection with lexicon (#437)
+- Modify count-postings tool (#450)
+- Make parsing libraries private dependencies (#463)
+- Multiply block max score by term weight in cursor (#474) (#488)
+- Upgrade CLI11 to 2.3.2
+- Upgrade spdlog to 1.11.0
+- Upgrade libfmt to 9.1.0
+- Upgrade range-v3 to 0.12.0
+- Upgrade Google Benchmark to 1.7.1
+- Upgrade to the latest Porter2 version
+- Replace `boost::variant` with `std::variant`
+- Replace `boost::filesystem` with `std::filesystem`
+
+### Removed
+
+- Remove optimal_hybrid_index (#412)
+- Remove PSTL (#472)
+- Remove std iterator (#487)
+- Remove configuration.hpp
+
+## 0.8.2
+
 - cppcoreguidelines-pro-type-member-init (#349)
 - Extract compression to headers (#350)
 - Plaintext tokenizer (#351)
 
-### Version 0.8.1
+## 0.8.1
+
 - Replace unnecessary raw loops (#338)
 - Fix readability-braces-around-statements warnings (#340)
 - Fix hicpp-use-auto warnings
@@ -16,7 +105,8 @@
 - hicpp-explicit-conversions (#347)
 - Update CMakeLists.txt (#348)
 
-### Version 0.8.0
+## 0.8.0
+
 - Binary lib (#312)
 - Change default run name from "R0" to "PISA" (#314)
 - 99% quantile in queries tool (#315)
@@ -37,7 +127,8 @@
 - drop default logger in create_freq_index (#334)
 - Fix 336 (#337)
 
-### Version 0.7.0
+## 0.7.0
+
 - Create FUNDING.yml
 - Update README.md
 - Update README.md
@@ -89,10 +180,12 @@
 - Count postings (#311)
 - Added tool to map textual queries to our query ID format (#310)
 
-### Version 0.6.6
+## 0.6.6
+
 - Fix: issue with using an old version of trecpp
 
-### Version 0.6.5
+## 0.6.5
+
 - Added node_modules to gitignore
 - Log stats on the inverted index (#208)
 - Update TBB and PSTL (#211)
@@ -104,23 +197,28 @@
 - Fix memory leak in cleantext (#215)
 - Add run_id (#216)
 
-### Version 0.6.4
+## 0.6.4
+
 - Update README.md
 - Update README.md
 - Update recursive_graph_bisection.cpp (#202)
 - Update recursive_graph_bisection.cpp (#204)
 
-### Version 0.6.3
+## 0.6.3
+
 - Fix python script to read the collection (#197)
 
-### Version 0.6.2
+## 0.6.2
+
 - Removed external/te
 
-### Version 0.6.1
+## 0.6.1
+
 - Fix logger names (#195)
 - Update create_wand_data.cpp (#193)
 
-### Version 0.6.0
+## 0.6.0
+
 - Create pull_request_template.md
 - Create pull_request_template.md
 - Delete pull_request_template.md
@@ -129,29 +227,35 @@
 - Update index.rst
 - BMA Clean (#191)
 
-### Version 0.5.0
+## 0.5.0
+
 - Moved files
 - Parsing Washington Post format (#189)
 - Upgrade wapopp (#190)
 
-### Version 0.4.0
+## 0.4.0
+
 - Block params (#187)
 - Sharding forward index (#106)
 
-### Version 0.3.1
+## 0.3.1
+
 - Patch extract query (#186)
 
-### Version 0.3.0
+## 0.3.0
+
 - Parallel evaluate (#181)
 
-### Version 0.2.0
+## 0.2.0
+
 - Create CONTRIBUTING.md
 - Added Contributing link
 - Update README.md
 - Implement tokenizer and use for query parsing. (#178)
 - Update default params for bmw25 to b=0.4 and k1=0.9 (#171)
 
-### Version 0.1.0
+## 0.1.0
+
 - Initial commit
 - README
 - Initial import
