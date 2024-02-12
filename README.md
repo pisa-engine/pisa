@@ -1,6 +1,6 @@
 <p align="center"><img src="https://pisa-engine.github.io/images/logo250.png" width="250px"></p>
 
-# PISA: Performant Indexes and Search for Academia v0.8.2
+# PISA: Performant Indexes and Search for Academia
 
 ![Build and test](https://github.com/pisa-engine/pisa/workflows/Build%20and%20test/badge.svg)
 ![clang-tidy](https://github.com/pisa-engine/pisa/workflows/clang-tidy/badge.svg)
