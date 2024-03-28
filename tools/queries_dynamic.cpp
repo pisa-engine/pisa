@@ -310,6 +310,16 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
+auto resolve_codec(std::string_view encoding) -> std::unique_ptr<BlockCodec> {
+    if (encoding == "block_simdbp") {
+        return std::make_unique<SimdBpBlockCodec>();
+    }
+    if (encoding == "simple16_simdbp") {
+        return std::make_unique<Simple16BlockCodec>();
+    }
+    throw std::domain_error("invalid encoding type");
+}
+
 int main(int argc, const char** argv) {
     bool extract = false;
     bool safe = false;
@@ -335,20 +345,9 @@ int main(int argc, const char** argv) {
         std::cout << "qid\tusec\n";
     }
 
-    auto index = [&]() {
-        if (app.index_encoding() == "block_simdbp") {
-            return BlockInvertedIndex(
-                MemorySource::mapped_file(app.index_filename()), std::make_unique<SimdBpBlockCodec>()
-            );
-        }
-        if (app.index_encoding() == "simple16_simdbp") {
-            return BlockInvertedIndex(
-                MemorySource::mapped_file(app.index_filename()),
-                std::make_unique<Simple16BlockCodec>()
-            );
-        }
-        throw std::domain_error("invalid encoding type");
-    }();
+    BlockInvertedIndex index(
+        MemorySource::mapped_file(app.index_filename()), resolve_codec(app.index_encoding())
+    );
 
     auto params = std::make_tuple(
         &index,
