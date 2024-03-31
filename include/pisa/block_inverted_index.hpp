@@ -11,6 +11,7 @@
 #include "mappable/mappable_vector.hpp"
 #include "memory_source.hpp"
 #include "temporary_directory.hpp"
+#include "util/block_profiler.hpp"
 
 namespace pisa {
 
@@ -24,7 +25,12 @@ namespace index::block {
  */
 class BlockInvertedIndexCursor {
   public:
-    BlockInvertedIndexCursor(BlockCodec const* block_codec, std::uint8_t const* data, std::uint64_t universe)
+    BlockInvertedIndexCursor(
+        BlockCodec const* block_codec,
+        std::uint8_t const* data,
+        std::uint64_t universe,
+        std::optional<std::uint32_t> profile_term
+    )
         : m_base(TightVariableByte::decode(data, &m_n, 1)),
           m_blocks(ceil_div(m_n, block_codec->block_size())),
           m_block_maxs(m_base),
@@ -37,6 +43,10 @@ class BlockInvertedIndexCursor {
             (concepts::FrequencyPostingCursor<BlockInvertedIndexCursor>
              && concepts::SortedPostingCursor<BlockInvertedIndexCursor>)
         );
+
+        if (profile_term.has_value()) {
+            m_profiler = block_profiler::open_list(*profile_term, m_blocks);
+        }
 
         m_docs_buf.resize(m_block_size);
         m_freqs_buf.resize(m_block_size);
@@ -218,6 +228,10 @@ class BlockInvertedIndexCursor {
         m_pos_in_block = 0;
         m_cur_docid = m_docs_buf[0];
         m_freqs_decoded = false;
+
+        if (m_profiler != nullptr) {
+            ++m_profiler[2 * m_cur_block];
+        }
     }
 
     void PISA_NOINLINE decode_freqs_block() {
@@ -226,6 +240,10 @@ class BlockInvertedIndexCursor {
         );
         intrinsics::prefetch(next_block);
         m_freqs_decoded = true;
+
+        if (m_profiler != nullptr) {
+            ++m_profiler[2 * m_cur_block + 1];
+        }
     }
 
     uint32_t m_n{0};
@@ -249,6 +267,7 @@ class BlockInvertedIndexCursor {
     std::vector<uint32_t> m_freqs_buf;
     BlockCodec const* m_block_codec;
     std::size_t m_block_size;
+    block_profiler::counter_type* m_profiler = nullptr;
 };
 
 class BlockInvertedIndex {
@@ -259,6 +278,7 @@ class BlockInvertedIndex {
     mapper::mappable_vector<std::uint8_t> m_lists;
     MemorySource m_source;
     std::unique_ptr<BlockCodec> m_block_codec;
+    bool m_profile;
 
     void check_term_range(std::size_t term_id) const;
 
@@ -268,7 +288,7 @@ class BlockInvertedIndex {
   public:
     using document_enumerator = BlockInvertedIndexCursor;
 
-    explicit BlockInvertedIndex(MemorySource source, std::unique_ptr<BlockCodec> block_codec);
+    BlockInvertedIndex(MemorySource source, std::unique_ptr<BlockCodec> block_codec, bool profile = false);
 
     template <typename Visitor>
     void map(Visitor& visit) {

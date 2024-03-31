@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <numeric>
 #include <optional>
@@ -16,17 +17,7 @@
 #include "accumulator/simple_accumulator.hpp"
 #include "app.hpp"
 #include "block_inverted_index.hpp"
-#include "codec/block_codec.hpp"
-#include "codec/interpolative.hpp"
-#include "codec/maskedvbyte.hpp"
-#include "codec/optpfor.hpp"
-#include "codec/qmx.hpp"
-#include "codec/simdbp.hpp"
-#include "codec/simple16.hpp"
-#include "codec/simple8b.hpp"
-#include "codec/streamvbyte.hpp"
-#include "codec/varint_g8iu.hpp"
-#include "codec/varintgb.hpp"
+#include "codec/block_codec_registry.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
@@ -319,44 +310,11 @@ using wand_raw_index = wand_data<wand_data_raw>;
 using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
-auto resolve_codec(std::string_view encoding) -> std::unique_ptr<BlockCodec> {
-    if (encoding == "block_interpolative") {
-        return std::make_unique<InterpolativeBlockCodec>();
-    }
-    if (encoding == "block_maskedvbyte") {
-        return std::make_unique<MaskedVByteBlockCodec>();
-    }
-    if (encoding == "block_optpfor") {
-        return std::make_unique<OptPForBlockCodec>();
-    }
-    if (encoding == "block_qmx") {
-        return std::make_unique<QmxBlockCodec>();
-    }
-    if (encoding == "block_simdbp") {
-        return std::make_unique<SimdBpBlockCodec>();
-    }
-    if (encoding == "block_simple16") {
-        return std::make_unique<Simple16BlockCodec>();
-    }
-    if (encoding == "block_simple8b") {
-        return std::make_unique<Simple8bBlockCodec>();
-    }
-    if (encoding == "block_streamvbyte") {
-        return std::make_unique<StreamVByteBlockCodec>();
-    }
-    if (encoding == "block_varintg8iu") {
-        return std::make_unique<VarintG8IUBlockCodec>();
-    }
-    if (encoding == "block_varintgb") {
-        return std::make_unique<VarintGbBlockCodec>();
-    }
-    throw std::domain_error("invalid encoding type");
-}
-
 int main(int argc, const char** argv) {
     bool extract = false;
     bool safe = false;
     bool quantized = false;
+    bool list_encodings = false;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Optional>,
@@ -370,6 +328,10 @@ int main(int argc, const char** argv) {
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
+
+    // TODO: only block ones for now
+    app.add_flag("--list-encodings", list_encodings, "List all available encodings.");
+
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
@@ -378,8 +340,15 @@ int main(int argc, const char** argv) {
         std::cout << "qid\tusec\n";
     }
 
+    if (list_encodings) {
+        for (auto encoding: get_block_codec_names()) {
+            std::cout << encoding << '\n';
+        }
+        return 0;
+    }
+
     BlockInvertedIndex index(
-        MemorySource::mapped_file(app.index_filename()), resolve_codec(app.index_encoding())
+        MemorySource::mapped_file(app.index_filename()), get_block_codec(app.index_encoding())
     );
 
     auto params = std::make_tuple(
