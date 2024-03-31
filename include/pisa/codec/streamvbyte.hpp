@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "codec/block_codec.hpp"
 #include "streamvbyte/include/streamvbyte.h"
 
 namespace pisa {
@@ -35,4 +36,16 @@ struct streamvbyte_block {
         return in + read;
     }
 };
+
+class StreamVByteBlockCodec: public BlockCodec {
+    static constexpr std::uint64_t m_block_size = 128;
+    static constexpr std::size_t m_max_compressed_bytes =
+        pisa::streamvbyte_max_compressedbytes(m_block_size);
+
+  public:
+    void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out) const;
+    uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) const;
+    auto block_size() const noexcept -> std::size_t { return m_block_size; }
+};
+
 }  // namespace pisa

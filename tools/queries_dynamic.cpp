@@ -17,11 +17,20 @@
 #include "app.hpp"
 #include "block_inverted_index.hpp"
 #include "codec/block_codec.hpp"
+#include "codec/interpolative.hpp"
+#include "codec/maskedvbyte.hpp"
+#include "codec/optpfor.hpp"
+#include "codec/qmx.hpp"
+#include "codec/simdbp.hpp"
+#include "codec/simple16.hpp"
+#include "codec/simple8b.hpp"
+#include "codec/streamvbyte.hpp"
+#include "codec/varint_g8iu.hpp"
+#include "codec/varintgb.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
 #include "cursor/cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
-#include "index_types.hpp"
 #include "memory_source.hpp"
 #include "query/algorithm/and_query.hpp"
 #include "query/algorithm/block_max_maxscore_query.hpp"
@@ -311,11 +320,35 @@ using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
 auto resolve_codec(std::string_view encoding) -> std::unique_ptr<BlockCodec> {
+    if (encoding == "block_interpolative") {
+        return std::make_unique<InterpolativeBlockCodec>();
+    }
+    if (encoding == "block_maskedvbyte") {
+        return std::make_unique<MaskedVByteBlockCodec>();
+    }
+    if (encoding == "block_optpfor") {
+        return std::make_unique<OptPForBlockCodec>();
+    }
+    if (encoding == "block_qmx") {
+        return std::make_unique<QmxBlockCodec>();
+    }
     if (encoding == "block_simdbp") {
         return std::make_unique<SimdBpBlockCodec>();
     }
-    if (encoding == "simple16_simdbp") {
+    if (encoding == "block_simple16") {
         return std::make_unique<Simple16BlockCodec>();
+    }
+    if (encoding == "block_simple8b") {
+        return std::make_unique<Simple8bBlockCodec>();
+    }
+    if (encoding == "block_streamvbyte") {
+        return std::make_unique<StreamVByteBlockCodec>();
+    }
+    if (encoding == "block_varintg8iu") {
+        return std::make_unique<VarintG8IUBlockCodec>();
+    }
+    if (encoding == "block_varintgb") {
+        return std::make_unique<VarintGbBlockCodec>();
     }
     throw std::domain_error("invalid encoding type");
 }
