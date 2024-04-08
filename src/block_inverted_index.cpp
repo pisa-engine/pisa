@@ -4,24 +4,18 @@
 
 namespace pisa {
 
-BlockInvertedIndex::BlockInvertedIndex(
-    MemorySource source, std::unique_ptr<BlockCodec> block_codec, bool profile
-)
-    : m_source(std::move(source)), m_block_codec(std::move(block_codec)), m_profile(profile) {
+BlockInvertedIndex::BlockInvertedIndex(MemorySource source, std::unique_ptr<BlockCodec> block_codec)
+    : m_source(std::move(source)), m_block_codec(std::move(block_codec)) {
     PISA_ASSERT_CONCEPT((concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor>));
     mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
 }
 
-auto BlockInvertedIndex::operator[](std::size_t term_id) const -> BlockInvertedIndexCursor {
+auto BlockInvertedIndex::operator[](std::size_t term_id) const -> BlockInvertedIndexCursor<> {
     check_term_range(term_id);
     compact_elias_fano::enumerator endpoints(m_endpoints, 0, m_lists.size(), m_size, m_params);
     auto endpoint = endpoints.move(term_id).second;
-    std::optional<std::uint32_t> profile_term = std::nullopt;
-    if (m_profile) {
-        profile_term = term_id;
-    }
     return BlockInvertedIndexCursor(
-        m_block_codec.get(), m_lists.data() + endpoint, num_docs(), profile_term
+        m_block_codec.get(), m_lists.data() + endpoint, num_docs(), term_id
     );
 }
 
@@ -48,6 +42,15 @@ void BlockInvertedIndex::warmup(std::size_t term_id) const {
         tmp = m_lists[i];
     }
     (void)tmp;
+}
+
+ProfilingBlockInvertedIndex::ProfilingBlockInvertedIndex(
+    MemorySource source, std::unique_ptr<BlockCodec> block_codec
+)
+    : BlockInvertedIndex(std::move(source), std::move(block_codec)) {
+    PISA_ASSERT_CONCEPT(
+        (concepts::SortedInvertedIndex<ProfilingBlockInvertedIndex, BlockInvertedIndexCursor<Profiling::On>>)
+    );
 }
 
 index::block::InMemoryBuilder::InMemoryBuilder(
