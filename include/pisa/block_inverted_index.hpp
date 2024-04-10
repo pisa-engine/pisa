@@ -47,7 +47,7 @@ class BlockInvertedIndexCursor {
              && concepts::SortedPostingCursor<BlockInvertedIndexCursor>)
         );
 
-        if (profiling == Profiling::On) {
+        if constexpr (profiling == Profiling::On) {
             m_profiler = block_profiler::open_list(term_id, m_blocks);
         }
 
