@@ -113,32 +113,38 @@ void compress_index(
     std::string const& seq_type,
     std::optional<std::string> const& wand_data_filename,
     ScorerParams const& scorer_params,
-    std::optional<Size> quantization_bits
+    std::optional<Size> quantization_bits,
+    bool in_memory
 ) {
     std::optional<QuantizingScorer<WandType>> quantizing_scorer{};
-    if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
-        WandType wdata;
-        mio::mmap_source wdata_source;
-        if (quantization_bits.has_value()) {
-            ensure(wand_data_filename.has_value())
-                .or_panic("Bug: Asked for quantized but no wand data");
-            std::error_code error;
-            wdata_source.map(*wand_data_filename, error);
-            if (error) {
-                spdlog::error("error mapping file: {}, exiting...", error.message());
-                std::abort();
+
+    // Performs the compression using an intermediate buffer.
+    if (!in_memory) {
+        if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
+            WandType wdata;
+            mio::mmap_source wdata_source;
+            if (quantization_bits.has_value()) {
+                ensure(wand_data_filename.has_value())
+                    .or_panic("Bug: Asked for quantized but no wand data");
+                std::error_code error;
+                wdata_source.map(*wand_data_filename, error);
+                if (error) {
+                    spdlog::error("error mapping file: {}, exiting...", error.message());
+                    std::abort();
+                }
+                mapper::map(wdata, wdata_source, mapper::map_flags::warmup);
+                auto scorer = scorer::from_params(scorer_params, wdata);
+                LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
+                quantizing_scorer = QuantizingScorer(std::move(scorer), quantizer);
             }
-            mapper::map(wdata, wdata_source, mapper::map_flags::warmup);
-            auto scorer = scorer::from_params(scorer_params, wdata);
-            LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
-            quantizing_scorer = QuantizingScorer(std::move(scorer), quantizer);
+            compress_index_streaming<CollectionType, WandType>(
+                input, params, *output_filename, std::move(quantizing_scorer), check
+            );
+            return;
         }
-        compress_index_streaming<CollectionType, WandType>(
-            input, params, *output_filename, std::move(quantizing_scorer), check
-        );
-        return;
     }
 
+    // Performs the compression in memory.
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 
@@ -217,7 +223,8 @@ void compress(
     std::string const& output_filename,
     ScorerParams const& scorer_params,
     std::optional<Size> quantization_bits,
-    bool check
+    bool check,
+    bool in_memory
 ) {
     binary_freq_collection input(input_basename.c_str());
     global_parameters params;
@@ -227,7 +234,7 @@ void compress(
     }                                                                                                                   \
     else if (index_encoding == BOOST_PP_STRINGIZE(T)) {                                                                 \
         compress_index<pisa::BOOST_PP_CAT(T, _index), wand_data<wand_data_raw>>(                                        \
-            input, params, output_filename, check, index_encoding, wand_data_filename, scorer_params, quantization_bits \
+            input, params, output_filename, check, index_encoding, wand_data_filename, scorer_params, quantization_bits, in_memory \
         );                                                                                                              \
         /**/
         BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);

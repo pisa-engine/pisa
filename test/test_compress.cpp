@@ -34,7 +34,8 @@ TEST_CASE("Compress index", "[index][compress]") {
         (tmp.path() / encoding).string(),
         ScorerParams(""),  // no scorer
         std::nullopt,  // no quantization
-        true  // check=true
+        true,  // check=true
+        false  // in-memory=false
     );
 }
 
@@ -82,6 +83,7 @@ TEST_CASE("Compress quantized index", "[index][compress]") {
         (tmp.path() / encoding).string(),
         scorer_params,
         pisa::Size(8),
-        true  // check=true
+        true,  // check=true,
+        false  // in-memory=true
     );
 }
