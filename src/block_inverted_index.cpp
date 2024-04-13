@@ -6,7 +6,7 @@ namespace pisa {
 
 BlockInvertedIndex::BlockInvertedIndex(MemorySource source, std::unique_ptr<BlockCodec> block_codec)
     : m_source(std::move(source)), m_block_codec(std::move(block_codec)) {
-    PISA_ASSERT_CONCEPT((concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor>));
+    PISA_ASSERT_CONCEPT((concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor<>>));
     mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
 }
 
