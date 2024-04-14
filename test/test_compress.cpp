@@ -35,7 +35,7 @@ TEST_CASE("Compress index", "[index][compress]") {
         ScorerParams(""),  // no scorer
         std::nullopt,  // no quantization
         true,  // check=true
-        false  // in-memory=false
+        GENERATE(true, false)  // in-memory=(true, false)
     );
 }
 
@@ -84,6 +84,6 @@ TEST_CASE("Compress quantized index", "[index][compress]") {
         scorer_params,
         pisa::Size(8),
         true,  // check=true,
-        false  // in-memory=true
+        GENERATE(true, false)  // in-memory=(true, false)
     );
 }
