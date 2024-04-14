@@ -26,6 +26,7 @@ TEST_CASE("Compress index", "[index][compress]") {
         "block_simple16",
         "block_simdbp"
     );
+    const bool in_memory = GENERATE(true, false);
     pisa::TemporaryDirectory tmp;
     pisa::compress(
         PISA_SOURCE_DIR "/test/test_data/test_collection",
@@ -35,7 +36,7 @@ TEST_CASE("Compress index", "[index][compress]") {
         ScorerParams(""),  // no scorer
         std::nullopt,  // no quantization
         true,  // check=true
-        GENERATE(true, false)  // in-memory=(true, false)
+        in_memory
     );
 }
 
@@ -75,6 +76,7 @@ TEST_CASE("Compress quantized index", "[index][compress]") {
         "block_simdbp"
     );
     CAPTURE(encoding);
+    const bool in_memory = GENERATE(true, false);
 
     pisa::compress(
         input,
@@ -84,6 +86,6 @@ TEST_CASE("Compress quantized index", "[index][compress]") {
         scorer_params,
         pisa::Size(8),
         true,  // check=true,
-        GENERATE(true, false)  // in-memory=(true, false)
+        in_memory
     );
 }
