@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 namespace pisa {
@@ -34,5 +35,7 @@ class BlockCodec {
      */
     [[nodiscard]] virtual auto block_size() const noexcept -> std::size_t = 0;
 };
+
+using BlockCodecPtr = std::shared_ptr<BlockCodec>;
 
 };  // namespace pisa

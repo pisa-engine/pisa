@@ -1,7 +1,9 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <spdlog/spdlog.h>
 
+#include "binary_freq_collection.hpp"
 #include "bit_vector.hpp"
 #include "codec/block_codec.hpp"
 #include "codec/block_codecs.hpp"
@@ -10,14 +12,19 @@
 #include "global_parameters.hpp"
 #include "mappable/mappable_vector.hpp"
 #include "memory_source.hpp"
+#include "scorer/quantized.hpp"
+#include "scorer/scorer.hpp"
 #include "temporary_directory.hpp"
+#include "type_safe.hpp"
 #include "util/block_profiler.hpp"
 
 namespace pisa {
 
 namespace index::block {
-    class InMemoryBuilder;
-    class StreamBuilder;
+    // class InMemoryBuilder;
+    class InMemoryPostingAccumulator;
+    // class StreamBuilder;
+    class StreamPostingAccumulator;
 }  // namespace index::block
 
 enum Profiling : bool { On, Off };
@@ -280,18 +287,20 @@ class BlockInvertedIndex {
     bit_vector m_endpoints;
     mapper::mappable_vector<std::uint8_t> m_lists;
     MemorySource m_source;
-    std::unique_ptr<BlockCodec> m_block_codec;
+    BlockCodecPtr m_block_codec;
 
   protected:
     void check_term_range(std::size_t term_id) const;
 
-    friend class index::block::InMemoryBuilder;
-    friend class index::block::StreamBuilder;
+    friend class index::block::InMemoryPostingAccumulator;
+    friend class index::block::StreamPostingAccumulator;
+
+    explicit BlockInvertedIndex(BlockCodecPtr block_codec);
 
   public:
     using document_enumerator = BlockInvertedIndexCursor<>;
 
-    BlockInvertedIndex(MemorySource source, std::unique_ptr<BlockCodec> block_codec);
+    BlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec);
 
     template <typename Visitor>
     void map(Visitor& visit) {
@@ -315,13 +324,10 @@ class BlockInvertedIndex {
 };
 
 class ProfilingBlockInvertedIndex: public BlockInvertedIndex {
-    friend class index::block::InMemoryBuilder;
-    friend class index::block::StreamBuilder;
-
   public:
     using document_enumerator = BlockInvertedIndexCursor<Profiling::On>;
 
-    ProfilingBlockInvertedIndex(MemorySource source, std::unique_ptr<BlockCodec> block_codec);
+    ProfilingBlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec);
 
     [[nodiscard]] auto operator[](std::size_t term_id) const
         -> BlockInvertedIndexCursor<Profiling::On>;
@@ -329,272 +335,92 @@ class ProfilingBlockInvertedIndex: public BlockInvertedIndex {
 
 namespace index::block {
 
-    class BlockPostingWriter {
-        BlockCodec const* m_block_codec;
+    class PostingAccumulator {
+      protected:
+        BlockCodecPtr m_block_codec;
+        std::size_t m_num_docs;
+        std::string m_output_filename;
+        bool m_finished = false;
 
       public:
-        explicit BlockPostingWriter(BlockCodec const* block_codec) : m_block_codec(block_codec) {}
+        explicit PostingAccumulator(
+            BlockCodecPtr block_codec, std::size_t num_docs, std::string output_filename
+        );
 
-        template <typename DocsIterator, typename FreqsIterator>
+        virtual void accumulate_posting_list(
+            std::size_t n, std::uint32_t const* docs, std::uint32_t const* freqs
+        ) = 0;
+
+        virtual void finish() = 0;
+
         void write(
-            std::vector<uint8_t>& out, uint32_t n, DocsIterator docs_begin, FreqsIterator freqs_begin
-        ) {
-            TightVariableByte::encode_single(n, out);
-
-            uint64_t block_size = m_block_codec->block_size();
-            uint64_t blocks = ceil_div(n, block_size);
-            size_t begin_block_maxs = out.size();
-            size_t begin_block_endpoints = begin_block_maxs + 4 * blocks;
-            size_t begin_blocks = begin_block_endpoints + 4 * (blocks - 1);
-            out.resize(begin_blocks);
-
-            DocsIterator docs_it(docs_begin);
-            FreqsIterator freqs_it(freqs_begin);
-            std::vector<uint32_t> docs_buf(block_size);
-            std::vector<uint32_t> freqs_buf(block_size);
-            int32_t last_doc(-1);
-            uint32_t block_base = 0;
-            for (size_t b = 0; b < blocks; ++b) {
-                uint32_t cur_block_size = ((b + 1) * block_size <= n) ? block_size : (n % block_size);
-
-                for (size_t i = 0; i < cur_block_size; ++i) {
-                    uint32_t doc(*docs_it++);
-                    docs_buf[i] = doc - last_doc - 1;
-                    last_doc = doc;
-
-                    freqs_buf[i] = *freqs_it++ - 1;
-                }
-                *((uint32_t*)&out[begin_block_maxs + 4 * b]) = last_doc;
-
-                m_block_codec->encode(
-                    docs_buf.data(), last_doc - block_base - (cur_block_size - 1), cur_block_size, out
-                );
-                m_block_codec->encode(freqs_buf.data(), uint32_t(-1), cur_block_size, out);
-                if (b != blocks - 1) {
-                    *((uint32_t*)&out[begin_block_endpoints + 4 * b]) = out.size() - begin_blocks;
-                }
-                block_base = last_doc + 1;
-            }
-        }
+            std::vector<uint8_t>& out,
+            std::uint32_t n,
+            std::uint32_t const* docs,
+            std::uint32_t const* freqs
+        );
     };
 
-    template <typename BlockDataRange>
-    void write_blocks(std::vector<uint8_t>& out, uint32_t n, BlockDataRange const& input_blocks) {
-        TightVariableByte::encode_single(n, out);
-        assert(input_blocks.front().index == 0);  // first block must remain first
-
-        uint64_t blocks = input_blocks.size();
-        size_t begin_block_maxs = out.size();
-        size_t begin_block_endpoints = begin_block_maxs + 4 * blocks;
-        size_t begin_blocks = begin_block_endpoints + 4 * (blocks - 1);
-        out.resize(begin_blocks);
-
-        for (auto const& block: input_blocks) {
-            size_t b = block.index;
-            // write endpoint
-            if (b != 0) {
-                *((uint32_t*)&out[begin_block_endpoints + 4 * (b - 1)]) = out.size() - begin_blocks;
-            }
-
-            // write max
-            *((uint32_t*)&out[begin_block_maxs + 4 * b]) = block.max;
-
-            // copy block
-            block.append_docs_block(out);
-            block.append_freqs_block(out);
-        }
-    }
-
-    /**
-     * In-memory block index builder.
-     *
-     * Builds the index in memory, which is eventually flushed to disk at the very end.
-     */
-    class InMemoryBuilder {
-        global_parameters m_params;
-        std::size_t m_num_docs;
-        BlockPostingWriter m_posting_writer;
+    class InMemoryPostingAccumulator: public PostingAccumulator {
+        global_parameters m_params{};
         std::vector<std::uint64_t> m_endpoints{};
         std::vector<std::uint8_t> m_lists{};
 
       public:
-        /**
-         * Constructs a builder for an index containing the given number of documents.
-         */
-        InMemoryBuilder(
-            std::uint64_t num_docs, global_parameters const& params, BlockPostingWriter posting_writer
+        explicit InMemoryPostingAccumulator(
+            BlockCodecPtr block_codec, std::size_t num_docs, std::string output_filename
         );
 
-        /**
-         * Records a new posting list.
-         *
-         * Postings are written to an in-memory buffer.
-         *
-         * \param n            Posting list length.
-         * \param docs_begin   Iterator that points at the first document ID.
-         * \param freqs_begin  Iterator that points at the first frequency.
-         * \param occurrences  Not used in this builder.
-         *
-         * \throws std::invalid_argument   Thrown if `n == 0`.
-         */
-        template <typename DocsIterator, typename FreqsIterator>
-        void
-        add_posting_list(std::uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, std::uint64_t /* occurrences */) {
-            if (!n) {
-                throw std::invalid_argument("List must be nonempty");
-            }
-            m_posting_writer.write(m_lists, n, docs_begin, freqs_begin);
-            m_endpoints.push_back(m_lists.size());
-        }
+        void accumulate_posting_list(
+            std::uint64_t n, std::uint32_t const* docs, std::uint32_t const* freqs
+        ) override;
 
-        /**
-         * Adds multiple posting list blocks.
-         *
-         * \tparam BlockDataRange  This intended to be a vector of structs of the type
-         *      block_posting_list<BlockCodec, Profile>::document_enumerator::block_data
-         *
-         * \param n       Posting list length.
-         * \param blocks  Encoded blocks.
-         *
-         * \throws std::invalid_argument   Thrown if `n == 0`.
-         */
-        template <typename BlockDataRange>
-        void add_posting_list(std::uint64_t n, BlockDataRange const& blocks) {
-            if (!n) {
-                throw std::invalid_argument("List must be nonempty");
-            }
-            write_blocks(m_lists, n, blocks);
-            m_endpoints.push_back(m_lists.size());
-        }
-
-        /**
-         * Adds a posting list that is already fully encoded.
-         *
-         * \tparam BytesRange  A collection of bytes, e.g., std::vector<std::uint8_t>
-         *
-         * \param data  Encoded data.
-         */
-        template <typename BytesRange>
-        void add_posting_list(BytesRange const& data) {
-            m_lists.insert(m_lists.end(), std::begin(data), std::end(data));
-            m_endpoints.push_back(m_lists.size());
-        }
-
-        /**
-         * Builds an index.
-         *
-         * \param sq  Inverted index object that will take ownership of the data.
-         */
-        void build(BlockInvertedIndex& sq);
+        void finish() override;
     };
 
-    /**
-     * Stream block index builder.
-     *
-     * Buffers postings on disk in order to support building indexes larger than memory.
-     */
-    class StreamBuilder {
-        global_parameters m_params{};
-        std::size_t m_num_docs = 0;
-        std::vector<std::uint64_t> m_endpoints{};
-        TemporaryDirectory tmp{};
+    class StreamPostingAccumulator: public PostingAccumulator {
+        TemporaryDirectory m_tmp{};
+        std::filesystem::path m_tmp_file;
         std::ofstream m_postings_output;
+        std::vector<std::uint64_t> m_endpoints{0};
         std::size_t m_postings_bytes_written{0};
-        std::unique_ptr<BlockCodec> m_block_codec;
-        BlockPostingWriter m_posting_writer;
+        global_parameters m_params{};
 
       public:
-        /**
-         * Constructs a builder for an index containing the given number of documents.
-         *
-         * This constructor opens a temporary file to write. This file is used for
-         * buffering postings. This buffer is flushed to the right destination when the
-         * `build` member function is called.
-         *
-         * \throws std::ios_base::failure Thrown if the the temporary buffer file cannot be opened.
-         */
-        StreamBuilder(
-            std::uint64_t num_docs, global_parameters const& params, BlockPostingWriter posting_writer
+        explicit StreamPostingAccumulator(
+            BlockCodecPtr block_codec, std::size_t num_docs, std::string output_filename
         );
 
-        /**
-         * Records a new posting list.
-         *
-         * Postings are written to the temporary file, while some other data is accumulated
-         * within the builder struct.
-         *
-         * \param n            Posting list length.
-         * \param docs_begin   Iterator that points at the first document ID.
-         * \param freqs_begin  Iterator that points at the first frequency.
-         * \param occurrences  Not used in this builder.
-         *
-         * \throws std::invalid_argument   Thrown if `n == 0`.
-         * \throws std::ios_base::failure  Thrown if failed to write to the temporary file buffer.
-         */
-        template <typename DocsIterator, typename FreqsIterator>
-        void
-        add_posting_list(std::uint64_t n, DocsIterator docs_begin, FreqsIterator freqs_begin, std::uint64_t /* occurrences */) {
-            if (!n) {
-                throw std::invalid_argument("List must be nonempty");
-            }
-            std::vector<std::uint8_t> buf;
-            m_posting_writer.write(buf, n, docs_begin, freqs_begin);
-            m_postings_bytes_written += buf.size();
-            m_postings_output.write(reinterpret_cast<char const*>(buf.data()), buf.size());
-            m_endpoints.push_back(m_postings_bytes_written);
-        }
+        void accumulate_posting_list(
+            std::uint64_t n, std::uint32_t const* docs, std::uint32_t const* freqs
+        ) override;
 
-        /**
-         * Adds multiple posting list blocks.
-         *
-         * \tparam BlockDataRange  This intended to be a vector of structs of the type
-         *      block_posting_list<BlockCodec, Profile>::document_enumerator::block_data
-         *
-         * \param n       Posting list length.
-         * \param blocks  Encoded blocks.
-         *
-         * \throws std::invalid_argument   Thrown if `n == 0`.
-         * \throws std::ios_base::failure  Thrown if failed to write to the temporary file buffer.
-         */
-        template <typename BlockDataRange>
-        void add_posting_list(std::uint64_t n, BlockDataRange const& blocks) {
-            if (!n) {
-                throw std::invalid_argument("List must be nonempty");
-            }
-            std::vector<std::uint8_t> buf;
-            write_blocks(buf, n, blocks);
-            m_postings_bytes_written += buf.size();
-            m_postings_output.write(reinterpret_cast<char const*>(buf.data()), buf.size());
-            m_endpoints.push_back(m_postings_bytes_written);
-        }
-
-        /**
-         * Adds a posting list that is already fully encoded.
-         *
-         * \tparam BytesRange  A collection of bytes, e.g., std::vector<std::uint8_t>
-         *
-         * \param data  Encoded data.
-         *
-         * \throws std::ios_base::failure  Thrown if failed to write to the temporary file buffer.
-         */
-        template <typename BytesRange>
-        void add_posting_list(BytesRange const& data) {
-            m_postings_bytes_written += data.size();
-            m_postings_output.write(reinterpret_cast<char const*>(data.data()), data.size());
-            m_endpoints.push_back(m_postings_bytes_written);
-        }
-
-        /**
-         * Flushes index data to disk.
-         *
-         * \param index_path  Output index path.
-         *
-         * \throws std::ios_base::failure  Thrown if failed to write to any file
-         *                                 or failed to read from the temporary buffer.
-         */
-        void build(std::string const& index_path);
+        void finish() override;
     };
 
 };  // namespace index::block
 
+class BlockIndexBuilder {
+  protected:
+    binary_freq_collection m_input;
+    BlockCodecPtr m_block_codec;
+    ScorerParams m_scorer_params;
+    std::optional<QuantizingScorer> m_quantizing_scorer;
+    bool m_check = false;
+    bool m_in_memory = false;
+
+  public:
+    BlockIndexBuilder(binary_freq_collection input, BlockCodecPtr block_codec, ScorerParams scorer_params);
+    auto check(bool check) -> BlockIndexBuilder&;
+    auto in_memory(bool in_mem) -> BlockIndexBuilder&;
+
+    template <typename WandData>
+    auto quantize(Size bits, WandData const& wdata) -> BlockIndexBuilder& {
+        LinearQuantizer quantizer(wdata.index_max_term_weight(), bits.as_int());
+        m_quantizing_scorer.emplace(scorer::from_params(m_scorer_params, wdata), quantizer);
+        return *this;
+    }
+
+    void build(std::string const& index_path);
+};
 };  // namespace pisa

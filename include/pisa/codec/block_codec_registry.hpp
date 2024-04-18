@@ -22,22 +22,22 @@ namespace pisa {
 
 template <typename... C>
 struct BlockCodecRegistry {
-    using BlockCodecConstructor = std::unique_ptr<BlockCodec> (*)();
+    using BlockCodecConstructor = BlockCodecPtr (*)();
 
     constexpr static std::array<std::string_view, sizeof...(C)> names =
         std::array<std::string_view, sizeof...(C)>{C::name...};
 
     constexpr static std::array<BlockCodecConstructor, sizeof...(C)> constructors =
-        std::array<BlockCodecConstructor, sizeof...(C)>{[]() -> std::unique_ptr<BlockCodec> {
-            return std::make_unique<C>();
+        std::array<BlockCodecConstructor, sizeof...(C)>{[]() -> BlockCodecPtr {
+            return std::make_shared<C>();
         }...};
 
     constexpr static auto count() -> std::size_t { return sizeof...(C); }
 
-    static auto get(std::string_view name) -> std::unique_ptr<BlockCodec> {
+    static auto get(std::string_view name) -> BlockCodecPtr {
         auto pos = std::find(names.begin(), names.end(), name);
         if (pos == names.end()) {
-            throw std::domain_error(fmt::format("invalid codec: {}", name));
+            return nullptr;
         }
         auto constructor = constructors[std::distance(names.begin(), pos)];
         return constructor();
@@ -56,7 +56,7 @@ using BlockCodecs = BlockCodecRegistry<
     VarintG8IUBlockCodec,
     VarintGbBlockCodec>;
 
-[[nodiscard]] auto get_block_codec(std::string_view name) -> std::unique_ptr<BlockCodec> {
+[[nodiscard]] auto get_block_codec(std::string_view name) -> BlockCodecPtr {
     return BlockCodecs::get(name);
 }
 

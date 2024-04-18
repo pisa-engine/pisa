@@ -4,6 +4,9 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include "block_inverted_index.hpp"
+#include "codec/block_codec.hpp"
+#include "codec/block_codec_registry.hpp"
 #include "compress.hpp"
 #include "ensure.hpp"
 #include "index_types.hpp"
@@ -49,7 +52,7 @@ void compress_index_streaming(
     binary_freq_collection const& input,
     pisa::global_parameters const& params,
     std::string const& output_filename,
-    std::optional<QuantizingScorer<Wand>> quantizing_scorer,
+    std::optional<QuantizingScorer> quantizing_scorer,
     bool check
 ) {
     spdlog::info("Processing {} documents (streaming)", input.num_docs());
@@ -115,29 +118,7 @@ void compress_index(
     ScorerParams const& scorer_params,
     std::optional<Size> quantization_bits
 ) {
-    std::optional<QuantizingScorer<WandType>> quantizing_scorer{};
-    if constexpr (std::is_same_v<typename CollectionType::index_layout_tag, BlockIndexTag>) {
-        WandType wdata;
-        mio::mmap_source wdata_source;
-        if (quantization_bits.has_value()) {
-            ensure(wand_data_filename.has_value())
-                .or_panic("Bug: Asked for quantized but no wand data");
-            std::error_code error;
-            wdata_source.map(*wand_data_filename, error);
-            if (error) {
-                spdlog::error("error mapping file: {}, exiting...", error.message());
-                std::abort();
-            }
-            mapper::map(wdata, wdata_source, mapper::map_flags::warmup);
-            auto scorer = scorer::from_params(scorer_params, wdata);
-            LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
-            quantizing_scorer = QuantizingScorer(std::move(scorer), quantizer);
-        }
-        compress_index_streaming<CollectionType, WandType>(
-            input, params, *output_filename, std::move(quantizing_scorer), check
-        );
-        return;
-    }
+    std::optional<QuantizingScorer> quantizing_scorer{};
 
     spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
@@ -150,9 +131,9 @@ void compress_index(
     }();
 
     if (quantization_bits.has_value()) {
-        std::unique_ptr<index_scorer<WandType>> scorer = scorer::from_params(scorer_params, wdata);
+        std::unique_ptr<IndexScorer> scorer = scorer::from_params(scorer_params, wdata);
         LinearQuantizer quantizer(wdata.index_max_term_weight(), quantization_bits->as_int());
-        quantizing_scorer = QuantizingScorer(std::move(scorer), quantizer);
+        quantizing_scorer.emplace(std::move(scorer), quantizer);
     }
 
     typename CollectionType::builder builder(input.num_docs(), params);
@@ -217,10 +198,24 @@ void compress(
     std::string const& output_filename,
     ScorerParams const& scorer_params,
     std::optional<Size> quantization_bits,
-    bool check
+    bool check,
+    bool in_memory
 ) {
     binary_freq_collection input(input_basename.c_str());
     global_parameters params;
+
+    auto block_codec = get_block_codec(index_encoding);
+    if (block_codec != nullptr) {
+        BlockIndexBuilder builder(std::move(input), std::move(block_codec), scorer_params);
+        builder.check(check).in_memory(in_memory);
+        std::optional<wand_data<wand_data_raw>> wdata{};
+        if (quantization_bits.has_value()) {
+            wdata.emplace(MemorySource::mapped_file(*wand_data_filename));
+            builder.quantize(*quantization_bits, *wdata);
+        }
+        builder.build(output_filename);
+        return;
+    }
 
     if (false) {
 #define LOOP_BODY(R, DATA, T)                                                                                           \

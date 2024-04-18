@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <utility>
 
@@ -23,14 +24,13 @@ struct quantized: public index_scorer<Wand> {
  *
  * This is not inheriting from `index_scorer` because it returns int scores.
  */
-template <typename Wand>
 class QuantizingScorer {
   private:
-    std::unique_ptr<index_scorer<Wand>> m_scorer;
+    std::unique_ptr<IndexScorer> m_scorer;
     LinearQuantizer m_quantizer;
 
   public:
-    QuantizingScorer(std::unique_ptr<index_scorer<Wand>> scorer, LinearQuantizer quantizer)
+    QuantizingScorer(std::unique_ptr<IndexScorer> scorer, LinearQuantizer quantizer)
         : m_scorer(std::move(scorer)), m_quantizer(quantizer) {}
 
     [[nodiscard]] auto term_scorer(std::uint64_t term_id) const
@@ -40,7 +40,6 @@ class QuantizingScorer {
                 auto score = scorer(doc, freq);
                 assert(score >= 0.0);
                 auto quantized = this->m_quantizer(score);
-                assert(quantized >= 0);
                 assert(quantized <= this->m_quantizer.range());
                 return quantized;
             };
