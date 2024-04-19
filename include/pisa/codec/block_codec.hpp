@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace pisa {
@@ -34,6 +35,8 @@ class BlockCodec {
      * encode at most `block_size()` elements.
      */
     [[nodiscard]] virtual auto block_size() const noexcept -> std::size_t = 0;
+
+    [[nodiscard]] virtual auto get_name() const noexcept -> std::string_view = 0;
 };
 
 using BlockCodecPtr = std::shared_ptr<BlockCodec>;

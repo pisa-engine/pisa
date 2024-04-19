@@ -2,6 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
+#include "block_inverted_index.hpp"
 #include "gsl/span"
 #include "index_types.hpp"
 #include "mappable/mapper.hpp"
@@ -57,6 +58,16 @@ void dump_stats(Collection& coll, std::string const& type, uint64_t postings) {
 
     stats_line()("type", type)("size", docs_size + freqs_size)("docs_size", docs_size)(
         "freqs_size", freqs_size)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
+}
+
+void dump_stats(SizeStats const& stats, std::size_t postings) {
+    stats.size_tree->dump();
+    double bits_per_doc = stats.docs * 8.0 / postings;
+    double bits_per_freq = stats.freqs * 8.0 / postings;
+    spdlog::info("Documents: {} bytes, {} bits per element", stats.docs, bits_per_doc);
+    spdlog::info("Frequencies: {} bytes, {} bits per element", stats.freqs, bits_per_freq);
+    stats_line()("size", stats.docs + stats.freqs)("docs_size", stats.docs)(
+        "freqs_size", stats.freqs)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
 }
 
 }  // namespace pisa

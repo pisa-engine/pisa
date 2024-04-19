@@ -2,6 +2,7 @@
 #include "bit_vector_builder.hpp"
 #include "codec/compact_elias_fano.hpp"
 #include "mappable/mapper.hpp"
+#include "util/index_build_utils.hpp"
 #include "util/progress.hpp"
 #include "util/verify_collection.hpp"
 
@@ -50,6 +51,24 @@ void BlockInvertedIndex::warmup(std::size_t term_id) const {
         tmp = m_lists[i];
     }
     (void)tmp;
+}
+
+auto BlockInvertedIndex::size_stats() -> SizeStats {
+    SizeStats stats;
+    stats.size_tree = mapper::size_tree_of(*this);
+
+    for (auto const& node: stats.size_tree->children) {
+        if (node->name == "m_lists") {
+            stats.docs = node->size;
+        }
+    }
+
+    for (size_t i = 0; i < size(); ++i) {
+        stats.freqs += (*this)[i].stats_freqs_size();
+    }
+    stats.docs -= stats.freqs;
+
+    return stats;
 }
 
 ProfilingBlockInvertedIndex::ProfilingBlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec)
@@ -169,18 +188,17 @@ void BlockIndexBuilder::build(std::string const& index_path) {
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Index compressed in {} seconds", elapsed_secs);
 
-    stats_line()("worker_threads", std::thread::hardware_concurrency())(
+    stats_line()("type", m_block_codec->get_name())("worker_threads", std::thread::hardware_concurrency())(
         "construction_time", elapsed_secs
     );
-    (void)postings;
-    // TODO
-    // dump_stats(coll, seq_type, postings);
-    // dump_index_specific_stats(coll, seq_type);
 
     if (m_check) {
         BlockInvertedIndex index(
             MemorySource::mapped_file(std::filesystem::path(index_path)), m_block_codec
         );
+        dump_stats(index.size_stats(), postings);
+        // TODO: only pefopt
+        // dump_index_specific_stats(coll, seq_type);
         verify_collection<binary_freq_collection, BlockInvertedIndex>(
             m_input, index, std::move(m_quantizing_scorer)
         );

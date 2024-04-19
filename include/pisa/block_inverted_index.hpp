@@ -11,6 +11,7 @@
 #include "concepts/inverted_index.hpp"
 #include "global_parameters.hpp"
 #include "mappable/mappable_vector.hpp"
+#include "mappable/mapper.hpp"
 #include "memory_source.hpp"
 #include "scorer/quantized.hpp"
 #include "scorer/scorer.hpp"
@@ -280,6 +281,12 @@ class BlockInvertedIndexCursor {
     block_profiler::counter_type* m_profiler = nullptr;
 };
 
+struct SizeStats {
+    mapper::size_node_ptr size_tree = nullptr;
+    std::size_t docs = 0;
+    std::size_t freqs = 0;
+};
+
 class BlockInvertedIndex {
     global_parameters m_params;
     std::size_t m_size{0};
@@ -321,6 +328,8 @@ class BlockInvertedIndex {
     [[nodiscard]] auto num_docs() const noexcept -> std::uint64_t { return m_num_docs; }
 
     void warmup(std::size_t term_id) const;
+
+    [[nodiscard]] auto size_stats() -> SizeStats;
 };
 
 class ProfilingBlockInvertedIndex: public BlockInvertedIndex {
