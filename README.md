@@ -4,7 +4,6 @@
 
 ![Build and test](https://github.com/pisa-engine/pisa/workflows/Build%20and%20test/badge.svg)
 ![clang-tidy](https://github.com/pisa-engine/pisa/workflows/clang-tidy/badge.svg)
-[![Documentation Status](https://readthedocs.org/projects/pisa/badge/?version=latest)](https://pisa.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/pisa-engine/pisa/branch/master/graph/badge.svg)](https://codecov.io/gh/pisa-engine/pisa)
 
 
@@ -120,7 +119,7 @@ resources:
 
 1. The [Open Source Information Retrieval Replicability Challenge (OSIRRC) paper describing PISA](http://ceur-ws.org/Vol-2409/docker08.pdf), including end-to-end experimentation.
 2. The accompanying [Docker image](https://github.com/osirrc/pisa-docker) which allows the experiments from above to be replicated.
-3. The [documentation](https://pisa.readthedocs.io/en/latest/).
+3. The [documentation](https://pisa-engine.github.io/pisa/book).
 4. Drop in to our [Slack channel](https://join.slack.com/t/pisa-engine/shared_invite/zt-dbxrm1mf-RtQMZTqxxlhOJsv3GHUErw) and say hi!
 
 ## Contributing
