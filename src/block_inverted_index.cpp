@@ -240,7 +240,8 @@ void index::block::InMemoryPostingAccumulator::finish() {
 index::block::StreamPostingAccumulator::StreamPostingAccumulator(
     BlockCodecPtr block_codec, std::size_t num_docs, std::string output_filename
 )
-    : index::block::PostingAccumulator(block_codec, num_docs, std::move(output_filename)),
+    : index::block::PostingAccumulator(block_codec, num_docs, output_filename),
+      m_tmp(std::filesystem::path(output_filename).parent_path()),
       m_tmp_file(m_tmp.path() / "buffer"),
       m_postings_output(m_tmp_file) {}
 

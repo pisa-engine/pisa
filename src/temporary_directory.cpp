@@ -1,7 +1,6 @@
 #include "pisa/temporary_directory.hpp"
 
 #include <algorithm>
-#include <iostream>
 #include <random>
 
 #include <spdlog/spdlog.h>
@@ -18,7 +17,10 @@ auto random_name(std::size_t length = 64UL) -> std::string {
 }
 
 TemporaryDirectory::TemporaryDirectory()
-    : dir_(std::filesystem::temp_directory_path() / random_name()) {
+    : pisa::TemporaryDirectory(std::filesystem::temp_directory_path()) {}
+
+TemporaryDirectory::TemporaryDirectory(std::filesystem::path const& root)
+    : dir_(root / random_name()) {
     std::filesystem::create_directory(dir_);
     spdlog::debug("Created a tmp dir {}", dir_.c_str());
 }

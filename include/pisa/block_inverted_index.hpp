@@ -396,7 +396,7 @@ namespace index::block {
     };
 
     class StreamPostingAccumulator: public PostingAccumulator {
-        TemporaryDirectory m_tmp{};
+        TemporaryDirectory m_tmp;
         std::filesystem::path m_tmp_file;
         std::ofstream m_postings_output;
         std::vector<std::uint64_t> m_endpoints{0};
