@@ -15,13 +15,13 @@ using namespace pisa;
 
 template <typename Index>
 void extract(
-    std::string const& index_filename,
+    Index const* index_ptr,
     std::vector<Query> const& queries,
     std::string const& separator,
     bool sum,
     bool print_qid
 ) {
-    Index index(MemorySource::mapped_file(index_filename));
+    auto const& index = *index_ptr;
     auto body = [&] {
         if (sum) {
             return std::function<void(Query const&)>([&](auto const& query) {
@@ -70,21 +70,10 @@ int main(int argc, char** argv) {
 
     spdlog::set_level(app.log_level());
 
-    /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                               \
-    }                                                                                       \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                               \
-        extract<BOOST_PP_CAT(T, _index)>(                                                   \
-            app.index_filename(), app.queries(), app.separator(), sum, app.print_query_id() \
-        );                                                                                  \
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
-    }
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        extract<Index>(&index, app.queries(), app.separator(), sum, app.print_query_id());
+    });
 
     return 0;
 }

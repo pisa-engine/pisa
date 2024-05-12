@@ -124,12 +124,8 @@ void index::block::PostingAccumulator::write(
     }
 }
 
-BlockIndexBuilder::BlockIndexBuilder(
-    binary_freq_collection input, BlockCodecPtr block_codec, ScorerParams scorer_params
-)
-    : m_input(std::move(input)),
-      m_block_codec(std::move(block_codec)),
-      m_scorer_params(scorer_params) {}
+BlockIndexBuilder::BlockIndexBuilder(BlockCodecPtr block_codec, ScorerParams scorer_params)
+    : m_block_codec(std::move(block_codec)), m_scorer_params(scorer_params) {}
 
 auto BlockIndexBuilder::check(bool check) -> BlockIndexBuilder& {
     m_check = check;
@@ -141,45 +137,33 @@ auto BlockIndexBuilder::in_memory(bool in_mem) -> BlockIndexBuilder& {
     return *this;
 }
 
-void BlockIndexBuilder::build(std::string const& index_path) {
-    spdlog::info("Processing {} documents", m_input.num_docs());
+auto BlockIndexBuilder::resolve_accumulator(std::size_t num_docs, std::string const& index_path)
+    -> std::unique_ptr<index::block::PostingAccumulator> {
+    if (m_in_memory) {
+        return std::make_unique<index::block::InMemoryPostingAccumulator>(
+            m_block_codec, num_docs, index_path
+        );
+    }
+    return std::make_unique<index::block::StreamPostingAccumulator>(
+        m_block_codec, num_docs, index_path
+    );
+}
+
+void BlockIndexBuilder::build(binary_freq_collection const& input, std::string const& index_path) {
+    spdlog::info("Processing {} documents", input.num_docs());
     double tick = get_time_usecs();
 
     size_t postings = 0;
     {
-        auto accumulator = [&]() -> std::unique_ptr<index::block::PostingAccumulator> {
-            if (m_in_memory) {
-                return std::make_unique<index::block::InMemoryPostingAccumulator>(
-                    m_block_codec, m_input.num_docs(), index_path
-                );
-            }
-            return std::make_unique<index::block::StreamPostingAccumulator>(
-                m_block_codec, m_input.num_docs(), index_path
-            );
-        }();
+        auto accumulator = resolve_accumulator(input.num_docs(), index_path);
 
-        pisa::progress progress("Create index", m_input.size());
+        pisa::progress progress("Create index", input.size());
 
         size_t term_id = 0;
-        for (auto const& plist: m_input) {
-            size_t size = plist.docs.size();
-            if (m_quantizing_scorer.has_value()) {
-                auto term_scorer = m_quantizing_scorer->term_scorer(term_id);
-                std::vector<std::uint32_t> quants;
-                for (size_t pos = 0; pos < size; ++pos) {
-                    std::uint32_t doc = *(plist.docs.begin() + pos);
-                    std::uint32_t freq = *(plist.freqs.begin() + pos);
-                    std::uint32_t quant_score = term_scorer(doc, freq);
-                    quants.push_back(quant_score);
-                }
-                assert(quants.size() == size);
-                accumulator->accumulate_posting_list(size, plist.docs.begin(), &quants[0]);
-            } else {
-                accumulator->accumulate_posting_list(size, plist.docs.begin(), plist.freqs.begin());
-            }
-
+        for (auto const& plist: input) {
+            accumulate_posting_list(plist.docs, plist.freqs, term_id, accumulator.get());
             progress.update(1);
-            postings += size;
+            postings += plist.docs.size();
             term_id += 1;
         }
         accumulator->finish();
@@ -200,7 +184,7 @@ void BlockIndexBuilder::build(std::string const& index_path) {
         // TODO: only pefopt
         // dump_index_specific_stats(coll, seq_type);
         verify_collection<binary_freq_collection, BlockInvertedIndex>(
-            m_input, index, std::move(m_quantizing_scorer)
+            input, index, std::move(m_quantizing_scorer)
         );
     }
 }

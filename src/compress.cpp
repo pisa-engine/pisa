@@ -8,7 +8,6 @@
 #include "codec/block_codec.hpp"
 #include "codec/block_codec_registry.hpp"
 #include "compress.hpp"
-#include "ensure.hpp"
 #include "index_types.hpp"
 #include "linear_quantizer.hpp"
 #include "type_safe.hpp"
@@ -206,31 +205,23 @@ void compress(
 
     auto block_codec = get_block_codec(index_encoding);
     if (block_codec != nullptr) {
-        BlockIndexBuilder builder(std::move(input), std::move(block_codec), scorer_params);
+        BlockIndexBuilder builder(std::move(block_codec), scorer_params);
         builder.check(check).in_memory(in_memory);
         std::optional<wand_data<wand_data_raw>> wdata{};
         if (quantization_bits.has_value()) {
             wdata.emplace(MemorySource::mapped_file(*wand_data_filename));
             builder.quantize(*quantization_bits, *wdata);
         }
-        builder.build(output_filename);
+        builder.build(input, output_filename);
         return;
     }
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                                           \
-    }                                                                                                                   \
-    else if (index_encoding == BOOST_PP_STRINGIZE(T)) {                                                                 \
-        compress_index<pisa::BOOST_PP_CAT(T, _index), wand_data<wand_data_raw>>(                                        \
-            input, params, output_filename, check, index_encoding, wand_data_filename, scorer_params, quantization_bits \
-        );                                                                                                              \
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", index_encoding);
-        std::abort();
-    }
+    resolve_freq_index_type(index_encoding, [&](auto index_traits) {
+        using Index = typename std::decay_t<decltype(index_traits)>::type;
+        compress_index<Index, wand_data<wand_data_raw>>(
+            input, params, output_filename, check, index_encoding, wand_data_filename, scorer_params, quantization_bits
+        );
+    });
 }
 
 }  // namespace pisa

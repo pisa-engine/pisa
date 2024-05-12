@@ -338,8 +338,8 @@ class ProfilingBlockInvertedIndex: public BlockInvertedIndex {
 
     ProfilingBlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec);
 
-    [[nodiscard]] auto operator[](std::size_t term_id) const
-        -> BlockInvertedIndexCursor<Profiling::On>;
+    [[nodiscard]] auto operator[](std::size_t term_id
+    ) const -> BlockInvertedIndexCursor<Profiling::On>;
 };
 
 namespace index::block {
@@ -411,15 +411,18 @@ namespace index::block {
 
 class BlockIndexBuilder {
   protected:
-    binary_freq_collection m_input;
+    // binary_freq_collection m_input;
     BlockCodecPtr m_block_codec;
     ScorerParams m_scorer_params;
     std::optional<QuantizingScorer> m_quantizing_scorer;
     bool m_check = false;
     bool m_in_memory = false;
 
+    auto resolve_accumulator(std::size_t num_docs, std::string const& index_path)
+        -> std::unique_ptr<index::block::PostingAccumulator>;
+
   public:
-    BlockIndexBuilder(binary_freq_collection input, BlockCodecPtr block_codec, ScorerParams scorer_params);
+    BlockIndexBuilder(BlockCodecPtr block_codec, ScorerParams scorer_params);
     auto check(bool check) -> BlockIndexBuilder&;
     auto in_memory(bool in_mem) -> BlockIndexBuilder&;
 
@@ -430,6 +433,31 @@ class BlockIndexBuilder {
         return *this;
     }
 
-    void build(std::string const& index_path);
+    template <typename Documents, typename Frequencies>
+    void accumulate_posting_list(
+        Documents const& documents,
+        Frequencies const& frequencies,
+        std::uint32_t term_id,
+        index::block::PostingAccumulator* accumulator
+    ) {
+        std::size_t size = documents.size();
+        if (m_quantizing_scorer.has_value()) {
+            auto term_scorer = m_quantizing_scorer->term_scorer(term_id);
+            std::vector<std::uint32_t> quants;
+            for (size_t pos = 0; pos < size; ++pos) {
+                std::uint32_t doc = *(documents.begin() + pos);
+                std::uint32_t freq = *(frequencies.begin() + pos);
+                std::uint32_t quant_score = term_scorer(doc, freq);
+                quants.push_back(quant_score);
+            }
+            assert(quants.size() == size);
+            accumulator->accumulate_posting_list(size, documents.begin(), &quants[0]);
+        } else {
+            accumulator->accumulate_posting_list(size, documents.begin(), frequencies.begin());
+        }
+    }
+
+    void build(binary_freq_collection const& input, std::string const& index_path);
 };
+
 };  // namespace pisa

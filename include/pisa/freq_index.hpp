@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <string_view>
 #include <tbb/parallel_invoke.h>
 
 #include "bitvector_collection.hpp"
