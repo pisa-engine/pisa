@@ -78,17 +78,13 @@ class trec_topic_reader {
 
         consume(m_is, NUM);
         consume(m_is, NUM_ATT);
-        read_until(
-            m_is, [](auto ch) { return ch == '<'; }, os
-        );
+        read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.num = boost::algorithm::trim_copy(os.str());
         consume(m_is, NUM_END, false);
 
         os.str("");
         consume(m_is, TITLE);
-        read_until(
-            m_is, [](auto ch) { return ch == '<'; }, os
-        );
+        read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.title = boost::algorithm::trim_copy(os.str());
         boost::replace_all(topic.title, "\n", " ");
         consume(m_is, TITLE_END, false);
@@ -96,9 +92,7 @@ class trec_topic_reader {
         os.str("");
         consume(m_is, DESC);
         consume(m_is, DESC_ATT, false);
-        read_until(
-            m_is, [](auto ch) { return ch == '<'; }, os
-        );
+        read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.desc = boost::algorithm::trim_copy(os.str());
         boost::replace_all(topic.desc, "\n", " ");
         consume(m_is, DESC_END, false);
@@ -106,9 +100,7 @@ class trec_topic_reader {
         os.str("");
         consume(m_is, NARR);
         consume(m_is, NARR_ATT, false);
-        read_until(
-            m_is, [](auto ch) { return ch == '<'; }, os
-        );
+        read_until(m_is, [](auto ch) { return ch == '<'; }, os);
         topic.narr = boost::algorithm::trim_copy(os.str());
         boost::replace_all(topic.narr, "\n", " ");
         consume(m_is, NARR_END, false);

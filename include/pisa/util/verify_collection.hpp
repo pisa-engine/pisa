@@ -28,8 +28,8 @@ void verify_collection(
         }
         auto term_scorer = quantizing_scorer.has_value()
             ? std::make_optional<std::function<std::uint32_t(std::uint32_t, std::uint32_t)>>(
-                quantizing_scorer->term_scorer(s)
-            )
+                  quantizing_scorer->term_scorer(s)
+              )
             : std::nullopt;
         for (size_t i = 0; i < e.size(); ++i, e.next()) {
             uint64_t docid = *(seq.docs.begin() + i);
@@ -84,8 +84,8 @@ void verify_collection(
         }
         auto term_scorer = quantizing_scorer.has_value()
             ? std::make_optional<std::function<std::uint32_t(std::uint32_t, std::uint32_t)>>(
-                quantizing_scorer->term_scorer(s)
-            )
+                  quantizing_scorer->term_scorer(s)
+              )
             : std::nullopt;
         for (size_t i = 0; i < e.size(); ++i, e.next()) {
             uint64_t docid = *(seq.docs.begin() + i);

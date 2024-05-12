@@ -12,8 +12,8 @@ using namespace pisa;
 
 using StrColl = std::vector<std::vector<std::pair<std::string, std::uint32_t>>>;
 
-[[nodiscard]] auto coll_to_strings(std::string const& coll_file, std::string const& doclex_file)
-    -> StrColl {
+[[nodiscard]] auto
+coll_to_strings(std::string const& coll_file, std::string const& doclex_file) -> StrColl {
     auto doclex_buf = Payload_Vector_Buffer::from_file(doclex_file);
     pisa::Payload_Vector<> doclex(doclex_buf);
     pisa::binary_freq_collection coll(coll_file.c_str());
