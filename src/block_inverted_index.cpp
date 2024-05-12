@@ -85,12 +85,16 @@ index::block::PostingAccumulator::PostingAccumulator(
       m_num_docs(num_docs),
       m_output_filename(std::move(output_filename)) {}
 
-void index::block::PostingAccumulator::write(
-    std::vector<uint8_t>& out, std::uint32_t n, std::uint32_t const* docs, std::uint32_t const* freqs
+void index::block::write_posting_list(
+    BlockCodec const* codec,
+    std::vector<uint8_t>& out,
+    std::uint32_t n,
+    std::uint32_t const* docs,
+    std::uint32_t const* freqs
 ) {
     TightVariableByte::encode_single(n, out);
 
-    uint64_t block_size = m_block_codec->block_size();
+    uint64_t block_size = codec->block_size();
     uint64_t blocks = ceil_div(n, block_size);
     size_t begin_block_maxs = out.size();
     size_t begin_block_endpoints = begin_block_maxs + 4 * blocks;
@@ -113,16 +117,22 @@ void index::block::PostingAccumulator::write(
         }
         std::memcpy(out.data() + begin_block_maxs + 4 * b, &last_doc, sizeof(last_doc));
 
-        m_block_codec->encode(
+        codec->encode(
             docs_buf.data(), last_doc - block_base - (cur_block_size - 1), cur_block_size, out
         );
-        m_block_codec->encode(freqs_buf.data(), uint32_t(-1), cur_block_size, out);
+        codec->encode(freqs_buf.data(), uint32_t(-1), cur_block_size, out);
         if (b != blocks - 1) {
             std::uint32_t endpoint = out.size() - begin_blocks;
             std::memcpy(out.data() + begin_block_endpoints + 4 * b, &endpoint, sizeof(endpoint));
         }
         block_base = last_doc + 1;
     }
+}
+
+void index::block::PostingAccumulator::write(
+    std::vector<uint8_t>& out, std::uint32_t n, std::uint32_t const* docs, std::uint32_t const* freqs
+) {
+    write_posting_list(m_block_codec.get(), out, n, docs, freqs);
 }
 
 BlockIndexBuilder::BlockIndexBuilder(BlockCodecPtr block_codec, ScorerParams scorer_params)

@@ -1,3 +1,6 @@
+#include <array>
+
+#include "FastPFor/headers/simple16.h"
 #include "codec/simple16.hpp"
 
 namespace pisa {

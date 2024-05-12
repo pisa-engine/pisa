@@ -1,3 +1,5 @@
+#include "QMX/qmx.hpp"
+#include "codec/block_codecs.hpp"
 #include "codec/qmx.hpp"
 
 namespace pisa {

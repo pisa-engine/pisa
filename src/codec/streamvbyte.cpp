@@ -1,4 +1,7 @@
+#include <array>
+
 #include "codec/streamvbyte.hpp"
+#include "streamvbyte/include/streamvbyte.h"
 
 namespace pisa {
 

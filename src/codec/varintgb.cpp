@@ -1,3 +1,6 @@
+#include <array>
+
+#include "codec/block_codecs.hpp"
 #include "codec/varintgb.hpp"
 
 namespace pisa {

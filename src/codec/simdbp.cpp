@@ -1,4 +1,9 @@
 #include "codec/simdbp.hpp"
+#include "codec/block_codecs.hpp"
+
+extern "C" {
+#include "simdcomp/include/simdbitpacking.h"
+}
 
 namespace pisa {
 

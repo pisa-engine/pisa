@@ -344,6 +344,14 @@ class ProfilingBlockInvertedIndex: public BlockInvertedIndex {
 
 namespace index::block {
 
+    void write_posting_list(
+        BlockCodec const* codec,
+        std::vector<uint8_t>& out,
+        std::uint32_t n,
+        std::uint32_t const* docs,
+        std::uint32_t const* freqs
+    );
+
     class PostingAccumulator {
       protected:
         BlockCodecPtr m_block_codec;

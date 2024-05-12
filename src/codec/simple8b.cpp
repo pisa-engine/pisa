@@ -1,3 +1,6 @@
+#include <array>
+
+#include "FastPFor/headers/simple8b.h"
 #include "codec/simple8b.hpp"
 
 namespace pisa {

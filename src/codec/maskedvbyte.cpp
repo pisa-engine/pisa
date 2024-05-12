@@ -1,4 +1,7 @@
 #include "codec/maskedvbyte.hpp"
+#include "MaskedVByte/include/varintdecode.h"
+#include "MaskedVByte/include/varintencode.h"
+#include "codec/block_codecs.hpp"
 
 namespace pisa {
 
