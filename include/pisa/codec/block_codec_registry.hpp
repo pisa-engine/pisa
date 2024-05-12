@@ -60,7 +60,7 @@ using BlockCodecs = BlockCodecRegistry<
     return BlockCodecs::get(name);
 }
 
-[[nodiscard]] auto get_block_codec_names() -> gsl::span<std::string_view const> {
+[[nodiscard]] constexpr auto get_block_codec_names() -> gsl::span<std::string_view const> {
     return gsl::make_span<std::string_view const>(&BlockCodecs::names[0], BlockCodecs::count());
 }
 
