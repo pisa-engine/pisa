@@ -104,8 +104,9 @@ TEST_CASE("block_posting_list") {
         "block_varintgb",
         "block_simple8b",
         "block_simple16",
-        "block_simdb"
+        "block_simdbp"
     );
+    CAPTURE(codec_name);
     auto codec = pisa::get_block_codec(codec_name);
     test_block_posting_list(codec);
 }
@@ -121,8 +122,9 @@ TEST_CASE("block_posting_list_reordering") {
         "block_varintgb",
         "block_simple8b",
         "block_simple16",
-        "block_simdb"
+        "block_simdbp"
     );
+    CAPTURE(codec_name);
     auto codec = pisa::get_block_codec(codec_name);
     test_block_posting_list_reordering(codec);
 }

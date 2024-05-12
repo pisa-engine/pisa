@@ -62,8 +62,9 @@ TEST_CASE("Example test case", "[codec]") {
         "block_varintgb",
         "block_simple8b",
         "block_simple16",
-        "block_simdb"
+        "block_simdbp"
     );
+    CAPTURE(codec_name);
     auto codec = pisa::get_block_codec(codec_name);
     bool use_sum_of_values = GENERATE(true, false);
     std::vector<std::uint32_t> values{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  1, 1, 1, 1, 1,
@@ -87,8 +88,9 @@ TEST_CASE("Property test", "[codec]") {
         "block_varintgb",
         "block_simple8b",
         "block_simple16",
-        "block_simdb"
+        "block_simdbp"
     );
+    CAPTURE(codec_name);
     auto codec = pisa::get_block_codec(codec_name);
     std::size_t use_sum_of_values = GENERATE(true, false);
     test_block_codec(codec.get());
