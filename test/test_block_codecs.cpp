@@ -54,7 +54,7 @@ void test_block_codec(pisa::BlockCodec const* codec) {
 TEST_CASE("Example test case", "[codec]") {
     auto codec_name = GENERATE(
         "block_optpfor",
-        "block_varint_G8IU",
+        "block_varintg8iu",
         "block_streamvbyte",
         "block_maskedvbyte",
         "block_interpolative",
@@ -79,7 +79,7 @@ TEST_CASE("Example test case", "[codec]") {
 TEST_CASE("Property test", "[codec]") {
     auto codec_name = GENERATE(
         "block_optpfor",
-        "block_varint_G8IU",
+        "block_varintg8iu",
         "block_streamvbyte",
         "block_maskedvbyte",
         "block_interpolative",

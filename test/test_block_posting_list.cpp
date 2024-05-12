@@ -6,16 +6,6 @@
 #include "test_generic_sequence.hpp"
 
 #include "block_inverted_index.hpp"
-#include "codec/block_codecs.hpp"
-#include "codec/maskedvbyte.hpp"
-#include "codec/qmx.hpp"
-#include "codec/simdbp.hpp"
-#include "codec/simple16.hpp"
-#include "codec/simple8b.hpp"
-#include "codec/streamvbyte.hpp"
-#include "codec/varintgb.hpp"
-
-#include "block_posting_list.hpp"
 
 #include <algorithm>
 #include <cstdlib>
@@ -106,7 +96,7 @@ void test_block_posting_list_reordering(pisa::BlockCodecPtr codec) {
 TEST_CASE("block_posting_list") {
     auto codec_name = GENERATE(
         "block_optpfor",
-        "block_varint_G8IU",
+        "block_varintg8iu",
         "block_streamvbyte",
         "block_maskedvbyte",
         "block_interpolative",
@@ -123,7 +113,7 @@ TEST_CASE("block_posting_list") {
 TEST_CASE("block_posting_list_reordering") {
     auto codec_name = GENERATE(
         "block_optpfor",
-        "block_varint_G8IU",
+        "block_varintg8iu",
         "block_streamvbyte",
         "block_maskedvbyte",
         "block_interpolative",
