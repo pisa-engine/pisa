@@ -111,14 +111,15 @@ void index::block::PostingAccumulator::write(
 
             freqs_buf[i] = *freqs++ - 1;
         }
-        *((uint32_t*)&out[begin_block_maxs + 4 * b]) = last_doc;
+        std::memcpy(out.data() + begin_block_maxs + 4 * b, &last_doc, sizeof(last_doc));
 
         m_block_codec->encode(
             docs_buf.data(), last_doc - block_base - (cur_block_size - 1), cur_block_size, out
         );
         m_block_codec->encode(freqs_buf.data(), uint32_t(-1), cur_block_size, out);
         if (b != blocks - 1) {
-            *((uint32_t*)&out[begin_block_endpoints + 4 * b]) = out.size() - begin_blocks;
+            std::uint32_t endpoint = out.size() - begin_blocks;
+            std::memcpy(out.data() + begin_block_endpoints + 4 * b, &endpoint, sizeof(endpoint));
         }
         block_base = last_doc + 1;
     }
