@@ -7,16 +7,6 @@
 #include <gsl/span>
 
 #include "codec/block_codec.hpp"
-#include "codec/interpolative.hpp"
-#include "codec/maskedvbyte.hpp"
-#include "codec/optpfor.hpp"
-#include "codec/qmx.hpp"
-#include "codec/simdbp.hpp"
-#include "codec/simple16.hpp"
-#include "codec/simple8b.hpp"
-#include "codec/streamvbyte.hpp"
-#include "codec/varint_g8iu.hpp"
-#include "codec/varintgb.hpp"
 
 namespace pisa {
 
@@ -44,24 +34,16 @@ struct BlockCodecRegistry {
     }
 };
 
-using BlockCodecs = BlockCodecRegistry<
-    InterpolativeBlockCodec,
-    MaskedVByteBlockCodec,
-    OptPForBlockCodec,
-    QmxBlockCodec,
-    SimdBpBlockCodec,
-    Simple16BlockCodec,
-    Simple8bBlockCodec,
-    StreamVByteBlockCodec,
-    VarintG8IUBlockCodec,
-    VarintGbBlockCodec>;
+/**
+ * Resolves a block codec from a name and returns a shared pointer to the created object.
+ *
+ * If the name is not recognized, `nullptr` is returned.
+ */
+[[nodiscard]] auto get_block_codec(std::string_view name) -> BlockCodecPtr;
 
-[[nodiscard]] auto get_block_codec(std::string_view name) -> BlockCodecPtr {
-    return BlockCodecs::get(name);
-}
-
-[[nodiscard]] constexpr auto get_block_codec_names() -> gsl::span<std::string_view const> {
-    return gsl::make_span<std::string_view const>(&BlockCodecs::names[0], BlockCodecs::count());
-}
+/**
+ * Lists the names of all known block codecs.
+ */
+[[nodiscard]] constexpr auto get_block_codec_names() -> gsl::span<std::string_view const>;
 
 }  // namespace pisa

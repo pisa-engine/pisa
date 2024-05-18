@@ -18,6 +18,12 @@ constexpr std::size_t streamvbyte_max_compressedbytes(std::uint32_t length) {
     return cb + db;
 }
 
+/**
+ * StreamVByte coding.
+ *
+ * Daniel Lemire, Nathan Kurz, Christoph Rupp: Stream VByte: Faster byte-oriented integer
+ * compression. Inf. Process. Lett. 130: 1-6 (2018). DOI: https://doi.org/10.1016/j.ipl.2017.09.011
+ */
 class StreamVByteBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
     static constexpr std::size_t m_max_compressed_bytes =

@@ -4,6 +4,12 @@
 
 namespace pisa {
 
+/**
+ * Simple8b coding.
+ *
+ * Vo Ngoc Anh, Alistair Moffat: Index compression using 64-bit words. Softw., Pract. Exper. 40(2):
+ * 131-147 (2010)
+ */
 class Simple8bBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
 

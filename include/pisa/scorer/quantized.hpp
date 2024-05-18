@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <utility>
@@ -11,10 +10,10 @@
 namespace pisa {
 
 template <typename Wand>
-struct quantized: public index_scorer<Wand> {
-    using index_scorer<Wand>::index_scorer;
+struct quantized: public WandIndexScorer<Wand> {
+    using WandIndexScorer<Wand>::WandIndexScorer;
 
-    term_scorer_t term_scorer([[maybe_unused]] uint64_t term_id) const {
+    TermScorer term_scorer([[maybe_unused]] uint64_t term_id) const {
         return []([[maybe_unused]] uint32_t doc, uint32_t freq) { return freq; };
     }
 };

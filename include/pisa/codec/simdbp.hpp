@@ -6,6 +6,12 @@
 
 namespace pisa {
 
+/**
+ * SIMD-BP128 coding.
+ *
+ * Daniel Lemire, Leonid Boytsov: Decoding billions of integers per second through vectorization.
+ * Softw., Pract. Exper. 45(1): 1-29 (2015)
+ */
 class SimdBpBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
 

@@ -14,7 +14,7 @@ RUN ./pisa/test/docker/install-cmake.sh
 RUN mkdir /pisa/build
 WORKDIR /pisa/build
 RUN cmake \
-    "-DCMAKE_BUILD_TYPE=Debug" \
+    "-DCMAKE_BUILD_TYPE=Release" \
     "-DPISA_BUILD_TOOLS=ON" \
     "-DPISA_ENABLE_TESTING=OFF" \
     "-DPISA_ENABLE_BENCHMARKING=OFF" \
@@ -29,5 +29,6 @@ COPY ./test/docker/benchmark/evaluate.sh /pisa/build
 COPY ./test/docker/benchmark/bench.sh /pisa/build
 COPY ./test/docker/benchmark/setup.sh /pisa/build
 COPY ./test/docker/benchmark/expected-eval.txt /pisa/build
+COPY ./test/docker/benchmark/encodings.sh /pisa/build
 
 CMD ["bash", "/pisa/test/docker/benchmark/run.sh"]

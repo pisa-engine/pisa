@@ -228,6 +228,14 @@ class VarIntGB {
     }
 };
 
+/**
+ * VarintGB coding.
+ *
+ * Jeffrey Dean. 2009. Challenges in building large-scale information retrieval systems: invited
+ * talk. In Proceedings of the Second ACM International Conference on Web Search and Data Mining
+ * (WSDM '09), Ricardo Baeza-Yates, Paolo Boldi, Berthier Ribeiro-Neto, and B. Barla Cambazoglu
+ * (Eds.). ACM, New York, NY, USA, 1-1. DOI: http://dx.doi.org/10.1145/1498759.1498761
+ */
 class VarintGbBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
 

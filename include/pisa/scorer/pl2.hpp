@@ -4,7 +4,6 @@
 
 #include <cmath>
 
-#include <algorithm>
 #include <cmath>
 #include <cstdint>
 
@@ -17,12 +16,12 @@ namespace pisa {
 /// G. Amati: "Probabalistic models for information retrieval based on
 /// divergence from randomness." PhD Thesis, University of Glasgow, 2003.
 template <typename Wand>
-struct pl2: public index_scorer<Wand> {
-    using index_scorer<Wand>::index_scorer;
+struct pl2: public WandIndexScorer<Wand> {
+    using WandIndexScorer<Wand>::WandIndexScorer;
 
-    pl2(const Wand& wdata, const float c) : index_scorer<Wand>(wdata), m_c(c) {}
+    pl2(const Wand& wdata, const float c) : WandIndexScorer<Wand>(wdata), m_c(c) {}
 
-    term_scorer_t term_scorer(uint64_t term_id) const override {
+    TermScorer term_scorer(uint64_t term_id) const override {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float tfn =
                 freq * std::log2(1.F + (m_c * this->m_wdata.avg_len()) / this->m_wdata.doc_len(doc));

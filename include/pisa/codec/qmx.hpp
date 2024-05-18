@@ -4,6 +4,14 @@
 
 namespace pisa {
 
+/**
+ * Quantities, Multipliers, and eXtractor (QMX) coding.
+ *
+ * Andrew Trotman. 2014. Compression, SIMD, and Postings Lists. In Proceedings of the 2014
+ * Australasian Document Computing Symposium (ADCS '14), J. Shane Culpepper, Laurence Park, and
+ * Guido Zuccon (Eds.). ACM, New York, NY, USA, Pages 50, 8 pages. DOI:
+ * https://doi.org/10.1145/2682862.2682870
+ */
 class QmxBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
     static constexpr std::uint64_t m_overflow = 512;

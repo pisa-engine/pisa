@@ -1,8 +1,6 @@
 #include "codec/block_codec_registry.hpp"
 
-#include <algorithm>
 #include <array>
-#include <memory>
 #include <string_view>
 
 #include <fmt/format.h>
@@ -21,5 +19,25 @@
 #include "codec/varintgb.hpp"
 
 namespace pisa {
+
+using BlockCodecs = BlockCodecRegistry<
+    InterpolativeBlockCodec,
+    MaskedVByteBlockCodec,
+    OptPForBlockCodec,
+    QmxBlockCodec,
+    SimdBpBlockCodec,
+    Simple16BlockCodec,
+    Simple8bBlockCodec,
+    StreamVByteBlockCodec,
+    VarintG8IUBlockCodec,
+    VarintGbBlockCodec>;
+
+auto get_block_codec(std::string_view name) -> BlockCodecPtr {
+    return BlockCodecs::get(name);
+}
+
+constexpr auto get_block_codec_names() -> gsl::span<std::string_view const> {
+    return gsl::make_span<std::string_view const>(&BlockCodecs::names[0], BlockCodecs::count());
+}
 
 }  // namespace pisa

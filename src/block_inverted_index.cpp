@@ -192,8 +192,6 @@ void BlockIndexBuilder::build(binary_freq_collection const& input, std::string c
             MemorySource::mapped_file(std::filesystem::path(index_path)), m_block_codec
         );
         dump_stats(index.size_stats(), postings);
-        // TODO: only pefopt
-        // dump_index_specific_stats(coll, seq_type);
         verify_collection<binary_freq_collection, BlockInvertedIndex>(
             input, index, std::move(m_quantizing_scorer)
         );

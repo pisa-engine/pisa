@@ -7,6 +7,15 @@
 
 namespace pisa {
 
+/**
+ * Varint-G8IU coding.
+ *
+ * Alexander A. Stepanov, Anil R. Gangolli, Daniel E. Rose, Ryan J. Ernst, and Paramjit S. Oberoi.
+ * 2011. SIMD-based decoding of posting lists. In Proceedings of the 20th ACM international
+ * conference on Information and knowledge management (CIKM '11), Bettina Berendt, Arjen de Vries,
+ * Wenfei Fan, Craig Macdonald, Iadh Ounis, and Ian Ruthven (Eds.). ACM, New York, NY, USA, 317-326.
+ * DOI: https://doi.org/10.1145/2063576.2063627
+ */
 class VarintG8IUBlockCodec: public BlockCodec {
     static const uint64_t m_block_size = 128;
 

@@ -2,6 +2,8 @@
 
 set -e
 
+source ./encodings.sh
+
 gzip -dc $(find "$COLLECTION_PATH" -type f -name '*.*z' \
     \( -path '*/disk4/fr94/[0-9]*/*' -o -path '*/disk4/ft/ft*' \
     -o -path '*/disk5/fbis/fb*' -o -path '*/disk5/latimes/la*' \)) \
@@ -25,20 +27,7 @@ gzip -dc $(find "$COLLECTION_PATH" -type f -name '*.*z' \
     -o "$WORKDIR/inv.bm25.bmw" \
     -s bm25
 
-encodings=(
-    block_interpolative
-    block_maskedvbyte
-    block_optpfor
-    block_qmx
-    block_simdbp
-    block_simple16
-    block_simple8b
-    block_streamvbyte
-    block_varintg8iu
-    block_varintgb
-)
-
-for encoding in ${encodings[@]}; do
+for encoding in ${ENCODINGS[@]}; do
     ./bin/compress_inverted_index \
         -e "$encoding" \
         -c "$WORKDIR/inv.bp" \

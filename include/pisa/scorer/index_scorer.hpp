@@ -5,26 +5,27 @@
 
 namespace pisa {
 
-using term_scorer_t = std::function<float(uint32_t, uint32_t)>;
 using TermScorer = std::function<float(uint32_t, uint32_t)>;
 
+/** Index scorer construct scorers for terms in the index. */
 class IndexScorer {
   public:
     virtual TermScorer term_scorer(std::uint64_t term_id) const = 0;
 };
 
+/** Index scorer using WAND metadata for scoring. */
 template <typename Wand>
-struct index_scorer: IndexScorer {
+struct WandIndexScorer: IndexScorer {
   protected:
     const Wand& m_wdata;
 
   public:
-    explicit index_scorer(const Wand& wdata) : m_wdata(wdata) {}
-    index_scorer(index_scorer const&) = default;
-    index_scorer(index_scorer&&) noexcept = default;
-    index_scorer& operator=(index_scorer const&) = delete;
-    index_scorer& operator=(index_scorer&&) noexcept = delete;
-    virtual ~index_scorer() = default;
+    explicit WandIndexScorer(const Wand& wdata) : m_wdata(wdata) {}
+    WandIndexScorer(WandIndexScorer const&) = default;
+    WandIndexScorer(WandIndexScorer&&) noexcept = default;
+    WandIndexScorer& operator=(WandIndexScorer const&) = delete;
+    WandIndexScorer& operator=(WandIndexScorer&&) noexcept = delete;
+    virtual ~WandIndexScorer() = default;
 };
 
 }  // namespace pisa

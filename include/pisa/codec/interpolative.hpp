@@ -7,6 +7,12 @@
 
 namespace pisa {
 
+/**
+ * Interpolative coding.
+ *
+ * Alistair Moffat, Lang Stuiver: Binary Interpolative Coding for Effective Index Compression. Inf.
+ * Retr. 3(1): 25-47 (2000)
+ */
 class InterpolativeBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
 
