@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.16.9)
 cmake_policy(SET CMP0074 NEW)
 
 project(PISA CXX C)
