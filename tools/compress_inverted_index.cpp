@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
         args.output(),
         args.scorer_params(),
         args.quantization_bits(),
-        args.check()
+        args.check(),
+        args.in_memory()
     );
 }

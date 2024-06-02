@@ -270,11 +270,13 @@ namespace arg {
                 ->required();
             app->add_option("-o,--output", m_output, "Output inverted index")->required();
             app->add_flag("--check", m_check, "Check the correctness of the index");
+            app->add_flag("--in-memory", m_in_memory, "Compress the index in memory, without using an intermediate buffer");
         }
 
         [[nodiscard]] auto input_basename() const -> std::string { return m_input_basename; }
         [[nodiscard]] auto output() const -> std::string { return m_output; }
         [[nodiscard]] auto check() const -> bool { return m_check; }
+        [[nodiscard]] auto in_memory() const -> bool { return m_in_memory; }
 
         /// Transform paths for `shard`.
         void apply_shard(Shard_Id shard) {
@@ -286,6 +288,7 @@ namespace arg {
         std::string m_input_basename{};
         std::string m_output{};
         bool m_check = false;
+        bool m_in_memory = false;
     };
 
     struct CreateWandData {
