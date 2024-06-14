@@ -3,9 +3,6 @@
 #define _USE_MATH_DEFINES
 
 #include <cmath>
-
-#include <algorithm>
-#include <cmath>
 #include <cstdint>
 
 #include "index_scorer.hpp"
@@ -18,10 +15,10 @@ namespace pisa {
 /// Vergata at TREC 2007 Blog Track," in Proceedings of the 16th Text REtrieval
 /// Conference (TREC), 2007.
 template <typename Wand>
-struct dph: public index_scorer<Wand> {
-    using index_scorer<Wand>::index_scorer;
+struct dph: public WandIndexScorer<Wand> {
+    using WandIndexScorer<Wand>::WandIndexScorer;
 
-    term_scorer_t term_scorer(uint64_t term_id) const override {
+    TermScorer term_scorer(uint64_t term_id) const override {
         auto s = [&, term_id](uint32_t doc, uint32_t freq) {
             float f = (float)freq / this->m_wdata.doc_len(doc);
             float norm = (1.F - f) * (1.F - f) / (freq + 1.F);

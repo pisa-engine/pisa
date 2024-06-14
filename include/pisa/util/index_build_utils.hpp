@@ -1,11 +1,10 @@
 #pragma once
 
-#include "spdlog/spdlog.h"
+#include <spdlog/spdlog.h>
 
-#include "gsl/span"
-#include "index_types.hpp"
+#include "block_inverted_index.hpp"
+#include "freq_index.hpp"
 #include "mappable/mapper.hpp"
-#include "util/progress.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
@@ -25,26 +24,6 @@ void get_size_stats(
     }
 }
 
-template <typename BlockCodec, bool Profile>
-void get_size_stats(
-    block_freq_index<BlockCodec, Profile>& coll, uint64_t& docs_size, uint64_t& freqs_size
-) {
-    auto size_tree = mapper::size_tree_of(coll);
-    size_tree->dump();
-    uint64_t total_size = 0;
-    for (auto const& node: size_tree->children) {
-        if (node->name == "m_lists") {
-            total_size = node->size;
-        }
-    }
-
-    freqs_size = 0;
-    for (size_t i = 0; i < coll.size(); ++i) {
-        freqs_size += coll[i].stats_freqs_size();
-    }
-    docs_size = total_size - freqs_size;
-}
-
 template <typename Collection>
 void dump_stats(Collection& coll, std::string const& type, uint64_t postings) {
     uint64_t docs_size = 0, freqs_size = 0;
@@ -57,6 +36,16 @@ void dump_stats(Collection& coll, std::string const& type, uint64_t postings) {
 
     stats_line()("type", type)("size", docs_size + freqs_size)("docs_size", docs_size)(
         "freqs_size", freqs_size)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
+}
+
+inline void dump_stats(SizeStats const& stats, std::size_t postings) {
+    stats.size_tree->dump();
+    double bits_per_doc = stats.docs * 8.0 / postings;
+    double bits_per_freq = stats.freqs * 8.0 / postings;
+    spdlog::info("Documents: {} bytes, {} bits per element", stats.docs, bits_per_doc);
+    spdlog::info("Frequencies: {} bytes, {} bits per element", stats.freqs, bits_per_freq);
+    stats_line()("size", stats.docs + stats.freqs)("docs_size", stats.docs)(
+        "freqs_size", stats.freqs)("bits_per_doc", bits_per_doc)("bits_per_freq", bits_per_freq);
 }
 
 }  // namespace pisa

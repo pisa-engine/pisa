@@ -17,12 +17,12 @@ namespace pisa {
 /// Language Models Applied to Ad Hoc Information Retrieval," in Proceedings of
 /// SIGIR, 2001.
 template <typename Wand>
-struct qld: public index_scorer<Wand> {
-    using index_scorer<Wand>::index_scorer;
+struct qld: public WandIndexScorer<Wand> {
+    using WandIndexScorer<Wand>::WandIndexScorer;
 
-    qld(const Wand& wdata, const float mu) : index_scorer<Wand>(wdata), m_mu(mu) {}
+    qld(const Wand& wdata, const float mu) : WandIndexScorer<Wand>(wdata), m_mu(mu) {}
 
-    term_scorer_t term_scorer(uint64_t term_id) const override {
+    TermScorer term_scorer(uint64_t term_id) const override {
         float mu = this->m_mu;
         float collection_len = this->m_wdata.collection_len();
         float term_occurrences = this->m_wdata.term_occurrence_count(term_id);

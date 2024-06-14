@@ -1,8 +1,5 @@
 #include <iostream>
 
-#include "mappable/mapper.hpp"
-#include "mio/mmap.hpp"
-
 #include "app.hpp"
 #include "cursor/cursor.hpp"
 #include "index_types.hpp"
@@ -15,12 +12,9 @@ using namespace pisa;
 
 template <typename IndexType>
 void selective_queries(
-    const std::string& index_filename, std::string const& encoding, std::vector<Query> const& queries
+    IndexType const* index_ptr, std::string const& encoding, std::vector<Query> const& queries
 ) {
-    IndexType index;
-    spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m, mapper::map_flags::warmup);
+    auto const& index = *index_ptr;
 
     spdlog::info("Performing {} queries", encoding);
 
@@ -47,18 +41,8 @@ int main(int argc, const char** argv) {
 
     spdlog::set_level(app.log_level());
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                         \
-    }                                                                 \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {         \
-        selective_queries<BOOST_PP_CAT(T, _index)>(                   \
-            app.index_filename(), app.index_encoding(), app.queries() \
-        );
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown encoding {}", app.index_encoding());
-    }
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        selective_queries<Index>(&index, app.index_encoding(), app.queries());
+    });
 }
