@@ -26,6 +26,7 @@ TEST_CASE("LinearQuantizer", "[scoring][unit]") {
         CAPTURE(max);
         pisa::LinearQuantizer quantizer(max, bits);
         REQUIRE(quantizer(0) == 1);
+	printf("q(%f) = %d, range=%d\n", max, quantizer(max), quantizer.range());
         REQUIRE(quantizer(max) == (1 << bits) - 1);
     }
 }
