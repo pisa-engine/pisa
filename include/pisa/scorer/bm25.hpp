@@ -5,6 +5,7 @@
 #include <cstdint>
 
 #include "index_scorer.hpp"
+
 namespace pisa {
 
 /// Implements the Okapi BM25 model. k1 and b are both free parameters which
@@ -14,11 +15,11 @@ namespace pisa {
 /// in Proceedings of the SIGIR 2012 Workshop on Open Source Information
 /// Retrieval (OSIR), 2012.
 template <typename Wand>
-struct bm25: public index_scorer<Wand> {
-    using index_scorer<Wand>::index_scorer;
+struct bm25: public WandIndexScorer<Wand> {
+    using WandIndexScorer<Wand>::WandIndexScorer;
 
     bm25(const Wand& wdata, const float b, const float k1)
-        : index_scorer<Wand>(wdata), m_b(b), m_k1(k1) {}
+        : WandIndexScorer<Wand>(wdata), m_b(b), m_k1(k1) {}
 
     float doc_term_weight(uint64_t freq, float norm_len) const {
         auto f = static_cast<float>(freq);
@@ -33,7 +34,7 @@ struct bm25: public index_scorer<Wand> {
         return std::max(epsilon_score, idf) * (1.0F + m_k1);
     }
 
-    term_scorer_t term_scorer(uint64_t term_id) const override {
+    TermScorer term_scorer(uint64_t term_id) const override {
         auto term_len = this->m_wdata.term_posting_count(term_id);
         auto term_weight = query_term_weight(term_len, this->m_wdata.num_docs());
         auto s = [&, term_weight](uint32_t doc, uint32_t freq) {

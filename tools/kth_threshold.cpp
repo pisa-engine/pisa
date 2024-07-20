@@ -47,7 +47,7 @@ std::set<uint32_t> parse_tuple(std::string const& line, size_t k) {
 
 template <typename IndexType, typename WandType>
 void kt_thresholds(
-    const std::string& index_filename,
+    IndexType const* index_ptr,
     const std::string& wand_data_filename,
     const std::vector<Query>& queries,
     std::string const& type,
@@ -59,9 +59,7 @@ void kt_thresholds(
     bool all_pairs,
     bool all_triples
 ) {
-    IndexType index;
-    mio::mmap_source m(index_filename.c_str());
-    mapper::map(index, m);
+    auto const& index = *index_ptr;
 
     WandType wdata;
 
@@ -189,41 +187,29 @@ int main(int argc, const char** argv) {
 
     spdlog::set_level(app.log_level());
 
-    auto params = std::make_tuple(
-        app.index_filename(),
-        app.wand_data_path(),
-        app.queries(),
-        app.index_encoding(),
-        app.scorer_params(),
-        app.k(),
-        quantized,
-        pairs_filename,
-        triples_filename,
-        all_pairs,
-        all_triples
-    );
-
-    /**/
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                                                    \
-    }                                                                                            \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                                    \
-        if (app.is_wand_compressed()) {                                                          \
-            if (quantized) {                                                                     \
-                std::apply(                                                                      \
-                    kt_thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params \
-                );                                                                               \
-            } else {                                                                             \
-                std::apply(kt_thresholds<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
-            }                                                                                    \
-        } else {                                                                                 \
-            std::apply(kt_thresholds<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        auto params = std::make_tuple(
+            &index,
+            app.wand_data_path(),
+            app.queries(),
+            app.index_encoding(),
+            app.scorer_params(),
+            app.k(),
+            quantized,
+            pairs_filename,
+            triples_filename,
+            all_pairs,
+            all_triples
+        );
+        if (app.is_wand_compressed()) {
+            if (quantized) {
+                std::apply(kt_thresholds<Index, wand_uniform_index_quantized>, params);
+            } else {
+                std::apply(kt_thresholds<Index, wand_uniform_index>, params);
+            }
+        } else {
+            std::apply(kt_thresholds<Index, wand_raw_index>, params);
         }
-        /**/
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
-    }
+    });
 }

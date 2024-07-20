@@ -1,11 +1,11 @@
 #pragma once
 
-#include <array>
 #include <cassert>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
-#include "streamvbyte/include/streamvbyte.h"
+#include "codec/block_codec.hpp"
 
 namespace pisa {
 
@@ -18,21 +18,26 @@ constexpr std::size_t streamvbyte_max_compressedbytes(std::uint32_t length) {
     return cb + db;
 }
 
-struct streamvbyte_block {
-    static const uint64_t block_size = 128;
-    static void
-    encode(uint32_t const* in, uint32_t /* sum_of_values */, size_t n, std::vector<uint8_t>& out) {
-        assert(n <= block_size);
-        auto* src = const_cast<uint32_t*>(in);
-        thread_local std::array<std::uint8_t, pisa::streamvbyte_max_compressedbytes(block_size)> buf{};
-        size_t out_len = streamvbyte_encode(src, n, buf.data());
-        out.insert(out.end(), buf.data(), buf.data() + out_len);
-    }
-    static uint8_t const*
-    decode(uint8_t const* in, uint32_t* out, uint32_t /* sum_of_values */, size_t n) {
-        assert(n <= block_size);
-        auto read = streamvbyte_decode(in, out, n);
-        return in + read;
-    }
+/**
+ * StreamVByte coding.
+ *
+ * Daniel Lemire, Nathan Kurz, Christoph Rupp: Stream VByte: Faster byte-oriented integer
+ * compression. Inf. Process. Lett. 130: 1-6 (2018). DOI: https://doi.org/10.1016/j.ipl.2017.09.011
+ */
+class StreamVByteBlockCodec: public BlockCodec {
+    static constexpr std::uint64_t m_block_size = 128;
+    static constexpr std::size_t m_max_compressed_bytes =
+        pisa::streamvbyte_max_compressedbytes(m_block_size);
+
+  public:
+    constexpr static std::string_view name = "block_streamvbyte";
+
+    void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
+        const override;
+    uint8_t const*
+    decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) const override;
+    auto block_size() const noexcept -> std::size_t override { return m_block_size; }
+    auto get_name() const noexcept -> std::string_view override { return name; }
 };
+
 }  // namespace pisa

@@ -38,7 +38,7 @@ using ranges::views::enumerate;
 
 template <typename IndexType, typename WandType>
 void evaluate_queries(
-    const std::string& index_filename,
+    IndexType const* index_ptr,
     const std::string& wand_data_filename,
     const std::vector<Query>& queries,
     const std::optional<std::string>& thresholds_filename,
@@ -51,7 +51,7 @@ void evaluate_queries(
     std::string const& run_id,
     std::string const& iteration
 ) {
-    IndexType index(MemorySource::mapped_file(index_filename));
+    auto const& index = *index_ptr;
     WandType const wdata(MemorySource::mapped_file(wand_data_filename));
 
     auto scorer = scorer::from_params(scorer_params, wdata);
@@ -218,42 +218,30 @@ int main(int argc, const char** argv) {
 
     auto iteration = "Q0";
 
-    auto params = std::make_tuple(
-        app.index_filename(),
-        app.wand_data_path(),
-        app.queries(),
-        app.thresholds_file(),
-        app.index_encoding(),
-        app.algorithm(),
-        app.k(),
-        documents_file,
-        app.scorer_params(),
-        app.weighted(),
-        run_id,
-        iteration
-    );
-
-    /**/
-    if (false) {  // NOLINT
-#define LOOP_BODY(R, DATA, T)                                                                       \
-    }                                                                                               \
-    else if (app.index_encoding() == BOOST_PP_STRINGIZE(T)) {                                       \
-        if (app.is_wand_compressed()) {                                                             \
-            if (quantized) {                                                                        \
-                std::apply(                                                                         \
-                    evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index_quantized>, params \
-                );                                                                                  \
-            } else {                                                                                \
-                std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_uniform_index>, params);  \
-            }                                                                                       \
-        } else {                                                                                    \
-            std::apply(evaluate_queries<BOOST_PP_CAT(T, _index), wand_raw_index>, params);          \
-        }                                                                                           \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", app.index_encoding());
-    }
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        auto params = std::make_tuple(
+            &index,
+            app.wand_data_path(),
+            app.queries(),
+            app.thresholds_file(),
+            app.index_encoding(),
+            app.algorithm(),
+            app.k(),
+            documents_file,
+            app.scorer_params(),
+            app.weighted(),
+            run_id,
+            iteration
+        );
+        if (app.is_wand_compressed()) {
+            if (quantized) {
+                std::apply(evaluate_queries<Index, wand_uniform_index_quantized>, params);
+            } else {
+                std::apply(evaluate_queries<Index, wand_uniform_index>, params);
+            }
+        } else {
+            std::apply(evaluate_queries<Index, wand_raw_index>, params);
+        }
+    });
 }

@@ -119,7 +119,8 @@ int main(int argc, char** argv) {
                     shard_args.output(),
                     shard_args.scorer_params(),
                     shard_args.quantization_bits(),
-                    shard_args.check()
+                    shard_args.check(),
+                    false
                 );
             }
             return 0;

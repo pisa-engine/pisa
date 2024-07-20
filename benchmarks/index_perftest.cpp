@@ -1,4 +1,5 @@
 #include "mappable/mapper.hpp"
+#include "memory_source.hpp"
 #include "mio/mmap.hpp"
 #include "spdlog/spdlog.h"
 
@@ -10,8 +11,7 @@ using pisa::do_not_optimize_away;
 using pisa::get_time_usecs;
 
 template <typename IndexType, bool with_freqs>
-void perftest(IndexType const& index, std::string const& type)
-{
+void perftest(IndexType const& index, std::string const& type) {
     std::string freqs_log = with_freqs ? "+freq()" : "";
     {
         size_t min_length = 4096;
@@ -22,7 +22,8 @@ void perftest(IndexType const& index, std::string const& type)
             "Scanning {} posting lists with length between {} and {}",
             max_number_of_lists,
             min_length,
-            max_length);
+            max_length
+        );
 
         std::vector<size_t> long_lists;
         for (size_t i = 0; i < index.size() and long_lists.size() <= max_number_of_lists; ++i) {
@@ -53,7 +54,8 @@ void perftest(IndexType const& index, std::string const& type)
             postings,
             freqs_log,
             uint64_t(elapsed / 1000000),
-            next_ns);
+            next_ns
+        );
         spdlog::info("{}\tnext{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), next_ns);
     }
 
@@ -97,26 +99,15 @@ void perftest(IndexType const& index, std::string const& type)
             calls,
             freqs_log,
             skip,
-            next_geq_ns);
+            next_geq_ns
+        );
         spdlog::info(
-            "{}\tnext_geq{}\t{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), skip, next_geq_ns);
+            "{}\tnext_geq{}\t{}\t{:.1f}", type, (with_freqs ? "_freq" : ""), skip, next_geq_ns
+        );
     }
 }
 
-template <typename IndexType>
-void perftest(const char* index_filename, std::string const& type)
-{
-    spdlog::info("Loading index from {}", index_filename);
-    IndexType index;
-    mio::mmap_source m(index_filename);
-    pisa::mapper::map(index, m, pisa::mapper::map_flags::warmup);
-
-    perftest<IndexType, false>(index, type);
-    perftest<IndexType, true>(index, type);
-}
-
-int main(int argc, const char** argv)
-{
+int main(int argc, const char** argv) {
     using namespace pisa;
 
     if (argc != 3) {
@@ -127,17 +118,9 @@ int main(int argc, const char** argv)
     std::string type = argv[1];
     const char* index_filename = argv[2];
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                    \
-    }                                                            \
-    else if (type == BOOST_PP_STRINGIZE(T))                      \
-    {                                                            \
-        perftest<BOOST_PP_CAT(T, _index)>(index_filename, type); \
-        /**/
-
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", type);
-    }
+    run_for_index(type, MemorySource::mapped_file(std::string_view(index_filename)), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        perftest<Index, false>(index, type);
+        perftest<Index, true>(index, type);
+    });
 }

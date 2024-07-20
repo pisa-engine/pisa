@@ -1,12 +1,9 @@
 #pragma once
 
-#include <array>
 #include <cstring>
 #include <vector>
 
-#include "FastPFor/headers/common.h"
-
-#include "codec/block_codecs.hpp"
+#include "codec/block_codec.hpp"
 #include "memory.hpp"
 
 namespace pisa {
@@ -231,30 +228,26 @@ class VarIntGB {
     }
 };
 
-struct varintgb_block {
-    static const uint64_t block_size = 128;
+/**
+ * VarintGB coding.
+ *
+ * Jeffrey Dean. 2009. Challenges in building large-scale information retrieval systems: invited
+ * talk. In Proceedings of the Second ACM International Conference on Web Search and Data Mining
+ * (WSDM '09), Ricardo Baeza-Yates, Paolo Boldi, Berthier Ribeiro-Neto, and B. Barla Cambazoglu
+ * (Eds.). ACM, New York, NY, USA, 1-1. DOI: http://dx.doi.org/10.1145/1498759.1498761
+ */
+class VarintGbBlockCodec: public BlockCodec {
+    static constexpr std::uint64_t m_block_size = 128;
 
-    static void
-    encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out) {
-        thread_local VarIntGB<false> varintgb_codec;
-        assert(n <= block_size);
-        if (n < block_size) {
-            interpolative_block::encode(in, sum_of_values, n, out);
-            return;
-        }
-        thread_local std::array<std::uint8_t, 2 * block_size * sizeof(uint32_t)> buf{};
-        size_t out_len = varintgb_codec.encodeArray(in, n, buf.data());
-        out.insert(out.end(), buf.data(), buf.data() + out_len);
-    }
+  public:
+    constexpr static std::string_view name = "block_varintgb";
 
-    static uint8_t const* decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) {
-        thread_local VarIntGB<false> varintgb_codec;
-        assert(n <= block_size);
-        if PISA_UNLIKELY (n < block_size) {
-            return interpolative_block::decode(in, out, sum_of_values, n);
-        }
-        auto read = varintgb_codec.decodeArray(in, n, out);
-        return read + in;
-    }
+    void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
+        const override;
+    uint8_t const*
+    decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) const override;
+    auto block_size() const noexcept -> std::size_t override { return m_block_size; }
+    auto get_name() const noexcept -> std::string_view override { return name; }
 };
+
 }  // namespace pisa

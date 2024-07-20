@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "concepts.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "query.hpp"

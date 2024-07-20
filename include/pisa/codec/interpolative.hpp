@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <vector>
 
 #include "codec/block_codec.hpp"
@@ -7,17 +8,16 @@
 namespace pisa {
 
 /**
- * Masked VByte coding.
+ * Interpolative coding.
  *
- * Jeff Plaisance, Nathan Kurz, Daniel Lemire, Vectorized VByte Decoding, International Symposium on
- * Web Algorithms 2015, 2015.
+ * Alistair Moffat, Lang Stuiver: Binary Interpolative Coding for Effective Index Compression. Inf.
+ * Retr. 3(1): 25-47 (2000)
  */
-class MaskedVByteBlockCodec: public BlockCodec {
+class InterpolativeBlockCodec: public BlockCodec {
     static constexpr std::uint64_t m_block_size = 128;
-    static constexpr std::uint64_t m_overflow = 512;
 
   public:
-    constexpr static std::string_view name = "block_maskedvbyte";
+    constexpr static std::string_view name = "block_interpolative";
 
     void encode(uint32_t const* in, uint32_t sum_of_values, size_t n, std::vector<uint8_t>& out)
         const override;

@@ -2,18 +2,16 @@
 #include <optional>
 #include <thread>
 
+#include "block_inverted_index.hpp"
 #include "boost/algorithm/string/classification.hpp"
 #include "boost/algorithm/string/split.hpp"
+#include "codec/block_codec_registry.hpp"
 #include "query/query_parser.hpp"
 #include "spdlog/spdlog.h"
-
-#include "mio/mmap.hpp"
 
 #include "cursor/cursor.hpp"
 #include "cursor/max_scored_cursor.hpp"
 #include "cursor/scored_cursor.hpp"
-#include "index_types.hpp"
-#include "mappable/mapper.hpp"
 #include "memory_source.hpp"
 #include "query/algorithm/and_query.hpp"
 #include "query/algorithm/maxscore_query.hpp"
@@ -53,32 +51,17 @@ void op_profile(QueryOperator const& query_op, std::vector<Query> const& queries
     }
 }
 
-template <typename IndexType>
-struct add_profiling {
-    using type = IndexType;
-};
-
-template <typename BlockType>
-struct add_profiling<block_freq_index<BlockType, false>> {
-    using type = block_freq_index<BlockType, true>;
-};
-
-template <typename IndexType>
 void profile(
-    const std::string index_filename,
-
+    BlockInvertedIndex const* index_ptr,
     const std::optional<std::string>& wand_data_filename,
     std::vector<Query> const& queries,
     std::string const& type,
     std::string const& query_type
 ) {
+    auto const& index = *index_ptr;
     using namespace pisa;
 
-    typename add_profiling<IndexType>::type index;
     using WandType = wand_data<wand_data_raw>;
-    spdlog::info("Loading index from {}", index_filename);
-    mio::mmap_source m(index_filename);
-    mapper::map(index, m);
 
     WandType const wdata = [&] {
         if (wand_data_filename) {
@@ -100,20 +83,13 @@ void profile(
         if (t == "and") {
             query_fun = [&](Query query) {
                 and_query and_q;
-                return and_q(
-                           make_cursors<typename add_profiling<IndexType>::type>(index, query),
-                           index.num_docs()
-                )
-                    .size();
+                return and_q(make_cursors(index, query), index.num_docs()).size();
             };
         } else if (t == "ranked_and" && wand_data_filename) {
             query_fun = [&](Query query) {
                 topk_queue topk(10);
                 ranked_and_query ranked_and_q(topk);
-                ranked_and_q(
-                    make_scored_cursors<typename add_profiling<IndexType>::type>(index, *scorer, query),
-                    index.num_docs()
-                );
+                ranked_and_q(make_scored_cursors(index, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -121,12 +97,7 @@ void profile(
             query_fun = [&](Query query) {
                 topk_queue topk(10);
                 wand_query wand_q(topk);
-                wand_q(
-                    make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                        index, wdata, *scorer, query
-                    ),
-                    index.num_docs()
-                );
+                wand_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -134,12 +105,7 @@ void profile(
             query_fun = [&](Query query) {
                 topk_queue topk(10);
                 maxscore_query maxscore_q(topk);
-                maxscore_q(
-                    make_max_scored_cursors<typename add_profiling<IndexType>::type, WandType>(
-                        index, wdata, *scorer, query
-                    ),
-                    index.num_docs()
-                );
+                maxscore_q(make_max_scored_cursors(index, wdata, *scorer, query), index.num_docs());
                 topk.finalize();
                 return topk.topk().size();
             };
@@ -184,18 +150,9 @@ int main(int argc, const char** argv) {
         }
     }
 
-    if (false) {
-#define LOOP_BODY(R, DATA, T)                                             \
-    }                                                                     \
-    else if (type == BOOST_PP_STRINGIZE(T)) {                             \
-        profile<BOOST_PP_CAT(T, _index)>(                                 \
-            index_filename, wand_data_filename, queries, type, query_type \
-        );                                                                \
-        /**/
+    ProfilingBlockInvertedIndex index(
+        MemorySource::mapped_file(std::filesystem::path(index_filename)), get_block_codec(type)
+    );
 
-        BOOST_PP_SEQ_FOR_EACH(LOOP_BODY, _, PISA_INDEX_TYPES);
-#undef LOOP_BODY
-    } else {
-        spdlog::error("Unknown type {}", type);
-    }
+    profile(&index, wand_data_filename, queries, type, query_type);
 }
