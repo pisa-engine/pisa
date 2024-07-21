@@ -55,7 +55,7 @@ class wand_data_raw {
             );
             block_docid.insert(block_docid.end(), t.first.begin(), t.first.end());
             max_term_weight.push_back(*(std::max_element(t.second.begin(), t.second.end())));
-            blocks_start.push_back(t.first.size() + blocks_start.back());
+            blocks_start.push_back(t.first.size());
 
             total_elements += seq.docs.size();
             total_blocks += t.first.size();
@@ -72,6 +72,7 @@ class wand_data_raw {
 
         void build(wand_data_raw& wdata) {
             wdata.m_block_max_term_weight.steal(block_max_term_weight);
+	    std::partial_sum(blocks_start.cbegin(), blocks_start.cend(), blocks_start.begin());
             wdata.m_blocks_start.steal(blocks_start);
             wdata.m_block_docid.steal(block_docid);
             spdlog::info(
