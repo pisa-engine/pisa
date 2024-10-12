@@ -364,6 +364,8 @@ namespace index::block {
             BlockCodecPtr block_codec, std::size_t num_docs, std::string output_filename
         );
 
+        virtual ~PostingAccumulator() = default;
+
         virtual void accumulate_posting_list(
             std::size_t n, std::uint32_t const* docs, std::uint32_t const* freqs
         ) = 0;
