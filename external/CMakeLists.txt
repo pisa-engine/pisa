@@ -9,7 +9,7 @@ target_compile_options(FastPFor PRIVATE -Wno-cast-align)
 
 # Add CLI11
 if (NOT PISA_SYSTEM_CLI11 AND PISA_BUILD_TOOLS)
-    set(CLI11_TESTING OFF CACHE BOOL "skip trecpp testing")
+    set(CLI11_TESTING OFF CACHE BOOL "skip cli11 testing")
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/CLI11 EXCLUDE_FROM_ALL)
 endif()
 
@@ -113,7 +113,7 @@ if (NOT PISA_SYSTEM_ONETBB)
     add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/oneTBB)
 endif()
 
-if (PISA_ENABLE_TESTING AND NOT PISA_SYSTEM_GOOGLE_BENCHMARK)
+if (PISA_ENABLE_BENCHMARKING AND NOT PISA_SYSTEM_GOOGLE_BENCHMARK)
     set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "skip Google Benchmark testing")
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "skip Google Benchmark testing")
     set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "disable -Werror")
