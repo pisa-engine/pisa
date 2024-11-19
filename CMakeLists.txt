@@ -85,6 +85,12 @@ if (UNIX)
      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ggdb") # Add debug info anyway
    endif()
 
+   # modify RPATH when installing to a non-system directory (e.g. /usr/local).
+   # required to find libtbb with non-system libtbb.
+   list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+   if(NOT PISA_SYSTEM_ONETBB AND "${isSystemDir}" STREQUAL "-1")
+      set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+   endif()
 endif()
 
 find_package(OpenMP)
