@@ -2,9 +2,6 @@
 
 set +x
 
-PISA_BIN="bin"
-export PATH="$PISA_BIN:$PATH"
-
 queries=$(cat <<HERE
 301:International Organized Crime
 302:Poliomyelitis and Post-Polio

@@ -3,8 +3,10 @@
 # This script should be executed within the build directory that is directly
 # in the project directory, e.g., /path/to/pisa/build
 
-PISA_BIN="./bin"
-export PATH="$PISA_BIN:$PATH"
+command -v compress_inverted_index >/dev/null 2>&1 || {
+    echo >&2 "tools not available in default path"
+    exit 1
+}
 
 test_dir=${TEST_DIR:-../test}
 
