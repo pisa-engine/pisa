@@ -2,8 +2,6 @@
 
 set +x
 
-PISA_BIN="bin"
-export PATH="$PISA_BIN:$PATH"
 DIR=$(dirname "$0")
 
 @test "Extract posting counts" {

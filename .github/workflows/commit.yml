@@ -70,6 +70,11 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       run: cmake --build . --config Debug -- -j 4
 
+    - name: Install
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: sudo make install
+
     - name: Test CLI
       shell: bash
       working-directory: ${{runner.workspace}}/build
