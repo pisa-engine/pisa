@@ -5,9 +5,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <iomanip>
 #include <iostream>
-#include <locale>
 #include <map>
 #include <vector>
 

@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <vector>
 
-#include "concepts.hpp"
 #include "partial_score_accumulator.hpp"
 #include "topk_queue.hpp"
 
@@ -58,7 +57,7 @@ class LazyAccumulator {
   public:
     explicit LazyAccumulator(std::size_t size)
         : m_size(size), m_accumulators((size + counters_in_descriptor - 1) / counters_in_descriptor) {
-        PISA_ASSERT_CONCEPT(PartialScoreAccumulator<decltype(*this)>);
+        static_assert(PartialScoreAccumulator<decltype(*this)>);
     }
 
     void reset() {

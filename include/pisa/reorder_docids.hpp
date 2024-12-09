@@ -11,8 +11,8 @@
 #include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"
+#include "payload_vector.hpp"
 #include "recursive_graph_bisection.hpp"
-#include "util/index_build_utils.hpp"
 #include "util/inverted_index_utils.hpp"
 #include "util/progress.hpp"
 

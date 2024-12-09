@@ -16,12 +16,8 @@
 
 #pragma once
 
-#ifdef PISA_ENABLE_CONCEPTS
-
 #include <concepts>
 #include <cstdint>
-#include <iterator>
-#include <vector>
 
 #include "topk_queue.hpp"
 
@@ -56,5 +52,3 @@ concept PartialScoreAccumulator = requires(T a, std::uint32_t docid, float score
 };  // namespace pisa
 
 // clang-format on
-
-#endif

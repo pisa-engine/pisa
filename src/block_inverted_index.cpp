@@ -10,13 +10,13 @@ namespace pisa {
 
 BlockInvertedIndex::BlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec)
     : m_source(std::move(source)), m_block_codec(std::move(block_codec)) {
-    PISA_ASSERT_CONCEPT((concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor<>>));
+    static_assert(concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor<>>);
     mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
 }
 
 BlockInvertedIndex::BlockInvertedIndex(BlockCodecPtr block_codec)
     : m_block_codec(std::move(block_codec)) {
-    PISA_ASSERT_CONCEPT((concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor<>>));
+    static_assert(concepts::SortedInvertedIndex<BlockInvertedIndex, BlockInvertedIndexCursor<>>);
 }
 
 auto BlockInvertedIndex::operator[](std::size_t term_id) const -> BlockInvertedIndexCursor<> {
@@ -73,7 +73,7 @@ auto BlockInvertedIndex::size_stats() -> SizeStats {
 
 ProfilingBlockInvertedIndex::ProfilingBlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec)
     : BlockInvertedIndex(std::move(source), std::move(block_codec)) {
-    PISA_ASSERT_CONCEPT(
+    static_assert(
         (concepts::SortedInvertedIndex<ProfilingBlockInvertedIndex, BlockInvertedIndexCursor<Profiling::On>>)
     );
 }

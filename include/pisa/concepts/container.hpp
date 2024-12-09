@@ -17,8 +17,6 @@
 
 #pragma once
 
-#ifdef PISA_ENABLE_CONCEPTS
-
 #include <concepts>
 
 namespace pisa::concepts {
@@ -35,5 +33,3 @@ concept SizedContainer = requires(T const container) {
 };  // namespace pisa
 
 // clang-format on
-
-#endif

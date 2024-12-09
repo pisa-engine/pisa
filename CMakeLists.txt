@@ -4,16 +4,11 @@ cmake_policy(SET CMP0074 NEW)
 project(PISA CXX C)
 
 if(NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD 20)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-if(NOT CMAKE_CXX_STANDARD EQUAL 17)
-    add_compile_definitions(PISA_ENABLE_CONCEPTS=1)
-    add_compile_definitions(PISA_CXX20=1)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fconcepts-diagnostics-depth=2")
-endif()
 add_compile_definitions(BOOST_NO_CXX98_FUNCTION_BASE=1)
 
 option(PISA_BUILD_TOOLS "Build command line tools." ON)

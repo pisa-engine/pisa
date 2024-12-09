@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "concepts.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "topk_queue.hpp"
 
@@ -12,12 +11,11 @@ struct wand_query {
     explicit wand_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
-    PISA_REQUIRES(
-        (concepts::MaxScorePostingCursor<pisa::val_t<CursorRange>>
-         && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>)
-    )
-    void
-    operator()(CursorRange&& cursors, uint64_t max_docid) {
+        requires(
+            (concepts::MaxScorePostingCursor<pisa::val_t<CursorRange>>
+             && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>)
+        )
+    void operator()(CursorRange&& cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {
             return;

@@ -16,8 +16,6 @@
 
 // clang-format off
 
-#ifdef PISA_ENABLE_CONCEPTS
-
 #include <concepts>
 #include <cstdint>
 
@@ -48,5 +46,3 @@ concept SortedInvertedIndex = InvertedIndex<T, Cursor> && SortedPostingCursor<Cu
 };  // namespace pisa
 
 // clang-format on
-
-#endif

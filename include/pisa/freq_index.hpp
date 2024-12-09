@@ -6,7 +6,6 @@
 
 #include "bitvector_collection.hpp"
 #include "codec/integer_codes.hpp"
-#include "concepts.hpp"
 #include "concepts/inverted_index.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "global_parameters.hpp"
@@ -44,9 +43,7 @@ class freq_index {
      *                any index operations may result in undefined behavior.
      */
     explicit freq_index(MemorySource source) : m_source(std::move(source)) {
-        PISA_ASSERT_CONCEPT(
-            (concepts::SortedInvertedIndex<freq_index, typename freq_index::document_enumerator>)
-        );
+        static_assert(concepts::SortedInvertedIndex<freq_index, typename freq_index::document_enumerator>);
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
@@ -180,7 +177,7 @@ class freq_index {
             typename DocsSequence::enumerator docs_enum, typename FreqsSequence::enumerator freqs_enum
         )
             : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum) {
-            PISA_ASSERT_CONCEPT(
+            static_assert(
                 (concepts::FrequencyPostingCursor<document_enumerator>
                  && concepts::SortedPostingCursor<document_enumerator>)
             );

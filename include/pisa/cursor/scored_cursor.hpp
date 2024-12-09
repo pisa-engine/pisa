@@ -1,6 +1,5 @@
 #pragma once
 
-#include "concepts.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "query.hpp"
 #include "scorer/index_scorer.hpp"
@@ -18,7 +17,7 @@ auto resolve_term_scorer(Scorer scorer, float weight) -> TermScorer {
 }
 
 template <typename Cursor>
-PISA_REQUIRES((concepts::FrequencyPostingCursor<Cursor> && concepts::SortedPostingCursor<Cursor>))
+    requires(concepts::FrequencyPostingCursor<Cursor> && concepts::SortedPostingCursor<Cursor>)
 class ScoredCursor {
   public:
     using base_cursor_type = Cursor;
@@ -27,7 +26,7 @@ class ScoredCursor {
         : m_base_cursor(std::move(cursor)),
           m_weight(weight),
           m_term_scorer(resolve_term_scorer(term_scorer, weight)) {
-        PISA_ASSERT_CONCEPT(
+        static_assert(
             (concepts::ScoredPostingCursor<ScoredCursor>
              && concepts::SortedPostingCursor<ScoredCursor>)
         );

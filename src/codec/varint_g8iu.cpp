@@ -1,8 +1,8 @@
 #include <cassert>
 
+#include "codec/VarIntG8IU.h"
 #include "codec/block_codecs.hpp"
 #include "codec/varint_g8iu.hpp"
-#include "util/likely.hpp"
 
 namespace pisa {
 
@@ -64,7 +64,7 @@ VarintG8IUBlockCodec::decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_v
     static Codec varint_codec;  // decodeBlock is thread-safe
     assert(n <= m_block_size);
 
-    if PISA_UNLIKELY (n < m_block_size) {
+    if (n < m_block_size) [[unlikely]] {
         return interpolative_block::decode(in, out, sum_of_values, n);
     }
 

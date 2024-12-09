@@ -4,7 +4,6 @@
 #include <string>
 #include <string_view>
 
-#include "concepts.hpp"
 #include "concepts/container.hpp"
 #include "concepts/mapping.hpp"
 #include "payload_vector.hpp"
@@ -25,8 +24,6 @@ class TermMap {
         -> std::optional<std::uint32_t> = 0;
 };
 
-PISA_ASSERT_CONCEPT((concepts::ReverseMapping<TermMap, std::string_view>));
-
 /**
  * Maps string representations of numbers to their numeric representations.
  */
@@ -38,7 +35,7 @@ class IntMap final: public TermMap {
         -> std::optional<std::uint32_t> override;
 };
 
-PISA_ASSERT_CONCEPT((concepts::ReverseMapping<IntMap, std::string_view>));
+static_assert(concepts::ReverseMapping<IntMap, std::string_view>);
 
 class LexiconMap final: public TermMap {
     std::optional<Payload_Vector_Buffer> m_buffer;
@@ -57,7 +54,7 @@ class LexiconMap final: public TermMap {
     [[nodiscard]] auto size() const noexcept -> std::size_t;
 };
 
-PISA_ASSERT_CONCEPT((concepts::BidirectionalMapping<LexiconMap, std::string_view>));
-PISA_ASSERT_CONCEPT((concepts::SizedContainer<LexiconMap>));
+static_assert(concepts::BidirectionalMapping<LexiconMap, std::string_view>);
+static_assert(concepts::SizedContainer<LexiconMap>);
 
 }  // namespace pisa

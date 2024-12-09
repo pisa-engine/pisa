@@ -1,7 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <stdexcept>
 
 #include <tbb/task_group.h>
 
@@ -186,7 +185,7 @@ struct partitioned_sequence {
         // note: this is instantiated oly if BaseSequence has next_geq
         template <typename Q = base_sequence_enumerator, typename = if_has_next_geq<Q>>
         value_type PISA_ALWAYSINLINE next_geq(uint64_t lower_bound) {
-            if PISA_LIKELY (lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound) {
+            if (lower_bound >= m_cur_base && lower_bound <= m_cur_upper_bound) [[likely]] {
                 auto val = m_partition_enum.next_geq(lower_bound - m_cur_base);
                 m_position = m_cur_begin + val.first;
                 return value_type(m_position, m_cur_base + val.second);
@@ -197,7 +196,7 @@ struct partitioned_sequence {
         value_type PISA_ALWAYSINLINE next() {
             ++m_position;
 
-            if PISA_LIKELY (m_position < m_cur_end) {
+            if (m_position < m_cur_end) [[likely]] {
                 uint64_t val = m_cur_base + m_partition_enum.next().second;
                 return value_type(m_position, val);
             }
@@ -207,7 +206,7 @@ struct partitioned_sequence {
         uint64_t size() const { return m_size; }
 
         uint64_t prev_value() const {
-            if PISA_UNLIKELY (m_position == m_cur_begin) {
+            if (m_position == m_cur_begin) [[unlikely]] {
                 return m_cur_partition != 0U ? m_cur_base - 1 : 0;
             }
             return m_cur_base + m_partition_enum.prev_value();
@@ -224,7 +223,7 @@ struct partitioned_sequence {
         // tight loops, on microbenchmarks this causes an improvement of
         // about 3ns on my i7 3Ghz
         value_type PISA_NOINLINE slow_next() {
-            if PISA_UNLIKELY (m_position == m_size) {
+            if (m_position == m_size) [[unlikely]] {
                 assert(m_cur_partition == m_partitions - 1);
                 auto val = m_partition_enum.next();
                 assert(val.first == m_partition_enum.size());

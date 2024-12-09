@@ -16,8 +16,6 @@
 
 #pragma once
 
-#ifdef PISA_ENABLE_CONCEPTS
-
 #include <concepts>
 #include <cstdint>
 #include <optional>
@@ -59,5 +57,3 @@ concept BidirectionalMapping = Mapping<T, Payload> && ReverseMapping<T, Payload>
 };  // namespace pisa
 
 // clang-format on
-
-#endif

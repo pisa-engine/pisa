@@ -7,7 +7,6 @@
 
 #include "global_parameters.hpp"
 #include "util/compiler_attribute.hpp"
-#include "util/likely.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
@@ -139,9 +138,9 @@ struct compact_ranked_bitvector {
 
             // optimize small forward skips
             uint64_t skip = position - m_position;
-            if PISA_LIKELY (position > m_position && skip <= linear_scan_threshold) {
+            if (position > m_position && skip <= linear_scan_threshold) [[likely]] {
                 m_position = position;
-                if PISA_UNLIKELY (m_position == size()) {
+                if (m_position == size()) [[unlikely]] {
                     m_value = m_of.universe;
                 } else {
                     bit_vector::unary_enumerator he = m_enumerator;
@@ -164,13 +163,13 @@ struct compact_ranked_bitvector {
             }
 
             uint64_t diff = lower_bound - m_value;
-            if PISA_LIKELY (lower_bound > m_value && diff <= linear_scan_threshold) {
+            if (lower_bound > m_value && diff <= linear_scan_threshold) [[likely]] {
                 // optimize small skips
                 bit_vector::unary_enumerator he = m_enumerator;
                 uint64_t val;
                 do {
                     m_position += 1;
-                    if PISA_LIKELY (m_position < size()) {
+                    if (m_position < size()) [[likely]] {
                         val = he.next() - m_of.bits_offset;
                     } else {
                         m_position = size();
@@ -190,7 +189,7 @@ struct compact_ranked_bitvector {
             m_position += 1;
             assert(m_position <= size());
 
-            if PISA_LIKELY (m_position < size()) {
+            if (m_position < size()) [[likely]] {
                 m_value = read_next();
             } else {
                 m_value = m_of.universe;
@@ -206,7 +205,7 @@ struct compact_ranked_bitvector {
             }
 
             uint64_t pos = 0;
-            if PISA_LIKELY (m_position < size()) {
+            if (m_position < size()) [[likely]] {
                 pos = m_bv->predecessor1(m_enumerator.position() - 1);
             } else {
                 pos = m_bv->predecessor1(m_of.end - 1);
@@ -218,7 +217,7 @@ struct compact_ranked_bitvector {
       private:
         value_type PISA_NOINLINE slow_move(uint64_t position) {
             uint64_t skip = position - m_position;
-            if PISA_UNLIKELY (position == size()) {
+            if (position == size()) [[unlikely]] {
                 m_position = position;
                 m_value = m_of.universe;
                 return value();
@@ -245,7 +244,7 @@ struct compact_ranked_bitvector {
         value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound) {
             using broadword::popcount;
 
-            if PISA_UNLIKELY (lower_bound >= m_of.universe) {
+            if (lower_bound >= m_of.universe) [[unlikely]] {
                 return move(size());
             }
 

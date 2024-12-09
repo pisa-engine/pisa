@@ -1,19 +1,15 @@
 #pragma once
 
 #include <cmath>
-#include <fstream>
 #include <iterator>
-#include <thread>
 #include <vector>
 
 #include "tbb/enumerable_thread_specific.h"
+#include "tbb/parallel_invoke.h"
 #include "tbb/task_group.h"
 
 #include "algorithm.hpp"
 #include "forward_index.hpp"
-#include "payload_vector.hpp"
-#include "util/index_build_utils.hpp"
-#include "util/inverted_index_utils.hpp"
 #include "util/log.hpp"
 #include "util/progress.hpp"
 #include "util/single_init_vector.hpp"
@@ -180,7 +176,7 @@ void compute_move_gains_caching(
         auto terms = range.terms(d);
         for (const auto& t: terms) {
             if constexpr (isLikelyCached) {  // NOLINT(readability-braces-around-statements)
-                if PISA_UNLIKELY (not gain_cache.has_value(t)) {
+                if (not gain_cache.has_value(t)) [[unlikely]] {
                     const auto& from_deg = from_lex[t];
                     const auto& to_deg = to_lex[t];
                     const auto term_gain = bp::expb(logn1, logn2, from_deg, to_deg)
@@ -188,7 +184,7 @@ void compute_move_gains_caching(
                     gain_cache.set(t, term_gain);
                 }
             } else {
-                if PISA_LIKELY (not gain_cache.has_value(t)) {
+                if (not gain_cache.has_value(t)) [[likely]] {
                     const auto& from_deg = from_lex[t];
                     const auto& to_deg = to_lex[t];
                     const auto term_gain = bp::expb(logn1, logn2, from_deg, to_deg)
@@ -223,7 +219,7 @@ void swap(document_partition<Iterator>& partition, degree_map_pair& degrees) {
     auto lit = left.begin();
     auto rit = right.begin();
     for (; lit != left.end() && rit != right.end(); ++lit, ++rit) {
-        if PISA_UNLIKELY (left.gain(*lit) + right.gain(*rit) <= 0) {
+        if (left.gain(*lit) + right.gain(*rit) <= 0) [[unlikely]] {
             break;
         }
         {

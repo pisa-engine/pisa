@@ -7,8 +7,7 @@
 #include "bit_vector.hpp"
 #include "codec/block_codec.hpp"
 #include "codec/block_codecs.hpp"
-#include "concepts.hpp"
-#include "concepts/inverted_index.hpp"
+#include "concepts/posting_cursor.hpp"
 #include "global_parameters.hpp"
 #include "mappable/mappable_vector.hpp"
 #include "mappable/mapper.hpp"
@@ -50,7 +49,7 @@ class BlockInvertedIndexCursor {
           m_universe(universe),
           m_block_codec(block_codec),
           m_block_size(block_codec->block_size()) {
-        PISA_ASSERT_CONCEPT(
+        static_assert(
             (concepts::FrequencyPostingCursor<BlockInvertedIndexCursor>
              && concepts::SortedPostingCursor<BlockInvertedIndexCursor>)
         );
@@ -68,7 +67,7 @@ class BlockInvertedIndexCursor {
 
     void PISA_ALWAYSINLINE next() {
         ++m_pos_in_block;
-        if PISA_UNLIKELY (m_pos_in_block == m_cur_block_size) {
+        if (m_pos_in_block == m_cur_block_size) [[unlikely]] {
             if (m_cur_block + 1 == m_blocks) {
                 m_cur_docid = m_universe;
                 return;
@@ -87,7 +86,7 @@ class BlockInvertedIndexCursor {
      * to the current document ID, the position will not change.
      */
     void PISA_ALWAYSINLINE next_geq(uint64_t lower_bound) {
-        if PISA_UNLIKELY (lower_bound > m_cur_block_max) {
+        if (lower_bound > m_cur_block_max) [[unlikely]] {
             // binary search seems to perform worse here
             if (lower_bound > block_max(m_blocks - 1)) {
                 m_cur_docid = m_universe;
@@ -111,7 +110,7 @@ class BlockInvertedIndexCursor {
     void PISA_ALWAYSINLINE move(uint64_t pos) {
         assert(pos >= position());
         uint64_t block = pos / m_block_size;
-        if PISA_UNLIKELY (block != m_cur_block) {
+        if (block != m_cur_block) [[unlikely]] {
             decode_docs_block(block);
         }
         while (position() < pos) {
@@ -338,8 +337,8 @@ class ProfilingBlockInvertedIndex: public BlockInvertedIndex {
 
     ProfilingBlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec);
 
-    [[nodiscard]] auto operator[](std::size_t term_id
-    ) const -> BlockInvertedIndexCursor<Profiling::On>;
+    [[nodiscard]] auto operator[](std::size_t term_id) const
+        -> BlockInvertedIndexCursor<Profiling::On>;
 };
 
 namespace index::block {
