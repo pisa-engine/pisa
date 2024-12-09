@@ -4,6 +4,17 @@ All notable changes to PISA will be documented in this file.
 The format of the changes starting from 0.9.0 is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.10.0](https://github.com/pisa-engine/pisa/releases/tag/v0.10.0)
+
+### Fixed
+- Quantize in range [1, 2^b) (#575)
+- Build-system fixes (#588)
+
+### Changed
+- Require CMake 3.16 or higher (#583)
+- Dynamic dispatch for block codecs (#579)
+- Add virtual destructor to `PostingAcumulator` (#587)
+
 ## [0.9.0](https://github.com/pisa-engine/pisa/releases/tag/v0.9.0)
 
 ### Added
