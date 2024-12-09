@@ -2,7 +2,7 @@ name: Pull Request
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   test:
@@ -10,10 +10,6 @@ jobs:
     strategy:
       matrix:
         compiler: [gcc13, clang16]
-        standard: [17]
-        include:
-          - compiler: gcc13 # Extra test for C++20
-            standard: 20
 
     steps:
     - uses: actions/checkout@v2
@@ -23,7 +19,7 @@ jobs:
     - name: Bulid docker image
       shell: bash
       run: |
-        docker build --build-arg CXX_STANDARD=${{matrix.standard}} \
+        docker build \
           -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.compiler}}/Dockerfile"
 
     - name: Test

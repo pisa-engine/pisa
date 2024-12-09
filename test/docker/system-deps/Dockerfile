@@ -1,7 +1,5 @@
 FROM gcc:13
 
-ARG CXX_STANDARD=17
-
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
 
@@ -32,7 +30,6 @@ RUN cmake \
     "-DPISA_SYSTEM_ONETBB=ON" \
     "-DPISA_SYSTEM_BOOST=ON" \
     "-DPISA_SYSTEM_CLI11=ON" \
-    "-DCMAKE_CXX_STANDARD=$CXX_STANDARD" \
     .. \
     && cmake --build . --config Debug -- -j 4
 

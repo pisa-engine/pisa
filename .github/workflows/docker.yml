@@ -1,7 +1,7 @@
 name: Publish Docker
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   docker:
@@ -16,5 +16,5 @@ jobs:
             -H "Travis-API-Version:3" \
             -H "Accept:application/json" \
             -H "Authorization:token ${{secrets.TRAVIS_API_TOKEN}}" \
-            -d '{"request":{"branch":"master"}}' \
+            -d '{"request":{"branch":"main"}}' \
             'https://api.travis-ci.com/repo/pisa-engine%2Fdocker/requests'
