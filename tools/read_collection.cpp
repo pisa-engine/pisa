@@ -12,9 +12,9 @@
 
 using namespace pisa;
 
-[[nodiscard]] auto print_function(
-    std::optional<std::string> const& map_file, std::optional<std::string> const& lex_file
-) -> std::function<void(std::uint32_t)> {
+[[nodiscard]] auto
+print_function(std::optional<std::string> const& map_file, std::optional<std::string> const& lex_file)
+    -> std::function<void(std::uint32_t)> {
     if (map_file) {
         return [loaded_map = pisa::io::read_string_vector(*map_file)](std::uint32_t term) {
             std::cout << loaded_map.at(term) << ' ';

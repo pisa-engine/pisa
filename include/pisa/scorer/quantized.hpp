@@ -32,8 +32,8 @@ class QuantizingScorer {
     QuantizingScorer(std::unique_ptr<IndexScorer> scorer, LinearQuantizer quantizer)
         : m_scorer(std::move(scorer)), m_quantizer(quantizer) {}
 
-    [[nodiscard]] auto term_scorer(std::uint64_t term_id
-    ) const -> std::function<std::uint32_t(std::uint32_t, std::uint32_t)> {
+    [[nodiscard]] auto term_scorer(std::uint64_t term_id) const
+        -> std::function<std::uint32_t(std::uint32_t, std::uint32_t)> {
         return
             [this, scorer = m_scorer->term_scorer(term_id)](std::uint32_t doc, std::uint32_t freq) {
                 auto score = scorer(doc, freq);
