@@ -1,6 +1,5 @@
 FROM debian:bullseye
 
-ARG CXX_STANDARD=17
 ARG DEBIAN_FRONTEND=noninteractive
 
 COPY . /pisa

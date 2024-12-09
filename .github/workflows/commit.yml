@@ -2,45 +2,22 @@ name: Commit
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   test_cli:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux-gcc-9]
+        name: [linux-gcc-13]
         include:
-          - name: linux-gcc-9
+          - name: linux-gcc-13
             os: ubuntu-22.04
-            compiler: "gcc"
-            version: "9"
 
     steps:
     - uses: actions/checkout@v2
-
-    - name: Install (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-          # Install compiler
-
-          cc="${{ matrix.compiler }}-${{ matrix.version }}"
-          cc="${cc%-}"
-          cxx="${cc/clang/clang++}"
-          cxx="${cxx/gcc/g++}"
-
-          sudo apt-get update
-          sudo apt-get install -y libtool m4 autoconf
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-              sudo apt-get install -y "${cxx}"
-          else
-              sudo apt-get install -y "${cc}"
-          fi
-          echo "CC=${cc}" >> $GITHUB_ENV
-          echo "CXX=${cxx}" >> $GITHUB_ENV
 
     - name: Install bats
       if: runner.os == 'Linux'

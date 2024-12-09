@@ -1,6 +1,5 @@
 FROM debian:bullseye
 
-ARG CXX_STANDARD=17
 ARG USE_SANITIZERS=OFF
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -17,7 +16,6 @@ RUN cmake \
     -DPISA_ENABLE_BENCHMARKING='OFF' \
     -DCMAKE_TOOLCHAIN_FILE='clang.cmake' \
     "-DPISA_SANITIZERS=$USE_SANITIZERS" \
-    "-DCMAKE_CXX_STANDARD=$CXX_STANDARD" \
     .. \
     && cmake --build . --config Debug -- -j 4
 

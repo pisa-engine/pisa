@@ -1,6 +1,5 @@
 FROM gcc:12
 
-ARG CXX_STANDARD=17
 ARG USE_SANITIZERS=OFF
 ARG BUILD_TYPE=Debug
 
@@ -17,7 +16,6 @@ RUN cmake \
     "-DPISA_BUILD_TOOLS=OFF" \
     "-DPISA_ENABLE_BENCHMARKING=OFF" \
     "-DPISA_SANITIZERS=$USE_SANITIZERS" \
-    "-DCMAKE_CXX_STANDARD=$CXX_STANDARD" \
     .. \
     && cmake --build . --config Debug -- -j 4
 
