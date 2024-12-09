@@ -1,13 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
-#include <iterator>
 #include <utility>
 #include <vector>
-
-#include "concepts.hpp"
-#include "util/util.hpp"
 
 namespace pisa {
 
@@ -103,10 +100,11 @@ struct score_opt_partition {
     score_opt_partition(
         I begin, std::uint32_t base, std::uint64_t size, double eps1, double eps2, float fixed_cost
     )
-        PISA_REQUIRES(
+        requires(
             std::forward_iterator<I>
             && (std::convertible_to<typename std::iterator_traits<I>::value_type, std::pair<std::uint64_t, float>>)
-        ) {
+        )
+    {
         // compute cost of single block.
         float max = 0;
         float sum = 0;

@@ -19,7 +19,6 @@ limitations under the License. */
 #include <cstdint>
 #include <vector>
 
-#include "concepts.hpp"
 #include "partial_score_accumulator.hpp"
 #include "topk_queue.hpp"
 
@@ -33,7 +32,7 @@ namespace pisa {
 class SimpleAccumulator: public std::vector<float> {
   public:
     explicit SimpleAccumulator(std::size_t size) : std::vector<float>(size) {
-        PISA_ASSERT_CONCEPT(PartialScoreAccumulator<decltype(*this)>);
+        static_assert(PartialScoreAccumulator<decltype(*this)>);
     }
 
     void reset() { std::fill(begin(), end(), 0.0); }

@@ -3,6 +3,13 @@
  * This code is released under the
  * Apache License Version 2.0 http://www.apache.org/licenses/.
  */
+
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <stdexcept>
+#include <vector>
+
 #if defined(_MSC_VER)
 #include <intrin.h>
 #else

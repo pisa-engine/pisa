@@ -2,9 +2,9 @@
 
 ## Compilers
 
-To compile PISA, you will need a compiler supporting at least the C++17
-standard. Our continuous integration pipeline compiles PISA and runs
-tests in the following configurations:
+To compile PISA, you will need a compiler supporting the C++20 standard.
+Our continuous integration pipeline compiles PISA and runs tests in the
+following configurations:
 - Linux:
     - GCC, versions: 10, 11, 12, 13
     - Clang 15, 16

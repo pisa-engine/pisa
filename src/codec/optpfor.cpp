@@ -60,7 +60,7 @@ OptPForBlockCodec::decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_valu
     thread_local Codec optpfor_codec;  // pfor decoding is *not* thread-safe
     assert(n <= m_block_size);
 
-    if PISA_UNLIKELY (n < m_block_size) {
+    if (n < m_block_size) [[unlikely]] {
         return interpolative_block::decode(in, out, sum_of_values, n);
     }
 

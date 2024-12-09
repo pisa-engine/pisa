@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "concepts.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "topk_queue.hpp"
 
@@ -12,7 +11,7 @@ struct block_max_wand_query {
     explicit block_max_wand_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
-    PISA_REQUIRES(concepts::BlockMaxPostingCursor<pisa::val_t<CursorRange>>)
+        requires(concepts::BlockMaxPostingCursor<pisa::val_t<CursorRange>>)
     void operator()(CursorRange&& cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {

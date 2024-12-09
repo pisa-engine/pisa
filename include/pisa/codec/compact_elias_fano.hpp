@@ -7,7 +7,6 @@
 
 #include "global_parameters.hpp"
 #include "util/compiler_attribute.hpp"
-#include "util/likely.hpp"
 #include "util/util.hpp"
 
 namespace pisa {
@@ -164,9 +163,9 @@ struct compact_elias_fano {
 
             uint64_t skip = position - m_position;
             // optimize small forward skips
-            if PISA_LIKELY (position > m_position && skip <= linear_scan_threshold) {
+            if (position > m_position && skip <= linear_scan_threshold) [[likely]] {
                 m_position = position;
-                if PISA_UNLIKELY (m_position == size()) {
+                if (m_position == size()) [[unlikely]] {
                     m_value = m_of.universe;
                 } else {
                     bit_vector::unary_enumerator he = m_high_enumerator;
@@ -193,13 +192,13 @@ struct compact_elias_fano {
             uint64_t cur_high = m_value >> m_of.lower_bits;
             uint64_t high_diff = high_lower_bound - cur_high;
 
-            if PISA_LIKELY (lower_bound > m_value && high_diff <= linear_scan_threshold) {
+            if (lower_bound > m_value && high_diff <= linear_scan_threshold) [[likely]] {
                 // optimize small skips
                 next_reader next_value(*this, m_position + 1);
                 uint64_t val;
                 do {
                     m_position += 1;
-                    if PISA_LIKELY (m_position < size()) {
+                    if (m_position < size()) [[likely]] {
                         val = next_value();
                     } else {
                         m_position = size();
@@ -220,7 +219,7 @@ struct compact_elias_fano {
             m_position += 1;
             assert(m_position <= size());
 
-            if PISA_LIKELY (m_position < size()) {
+            if (m_position < size()) [[likely]] {
                 m_value = read_next();
             } else {
                 m_value = m_of.universe;
@@ -234,7 +233,7 @@ struct compact_elias_fano {
             }
 
             uint64_t prev_high = 0;
-            if PISA_LIKELY (m_position < size()) {
+            if (m_position < size()) [[likely]] {
                 prev_high = m_bv->predecessor1(m_high_enumerator.position() - 1);
             } else {
                 prev_high = m_bv->predecessor1(m_of.lower_bits_offset - 1);
@@ -253,7 +252,7 @@ struct compact_elias_fano {
 
       private:
         value_type PISA_NOINLINE slow_move(uint64_t position) {
-            if PISA_UNLIKELY (position == size()) {
+            if (position == size()) [[unlikely]] {
                 m_position = position;
                 m_value = m_of.universe;
                 return value();
@@ -279,7 +278,7 @@ struct compact_elias_fano {
         }
 
         value_type PISA_NOINLINE slow_next_geq(uint64_t lower_bound) {
-            if PISA_UNLIKELY (lower_bound >= m_of.universe) {
+            if (lower_bound >= m_of.universe) [[unlikely]] {
                 return move(size());
             }
 
@@ -309,7 +308,7 @@ struct compact_elias_fano {
 
             next_reader read_value(*this, m_position);
             while (true) {
-                if PISA_UNLIKELY (m_position == size()) {
+                if (m_position == size()) [[unlikely]] {
                     m_value = m_of.universe;
                     return value();
                 }

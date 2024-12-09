@@ -2,13 +2,8 @@
 
 #include <array>
 
-#include "FastPFor/headers/optpfor.h"
-#include "FastPFor/headers/variablebyte.h"
-
-#include "VarIntG8IU.h"
 #include "interpolative_coding.hpp"
 #include "util/compiler_attribute.hpp"
-#include "util/likely.hpp"
 #include "util/util.hpp"
 
 namespace pisa {

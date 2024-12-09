@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <iostream>
+#include <numeric>
 
 #include "spdlog/spdlog.h"
 
@@ -7,8 +7,7 @@
 #include "util/do_not_optimize_away.hpp"
 #include "util/util.hpp"
 
-int main()
-{
+int main() {
     using namespace pisa;
     static const size_t size = interpolative_block::block_size;
     static const size_t runs = 1 << 20;

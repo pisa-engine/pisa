@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "concepts.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "util/do_not_optimize_away.hpp"
 
@@ -13,7 +12,7 @@ namespace pisa {
 template <bool with_freqs>
 struct or_query {
     template <typename CursorRange>
-    PISA_REQUIRES((concepts::SortedPostingCursor<typename CursorRange::value_type>))
+        requires(concepts::SortedPostingCursor<typename CursorRange::value_type>)
     uint64_t operator()(CursorRange&& cursors, uint64_t max_docid) const {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {

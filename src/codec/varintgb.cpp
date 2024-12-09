@@ -23,7 +23,7 @@ uint8_t const*
 VarintGbBlockCodec::decode(uint8_t const* in, uint32_t* out, uint32_t sum_of_values, size_t n) const {
     thread_local VarIntGB<false> varintgb_codec;
     assert(n <= m_block_size);
-    if PISA_UNLIKELY (n < m_block_size) {
+    if (n < m_block_size) [[unlikely]] {
         return interpolative_block::decode(in, out, sum_of_values, n);
     }
     auto read = varintgb_codec.decodeArray(in, n, out);

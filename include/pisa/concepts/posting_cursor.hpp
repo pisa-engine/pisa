@@ -16,8 +16,6 @@
 
 #pragma once
 
-#ifdef PISA_ENABLE_CONCEPTS
-
 #include <concepts>
 #include <cstdint>
 
@@ -95,5 +93,3 @@ concept BlockMaxPostingCursor = MaxScorePostingCursor<C> && SortedPostingCursor<
 };  // namespace pisa
 
 // clang-format on
-
-#endif

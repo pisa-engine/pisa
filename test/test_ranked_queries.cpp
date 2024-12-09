@@ -96,7 +96,7 @@ class ranked_or_taat_query_acc: public ranked_or_taat_query {
     using ranked_or_taat_query::ranked_or_taat_query;
 
     template <typename CursorRange>
-    PISA_REQUIRES((pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>))
+        requires(pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>)
     void operator()(CursorRange&& cursors, uint64_t max_docid) {
         Acc accumulator(max_docid);
         ranked_or_taat_query::operator()(cursors, max_docid, accumulator);
@@ -109,7 +109,7 @@ class range_query_128: public range_query<T> {
     using range_query<T>::range_query;
 
     template <typename CursorRange>
-    PISA_REQUIRES((pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>))
+        requires(pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>)
     void operator()(CursorRange&& cursors, uint64_t max_docid) {
         range_query<T>::operator()(cursors, max_docid, 128);
     }

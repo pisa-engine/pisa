@@ -1,7 +1,6 @@
 #pragma once
 
 #include "accumulator/partial_score_accumulator.hpp"
-#include "concepts.hpp"
 #include "concepts/posting_cursor.hpp"
 #include "topk_queue.hpp"
 
@@ -12,12 +11,11 @@ class ranked_or_taat_query {
     explicit ranked_or_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
-    PISA_REQUIRES(
-        (PartialScoreAccumulator<Acc> && concepts::ScoredPostingCursor<pisa::val_t<CursorRange>>
-         && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>)
-    )
-    void
-    operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator) {
+        requires(
+            (PartialScoreAccumulator<Acc> && concepts::ScoredPostingCursor<pisa::val_t<CursorRange>>
+             && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>)
+        )
+    void operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator) {
         if (cursors.empty()) {
             return;
         }

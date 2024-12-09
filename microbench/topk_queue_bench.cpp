@@ -1,6 +1,7 @@
 #include <algorithm>
+#include <chrono>
 #include <random>
-#include <string>
+#include <stdexcept>
 
 #include <benchmark/benchmark.h>
 
@@ -14,8 +15,7 @@ enum Series : std::int64_t {
     RANDOM = 2,
 };
 
-auto generate_increasing_scores(std::size_t length)
-{
+auto generate_increasing_scores(std::size_t length) {
     std::vector<Entry> vals;
     std::generate_n(std::back_inserter(vals), length, [score = 100.0, docid = 0]() mutable {
         score += 0.1;
@@ -24,8 +24,7 @@ auto generate_increasing_scores(std::size_t length)
     return vals;
 }
 
-auto generate_decreasing_scores(std::size_t length)
-{
+auto generate_decreasing_scores(std::size_t length) {
     std::vector<Entry> vals;
     std::generate_n(std::back_inserter(vals), length, [score = 100.0, docid = 0]() mutable {
         score -= 0.1;
@@ -34,8 +33,7 @@ auto generate_decreasing_scores(std::size_t length)
     return vals;
 }
 
-auto generate_random_scores(std::size_t length)
-{
+auto generate_random_scores(std::size_t length) {
     std::mt19937 gen(1902741074);
     std::uniform_real_distribution<> dis(0.0, 10.0);
     std::vector<Entry> vals;
@@ -45,8 +43,7 @@ auto generate_random_scores(std::size_t length)
     return vals;
 }
 
-auto generate_entries(std::size_t length, Series series)
-{
+auto generate_entries(std::size_t length, Series series) {
     switch (series) {
     case INCREASING: return generate_increasing_scores(length);
     case DECREASING: return generate_decreasing_scores(length);
@@ -55,15 +52,13 @@ auto generate_entries(std::size_t length, Series series)
     throw std::logic_error("unreachable");
 }
 
-void insert_all(pisa::topk_queue& queue, std::vector<Entry> const& entries)
-{
+void insert_all(pisa::topk_queue& queue, std::vector<Entry> const& entries) {
     for (auto const& [score, docid]: entries) {
         benchmark::DoNotOptimize(queue.insert(score, docid));
     }
 }
 
-static void bm_topk_queue(benchmark::State& state)
-{
+static void bm_topk_queue(benchmark::State& state) {
     auto entries = generate_entries(state.range(0), Series{state.range(2)});
     for (auto _: state) {
         pisa::topk_queue queue(state.range(1));
