@@ -21,7 +21,7 @@ void test_case(pisa::BlockCodec const* codec, std::vector<std::uint32_t> values,
     codec->encode(values.data(), sum_of_values, values.size(), encoded);
 
     // Needed for QMX, see `include/pisa/codec/qmx.hpp` for more details.
-    if (codec->get_name() == "block_qms") {
+    if (codec->get_name() == "block_qmx") {
         std::array<char, 15> padding{};
         encoded.insert(encoded.end(), padding.begin(), padding.end());
     }
@@ -29,7 +29,7 @@ void test_case(pisa::BlockCodec const* codec, std::vector<std::uint32_t> values,
     std::vector<uint32_t> decoded(values.size());
     uint8_t const* out = codec->decode(encoded.data(), decoded.data(), sum_of_values, values.size());
 
-    if (codec->get_name() == "block_qms") {
+    if (codec->get_name() == "block_qmx") {
         REQUIRE(encoded.size() == out - encoded.data() + 15);
     } else {
         REQUIRE(encoded.size() == out - encoded.data());
