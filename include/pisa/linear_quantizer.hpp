@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include <fmt/format.h>
-#include <gsl/gsl_assert>
 
 namespace pisa {
 

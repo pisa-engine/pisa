@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <span>
 #include <string>
 
 #include <catch2/catch.hpp>
-#include <gsl/span>
 
 #include "binary_collection.hpp"
 #include "filesystem.hpp"
@@ -72,16 +72,16 @@ TEST_CASE("Write header", "[parsing][forward_index]") {
 }
 
 template <typename T>
-void write_lines(std::ostream& os, gsl::span<T>&& elements) {
+void write_lines(std::ostream& os, std::span<T>&& elements) {
     for (auto const& element: elements) {
         os << element << '\n';
     }
 }
 
 template <typename T>
-void write_lines(std::string const& filename, gsl::span<T>&& elements) {
+void write_lines(std::string const& filename, std::span<T>&& elements) {
     std::ofstream os(filename);
-    write_lines<T>(os, std::forward<gsl::span<T>>(elements));
+    write_lines<T>(os, std::forward<std::span<T>>(elements));
 }
 
 TEST_CASE("Build forward index batch", "[parsing][forward_index]") {
@@ -146,8 +146,8 @@ void write_batch(
 ) {
     std::string document_file = basename + ".documents";
     std::string term_file = basename + ".terms";
-    write_lines(document_file, gsl::make_span(documents));
-    write_lines(term_file, gsl::make_span(terms));
+    write_lines(document_file, std::span(documents));
+    write_lines(term_file, std::span(terms));
     std::ofstream os(basename);
     Forward_Index_Builder::write_header(os, collection.size());
     for (auto const& seq: collection) {

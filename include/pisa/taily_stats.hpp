@@ -1,6 +1,7 @@
 #pragma once
 
-#include <gsl/span>
+#include <span>
+
 #include <mio/mmap.hpp>
 #include <taily.hpp>
 
@@ -54,10 +55,9 @@ class TailyStats {
     }
 
     [[nodiscard]] PISA_ALWAYSINLINE auto bytes(std::size_t start, std::size_t size) const
-        -> gsl::span<char const> {
-        try {
-            return m_source.subspan(start, size);
-        } catch (std::out_of_range const&) {
+        -> std::span<char const> {
+        if (start > m_source.size()
+            || (size != std::dynamic_extent && start + size > m_source.size())) {
             throw std::out_of_range(fmt::format(
                 "Tried to read bytes {}-{} but memory source is of size {}",
                 start,
@@ -65,6 +65,7 @@ class TailyStats {
                 m_source.size()
             ));
         }
+        return m_source.subspan(start, size);
     }
 
     MemorySource m_source;
@@ -99,7 +100,7 @@ template <typename Scorer>
 }
 
 void write_feature_stats(
-    gsl::span<taily::Feature_Statistics> stats, std::size_t num_documents, std::string const& output_path
+    std::span<taily::Feature_Statistics> stats, std::size_t num_documents, std::string const& output_path
 ) {
     std::ofstream ofs(output_path);
     ofs.write(reinterpret_cast<const char*>(&num_documents), sizeof(num_documents));

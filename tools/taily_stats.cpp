@@ -1,6 +1,3 @@
-#include <iostream>
-#include <optional>
-
 #include <CLI/CLI.hpp>
 #include <mio/mmap.hpp>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -9,10 +6,6 @@
 
 #include "./taily_stats.hpp"
 #include "app.hpp"
-#include "binary_freq_collection.hpp"
-#include "memory_source.hpp"
-#include "scorer/scorer.hpp"
-#include "util/progress.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"

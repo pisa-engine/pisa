@@ -47,9 +47,6 @@ add_library(simdcomp STATIC ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdbitpack
                             ${CMAKE_CURRENT_SOURCE_DIR}/simdcomp/src/simdcomputil.c
 )
 
-# Add GSL
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/GSL EXCLUDE_FROM_ALL)
-
 # Add Boost
 if (NOT PISA_SYSTEM_BOOST)
     add_subdirectory(boost-cmake)

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
+#include <span>
 #include <string_view>
 
 #include <fmt/format.h>
-#include <gsl/span>
 
 #include "codec/block_codec.hpp"
 
@@ -44,6 +45,6 @@ struct BlockCodecRegistry {
 /**
  * Lists the names of all known block codecs.
  */
-[[nodiscard]] constexpr auto get_block_codec_names() -> gsl::span<std::string_view const>;
+[[nodiscard]] constexpr auto get_block_codec_names() -> std::span<std::string_view const>;
 
 }  // namespace pisa

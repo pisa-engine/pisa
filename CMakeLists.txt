@@ -127,7 +127,6 @@ target_link_libraries(pisa
         Boost::boost
         mio
         mio_base
-        GSL
         spdlog
         fmt::fmt
         range-v3

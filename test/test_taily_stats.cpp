@@ -1,12 +1,11 @@
-#include "type_safe.hpp"
-#include <taily.hpp>
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
 #include <array>
+#include <span>
 
 #include <boost/interprocess/streams/bufferstream.hpp>
-#include <gsl/span>
+#include <taily.hpp>
 
 #include "binary_freq_collection.hpp"
 #include "io.hpp"
@@ -15,6 +14,7 @@
 #include "scorer/scorer.hpp"
 #include "taily_stats.hpp"
 #include "temporary_directory.hpp"
+#include "type_safe.hpp"
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 
@@ -23,7 +23,7 @@ using taily::Feature_Statistics;
 void write_documents(std::filesystem::path const& path) {
     pisa::io::write_data(
         path.string(),
-        gsl::span<std::byte const>(std::array<std::byte, 44>{
+        std::span<std::byte const>(std::array<std::byte, 44>{
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},
             std::byte{6}, std::byte{0}, std::byte{0}, std::byte{0},  //< #docs
             std::byte{2}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
@@ -42,7 +42,7 @@ void write_documents(std::filesystem::path const& path) {
 void write_frequencies(std::filesystem::path const& path) {
     pisa::io::write_data(
         path.string(),
-        gsl::span<std::byte const>(std::array<std::byte, 36>{
+        std::span<std::byte const>(std::array<std::byte, 36>{
             std::byte{2}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //< term 0
@@ -59,7 +59,7 @@ void write_frequencies(std::filesystem::path const& path) {
 void write_sizes(std::filesystem::path const& path) {
     pisa::io::write_data(
         path.string(),
-        gsl::span<std::byte const>(std::array<std::byte, 28>{
+        std::span<std::byte const>(std::array<std::byte, 28>{
             std::byte{5}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //
             std::byte{1}, std::byte{0}, std::byte{0}, std::byte{0},  //

@@ -2,9 +2,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <span>
 #include <unordered_set>
-
-#include <gsl/span>
 
 #include "binary_freq_collection.hpp"
 #include "util/progress.hpp"
@@ -12,7 +11,7 @@
 namespace pisa {
 
 template <typename T>
-std::ostream& write_sequence(std::ostream& os, gsl::span<T> sequence) {
+std::ostream& write_sequence(std::ostream& os, std::span<T> sequence) {
     auto length = static_cast<uint32_t>(sequence.size());
     os.write(reinterpret_cast<const char*>(&length), sizeof(length));
     os.write(reinterpret_cast<const char*>(sequence.data()), length * sizeof(T));
@@ -47,7 +46,7 @@ void sample_inverted_index(
     std::ofstream fos(output_basename + ".freqs");
 
     auto document_count = static_cast<std::uint32_t>(input.num_docs());
-    write_sequence(dos, gsl::make_span<std::uint32_t const>(&document_count, 1));
+    write_sequence(dos, std::span<std::uint32_t const>(&document_count, 1));
     pisa::progress progress("Sampling inverted index", input.size());
     size_t term = 0;
     for (auto const& plist: input) {
@@ -68,8 +67,8 @@ void sample_inverted_index(
             sampled_freqs.push_back(plist.freqs[index]);
         }
 
-        write_sequence(dos, gsl::span<std::uint32_t const>(sampled_docs));
-        write_sequence(fos, gsl::span<std::uint32_t const>(sampled_freqs));
+        write_sequence(dos, std::span<std::uint32_t const>(sampled_docs));
+        write_sequence(fos, std::span<std::uint32_t const>(sampled_freqs));
         term += 1;
         progress.update(1);
     }
