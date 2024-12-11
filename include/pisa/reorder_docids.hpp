@@ -4,15 +4,16 @@
 #include <cstdint>
 #include <fstream>
 #include <random>
+#include <span>
 #include <string>
 #include <vector>
 
-#include <gsl/span>
 #include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"
 #include "payload_vector.hpp"
 #include "recursive_graph_bisection.hpp"
+#include "span.hpp"
 #include "util/inverted_index_utils.hpp"
 #include "util/progress.hpp"
 
@@ -80,8 +81,8 @@ namespace detail {
     forward_index fwd = options.input_fwd
         ? forward_index::read(*options.input_fwd)
         : forward_index::from_inverted_index(
-            options.input_basename, options.min_length, options.compress_fwd
-        );
+              options.input_basename, options.min_length, options.compress_fwd
+          );
 
     if (options.output_fwd) {
         forward_index::write(fwd, *options.output_fwd);
@@ -137,7 +138,7 @@ struct ReorderOptions {
 inline auto reorder_postings(
     binary_freq_collection const& input,
     std::string_view output_basename,
-    gsl::span<std::uint32_t const> mapping
+    std::span<std::uint32_t const> mapping
 ) {
     pisa::progress progress("Reassigning IDs in posting lists", input.size());
 
@@ -149,7 +150,7 @@ inline auto reorder_postings(
     std::vector<std::pair<std::uint32_t, std::uint32_t>> posting_list;
     for (const auto& seq: input) {
         for (size_t i = 0; i < seq.docs.size(); ++i) {
-            posting_list.emplace_back(mapping[seq.docs.begin()[i]], seq.freqs.begin()[i]);
+            posting_list.emplace_back(pisa::at(mapping, seq.docs.begin()[i]), seq.freqs.begin()[i]);
         }
 
         std::sort(posting_list.begin(), posting_list.end());
@@ -169,7 +170,7 @@ inline auto reorder_postings(
 inline auto reorder_lexicon(
     std::string const& input_lexicon,
     std::string const& output_lexicon,
-    gsl::span<std::uint32_t const> mapping
+    std::span<std::uint32_t const> mapping
 )
 
 {
@@ -187,7 +188,7 @@ inline auto reorder_lexicon(
 inline auto reorder_sizes(
     binary_collection const& input_sizes,
     std::uint64_t num_docs,
-    gsl::span<std::uint32_t const> mapping,
+    std::span<std::uint32_t const> mapping,
     std::string_view output_basename
 ) {
     pisa::progress progress("Reordering document sizes", num_docs);
@@ -195,8 +196,11 @@ inline auto reorder_sizes(
     if (sizes.size() != num_docs) {
         throw std::invalid_argument("Invalid sizes file");
     }
+    if (mapping.size() != num_docs) {
+        throw std::invalid_argument("Invalid mapping size");
+    }
 
-    auto size_sequence = gsl::span(sizes.begin(), sizes.size());
+    auto size_sequence = std::span(sizes.begin(), sizes.size());
     std::vector<std::uint32_t> new_sizes(num_docs);
     for (size_t i = 0; i < num_docs; ++i) {
         new_sizes[mapping[i]] = size_sequence[i];
@@ -212,7 +216,7 @@ inline void reorder_from_mapping(
     binary_freq_collection const& input_collection,
     binary_collection const& input_sizes,
     ReorderOptions const& options,
-    gsl::span<std::uint32_t const> mapping
+    std::span<std::uint32_t const> mapping
 ) {
     auto num_docs = input_collection.num_docs();
     reorder_sizes(input_sizes, num_docs, mapping, options.output_basename);

@@ -3,7 +3,6 @@
 #include <map>
 #include <sstream>
 
-#include <gsl/gsl_assert>
 #include <range/v3/view/iota.hpp>
 #include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
@@ -93,7 +92,9 @@ auto Forward_Index_Builder::collect_terms(std::string const& basename, std::ptrd
     std::stack<Term_Span> spans;
     std::vector<std::string> terms;
     auto merge_spans = [&](Term_Span lhs, Term_Span rhs) {
-        Expects(lhs.last == rhs.first);
+        if (lhs.last != rhs.first) {
+            throw std::invalid_argument("first and last elements are not equal");
+        }
         auto first = std::next(terms.begin(), lhs.first);
         auto mid = std::next(terms.begin(), lhs.last);
         auto last = std::next(terms.begin(), rhs.last);

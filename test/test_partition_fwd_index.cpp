@@ -4,10 +4,10 @@
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
+#include <span>
 #include <string>
 
 #include <fmt/ostream.h>
-#include <gsl/span>
 #include <range/v3/action/transform.hpp>
 #include <range/v3/algorithm/stable_sort.hpp>
 #include <range/v3/range/conversion.hpp>
@@ -19,6 +19,7 @@
 #include "binary_collection.hpp"
 #include "forward_index_builder.hpp"
 #include "invert.hpp"
+#include "io.hpp"
 #include "payload_vector.hpp"
 #include "pisa_config.hpp"
 #include "sharding.hpp"
@@ -78,7 +79,7 @@ TEST_CASE("mapping_from_files", "[invert][unit]") {
     auto stream_pointers = ranges::views::transform(shards, [](auto const& s) { return s.get(); })
         | ranges::to<std::vector>();
     REQUIRE(
-        mapping_from_files(&full, gsl::span<std::istream*>(stream_pointers)).as_vector()
+        mapping_from_files(&full, std::span<std::istream*>(stream_pointers)).as_vector()
         == std::vector<Shard_Id>{0_s, 0_s, 0_s, 1_s, 1_s, 0_s, 2_s, 2_s, 2_s, 2_s, 2_s, 2_s}
     );
 }

@@ -2,13 +2,14 @@
 #include "catch2/catch.hpp"
 
 #include <algorithm>
+#include <span>
 #include <string_view>
 
 #include <fmt/format.h>
-#include <gsl/span>
 #include <rapidcheck.h>
 
 #include "payload_vector.hpp"
+#include "span.hpp"
 
 using namespace pisa;
 using namespace std::literals::string_view_literals;
@@ -22,14 +23,15 @@ inline std::byte operator"" _b(char c) {
 
 TEST_CASE("Unpack head", "[payload_vector][unit]") {
     std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
+    std::vector<std::byte> tail{1_b, 2_b, 3_b, 4_b, 5_b};
     REQUIRE(
         unpack_head<std::byte>(bytes)
-        == std::tuple(0_b, gsl::make_span(std::vector<std::byte>{1_b, 2_b, 3_b, 4_b, 5_b}))
+        == std::tuple(0_b, std::span<std::byte const>(tail.data(), tail.size()))
     );
     auto [b, i, s] = unpack_head<std::byte, uint32_t>(bytes);
     CHECK(b == 0_b);
     CHECK(i == uint32_t(67305985));
-    CHECK(s == gsl::make_span(std::vector<std::byte>{5_b}));
+    CHECK(s == std::span<std::byte const>(std::vector<std::byte>{5_b}));
     REQUIRE_THROWS_MATCHES(
         (unpack_head<std::byte, uint32_t, uint16_t>(bytes)),
         std::runtime_error,
@@ -45,22 +47,22 @@ TEST_CASE("Split span", "[payload_vector][unit]") {
     REQUIRE(
         split(bytes, 0)
         == std::tuple(
-            gsl::make_span(std::vector<std::byte>{}),
-            gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})
+            std::span<std::byte const>(std::vector<std::byte>{}),
+            std::span<std::byte const>(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b})
         )
     );
     REQUIRE(
         split(bytes, 4)
         == std::tuple(
-            gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
-            gsl::make_span(std::vector<std::byte>{4_b, 5_b})
+            std::span<std::byte const>(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b}),
+            std::span<std::byte const>(std::vector<std::byte>{4_b, 5_b})
         )
     );
     REQUIRE(
         split(bytes, 6)
         == std::tuple(
-            gsl::make_span(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
-            gsl::make_span(std::vector<std::byte>{})
+            std::span<std::byte const>(std::vector<std::byte>{0_b, 1_b, 2_b, 3_b, 4_b, 5_b}),
+            std::span<std::byte const>(std::vector<std::byte>{})
         )
     );
     REQUIRE_THROWS_MATCHES(
@@ -74,7 +76,9 @@ TEST_CASE("Split span", "[payload_vector][unit]") {
 
 TEST_CASE("Cast span", "[payload_vector][unit]") {
     std::vector<std::byte> bytes{0_b, 1_b, 2_b, 3_b, 4_b, 5_b};
-    REQUIRE(cast_span<uint16_t>(bytes) == gsl::make_span(std::vector<uint16_t>{256, 770, 1284}));
+    REQUIRE(
+        cast_span<uint16_t>(bytes) == std::span<uint16_t const>(std::vector<uint16_t>{256, 770, 1284})
+    );
     REQUIRE_THROWS_MATCHES(
         cast_span<uint32_t>(bytes),
         std::runtime_error,
@@ -89,7 +93,9 @@ TEST_CASE("Test string-payload vector", "[payload_vector][unit]") {
     std::vector<std::byte> payloads{
         'a'_b, 'b'_b, 'c'_b, 'd'_b, 'e'_b, 'f'_b, 'g'_b, 'h'_b, 'i'_b, 'j'_b, 'k'_b, 'l'_b, 'm'_b
     };
-    Payload_Vector<std::string_view> vec(gsl::make_span(offsets), gsl::make_span(payloads));
+    Payload_Vector<std::string_view> vec(
+        std::span<std::size_t const>{offsets}, std::span<std::byte const>(payloads)
+    );
     SECTION("size") {
         REQUIRE(vec.size() == 4);
     }
@@ -160,7 +166,7 @@ TEST_CASE("Test string-payload vector", "[payload_vector][unit]") {
 TEST_CASE("Test payload vector container", "[payload_vector][unit]") {
     std::vector<std::string> vec{"abc", "def", "ghij", "klm"};
     std::ostringstream str;
-    auto container = encode_payload_vector(gsl::span<std::string const>(vec));
+    auto container = encode_payload_vector(std::span<std::string const>(vec));
     Payload_Vector<std::string_view> pvec(container);
     REQUIRE(std::vector<std::string>(vec.begin(), vec.end()) == vec);
 }
@@ -168,7 +174,7 @@ TEST_CASE("Test payload vector container", "[payload_vector][unit]") {
 TEST_CASE("Test payload vector encoding", "[payload_vector][unit]") {
     std::vector<std::string> vec{"abc", "def", "ghij", "klm"};
     std::ostringstream str;
-    encode_payload_vector(gsl::span<std::string const>(vec)).to_stream(str);
+    encode_payload_vector(std::span<std::string const>(vec)).to_stream(str);
     auto encoded = str.str();
     // clang-format off
     REQUIRE(std::vector<char>(encoded.begin(), encoded.end()) == std::vector<char>{
@@ -194,7 +200,7 @@ TEST_CASE("Test payload vector decoding", "[payload_vector][unit]") {
             'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'};
     // clang-format on
     auto vec = Payload_Vector<std::string_view>::from(
-        gsl::make_span(reinterpret_cast<std::byte const*>(data.data()), data.size())
+        std::span(reinterpret_cast<std::byte const*>(data.data()), data.size())
     );
     REQUIRE(
         std::vector<std::string>(vec.begin(), vec.end())

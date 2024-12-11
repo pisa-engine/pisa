@@ -15,6 +15,7 @@
 #include "binary_collection.hpp"
 #include "payload_vector.hpp"
 #include "util/util.hpp"
+#include "io.hpp"
 
 namespace pisa {
 
@@ -52,7 +53,7 @@ auto resolve_shards(std::string_view basename, std::string_view suffix) -> std::
     return shards;
 }
 
-auto mapping_from_files(std::istream* full_titles, gsl::span<std::istream*> shard_titles)
+auto mapping_from_files(std::istream* full_titles, std::span<std::istream*> shard_titles)
     -> VecMap<Document_Id, Shard_Id> {
     std::unordered_map<std::string, Shard_Id> map;
     auto shard_id = Shard_Id(0);
@@ -85,7 +86,7 @@ auto mapping_from_files(std::istream* full_titles, gsl::span<std::istream*> shar
     return result;
 }
 
-auto mapping_from_files(std::string const& full_titles, gsl::span<std::string const> shard_titles)
+auto mapping_from_files(std::string const& full_titles, std::span<std::string const> shard_titles)
     -> VecMap<Document_Id, Shard_Id> {
     std::ifstream fis(full_titles);
     std::vector<std::unique_ptr<std::istream>> shard_is;
@@ -97,7 +98,7 @@ auto mapping_from_files(std::string const& full_titles, gsl::span<std::string co
     }
     auto title_files = shard_is | ranges::views::transform([](auto& is) { return is.get(); })
         | ranges::to<std::vector>();
-    return mapping_from_files(&fis, gsl::make_span(title_files));
+    return mapping_from_files(&fis, std::span(title_files));
 }
 
 auto create_random_mapping(int document_count, int shard_count, std::optional<std::uint64_t> seed)

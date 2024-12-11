@@ -79,9 +79,9 @@ namespace pisa { namespace invert {
             document_sizes.begin(),
             [](auto const& terms) { return terms.size(); }
         );
-        gsl::index batch_size = (documents.size() + threads - 1) / threads;
+        std::size_t batch_size = (documents.size() + threads - 1) / threads;
         std::vector<ForwardIndexSlice> batches;
-        for (gsl::index first_idx_in_batch = 0; first_idx_in_batch < documents.size();
+        for (std::size_t first_idx_in_batch = 0; first_idx_in_batch < documents.size();
              first_idx_in_batch += batch_size) {
             auto last_idx_in_batch = std::min(first_idx_in_batch + batch_size, documents.size());
             auto first_document_in_batch = first_document_id + first_idx_in_batch;
@@ -116,19 +116,19 @@ namespace pisa { namespace invert {
         std::ofstream fstream(basename + ".freqs");
         std::ofstream sstream(basename + ".sizes");
         std::uint32_t count = index.document_sizes.size();
-        write_sequence(dstream, gsl::make_span<uint32_t const>(&count, 1));
+        write_sequence(dstream, std::span<uint32_t const>(&count, 1));
         for (auto term: ranges::views::iota(Term_Id(0), Term_Id(term_count))) {
             if (auto pos = index.documents.find(term); pos != index.documents.end()) {
                 auto const& documents = pos->second;
                 auto const& frequencies = index.frequencies.at(term);
-                write_sequence(dstream, gsl::span<Document_Id const>(documents));
-                write_sequence(fstream, gsl::span<Frequency const>(frequencies));
+                write_sequence(dstream, std::span<Document_Id const>(documents));
+                write_sequence(fstream, std::span<Frequency const>(frequencies));
             } else {
-                write_sequence(dstream, gsl::span<Document_Id const>());
-                write_sequence(fstream, gsl::span<Frequency const>());
+                write_sequence(dstream, std::span<Document_Id const>());
+                write_sequence(fstream, std::span<Frequency const>());
             }
         }
-        write_sequence(sstream, gsl::span<uint32_t const>(index.document_sizes));
+        write_sequence(sstream, std::span<uint32_t const>(index.document_sizes));
     }
 
     [[nodiscard]] auto build_batches(
@@ -139,7 +139,7 @@ namespace pisa { namespace invert {
         auto doc_iter = ++coll.begin();
         uint32_t documents_processed = 0;
         while (doc_iter != coll.end()) {
-            std::vector<gsl::span<Term_Id const>> documents;
+            std::vector<std::span<Term_Id const>> documents;
             for (; doc_iter != coll.end() && documents.size() < params.batch_size; ++doc_iter) {
                 auto document_sequence = *doc_iter;
                 documents.emplace_back(
@@ -173,7 +173,7 @@ namespace pisa { namespace invert {
         }
 
         std::ofstream sos(output_basename + ".sizes");
-        write_sequence(sos, gsl::span<uint32_t const>(document_sizes));
+        write_sequence(sos, std::span<uint32_t const>(document_sizes));
 
         std::vector<binary_collection::const_iterator> doc_iterators;
         std::vector<binary_collection::const_iterator> freq_iterators;
@@ -193,7 +193,7 @@ namespace pisa { namespace invert {
         std::ofstream dos(output_basename + ".docs");
         std::ofstream fos(output_basename + ".freqs");
         auto document_count = static_cast<uint32_t>(document_sizes.size());
-        write_sequence(dos, gsl::make_span<uint32_t const>(&document_count, 1));
+        write_sequence(dos, std::span<uint32_t const>(&document_count, 1));
         size_t postings_count = 0;
         for (auto term_id: ranges::views::iota(uint32_t(0), term_count)) {
             std::vector<uint32_t> dlist;
@@ -225,8 +225,8 @@ namespace pisa { namespace invert {
                 throw std::runtime_error(msg);
             }
             postings_count += dlist.size();
-            write_sequence(dos, gsl::span<uint32_t const>(dlist));
-            write_sequence(fos, gsl::span<uint32_t const>(flist));
+            write_sequence(dos, std::span<uint32_t const>(dlist));
+            write_sequence(fos, std::span<uint32_t const>(flist));
         }
 
         spdlog::info("Number of terms: {}", term_count);

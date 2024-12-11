@@ -1,17 +1,9 @@
-#include <algorithm>
-#include <thread>
-#include <vector>
-
-#include "CLI/CLI.hpp"
-#include "gsl/span"
 #include "spdlog/spdlog.h"
 #include "tbb/global_control.h"
 #include "tbb/task_group.h"
 
 #include "app.hpp"
-#include "binary_collection.hpp"
 #include "invert.hpp"
-#include "util/util.hpp"
 
 int main(int argc, char** argv) {
     CLI::App app{"Constructs an inverted index from a forward index."};

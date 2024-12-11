@@ -1,5 +1,7 @@
 #include <cmath>
+#include <stdexcept>
 
+#include "fmt/core.h"
 #include "linear_quantizer.hpp"
 
 namespace pisa {
@@ -19,7 +21,11 @@ LinearQuantizer::LinearQuantizer(float max, std::uint8_t bits)
 }
 
 auto LinearQuantizer::operator()(float value) const -> std::uint32_t {
-    Expects(0 <= value && value <= m_max);
+    if (value < 0 || value > m_max) {
+        throw std::invalid_argument(
+            fmt::format("quantized value must be between 0 and {} but {} given", m_max, value)
+        );
+    }
     return std::round(value * m_scale) + 1;
 }
 

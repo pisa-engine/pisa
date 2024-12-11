@@ -1,3 +1,5 @@
+#include <span>
+
 #include "in_memory_index.hpp"
 
 auto VectorCursor::size() const noexcept -> std::size_t {
@@ -31,7 +33,7 @@ void VectorCursor::next_geq(std::uint32_t docid) {
 
 void VectorCursor::try_finish() {
     if (documents.empty()) {
-        documents = gsl::make_span(sentinel_document);
+        documents = std::span(sentinel_document);
     }
 }
 
@@ -42,10 +44,7 @@ auto InMemoryIndex::operator[](std::uint32_t term_id) const -> VectorCursor {
         );
     }
     return {
-        gsl::make_span(documents[term_id]),
-        gsl::make_span(frequencies[term_id]),
-        num_documents,
-        {num_documents}
+        std::span(documents[term_id]), std::span(frequencies[term_id]), num_documents, {num_documents}
     };
 }
 

@@ -2,9 +2,9 @@
 
 #include <filesystem>
 #include <memory>
+#include <span>
 #include <vector>
 
-#include <gsl/span>
 #include <mio/mmap.hpp>
 
 namespace pisa {
@@ -29,7 +29,7 @@ class MemorySource {
     /// Constructs a memory source from a vector.
     ///
     /// NOTE: This is non-owning source, so tread carefully!
-    [[nodiscard]] static auto from_span(gsl::span<char> span) -> MemorySource;
+    [[nodiscard]] static auto from_span(std::span<char> span) -> MemorySource;
 
     /// Constructs a memory source using a memory mapped file.
     ///
@@ -65,13 +65,13 @@ class MemorySource {
     [[nodiscard]] auto size() const -> size_type;
 
     /// Full span over memory.
-    [[nodiscard]] auto span() const -> gsl::span<value_type const>;
+    [[nodiscard]] auto span() const -> std::span<value_type const>;
 
     /// Subspan of memory.
     ///
     /// \throws std::out_of_range   if offset + size is out of bounds
-    [[nodiscard]] auto subspan(size_type offset, size_type size = gsl::dynamic_extent) const
-        -> gsl::span<value_type const>;
+    [[nodiscard]] auto subspan(size_type offset, size_type size = std::dynamic_extent) const
+        -> std::span<value_type const>;
 
     /// Type erasure interface. Any type implementing it are supported as memory source.
     struct Interface {

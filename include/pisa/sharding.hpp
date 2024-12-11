@@ -1,11 +1,10 @@
 #pragma once
 
 #include <optional>
+#include <span>
 
-#include <gsl/span>
 #include <spdlog/spdlog.h>
 
-#include "io.hpp"
 #include "type_safe.hpp"
 #include "vec_map.hpp"
 
@@ -18,10 +17,10 @@ format_shard(std::string_view basename, Shard_Id shard, std::string_view suffix 
 
 auto resolve_shards(std::string_view basename, std::string_view suffix = {}) -> std::vector<Shard_Id>;
 
-auto mapping_from_files(std::istream* full_titles, gsl::span<std::istream*> shard_titles)
+auto mapping_from_files(std::istream* full_titles, std::span<std::istream*> shard_titles)
     -> VecMap<Document_Id, Shard_Id>;
 
-auto mapping_from_files(std::string const& full_titles, gsl::span<std::string const> shard_titles)
+auto mapping_from_files(std::string const& full_titles, std::span<std::string const> shard_titles)
     -> VecMap<Document_Id, Shard_Id>;
 
 auto create_random_mapping(
