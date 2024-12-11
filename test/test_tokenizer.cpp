@@ -1,10 +1,10 @@
 #define CATCH_CONFIG_MAIN
 
-#include <catch2/catch.hpp>
+#include <span>
 
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
-#include <gsl/span>
+#include <catch2/catch.hpp>
 
 #include "payload_vector.hpp"
 #include "query.hpp"
@@ -85,7 +85,7 @@ TEST_CASE("Parse query terms to ids") {
     pisa::TemporaryDirectory tmpdir;
     auto lexfile = tmpdir.path() / "lex";
     encode_payload_vector(
-        gsl::make_span(std::vector<std::string>{"lol", "obama", "term2", "tree", "usa"})
+        std::span<std::string const>(std::vector<std::string>{"lol", "obama", "term2", "tree", "usa"})
     )
         .to_file(lexfile.string());
 

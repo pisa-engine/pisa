@@ -1,10 +1,10 @@
 #include "codec/block_codec_registry.hpp"
 
 #include <array>
+#include <span>
 #include <string_view>
 
 #include <fmt/format.h>
-#include <gsl/span>
 
 #include "codec/block_codec.hpp"
 #include "codec/interpolative.hpp"
@@ -36,8 +36,8 @@ auto get_block_codec(std::string_view name) -> BlockCodecPtr {
     return BlockCodecs::get(name);
 }
 
-constexpr auto get_block_codec_names() -> gsl::span<std::string_view const> {
-    return gsl::make_span<std::string_view const>(&BlockCodecs::names[0], BlockCodecs::count());
+constexpr auto get_block_codec_names() -> std::span<std::string_view const> {
+    return std::span<std::string_view const>(&BlockCodecs::names[0], BlockCodecs::count());
 }
 
 }  // namespace pisa

@@ -2,9 +2,7 @@
 #include "catch2/catch.hpp"
 
 #include <fmt/format.h>
-#include <gsl/span>
 
-#include "cursor/scored_cursor.hpp"
 #include "in_memory_index.hpp"
 #include "intersection.hpp"
 
@@ -40,7 +38,7 @@ TEST_CASE("Vector cursor", "[intersection][unit]") {
     std::vector<std::uint32_t> documents{0, 3, 5, 6, 87, 111};
     std::vector<std::uint32_t> frequencies{1, 4, 6, 7, 88, 112};
 
-    auto cursor = VectorCursor{gsl::make_span(documents), gsl::make_span(frequencies), 200, {200}};
+    auto cursor = VectorCursor{std::span(documents), std::span(frequencies), 200, {200}};
 
     REQUIRE(cursor.size() == 6);
 
@@ -74,7 +72,7 @@ TEST_CASE("Vector cursor", "[intersection][unit]") {
     REQUIRE(cursor.docid() == 200);
 
     // NEXTGEQ
-    cursor = VectorCursor{gsl::make_span(documents), gsl::make_span(frequencies), 200, {200}};
+    cursor = VectorCursor{std::span(documents), std::span(frequencies), 200, {200}};
 
     REQUIRE(cursor.docid() == 0);
     REQUIRE(cursor.freq() == 1);

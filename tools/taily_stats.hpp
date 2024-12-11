@@ -1,7 +1,5 @@
 #pragma once
 
-#include <gsl/span>
-
 #include "app.hpp"
 #include "pisa/taily_stats.hpp"
 #include "pisa/wand_data.hpp"

@@ -1,13 +1,13 @@
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include <fmt/format.h>
-#include <gsl/span>
 
 struct VectorCursor {
-    gsl::span<std::uint32_t const> documents;
-    gsl::span<std::uint32_t const> frequencies;
+    std::span<std::uint32_t const> documents;
+    std::span<std::uint32_t const> frequencies;
     std::uint32_t max_docid;
 
     std::array<std::uint32_t, 1> sentinel_document;

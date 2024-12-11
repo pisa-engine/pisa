@@ -1,16 +1,16 @@
 #pragma once
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <span>
 #include <string_view>
 #include <vector>
 
 #include <fmt/format.h>
-#include <gsl/gsl_assert>
-#include <gsl/span>
 
 namespace pisa {
 
@@ -24,8 +24,8 @@ namespace detail {
         using value_type = Payload_View;
         using difference_type = std::make_signed_t<size_type>;
 
-        typename gsl::span<size_type const>::iterator offset_iter;
-        typename gsl::span<std::byte const>::iterator payload_iter;
+        typename std::span<size_type const>::iterator offset_iter;
+        typename std::span<std::byte const>::iterator payload_iter;
 
         constexpr auto operator++() -> Payload_Vector_Iterator& {
             ++offset_iter;
@@ -194,7 +194,7 @@ auto encode_payload_vector(InputIterator first, InputIterator last, PayloadEncod
 }
 
 template <typename Payload, typename PayloadEncodingFn>
-auto encode_payload_vector(gsl::span<Payload const> values, PayloadEncodingFn encoding_fn) {
+auto encode_payload_vector(std::span<Payload const> values, PayloadEncodingFn encoding_fn) {
     return encode_payload_vector(values.begin(), values.end(), encoding_fn);
 }
 
@@ -207,13 +207,13 @@ auto encode_payload_vector(InputIterator first, InputIterator last) {
     });
 }
 
-inline auto encode_payload_vector(gsl::span<std::string const> values) {
+inline auto encode_payload_vector(std::span<std::string const> values) {
     return encode_payload_vector(values.begin(), values.end());
 }
 
 template <typename... T>
-constexpr auto unpack_head(gsl::span<std::byte const> mem)
-    -> std::tuple<T..., gsl::span<std::byte const>> {
+constexpr auto unpack_head(std::span<std::byte const> mem)
+    -> std::tuple<T..., std::span<std::byte const>> {
     static_assert(detail::all_pod<T...>::value);
     auto offset = detail::sizeofs<T...>::value;
     if (offset > mem.size()) {
@@ -223,10 +223,10 @@ constexpr auto unpack_head(gsl::span<std::byte const> mem)
     }
     auto tail = mem.subspan(offset);
     auto head = detail::unpack<T...>(mem.data());
-    return std::tuple_cat(head, std::tuple<gsl::span<std::byte const>>(tail));
+    return std::tuple_cat(head, std::tuple<std::span<std::byte const>>(tail));
 }
 
-[[nodiscard]] inline auto split(gsl::span<std::byte const> mem, std::size_t offset) {
+[[nodiscard]] inline auto split(std::span<std::byte const> mem, std::size_t offset) {
     if (offset > mem.size()) {
         throw std::runtime_error(
             fmt::format("Cannot split span of size {} at position {}", mem.size(), offset)
@@ -236,14 +236,14 @@ constexpr auto unpack_head(gsl::span<std::byte const> mem)
 }
 
 template <typename T>
-[[nodiscard]] auto cast_span(gsl::span<std::byte const> mem) -> gsl::span<T const> {
+[[nodiscard]] auto cast_span(std::span<std::byte const> mem) -> std::span<T const> {
     auto type_size = sizeof(T);
     if (mem.size() % type_size != 0) {
         throw std::runtime_error(
             fmt::format("Failed to cast byte-span to span of T of size {}", type_size)
         );
     }
-    return gsl::make_span(reinterpret_cast<T const*>(mem.data()), mem.size() / type_size);
+    return std::span(reinterpret_cast<T const*>(mem.data()), mem.size() / type_size);
 }
 
 template <typename Payload_View = std::string_view>
@@ -257,17 +257,17 @@ class Payload_Vector {
     explicit Payload_Vector(Payload_Vector_Buffer const& container)
         : offsets_(container.offsets), payloads_(container.payloads) {}
 
-    Payload_Vector(gsl::span<size_type const> offsets, gsl::span<std::byte const> payloads)
+    Payload_Vector(std::span<size_type const> offsets, std::span<std::byte const> payloads)
         : offsets_(offsets), payloads_(payloads) {}
 
     template <typename ContiguousContainer>
     [[nodiscard]] constexpr static auto from(ContiguousContainer&& mem) -> Payload_Vector {
-        return from(gsl::make_span(reinterpret_cast<std::byte const*>(mem.data()), mem.size()));
+        return from(std::span(reinterpret_cast<std::byte const*>(mem.data()), mem.size()));
     }
 
-    [[nodiscard]] static auto from(gsl::span<std::byte const> mem) -> Payload_Vector {
+    [[nodiscard]] static auto from(std::span<std::byte const> mem) -> Payload_Vector {
         size_type length;
-        gsl::span<std::byte const> tail;
+        std::span<std::byte const> tail;
         try {
             std::tie(length, tail) = unpack_head<size_type>(mem);
         } catch (std::runtime_error const& err) {
@@ -276,7 +276,7 @@ class Payload_Vector {
             );
         }
 
-        gsl::span<std::byte const> offsets, payloads;
+        std::span<std::byte const> offsets, payloads;
         try {
             std::tie(offsets, payloads) = split(tail, (length + 1U) * sizeof(size_type));
         } catch (std::runtime_error const& err) {
@@ -314,8 +314,8 @@ class Payload_Vector {
     }
 
   private:
-    gsl::span<size_type const> offsets_;
-    gsl::span<std::byte const> payloads_;
+    std::span<size_type const> offsets_;
+    std::span<std::byte const> payloads_;
 };
 
 /// Find the position of `value` in a sorted range.
@@ -339,7 +339,7 @@ auto binary_search(Iter begin, Iter end, T value, Compare cmp = std::less<>{})
 /// It calls the function overload that takes iterators. See that overload's documentation for more
 /// information.
 template <typename T, typename Compare = std::less<T>>
-auto binary_search(gsl::span<std::add_const_t<T>> range, T value, Compare cmp = std::less<T>{})
+auto binary_search(std::span<std::add_const_t<T>> range, T value, Compare cmp = std::less<T>{})
     -> std::optional<std::ptrdiff_t> {
     return pisa::binary_search(range.begin(), range.end(), value, cmp);
 }

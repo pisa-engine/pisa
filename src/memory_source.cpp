@@ -12,7 +12,7 @@ auto MemorySource::from_vector(std::vector<char> vec) -> MemorySource {
     return MemorySource(std::move(vec));
 }
 
-auto MemorySource::from_span(gsl::span<char> span) -> MemorySource {
+auto MemorySource::from_span(std::span<char> span) -> MemorySource {
     return MemorySource(span);
 }
 
@@ -59,17 +59,17 @@ auto MemorySource::size() const -> size_type {
     return m_source->size();
 }
 
-auto MemorySource::span() const -> gsl::span<value_type const> {
+auto MemorySource::span() const -> std::span<value_type const> {
     if (m_source == nullptr) {
-        return gsl::span<value_type const>();
+        return std::span<value_type const>();
     }
-    return gsl::span<value_type const>(begin(), size());
+    return std::span<value_type const>(begin(), size());
 }
 
-auto MemorySource::subspan(size_type offset, size_type size) const -> gsl::span<value_type const> {
+auto MemorySource::subspan(size_type offset, size_type size) const -> std::span<value_type const> {
     if (m_source == nullptr) {
-        if (offset == 0 && (size == 0 || size == gsl::dynamic_extent)) {
-            return gsl::span<value_type const>();
+        if (offset == 0 && (size == 0 || size == std::dynamic_extent)) {
+            return std::span<value_type const>();
         }
         throw std::out_of_range("Subspan out of bounds");
     }

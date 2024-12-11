@@ -1,13 +1,11 @@
-#include <algorithm>
 #include <exception>
-#include <random>
+#include <span>
 #include <thread>
 #include <vector>
 
 #include <CLI/CLI.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
-#include <gsl/span>
 #include <range/v3/view/chunk.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <range/v3/view/iota.hpp>
@@ -16,11 +14,7 @@
 #include <tbb/global_control.h>
 
 #include "app.hpp"
-#include "binary_collection.hpp"
-#include "io.hpp"
 #include "sharding.hpp"
-#include "util/util.hpp"
-#include "vec_map.hpp"
 
 using namespace pisa;
 using ranges::views::chunk;
@@ -56,7 +50,7 @@ int main(int argc, char** argv) {
             partition_fwd_index(input_basename, output_basename, mapping);
         } else if (*shard_files_option) {
             auto mapping = mapping_from_files(
-                fmt::format("{}.documents", input_basename), gsl::make_span(shard_files)
+                fmt::format("{}.documents", input_basename), std::span(shard_files)
             );
             partition_fwd_index(input_basename, output_basename, mapping);
         } else {
