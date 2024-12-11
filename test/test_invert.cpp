@@ -2,16 +2,15 @@
 #include "catch2/catch.hpp"
 
 #include <cstdio>
+#include <span>
 #include <string>
 
-#include <gsl/span>
+#include <mio/mmap.hpp>
 #include <range/v3/view/iota.hpp>
 
-#include "binary_collection.hpp"
 #include "filesystem.hpp"
 #include "invert.hpp"
 #include "payload_vector.hpp"
-#include "pisa_config.hpp"
 #include "temporary_directory.hpp"
 
 using namespace pisa;
@@ -19,9 +18,7 @@ using namespace pisa::literals;
 
 TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][unit]") {
     std::vector<std::vector<Term_Id>> documents = {{0_t, 1_t, 2_t, 3_t}, {1_t, 2_t, 3_t, 8_t}};
-    std::vector<gsl::span<Term_Id const>> spans = {
-        gsl::make_span(documents[0]), gsl::make_span(documents[1])
-    };
+    std::vector<std::span<Term_Id const>> spans = {std::span(documents[0]), std::span(documents[1])};
 
     auto postings =
         invert::map_to_postings(invert::ForwardIndexSlice{spans, ranges::views::iota(0_d, 2_d)});
@@ -208,12 +205,12 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]") {
         /* Doc 4 */ {8_t, 6_t, 9_t, 6_t, 6_t, 5_t, 4_t, 3_t, 1_t, 0_t, 6_t}
     };
 
-    std::vector<gsl::span<Term_Id const>> document_range;
+    std::vector<std::span<Term_Id const>> document_range;
     std::transform(
         collection.begin(),
         collection.end(),
         std::back_inserter(document_range),
-        [](auto const& vec) { return gsl::span<Term_Id const>(vec); }
+        [](auto const& vec) { return std::span<Term_Id const>(vec); }
     );
     size_t threads = 1;
 

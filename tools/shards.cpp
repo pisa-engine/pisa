@@ -2,7 +2,6 @@
 #include <vector>
 
 #include <CLI/CLI.hpp>
-#include <gsl/span>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <tbb/global_control.h>

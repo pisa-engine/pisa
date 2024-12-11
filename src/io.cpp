@@ -44,7 +44,7 @@ auto load_data(std::string const& data_file) -> std::vector<char> {
     return data;
 }
 
-void write_data(std::string const& data_file, gsl::span<std::byte const> bytes) {
+void write_data(std::string const& data_file, std::span<std::byte const> bytes) {
     std::ofstream os(data_file);
     os.write(reinterpret_cast<char const*>(bytes.data()), bytes.size());
 }

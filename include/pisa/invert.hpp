@@ -1,10 +1,10 @@
 #pragma once
 
 #include <optional>
+#include <span>
 #include <thread>
 #include <vector>
 
-#include <gsl/span>
 #include <range/v3/view/iota.hpp>
 #include <tbb/blocked_range.h>
 
@@ -16,7 +16,7 @@ namespace pisa { namespace invert {
     using PostingIterator = typename std::vector<Posting>::iterator;
     using Documents = std::unordered_map<Term_Id, std::vector<Document_Id>>;
     using Frequencies = std::unordered_map<Term_Id, std::vector<Frequency>>;
-    using DocumentRange = gsl::span<gsl::span<Term_Id const>>;
+    using DocumentRange = std::span<std::span<Term_Id const>>;
 
     /// Inverted index abstraction used internally in the inverting process.
     ///
@@ -42,7 +42,7 @@ namespace pisa { namespace invert {
 
     /// A single slice view over a chunk of a forward index.
     struct ForwardIndexSlice {
-        gsl::span<gsl::span<Term_Id const>> documents;
+        std::span<std::span<Term_Id const>> documents;
         ranges::iota_view<Document_Id, Document_Id> document_ids;
     };
 
