@@ -31,7 +31,7 @@ void progress::update(std::size_t inc) {
 
 void progress::print_status() {
     size_t progress = (100 * m_count) / m_goal;
-    std::chrono::seconds elapsed =
+    auto elapsed =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - m_start);
     if (progress != m_progress or elapsed != m_elapsed) {
         m_progress = progress;
@@ -43,12 +43,9 @@ void progress::print_status() {
 }
 
 std::ostream& progress::format_interval(std::ostream& out, std::chrono::seconds time) {
-    using std::chrono::hours;
-    using std::chrono::minutes;
-    using std::chrono::seconds;
-    hours h = std::chrono::duration_cast<hours>(time);
-    minutes m = std::chrono::duration_cast<minutes>(time - h);
-    seconds s = std::chrono::duration_cast<seconds>(time - h - m);
+    auto h = std::chrono::duration_cast<std::chrono::hours>(time);
+    auto m = std::chrono::duration_cast<std::chrono::minutes>(time - h);
+    auto s = std::chrono::duration_cast<std::chrono::seconds>(time - h - m);
     if (h.count() > 0) {
         out << h.count() << "h ";
     }
