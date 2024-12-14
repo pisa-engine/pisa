@@ -13,6 +13,8 @@ namespace pisa {
  */
 class BlockCodec {
   public:
+    virtual ~BlockCodec() = default;
+
     /**
      * Encodes a list of `n` unsigned integers and appends them to the output buffer.
      */
