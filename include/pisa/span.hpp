@@ -26,8 +26,8 @@ namespace pisa {
  * want checked access.
  */
 template <typename T>
-[[nodiscard]] constexpr auto at(std::span<T> const& span, typename std::span<T>::size_type pos)
-    -> std::span<T>::reference {
+[[nodiscard]] constexpr auto at(std::span<T> const& span, typename std::span<T>::size_type pos) ->
+    typename std::span<T>::reference {
     if (pos >= span.size()) {
         throw std::out_of_range("out of range access to span");
     }
