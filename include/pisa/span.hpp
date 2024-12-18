@@ -34,12 +34,47 @@ template <typename T>
     return span[pos];
 }
 
-}  // namespace pisa
-
-namespace std {
+template <typename T>
+[[nodiscard]] constexpr auto subspan_or_throw(
+    std::span<T> const& span,
+    typename std::span<T>::size_type offset,
+    typename std::span<T>::size_type count,
+    std::string const& error_msg
+) -> std::span<T> {
+    if (offset + count > span.size()) {
+        throw std::out_of_range(error_msg);
+    }
+    return span.subspan(offset, count);
+}
 
 template <typename T>
-[[nodiscard]] auto operator==(std::span<T> const& lhs, std::span<T> const& rhs) -> bool {
+[[nodiscard]] constexpr auto subspan_or_throw(
+    std::span<T> const& span,
+    typename std::span<T>::size_type offset,
+    typename std::span<T>::size_type count
+) -> std::span<T> {
+    return subspan_or_throw(span, offset, count, "out of range subspan");
+}
+
+template <typename T>
+[[nodiscard]] auto lex_lt(std::span<T> const& lhs, std::span<T> const& rhs) -> bool {
+    auto lit = lhs.begin();
+    auto rit = rhs.begin();
+    while (lit != lhs.end() && rit != rhs.end()) {
+        if (*lit < *rit) {
+            return true;
+        }
+        if (*lit > *rit) {
+            return false;
+        }
+        ++lit;
+        ++rit;
+    }
+    return lit == lhs.end() && rit != rhs.end();
+}
+
+template <typename T>
+[[nodiscard]] auto lex_eq(std::span<T> const& lhs, std::span<T> const& rhs) -> bool {
     if (lhs.size() != rhs.size()) {
         return false;
     }
@@ -51,6 +86,15 @@ template <typename T>
         }
     }
     return true;
+}
+
+}  // namespace pisa
+
+namespace std {
+
+template <typename T>
+[[nodiscard]] auto operator==(std::span<T> const& lhs, std::span<T> const& rhs) -> bool {
+    return ::pisa::lex_eq(lhs, rhs);
 }
 
 }  // namespace std
