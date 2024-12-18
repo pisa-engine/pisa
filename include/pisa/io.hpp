@@ -36,7 +36,7 @@ template <typename Function>
 void for_each_line(std::istream& is, Function fn) {
     std::string line;
     while (std::getline(is, line)) {
-        fn(line);
+        fn(std::move(line));
     }
 }
 

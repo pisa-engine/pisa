@@ -46,3 +46,7 @@
 - [`taily-stats`](cli/taily-stats.md)
 - [`taily-thresholds`](cli/taily-thresholds.md)
 - [`thresholds`](cli/thresholds.md)
+
+# Specifications
+ 
+- [Lookup Table](specs/lookup-table.md)
