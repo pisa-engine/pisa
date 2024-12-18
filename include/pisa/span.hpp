@@ -26,12 +26,66 @@ namespace pisa {
  * want checked access.
  */
 template <typename T>
-[[nodiscard]] constexpr auto at(std::span<T> const& span, typename std::span<T>::size_type pos)
-    -> std::span<T>::reference {
+[[nodiscard]] constexpr auto at(std::span<T> const& span, typename std::span<T>::size_type pos) ->
+    typename std::span<T>::reference {
     if (pos >= span.size()) {
         throw std::out_of_range("out of range access to span");
     }
     return span[pos];
+}
+
+template <typename T>
+[[nodiscard]] constexpr auto subspan_or_throw(
+    std::span<T> const& span,
+    typename std::span<T>::size_type offset,
+    typename std::span<T>::size_type count,
+    std::string const& error_msg
+) -> std::span<T> {
+    if (offset + count > span.size()) {
+        throw std::out_of_range(error_msg);
+    }
+    return span.subspan(offset, count);
+}
+
+template <typename T>
+[[nodiscard]] constexpr auto subspan_or_throw(
+    std::span<T> const& span,
+    typename std::span<T>::size_type offset,
+    typename std::span<T>::size_type count
+) -> std::span<T> {
+    return subspan_or_throw(span, offset, count, "out of range subspan");
+}
+
+template <typename T>
+[[nodiscard]] auto lex_lt(std::span<T> const& lhs, std::span<T> const& rhs) -> bool {
+    auto lit = lhs.begin();
+    auto rit = rhs.begin();
+    while (lit != lhs.end() && rit != rhs.end()) {
+        if (*lit < *rit) {
+            return true;
+        }
+        if (*lit > *rit) {
+            return false;
+        }
+        ++lit;
+        ++rit;
+    }
+    return rit == rhs.end() && lit != lhs.end();
+}
+
+template <typename T>
+[[nodiscard]] auto lex_eq(std::span<T> const& lhs, std::span<T> const& rhs) -> bool {
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    auto lit = lhs.begin();
+    auto rit = rhs.begin();
+    while (lit != lhs.end()) {
+        if (*lit++ != *rit++) {
+            return false;
+        }
+    }
+    return true;
 }
 
 }  // namespace pisa

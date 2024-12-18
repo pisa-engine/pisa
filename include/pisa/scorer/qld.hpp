@@ -28,7 +28,7 @@ struct qld: public WandIndexScorer<Wand> {
         float term_occurrences = this->m_wdata.term_occurrence_count(term_id);
         float term_component = collection_len / (mu * term_occurrences);
 
-        auto s = [this, mu, term_component, term_id](uint32_t doc, uint32_t freq) {
+        auto s = [this, mu, term_component](uint32_t doc, uint32_t freq) {
             float doclen = this->m_wdata.doc_len(doc);
             float a = std::log(mu / (doclen + mu));
             float b = std::log1p(freq * term_component);
