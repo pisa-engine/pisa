@@ -108,3 +108,40 @@ jobs:
     - name: Bulid docker image
       shell: bash
       run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/headers/Dockerfile"
+
+  mac_tests:
+    runs-on: macos-13
+    strategy:
+      matrix:
+        name: [macos-xcode-13.2]
+        include:
+          - name: macos-xcode-13.2
+            os: macos-latest
+            compiler: "xcode"
+            version: "13.2"
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install (macOS)
+      if: runner.os == 'macOS'
+      run: |
+          brew install autoconf automake libtool cmake
+
+    - name: Create Build Environment
+      shell: bash
+      run: cmake -E make_directory ${{runner.workspace}}/build
+
+    - name: Configure
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake "$GITHUB_WORKSPACE" -DCMAKE_BUILD_TYPE=Debug -DPISA_BUILD_TOOLS=ON -DPISA_CI_BUILD=ON ..
+
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Debug -- -j 4
+
+    - name: Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -VV -j 4
