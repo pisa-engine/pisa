@@ -2,13 +2,9 @@
 
 #include <algorithm>
 #include <vector>
-
-#include "boost/function.hpp"
-#include "boost/lambda/bind.hpp"
 #include "boost/lambda/construct.hpp"
 #include "boost/range.hpp"
 #include "boost/utility.hpp"
-
 #include "util/intrinsics.hpp"
 
 namespace pisa { namespace mapper {
@@ -19,7 +15,7 @@ namespace pisa { namespace mapper {
         class sizeof_visitor;
     }  // namespace detail
 
-    using deleter_t = boost::function<void()>;
+    using deleter_t = std::function<void()>;
 
     template <typename T>  // T must be a POD
     class mappable_vector {
@@ -38,15 +34,16 @@ namespace pisa { namespace mapper {
         explicit mappable_vector(Range const& from) : m_data(0), m_size(0) {
             size_t size = boost::size(from);
             T* data = new T[size];
-            m_deleter = boost::lambda::bind(boost::lambda::delete_array(), data);
-
+            m_deleter = [&data]() {
+                delete[] data;
+            };
             std::copy(boost::begin(from), boost::end(from), data);
             m_data = data;
             m_size = size;
         }
 
         ~mappable_vector() {
-            if (not m_deleter.empty()) {
+            if (m_deleter) {
                 m_deleter();
             }
         }
@@ -66,7 +63,9 @@ namespace pisa { namespace mapper {
             if (m_size > 0) {
                 auto* new_vec = new std::vector<T>;
                 new_vec->swap(vec);
-                m_deleter = boost::lambda::bind(boost::lambda::delete_ptr(), new_vec);
+                m_deleter = [&new_vec]() {
+                    delete new_vec;
+                };
                 m_data = &(*new_vec)[0];
             }
         }
