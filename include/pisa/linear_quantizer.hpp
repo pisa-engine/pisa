@@ -19,7 +19,6 @@ struct LinearQuantizer {
   private:
     std::uint32_t m_range;
     float m_max;
-    float m_scale;
 };
 
 }  // namespace pisa
