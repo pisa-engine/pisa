@@ -37,7 +37,7 @@ TemporaryDirectory::~TemporaryDirectory() {
     spdlog::debug("Removed a tmp dir {}", dir_.c_str());
 }
 
-auto TemporaryDirectory::path() -> std::filesystem::path const& {
+auto TemporaryDirectory::path() const -> std::filesystem::path const& {
     return dir_;
 }
 

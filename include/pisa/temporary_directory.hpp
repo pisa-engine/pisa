@@ -21,7 +21,7 @@ struct TemporaryDirectory {
     ~TemporaryDirectory();
 
     /** Returns the path to the created directory. */
-    [[nodiscard]] auto path() -> std::filesystem::path const&;
+    [[nodiscard]] auto path() const -> std::filesystem::path const&;
 
   private:
     std::filesystem::path dir_;
