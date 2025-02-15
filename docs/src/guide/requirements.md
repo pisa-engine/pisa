@@ -8,8 +8,11 @@ following configurations:
 - Linux:
     - GCC, versions: 10, 11, 12, 13
     - Clang 15, 16
-- MaxOS:
-    - XCode 13.2
+
+There are currently no MacOS builds running in CI because we have no one
+actively maintaining them. That said, Mac builds should in theory work
+on the x86 architecture. The new ARM-based architecture has not been
+tested.
 
 _Supporting Windows is planned but is currently not being actively
 worked on_, mostly due to a combination of man-hour shortage,
