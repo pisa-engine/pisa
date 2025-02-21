@@ -6,8 +6,8 @@ To compile PISA, you will need a compiler supporting the C++20 standard.
 Our continuous integration pipeline compiles PISA and runs tests in the
 following configurations:
 - Linux:
-    - GCC, versions: 10, 11, 12, 13
-    - Clang 15, 16
+    - GCC, versions: 10, 11, 12, 13, 14
+    - Clang 16, 17, 18, 19
 
 There are currently no MacOS builds running in CI because we have no one
 actively maintaining them. That said, Mac builds should in theory work
