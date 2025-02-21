@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        compiler: [gcc10, gcc11, gcc12, gcc13, clang15, clang16]
+        compiler: [gcc10, gcc11, gcc12, gcc13, gcc14, clang16, clang17, clang18, clang19]
         build_type: [Debug]
         sanitizers: [OFF]
         include:
           - compiler: gcc13   # Extra test for Release
             build_type: Release
-          - compiler: clang16 # Extra test with sanitizers
+          - compiler: clang19 # Extra test with sanitizers
             sanitizers: ON
 
     steps:
