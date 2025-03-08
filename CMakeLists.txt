@@ -145,6 +145,7 @@ target_link_libraries(pisa
         warcpp
         wapopp
         trecpp
+        nlohmann_json::nlohmann_json
 )
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)

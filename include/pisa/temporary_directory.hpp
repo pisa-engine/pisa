@@ -23,8 +23,15 @@ struct TemporaryDirectory {
     /** Returns the path to the created directory. */
     [[nodiscard]] auto path() const -> std::filesystem::path const&;
 
+    /**
+     * Directory will not be cleaned up when the destructor is called.
+     * Useful for debugging.
+     **/
+    void disable_cleanup();
+
   private:
     std::filesystem::path dir_;
+    bool cleanup_ = true;
 };
 
 };  // namespace pisa

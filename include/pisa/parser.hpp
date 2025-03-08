@@ -11,6 +11,8 @@ namespace pisa {
 void parse_plaintext_content(std::string&& content, std::function<void(std::string&&)> process);
 void parse_html_content(std::string&& content, std::function<void(std::string&&)> process);
 
+[[nodiscard]] auto parse_jsonl_record(std::istream& in) -> std::optional<Document_Record>;
+
 std::function<std::optional<Document_Record>(std::istream&)>
 record_parser(std::string const& type, std::istream& is);
 
