@@ -31,14 +31,22 @@ TemporaryDirectory& TemporaryDirectory::operator=(TemporaryDirectory const&) = d
 TemporaryDirectory& TemporaryDirectory::operator=(TemporaryDirectory&&) noexcept = default;
 
 TemporaryDirectory::~TemporaryDirectory() {
-    if (std::filesystem::exists(dir_)) {
-        std::filesystem::remove_all(dir_);
+    if (cleanup_) {
+        if (std::filesystem::exists(dir_)) {
+            std::filesystem::remove_all(dir_);
+        }
+        spdlog::debug("Removed a temporary directory {}", dir_.c_str());
+    } else {
+        spdlog::info("Keeping directory {}", dir_.c_str());
     }
-    spdlog::debug("Removed a tmp dir {}", dir_.c_str());
 }
 
 auto TemporaryDirectory::path() const -> std::filesystem::path const& {
     return dir_;
+}
+
+void TemporaryDirectory::disable_cleanup() {
+    cleanup_ = false;
 }
 
 };  // namespace pisa

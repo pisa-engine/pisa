@@ -2,6 +2,8 @@
 #include "pisa/parsing/html.hpp"
 #include "pisa/tokenizer.hpp"
 
+#include <nlohmann/json.hpp>
+#include <string>
 #include <trecpp/trecpp.hpp>
 #include <wapopp/wapopp.hpp>
 #include <warcpp/warcpp.hpp>
@@ -50,6 +52,18 @@ template <typename ReadSubsequentRecordFn>
     };
 }
 
+auto parse_jsonl_record(std::istream& in) -> std::optional<Document_Record> {
+    std::string line;
+    if (!std::getline(in, line)) {
+        return std::nullopt;
+    }
+    auto json = nlohmann::json::parse(line);
+    auto title = json["title"];
+    auto it = json.find("url");
+    std::string url = it != json.end() ? *it : "";
+    return std::make_optional<Document_Record>(std::move(title), json["content"], std::move(url));
+}
+
 std::function<std::optional<Document_Record>(std::istream&)>
 record_parser(std::string const& type, std::istream& is) {
     if (type == "plaintext") {
@@ -62,6 +76,9 @@ record_parser(std::string const& type, std::istream& is) {
             }
             return std::nullopt;
         };
+    }
+    if (type == "jsonl") {
+        return parse_jsonl_record;
     }
     if (type == "trectext") {
         return trec_record_parser(trecpp::text::read_subsequent_record);

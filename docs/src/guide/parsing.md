@@ -105,6 +105,8 @@ The following raw collection formats are supported:
 * `plaintext`: every line contains the document's title first, then any
   number of whitespaces, followed by the content delimited by a new line
   character.
+* `jsonl`: every line is a JSON document with three fields: `title`,
+  `content`, and (optionally) `url`
 * `trectext`: TREC newswire collections.
 * `trecweb`: TREC web collections.
 * `warc`: Web ARChive format as defined in [the format
