@@ -118,3 +118,31 @@ In case you want to parse a set of files where each one is a document (for examp
 to format it to TREC (take into account that each relative file path is used as the document ID).
 Once the file is generated, parse it with the `parse_collection` command specifying the `trectext`
 value for the `--format` option.
+
+## IR Datasets
+
+We provide a convenient integration with
+[ir-datasets](https://ir-datasets.com/) through a Python script that can
+be piped to the `parse_collection` tool.
+
+**NOTE**: the script depends on a Python 3 environment that has the
+`ir-datasets` package already installed. See the project's documentation
+for the installation instructions.
+
+The script is called `ir-datasets` and is copied to the `bin` directory
+when compiling the project. It takes one argument, which is the name of
+the collection you want to parse. Please refer to
+[ir-datasets](https://ir-datasets.com/) for the list of supported
+datasets and for the instructions on how to connect the datasets that
+are not downloaded directly, but rather have to be linked manually.
+
+The documents are printed to the standard output in the JSONL format.
+You can pipe the output of the `ir-datasets` script to `parse_dataset`
+program, and pass `--format jsonl` to the latter.
+
+    $ ir-datasets wikir/en1k | \
+        parse_collection -f jsonl -F lowercase porter2 -o path/to/forward/index
+
+Note that the first run of the `ir-datasets` script on a given
+collection may take a while because it may have to download the data to
+the local drive first.

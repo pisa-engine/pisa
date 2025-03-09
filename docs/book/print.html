@@ -433,6 +433,28 @@ specification</a>.</li>
 to format it to TREC (take into account that each relative file path is used as the document ID).
 Once the file is generated, parse it with the <code>parse_collection</code> command specifying the <code>trectext</code>
 value for the <code>--format</code> option.</p>
+<h2 id="ir-datasets"><a class="header" href="#ir-datasets">IR Datasets</a></h2>
+<p>We provide a convenient integration with
+<a href="https://ir-datasets.com/">ir-datasets</a> through a Python script that can
+be piped to the <code>parse_collection</code> tool.</p>
+<p><strong>NOTE</strong>: the script depends on a Python 3 environment that has the
+<code>ir-datasets</code> package already installed. See the project's documentation
+for the installation instructions.</p>
+<p>The script is called <code>ir-datasets</code> and is copied to the <code>bin</code> directory
+when compiling the project. It takes one argument, which is the name of
+the collection you want to parse. Please refer to
+<a href="https://ir-datasets.com/">ir-datasets</a> for the list of supported
+datasets and for the instructions on how to connect the datasets that
+are not downloaded directly, but rather have to be linked manually.</p>
+<p>The documents are printed to the standard output in the JSONL format.
+You can pipe the output of the <code>ir-datasets</code> script to <code>parse_dataset</code>
+program, and pass <code>--format jsonl</code> to the latter.</p>
+<pre><code>$ ir-datasets wikir/en1k | \
+    parse_collection -f jsonl -F lowercase porter2 -o path/to/forward/index
+</code></pre>
+<p>Note that the first run of the <code>ir-datasets</code> script on a given
+collection may take a while because it may have to download the data to
+the local drive first.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="inverting"><a class="header" href="#inverting">Inverting</a></h1>
 <p>Once the parsing phase is complete, use the <code>invert</code> command to turn a
 <em>forward index</em> into an <em>inverted index</em>. For example, assuming the

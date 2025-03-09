@@ -33,3 +33,5 @@ add_tool(taily-stats taily_stats.cpp)
 add_tool(taily-thresholds taily_thresholds.cpp)
 add_tool(extract-maxscores extract_maxscores.cpp)
 add_tool(lookup-table lookup_table.cpp)
+
+configure_file(../script/ir-datasets.py ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ir-datasets COPYONLY)
