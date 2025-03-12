@@ -106,7 +106,8 @@ The following raw collection formats are supported:
   number of whitespaces, followed by the content delimited by a new line
   character.
 * `jsonl`: every line is a JSON document with three fields: `title`,
-  `content`, and (optionally) `url`
+  `content`, and (optionally) `url` (NOTE: "title" in PISA is a unique
+  string identifying a document)
 * `trectext`: TREC newswire collections.
 * `trecweb`: TREC web collections.
 * `warc`: Web ARChive format as defined in [the format
