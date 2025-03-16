@@ -33,6 +33,17 @@ docs/**/*.pdf
 
 .cache
 .github
+.git
 
 Dockerfile
 test/**/Dockerfile
+
+**/__pycache__
+**/.pytest_cache
+**/.venv
+**/dist
+dev
+
+**/external/Catch2/scripts/
+**/external/Catch2/projects/
+**/external/Catch2/misc/
