@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <optional>
 #include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"

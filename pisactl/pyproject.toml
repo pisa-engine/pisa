@@ -1,0 +1,30 @@
+[project]
+name = "pisactl"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Michal Siedlaczek", email = "michal@siedlaczek.me" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "ir-datasets>=0.5.10",
+    "pydantic>=2.10.6",
+    "pydantic-yaml>=1.4.0",
+    "rtoml>=0.12.0",
+]
+
+[project.scripts]
+pisactl = "pisactl.cmd:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[tool.ruff]
+line-length = 100
