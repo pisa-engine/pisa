@@ -18,6 +18,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Install bats
       if: runner.os == 'Linux'
@@ -64,6 +66,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Bulid docker image
       shell: bash
@@ -103,7 +107,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Bulid docker image
       shell: bash
