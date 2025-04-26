@@ -1,8 +1,3 @@
-EXECUTE_PROCESS(COMMAND git submodule update --init --recursive
-                WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/..
-                OUTPUT_QUIET
-        )
-
 # Add FastPFor
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/FastPFor EXCLUDE_FROM_ALL)
 target_compile_options(FastPFor PRIVATE -Wno-cast-align)
