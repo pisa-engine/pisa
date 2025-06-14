@@ -25,7 +25,7 @@ We can now execute the container in an interactive terminal:
 If you are running a RedHat based system such as RHEL or Fedora, you may
 need to run `sudo setenforce 0` for Podman.
 
-# Section 1
+# Section 1: Basic Usage
 
 This section showcases the basic usage of PISA, including indexing a
 collection, inspecting metadata, and querying the index. We will start
@@ -47,7 +47,11 @@ Throughout this tutorial, we use `pisa` command for easy access to
 indexing an querying capabilities of PISA. Note, however, this is an
 experimental tool, written in Python, that calls various PISA commands.
 It is subject to changes in the future. We will mention some of the
-lower-level commands later.
+lower-level commands later. For those interested, you can find more
+details about all PISA commands in
+[our documentation](https://pisa-engine.github.io/pisa/book)'s CLI
+Reference section.
+
 
 ## Toy Example
 
@@ -58,7 +62,7 @@ the `jq` tool to pretty-print it:
     cat /data/tiny.jsonl | jq
 
 Each document has a title and content, which is all we will need to
-build and index. We can now pipe it to the `pisa` tool with the
+build an index. We can now pipe it to the `pisa` tool with the
 appropriate parameters.
 
     pisa index stdin --format jsonl -o /workdir/toy < /data/tiny.jsonl
@@ -88,7 +92,10 @@ want to use as the content. We will use the English subset of the
         --content-fields text \
         -o /workdir/wikir
 
-This time, it will take a while to index, as the collection is larger.
+This time, it will take a while to index, as this collection contains
+roughly 370,000 documents. The collection will also have to be
+downloaded (~165 MiB) before the indexing starts. That said, the entire
+command shouldn't run much longer than a couple of minutes.
 
 Once it finishes, we can query the index. To avoid passing the index
 location as a command argument, we can change directory to where the
@@ -112,7 +119,7 @@ We can now run these queries against the index.
 
     pisa query < /data/wikir.queries
 
-#### TODO: should we eval?
+TODO(https://github.com/pisa-engine/pisa/issues/608): trec_eval
 
 We can also run a benchmark, instead of returning results, by simply
 passing `--benchmark` flag. It also may be more convenient to read the
@@ -129,7 +136,8 @@ exhaustive retrieval:
     pisa query --benchmark --algorithm ranked_or < /data/wikir.queries
     
 This should be significantly slower. We can also try `ranked_and` for
-_conjunctive_ retrieval:
+_conjunctive_ retrieval, which requires _all_ query terms to be present
+for a document to be returned:
 
     pisa query --benchmark --algorithm ranked_and < /data/wikir.queries
 
@@ -146,14 +154,14 @@ following command:
 
     pisa meta alias default
 
-We can chose different parameters at indexing time, however, we can also
+We can choose different parameters at indexing time, however, we can also
 create an additional index using an alias.
 
     pisa add-index --alias interpolative --encoding block_interpolative
 
-Notice that this time around it takes much faster than before. This is
+Notice that this time around it is much faster than before. This is
 because much of work can be reused. The collection is already parsed and
-an inverted index is built; we only need to compress it postings with a
+an inverted index is built; we only need to compress its postings with a
 different encoding.
 
 We can now list aliases:
@@ -167,7 +175,7 @@ And inspect parameters of the new index:
 The `block_interpolative` encoding is known to be much more
 space-efficient but slower. We can verify the size by listing the files:
 
-    ls -lh /workdir/wikir/inv:*
+    du -ah /workdir/wikir | grep inv
 
 Finally, we can query the new index by passing the alias:
 
@@ -175,15 +183,13 @@ Finally, we can query the new index by passing the alias:
 
 Querying the new index should be slower than the initial one.
 
-# Section 2
+# Section 2: MS MARCO Experiments
 
-> TODO: is there a collection that we can distribute?
-> if not, should we share a CIFF and only mention jsonl2ciff?
-> For now, I'm assuming there's `msmacro.ciff` file in /workdir
+TODO(https://github.com/pisa-engine/pisa/issues/610): collection & queries
 
     pisa index ciff \
-        --input /workdir/msmacro.ciff \
-        --output /workdir/msmacro \
+        --input /workdir/msmarco.ciff \
+        --output /workdir/msmarco \
         --scorer passthrough
 
 Notice that we use `passthrough` scorer. This is because the payloads
@@ -191,14 +197,16 @@ that are available in the provided CIFF are precomputed scores as
 opposed to frequencies, therefore we only want to add up the scores but
 not use any particular formula such as BM25.
 
-    cd /workdir/msmacro
-    pisa query < /data/queries.txt # TODO: what queries?
+    cd /workdir/msmarco
+    pisa query < /data/queries.txt # TODO(https://github.com/pisa-engine/pisa/issues/610)
     pisa query --benchmark < /data/queries.txt
 
-* TODO: These experiments will also demonstrate the slowdowns
-caused by LSR in practice
+TODO(https://github.com/pisa-engine/pisa/issues/610): These experiments
+will also demonstrate the slowdowns caused by LSR in practice.
  
-# Where do we talk about this? If at all?
+# Data: Finer Details
+
+TODO(https://github.com/pisa-engine/pisa/issues/611)
 
 You will see the following files:
 * `metadata.yaml`: collection metadata
