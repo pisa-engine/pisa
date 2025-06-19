@@ -40,16 +40,18 @@ auto transform_terms(pisa::binary_collection const& fwd, pisa::Payload_Vector<> 
     -> std::vector<std::vector<std::string>> {
     std::vector<std::vector<std::string>> terms;
     // notice we are skipping the first sequence that encodes document count
-    std::transform(std::next(fwd.begin()), fwd.end(), std::back_inserter(terms), [&termlex](auto term_ids) {
-        std::vector<std::string> doc_terms;
-        std::transform(
-            term_ids.begin(),
-            term_ids.end(),
-            std::back_inserter(doc_terms),
-            [&termlex](auto term_id) { return std::string(termlex[term_id]); }
-        );
-        return doc_terms;
-    });
+    std::transform(
+        std::next(fwd.begin()), fwd.end(), std::back_inserter(terms), [&termlex](auto term_ids) {
+            std::vector<std::string> doc_terms;
+            std::transform(
+                term_ids.begin(),
+                term_ids.end(),
+                std::back_inserter(doc_terms),
+                [&termlex](auto term_id) { return std::string(termlex[term_id]); }
+            );
+            return doc_terms;
+        }
+    );
     return terms;
 }
 
@@ -58,10 +60,7 @@ auto read_collection_from_plaintext(std::string const& path, std::shared_ptr<pis
     auto lines = pisa::io::read_string_vector(path);
     std::vector<std::vector<std::string>> collection;
     std::transform(
-        lines.begin(),
-        lines.end(),
-        std::back_inserter(collection),
-        [&analyzer](auto const& line) {
+        lines.begin(), lines.end(), std::back_inserter(collection), [&analyzer](auto const& line) {
             auto token_stream = analyzer->analyze(line);
             // note we are skipping title
             return std::vector<std::string>(std::next(token_stream->begin()), token_stream->end());
@@ -132,10 +131,9 @@ TEST_CASE("Parse JSON collection with URLs", "[index][parse]") {
     auto expected_urls =
         pisa::io::read_string_vector(PISA_SOURCE_DIR "/test/test_data/tiny/tiny.fwd.documents");
     std::transform(
-        expected_urls.begin(),
-        expected_urls.end(),
-        expected_urls.begin(),
-        [](auto const& title) { return fmt::format("https://{}.net", title); }
+        expected_urls.begin(), expected_urls.end(), expected_urls.begin(), [](auto const& title) {
+            return fmt::format("https://{}.net", title);
+        }
     );
     REQUIRE(pisa::io::read_string_vector(tmp.path() / "tiny.fwd.urls") == expected_urls);
 }

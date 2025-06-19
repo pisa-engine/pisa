@@ -217,9 +217,9 @@ constexpr auto unpack_head(std::span<std::byte const> mem)
     static_assert(detail::all_pod<T...>::value);
     auto offset = detail::sizeofs<T...>::value;
     if (offset > mem.size()) {
-        throw std::runtime_error(fmt::format(
-            "Cannot unpack span of size {} into structure of size {}", mem.size(), offset
-        ));
+        throw std::runtime_error(
+            fmt::format("Cannot unpack span of size {} into structure of size {}", mem.size(), offset)
+        );
     }
     auto tail = mem.subspan(offset);
     auto head = detail::unpack<T...>(mem.data());
@@ -294,9 +294,11 @@ class Payload_Vector {
             );
         }
         if (offsets_[idx] >= payloads_.size()) {
-            throw std::runtime_error(fmt::format(
-                "Offset {} too large for payload array of {} bytes", offsets_[idx], payloads_.size()
-            ));
+            throw std::runtime_error(
+                fmt::format(
+                    "Offset {} too large for payload array of {} bytes", offsets_[idx], payloads_.size()
+                )
+            );
         }
         return *(begin() + idx);
     }

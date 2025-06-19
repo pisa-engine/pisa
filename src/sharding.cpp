@@ -13,9 +13,9 @@
 
 #include "algorithm.hpp"
 #include "binary_collection.hpp"
+#include "io.hpp"
 #include "payload_vector.hpp"
 #include "util/util.hpp"
-#include "io.hpp"
 
 namespace pisa {
 

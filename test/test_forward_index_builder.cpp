@@ -29,11 +29,14 @@ TEST_CASE("Batch file name", "[parsing][forward_index]") {
 TEST_CASE("Write document to stream", "[parsing][forward_index]") {
     std::ostringstream os;
 
-    auto [term_ids, encoded_sequence] = GENERATE(table<std::vector<uint32_t>, std::string>(
-        {{{0, 1, 2, 3, 4, 3, 2, 1, 0}, {9, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0,
-                                        4, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
-         {{}, {0, 0, 0, 0}}}
-    ));
+    auto [term_ids, encoded_sequence] = GENERATE(
+        table<std::vector<uint32_t>, std::string>(
+            {{{0, 1, 2, 3, 4, 3, 2, 1, 0},
+              {9, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0,
+               4, 0, 0, 0, 3, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0}},
+             {{}, {0, 0, 0, 0}}}
+        )
+    );
     WHEN("List of term IDs is written to stream") {
         Forward_Index_Builder::write_document(os, term_ids.begin(), term_ids.end());
         THEN("Encoded sequence is " << encoded_sequence) {
@@ -45,9 +48,13 @@ TEST_CASE("Write document to stream", "[parsing][forward_index]") {
 TEST_CASE("Write header", "[parsing][forward_index]") {
     std::ostringstream os;
 
-    auto [document_count, encoded_header] = GENERATE(table<uint32_t, std::string>(
-        {{0, {1, 0, 0, 0, 0, 0, 0, 0}}, {1, {1, 0, 0, 0, 1, 0, 0, 0}}, {10, {1, 0, 0, 0, 10, 0, 0, 0}}}
-    ));
+    auto [document_count, encoded_header] = GENERATE(
+        table<uint32_t, std::string>(
+            {{0, {1, 0, 0, 0, 0, 0, 0, 0}},
+             {1, {1, 0, 0, 0, 1, 0, 0, 0}},
+             {10, {1, 0, 0, 0, 10, 0, 0, 0}}}
+        )
+    );
     GIVEN("Document count is " << document_count)
     WHEN("Header is written to stream") {
         Forward_Index_Builder::write_header(os, document_count);

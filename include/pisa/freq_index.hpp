@@ -43,7 +43,9 @@ class freq_index {
      *                any index operations may result in undefined behavior.
      */
     explicit freq_index(MemorySource source) : m_source(std::move(source)) {
-        static_assert(concepts::SortedInvertedIndex<freq_index, typename freq_index::document_enumerator>);
+        static_assert(
+            concepts::SortedInvertedIndex<freq_index, typename freq_index::document_enumerator>
+        );
         mapper::map(*this, m_source.data(), mapper::map_flags::warmup);
     }
 
@@ -177,10 +179,10 @@ class freq_index {
             typename DocsSequence::enumerator docs_enum, typename FreqsSequence::enumerator freqs_enum
         )
             : m_docs_enum(docs_enum), m_freqs_enum(freqs_enum) {
-            static_assert(
-                (concepts::FrequencyPostingCursor<document_enumerator>
-                 && concepts::SortedPostingCursor<document_enumerator>)
-            );
+            static_assert((
+                concepts::FrequencyPostingCursor<document_enumerator>
+                && concepts::SortedPostingCursor<document_enumerator>
+            ));
             reset();
         }
 

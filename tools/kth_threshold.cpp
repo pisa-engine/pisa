@@ -28,9 +28,11 @@ std::set<uint32_t> parse_tuple(std::string const& line, size_t k) {
     std::vector<std::string> term_ids;
     boost::algorithm::split(term_ids, line, boost::is_any_of(" \t"));
     if (term_ids.size() != k) {
-        throw std::runtime_error(fmt::format(
-            "Wrong number of terms in line: {} (expected {} but found {})", line, k, term_ids.size()
-        ));
+        throw std::runtime_error(
+            fmt::format(
+                "Wrong number of terms in line: {} (expected {} but found {})", line, k, term_ids.size()
+            )
+        );
     }
 
     std::set<uint32_t> term_ids_int;
@@ -38,7 +40,8 @@ std::set<uint32_t> parse_tuple(std::string const& line, size_t k) {
         try {
             term_ids_int.insert(std::stoi(term_id));
         } catch (...) {
-            throw std::runtime_error(fmt::format("Cannot convert {} to int in line: {}", term_id, line)
+            throw std::runtime_error(
+                fmt::format("Cannot convert {} to int in line: {}", term_id, line)
             );
         }
     }
@@ -187,29 +190,31 @@ int main(int argc, const char** argv) {
 
     spdlog::set_level(app.log_level());
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        auto params = std::make_tuple(
-            &index,
-            app.wand_data_path(),
-            app.queries(),
-            app.index_encoding(),
-            app.scorer_params(),
-            app.k(),
-            quantized,
-            pairs_filename,
-            triples_filename,
-            all_pairs,
-            all_triples
-        );
-        if (app.is_wand_compressed()) {
-            if (quantized) {
-                std::apply(kt_thresholds<Index, wand_uniform_index_quantized>, params);
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            auto params = std::make_tuple(
+                &index,
+                app.wand_data_path(),
+                app.queries(),
+                app.index_encoding(),
+                app.scorer_params(),
+                app.k(),
+                quantized,
+                pairs_filename,
+                triples_filename,
+                all_pairs,
+                all_triples
+            );
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    std::apply(kt_thresholds<Index, wand_uniform_index_quantized>, params);
+                } else {
+                    std::apply(kt_thresholds<Index, wand_uniform_index>, params);
+                }
             } else {
-                std::apply(kt_thresholds<Index, wand_uniform_index>, params);
+                std::apply(kt_thresholds<Index, wand_raw_index>, params);
             }
-        } else {
-            std::apply(kt_thresholds<Index, wand_raw_index>, params);
         }
-    });
+    );
 }

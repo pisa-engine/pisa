@@ -183,9 +183,11 @@ TEST_CASE("Rearrange sequences", "[invert][integration]") {
                 auto full = binary_collection(fwd_basename.c_str());
                 auto full_iter = ++full.begin();
                 std::vector<std::vector<std::uint32_t>> expected;
-                std::transform(full_iter, full.end(), std::back_inserter(expected), [](auto const& seq) {
-                    return std::vector<std::uint32_t>(seq.begin(), seq.end());
-                });
+                std::transform(
+                    full_iter, full.end(), std::back_inserter(expected), [](auto const& seq) {
+                        return std::vector<std::uint32_t>(seq.begin(), seq.end());
+                    }
+                );
                 auto sorted_mapping = mapping.entries().collect();
                 ranges::stable_sort(sorted_mapping, [](auto const& lhs, auto const& rhs) {
                     return std::make_pair(lhs.second, lhs.first)
@@ -254,9 +256,11 @@ TEST_CASE("partition_fwd_index", "[invert][integration]") {
                     shards.push_back(binary_collection(
                         fmt::format("{}.{:03d}", output_basename, shard.as_int()).c_str()
                     ));
-                    shard_terms.push_back(io::read_string_vector(
-                        fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str()
-                    ));
+                    shard_terms.push_back(
+                        io::read_string_vector(
+                            fmt::format("{}.{:03d}.terms", output_basename, shard.as_int()).c_str()
+                        )
+                    );
                     shard_iterators.push_back(++shards.back().begin());
                 }
                 Shard_Id shard = 0_s;

@@ -41,8 +41,10 @@ int main(int argc, const char** argv) {
 
     spdlog::set_level(app.log_level());
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        selective_queries<Index>(&index, app.index_encoding(), app.queries());
-    });
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            selective_queries<Index>(&index, app.index_encoding(), app.queries());
+        }
+    );
 }

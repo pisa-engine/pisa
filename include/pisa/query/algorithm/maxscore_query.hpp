@@ -15,10 +15,10 @@ struct maxscore_query {
     explicit maxscore_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename Cursors>
-        requires(
-            (concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>
-             && concepts::SortedPostingCursor<pisa::val_t<Cursors>>)
-        )
+        requires((
+            concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>
+            && concepts::SortedPostingCursor<pisa::val_t<Cursors>>
+        ))
     [[nodiscard]] PISA_ALWAYSINLINE auto sorted(Cursors&& cursors)
         -> std::vector<pisa::val_t<Cursors>> {
         std::vector<std::size_t> term_positions(cursors.size());
@@ -50,9 +50,9 @@ struct maxscore_query {
         requires(concepts::MaxScorePostingCursor<pisa::val_t<Cursors>>)
     [[nodiscard]] PISA_ALWAYSINLINE auto min_docid(Cursors&& cursors) -> std::uint32_t {
         return std::min_element(
-                   cursors.begin(),
-                   cursors.end(),
-                   [](auto&& lhs, auto&& rhs) { return lhs.docid() < rhs.docid(); }
+                   cursors.begin(), cursors.end(), [](auto&& lhs, auto&& rhs) {
+                       return lhs.docid() < rhs.docid();
+                   }
         )->docid();
     }
 

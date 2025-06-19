@@ -90,19 +90,21 @@ TEST_CASE("Reorder documents with BP") {
                 std::make_optional<std::size_t>(1),
                 std::make_optional<std::size_t>(2)
             );
-            int code = recursive_graph_bisection(RecursiveGraphBisectionOptions{
-                .input_basename = inv_path,
-                .output_basename = bp_inv_path,
-                .output_fwd = std::nullopt,
-                .input_fwd = std::nullopt,
-                .document_lexicon = fmt::format("{}.doclex", fwd_path),
-                .reordered_document_lexicon = fmt::format("{}.doclex", bp_fwd_path),
-                .depth = cache_depth,
-                .node_config = std::nullopt,
-                .min_length = 0,
-                .compress_fwd = false,
-                .print_args = false,
-            });
+            int code = recursive_graph_bisection(
+                RecursiveGraphBisectionOptions{
+                    .input_basename = inv_path,
+                    .output_basename = bp_inv_path,
+                    .output_fwd = std::nullopt,
+                    .input_fwd = std::nullopt,
+                    .document_lexicon = fmt::format("{}.doclex", fwd_path),
+                    .reordered_document_lexicon = fmt::format("{}.doclex", bp_fwd_path),
+                    .depth = cache_depth,
+                    .node_config = std::nullopt,
+                    .min_length = 0,
+                    .compress_fwd = false,
+                    .print_args = false,
+                }
+            );
             REQUIRE(code == 0);
             THEN("Both collections are equal when mapped to strings") {
                 auto expected = coll_to_strings(inv_path, fmt::format("{}.doclex", fwd_path));
@@ -112,19 +114,21 @@ TEST_CASE("Reorder documents with BP") {
         }
 
         WHEN("Reordered documents with BP node version") {
-            int code = recursive_graph_bisection(RecursiveGraphBisectionOptions{
-                .input_basename = inv_path,
-                .output_basename = bp_inv_path,
-                .output_fwd = std::nullopt,
-                .input_fwd = std::nullopt,
-                .document_lexicon = fmt::format("{}.doclex", fwd_path),
-                .reordered_document_lexicon = fmt::format("{}.doclex", bp_fwd_path),
-                .depth = std::nullopt,
-                .node_config = PISA_SOURCE_DIR "/test/test_data/bp-node-config.txt",
-                .min_length = 0,
-                .compress_fwd = false,
-                .print_args = false,
-            });
+            int code = recursive_graph_bisection(
+                RecursiveGraphBisectionOptions{
+                    .input_basename = inv_path,
+                    .output_basename = bp_inv_path,
+                    .output_fwd = std::nullopt,
+                    .input_fwd = std::nullopt,
+                    .document_lexicon = fmt::format("{}.doclex", fwd_path),
+                    .reordered_document_lexicon = fmt::format("{}.doclex", bp_fwd_path),
+                    .depth = std::nullopt,
+                    .node_config = PISA_SOURCE_DIR "/test/test_data/bp-node-config.txt",
+                    .min_length = 0,
+                    .compress_fwd = false,
+                    .print_args = false,
+                }
+            );
             REQUIRE(code == 0);
             THEN("Both collections are equal when mapped to strings") {
                 auto expected = coll_to_strings(inv_path, fmt::format("{}.doclex", fwd_path));

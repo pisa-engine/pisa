@@ -11,10 +11,10 @@ struct range_taat_query {
     explicit range_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
-        requires(
-            (PartialScoreAccumulator<Acc>
-             && pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>)
-        )
+        requires((
+            PartialScoreAccumulator<Acc>
+            && pisa::concepts::MaxScorePostingCursor<typename std::decay_t<CursorRange>::value_type>
+        ))
     void operator()(CursorRange&& cursors, uint64_t max_docid, size_t range_size, Acc&& accumulator) {
         if (cursors.empty()) {
             return;

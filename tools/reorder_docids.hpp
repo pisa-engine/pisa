@@ -11,19 +11,21 @@ auto reorder_docids(ReorderDocuments const& args) -> int {
     tbb::global_control c(oneapi::tbb::global_control::max_allowed_parallelism, 2);
     try {
         if (args.bp()) {
-            return recursive_graph_bisection(RecursiveGraphBisectionOptions{
-                .input_basename = args.input_basename(),
-                .output_basename = args.output_basename(),
-                .output_fwd = args.output_fwd(),
-                .input_fwd = args.input_fwd(),
-                .document_lexicon = args.document_lexicon(),
-                .reordered_document_lexicon = args.reordered_document_lexicon(),
-                .depth = args.depth(),
-                .node_config = args.node_config(),
-                .min_length = args.min_length(),
-                .compress_fwd = not args.nogb(),
-                .print_args = args.print(),
-            });
+            return recursive_graph_bisection(
+                RecursiveGraphBisectionOptions{
+                    .input_basename = args.input_basename(),
+                    .output_basename = args.output_basename(),
+                    .output_fwd = args.output_fwd(),
+                    .input_fwd = args.input_fwd(),
+                    .document_lexicon = args.document_lexicon(),
+                    .reordered_document_lexicon = args.reordered_document_lexicon(),
+                    .depth = args.depth(),
+                    .node_config = args.node_config(),
+                    .min_length = args.min_length(),
+                    .compress_fwd = not args.nogb(),
+                    .print_args = args.print(),
+                }
+            );
         }
         ReorderOptions options{
             .input_basename = args.input_basename(),
