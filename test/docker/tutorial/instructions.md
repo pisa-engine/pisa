@@ -1,4 +1,6 @@
-# Running PISA in container
+# Efficient In-Memory Inverted Indexes
+
+## Running PISA in container
 
 TODO download instructions
 
@@ -20,12 +22,12 @@ We can now execute the container in an interactive terminal:
 
     docker exec -it pisa /bin/bash
 
-## Note about RedHat based systems
+### Note about RedHat based systems
 
 If you are running a RedHat based system such as RHEL or Fedora, you may
 need to run `sudo setenforce 0` for Podman.
 
-# Section 1: Basic Usage
+## Section 1: Basic Usage
 
 This section showcases the basic usage of PISA, including indexing a
 collection, inspecting metadata, and querying the index. We will start
@@ -41,7 +43,7 @@ retrieval algorithms and show the difference in performance. Finally, we
 will build another index based on the same collection and compare size
 and benchmarking results.
 
-## Note on `pisa` command
+### Note on `pisa` command
 
 Throughout this tutorial, we use `pisa` command for easy access to
 indexing an querying capabilities of PISA. Note, however, this is an
@@ -53,7 +55,7 @@ details about all PISA commands in
 Reference section.
 
 
-## Toy Example
+### Toy Example
 
 First, let's have a peek at our toy collection. Our file is in JSONL
 format -- each line contains a JSON representing a document. We can use
@@ -80,7 +82,7 @@ verify by listing the contents of the directory:
 
 We will get back to those later.
 
-## WikIR collection
+### WikIR collection
 
 We can now proceed to indexing a real dataset. For convenience, we will
 use the integration with [`ir-datasets`](https://ir-datasets.com/). All
@@ -119,7 +121,7 @@ We can now run these queries against the index.
 
     pisa query < /data/wikir.queries
 
-TODO(https://github.com/pisa-engine/pisa/issues/608): trec_eval
+TODO(<https://github.com/pisa-engine/pisa/issues/608>): trec_eval
 
 We can also run a benchmark, instead of returning results, by simply
 passing `--benchmark` flag. It also may be more convenient to read the
@@ -134,7 +136,7 @@ see how the results will compare when we use `ranked_or`, which is
 exhaustive retrieval:
 
     pisa query --benchmark --algorithm ranked_or < /data/wikir.queries
-    
+
 This should be significantly slower. We can also try `ranked_and` for
 _conjunctive_ retrieval, which requires _all_ query terms to be present
 for a document to be returned:
@@ -146,7 +148,7 @@ different value:
 
     pisa query --benchmark -k 1000 < /data/wikir.queries
 
-### Multiple indexes
+#### Multiple indexes
 
 When building the index, we used default values for the encoding, skip
 list block size, and the scorer. We can inspect those by running the
@@ -183,9 +185,9 @@ Finally, we can query the new index by passing the alias:
 
 Querying the new index should be slower than the initial one.
 
-# Section 2: MS MARCO Experiments
+## Section 2: MS MARCO Experiments
 
-TODO(https://github.com/pisa-engine/pisa/issues/610): collection & queries
+TODO(<https://github.com/pisa-engine/pisa/issues/610>): collection & queries
 
     pisa index ciff \
         --input /workdir/msmarco.ciff \
@@ -198,17 +200,18 @@ opposed to frequencies, therefore we only want to add up the scores but
 not use any particular formula such as BM25.
 
     cd /workdir/msmarco
-    pisa query < /data/queries.txt # TODO(https://github.com/pisa-engine/pisa/issues/610)
+    pisa query < /data/queries.txt # TODO(<https://github.com/pisa-engine/pisa/issues/610>)
     pisa query --benchmark < /data/queries.txt
 
-TODO(https://github.com/pisa-engine/pisa/issues/610): These experiments
+TODO(<https://github.com/pisa-engine/pisa/issues/610>): These experiments
 will also demonstrate the slowdowns caused by LSR in practice.
  
-# Data: Finer Details
+## Data: Finer Details
 
-TODO(https://github.com/pisa-engine/pisa/issues/611)
+TODO(<https://github.com/pisa-engine/pisa/issues/611>)
 
 You will see the following files:
+
 * `metadata.yaml`: collection metadata
 * `documents`: new-line separated document titles
 * `terms`: new-line separated terms occurring in the collection
