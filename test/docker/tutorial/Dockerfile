@@ -58,7 +58,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=America/New_York
 
 RUN apt-get -y update \
-    && apt-get install -y libgomp1 curl jq
+    && apt-get install -y libgomp1 curl jq \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /pisa/build/bin/* /usr/bin/
 COPY --from=build /pisa/pisactl/dist /tmp/dist
