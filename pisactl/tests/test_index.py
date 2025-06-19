@@ -162,7 +162,7 @@ def test_index_stdin(
     alias: str,
     force: bool,
     encoding: str,
-    format: ParseFormat,
+    parse_format: ParseFormat,
     analyzer: Analyzer,
     scorer: Scorer,
     block: Block,
@@ -180,7 +180,7 @@ def test_index_stdin(
             output="/output",
             force=force,
             encoding=encoding,
-            source=StdinSource(format=format, analyzer=analyzer),
+            source=StdinSource(format=parse_format, analyzer=analyzer),
             scorer=scorer,
             block=block,
             quantize=quantize,
@@ -189,7 +189,7 @@ def test_index_stdin(
     tools.parse_pipe.assert_called_once_with(
         "/output",
         analyzer=analyzer,
-        fmt=format.value,
+        fmt=parse_format.value,
         force=force,
     )
     tools.invert_forward_index.assert_called_once_with(sentinel.meta)
@@ -304,7 +304,7 @@ def test_index_ciff(
     alias: str,
     force: bool,
     encoding: str,
-    input: str,
+    input_path: str,
     scorer: Scorer,
     block: Block,
     quantize: int | None,
@@ -320,13 +320,13 @@ def test_index_ciff(
             output="/output",
             force=force,
             encoding=encoding,
-            source=CiffSource(input=pathlib.Path(input)),
+            source=CiffSource(input=pathlib.Path(input_path)),
             scorer=scorer,
             block=block,
             quantize=quantize,
         ),
     )
-    tools.ciff_to_pisa.assert_called_once_with(input, "/output", force=force)
+    tools.ciff_to_pisa.assert_called_once_with(input_path, "/output", force=force)
     tools.compress.assert_called_once_with(
         sentinel.meta,
         encoding,
