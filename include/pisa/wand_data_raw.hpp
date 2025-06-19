@@ -47,8 +47,8 @@ class wand_data_raw {
             auto t = std::holds_alternative<FixedBlock>(block_size)
                 ? static_block_partition(seq, scorer, std::get<FixedBlock>(block_size).size)
                 : variable_block_partition(
-                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda
-                );
+                      coll, seq, scorer, std::get<VariableBlock>(block_size).lambda
+                  );
 
             block_max_term_weight.insert(
                 block_max_term_weight.end(), t.second.begin(), t.second.end()

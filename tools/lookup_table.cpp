@@ -125,14 +125,16 @@ void print(pisa::LookupTable const& table, Arguments const& args) {
     }
 
     if (first >= table.size()) {
-        throw std::runtime_error(fmt::format(
-            "starting position {} in a table of size {} is out of bounds", first, table.size()
-        ));
+        throw std::runtime_error(
+            fmt::format(
+                "starting position {} in a table of size {} is out of bounds", first, table.size()
+            )
+        );
     }
     if (last >= table.size()) {
-        throw std::runtime_error(fmt::format(
-            "last position {} in a table of size {} is out of bounds", last, table.size()
-        ));
+        throw std::runtime_error(
+            fmt::format("last position {} in a table of size {} is out of bounds", last, table.size())
+        );
     }
 
     for (auto pos = first; pos <= last; ++pos) {

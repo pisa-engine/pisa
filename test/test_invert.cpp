@@ -24,9 +24,9 @@ TEST_CASE("Map sequence of document terms to sequence of postings", "[invert][un
         invert::map_to_postings(invert::ForwardIndexSlice{spans, ranges::views::iota(0_d, 2_d)});
     REQUIRE(
         postings
-        == std::vector<std::pair<
-            Term_Id,
-            Document_Id>>{{0_t, 0_d}, {1_t, 0_d}, {2_t, 0_d}, {3_t, 0_d}, {1_t, 1_d}, {2_t, 1_d}, {3_t, 1_d}, {8_t, 1_d}}
+        == std::vector<std::pair<Term_Id, Document_Id>>{
+            {0_t, 0_d}, {1_t, 0_d}, {2_t, 0_d}, {3_t, 0_d}, {1_t, 1_d}, {2_t, 1_d}, {3_t, 1_d}, {8_t, 1_d}
+        }
     );
 }
 
@@ -68,15 +68,15 @@ TEST_CASE("Accumulate postings to Inverted_Index", "[invert][unit]") {
     index(tbb::blocked_range<iterator_type>(postings.begin(), postings.end()));
     REQUIRE(
         index.documents
-        == std::unordered_map<
-            Term_Id,
-            std::vector<Document_Id>>{{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}}
+        == std::unordered_map<Term_Id, std::vector<Document_Id>>{
+            {0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}
+        }
     );
     REQUIRE(
         index.frequencies
-        == std::unordered_map<
-            Term_Id,
-            std::vector<Frequency>>{{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}
+        == std::unordered_map<Term_Id, std::vector<Frequency>>{
+            {0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}
+        }
     );
 }
 
@@ -95,24 +95,40 @@ TEST_CASE("Accumulate postings to Inverted_Index one by one", "[invert][unit]") 
     }
     REQUIRE(
         index.documents
-        == std::unordered_map<
-            Term_Id,
-            std::vector<
-                Document_Id>>{{0_t, {0_d, 1_d, 4_d}}, {1_t, {2_d, 4_d}}, {2_t, {0_d, 1_d}}, {3_t, {0_d, 1_d, 4_d}}, {4_t, {1_d, 4_d}}, {5_t, {1_d, 2_d, 3_d, 4_d}}, {6_t, {1_d, 4_d}}, {7_t, {1_d}}, {8_t, {2_d, 3_d, 4_d}}, {9_t, {0_d, 2_d, 3_d, 4_d}}}
+        == std::unordered_map<Term_Id, std::vector<Document_Id>>{
+            {0_t, {0_d, 1_d, 4_d}},
+            {1_t, {2_d, 4_d}},
+            {2_t, {0_d, 1_d}},
+            {3_t, {0_d, 1_d, 4_d}},
+            {4_t, {1_d, 4_d}},
+            {5_t, {1_d, 2_d, 3_d, 4_d}},
+            {6_t, {1_d, 4_d}},
+            {7_t, {1_d}},
+            {8_t, {2_d, 3_d, 4_d}},
+            {9_t, {0_d, 2_d, 3_d, 4_d}}
+        }
     );
     REQUIRE(
         index.frequencies
-        == std::unordered_map<
-            Term_Id,
-            std::vector<
-                Frequency>>{{0_t, {2_f, 1_f, 1_f}}, {1_t, {1_f, 1_f}}, {2_t, {1_f, 1_f}}, {3_t, {1_f, 1_f, 1_f}}, {4_t, {2_f, 1_f}}, {5_t, {2_f, 1_f, 1_f, 1_f}}, {6_t, {1_f, 4_f}}, {7_t, {1_f}}, {8_t, {3_f, 1_f, 1_f}}, {9_t, {1_f, 1_f, 1_f, 1_f}}}
+        == std::unordered_map<Term_Id, std::vector<Frequency>>{
+            {0_t, {2_f, 1_f, 1_f}},
+            {1_t, {1_f, 1_f}},
+            {2_t, {1_f, 1_f}},
+            {3_t, {1_f, 1_f, 1_f}},
+            {4_t, {2_f, 1_f}},
+            {5_t, {2_f, 1_f, 1_f, 1_f}},
+            {6_t, {1_f, 4_f}},
+            {7_t, {1_f}},
+            {8_t, {3_f, 1_f, 1_f}},
+            {9_t, {1_f, 1_f, 1_f, 1_f}}
+        }
     );
 }
 
 TEST_CASE("Join Inverted_Index to another", "[invert][unit]") {
     using index_type = invert::Inverted_Index;
-    auto [lhs, rhs, expected_joined, message] =
-        GENERATE(table<index_type, index_type, index_type, std::string>(
+    auto [lhs, rhs, expected_joined, message] = GENERATE(
+        table<index_type, index_type, index_type, std::string>(
             {{index_type(
                   {{0_t, {0_d, 1_d, 2_d}}, {1_t, {0_d, 1_d}}, {2_t, {5_d}}},
                   {{0_t, {1_f, 1_f, 1_f}}, {1_t, {4_f, 1_f}}, {2_t, {1_f}}}
@@ -182,7 +198,8 @@ TEST_CASE("Join Inverted_Index to another", "[invert][unit]") {
               index_type({{0_t, {0_d}}}, {{0_t, {1_f}}}),
               index_type({{0_t, {0_d}}}, {{0_t, {2_f}}}),
               "single posting"}}
-        ));
+        )
+    );
     WHEN("Join left to right -- " << message) {
         lhs.join(rhs);
         REQUIRE(lhs.documents == expected_joined.documents);
@@ -207,10 +224,9 @@ TEST_CASE("Invert a range of documents from a collection", "[invert][unit]") {
 
     std::vector<std::span<Term_Id const>> document_range;
     std::transform(
-        collection.begin(),
-        collection.end(),
-        std::back_inserter(document_range),
-        [](auto const& vec) { return std::span<Term_Id const>(vec); }
+        collection.begin(), collection.end(), std::back_inserter(document_range), [](auto const& vec) {
+            return std::span<Term_Id const>(vec);
+        }
     );
     size_t threads = 1;
 

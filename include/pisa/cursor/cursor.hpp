@@ -18,10 +18,9 @@ template <typename Index>
     std::vector<cursor> cursors;
     cursors.reserve(query.terms().size());
     std::transform(
-        query.terms().begin(),
-        query.terms().end(),
-        std::back_inserter(cursors),
-        [&](auto&& term) { return index[term.id]; }
+        query.terms().begin(), query.terms().end(), std::back_inserter(cursors), [&](auto&& term) {
+            return index[term.id];
+        }
     );
 
     return cursors;

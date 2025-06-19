@@ -53,10 +53,9 @@ namespace detail {
     inline void run_with_config(const std::string& config_file, const range_type& initial_range) {
         auto nodes = read_node_config(config_file, initial_range);
         auto total_count = std::accumulate(
-            nodes.begin(),
-            nodes.end(),
-            std::ptrdiff_t(0),
-            [](auto acc, const auto& node) { return acc + node.partition.size(); }
+            nodes.begin(), nodes.end(), std::ptrdiff_t(0), [](auto acc, const auto& node) {
+                return acc + node.partition.size();
+            }
         );
         pisa::progress bp_progress("Graph bisection", total_count);
         bp_progress.update(0);

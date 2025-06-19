@@ -9,9 +9,11 @@ namespace pisa {
 
 [[nodiscard]] auto all_ones(std::uint32_t bits) -> std::uint32_t {
     if (bits > 32 or bits < 2) {
-        throw std::runtime_error(fmt::format(
-            "Linear quantizer must take a number of bits between 2 and 32 but {} passed", bits
-        ));
+        throw std::runtime_error(
+            fmt::format(
+                "Linear quantizer must take a number of bits between 2 and 32 but {} passed", bits
+            )
+        );
     }
     auto half = std::uint32_t(1) << (bits - 1);
     return half - 1 + half;

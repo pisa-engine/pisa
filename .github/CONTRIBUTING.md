@@ -18,3 +18,13 @@ All you need to do is running the following inside the repository:
 bump [major|minor]patch]
 git push origin master --tags
 ```
+
+## Formatting
+
+We use `clang-format` 20 to format the C++ code. The easiest way to
+obtain it is to install the Python package. This is an example using
+[pipx](https://pipx.pypa.io/latest/):
+
+```shell
+pipx install clang-format==20.1.6
+```

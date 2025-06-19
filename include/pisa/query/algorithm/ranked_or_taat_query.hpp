@@ -11,10 +11,10 @@ class ranked_or_taat_query {
     explicit ranked_or_taat_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange, typename Acc>
-        requires(
-            (PartialScoreAccumulator<Acc> && concepts::ScoredPostingCursor<pisa::val_t<CursorRange>>
-             && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>)
-        )
+        requires((
+            PartialScoreAccumulator<Acc> && concepts::ScoredPostingCursor<pisa::val_t<CursorRange>>
+            && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>
+        ))
     void operator()(CursorRange&& cursors, uint64_t max_docid, Acc&& accumulator) {
         if (cursors.empty()) {
             return;

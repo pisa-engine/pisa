@@ -17,10 +17,10 @@ struct ranked_or_query {
     explicit ranked_or_query(topk_queue& topk) : m_topk(topk) {}
 
     template <typename CursorRange>
-        requires(
-            (concepts::ScoredPostingCursor<pisa::val_t<CursorRange>>
-             && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>)
-        )
+        requires((
+            concepts::ScoredPostingCursor<pisa::val_t<CursorRange>>
+            && concepts::SortedPostingCursor<pisa::val_t<CursorRange>>
+        ))
     void operator()(CursorRange&& cursors, uint64_t max_docid) {
         using Cursor = typename std::decay_t<CursorRange>::value_type;
         if (cursors.empty()) {

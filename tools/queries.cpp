@@ -334,29 +334,31 @@ int main(int argc, const char** argv) {
         std::cout << "qid\tusec\n";
     }
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        auto params = std::make_tuple(
-            &index,
-            app.wand_data_path(),
-            app.queries(),
-            app.thresholds_file(),
-            app.index_encoding(),
-            app.algorithm(),
-            app.k(),
-            app.scorer_params(),
-            app.weighted(),
-            extract,
-            safe
-        );
-        if (app.is_wand_compressed()) {
-            if (quantized) {
-                std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            auto params = std::make_tuple(
+                &index,
+                app.wand_data_path(),
+                app.queries(),
+                app.thresholds_file(),
+                app.index_encoding(),
+                app.algorithm(),
+                app.k(),
+                app.scorer_params(),
+                app.weighted(),
+                extract,
+                safe
+            );
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+                } else {
+                    std::apply(perftest<Index, wand_uniform_index>, params);
+                }
             } else {
-                std::apply(perftest<Index, wand_uniform_index>, params);
+                std::apply(perftest<Index, wand_raw_index>, params);
             }
-        } else {
-            std::apply(perftest<Index, wand_raw_index>, params);
         }
-    });
+    );
 }

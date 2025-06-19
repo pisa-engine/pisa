@@ -17,10 +17,10 @@ class MaxScoredCursor: public ScoredCursor<Cursor> {
     MaxScoredCursor(Cursor cursor, TermScorer term_scorer, float weight, float max_score)
         : ScoredCursor<Cursor>(std::move(cursor), std::move(term_scorer), weight),
           m_max_score(max_score) {
-        static_assert(
-            (concepts::MaxScorePostingCursor<MaxScoredCursor>
-             && concepts::SortedPostingCursor<MaxScoredCursor>)
-        );
+        static_assert((
+            concepts::MaxScorePostingCursor<MaxScoredCursor>
+            && concepts::SortedPostingCursor<MaxScoredCursor>
+        ));
     }
     MaxScoredCursor(MaxScoredCursor const&) = delete;
     MaxScoredCursor(MaxScoredCursor&&) = default;

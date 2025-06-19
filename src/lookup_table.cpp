@@ -89,14 +89,16 @@ void validate_padding(std::span<std::byte const> bytes) {
     auto padding = read<std::uint64_t>(bytes, 0, "not enough bytes for header");
     padding &= 0xFFFFFFFFFF000000;
     if (padding != 0) {
-        throw std::domain_error(fmt::format(
-            "bytes 3-7 must be all 0 but are {:#2x} {:#2x} {:#2x} {:#2x} {:#2x}",
-            bytes[3],
-            bytes[4],
-            bytes[5],
-            bytes[6],
-            bytes[7]
-        ));
+        throw std::domain_error(
+            fmt::format(
+                "bytes 3-7 must be all 0 but are {:#2x} {:#2x} {:#2x} {:#2x} {:#2x}",
+                bytes[3],
+                bytes[4],
+                bytes[5],
+                bytes[6],
+                bytes[7]
+            )
+        );
     }
 }
 
@@ -203,11 +205,13 @@ auto LookupTable::from_bytes(std::span<std::byte const> bytes) -> LookupTable {
     auto leading_bytes = pisa::subspan_or_throw(bytes, 0, 2, "header must be at least 2 bytes");
     auto verification_byte = leading_bytes[0];
     if (verification_byte != lt::VERIFICATION_BYTE) {
-        throw std::domain_error(fmt::format(
-            "lookup table verification byte invalid: must be {:#x} but {:#x} given",
-            lt::VERIFICATION_BYTE,
-            verification_byte
-        ));
+        throw std::domain_error(
+            fmt::format(
+                "lookup table verification byte invalid: must be {:#x} but {:#x} given",
+                lt::VERIFICATION_BYTE,
+                verification_byte
+            )
+        );
     }
 
     auto version = static_cast<std::uint8_t>(leading_bytes[1]);

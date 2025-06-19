@@ -26,10 +26,9 @@ void extract(
         if (sum) {
             return std::function<void(Query const&)>([&](auto const& query) {
                 auto count = std::accumulate(
-                    query.terms().begin(),
-                    query.terms().end(),
-                    0,
-                    [&](auto s, auto term) { return s + index[term.id].size(); }
+                    query.terms().begin(), query.terms().end(), 0, [&](auto s, auto term) {
+                        return s + index[term.id].size();
+                    }
                 );
                 std::cout << count << '\n';
             });
@@ -70,10 +69,12 @@ int main(int argc, char** argv) {
 
     spdlog::set_level(app.log_level());
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        extract<Index>(&index, app.queries(), app.separator(), sum, app.print_query_id());
-    });
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            extract<Index>(&index, app.queries(), app.separator(), sum, app.print_query_id());
+        }
+    );
 
     return 0;
 }
