@@ -159,7 +159,7 @@ class Tools:
         for token_filter in meta.analyzer.token_filters:
             args += ["-F", token_filter]
 
-        subprocess.run(args, stdin=pipe)
+        subprocess.run(args, stdin=pipe, check=True)
 
         for name in ["documents", "terms", "urls", "doclex", "termlex"]:
             (workdir / f"fwd.{name}").rename(workdir / name)
