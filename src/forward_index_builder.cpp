@@ -265,6 +265,9 @@ void Forward_Index_Builder::build(
         }
     }
     batch_group.wait();
+    if (first_document.as_int() == 0) {
+        throw std::runtime_error("no documents parsed");
+    }
     merge(output_file, first_document.as_int(), batch_number);
     remove_batches(output_file, batch_number);
 }
