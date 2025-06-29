@@ -17,6 +17,7 @@ import argparse
 import os
 from typing import Literal
 
+import pydantic
 from ruamel.yaml import sys
 
 from pisactl.command.index import AddIndexArgs, IndexArgs, index, add_index
@@ -173,6 +174,12 @@ def main() -> None:
                 query(tools, args)
             case "meta":
                 query_meta(args)
-    except (MetadataNotFound, AliasNotFound, ToolError, IndexResolutionError) as err:
+    except (
+        MetadataNotFound,
+        AliasNotFound,
+        ToolError,
+        IndexResolutionError,
+        pydantic.ValidationError,
+    ) as err:
         print(f"ERROR: {err}", file=sys.stderr)
         sys.exit(1)
