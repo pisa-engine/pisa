@@ -58,12 +58,14 @@ class TailyStats {
         -> std::span<char const> {
         if (start > m_source.size()
             || (size != std::dynamic_extent && start + size > m_source.size())) {
-            throw std::out_of_range(fmt::format(
-                "Tried to read bytes {}-{} but memory source is of size {}",
-                start,
-                start + size,
-                m_source.size()
-            ));
+            throw std::out_of_range(
+                fmt::format(
+                    "Tried to read bytes {}-{} but memory source is of size {}",
+                    start,
+                    start + size,
+                    m_source.size()
+                )
+            );
         }
         return m_source.subspan(start, size);
     }
@@ -122,12 +124,14 @@ void taily_score_shards(
     Fn func
 ) {
     if (shard_stats_paths.size() != shard_queries.size()) {
-        throw std::invalid_argument(fmt::format(
-            "Number of discovered shard stats paths ({}) does not match number of "
-            "parsed query lists ({})",
-            shard_stats_paths.size(),
-            shard_queries.size()
-        ));
+        throw std::invalid_argument(
+            fmt::format(
+                "Number of discovered shard stats paths ({}) does not match number of "
+                "parsed query lists ({})",
+                shard_stats_paths.size(),
+                shard_queries.size()
+            )
+        );
     }
     std::for_each(shard_queries.begin(), shard_queries.end(), [&global_queries](auto&& sq) {
         if (global_queries.size() != sq.size()) {

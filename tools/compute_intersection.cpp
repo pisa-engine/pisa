@@ -118,10 +118,12 @@ int main(int argc, const char** argv) {
     IntersectionType intersection_type =
         combinations ? IntersectionType::Combinations : IntersectionType::Query;
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        intersect<Index, wand_raw_index>(
-            &index, app.wand_data_path(), filtered_queries, intersection_type, max_term_count
-        );
-    });
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            intersect<Index, wand_raw_index>(
+                &index, app.wand_data_path(), filtered_queries, intersection_type, max_term_count
+            );
+        }
+    );
 }

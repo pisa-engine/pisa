@@ -18,6 +18,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Install bats
       if: runner.os == 'Linux'
@@ -64,6 +66,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Bulid docker image
       shell: bash
@@ -74,7 +78,7 @@ jobs:
       run: docker run --env CODECOV_TOKEN="${{ secrets.CODECOV_TOKEN }}" --rm pisa
 
   format:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v2
@@ -82,7 +86,7 @@ jobs:
     - name: Install clang-format
       shell: bash
       run: |
-          sudo pip install clang-format
+          sudo pip install clang-format==20.1.6
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -103,7 +107,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        submodules: true
+        submodules: recursive
 
     - name: Bulid docker image
       shell: bash

@@ -15,10 +15,9 @@
 template <typename T>
 std::vector<T> concatenate(std::vector<std::vector<T>> const& containers) {
     auto full_size = std::accumulate(
-        containers.begin(),
-        containers.end(),
-        0,
-        [](auto const& acc, auto const& container) { return acc + container.size(); }
+        containers.begin(), containers.end(), 0, [](auto const& acc, auto const& container) {
+            return acc + container.size();
+        }
     );
     std::vector<T> vec(full_size);
     auto next_begin = std::begin(vec);
@@ -87,10 +86,12 @@ namespace pisa { namespace invert {
             auto first_document_in_batch = first_document_id + first_idx_in_batch;
             auto last_document_in_batch = first_document_id + last_idx_in_batch;
             auto current_batch_size = last_idx_in_batch - first_idx_in_batch;
-            batches.push_back(ForwardIndexSlice{
-                documents.subspan(first_idx_in_batch, current_batch_size),
-                ranges::views::iota(first_document_in_batch, last_document_in_batch)
-            });
+            batches.push_back(
+                ForwardIndexSlice{
+                    documents.subspan(first_idx_in_batch, current_batch_size),
+                    ranges::views::iota(first_document_in_batch, last_document_in_batch)
+                }
+            );
         }
         std::vector<std::vector<std::pair<Term_Id, Document_Id>>> posting_vectors(batches.size());
 

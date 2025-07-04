@@ -73,9 +73,9 @@ auto BlockInvertedIndex::size_stats() -> SizeStats {
 
 ProfilingBlockInvertedIndex::ProfilingBlockInvertedIndex(MemorySource source, BlockCodecPtr block_codec)
     : BlockInvertedIndex(std::move(source), std::move(block_codec)) {
-    static_assert(
-        (concepts::SortedInvertedIndex<ProfilingBlockInvertedIndex, BlockInvertedIndexCursor<Profiling::On>>)
-    );
+    static_assert((
+        concepts::SortedInvertedIndex<ProfilingBlockInvertedIndex, BlockInvertedIndexCursor<Profiling::On>>
+    ));
 }
 
 index::block::PostingAccumulator::PostingAccumulator(

@@ -30,3 +30,7 @@ node_modules
 *.aux
 *.log
 docs/**/*.pdf
+
+__pycache__
+.venv
+.python-version

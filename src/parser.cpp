@@ -84,7 +84,8 @@ record_parser(std::string const& type, std::istream& is) {
         return trec_record_parser(trecpp::text::read_subsequent_record);
     }
     if (type == "trecweb") {
-        return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](std::istream& in
+        return [=, parser = std::make_shared<trecpp::web::TrecParser>(is)](
+                   std::istream& in
                ) -> std::optional<Document_Record> {
             while (not in.eof()) {
                 auto record = trecpp::match(

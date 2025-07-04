@@ -26,10 +26,9 @@ class ScoredCursor {
         : m_base_cursor(std::move(cursor)),
           m_weight(weight),
           m_term_scorer(resolve_term_scorer(term_scorer, weight)) {
-        static_assert(
-            (concepts::ScoredPostingCursor<ScoredCursor>
-             && concepts::SortedPostingCursor<ScoredCursor>)
-        );
+        static_assert((
+            concepts::ScoredPostingCursor<ScoredCursor> && concepts::SortedPostingCursor<ScoredCursor>
+        ));
     }
     ScoredCursor(ScoredCursor const&) = delete;
     ScoredCursor(ScoredCursor&&) = default;

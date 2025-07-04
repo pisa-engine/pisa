@@ -36,7 +36,7 @@ TEST_CASE("parse_jsonl_record", "[parser][unit]") {
         REQUIRE(record->content() == "lorem ipsum");
         record = pisa::parse_jsonl_record(in);
         REQUIRE(record->title() == "DOC2");
-        REQUIRE(record->url() == "");
+        REQUIRE(record->url().empty());
         REQUIRE(record->content() == "hello world");
         record = pisa::parse_jsonl_record(in);
         REQUIRE(record->title() == "DOC3");

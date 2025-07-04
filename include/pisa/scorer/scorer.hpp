@@ -22,7 +22,8 @@ struct ScorerParams {
 };
 
 namespace pisa { namespace scorer {
-    inline auto from_params = [](const ScorerParams& params, auto const& wdata
+    inline auto from_params = [](
+                                  const ScorerParams& params, auto const& wdata
                               ) -> std::unique_ptr<WandIndexScorer<std::decay_t<decltype(wdata)>>> {
         if (params.name == "bm25") {
             return std::make_unique<bm25<std::decay_t<decltype(wdata)>>>(

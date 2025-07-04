@@ -22,7 +22,10 @@ def _parser():
 
 
 def parse_dataset(dataset_name, fields: list[str]):
-    dataset = ir.load(dataset_name)
+    try:
+        dataset = ir.load(dataset_name)
+    except KeyError as err:
+        raise RuntimeError(f"unknown dataset {err}")
     for doc in dataset.docs_iter():
         content = " ".join(getattr(doc, field) for field in fields)
         print(json.dumps({"title": doc.doc_id, "content": content}))
@@ -37,6 +40,9 @@ def main():
     except BrokenPipeError:
         devnull = os.open(os.devnull, os.O_WRONLY)
         os.dup2(devnull, sys.stdout.fileno())
+    except Exception as err:
+        print(f"ERROR: {err}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

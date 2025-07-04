@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fmt/format.h>
+#include <optional>
 #include <spdlog/spdlog.h>
 
 #include "binary_freq_collection.hpp"
@@ -49,10 +50,10 @@ class BlockInvertedIndexCursor {
           m_universe(universe),
           m_block_codec(block_codec),
           m_block_size(block_codec->block_size()) {
-        static_assert(
-            (concepts::FrequencyPostingCursor<BlockInvertedIndexCursor>
-             && concepts::SortedPostingCursor<BlockInvertedIndexCursor>)
-        );
+        static_assert((
+            concepts::FrequencyPostingCursor<BlockInvertedIndexCursor>
+            && concepts::SortedPostingCursor<BlockInvertedIndexCursor>
+        ));
 
         if constexpr (profiling == Profiling::On) {
             m_profiler = block_profiler::open_list(term_id, m_blocks);

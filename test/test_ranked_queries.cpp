@@ -70,8 +70,7 @@ struct IndexData {
     }
 
     [[nodiscard]] static auto
-    get(std::string const& s_name, bool quantized, std::unordered_set<size_t> const& dropped_term_ids
-    ) {
+    get(std::string const& s_name, bool quantized, std::unordered_set<size_t> const& dropped_term_ids) {
         if (IndexData::data.find(s_name) == IndexData::data.end()) {
             IndexData::data[s_name] =
                 std::make_unique<IndexData<Index>>(s_name, quantized, dropped_term_ids);
@@ -116,7 +115,22 @@ class range_query_128: public range_query<T> {
 };
 
 // NOLINTNEXTLINE(hicpp-explicit-conversions)
-TEMPLATE_TEST_CASE("Ranked query test", "[query][ranked][integration]", ranked_or_taat_query_acc<SimpleAccumulator>, ranked_or_taat_query_acc<LazyAccumulator<4>>, wand_query, maxscore_query, block_max_wand_query, block_max_maxscore_query, range_query_128<ranked_or_taat_query_acc<SimpleAccumulator>>, range_query_128<ranked_or_taat_query_acc<LazyAccumulator<4>>>, range_query_128<wand_query>, range_query_128<maxscore_query>, range_query_128<block_max_wand_query>, range_query_128<block_max_maxscore_query>) {
+TEMPLATE_TEST_CASE(
+    "Ranked query test",
+    "[query][ranked][integration]",
+    ranked_or_taat_query_acc<SimpleAccumulator>,
+    ranked_or_taat_query_acc<LazyAccumulator<4>>,
+    wand_query,
+    maxscore_query,
+    block_max_wand_query,
+    block_max_maxscore_query,
+    range_query_128<ranked_or_taat_query_acc<SimpleAccumulator>>,
+    range_query_128<ranked_or_taat_query_acc<LazyAccumulator<4>>>,
+    range_query_128<wand_query>,
+    range_query_128<maxscore_query>,
+    range_query_128<block_max_wand_query>,
+    range_query_128<block_max_maxscore_query>
+) {
     for (auto quantized: {false, true}) {
         for (auto&& s_name: {"bm25", "qld"}) {
             std::unordered_set<size_t> dropped_term_ids;

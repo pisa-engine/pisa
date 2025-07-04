@@ -47,13 +47,15 @@ class uniform_score_compressor {
                 elem = elem << m_quantization_bits.as_int();
                 elem += *(score_begin + pos);
                 if (pos && elem < temp.back()) {
-                    throw std::runtime_error(fmt::format(
-                        "Sequence is not sorted: value at index {} "
-                        "({}) lower than its predecessor ({})",
-                        pos,
-                        elem,
-                        temp.back()
-                    ));
+                    throw std::runtime_error(
+                        fmt::format(
+                            "Sequence is not sorted: value at index {} "
+                            "({}) lower than its predecessor ({})",
+                            pos,
+                            elem,
+                            temp.back()
+                        )
+                    );
                 }
                 temp.push_back(elem);
             }
@@ -120,8 +122,8 @@ class wand_data_compressed {
             auto t = std::holds_alternative<FixedBlock>(block_size)
                 ? static_block_partition(seq, scorer, std::get<FixedBlock>(block_size).size)
                 : variable_block_partition(
-                    coll, seq, scorer, std::get<VariableBlock>(block_size).lambda
-                );
+                      coll, seq, scorer, std::get<VariableBlock>(block_size).lambda
+                  );
 
             float max_score = *(std::max_element(t.second.begin(), t.second.end()));
             max_term_weight.push_back(max_score);

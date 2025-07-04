@@ -65,10 +65,10 @@ namespace query {
      *  - `unweighted`: forces each weight to be 1.0 even if duplicates are removed;
      *  - `sort`: sorts terms by ID.
      *
-     * !! Note that `keep_duplicates` is very inefficient if used for retrieval because some posting:
-     * lists will have to be traversed multiple times if duplicate terms exist. Do not use it unless
-     * you know exactly what you are doing (e.g. if you use Query outside of the standard query
-     * processing and you rely on duplicates).
+     * !! Note that `keep_duplicates` is very inefficient if used for retrieval because some
+     * posting: lists will have to be traversed multiple times if duplicate terms exist. Do not use
+     * it unless you know exactly what you are doing (e.g. if you use Query outside of the standard
+     * query processing and you rely on duplicates).
      *
      * Policies can be combined similar to bitsets. For example, `unweighted | sort` will both
      * force unit weights and sort the terms.
@@ -122,11 +122,7 @@ class Query {
         using value_type = typename std::iterator_traits<TermIterator>::value_type;
         static_assert(std::is_constructible_v<TermId, value_type>);
         std::transform(
-            first_term,
-            last_term,
-            first_weight,
-            std::back_inserter(m_terms),
-            [](auto id, auto weight) {
+            first_term, last_term, first_weight, std::back_inserter(m_terms), [](auto id, auto weight) {
                 return WeightedTerm{id, weight};
             }
         );

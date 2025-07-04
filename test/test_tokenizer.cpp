@@ -75,8 +75,9 @@ TEST_CASE("EnglishTokenizer") {
         EnglishTokenStream tokenizer(str);
         REQUIRE(
             std::vector<std::string>(tokenizer.begin(), tokenizer.end())
-            == std::vector<
-                std::string>{"a", "1", "12", "w0rd", "token", "izer", "pup", "USa", "us", "hel", "lo"}
+            == std::vector<std::string>{
+                "a", "1", "12", "w0rd", "token", "izer", "pup", "USa", "us", "hel", "lo"
+            }
         );
     }
 }
@@ -89,15 +90,16 @@ TEST_CASE("Parse query terms to ids") {
     )
         .to_file(lexfile.string());
 
-    auto [query, id, parsed] =
-        GENERATE(table<std::string, std::optional<std::string>, std::vector<WeightedTerm>>(
+    auto [query, id, parsed] = GENERATE(
+        table<std::string, std::optional<std::string>, std::vector<WeightedTerm>>(
             {{"17:obama family tree", "17", {{1, 1.0}, {3, 1.0}}},
              {"obama family tree", std::nullopt, {{1, 1.0}, {3, 1.0}}},
              {"obama, family, trees", std::nullopt, {{1, 1.0}, {3, 1.0}}},
              {"obama + family + tree", std::nullopt, {{1, 1.0}, {3, 1.0}}},
              {"lol's", std::nullopt, {{0, 1.0}}},
              {"U.S.A.!?", std::nullopt, {{4, 1.0}}}}
-        ));
+        )
+    );
     CAPTURE(query);
 
     auto analyzer = TextAnalyzer(std::make_unique<EnglishTokenizer>());

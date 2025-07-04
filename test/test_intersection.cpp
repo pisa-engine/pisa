@@ -16,16 +16,18 @@ TEST_CASE("filter query", "[intersection][unit]") {
             std::vector<std::uint32_t>{6, 1, 5},  // terms
             std::vector<float>{0.1, 0.4, 1.0}  // weights
         );
-        auto [mask, expected] = GENERATE(table<Mask, Query>({
-            {0b001, Query{"Q1", std::vector<std::uint32_t>{6}, std::vector<float>{0.1}}},
-            {0b010, Query{"Q1", std::vector<std::uint32_t>{1}, std::vector<float>{0.4}}},
-            {0b100, Query{"Q1", std::vector<std::uint32_t>{5}, std::vector<float>{1.0}}},
-            {0b011, Query{"Q1", std::vector<std::uint32_t>{6, 1}, std::vector<float>{0.1, 0.4}}},
-            {0b101, Query{"Q1", std::vector<std::uint32_t>{6, 5}, std::vector<float>{0.1, 1.0}}},
-            {0b110, Query{"Q1", std::vector<std::uint32_t>{1, 5}, std::vector<float>{0.4, 1.0}}},
-            {0b111,
-             Query{"Q1", std::vector<std::uint32_t>{6, 1, 5}, std::vector<float>{0.1, 0.4, 1.0}}},
-        }));
+        auto [mask, expected] = GENERATE(
+            table<Mask, Query>({
+                {0b001, Query{"Q1", std::vector<std::uint32_t>{6}, std::vector<float>{0.1}}},
+                {0b010, Query{"Q1", std::vector<std::uint32_t>{1}, std::vector<float>{0.4}}},
+                {0b100, Query{"Q1", std::vector<std::uint32_t>{5}, std::vector<float>{1.0}}},
+                {0b011, Query{"Q1", std::vector<std::uint32_t>{6, 1}, std::vector<float>{0.1, 0.4}}},
+                {0b101, Query{"Q1", std::vector<std::uint32_t>{6, 5}, std::vector<float>{0.1, 1.0}}},
+                {0b110, Query{"Q1", std::vector<std::uint32_t>{1, 5}, std::vector<float>{0.4, 1.0}}},
+                {0b111,
+                 Query{"Q1", std::vector<std::uint32_t>{6, 1, 5}, std::vector<float>{0.1, 0.4, 1.0}}},
+            })
+        );
         WHEN("Filtered with mask " << mask) {
             auto actual = filter(query, mask);
             CHECK(actual.id() == expected.id());
@@ -119,15 +121,17 @@ TEST_CASE("compute intersection", "[intersection][unit]") {
             std::vector<std::uint32_t>{6, 1, 5},  // terms
             std::vector<float>{0.1, 0.4, 1.0}  // weights
         };
-        auto [mask, len, max] = GENERATE(table<Mask, std::size_t, float>({
-            {0b001, 3, 1.84583F},
-            {0b010, 3, 1.84583F},
-            {0b100, 3, 1.84583F},
-            {0b011, 1, 3.69165F},
-            {0b101, 2, 3.69165F},
-            {0b110, 2, 3.69165F},
-            {0b111, 1, 5.53748F},
-        }));
+        auto [mask, len, max] = GENERATE(
+            table<Mask, std::size_t, float>({
+                {0b001, 3, 1.84583F},
+                {0b010, 3, 1.84583F},
+                {0b100, 3, 1.84583F},
+                {0b011, 1, 3.69165F},
+                {0b101, 2, 3.69165F},
+                {0b110, 2, 3.69165F},
+                {0b111, 1, 5.53748F},
+            })
+        );
         WHEN("Computed intersection with mask " << mask) {
             auto intersection = Intersection::compute(index, wand, query, mask);
             CHECK(intersection.length == len);
@@ -162,8 +166,9 @@ TEST_CASE("for_all_subsets", "[intersection][unit]") {
             THEN("Unigrams and bigrams accumulated") {
                 CHECK(
                     masks
-                    == std::vector<
-                        Mask>{Mask(0b001), Mask(0b010), Mask(0b011), Mask(0b100), Mask(0b101), Mask(0b110)}
+                    == std::vector<Mask>{
+                        Mask(0b001), Mask(0b010), Mask(0b011), Mask(0b100), Mask(0b101), Mask(0b110)
+                    }
                 );
             }
         }
@@ -172,8 +177,15 @@ TEST_CASE("for_all_subsets", "[intersection][unit]") {
             THEN("All combinations accumulated") {
                 CHECK(
                     masks
-                    == std::vector<
-                        Mask>{Mask(0b001), Mask(0b010), Mask(0b011), Mask(0b100), Mask(0b101), Mask(0b110), Mask(0b111)}
+                    == std::vector<Mask>{
+                        Mask(0b001),
+                        Mask(0b010),
+                        Mask(0b011),
+                        Mask(0b100),
+                        Mask(0b101),
+                        Mask(0b110),
+                        Mask(0b111)
+                    }
                 );
             }
         }

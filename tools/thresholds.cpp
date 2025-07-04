@@ -70,25 +70,27 @@ int main(int argc, const char** argv) {
     CLI11_PARSE(app, argc, argv);
     spdlog::set_level(app.log_level());
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        auto params = std::make_tuple(
-            &index,
-            app.wand_data_path(),
-            app.queries(),
-            app.index_encoding(),
-            app.scorer_params(),
-            app.k(),
-            quantized
-        );
-        if (app.is_wand_compressed()) {
-            if (quantized) {
-                std::apply(thresholds<Index, wand_uniform_index_quantized>, params);
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            auto params = std::make_tuple(
+                &index,
+                app.wand_data_path(),
+                app.queries(),
+                app.index_encoding(),
+                app.scorer_params(),
+                app.k(),
+                quantized
+            );
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    std::apply(thresholds<Index, wand_uniform_index_quantized>, params);
+                } else {
+                    std::apply(thresholds<Index, wand_uniform_index>, params);
+                }
             } else {
-                std::apply(thresholds<Index, wand_uniform_index>, params);
+                std::apply(thresholds<Index, wand_raw_index>, params);
             }
-        } else {
-            std::apply(thresholds<Index, wand_raw_index>, params);
         }
-    });
+    );
 }
