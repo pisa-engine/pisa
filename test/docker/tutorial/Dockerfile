@@ -45,6 +45,12 @@ RUN cmake \
     .. \
     && cmake --build . --config Release -- -j 4
 
+WORKDIR /
+RUN wget https://github.com/usnistgov/trec_eval/archive/refs/tags/v9.0.8.tar.gz
+RUN tar xzvf v9.0.8.tar.gz
+WORKDIR /trec_eval-9.0.8
+RUN make
+
 FROM rust:1.85 AS ciff_build
 
 WORKDIR /
@@ -68,6 +74,7 @@ COPY --from=ciff_build /ciff/target/release/jsonl2ciff /usr/bin/
 COPY --from=ciff_build /ciff/target/release/ciff2pisa /usr/bin/
 COPY --from=ciff_build /ciff/target/release/pisa2ciff /usr/bin/
 COPY --from=build /opt/intel /opt/intel
+COPY --from=build /trec_eval-9.0.8/trec_eval /usr/bin
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 RUN /root/.local/bin/uv venv

@@ -125,9 +125,14 @@ collection. For convenience, a file in a format understood by PISA is
 available at `/input/wikir.queries`. We can run these queries against
 the index:
 
-    pisa query < /input/wikir.queries
+    pisa query < /input/wikir.queries > wikir.results
 
-TODO(<https://github.com/pisa-engine/pisa/issues/608>): trec_eval
+Notice that we redirect the results to `wikir.results` file. We can now
+use the `trec_eval` tool to calculate the relevance metrics. We have to
+pass the known query relevance file that is located in the input
+directory.
+
+    trec_eval /input/wikir.qrels wikir.results
 
 We can also run a benchmark, instead of returning results, by simply
 passing `--benchmark` flag. It also may be more convenient to read the
@@ -193,10 +198,13 @@ Querying the new index should be slower than the initial one.
 
 ## Section 2: MS MARCO Experiments
 
-TODO(<https://github.com/pisa-engine/pisa/issues/610>): collection & queries
+In this section, we will run experiments on the MS MARCO dataset. The
+collections are provided in the input directory in the CIFF format.
+
+First, let's build an index with precomputed BM25 scores.
 
     pisa index ciff \
-        --input /workdir/msmarco.ciff \
+        --input /input/msmarco/marco-v1.bp.ciff \
         --output /workdir/msmarco \
         --scorer passthrough
 
@@ -206,8 +214,11 @@ opposed to frequencies, therefore we only want to add up the scores but
 not use any particular formula such as BM25.
 
     cd /workdir/msmarco
-    pisa query < /data/queries.txt # TODO(<https://github.com/pisa-engine/pisa/issues/610>)
-    pisa query --benchmark < /data/queries.txt
+    pisa query < /input/msmarco/dev.queries > dev.results
+
+We can now calculate the metrics:
+
+    trec_eval /input/msmarco/qrels.msmarco-passage.dev-subset.txt dev.results
 
 TODO(<https://github.com/pisa-engine/pisa/issues/610>): These experiments
 will also demonstrate the slowdowns caused by LSR in practice.
