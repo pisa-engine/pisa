@@ -21,7 +21,7 @@ from unittest.mock import MagicMock, sentinel
 from pydantic import ValidationError
 import pytest
 import pisactl.command.index
-from pisactl.command.index import AddIndexArgs, IndexArgs, index, add_index
+from pisactl.command.index import AddIndexArgs, IndexArgs, IndexDirExists, index, add_index
 from pisactl.metadata import Analyzer, Block, FixedBlock, VariableBlock
 from pisactl.scorer import BM25, Scorer
 from pisactl.source import CiffSource, IrDatasetsSource, ParseFormat, StdinSource
@@ -133,12 +133,61 @@ def test_index_args():
     )
 
 
+def test_index_existing_dir_force(tmp_path: pathlib.Path):
+    output = str(tmp_path / "output")
+    (tmp_path / "output").mkdir()
+    tools = MagicMock(
+        parse_pipe=MagicMock(return_value=sentinel.meta),
+        invert_forward_index=MagicMock(return_value=sentinel.meta),
+        compress=MagicMock(),
+    )
+    index(
+        tools,
+        IndexArgs(
+            alias="default",
+            output=output,
+            force=True,
+            encoding="block_simdbp",
+            source=StdinSource(format=ParseFormat.JSONL, analyzer=Analyzer()),
+            scorer=DEFAULT_SCORER,
+            block=FixedBlock(size=32),
+            quantize=None,
+        ),
+    )
+    # merely testing if it went ahead, other tests verify more details
+    tools.parse_pipe.assert_called_once()
+
+
+def test_index_existing_dir_do_not_force(tmp_path: pathlib.Path):
+    output = str(tmp_path / "output")
+    (tmp_path / "output").mkdir()
+    tools = MagicMock(
+        parse_pipe=MagicMock(return_value=sentinel.meta),
+        invert_forward_index=MagicMock(return_value=sentinel.meta),
+        compress=MagicMock(),
+    )
+    # we are not forcing on existing dir, so indexing fails
+    with pytest.raises(IndexDirExists):
+        index(
+            tools,
+            IndexArgs(
+                alias="default",
+                output=output,
+                force=False,
+                encoding="block_simdbp",
+                source=StdinSource(format=ParseFormat.JSONL, analyzer=Analyzer()),
+                scorer=DEFAULT_SCORER,
+                block=FixedBlock(size=32),
+                quantize=None,
+            ),
+        )
+
+
 @pytest.mark.parametrize(
-    "alias,force,encoding,format,analyzer,scorer,block,quantize",
+    "alias,encoding,parse_format,analyzer,scorer,block,quantize",
     [
         (
             "default",
-            False,
             "block_simdbp",
             ParseFormat.JSONL,
             Analyzer(),
@@ -148,7 +197,6 @@ def test_index_args():
         ),
         (
             "qmx",
-            True,
             "block_qmx",
             ParseFormat.PLAINTEXT,
             Analyzer(tokenizer="whitespace", strip_html=False, token_filters=["lowercase"]),
@@ -160,14 +208,15 @@ def test_index_args():
 )
 def test_index_stdin(
     alias: str,
-    force: bool,
     encoding: str,
     parse_format: ParseFormat,
     analyzer: Analyzer,
     scorer: Scorer,
     block: Block,
     quantize: int | None,
+    tmp_path: pathlib.Path,
 ):
+    output = str(tmp_path / "output")
     tools = MagicMock(
         parse_pipe=MagicMock(return_value=sentinel.meta),
         invert_forward_index=MagicMock(return_value=sentinel.meta),
@@ -177,8 +226,8 @@ def test_index_stdin(
         tools,
         IndexArgs(
             alias=alias,
-            output="/output",
-            force=force,
+            output=output,
+            force=False,
             encoding=encoding,
             source=StdinSource(format=parse_format, analyzer=analyzer),
             scorer=scorer,
@@ -186,12 +235,7 @@ def test_index_stdin(
             quantize=quantize,
         ),
     )
-    tools.parse_pipe.assert_called_once_with(
-        "/output",
-        analyzer=analyzer,
-        fmt=parse_format.value,
-        force=force,
-    )
+    tools.parse_pipe.assert_called_once_with(output, analyzer=analyzer, fmt=parse_format.value)
     tools.invert_forward_index.assert_called_once_with(sentinel.meta)
     tools.compress.assert_called_once_with(
         sentinel.meta,
@@ -204,11 +248,10 @@ def test_index_stdin(
 
 
 @pytest.mark.parametrize(
-    "alias,force,encoding,name,content_fields,analyzer,scorer,block,quantize",
+    "alias,encoding,name,content_fields,analyzer,scorer,block,quantize",
     [
         (
             "default",
-            False,
             "block_simdbp",
             "wikir/en1k",
             ["docid", "text"],
@@ -219,7 +262,6 @@ def test_index_stdin(
         ),
         (
             "qmx",
-            True,
             "block_qmx",
             "clueweb09b",
             ["content"],
@@ -232,7 +274,6 @@ def test_index_stdin(
 )
 def test_index_ir_datasets(
     alias: str,
-    force: bool,
     encoding: str,
     name: str,
     content_fields: list[str],
@@ -240,7 +281,9 @@ def test_index_ir_datasets(
     scorer: Scorer,
     block: Block,
     quantize: int | None,
+    tmp_path: pathlib.Path,
 ):
+    output = str(tmp_path / "output")
     tools = MagicMock(
         parse_ir_datasets=MagicMock(return_value=sentinel.meta),
         invert_forward_index=MagicMock(return_value=sentinel.meta),
@@ -250,8 +293,8 @@ def test_index_ir_datasets(
         tools,
         IndexArgs(
             alias=alias,
-            output="/output",
-            force=force,
+            output=output,
+            force=False,
             encoding=encoding,
             source=IrDatasetsSource(analyzer=analyzer, name=name, content_fields=content_fields),
             scorer=scorer,
@@ -260,11 +303,7 @@ def test_index_ir_datasets(
         ),
     )
     tools.parse_ir_datasets.assert_called_once_with(
-        name=name,
-        analyzer=analyzer,
-        output_dir="/output",
-        content_fields=content_fields,
-        force=force,
+        name=name, analyzer=analyzer, output_dir=output, content_fields=content_fields
     )
     tools.invert_forward_index.assert_called_once_with(sentinel.meta)
     tools.compress.assert_called_once_with(
@@ -278,20 +317,11 @@ def test_index_ir_datasets(
 
 
 @pytest.mark.parametrize(
-    "alias,force,encoding,input,scorer,block,quantize",
+    "alias,encoding,input_path,scorer,block,quantize",
     [
-        (
-            "default",
-            False,
-            "block_simdbp",
-            "/input",
-            DEFAULT_SCORER,
-            FixedBlock(size=32),
-            None,
-        ),
+        ("default", "block_simdbp", "/input", DEFAULT_SCORER, FixedBlock(size=32), None),
         (
             "qmx",
-            True,
             "block_qmx",
             "/input",
             DEFAULT_SCORER,
@@ -302,13 +332,14 @@ def test_index_ir_datasets(
 )
 def test_index_ciff(
     alias: str,
-    force: bool,
     encoding: str,
     input_path: str,
     scorer: Scorer,
     block: Block,
     quantize: int | None,
+    tmp_path: pathlib.Path,
 ):
+    output = str(tmp_path / "output")
     tools = MagicMock(
         ciff_to_pisa=MagicMock(return_value=sentinel.meta),
         compress=MagicMock(),
@@ -317,8 +348,8 @@ def test_index_ciff(
         tools,
         IndexArgs(
             alias=alias,
-            output="/output",
-            force=force,
+            output=output,
+            force=False,
             encoding=encoding,
             source=CiffSource(input=pathlib.Path(input_path)),
             scorer=scorer,
@@ -326,7 +357,7 @@ def test_index_ciff(
             quantize=quantize,
         ),
     )
-    tools.ciff_to_pisa.assert_called_once_with(input_path, "/output", force=force)
+    tools.ciff_to_pisa.assert_called_once_with(input_path, output)
     tools.compress.assert_called_once_with(
         sentinel.meta,
         encoding,

@@ -1,22 +1,34 @@
 # Efficient In-Memory Inverted Indexes
 
-## Running PISA in container
+## Prerequisites
 
-TODO download instructions
+### Download container image
+
+TODO
+
+### Download input data
+
+TODO
+
+## Running PISA in container
 
 You can use Docker or Podman to start the container. In the example
 below, we mount a volume so that we can persist the files we create
 after the container has terminated. We use a mounted volume to persist
 the data on the local drive in an arbitrary directory
 `$HOME/pisa-workdir` (can be any other directory on your local drive).
+We also mount the input volume that points to the input data directory
+that should have been downloaded as one of the prerequisites (in this
+example, we use `$HOME/sigir25-input-data`).
 
     mkdir -p "$HOME/pisa-workdir"
     docker run \
-        --detach -it                        # run in background
-        --network host \                    # to avoid connection issues
-        --name=pisa \                       # name container
-        -v "$HOME/pisa-workdir:/workdir" \  # mount volume
-        pisa-tutorial                       # image name
+        --detach -it                            # run in background
+        --network host \                        # to avoid connection issues
+        --name=pisa \                           # name container
+        -v "$HOME/pisa-workdir:/workdir" \      # mount workdir volume
+        -v "$HOME/sigir25-input-data:/input" \  # mount input data volume
+        pisa-tutorial                           # image name
 
 We can now execute the container in an interactive terminal:
 
@@ -61,13 +73,13 @@ First, let's have a peek at our toy collection. Our file is in JSONL
 format -- each line contains a JSON representing a document. We can use
 the `jq` tool to pretty-print it:
 
-    cat /data/tiny.jsonl | jq
+    cat /input/tiny.jsonl | jq
 
 Each document has a title and content, which is all we will need to
 build an index. We can now pipe it to the `pisa` tool with the
 appropriate parameters.
 
-    pisa index stdin --format jsonl -o /workdir/toy < /data/tiny.jsonl
+    pisa index stdin --format jsonl -o /workdir/toy < /input/tiny.jsonl
 
 Let's break it down. We execute the `index` command, with `stdin`
 subcommand, indicating that the collection will be read from the
@@ -109,17 +121,11 @@ index was built:
 We should get the results in the TREC format.
 
 It is more useful to use the set of queries that come with the
-collection. We can use the `ir_datasets` tool that comes pre-installed
-in the Docker image. Notice that we use `awk` to convert the file format
-to a format understood by PISA.
+collection. For convenience, a file in a format understood by PISA is
+available at `/input/wikir.queries`. We can run these queries against
+the index:
 
-    ir_datasets export wikir/en1k/test queries \
-        | awk '{ print $1":"$2 }' \
-        > /data/wikir.queries
-
-We can now run these queries against the index.
-
-    pisa query < /data/wikir.queries
+    pisa query < /input/wikir.queries
 
 TODO(<https://github.com/pisa-engine/pisa/issues/608>): trec_eval
 
@@ -127,7 +133,7 @@ We can also run a benchmark, instead of returning results, by simply
 passing `--benchmark` flag. It also may be more convenient to read the
 queries from a file:
 
-    pisa query --benchmark < /data/wikir.queries
+    pisa query --benchmark < /input/wikir.queries
 
 This will print out some logs and a JSON result with some statistics.
 Note that by default the algorithm used is `block_max_wand`, which is a
@@ -135,18 +141,18 @@ rather efficient disjunctive top-k retrieval algorithm. For now, let's
 see how the results will compare when we use `ranked_or`, which is
 exhaustive retrieval:
 
-    pisa query --benchmark --algorithm ranked_or < /data/wikir.queries
+    pisa query --benchmark --algorithm ranked_or < /input/wikir.queries
 
 This should be significantly slower. We can also try `ranked_and` for
 _conjunctive_ retrieval, which requires _all_ query terms to be present
 for a document to be returned:
 
-    pisa query --benchmark --algorithm ranked_and < /data/wikir.queries
+    pisa query --benchmark --algorithm ranked_and < /input/wikir.queries
 
 By default we will retrieve top 10 results, but we can choose a
 different value:
 
-    pisa query --benchmark -k 1000 < /data/wikir.queries
+    pisa query --benchmark -k 1000 < /input/wikir.queries
 
 #### Multiple indexes
 
@@ -177,7 +183,7 @@ And inspect parameters of the new index:
 The `block_interpolative` encoding is known to be much more
 space-efficient but slower. We can verify the size by listing the files:
 
-    du -ah /workdir/wikir | grep inv
+    du -ah /workdir/wikir | grep 'inv:'
 
 Finally, we can query the new index by passing the alias:
 
