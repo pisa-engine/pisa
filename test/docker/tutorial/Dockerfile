@@ -68,7 +68,6 @@ COPY --from=ciff_build /ciff/target/release/jsonl2ciff /usr/bin/
 COPY --from=ciff_build /ciff/target/release/ciff2pisa /usr/bin/
 COPY --from=ciff_build /ciff/target/release/pisa2ciff /usr/bin/
 COPY --from=build /opt/intel /opt/intel
-COPY --from=build /pisa/test/test_data/tiny/tiny-no-url.jsonl /data/tiny.jsonl
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 RUN /root/.local/bin/uv venv

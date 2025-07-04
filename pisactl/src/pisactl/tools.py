@@ -26,7 +26,7 @@ class ToolError(Exception):
         self.cmd = cmd
 
     def __str__(self) -> str:
-        return f"ERROR: command failed: {self.cmd}"
+        return f"command failed: {self.cmd}"
 
 
 class Tools:
@@ -80,11 +80,8 @@ class Tools:
         except subprocess.CalledProcessError:
             raise ToolError(" ".join(args))
 
-    def ciff_to_pisa(
-        self, ciff_file: str, output_dir: str, *, force: bool
-    ) -> metadata.CollectionMetadata:
+    def ciff_to_pisa(self, ciff_file: str, output_dir: str) -> metadata.CollectionMetadata:
         workdir = pathlib.Path(output_dir)
-        workdir.mkdir(exist_ok=force)
         self._run(
             [self._cmd_ciff_to_pisa(), "--ciff-file", ciff_file, "--output", str(workdir / "ciff")]
         )
@@ -122,7 +119,7 @@ class Tools:
         )
 
     def _parse_pipe(
-        self, output_dir: str, pipe, *, analyzer: metadata.Analyzer, fmt: str, force: bool
+        self, output_dir: str, pipe, *, analyzer: metadata.Analyzer, fmt: str
     ) -> metadata.CollectionMetadata:
         """Parse a dataset from the collection piped into stdin."""
 
@@ -143,7 +140,6 @@ class Tools:
             },
         )
 
-        workdir.mkdir(exist_ok=force)
         args = [
             self._cmd_parse_collection(),
             "--format",
@@ -167,11 +163,11 @@ class Tools:
         return meta
 
     def parse_pipe(
-        self, output_dir: str, *, analyzer: metadata.Analyzer, fmt: str, force: bool
+        self, output_dir: str, *, analyzer: metadata.Analyzer, fmt: str
     ) -> metadata.CollectionMetadata:
         """Parse a dataset from the collection piped into stdin."""
 
-        return self._parse_pipe(output_dir, sys.stdin, analyzer=analyzer, fmt=fmt, force=force)
+        return self._parse_pipe(output_dir, sys.stdin, analyzer=analyzer, fmt=fmt)
 
     def parse_ir_datasets(
         self,
@@ -180,7 +176,6 @@ class Tools:
         *,
         analyzer: metadata.Analyzer,
         content_fields: list[str],
-        force: bool,
     ) -> metadata.CollectionMetadata:
         """Parse a dataset from `ir-datasets`, producing a forward index with supporting files,
         such as term and document lexicons."""
@@ -189,7 +184,7 @@ class Tools:
             [self._cmd_ir_datasets(), name, "--content-fields", *content_fields],
             stdout=subprocess.PIPE,
         )
-        return self._parse_pipe(output_dir, ir.stdout, analyzer=analyzer, fmt="jsonl", force=force)
+        return self._parse_pipe(output_dir, ir.stdout, analyzer=analyzer, fmt="jsonl")
 
     def invert_forward_index(
         self, meta: metadata.CollectionMetadata, *, ordering: str = "default"

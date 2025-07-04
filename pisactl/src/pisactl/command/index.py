@@ -24,10 +24,25 @@ from pisactl.source import CiffSource, IrDatasetsSource, Source, StdinSource, Ve
 from pisactl.tools import Tools
 
 
+class IndexDirExists(Exception):
+    def __init__(self, path: pathlib.Path):
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"index dir already exists ({self.path}), use --force to overwrite"
+
+
 def _block(args: dict):
     if "lambda_" in args and args["lambda_"] is not None:
         return VariableBlock.model_validate({"lambda": args["lambda_"]})
     return FixedBlock(size=args["block_size"])
+
+
+def _mkdir(path: pathlib.Path, force: bool):
+    try:
+        path.mkdir(exist_ok=force)
+    except FileExistsError:
+        raise IndexDirExists(path)
 
 
 class CommonIndexArgs(pydantic.BaseModel):
@@ -84,26 +99,21 @@ class AddIndexArgs(CommonIndexArgs):
 
 
 def index(tools: Tools, args: IndexArgs):
+    _mkdir(pathlib.Path(args.output), force=args.force)
     match args.source:
         case CiffSource() as source:
             assert source.input is not None
-            meta = tools.ciff_to_pisa(str(source.input), args.output, force=args.force)
+            meta = tools.ciff_to_pisa(str(source.input), args.output)
         case IrDatasetsSource() as source:
             meta = tools.parse_ir_datasets(
                 name=source.name,
                 analyzer=source.analyzer,
                 output_dir=args.output,
                 content_fields=source.content_fields,
-                force=args.force,
             )
             meta = tools.invert_forward_index(meta)
         case StdinSource() as source:
-            meta = tools.parse_pipe(
-                args.output,
-                analyzer=source.analyzer,
-                fmt=source.format.value,
-                force=args.force,
-            )
+            meta = tools.parse_pipe(args.output, analyzer=source.analyzer, fmt=source.format.value)
             meta = tools.invert_forward_index(meta)
         case VectorsSource() as source:
             raise RuntimeError("not implemented")
