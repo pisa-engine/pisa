@@ -72,11 +72,11 @@ class Tools:
         with open(meta.workdir / meta.terms, "r") as f:
             return sum(1 for line in f if line.strip() != "")
 
-    def _run(self, args: list[str]):
+    def _run(self, args: list[str], *, stdin=None):
         try:
             if self.verbose:
                 print("#", " ".join(args), file=sys.stderr)
-            subprocess.run(args, check=True)
+            subprocess.run(args, stdin=stdin, check=True)
         except subprocess.CalledProcessError:
             raise ToolError(" ".join(args))
 
@@ -155,7 +155,7 @@ class Tools:
         for token_filter in meta.analyzer.token_filters:
             args += ["-F", token_filter]
 
-        subprocess.run(args, stdin=pipe, check=True)
+        self._run(args, stdin=pipe)
 
         for name in ["documents", "terms", "urls", "doclex", "termlex"]:
             (workdir / f"fwd.{name}").rename(workdir / name)
@@ -191,7 +191,7 @@ class Tools:
     ) -> metadata.CollectionMetadata:
         assert meta.forward_index is not None
         term_count = self._count_terms(meta)
-        subprocess.run(
+        self._run(
             [
                 self._cmd_invert(),
                 "--input",
@@ -201,7 +201,6 @@ class Tools:
                 "--term-count",
                 str(term_count),
             ],
-            check=True,
         )
         if meta.orderings is None:
             meta.orderings = {}
@@ -247,7 +246,7 @@ class Tools:
                     args += ["--qld-mu", str(mu)]
                 case PL2(c=c):
                     args += ["--pl2-c", str(c)]
-        subprocess.run(args, check=True)
+        self._run(args)
 
     def _create_wdata(self, workdir: pathlib.Path, input_base: str, wdata: metadata.WandData):
         args = [
@@ -263,7 +262,7 @@ class Tools:
                 args += ["--block-size", str(size)]
             case metadata.VariableBlock(lambda_=lambda_):
                 args += ["--lambda", str(lambda_)]
-        subprocess.run(args, check=True)
+        self._run(args)
 
     def compress(
         self,
