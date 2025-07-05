@@ -26,7 +26,7 @@ class ToolError(Exception):
         self.cmd = cmd
 
     def __str__(self) -> str:
-        return f"ERROR: command failed: {self.cmd}"
+        return f"command failed: {self.cmd}"
 
 
 class Tools:
@@ -72,19 +72,16 @@ class Tools:
         with open(meta.workdir / meta.terms, "r") as f:
             return sum(1 for line in f if line.strip() != "")
 
-    def _run(self, args: list[str]):
+    def _run(self, args: list[str], *, stdin=None):
         try:
             if self.verbose:
                 print("#", " ".join(args), file=sys.stderr)
-            subprocess.run(args, check=True)
+            subprocess.run(args, stdin=stdin, check=True)
         except subprocess.CalledProcessError:
             raise ToolError(" ".join(args))
 
-    def ciff_to_pisa(
-        self, ciff_file: str, output_dir: str, *, force: bool
-    ) -> metadata.CollectionMetadata:
+    def ciff_to_pisa(self, ciff_file: str, output_dir: str) -> metadata.CollectionMetadata:
         workdir = pathlib.Path(output_dir)
-        workdir.mkdir(exist_ok=force)
         self._run(
             [self._cmd_ciff_to_pisa(), "--ciff-file", ciff_file, "--output", str(workdir / "ciff")]
         )
@@ -122,7 +119,7 @@ class Tools:
         )
 
     def _parse_pipe(
-        self, output_dir: str, pipe, *, analyzer: metadata.Analyzer, fmt: str, force: bool
+        self, output_dir: str, pipe, *, analyzer: metadata.Analyzer, fmt: str
     ) -> metadata.CollectionMetadata:
         """Parse a dataset from the collection piped into stdin."""
 
@@ -143,7 +140,6 @@ class Tools:
             },
         )
 
-        workdir.mkdir(exist_ok=force)
         args = [
             self._cmd_parse_collection(),
             "--format",
@@ -159,7 +155,7 @@ class Tools:
         for token_filter in meta.analyzer.token_filters:
             args += ["-F", token_filter]
 
-        subprocess.run(args, stdin=pipe, check=True)
+        self._run(args, stdin=pipe)
 
         for name in ["documents", "terms", "urls", "doclex", "termlex"]:
             (workdir / f"fwd.{name}").rename(workdir / name)
@@ -167,11 +163,11 @@ class Tools:
         return meta
 
     def parse_pipe(
-        self, output_dir: str, *, analyzer: metadata.Analyzer, fmt: str, force: bool
+        self, output_dir: str, *, analyzer: metadata.Analyzer, fmt: str
     ) -> metadata.CollectionMetadata:
         """Parse a dataset from the collection piped into stdin."""
 
-        return self._parse_pipe(output_dir, sys.stdin, analyzer=analyzer, fmt=fmt, force=force)
+        return self._parse_pipe(output_dir, sys.stdin, analyzer=analyzer, fmt=fmt)
 
     def parse_ir_datasets(
         self,
@@ -180,7 +176,6 @@ class Tools:
         *,
         analyzer: metadata.Analyzer,
         content_fields: list[str],
-        force: bool,
     ) -> metadata.CollectionMetadata:
         """Parse a dataset from `ir-datasets`, producing a forward index with supporting files,
         such as term and document lexicons."""
@@ -189,14 +184,14 @@ class Tools:
             [self._cmd_ir_datasets(), name, "--content-fields", *content_fields],
             stdout=subprocess.PIPE,
         )
-        return self._parse_pipe(output_dir, ir.stdout, analyzer=analyzer, fmt="jsonl", force=force)
+        return self._parse_pipe(output_dir, ir.stdout, analyzer=analyzer, fmt="jsonl")
 
     def invert_forward_index(
         self, meta: metadata.CollectionMetadata, *, ordering: str = "default"
     ) -> metadata.CollectionMetadata:
         assert meta.forward_index is not None
         term_count = self._count_terms(meta)
-        subprocess.run(
+        self._run(
             [
                 self._cmd_invert(),
                 "--input",
@@ -206,7 +201,6 @@ class Tools:
                 "--term-count",
                 str(term_count),
             ],
-            check=True,
         )
         if meta.orderings is None:
             meta.orderings = {}
@@ -252,7 +246,7 @@ class Tools:
                     args += ["--qld-mu", str(mu)]
                 case PL2(c=c):
                     args += ["--pl2-c", str(c)]
-        subprocess.run(args, check=True)
+        self._run(args)
 
     def _create_wdata(self, workdir: pathlib.Path, input_base: str, wdata: metadata.WandData):
         args = [
@@ -268,7 +262,7 @@ class Tools:
                 args += ["--block-size", str(size)]
             case metadata.VariableBlock(lambda_=lambda_):
                 args += ["--lambda", str(lambda_)]
-        subprocess.run(args, check=True)
+        self._run(args)
 
     def compress(
         self,

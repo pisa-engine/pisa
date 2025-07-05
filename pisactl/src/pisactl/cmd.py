@@ -20,7 +20,7 @@ from typing import Literal
 import pydantic
 from ruamel.yaml import sys
 
-from pisactl.command.index import AddIndexArgs, IndexArgs, index, add_index
+from pisactl.command.index import AddIndexArgs, IndexArgs, IndexDirExists, index, add_index
 from pisactl.command.query import query
 from pisactl.command.query_meta import query_meta
 from pisactl.metadata import AliasNotFound, IndexResolutionError, MetadataNotFound
@@ -179,6 +179,7 @@ def main() -> None:
         AliasNotFound,
         ToolError,
         IndexResolutionError,
+        IndexDirExists,
         pydantic.ValidationError,
     ) as err:
         print(f"ERROR: {err}", file=sys.stderr)
