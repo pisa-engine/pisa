@@ -201,24 +201,22 @@ Querying the new index should be slower than the initial one.
 In this section, we will run experiments on the MS MARCO dataset. The
 collections are provided in the input directory in the CIFF format.
 
-First, let's build an index with precomputed BM25 scores.
+First, let's build a traditional index with frequencies.
 
     pisa index ciff \
         --input /input/msmarco/marco-v1.bp.ciff \
-        --output /workdir/msmarco \
-        --scorer passthrough
+        --output /workdir/msmarco
 
-Notice that we use `passthrough` scorer. This is because the payloads
-that are available in the provided CIFF are precomputed scores as
-opposed to frequencies, therefore we only want to add up the scores but
-not use any particular formula such as BM25.
+Once done, we can query the index to obtain the results, and calculate
+the evaluation metrics:
 
     cd /workdir/msmarco
     pisa query < /input/msmarco/dev.queries > dev.results
-
-We can now calculate the metrics:
-
     trec_eval /input/msmarco/qrels.msmarco-passage.dev-subset.txt dev.results
+
+Finally, we can run some benchmarks.
+
+    pisa query --benchmark < /input/msmarco/dev.queries
 
 TODO(<https://github.com/pisa-engine/pisa/issues/610>): These experiments
 will also demonstrate the slowdowns caused by LSR in practice.
