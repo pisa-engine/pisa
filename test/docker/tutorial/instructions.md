@@ -2,13 +2,33 @@
 
 ## Prerequisites
 
-### Download container image
-
-TODO
-
 ### Download input data
 
 TODO
+
+### Download container image
+
+First,
+[download the image](https://sigir2025.it-mil-1.linodeobjects.com/pisa-tutorial.tar.gz).
+Then, load it locally:
+
+```shell
+docker load < pisa-tutorial.tar.gz
+```
+
+You can also use any compatible container management tool, such as `podman`.
+
+### Build container image
+
+**Alternatively**, the container image can be built, as shown below.
+However, it may take a while to compile everything, so we recommend
+downloading the image as shown above.
+
+```shell
+git clone https://github.com/pisa-engine/pisa.git
+cd pisa
+docker build -t pisa-tutorial -f- . < test/docker/tutorial/Dockerfile
+```
 
 ## Running PISA in container
 
