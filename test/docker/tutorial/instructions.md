@@ -237,9 +237,42 @@ the evaluation metrics:
 Finally, we can run some benchmarks.
 
     pisa query --benchmark < /input/msmarco/dev.queries
+    
+### LSR: DeeperImpact
 
-TODO(<https://github.com/pisa-engine/pisa/issues/610>): These experiments
-will also demonstrate the slowdowns caused by LSR in practice.
+Index DeeperImpact:
+
+    pisa index ciff \
+        --input /input/lsr-small/di-marco-v1.subset.bp.ciff \
+        --output /workdir/di \
+        --scorer passthrough
+
+Query:
+
+    cd /workdir/di
+    pisa query < /input/lsr-small/di.queries > di.results
+    trec_eval /input/lsr-small/ wikir.results
+    
+Benchmark:
+
+    pisa query --benchmark < /input/lsr-small/di.queries
+
+### LSR: Splade
+
+Index:
+
+    pisa index ciff \
+        --input /input/lsr-small/spladev3-marco-v1.subset.bp.ciff \
+        --output /workdir/splade \
+        --scorer passthrough
+
+Query:
+
+    cd /workdir/splade
+    pisa query \
+        --weighted \ # must use weighted queries for splade
+        < /input/lsr-small/spladev3.queries > spladev3.results
+    trec_eval /input/lsr-small/qrels.msmarco-passage.dev-subset.txt spladev3.results
  
 ## Data: Finer Details
 
