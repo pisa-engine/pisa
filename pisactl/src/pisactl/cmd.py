@@ -122,6 +122,12 @@ def query_parser(parser: argparse.ArgumentParser):
         "--algorithm", help="Retrieval algorithm", default="block_max_wand", choices=ALGORITHMS
     )
     parser.add_argument("--benchmark", action="store_true", default=False)
+    parser.add_argument(
+        "--weighted",
+        action="store_true",
+        default=False,
+        help="Add weight to repeated query terms",
+    )
 
 
 def meta_parser(parser: argparse.ArgumentParser):

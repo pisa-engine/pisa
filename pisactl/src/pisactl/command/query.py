@@ -34,4 +34,5 @@ def query(tools: Tools, args):
             k=args.k,
             algorithm=args.algorithm,
             benchmark=args.benchmark,
+            weighted=args.weighted,
         )

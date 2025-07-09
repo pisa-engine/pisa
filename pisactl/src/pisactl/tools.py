@@ -335,6 +335,7 @@ class Tools:
         algorithm: str,
         benchmark: bool = False,
         ordering: str = "default",
+        weighted: bool = False,
     ):
         assert meta.orderings is not None
         ordering_meta = meta.orderings[ordering]
@@ -381,5 +382,6 @@ class Tools:
                 algorithm,
                 "--queries",
                 str(input_file),
+                *(["--weighted"] if weighted else []),
             ],
         )
