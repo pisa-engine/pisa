@@ -4,11 +4,18 @@
 
 ### Download input data
 
-TODO
+First, [download the data package](https://www.dropbox.com/scl/fi/kscnjyuh3dsmze0t2lf04/sigir25.zip?rlkey=lkblugqtb7myvsk5h6a54g06n&st=r133t9s0&dl=0). It is around 1.5GB, and about 5GB once decompressed.
 
+Move it somewhere on your machine, and unpack it. Make a note of the full path as we will need it shortly.
+
+    mkdir -p "$HOME/sigir25-input-data"
+    mv sigir25.zip $HOME/sigir25-input-data
+    cd $HOME/sigir25-input-data
+    unzip sigir25.zip
+        
 ### Download container image
 
-First,
+Next,
 [download the image](https://sigir2025.it-mil-1.linodeobjects.com/pisa-tutorial.tar.gz).
 Then, load it locally:
 
@@ -42,17 +49,43 @@ that should have been downloaded as one of the prerequisites (in this
 example, we use `$HOME/sigir25-input-data`).
 
     mkdir -p "$HOME/pisa-workdir"
+    docker image list # Get the specific name of the docker image
     docker run \
         --detach -it                            # run in background
         --network host \                        # to avoid connection issues
         --name=pisa \                           # name container
         -v "$HOME/pisa-workdir:/workdir" \      # mount workdir volume
         -v "$HOME/sigir25-input-data:/input" \  # mount input data volume
-        pisa-tutorial                           # image name
+        pisa-tutorial                           # image name -- ensure it matches the output of the previous command
 
+    
 We can now execute the container in an interactive terminal:
 
     docker exec -it pisa /bin/bash
+
+You should be able to sanity check the input directory is mounted as expected:
+    
+    find input/
+
+It should return the contents of the uncompressed data zip from the prerequisites step.
+For example:
+
+    root@temple:/# find input/
+    input/
+    input/lsr-small
+    input/lsr-small/spladev3.queries
+    input/lsr-small/spladev3-marco-v1.subset.bp.ciff
+    input/lsr-small/di-marco-v1.subset.bp.ciff
+    input/lsr-small/di.queries
+    input/lsr-small/qrels.msmarco-passage.dev-subset.txt
+    input/lsr-small/README.md
+    input/tf-index
+    input/tf-index/marco-v1.bp.ciff
+    input/tf-index/dev.queries
+    input/tf-index/qrels.msmarco-passage.dev-subset.txt
+    input/tf-index/README.md
+    root@temple:/# 
+
 
 ### Note about RedHat based systems
 
@@ -224,61 +257,77 @@ collections are provided in the input directory in the CIFF format.
 First, let's build a traditional index with frequencies.
 
     pisa index ciff \
-        --input /input/msmarco/marco-v1.bp.ciff \
+        --input /input/tf-index/marco-v1.bp.ciff \
         --output /workdir/msmarco
 
 Once done, we can query the index to obtain the results, and calculate
 the evaluation metrics:
 
     cd /workdir/msmarco
-    pisa query < /input/msmarco/dev.queries > dev.results
-    trec_eval /input/msmarco/qrels.msmarco-passage.dev-subset.txt dev.results
+    pisa query < /input/tf-index/dev.queries > dev.results
+    trec_eval /input/tf-index/qrels.msmarco-passage.dev-subset.txt dev.results
 
 Finally, we can run some benchmarks.
 
-    pisa query --benchmark < /input/msmarco/dev.queries
+    pisa query --benchmark < /input/tf-index/dev.queries
     
 ### LSR: DeeperImpact
 
-Index DeeperImpact:
+Similar to the earlier experiments, we can also experiment with learned sparse indexes.
+Firstly, we will index [DeeperImpact](https://arxiv.org/html/2405.17093v2). Note that to ensure the tutorial data is not too large, we have only exported the subset of the postings lists required for the following query file.
+
+Since learned sparse retrieval models typically provide the per-term impact for each document, we do not need to specify a ranker. As an alternative, we must instruct PISA to just use the weights provided, and we can do that here with the `--scorer passthrough` flag.
 
     pisa index ciff \
         --input /input/lsr-small/di-marco-v1.subset.bp.ciff \
         --output /workdir/di \
         --scorer passthrough
 
-Query:
+As before, we can now query our index:
 
     cd /workdir/di
     pisa query < /input/lsr-small/di.queries > di.results
-    trec_eval /input/lsr-small/ wikir.results
+    trec_eval /input/lsr-small/qrels.msmarco-passage.dev-subset.txt di.results
     
-Benchmark:
+Similarly, we can benchmark our queries. Note we are just using a subset of 100 queries here:
 
     pisa query --benchmark < /input/lsr-small/di.queries
 
+If you wish, you can re-run the commands above specifying different compression methods, querying algorithms, and so on.
+
 ### LSR: Splade
 
-Index:
+Next, we will also index the [SPLADEv3](https://arxiv.org/abs/2403.06789) model. Once again, we've only provided the necessary postings to keep the ciff file small, and we must use the `passthrough` option.
 
     pisa index ciff \
         --input /input/lsr-small/spladev3-marco-v1.subset.bp.ciff \
         --output /workdir/splade \
         --scorer passthrough
 
-Query:
+Query: Unlike DeeperImpact, we also need to specify weighted querying for SPLADE, as the *query* term weights must be obeyed for effective retrieval.
+Examining the queries file will make this evident:
+    
+    head -n 1 /input/lsr-small/spladev3.queries 
+    2:and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and and is is is is is is is is is is is is is is is is is is is is is is is is is ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r ##r alex alex alex alex alex alex alex alex alex alex alex alex alex alex alex alex plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus plus gene gene gene alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan alan emma emma emma emma definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition definition lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily lily biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology biology pedro pedro pedro pedro pedro pedro pedro pedro enzyme enzyme enzyme enzyme enzyme enzyme enzyme substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance substance gage gage gage gage gage gage gage receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptor receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors receptors ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ser ant pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill pill hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone hormone ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen ##rogen gland gland gland gland gland gland gland gland
+
+Let us now try query processing:
 
     cd /workdir/splade
     pisa query \
         --weighted \ # must use weighted queries for splade
         < /input/lsr-small/spladev3.queries > spladev3.results
     trec_eval /input/lsr-small/qrels.msmarco-passage.dev-subset.txt spladev3.results
+
+## Try it Yourself
+Both DeeperImpact and SPLADEv3 have been exported with the same subset of queries.
+Try to benchmark the two indexes - which is faster? Which is more effective?
+Experiment with different values of k, different retrieval algorithms, and try turning term weighting on and off!
  
-## Data: Finer Details
+## Appendix: Finer Details
 
 TODO(<https://github.com/pisa-engine/pisa/issues/611>)
 
-You will see the following files:
+Below are brief descriptions of some of the files you will see, and what their role is:
 
 * `metadata.yaml`: collection metadata
 * `documents`: new-line separated document titles
