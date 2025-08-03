@@ -115,6 +115,7 @@ TEST_CASE("compute intersection", "[intersection][unit]") {
             10
         };
         InMemoryWand wand{{0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 6.0}, 10};
+        auto scorer = scorer::from_params(ScorerParams("bm25"), wand);
 
         Query query{
             "Q1",  // query ID
@@ -133,7 +134,7 @@ TEST_CASE("compute intersection", "[intersection][unit]") {
             })
         );
         WHEN("Computed intersection with mask " << mask) {
-            auto intersection = Intersection::compute(index, wand, query, mask);
+            auto intersection = Intersection::compute(index, wand, scorer, query, mask);
             CHECK(intersection.length == len);
             CHECK(intersection.max_score == Approx(max));
         }
