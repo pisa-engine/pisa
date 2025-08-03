@@ -104,7 +104,7 @@ int main(int argc, const char** argv) {
     auto queries = app.queries();
     auto filtered_queries = ranges::views::filter(queries, [&](auto&& query) {
         auto size = query.terms().size();
-        return size < min_query_len || size > max_query_len;
+        return min_query_len <= size && size <= max_query_len;
     });
 
     if (header) {
