@@ -23,6 +23,7 @@ template <typename IndexType, typename WandType, typename QueryRange>
 void intersect(
     IndexType const* index_ptr,
     std::optional<std::string> const& wand_data_filename,
+    const ScorerParams& scorer_params,
     QueryRange&& queries,
     IntersectionType intersection_type,
     std::optional<std::uint8_t> max_term_count = std::nullopt
@@ -43,9 +44,10 @@ void intersect(
     }
 
     std::size_t qid = 0U;
+    auto scorer = scorer::from_params(scorer_params, wdata);
 
     auto print_intersection = [&](auto const& query, auto const& mask) {
-        auto intersection = Intersection::compute(index, wdata, query, mask);
+        auto intersection = Intersection::compute(index, wdata, scorer, query, mask);
         std::cout << fmt::format(
             "{}\t{}\t{}\t{}\n",
             query.id() ? *query.id() : std::to_string(qid),
@@ -59,7 +61,7 @@ void intersect(
         if (intersection_type == IntersectionType::Combinations) {
             for_all_subsets(query, max_term_count, print_intersection);
         } else {
-            auto intersection = Intersection::compute(index, wdata, query);
+            auto intersection = Intersection::compute(index, wdata, scorer, query);
             std::cout << fmt::format(
                 "{}\t{}\t{}\n",
                 query.id() ? *query.id() : std::to_string(qid),
@@ -83,7 +85,7 @@ int main(int argc, const char** argv) {
     bool combinations = false;
     bool header = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::LogLevel>
+    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::Scorer, arg::LogLevel>
         app{"Computes intersections of posting lists."};
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query"
@@ -118,12 +120,10 @@ int main(int argc, const char** argv) {
     IntersectionType intersection_type =
         combinations ? IntersectionType::Combinations : IntersectionType::Query;
 
-    run_for_index(
-        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-            using Index = std::decay_t<decltype(index)>;
-            intersect<Index, wand_raw_index>(
-                &index, app.wand_data_path(), filtered_queries, intersection_type, max_term_count
-            );
-        }
-    );
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        intersect<Index, wand_raw_index>(
+            &index, app.wand_data_path(), app.scorer_params(), filtered_queries, intersection_type, max_term_count
+        );
+    });
 }
