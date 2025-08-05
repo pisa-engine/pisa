@@ -25,7 +25,7 @@ namespace intersection {
     /// Returns a filtered copy of `query` containing only terms indicated by ones in the bit mask.
     [[nodiscard]] inline auto filter(Query const& query, Mask const& mask) -> Query {
         if (query.terms().size() > MAX_QUERY_LEN) {
-            throw std::invalid_argument("Queries can be at most 2^32 terms long");
+            throw std::invalid_argument("Queries can be at most 2^31 terms long");
         }
         std::vector<std::uint32_t> terms;
         std::vector<float> weights;
