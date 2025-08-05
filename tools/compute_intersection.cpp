@@ -48,6 +48,9 @@ void intersect(
 
     auto print_intersection = [&](auto const& query, auto const& mask) {
         auto intersection = Intersection::compute(index, wdata, scorer, query, mask);
+        if (0U == intersection.length) {
+            return;
+        }
         std::cout << fmt::format(
             "{}\t{}\t{}\t{}\n",
             query.id() ? *query.id() : std::to_string(qid),
@@ -62,6 +65,9 @@ void intersect(
             for_all_subsets(query, max_term_count, print_intersection);
         } else {
             auto intersection = Intersection::compute(index, wdata, scorer, query);
+            if (0U == intersection.length) {
+                continue;
+            }
             std::cout << fmt::format(
                 "{}\t{}\t{}\n",
                 query.id() ? *query.id() : std::to_string(qid),
