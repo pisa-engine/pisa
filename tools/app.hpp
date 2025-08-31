@@ -8,6 +8,8 @@
 #include <thread>
 
 #include <CLI/CLI.hpp>
+#include <range/v3/range/conversion.hpp>
+#include <range/v3/view/filter.hpp>
 #include <range/v3/view/getlines.hpp>
 #include <range/v3/view/transform.hpp>
 #include <spdlog/spdlog.h>
@@ -134,6 +136,7 @@ namespace arg {
             } else {
                 io::for_each_line(std::cin, parse_query);
             }
+
             return qs;
         }
 
@@ -153,6 +156,42 @@ namespace arg {
         bool m_weighted = false;
         std::optional<std::string> m_term_lexicon{std::nullopt};
         CLI::Option* m_terms_option{};
+    };
+
+    /**
+     * Post query parsing filter. There is only one required filter at present
+     * in `tools/compute_intersection`. Therefore the implementation is
+     * specific to that particular use case (filter by query length).
+     */
+    struct QueryFilter {
+        explicit QueryFilter(CLI::App* app)
+            : m_min_length(1), m_max_length(std::numeric_limits<int>::max()) {
+            app->add_option("--min-query-len", m_min_length, "Minimum query length");
+            app->add_option("--max-query-len", m_max_length, "Maximum query length");
+        }
+
+        [[nodiscard]] auto query_filter_min_length() const -> int { return m_min_length; }
+        [[nodiscard]] auto query_filter_max_length() const -> int { return m_max_length; }
+
+        /**
+         * Takes the (parsed) queries and filters them according to the length
+         * constraints.
+         */
+        [[nodiscard]] auto query_filter_apply(std::vector<::pisa::Query> const& qs) const
+            -> std::vector<::pisa::Query> {
+            return ranges::views::filter(
+                       qs,
+                       [&](auto&& query) {
+                           auto n_terms = query.terms().size();
+                           return m_min_length <= n_terms && n_terms <= m_max_length;
+                       }
+                   )
+                | ranges::to<std::vector>();
+        }
+
+      private:
+        int m_min_length;
+        int m_max_length;
     };
 
     struct Algorithm {

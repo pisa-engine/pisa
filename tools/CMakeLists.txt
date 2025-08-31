@@ -35,3 +35,7 @@ add_tool(extract-maxscores extract_maxscores.cpp)
 add_tool(lookup-table lookup_table.cpp)
 
 configure_file(../script/ir-datasets.py ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ir-datasets COPYONLY)
+
+if (PISA_ENABLE_TESTING AND BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
