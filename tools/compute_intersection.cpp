@@ -80,12 +80,15 @@ int main(int argc, const char** argv) {
     spdlog::set_default_logger(spdlog::stderr_color_mt(""));
 
     std::optional<std::uint8_t> max_term_count;
-    std::size_t min_query_len = 0;
-    std::size_t max_query_len = std::numeric_limits<std::size_t>::max();
     bool combinations = false;
     bool header = false;
 
-    App<arg::Index, arg::WandData<arg::WandMode::Required>, arg::Query<arg::QueryMode::Unranked>, arg::Scorer, arg::LogLevel>
+    App<arg::Index,
+        arg::WandData<arg::WandMode::Required>,
+        arg::Query<arg::QueryMode::Unranked>,
+        arg::QueryFilter,
+        arg::Scorer,
+        arg::LogLevel>
         app{"Computes intersections of posting lists."};
     auto* combinations_flag = app.add_flag(
         "--combinations", combinations, "Compute intersections for combinations of terms in query"
@@ -96,18 +99,12 @@ int main(int argc, const char** argv) {
            "Max number of terms when computing combinations"
     )
         ->needs(combinations_flag);
-    app.add_option("--min-query-len", min_query_len, "Minimum query length");
-    app.add_option("--max-query-len", max_query_len, "Maximum query length");
     app.add_flag("--header", header, "Write TSV header");
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_level(app.log_level());
 
-    auto queries = app.queries();
-    auto filtered_queries = ranges::views::filter(queries, [&](auto&& query) {
-        auto size = query.terms().size();
-        return min_query_len <= size && size <= max_query_len;
-    });
+    auto filtered_queries = app.query_filter_apply(app.queries());
 
     if (header) {
         if (combinations) {
