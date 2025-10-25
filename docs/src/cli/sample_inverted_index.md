@@ -16,12 +16,12 @@ Creates a smaller inverted index from an existing one by sampling postings or do
 
 ## Examples
 
-### Keep ~10% of postings
+### Keep ~25% of postings
 ```bash
-sample_inverted_index -c path/to/inverted -o path/to/inverted.sampled -r 0.1 -t random_postings
+sample_inverted_index -c path/to/inverted -o path/to/inverted.sampled -r 0.25 -t random_postings
 ```
 
-### Keep ~10% of the documents
+### Keep ~25% of the documents
 ```bash
 sample_inverted_index -c path/to/inverted -o path/to/inverted.sampled -r 0.25 -t random_docids
 ```
