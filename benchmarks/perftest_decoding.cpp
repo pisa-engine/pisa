@@ -56,18 +56,22 @@ int main(int argc, const char **argv)
             // Executes test decoding only docids (first test is warm-up).
             spdlog::info("Decoding posting lists (only docs)...");
             perftest<IndexType, false>(index); // Warm-up
-            double t1 = perftest<IndexType, false>(index);
-            double t2 = perftest<IndexType, false>(index);
-            double avg = (t1 + t2) / 2;
-            spdlog::info("Decoding (only docs) average: {} ms.", avg);
+            double min_docs = perftest<IndexType, false>(index);
+            for (int i = 0; i < 5; i++) {
+                double t = perftest<IndexType, false>(index);
+                if (t < min_docs) min_docs = t;
+            }
+            spdlog::info("Decoding (only docs) minimum: {} ms.", min_docs);
 
             // Executes test decoding docids and freqs (first test is warm-up).
             spdlog::info("Decoding posting lists (with freqs)...");
             perftest<IndexType, true>(index); // Warm-up
-            t1 = perftest<IndexType, true>(index);
-            t2 = perftest<IndexType, true>(index);
-            avg = (t1 + t2) / 2;
-            spdlog::info("Decoding (with freqs) average: {} ms.", avg);
+            double min_freqs = perftest<IndexType, true>(index);
+            for (int i = 0; i < 5; i++) {
+                double t = perftest<IndexType, true>(index);
+                if (t < min_freqs) min_freqs = t;
+            }
+            spdlog::info("Decoding (with freqs) minimum: {} ms.", min_freqs);
         });
     } catch (const std::exception& e) {
         spdlog::error("Error: {}", e.what());
