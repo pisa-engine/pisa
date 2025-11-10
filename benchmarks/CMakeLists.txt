@@ -12,3 +12,8 @@ add_executable(scan_perftest scan_perftest.cpp)
 target_link_libraries(scan_perftest
   pisa
 )
+
+add_executable(perftest_decoding perftest_decoding.cpp)
+target_link_libraries(perftest_decoding
+  pisa
+)
