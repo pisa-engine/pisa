@@ -120,6 +120,7 @@ void op_perftest(
         spdlog::info("95% quantile: {}", q95);
         spdlog::info("99% quantile: {}", q99);
         spdlog::info("Num. reruns: {}", num_reruns);
+        spdlog::info("Num. of runs per query: {}", runs);
 
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
             "q95", q95)("q99", q99);
@@ -138,7 +139,8 @@ void perftest(
     const ScorerParams& scorer_params,
     const bool weighted,
     bool extract,
-    bool safe
+    bool safe,
+    std::size_t runs
 ) {
     auto const& index = *index_ptr;
 
@@ -298,9 +300,9 @@ void perftest(
             break;
         }
         if (extract) {
-            extract_times(query_fun, queries, thresholds, type, t, 2, std::cout);
+            extract_times(query_fun, queries, thresholds, type, t, runs, std::cout);
         } else {
-            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe);
+            op_perftest(query_fun, queries, thresholds, type, t, runs, k, safe);
         }
     }
 }
@@ -313,6 +315,7 @@ int main(int argc, const char** argv) {
     bool extract = false;
     bool safe = false;
     bool quantized = false;
+    std::size_t runs = 0;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Optional>,
@@ -326,6 +329,9 @@ int main(int argc, const char** argv) {
     app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
+    app.add_option("--runs", runs, "Number of runs per query")
+        ->default_val(2)
+        ->check(CLI::PositiveNumber);
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
@@ -348,7 +354,8 @@ int main(int argc, const char** argv) {
                 app.scorer_params(),
                 app.weighted(),
                 extract,
-                safe
+                safe,
+                runs
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
