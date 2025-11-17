@@ -79,7 +79,7 @@ void op_perftest(
     bool safe
 ) {
     std::vector<double> query_times;
-    std::size_t num_reruns = 0;
+    std::size_t corrective_rerun_count = 0;
     spdlog::info("Safe: {}", safe);
 
     for (size_t run = 0; run <= runs; ++run) {
@@ -88,7 +88,7 @@ void op_perftest(
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query, thresholds[idx]);
                 if (safe && result < k) {
-                    num_reruns += 1;
+                    corrective_rerun_count += 1;
                     result = query_func(query, 0);
                 }
                 do_not_optimize_away(result);
@@ -119,8 +119,8 @@ void op_perftest(
         spdlog::info("90% quantile: {}", q90);
         spdlog::info("95% quantile: {}", q95);
         spdlog::info("99% quantile: {}", q99);
-        spdlog::info("Num. reruns: {}", num_reruns);
-        spdlog::info("Num. of runs per query: {}", runs);
+        spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
+        spdlog::info("Runs per query (excluding warmup): {}", runs);
 
         stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
             "q95", q95)("q99", q99);
