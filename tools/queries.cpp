@@ -44,13 +44,14 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-enum class AggregationType { None = 0, Min = 1, Mean = 2, };
+enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3};
 
 [[nodiscard]] auto to_string(AggregationType type) -> std::string {
     switch (type) {
         case AggregationType::None: return "none";
         case AggregationType::Min: return "min";
         case AggregationType::Mean: return "mean";
+        case AggregationType::Median: return "median";
     }
     return "unknown";
 }
@@ -75,6 +76,19 @@ std::vector<std::size_t> aggregate_and_sort_query_times(
             double sum = std::accumulate(times.begin(), times.end(), double());
             double mean = sum / times.size();
             aggregated_query_times.push_back(mean);
+        }
+    } else if (aggregation_type == AggregationType::Median) {
+        for (auto const& times: query_times) {
+            auto sorted_times = times;
+            std::sort(sorted_times.begin(), sorted_times.end());
+            std::size_t sample_count = sorted_times.size();
+            double median = 0;
+            if (sample_count % 2 == 1) {
+                median = sorted_times[sample_count / 2];
+            } else {
+                median = (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
+            }
+            aggregated_query_times.push_back(median);
         }
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
@@ -142,6 +156,7 @@ void extract_times(
     print_stats(AggregationType::None, aggregate_and_sort_query_times(AggregationType::None, query_times));
     print_stats(AggregationType::Min, aggregate_and_sort_query_times(AggregationType::Min, query_times));
     print_stats(AggregationType::Mean, aggregate_and_sort_query_times(AggregationType::Mean, query_times));
+    print_stats(AggregationType::Median, aggregate_and_sort_query_times(AggregationType::Median, query_times));
 }
 
 template <typename Functor>
