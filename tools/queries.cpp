@@ -107,7 +107,7 @@ void print_stats(AggregationType aggregation_type, std::vector<std::size_t> cons
     double q90 = query_times[90 * query_times.size() / 100];
     double q95 = query_times[95 * query_times.size() / 100];
     double q99 = query_times[99 * query_times.size() / 100];
-    stats_line()("aggregated_by", to_string(aggregation_type))("mean", mean)("q50", q50)("q90", q90)("q95", q95)("q99", q99);
+    stats_line(std::cerr)("aggregated_by", to_string(aggregation_type))("mean", mean)("q50", q50)("q90", q90)("q95", q95)("q99", q99);
 }
 
 template <typename Fn>
