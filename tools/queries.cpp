@@ -46,28 +46,46 @@ using ranges::views::enumerate;
 
 template <typename Fn>
 void extract_times(
-    Fn fn,
+    Fn query_func,
     std::vector<Query> const& queries,
     std::vector<Score> const& thresholds,
     std::string const& index_type,
     std::string const& query_type,
     size_t runs,
+    std::uint64_t k,
+    bool safe,
     std::ostream& os
 ) {
-    std::vector<std::size_t> times(runs);
+    std::vector<std::size_t> query_times(runs);
+    std::size_t corrective_rerun_count = 0;
+    spdlog::info("Safe: {}", safe);
+
     for (auto&& [qid, query]: enumerate(queries)) {
-        do_not_optimize_away(fn(query, thresholds[qid])); // warmup
-        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
-            return run_with_timer<std::chrono::microseconds>(
-                       [&]() { do_not_optimize_away(fn(q, t)); }
-            ).count();
-        });
+        size_t idx = 0;
+        for (size_t run = 0; run <= runs; ++run) {
+            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
+                uint64_t result = query_func(query, thresholds[idx]);
+                if (safe && result < k) {
+                    corrective_rerun_count += 1;
+                    result = query_func(query, 0);
+                }
+                do_not_optimize_away(result);
+            });
+            if (run != 0) { // first run is not timed
+                query_times.push_back(usecs.count());
+            }
+            idx += 1;
+        }
         os << fmt::format("{}", query.id().value_or(std::to_string(qid)));
-        for (auto t: times) {
+        for (auto t: query_times) {
             os << fmt::format("\t{}", t);
         }
         os << "\n";
     }
+
+    spdlog::info("---- {} {}", index_type, query_type);
+    spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
+    spdlog::info("Runs per query (excluding warmup): {}", runs);
 }
 
 template <typename Functor>
@@ -303,7 +321,7 @@ void perftest(
             break;
         }
         if (extract) {
-            extract_times(query_fun, queries, thresholds, type, t, runs, std::cout);
+            extract_times(query_fun, queries, thresholds, type, t, runs, k, safe, std::cout);
         } else {
             op_perftest(query_fun, queries, thresholds, type, t, runs, k, safe);
         }
