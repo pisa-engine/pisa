@@ -56,14 +56,17 @@ void extract_times(
 ) {
     std::vector<std::size_t> times(runs);
     for (auto&& [qid, query]: enumerate(queries)) {
-        do_not_optimize_away(fn(query, thresholds[qid]));
+        do_not_optimize_away(fn(query, thresholds[qid])); // warmup
         std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
             return run_with_timer<std::chrono::microseconds>(
                        [&]() { do_not_optimize_away(fn(q, t)); }
             ).count();
         });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id().value_or(std::to_string(qid)), mean);
+        os << fmt::format("{}", query.id().value_or(std::to_string(qid)));
+        for (auto t: times) {
+            os << fmt::format("\t{}", t);
+        }
+        os << "\n";
     }
 }
 
@@ -337,7 +340,11 @@ int main(int argc, const char** argv) {
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
     if (extract) {
-        std::cout << "qid\tusec\n";
+        std::cout << "qid";
+        for (size_t i = 1; i <= runs; ++i) {
+            std::cout << fmt::format("\tusec{}", i);
+        }
+        std::cout<<"\n";
     }
 
     run_for_index(
