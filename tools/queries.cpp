@@ -44,6 +44,41 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
+enum class AggregationType { None = 0 };
+
+[[nodiscard]] auto to_string(AggregationType type) -> std::string {
+    switch (type) {
+        case AggregationType::None: return "none";
+    }
+    return "unknown";
+}
+
+std::vector<std::size_t> aggregate_and_sort_query_times(
+    AggregationType aggregation_type,
+    std::vector<std::vector<std::size_t>> const& query_times
+) {
+    std::vector<std::size_t> aggregated_query_times;
+    if (aggregation_type == AggregationType::None) {
+        for (auto const& times: query_times) {
+            for (auto t: times) {
+                aggregated_query_times.push_back(t);
+            }
+        }
+    }
+    std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
+    return aggregated_query_times;
+}
+
+void print_stats(AggregationType aggregation_type, std::vector<std::size_t> const& query_times) {
+    double mean = std::accumulate(query_times.begin(), query_times.end(), 0.0)
+        / query_times.size();
+    double q50 = query_times[query_times.size() / 2];
+    double q90 = query_times[90 * query_times.size() / 100];
+    double q95 = query_times[95 * query_times.size() / 100];
+    double q99 = query_times[99 * query_times.size() / 100];
+    stats_line()("aggregated_by", to_string(aggregation_type))("mean", mean)("q50", q50)("q90", q90)("q95", q95)("q99", q99);
+}
+
 template <typename Fn>
 void extract_times(
     Fn query_func,
@@ -92,6 +127,7 @@ void extract_times(
     spdlog::info("---- {} {}", index_type, query_type);
     spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
     spdlog::info("Runs per query (excluding warmup): {}", runs);
+    print_stats(AggregationType::None, aggregate_and_sort_query_times(AggregationType::None, query_times));
 }
 
 template <typename Functor>
