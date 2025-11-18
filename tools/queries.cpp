@@ -56,15 +56,17 @@ void extract_times(
     bool safe,
     std::ostream& os
 ) {
-    std::vector<std::size_t> query_times(runs);
+    std::vector<std::vector<std::size_t>> query_times(queries.size(), std::vector<std::size_t>(runs));
     std::size_t corrective_rerun_count = 0;
     spdlog::info("Safe: {}", safe);
 
-    for (auto&& [qid, query]: enumerate(queries)) {
-        size_t idx = 0;
-        for (size_t run = 0; run <= runs; ++run) {
+    // Note: each query is measured once per run, so the set of queries is
+    // measured independently in each run.
+    for (size_t run = 0; run <= runs; ++run) {
+        size_t query_idx = 0;
+        for (auto const& query: queries) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query, thresholds[idx]);
+                uint64_t result = query_func(query, thresholds[query_idx]);
                 if (safe && result < k) {
                     corrective_rerun_count += 1;
                     result = query_func(query, 0);
@@ -72,12 +74,16 @@ void extract_times(
                 do_not_optimize_away(result);
             });
             if (run != 0) { // first run is not timed
-                query_times.push_back(usecs.count());
+                query_times[query_idx][run - 1] = usecs.count();
             }
-            idx += 1;
+            query_idx += 1;
         }
-        os << fmt::format("{}", query.id().value_or(std::to_string(qid)));
-        for (auto t: query_times) {
+    }
+
+    // Print timing results for each query.
+    for (auto&& [query_idx, query]: enumerate(queries)) {
+        os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
+        for (auto t: query_times[query_idx]) {
             os << fmt::format("\t{}", t);
         }
         os << "\n";
