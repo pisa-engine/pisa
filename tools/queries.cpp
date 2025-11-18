@@ -44,12 +44,13 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-enum class AggregationType { None = 0, Min = 1, };
+enum class AggregationType { None = 0, Min = 1, Mean = 2, };
 
 [[nodiscard]] auto to_string(AggregationType type) -> std::string {
     switch (type) {
         case AggregationType::None: return "none";
         case AggregationType::Min: return "min";
+        case AggregationType::Mean: return "mean";
     }
     return "unknown";
 }
@@ -68,6 +69,12 @@ std::vector<std::size_t> aggregate_and_sort_query_times(
     } else if (aggregation_type == AggregationType::Min) {
         for (auto const& times: query_times) {
             aggregated_query_times.push_back(*std::min_element(times.begin(), times.end()));
+        }
+    } else if (aggregation_type == AggregationType::Mean) {
+        for (auto const& times: query_times) {
+            double sum = std::accumulate(times.begin(), times.end(), double());
+            double mean = sum / times.size();
+            aggregated_query_times.push_back(mean);
         }
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
@@ -134,6 +141,7 @@ void extract_times(
     spdlog::info("Runs per query (excluding warmup): {}", runs);
     print_stats(AggregationType::None, aggregate_and_sort_query_times(AggregationType::None, query_times));
     print_stats(AggregationType::Min, aggregate_and_sort_query_times(AggregationType::Min, query_times));
+    print_stats(AggregationType::Mean, aggregate_and_sort_query_times(AggregationType::Mean, query_times));
 }
 
 template <typename Functor>
