@@ -57,43 +57,43 @@ enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4};
     return "unknown";
 }
 
-std::vector<std::size_t> aggregate_and_sort_query_times(
+std::vector<std::size_t> aggregate_and_sort_times_per_query(
     AggregationType aggregation_type,
-    std::vector<std::vector<std::size_t>> const& query_times
+    std::vector<std::vector<std::size_t>> const& times_per_query
 ) {
     std::vector<std::size_t> aggregated_query_times;
     if (aggregation_type == AggregationType::None) {
-        for (auto const& times: query_times) {
-            for (auto t: times) {
+        for (auto const& query_times: times_per_query) {
+            for (auto t: query_times) {
                 aggregated_query_times.push_back(t);
             }
         }
     } else if (aggregation_type == AggregationType::Min) {
-        for (auto const& times: query_times) {
-            aggregated_query_times.push_back(*std::min_element(times.begin(), times.end()));
+        for (auto const& query_times: times_per_query) {
+            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end()));
         }
     } else if (aggregation_type == AggregationType::Mean) {
-        for (auto const& times: query_times) {
-            double sum = std::accumulate(times.begin(), times.end(), double());
-            double mean = sum / times.size();
+        for (auto const& query_times: times_per_query) {
+            double sum = std::accumulate(query_times.begin(), query_times.end(), double());
+            double mean = sum / query_times.size();
             aggregated_query_times.push_back(mean);
         }
     } else if (aggregation_type == AggregationType::Median) {
-        for (auto const& times: query_times) {
-            auto sorted_times = times;
-            std::sort(sorted_times.begin(), sorted_times.end());
-            std::size_t sample_count = sorted_times.size();
+        for (auto const& query_times: times_per_query) {
+            auto sorted_query_times = query_times;
+            std::sort(sorted_query_times.begin(), sorted_query_times.end());
+            std::size_t sample_count = sorted_query_times.size();
             double median = 0;
             if (sample_count % 2 == 1) {
-                median = sorted_times[sample_count / 2];
+                median = sorted_query_times[sample_count / 2];
             } else {
-                median = (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
+                median = (sorted_query_times[sample_count / 2] + sorted_query_times[sample_count / 2 - 1]) / 2;
             }
             aggregated_query_times.push_back(median);
         }
     } else if (aggregation_type == AggregationType::Max) {
-        for (auto const& times: query_times) {
-            aggregated_query_times.push_back(*std::max_element(times.begin(), times.end()));
+        for (auto const& query_times: times_per_query) {
+            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end()));
         }
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
@@ -122,7 +122,7 @@ void extract_times(
     bool safe,
     std::ostream& os
 ) {
-    std::vector<std::vector<std::size_t>> query_times(queries.size(), std::vector<std::size_t>(runs));
+    std::vector<std::vector<std::size_t>> times_per_query(queries.size(), std::vector<std::size_t>(runs));
     std::size_t corrective_rerun_count = 0;
     spdlog::info("Safe: {}", safe);
 
@@ -140,7 +140,7 @@ void extract_times(
                 do_not_optimize_away(result);
             });
             if (run != 0) { // first run is not timed
-                query_times[query_idx][run - 1] = usecs.count();
+                times_per_query[query_idx][run - 1] = usecs.count();
             }
             query_idx += 1;
         }
@@ -149,7 +149,7 @@ void extract_times(
     // Print timing results for each query.
     for (auto&& [query_idx, query]: enumerate(queries)) {
         os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
-        for (auto t: query_times[query_idx]) {
+        for (auto t: times_per_query[query_idx]) {
             os << fmt::format("\t{}", t);
         }
         os << "\n";
@@ -158,11 +158,11 @@ void extract_times(
     spdlog::info("---- {} {}", index_type, query_type);
     spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
     spdlog::info("Runs per query (excluding warmup): {}", runs);
-    print_stats(AggregationType::None, aggregate_and_sort_query_times(AggregationType::None, query_times));
-    print_stats(AggregationType::Min, aggregate_and_sort_query_times(AggregationType::Min, query_times));
-    print_stats(AggregationType::Mean, aggregate_and_sort_query_times(AggregationType::Mean, query_times));
-    print_stats(AggregationType::Median, aggregate_and_sort_query_times(AggregationType::Median, query_times));
-    print_stats(AggregationType::Max, aggregate_and_sort_query_times(AggregationType::Max, query_times));
+    print_stats(AggregationType::None, aggregate_and_sort_times_per_query(AggregationType::None, times_per_query));
+    print_stats(AggregationType::Min, aggregate_and_sort_times_per_query(AggregationType::Min, times_per_query));
+    print_stats(AggregationType::Mean, aggregate_and_sort_times_per_query(AggregationType::Mean, times_per_query));
+    print_stats(AggregationType::Median, aggregate_and_sort_times_per_query(AggregationType::Median, times_per_query));
+    print_stats(AggregationType::Max, aggregate_and_sort_times_per_query(AggregationType::Max, times_per_query));
 }
 
 template <typename Functor>
