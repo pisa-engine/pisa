@@ -113,23 +113,24 @@ function_iterator<State, AdvanceFunctor, ValueFunctor> make_function_iterator(
 }
 
 struct stats_line {
-    stats_line() { std::cout << "{"; }
+    stats_line() : m_out(std::cout) { m_out << "{"; }
+    explicit stats_line(std::ostream& out) : m_out(out) { m_out << "{"; }
     stats_line(stats_line const&) = default;
     stats_line(stats_line&&) noexcept = default;
     stats_line& operator=(stats_line const&) = default;
     stats_line& operator=(stats_line&&) noexcept = default;
-    ~stats_line() { std::cout << "}" << std::endl; }
+    ~stats_line() { m_out << "}" << std::endl; }
 
     template <typename K, typename T>
     stats_line& operator()(K const& key, T const& value) {
         if (!first) {
-            std::cout << ", ";
+            m_out << ", ";
         } else {
             first = false;
         }
 
         emit(key);
-        std::cout << ": ";
+        m_out << ": ";
         emit(value);
         return *this;
     }
@@ -142,27 +143,27 @@ struct stats_line {
   private:
     template <typename T>
     void emit(T const& v) const {
-        std::cout << v;
+        m_out << v;
     }
 
     // XXX properly escape strings
-    void emit(const char* s) const { std::cout << '"' << s << '"'; }
+    void emit(const char* s) const { m_out << '"' << s << '"'; }
 
     void emit(std::string const& s) const { emit(s.c_str()); }
 
     template <typename T>
     void emit(std::vector<T> const& v) const {
-        std::cout << "[";
+        m_out << "[";
         bool first = true;
         for (auto const& i: v) {
             if (first) {
                 first = false;
             } else {
-                std::cout << ", ";
+                m_out << ", ";
             }
             emit(i);
         }
-        std::cout << "]";
+        m_out << "]";
     }
 
     template <typename K, typename V>
@@ -174,7 +175,7 @@ struct stats_line {
     template <typename Tuple, size_t Pos>
     typename std::enable_if<Pos != 0, void>::type emit_tuple_helper(Tuple const& t) const {
         emit_tuple_helper<Tuple, Pos - 1>(t);
-        std::cout << ", ";
+        m_out << ", ";
         emit(std::get<Pos>(t));
     }
 
@@ -185,9 +186,9 @@ struct stats_line {
 
     template <typename... Tp>
     void emit(std::tuple<Tp...> const& t) const {
-        std::cout << "[";
+        m_out << "[";
         emit_tuple_helper<std::tuple<Tp...>, sizeof...(Tp) - 1>(t);
-        std::cout << "]";
+        m_out << "]";
     }
 
     template <typename T1, typename T2>
@@ -195,6 +196,7 @@ struct stats_line {
         emit(std::make_tuple(p.first, p.second));
     }
 
+    std::ostream& m_out;
     bool first{true};
 };
 
