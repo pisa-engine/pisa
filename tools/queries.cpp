@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <iostream>
+#include <map>
 #include <numeric>
 #include <optional>
 #include <string>
-#include <map>
 
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -45,22 +45,21 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
-enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4};
+enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
 [[nodiscard]] auto to_string(AggregationType type) -> std::string {
     switch (type) {
-        case AggregationType::None: return "none";
-        case AggregationType::Min: return "min";
-        case AggregationType::Mean: return "mean";
-        case AggregationType::Median: return "median";
-        case AggregationType::Max: return "max";
+    case AggregationType::None: return "none";
+    case AggregationType::Min: return "min";
+    case AggregationType::Mean: return "mean";
+    case AggregationType::Median: return "median";
+    case AggregationType::Max: return "max";
     }
     return "unknown";
 }
 
 std::vector<std::size_t> aggregate_and_sort_times_per_query(
-    AggregationType aggregation_type,
-    std::vector<std::vector<std::size_t>> const& times_per_query
+    AggregationType aggregation_type, std::vector<std::vector<std::size_t>> const& times_per_query
 ) {
     std::vector<std::size_t> aggregated_query_times;
     if (aggregation_type == AggregationType::None) {
@@ -71,7 +70,8 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
         }
     } else if (aggregation_type == AggregationType::Min) {
         for (auto const& query_times: times_per_query) {
-            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end()));
+            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end())
+            );
         }
     } else if (aggregation_type == AggregationType::Mean) {
         for (auto const& query_times: times_per_query) {
@@ -88,13 +88,16 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
             if (sample_count % 2 == 1) {
                 median = sorted_query_times[sample_count / 2];
             } else {
-                median = (sorted_query_times[sample_count / 2] + sorted_query_times[sample_count / 2 - 1]) / 2;
+                median =
+                    (sorted_query_times[sample_count / 2] + sorted_query_times[sample_count / 2 - 1])
+                    / 2;
             }
             aggregated_query_times.push_back(median);
         }
     } else if (aggregation_type == AggregationType::Max) {
         for (auto const& query_times: times_per_query) {
-            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end()));
+            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end())
+            );
         }
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
@@ -102,8 +105,8 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
 }
 
 void print_stats(AggregationType aggregation_type, std::vector<std::size_t> const& query_times) {
-    double mean = std::accumulate(query_times.begin(), query_times.end(), double())
-        / query_times.size();
+    double mean =
+        std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
     double q50 = query_times[query_times.size() / 2];
     double q90 = query_times[90 * query_times.size() / 100];
     double q95 = query_times[95 * query_times.size() / 100];
@@ -125,7 +128,9 @@ void extract_times(
     bool summary_only,
     std::ostream& os
 ) {
-    std::vector<std::vector<std::size_t>> times_per_query(queries.size(), std::vector<std::size_t>(runs));
+    std::vector<std::vector<std::size_t>> times_per_query(
+        queries.size(), std::vector<std::size_t>(runs)
+    );
     std::size_t corrective_rerun_count = 0;
     spdlog::info("Safe: {}", safe);
 
@@ -142,7 +147,7 @@ void extract_times(
                 }
                 do_not_optimize_away(result);
             });
-            if (run != 0) { // first run is not timed
+            if (run != 0) {  // first run is not timed
                 times_per_query[query_idx][run - 1] = usecs.count();
             }
             query_idx += 1;
@@ -178,14 +183,17 @@ void extract_times(
             }
         }
     } else {
-        auto aggregated_query_times = aggregate_and_sort_times_per_query(aggregate_by, times_per_query);
+        auto aggregated_query_times =
+            aggregate_and_sort_times_per_query(aggregate_by, times_per_query);
         print_stats(aggregate_by, aggregated_query_times);
 
         if (!summary_only) {
             std::cout << fmt::format("qid\tusec_{}", to_string(aggregate_by)) << "\n";
             for (auto&& [query_idx, query]: enumerate(queries)) {
                 os << fmt::format(
-                    "{}\t{}\n", query.id().value_or(std::to_string(query_idx)), aggregated_query_times[query_idx]
+                    "{}\t{}\n",
+                    query.id().value_or(std::to_string(query_idx)),
+                    aggregated_query_times[query_idx]
                 );
             }
         }
@@ -393,10 +401,10 @@ int main(int argc, const char** argv) {
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
-    app.add_flag("--summary-only", summary_only, "Only print summary stats, ommiting per-query results");
-    app.add_option("--runs", runs, "Number of runs per query")
-        ->default_val(3)
-        ->check(CLI::PositiveNumber);
+    app.add_flag(
+        "--summary-only", summary_only, "Only print summary stats, ommiting per-query results"
+    );
+    app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
     app.add_option("--aggregate-by", aggregate_by, "Aggregation mode for results per query")
         ->transform(CLI::CheckedTransformer(std::map<std::string, AggregationType>{
             {"none", AggregationType::None},
@@ -411,33 +419,31 @@ int main(int argc, const char** argv) {
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
 
-    run_for_index(
-        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-            using Index = std::decay_t<decltype(index)>;
-            auto params = std::make_tuple(
-                &index,
-                app.wand_data_path(),
-                app.queries(),
-                app.thresholds_file(),
-                app.index_encoding(),
-                app.algorithm(),
-                app.k(),
-                app.scorer_params(),
-                app.weighted(),
-                safe,
-                runs,
-                aggregate_by,
-                summary_only
-            );
-            if (app.is_wand_compressed()) {
-                if (quantized) {
-                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
-                } else {
-                    std::apply(perftest<Index, wand_uniform_index>, params);
-                }
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        auto params = std::make_tuple(
+            &index,
+            app.wand_data_path(),
+            app.queries(),
+            app.thresholds_file(),
+            app.index_encoding(),
+            app.algorithm(),
+            app.k(),
+            app.scorer_params(),
+            app.weighted(),
+            safe,
+            runs,
+            aggregate_by,
+            summary_only
+        );
+        if (app.is_wand_compressed()) {
+            if (quantized) {
+                std::apply(perftest<Index, wand_uniform_index_quantized>, params);
             } else {
-                std::apply(perftest<Index, wand_raw_index>, params);
+                std::apply(perftest<Index, wand_uniform_index>, params);
             }
+        } else {
+            std::apply(perftest<Index, wand_raw_index>, params);
         }
-    );
+    });
 }
