@@ -395,7 +395,7 @@ int main(int argc, const char** argv) {
         ->needs(app.thresholds_option());
     app.add_flag("--summary-only", summary_only, "Only print summary stats, ommiting per-query results");
     app.add_option("--runs", runs, "Number of runs per query")
-        ->default_val(2)
+        ->default_val(3)
         ->check(CLI::PositiveNumber);
     app.add_option("--aggregate-by", aggregate_by, "Aggregation mode for results per query")
         ->transform(CLI::CheckedTransformer(std::map<std::string, AggregationType>{
