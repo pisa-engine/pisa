@@ -192,66 +192,6 @@ void extract_times(
     }
 }
 
-template <typename Functor>
-void op_perftest(
-    Functor query_func,
-    std::vector<Query> const& queries,
-    std::vector<Score> const& thresholds,
-    std::string const& index_type,
-    std::string const& query_type,
-    size_t runs,
-    std::uint64_t k,
-    bool safe
-) {
-    std::vector<double> query_times;
-    std::size_t corrective_rerun_count = 0;
-    spdlog::info("Safe: {}", safe);
-
-    for (size_t run = 0; run <= runs; ++run) {
-        size_t idx = 0;
-        for (auto const& query: queries) {
-            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query, thresholds[idx]);
-                if (safe && result < k) {
-                    corrective_rerun_count += 1;
-                    result = query_func(query, 0);
-                }
-                do_not_optimize_away(result);
-            });
-            if (run != 0) {  // first run is not timed
-                query_times.push_back(usecs.count());
-            }
-            idx += 1;
-        }
-    }
-
-    if (false) {
-        for (auto t: query_times) {
-            std::cout << (t / 1000) << std::endl;
-        }
-    } else {
-        std::sort(query_times.begin(), query_times.end());
-        double avg =
-            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
-        double q50 = query_times[query_times.size() / 2];
-        double q90 = query_times[90 * query_times.size() / 100];
-        double q95 = query_times[95 * query_times.size() / 100];
-        double q99 = query_times[99 * query_times.size() / 100];
-
-        spdlog::info("---- {} {}", index_type, query_type);
-        spdlog::info("Mean: {}", avg);
-        spdlog::info("50% quantile: {}", q50);
-        spdlog::info("90% quantile: {}", q90);
-        spdlog::info("95% quantile: {}", q95);
-        spdlog::info("99% quantile: {}", q99);
-        spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
-        spdlog::info("Runs per query (excluding warmup): {}", runs);
-
-        stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
-            "q95", q95)("q99", q99);
-    }
-}
-
 template <typename IndexType, typename WandType>
 void perftest(
     IndexType const* index_ptr,
@@ -263,7 +203,6 @@ void perftest(
     uint64_t k,
     const ScorerParams& scorer_params,
     const bool weighted,
-    bool extract,
     bool safe,
     std::size_t runs,
     AggregationType aggregate_by,
@@ -426,13 +365,9 @@ void perftest(
             spdlog::error("Unsupported query type: {}", t);
             break;
         }
-        if (extract) {
-            extract_times(
-                query_fun, queries, thresholds, type, t, runs, k, safe, aggregate_by, summary_only, std::cout
-            );
-        } else {
-            op_perftest(query_fun, queries, thresholds, type, t, runs, k, safe);
-        }
+        extract_times(
+            query_fun, queries, thresholds, type, t, runs, k, safe, aggregate_by, summary_only, std::cout
+        );
     }
 }
 
@@ -441,7 +376,6 @@ using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
 int main(int argc, const char** argv) {
-    bool extract = false;
     bool safe = false;
     bool quantized = false;
     bool summary_only = false;
@@ -457,7 +391,6 @@ int main(int argc, const char** argv) {
         arg::LogLevel>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
-    app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
     app.add_flag("--summary-only", summary_only, "Only print summary stats, ommiting per-query results");
@@ -491,7 +424,6 @@ int main(int argc, const char** argv) {
                 app.k(),
                 app.scorer_params(),
                 app.weighted(),
-                extract,
                 safe,
                 runs,
                 aggregate_by,
