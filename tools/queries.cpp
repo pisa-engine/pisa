@@ -3,6 +3,7 @@
 #include <numeric>
 #include <optional>
 #include <string>
+#include <map>
 
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -120,6 +121,7 @@ void extract_times(
     size_t runs,
     std::uint64_t k,
     bool safe,
+    AggregationType aggregate_by,
     std::ostream& os
 ) {
     std::vector<std::vector<std::size_t>> times_per_query(queries.size(), std::vector<std::size_t>(runs));
@@ -146,23 +148,41 @@ void extract_times(
         }
     }
 
-    // Print timing results for each query.
-    for (auto&& [query_idx, query]: enumerate(queries)) {
-        os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
-        for (auto t: times_per_query[query_idx]) {
-            os << fmt::format("\t{}", t);
-        }
-        os << "\n";
-    }
-
     spdlog::info("---- {} {}", index_type, query_type);
     spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
     spdlog::info("Runs per query (excluding warmup): {}", runs);
-    print_stats(AggregationType::None, aggregate_and_sort_times_per_query(AggregationType::None, times_per_query));
-    print_stats(AggregationType::Min, aggregate_and_sort_times_per_query(AggregationType::Min, times_per_query));
-    print_stats(AggregationType::Mean, aggregate_and_sort_times_per_query(AggregationType::Mean, times_per_query));
-    print_stats(AggregationType::Median, aggregate_and_sort_times_per_query(AggregationType::Median, times_per_query));
-    print_stats(AggregationType::Max, aggregate_and_sort_times_per_query(AggregationType::Max, times_per_query));
+
+    if (aggregate_by == AggregationType::None) {
+        auto print_aggregated_stats = [&](AggregationType type) {
+            print_stats(type, aggregate_and_sort_times_per_query(type, times_per_query));
+        };
+        print_aggregated_stats(AggregationType::None);
+        print_aggregated_stats(AggregationType::Min);
+        print_aggregated_stats(AggregationType::Mean);
+        print_aggregated_stats(AggregationType::Median);
+        print_aggregated_stats(AggregationType::Max);
+
+        std::cout << "qid";
+        for (size_t i = 1; i <= runs; ++i) {
+            std::cout << fmt::format("\tusec{}", i);
+        }
+        std::cout<<"\n";
+        for (auto&& [query_idx, query]: enumerate(queries)) {
+            os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
+            for (auto t: times_per_query[query_idx]) {
+                os << fmt::format("\t{}", t);
+            }
+            os << "\n";
+        }
+    } else {
+        auto aggregated_query_times = aggregate_and_sort_times_per_query(aggregate_by, times_per_query);
+        print_stats(aggregate_by, aggregated_query_times);
+
+        std::cout << fmt::format("qid\tusec_{}", to_string(aggregate_by)) << "\n";
+        for (auto&& [query_idx, query]: enumerate(queries)) {
+            os << fmt::format("{}\t{}\n", query.id().value_or(std::to_string(query_idx)), aggregated_query_times[query_idx]);
+        }
+    }
 }
 
 template <typename Functor>
@@ -238,7 +258,8 @@ void perftest(
     const bool weighted,
     bool extract,
     bool safe,
-    std::size_t runs
+    std::size_t runs,
+    AggregationType aggregate_by
 ) {
     auto const& index = *index_ptr;
 
@@ -398,7 +419,7 @@ void perftest(
             break;
         }
         if (extract) {
-            extract_times(query_fun, queries, thresholds, type, t, runs, k, safe, std::cout);
+            extract_times(query_fun, queries, thresholds, type, t, runs, k, safe, aggregate_by, std::cout);
         } else {
             op_perftest(query_fun, queries, thresholds, type, t, runs, k, safe);
         }
@@ -414,6 +435,7 @@ int main(int argc, const char** argv) {
     bool safe = false;
     bool quantized = false;
     std::size_t runs = 0;
+    AggregationType aggregate_by = AggregationType::None;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Optional>,
@@ -430,17 +452,19 @@ int main(int argc, const char** argv) {
     app.add_option("--runs", runs, "Number of runs per query")
         ->default_val(2)
         ->check(CLI::PositiveNumber);
+    app.add_option("--aggregate-by", aggregate_by, "Aggregation mode for results per query")
+        ->transform(CLI::CheckedTransformer(std::map<std::string, AggregationType>{
+            {"none", AggregationType::None},
+            {"min", AggregationType::Min},
+            {"mean", AggregationType::Mean},
+            {"median", AggregationType::Median},
+            {"max", AggregationType::Max},
+        }))
+        ->default_val("none");
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
-    if (extract) {
-        std::cout << "qid";
-        for (size_t i = 1; i <= runs; ++i) {
-            std::cout << fmt::format("\tusec{}", i);
-        }
-        std::cout<<"\n";
-    }
 
     run_for_index(
         app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
@@ -457,7 +481,8 @@ int main(int argc, const char** argv) {
                 app.weighted(),
                 extract,
                 safe,
-                runs
+                runs,
+                aggregate_by
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
