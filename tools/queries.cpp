@@ -69,8 +69,7 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
         }
     } else if (aggregation_type == AggregationType::Min) {
         for (auto const& query_times: times_per_query) {
-            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end())
-            );
+            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end()));
         }
     } else if (aggregation_type == AggregationType::Mean) {
         for (auto const& query_times: times_per_query) {
@@ -95,8 +94,7 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
         }
     } else if (aggregation_type == AggregationType::Max) {
         for (auto const& query_times: times_per_query) {
-            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end())
-            );
+            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end()));
         }
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
@@ -405,44 +403,50 @@ int main(int argc, const char** argv) {
     );
     app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
     app.add_option("--aggregate-by", aggregate_by, "Aggregation mode for results per query")
-        ->transform(CLI::CheckedTransformer(std::map<std::string, AggregationType>{
-            {"none", AggregationType::None},
-            {"min", AggregationType::Min},
-            {"mean", AggregationType::Mean},
-            {"median", AggregationType::Median},
-            {"max", AggregationType::Max},
-        }))
+        ->transform(
+            CLI::CheckedTransformer(
+                std::map<std::string, AggregationType>{
+                    {"none", AggregationType::None},
+                    {"min", AggregationType::Min},
+                    {"mean", AggregationType::Mean},
+                    {"median", AggregationType::Median},
+                    {"max", AggregationType::Max},
+                }
+            )
+        )
         ->default_val("none");
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        auto params = std::make_tuple(
-            &index,
-            app.wand_data_path(),
-            app.queries(),
-            app.thresholds_file(),
-            app.index_encoding(),
-            app.algorithm(),
-            app.k(),
-            app.scorer_params(),
-            app.weighted(),
-            safe,
-            runs,
-            aggregate_by,
-            summary_only
-        );
-        if (app.is_wand_compressed()) {
-            if (quantized) {
-                std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            auto params = std::make_tuple(
+                &index,
+                app.wand_data_path(),
+                app.queries(),
+                app.thresholds_file(),
+                app.index_encoding(),
+                app.algorithm(),
+                app.k(),
+                app.scorer_params(),
+                app.weighted(),
+                safe,
+                runs,
+                aggregate_by,
+                summary_only
+            );
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+                } else {
+                    std::apply(perftest<Index, wand_uniform_index>, params);
+                }
             } else {
-                std::apply(perftest<Index, wand_uniform_index>, params);
+                std::apply(perftest<Index, wand_raw_index>, params);
             }
-        } else {
-            std::apply(perftest<Index, wand_raw_index>, params);
         }
-    });
+    );
 }
