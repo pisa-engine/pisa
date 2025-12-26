@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <optional>
@@ -121,7 +122,7 @@ void extract_times(
     size_t runs,
     std::uint64_t k,
     bool safe,
-    std::ostream& os
+    std::ostream* os = nullptr
 ) {
     std::vector<std::vector<std::size_t>> times_per_query(
         queries.size(), std::vector<std::size_t>(runs)
@@ -162,17 +163,19 @@ void extract_times(
     print_aggregated_stats(AggregationType::Median);
     print_aggregated_stats(AggregationType::Max);
 
-    std::cout << "qid";
-    for (size_t i = 1; i <= runs; ++i) {
-        std::cout << fmt::format("\tusec{}", i);
-    }
-    std::cout << "\n";
-    for (auto&& [query_idx, query]: enumerate(queries)) {
-        os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
-        for (auto t: times_per_query[query_idx]) {
-            os << fmt::format("\t{}", t);
+    if (os != nullptr) {
+        *os << "qid";
+        for (size_t i = 1; i <= runs; ++i) {
+            *os << fmt::format("\tusec{}", i);
         }
-        os << "\n";
+        *os << "\n";
+        for (auto&& [query_idx, query]: enumerate(queries)) {
+            *os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
+            for (auto t: times_per_query[query_idx]) {
+                *os << fmt::format("\t{}", t);
+            }
+            *os << "\n";
+        }
     }
 }
 
@@ -188,7 +191,8 @@ void perftest(
     const ScorerParams& scorer_params,
     const bool weighted,
     bool safe,
-    std::size_t runs
+    std::size_t runs,
+    std::ostream* output
 ) {
     auto const& index = *index_ptr;
 
@@ -348,7 +352,7 @@ void perftest(
             break;
         }
         extract_times(
-            query_fun, queries, thresholds, type, t, runs, k, safe, std::cout
+            query_fun, queries, thresholds, type, t, runs, k, safe, output
         );
     }
 }
@@ -361,6 +365,7 @@ int main(int argc, const char** argv) {
     bool safe = false;
     bool quantized = false;
     std::size_t runs = 0;
+    std::optional<std::string> output_filename;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Optional>,
@@ -374,10 +379,22 @@ int main(int argc, const char** argv) {
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
     app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
+    app.add_option("-o,--output", output_filename, "Output file for query timing data");
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
+
+    std::ofstream output_file;
+    std::ostream* output = nullptr;
+    if (output_filename) {
+        output_file.open(*output_filename);
+        if (!output_file) {
+            spdlog::error("Failed to open data output file: {}", *output_filename);
+            return 1;
+        }
+        output = &output_file;
+    }
 
     run_for_index(
         app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
@@ -393,7 +410,8 @@ int main(int argc, const char** argv) {
                 app.scorer_params(),
                 app.weighted(),
                 safe,
-                runs
+                runs,
+                output
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
