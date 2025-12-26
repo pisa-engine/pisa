@@ -102,16 +102,6 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
     return aggregated_query_times;
 }
 
-void print_stats(AggregationType aggregation_type, std::vector<std::size_t> const& query_times) {
-    double mean =
-        std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
-    double q50 = query_times[query_times.size() / 2];
-    double q90 = query_times[90 * query_times.size() / 100];
-    double q95 = query_times[95 * query_times.size() / 100];
-    double q99 = query_times[99 * query_times.size() / 100];
-    stats_line(std::cerr)("aggregated_by", to_string(aggregation_type))("mean", mean)("q50", q50)("q90", q90)("q95", q95)("q99", q99);
-}
-
 template <typename Fn>
 void extract_times(
     Fn query_func,
@@ -128,7 +118,6 @@ void extract_times(
         queries.size(), std::vector<std::size_t>(runs)
     );
     std::size_t corrective_rerun_count = 0;
-    spdlog::info("Safe: {}", safe);
 
     // Note: each query is measured once per run, so the set of queries is
     // measured independently in each run.
@@ -150,19 +139,46 @@ void extract_times(
         }
     }
 
-    spdlog::info("---- {} {}", index_type, query_type);
-    spdlog::info("Corrective reruns due to insufficient results: {}", corrective_rerun_count);
-    spdlog::info("Runs per query (excluding warmup): {}", runs);
+    // Print JSON summary
+    std::cout << "{\n"
+              << "  \"encoding\": \"" << index_type << "\",\n"
+              << "  \"algorithm\": \"" << query_type << "\",\n"
+              << "  \"runs\": " << runs << ",\n"
+              << "  \"k\": " << k << ",\n"
+              << "  \"safe\": " << (safe ? "true" : "false") << ",\n"
+              << "  \"corrective_reruns\": " << corrective_rerun_count << ",\n"
+              << "  \"query_aggregation\": {\n";
 
-    auto print_aggregated_stats = [&](AggregationType type) {
-        print_stats(type, aggregate_and_sort_times_per_query(type, times_per_query));
+    auto print_aggregated_query_times = [&](AggregationType agg_type, bool is_last=false) {
+        auto query_times = aggregate_and_sort_times_per_query(agg_type, times_per_query);
+        auto agg_name = to_string(agg_type);
+
+        double mean =
+            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
+        double q50 = query_times[query_times.size() / 2];
+        double q90 = query_times[90 * query_times.size() / 100];
+        double q95 = query_times[95 * query_times.size() / 100];
+        double q99 = query_times[99 * query_times.size() / 100];
+
+        std::cout << "    \"" << agg_name << "\": {"
+                  << "\"mean\": " << mean << ", "
+                  << "\"q50\": " << q50 << ", "
+                  << "\"q90\": " << q90 << ", "
+                  << "\"q95\": " << q95 << ", "
+                  << "\"q99\": " << q99 << "}";
+        if (!is_last) {
+            std::cout << ",\n";
+        }
     };
-    print_aggregated_stats(AggregationType::None);
-    print_aggregated_stats(AggregationType::Min);
-    print_aggregated_stats(AggregationType::Mean);
-    print_aggregated_stats(AggregationType::Median);
-    print_aggregated_stats(AggregationType::Max);
 
+    print_aggregated_query_times(AggregationType::None);
+    print_aggregated_query_times(AggregationType::Min);
+    print_aggregated_query_times(AggregationType::Mean);
+    print_aggregated_query_times(AggregationType::Median);
+    print_aggregated_query_times(AggregationType::Max, true);
+    std::cout << "\n  }\n}\n";
+
+    // Save times per query (if required)
     if (os != nullptr) {
         *os << "qid";
         for (size_t i = 1; i <= runs; ++i) {
@@ -195,8 +211,7 @@ void perftest(
     std::ostream* output
 ) {
     auto const& index = *index_ptr;
-
-    spdlog::info("Warming up posting lists");
+    spdlog::info("Warming up posting lists...");
     std::unordered_set<TermId> warmed_up;
     for (auto const& q: queries) {
         for (auto [t, _]: q.terms()) {
@@ -229,15 +244,11 @@ void perftest(
     }
 
     auto scorer = scorer::from_params(scorer_params, wdata);
-
-    spdlog::info("Performing {} queries", type);
-    spdlog::info("K: {}", k);
-
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
     for (auto&& t: query_types) {
-        spdlog::info("Query type: {}", t);
+        spdlog::info("Performing {} runs for '{}' queries...", runs, t);
         std::function<uint64_t(Query, Score)> query_fun;
         if (t == "and") {
             query_fun = [&](Query query, Score) {
