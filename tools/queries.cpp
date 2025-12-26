@@ -55,7 +55,7 @@ enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
     case AggregationType::Median: return "median";
     case AggregationType::Max: return "max";
     }
-    return "unknown";
+    throw std::logic_error("Unknown AggregationType");
 }
 
 std::vector<std::size_t> aggregate_and_sort_times_per_query(
