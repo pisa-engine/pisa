@@ -202,13 +202,13 @@ void perftest(
     const std::vector<Query>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
-    std::string const& query_type,
+    std::vector<std::string> const& query_types,
     uint64_t k,
     const ScorerParams& scorer_params,
     const bool weighted,
     bool safe,
     std::size_t runs,
-    std::ostream* output
+    std::optional<std::vector<std::string>> const& output_paths
 ) {
     auto const& index = *index_ptr;
     spdlog::info("Warming up posting lists...");
@@ -244,11 +244,29 @@ void perftest(
     }
 
     auto scorer = scorer::from_params(scorer_params, wdata);
-    std::vector<std::string> query_types;
-    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
 
-    for (auto&& t: query_types) {
+    std::vector<std::ofstream> output_files(output_paths ? output_paths->size() : 0);
+    if (output_paths) {
+        for (std::size_t i = 0; i < output_paths->size(); ++i) {
+            const auto& path = (*output_paths)[i];
+            output_files[i].open(path);
+            if (!output_files[i].is_open()) {
+                const auto err_msg = fmt::format("Failed to open output file: {}.", path);
+                spdlog::error(err_msg);
+                throw std::runtime_error(err_msg);
+            }
+        }
+    }
+
+    for (std::size_t query_type_idx = 0; query_type_idx < query_types.size(); ++query_type_idx) {
+        auto const& t = query_types[query_type_idx];
+        std::ostream* output = nullptr;
+        if (output_paths) {
+            output = &output_files[query_type_idx];
+            spdlog::info("Per-run query output will be saved to '{}'.", (*output_paths)[query_type_idx]);
+        }
         spdlog::info("Performing {} runs for '{}' queries...", runs, t);
+
         std::function<uint64_t(Query, Score)> query_fun;
         if (t == "and") {
             query_fun = [&](Query query, Score) {
@@ -376,7 +394,7 @@ int main(int argc, const char** argv) {
     bool safe = false;
     bool quantized = false;
     std::size_t runs = 0;
-    std::optional<std::string> output_filename;
+    std::optional<std::string> output_paths_arg;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Optional>,
@@ -390,21 +408,34 @@ int main(int argc, const char** argv) {
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
     app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
-    app.add_option("-o,--output", output_filename, "Output file for query timing data");
+    app.add_option(
+        "-o,--output",
+        output_paths_arg,
+        "Output file for per-run query timing data (use ':' to separate multiple files)"
+    );
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
 
-    std::ofstream output_file;
-    std::ostream* output = nullptr;
-    if (output_filename) {
-        output_file.open(*output_filename);
-        if (!output_file) {
-            spdlog::error("Failed to open data output file: {}", *output_filename);
+    // Parse query types (algorithms)
+    std::vector<std::string> query_types;
+    boost::algorithm::split(query_types, app.algorithm(), boost::is_any_of(":"));
+
+    // Parse file paths
+    std::optional<std::vector<std::string>> output_paths;
+    if (output_paths_arg) {
+        std::vector<std::string> outputs;
+        boost::algorithm::split(outputs, *output_paths_arg, boost::is_any_of(":"));
+        if (outputs.size() != query_types.size()) {
+            spdlog::error(
+                "Expected {} output files (one per query type) but got {}.",
+                outputs.size(),
+                query_types.size()
+            );
             return 1;
         }
-        output = &output_file;
+        output_paths = std::move(outputs);
     }
 
     run_for_index(
@@ -416,13 +447,13 @@ int main(int argc, const char** argv) {
                 app.queries(),
                 app.thresholds_file(),
                 app.index_encoding(),
-                app.algorithm(),
+                query_types,
                 app.k(),
                 app.scorer_params(),
                 app.weighted(),
                 safe,
                 runs,
-                output
+                output_paths
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
