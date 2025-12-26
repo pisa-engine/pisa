@@ -87,7 +87,12 @@ const std::map<std::string, spdlog::level::level_enum> LogLevel::ENUM_MAP = {
 };
 
 Algorithm::Algorithm(CLI::App* app) {
-    app->add_option("-a,--algorithm", m_algorithm, "Query processing algorithm")->required();
+    app->add_option(
+           "-a,--algorithm",
+           m_algorithm,
+           "Query processing algorithm (use ':' to separate multiple algorithms)"
+       )
+        ->required();
 }
 
 auto Algorithm::algorithm() const -> std::string const& {
