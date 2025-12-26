@@ -121,7 +121,6 @@ void extract_times(
     size_t runs,
     std::uint64_t k,
     bool safe,
-    bool summary_only,
     std::ostream& os
 ) {
     std::vector<std::vector<std::size_t>> times_per_query(
@@ -163,19 +162,17 @@ void extract_times(
     print_aggregated_stats(AggregationType::Median);
     print_aggregated_stats(AggregationType::Max);
 
-    if (!summary_only) {
-        std::cout << "qid";
-        for (size_t i = 1; i <= runs; ++i) {
-            std::cout << fmt::format("\tusec{}", i);
+    std::cout << "qid";
+    for (size_t i = 1; i <= runs; ++i) {
+        std::cout << fmt::format("\tusec{}", i);
+    }
+    std::cout << "\n";
+    for (auto&& [query_idx, query]: enumerate(queries)) {
+        os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
+        for (auto t: times_per_query[query_idx]) {
+            os << fmt::format("\t{}", t);
         }
-        std::cout << "\n";
-        for (auto&& [query_idx, query]: enumerate(queries)) {
-            os << fmt::format("{}", query.id().value_or(std::to_string(query_idx)));
-            for (auto t: times_per_query[query_idx]) {
-                os << fmt::format("\t{}", t);
-            }
-            os << "\n";
-        }
+        os << "\n";
     }
 }
 
@@ -191,8 +188,7 @@ void perftest(
     const ScorerParams& scorer_params,
     const bool weighted,
     bool safe,
-    std::size_t runs,
-    bool summary_only
+    std::size_t runs
 ) {
     auto const& index = *index_ptr;
 
@@ -352,7 +348,7 @@ void perftest(
             break;
         }
         extract_times(
-            query_fun, queries, thresholds, type, t, runs, k, safe, summary_only, std::cout
+            query_fun, queries, thresholds, type, t, runs, k, safe, std::cout
         );
     }
 }
@@ -364,7 +360,6 @@ using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType:
 int main(int argc, const char** argv) {
     bool safe = false;
     bool quantized = false;
-    bool summary_only = false;
     std::size_t runs = 0;
 
     App<arg::Index,
@@ -378,9 +373,6 @@ int main(int argc, const char** argv) {
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
-    app.add_flag(
-        "--summary-only", summary_only, "Only print summary stats, ommiting per-query results"
-    );
     app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
     CLI11_PARSE(app, argc, argv);
 
@@ -401,8 +393,7 @@ int main(int argc, const char** argv) {
                 app.scorer_params(),
                 app.weighted(),
                 safe,
-                runs,
-                summary_only
+                runs
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
