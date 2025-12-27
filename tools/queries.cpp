@@ -71,7 +71,8 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
         }
     } else if (aggregation_type == AggregationType::Min) {
         for (auto const& query_times: times_per_query) {
-            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end()));
+            aggregated_query_times.push_back(*std::min_element(query_times.begin(), query_times.end())
+            );
         }
     } else if (aggregation_type == AggregationType::Mean) {
         for (auto const& query_times: times_per_query) {
@@ -96,7 +97,8 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
         }
     } else if (aggregation_type == AggregationType::Max) {
         for (auto const& query_times: times_per_query) {
-            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end()));
+            aggregated_query_times.push_back(*std::max_element(query_times.begin(), query_times.end())
+            );
         }
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
@@ -161,14 +163,14 @@ void extract_times(
         double q95 = query_times[95 * query_times.size() / 100];
         double q99 = query_times[99 * query_times.size() / 100];
 
-        summary["times"].push_back({
-            {"query_aggregation", agg_name},
-            {"mean", mean},
-            {"q50", q50},
-            {"q90", q90},
-            {"q95", q95},
-            {"q99", q99}
-        });
+        summary["times"].push_back(
+            {{"query_aggregation", agg_name},
+             {"mean", mean},
+             {"q50", q50},
+             {"q90", q90},
+             {"q95", q95},
+             {"q99", q99}}
+        );
     };
 
     add_aggregated_query_times(AggregationType::None);
@@ -181,11 +183,7 @@ void extract_times(
     // Save times per query (if required)
     if (os != nullptr) {
         for (auto&& [query_idx, query]: enumerate(queries)) {
-            *os << fmt::format(
-                "{}\t{}",
-                query_type,
-                query.id().value_or(std::to_string(query_idx))
-            );
+            *os << fmt::format("{}\t{}", query_type, query.id().value_or(std::to_string(query_idx)));
             for (auto t: times_per_query[query_idx]) {
                 *os << fmt::format("\t{}", t);
             }
@@ -417,32 +415,30 @@ int main(int argc, const char** argv) {
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, app.algorithm(), boost::is_any_of(":"));
 
-    run_for_index(
-        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-            using Index = std::decay_t<decltype(index)>;
-            auto params = std::make_tuple(
-                &index,
-                app.wand_data_path(),
-                app.queries(),
-                app.thresholds_file(),
-                app.index_encoding(),
-                query_types,
-                app.k(),
-                app.scorer_params(),
-                app.weighted(),
-                safe,
-                runs,
-                output_path
-            );
-            if (app.is_wand_compressed()) {
-                if (quantized) {
-                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
-                } else {
-                    std::apply(perftest<Index, wand_uniform_index>, params);
-                }
+    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+        using Index = std::decay_t<decltype(index)>;
+        auto params = std::make_tuple(
+            &index,
+            app.wand_data_path(),
+            app.queries(),
+            app.thresholds_file(),
+            app.index_encoding(),
+            query_types,
+            app.k(),
+            app.scorer_params(),
+            app.weighted(),
+            safe,
+            runs,
+            output_path
+        );
+        if (app.is_wand_compressed()) {
+            if (quantized) {
+                std::apply(perftest<Index, wand_uniform_index_quantized>, params);
             } else {
-                std::apply(perftest<Index, wand_raw_index>, params);
+                std::apply(perftest<Index, wand_uniform_index>, params);
             }
+        } else {
+            std::apply(perftest<Index, wand_raw_index>, params);
         }
-    );
+    });
 }
