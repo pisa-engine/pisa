@@ -5,6 +5,8 @@
 #include <optional>
 #include <string>
 
+#include <nlohmann/json.hpp>
+
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -44,7 +46,6 @@
 
 using namespace pisa;
 using ranges::views::enumerate;
-
 enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
 [[nodiscard]] auto to_string(AggregationType type) -> std::string {
@@ -140,16 +141,16 @@ void extract_times(
     }
 
     // Print JSON summary
-    std::cout << "{\n"
-              << "  \"encoding\": \"" << index_type << "\",\n"
-              << "  \"algorithm\": \"" << query_type << "\",\n"
-              << "  \"runs\": " << runs << ",\n"
-              << "  \"k\": " << k << ",\n"
-              << "  \"safe\": " << (safe ? "true" : "false") << ",\n"
-              << "  \"corrective_reruns\": " << corrective_rerun_count << ",\n"
-              << "  \"query_aggregation\": {\n";
+    nlohmann::json summary;
+    summary["encoding"] = index_type;
+    summary["algorithm"] = query_type;
+    summary["runs"] = runs;
+    summary["k"] = k;
+    summary["safe"] = safe;
+    summary["corrective_reruns"] = corrective_rerun_count;
+    summary["times"] = nlohmann::json::array();
 
-    auto print_aggregated_query_times = [&](AggregationType agg_type, bool is_last=false) {
+    auto add_aggregated_query_times = [&](AggregationType agg_type) {
         auto query_times = aggregate_and_sort_times_per_query(agg_type, times_per_query);
         auto agg_name = to_string(agg_type);
 
@@ -160,23 +161,22 @@ void extract_times(
         double q95 = query_times[95 * query_times.size() / 100];
         double q99 = query_times[99 * query_times.size() / 100];
 
-        std::cout << "    \"" << agg_name << "\": {"
-                  << "\"mean\": " << mean << ", "
-                  << "\"q50\": " << q50 << ", "
-                  << "\"q90\": " << q90 << ", "
-                  << "\"q95\": " << q95 << ", "
-                  << "\"q99\": " << q99 << "}";
-        if (!is_last) {
-            std::cout << ",\n";
-        }
+        summary["times"].push_back({
+            {"query_aggregation", agg_name},
+            {"mean", mean},
+            {"q50", q50},
+            {"q90", q90},
+            {"q95", q95},
+            {"q99", q99}
+        });
     };
 
-    print_aggregated_query_times(AggregationType::None);
-    print_aggregated_query_times(AggregationType::Min);
-    print_aggregated_query_times(AggregationType::Mean);
-    print_aggregated_query_times(AggregationType::Median);
-    print_aggregated_query_times(AggregationType::Max, true);
-    std::cout << "\n  }\n}\n";
+    add_aggregated_query_times(AggregationType::None);
+    add_aggregated_query_times(AggregationType::Min);
+    add_aggregated_query_times(AggregationType::Mean);
+    add_aggregated_query_times(AggregationType::Median);
+    add_aggregated_query_times(AggregationType::Max);
+    std::cout << summary.dump(2) << "\n";
 
     // Save times per query (if required)
     if (os != nullptr) {
