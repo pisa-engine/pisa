@@ -171,7 +171,13 @@ auto Threads::print_args(std::ostream& os) const -> std::ostream& {
 Invert::Invert(CLI::App* app) {
     app->add_option("-i,--input", m_input_basename, "Forward index basename")->required();
     app->add_option("-o,--output", m_output_basename, "Output inverted index basename")->required();
-    app->add_option("--term-count", m_term_count, "Number of distinct terms in the forward index");
+    app->add_option(
+        "--term-count",
+        m_term_count,
+        "Number of distinct terms in the forward index.\n"
+        "When omitted, the term count from the lexicon\n"
+        "file `{input}.termlex` is used."
+    );
 }
 
 auto Invert::input_basename() const -> std::string {

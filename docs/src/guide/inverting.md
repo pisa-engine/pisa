@@ -6,12 +6,15 @@ existence of a forward index in the path `path/to/forward/cw09b`:
 
     $ mkdir -p path/to/inverted
     $ ./invert -i path/to/forward/cw09b \
-        -o path/to/inverted/cw09b \
-        --term-count `wc -w < path/to/forward/cw09b.terms`
+        -o path/to/inverted/cw09b
 
-Note that the script requires as parameter the number of terms to be
-indexed, which is obtained by embedding the
-`wc -w < path/to/forward/cw09b.terms` instruction.
+Inverting an index requires the knowledge of the number of terms in
+the lexicon ahead of time. In the above example, the `invert` command
+assumes that a `cw09b.termlex' file exists from the output of
+`parse_collection` which is used to lookup the term count.
+
+Note that the number of terms can be provided using `--term-count` in
+case the lexicon is not available or on a different path.
 
 ## Inverted index format
 
