@@ -138,8 +138,7 @@ void extract_times(
     // Note: each query is measured once per run, so the set of queries is
     // measured independently in each run.
     for (size_t run = 0; run <= runs; ++run) {
-        size_t query_idx = 0;
-        for (auto const& query: queries) {
+        for (auto&& [query_idx, query]: enumerate(queries)) {
             auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
                 uint64_t result = query_func(query, thresholds[query_idx]);
                 if (safe && result < k) {
@@ -151,7 +150,6 @@ void extract_times(
             if (run != 0) {  // first run is not timed
                 times_per_query[query_idx][run - 1] = usecs.count();
             }
-            query_idx += 1;
         }
     }
 
