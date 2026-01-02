@@ -19,11 +19,10 @@
 #include <optional>
 #include <string>
 
-#include <nlohmann/json.hpp>
-
 #include <CLI/CLI.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <nlohmann/json.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
