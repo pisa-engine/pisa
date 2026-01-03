@@ -1,0 +1,314 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Lookup Table - PISA Guide</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">PISA Guide</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="lookup-table-format-specification"><a class="header" href="#lookup-table-format-specification">Lookup Table Format Specification</a></h1>
+<p>A lookup table is a bidirectional mapping from an index, representing an
+internal ID, to a binary payload, such as string. E.g., an <code>N</code>-element
+lookup table maps values <code>0...N-1</code> to their payloads. These tables are
+used for things like mapping terms to term IDs and document IDs to
+titles or URLs.</p>
+<p>The format of a lookup table is designed to operate without having to
+parse the entire structure. Once the header is parsed, it is possible to
+operate directly on the binary format to access the data. In fact, a
+lookup table will typically be memory mapped. Therefore, it is possible
+to perform a lookup (or reverse lookup) without loading the entire
+structure into memory.</p>
+<p>The header always begins as follows:</p>
+<pre><code>+--------+--------+--------   -+
+|  0x87  |  Ver.  |        ... |
++--------+--------+--------   -+
+</code></pre>
+<p>The first byte is a constant identifier. When reading, we can verify
+whether this byte is correct to make sure we are using the correct type
+of data structure.</p>
+<p>The second byte is equal to the version of the format.</p>
+<p>The remaining of the format is defined separately for each version. The
+version is introduced in order to be able to update the format in the
+future but still be able to read old formats for backwards
+compatibility.</p>
+<h2 id="v1"><a class="header" href="#v1">v1</a></h2>
+<pre><code>+--------+--------+--------+--------+--------+--------+--------+--------+
+|  0x87  |  0x01  | Flags  |                    0x00                    |
++--------+--------+--------+--------+--------+--------+--------+--------+
+|                                 Length                                |
++--------+--------+--------+--------+--------+--------+--------+--------+
+|                                                                       |
+|                                Offsets                                |
+|                                                                       |
++-----------------------------------------------------------------------+
+|                                                                       |
+|                                Payloads                               |
+|                                                                       |
++-----------------------------------------------------------------------+
+</code></pre>
+<p>Immediately after the version bit, we have flags byte.</p>
+<pre><code> MSB                         LSB
++---+---+---+---+---+---+---+---+
+| 0 | 0 | 0 | 0 | 0 | 0 | W | S |
++---+---+---+---+---+---+---+---+
+</code></pre>
+<p>The first bit (<code>S</code>) indicates whether the payloads are sorted (1) or not
+(0). The second bit (<code>W</code>) defines the width of offsets (see below):
+32-bit (0) or 64-bit (1). In most use cases, the cumulative size of the
+payloads will be small enough to address it by 32-bit offsets. For
+example, if we store words that are 16-bytes long on average, we can
+address over 200 million of them. For this many elements, reducing the
+width of the offsets would save us over 700 MB. Still, we want to
+support 64-bit addressing because some payloads may be much longer
+(e.g., URLs).</p>
+<p>The rest of the bits in the flags byte are currently not used, but
+should be set to 0 to make sure that if more flags are introduced, we
+know what values to expect in the older iterations, and thus we can make
+sure to keep it backwards-compatible.</p>
+<p>The following 5 bytes are padding with values of 0. This is to help with
+byte alignment. When loaded to memory, it should be loaded with 8-byte
+alignment. When memory mapped, it should be already correctly aligned by
+the operating system (at least on Linux).</p>
+<p>Following the padding, there is a 64-bit unsigned integer encoding the
+number of elements in the lexicon (<code>N</code>).</p>
+<p>Given <code>N</code> and <code>W</code>, we can now calculate the byte range of all offsets,
+and thus the address offset for the start of the payloads. The offsets
+are <code>N+1</code> little-endian unsigned integers of size determined by <code>W</code>
+(either 4 or 8 bytes). The offsets are associated with consecutive IDs
+from 0 to <code>N-1</code>; the last the <code>N+1</code> offsets points at the first byte
+after the last payload. The offsets are relative to the beginning of the
+first payload, therefore the first offset will always be 0.</p>
+<p>Payloads are arbitrary bytes, and must be interpreted by the software.
+Although the typical use case are strings, this can be any binary
+payload. Note that in case of strings, they will not be 0-terminated
+unless they were specifically stored as such. Although this should be
+clear by the fact a payload is simply a sequence of bytes, it is only
+prudent to point it out. Thus, one must be extremely careful when using
+C-style strings, as their use is contingent on a correct values inserted
+and encoded in the first place, and assuming 0-terminated strings may
+easily lead to undefined behavior. Thus, it is recommended to store
+strings without terminating them, and then interpret them as string
+views (such as <code>std::string_view</code>) instead of a C-style string.</p>
+<p>The boundaries of the k-th payload are defined by the values of k-th and
+(k+1)-th offsets. Note that because of the additional offset that points
+to immediately after the last payload, we can read offsets <code>k</code> and <code>k+1</code>
+for any index <code>k &lt; N</code> (recall that <code>N</code> is the number of elements).</p>
+<p>If the payloads are sorted (S), we can find an ID of a certain payload
+with a binary search. This is crucial for any application that requires
+mapping from payloads to their position in the table.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../cli/thresholds.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../cli/thresholds.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>
