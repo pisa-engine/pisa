@@ -1,7 +1,6 @@
 [book]
 authors = ["Michal Siedlaczek"]
 language = "en"
-multilingual = false
 src = "src"
 title = "PISA Guide"
 

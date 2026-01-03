@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light" dir="ltr">
+<html lang="en" class="light sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
 
         <!-- Custom HTML head -->
-        
+
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
@@ -25,26 +25,41 @@
         <link rel="stylesheet" href="fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
-    </head>
-    <body class="sidebar-visible no-js">
-    <div id="body-container">
-        <!-- Provide site root to javascript -->
-        <script>
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
-        </script>
 
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -58,68 +73,51 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
+            const html = document.documentElement;
             html.classList.remove('light')
             html.classList.add(theme);
-            var body = document.querySelector('body');
-            body.classList.remove('no-js')
-            body.classList.add('js');
+            html.classList.add("js");
         </script>
 
         <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var body = document.querySelector('body');
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
+                sidebar_toggle.checked = false;
             }
-            sidebar_toggle.checked = sidebar === 'visible';
-            body.classList.remove('sidebar-visible');
-            body.classList.add("sidebar-" + sidebar);
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="introduction.html">Introduction</a></li><li class="chapter-item expanded affix "><li class="part-title">User Guide</li><li class="chapter-item expanded "><a href="guide/requirements.html"><strong aria-hidden="true">1.</strong> Requirements</a></li><li class="chapter-item expanded "><a href="guide/installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="guide/indexing-pipeline.html"><strong aria-hidden="true">3.</strong> Indexing Pipeline</a></li><li class="chapter-item expanded "><a href="guide/parsing.html"><strong aria-hidden="true">4.</strong> Parsing</a></li><li class="chapter-item expanded "><a href="guide/inverting.html"><strong aria-hidden="true">5.</strong> Inverting</a></li><li class="chapter-item expanded "><a href="guide/compressing.html"><strong aria-hidden="true">6.</strong> Compressing</a></li><li class="chapter-item expanded "><a href="guide/wand_data.html"><strong aria-hidden="true">7.</strong> "WAND" Data</a></li><li class="chapter-item expanded "><a href="guide/querying.html"><strong aria-hidden="true">8.</strong> Querying</a></li><li class="chapter-item expanded "><a href="guide/algorithms.html"><strong aria-hidden="true">9.</strong> Retrieval Algorithms</a></li><li class="chapter-item expanded "><a href="guide/reordering.html"><strong aria-hidden="true">10.</strong> Document Reordering</a></li><li class="chapter-item expanded "><a href="guide/sharding.html"><strong aria-hidden="true">11.</strong> Sharding</a></li><li class="chapter-item expanded "><a href="guide/threshold-estimation.html"><strong aria-hidden="true">12.</strong> Threshold Estimation</a></li><li class="chapter-item expanded affix "><li class="part-title">Tutorials</li><li class="chapter-item expanded "><a href="tutorial/robust04.html"><strong aria-hidden="true">13.</strong> Regression test for Robust04</a></li><li class="chapter-item expanded affix "><li class="part-title">CLI Reference</li><li class="chapter-item expanded "><a href="cli/compress_inverted_index.html"><strong aria-hidden="true">14.</strong> compress_inverted_index</a></li><li class="chapter-item expanded "><a href="cli/compute_intersection.html"><strong aria-hidden="true">15.</strong> compute_intersection</a></li><li class="chapter-item expanded "><a href="cli/count-postings.html"><strong aria-hidden="true">16.</strong> count-postings</a></li><li class="chapter-item expanded "><a href="cli/create_wand_data.html"><strong aria-hidden="true">17.</strong> create_wand_data</a></li><li class="chapter-item expanded "><a href="cli/evaluate_queries.html"><strong aria-hidden="true">18.</strong> evaluate_queries</a></li><li class="chapter-item expanded "><a href="cli/extract-maxscores.html"><strong aria-hidden="true">19.</strong> extract-maxscores</a></li><li class="chapter-item expanded "><a href="cli/extract_topics.html"><strong aria-hidden="true">20.</strong> extract_topics</a></li><li class="chapter-item expanded "><a href="cli/invert.html"><strong aria-hidden="true">21.</strong> invert</a></li><li class="chapter-item expanded "><a href="cli/kth_threshold.html"><strong aria-hidden="true">22.</strong> kth_threshold</a></li><li class="chapter-item expanded "><a href="cli/lexicon.html"><strong aria-hidden="true">23.</strong> lexicon</a></li><li class="chapter-item expanded "><a href="cli/map_queries.html"><strong aria-hidden="true">24.</strong> map_queries</a></li><li class="chapter-item expanded "><a href="cli/parse_collection.html"><strong aria-hidden="true">25.</strong> parse_collection</a></li><li class="chapter-item expanded "><a href="cli/partition_fwd_index.html"><strong aria-hidden="true">26.</strong> partition_fwd_index</a></li><li class="chapter-item expanded "><a href="cli/queries.html"><strong aria-hidden="true">27.</strong> queries</a></li><li class="chapter-item expanded "><a href="cli/read_collection.html"><strong aria-hidden="true">28.</strong> read_collection</a></li><li class="chapter-item expanded "><a href="cli/reorder-docids.html"><strong aria-hidden="true">29.</strong> reorder-docids</a></li><li class="chapter-item expanded "><a href="cli/sample_inverted_index.html"><strong aria-hidden="true">30.</strong> sample_inverted_index</a></li><li class="chapter-item expanded "><a href="cli/selective_queries.html"><strong aria-hidden="true">31.</strong> selective_queries</a></li><li class="chapter-item expanded "><a href="cli/shards.html"><strong aria-hidden="true">32.</strong> shards</a></li><li class="chapter-item expanded "><a href="cli/stem_queries.html"><strong aria-hidden="true">33.</strong> stem_queries</a></li><li class="chapter-item expanded "><a href="cli/taily-stats.html"><strong aria-hidden="true">34.</strong> taily-stats</a></li><li class="chapter-item expanded "><a href="cli/taily-thresholds.html"><strong aria-hidden="true">35.</strong> taily-thresholds</a></li><li class="chapter-item expanded "><a href="cli/thresholds.html"><strong aria-hidden="true">36.</strong> thresholds</a></li><li class="chapter-item expanded affix "><li class="part-title">Specifications</li><li class="chapter-item expanded "><a href="specs/lookup-table.html"><strong aria-hidden="true">37.</strong> Lookup Table</a></li></ol>
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
-
-        <!-- Track and set sidebar scroll position -->
-        <script>
-            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
-            sidebarScrollbox.addEventListener('click', function(e) {
-                if (e.target.tagName === 'A') {
-                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
-                }
-            }, { passive: true });
-            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
-            sessionStorage.removeItem('sidebar-scroll');
-            if (sidebarScrollTop) {
-                // preserve sidebar scroll position when navigating via links within sidebar
-                sidebarScrollbox.scrollTop = sidebarScrollTop;
-            } else {
-                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
-                var activeSection = document.querySelector('#sidebar .active');
-                if (activeSection) {
-                    activeSection.scrollIntoView({ block: 'center' });
-                }
-            }
-        </script>
 
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -129,13 +127,14 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -152,7 +151,12 @@
 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -265,7 +269,7 @@ $ make
 <p>CMake supports configuring for different build systems.
 On Linux and Mac, the default is Makefiles, thus, the following two commands are equivalent:</p>
 <pre><code class="language-shell">$ cmake -G ..
-$ cmake -G &quot;Unix Makefiles&quot; ..
+$ cmake -G "Unix Makefiles" ..
 </code></pre>
 <p>Alternatively to Makefiles, you can configure the project to use Ninja instead:</p>
 <pre><code class="language-shell">$ cmake -G Ninja ..
@@ -421,7 +425,7 @@ any other languages. Contributions are welcome.</p>
 number of whitespaces, followed by the content delimited by a new line
 character.</li>
 <li><code>jsonl</code>: every line is a JSON document with three fields: <code>title</code>,
-<code>content</code>, and (optionally) <code>url</code> (NOTE: &quot;title&quot; in PISA is a unique
+<code>content</code>, and (optionally) <code>url</code> (NOTE: "title" in PISA is a unique
 string identifying a document)</li>
 <li><code>trectext</code>: TREC newswire collections.</li>
 <li><code>trecweb</code>: TREC web collections.</li>
@@ -462,12 +466,13 @@ the local drive first.</p>
 existence of a forward index in the path <code>path/to/forward/cw09b</code>:</p>
 <pre><code>$ mkdir -p path/to/inverted
 $ ./invert -i path/to/forward/cw09b \
-    -o path/to/inverted/cw09b \
-    --term-count `wc -w &lt; path/to/forward/cw09b.terms`
+    -o path/to/inverted/cw09b
 </code></pre>
-<p>Note that the script requires as parameter the number of terms to be
-indexed, which is obtained by embedding the
-<code>wc -w &lt; path/to/forward/cw09b.terms</code> instruction.</p>
+<p>Inverting an index requires the knowledge of the number of terms in
+the lexicon ahead of time. In the above example, the <code>invert</code> command
+assumes that a <code>cw09b.termlex' file exists from the output of </code>parse_collection` which is used to lookup the term count.</p>
+<p>Note that the number of terms can be provided using <code>--term-count</code> in
+case the lexicon is not available or on a different path.</p>
 <h2 id="inverted-index-format"><a class="header" href="#inverted-index-format">Inverted index format</a></h2>
 <p>A <em>binary sequence</em> is a sequence of integers prefixed by its length,
 where both the sequence integers and the length are written as 32-bit
@@ -503,9 +508,9 @@ import numpy as np
 class InvertedIndex:
     def __init__(self, index_name):
         index_dir = os.path.join(index_name)
-        self.docs = np.memmap(index_name + &quot;.docs&quot;, dtype=np.uint32,
+        self.docs = np.memmap(index_name + ".docs", dtype=np.uint32,
               mode='r')
-        self.freqs = np.memmap(index_name + &quot;.freqs&quot;, dtype=np.uint32,
+        self.freqs = np.memmap(index_name + ".freqs", dtype=np.uint32,
               mode='r')
 
     def __iter__(self):
@@ -518,7 +523,7 @@ class InvertedIndex:
     def __next__(self):
         return self
 
-for i, (docs, freqs) in enumerate(InvertedIndex(&quot;cw09b&quot;)):
+for i, (docs, freqs) in enumerate(InvertedIndex("cw09b")):
     print(i, docs, freqs)
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="compressing"><a class="header" href="#compressing">Compressing</a></h1>
@@ -599,10 +604,10 @@ RLE (Run-Length Encoding).</p>
 <blockquote>
 <p>Jeffrey Dean. 2009. Challenges in building large-scale information retrieval systems: invited talk. In Proceedings of the Second ACM International Conference on Web Search and Data Mining (WSDM '09), Ricardo Baeza-Yates, Paolo Boldi, Berthier Ribeiro-Neto, and B. Barla Cambazoglu (Eds.). ACM, New York, NY, USA, 1-1. DOI: http://dx.doi.org/10.1145/1498759.1498761</p>
 </blockquote>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="wand-data-1"><a class="header" href="#wand-data-1">&quot;WAND&quot; Data</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="wand-data-1"><a class="header" href="#wand-data-1">"WAND" Data</a></h1>
 <blockquote>
 <p><strong>WARNING</strong> <br />
-&quot;WAND data&quot; is a legacy term that may be somewhat misleading. The name
+"WAND data" is a legacy term that may be somewhat misleading. The name
 originates from the WAND algorithm, but in fact all <em>scored</em> queries
 must use WAND data. This name will likely change in the future to more
 accurately reflect its nature, but we still use it now because it is
@@ -912,8 +917,8 @@ possible to use the k-th highest score for certain pairs and triples of
 terms.</p>
 <p>To perform threshold estimation use the <code>kth_threshold</code> command.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="regression-test-for-robust04"><a class="header" href="#regression-test-for-robust04">Regression test for Robust04</a></h1>
-<p>This tutorial explains how to run regression tests on the <a href="https://trec.nist.gov/data/t13_robust.html">Robust04</a>
-collection.</p>
+<p>This tutorial explains how to run regression tests on the
+<a href="https://trec.nist.gov/data/t13_robust.html">Robust04</a> collection.</p>
 <h2 id="requirements-1"><a class="header" href="#requirements-1">Requirements</a></h2>
 <p>Due to the collection's license, we cannot distribute it, and thus you
 will need to obtain it separately to run this test. See
@@ -929,15 +934,20 @@ directory:</p>
 one, make sure to substitute it in any subsequent command.</p>
 <p>Building the image may take a while because the tools will be compiled.</p>
 <p>Once the image is built, you can run it with:</p>
-<pre><code>podman run -v path/to/disk45:/opt/disk45:ro -v your/workdir:/opt/workdir --rm pisa-bench
+<pre><code>podman run \
+    -v path/to/disk45:/opt/disk45:ro \
+    -v your/workdir:/opt/workdir \
+    --rm pisa-bench
 </code></pre>
-<p>Replace <code>path/to/disk45</code> with your local path to the Robust04 disk 4 &amp; 5
-directory, and <code>your/workdir</code> with the path to a local working
+<p>Replace <code>path/to/disk45</code> with your local path to the Robust04 disk 4 and
+5 directory, and <code>your/workdir</code> with the path to a local working
 directory, where artifacts will be written.</p>
 <p>By default, the script will build all indices and run evaluation. If you
 want to inspect the image or run some custom commands, you can execute
 the image interactively:</p>
-<pre><code>podman run -v $HOME/data/disk45:/opt/disk45:ro -v $HOME/workdir:/opt/workdir \
+<pre><code>podman run \
+    -v $HOME/data/disk45:/opt/disk45:ro \
+    -v $HOME/workdir:/opt/workdir \
     --rm -it pisa-bench /bin/bash
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="compress_inverted_index"><a class="header" href="#compress_inverted_index"><code>compress_inverted_index</code></a></h1>
@@ -1027,14 +1037,23 @@ Options:
   -q,--queries TEXT           Path to file with queries
   --terms TEXT                Term lexicon
   --weighted                  Weights scores by query frequency
+  --min-query-len INT         Minimum query length
+  --max-query-len INT         Maximum query length
+  -s,--scorer TEXT REQUIRED   Scorer function
+  --bm25-k1 FLOAT Needs: --scorer
+                              BM25 k1 parameter.
+  --bm25-b FLOAT Needs: --scorer
+                              BM25 b parameter.
+  --pl2-c FLOAT Needs: --scorer
+                              PL2 c parameter.
+  --qld-mu FLOAT Needs: --scorer
+                              QLD mu parameter.
   -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
                               Log level
   --config                    Configuration .ini file
   --combinations              Compute intersections for combinations of terms in query
   --max-term-count,--mtc UINT Needs: --combinations
                               Max number of terms when computing combinations
-  --min-query-len UINT        Minimum query length
-  --max-query-len UINT        Maximum query length
   --header                    Write TSV header
 </code></pre>
 <h2 id="description-1"><a class="header" href="#description-1">Description</a></h2>
@@ -1110,7 +1129,7 @@ Options:
 </code></pre>
 <h2 id="description-3"><a class="header" href="#description-3">Description</a></h2>
 <p>Creates additional data needed for certain query algorithms.
-See <a href="cli/../guide/wand_data.html"><code>&quot;WAND&quot; Data</code></a> for more details.</p>
+See <a href="cli/../guide/wand_data.html"><code>"WAND" Data</code></a> for more details.</p>
 <p>Refer to <a href="cli/queries.html"><code>queries</code></a> for details about scoring functions.</p>
 <h2 id="blocks"><a class="header" href="#blocks">Blocks</a></h2>
 <p>Each posting list is divided into blocks, and each block gets a
@@ -1219,7 +1238,9 @@ Options:
   -h,--help                   Print this help message and exit
   -i,--input TEXT REQUIRED    Forward index basename
   -o,--output TEXT REQUIRED   Output inverted index basename
-  --term-count UINT           Number of distinct terms in the forward index
+  --term-count UINT           Number of distinct terms in the forward index.
+                              When omitted, the term count from the lexicon
+                              file `{input}.termlex` is used.
   -j,--threads UINT           Number of threads
   --batch-size UINT [100000]  Number of documents to process at a time
   -L,--log-level TEXT:{critical,debug,err,info,off,trace,warn} [info] 
@@ -1406,7 +1427,7 @@ correct index encoding with <code>--encoding</code> option, as this is currently
 not stored in the index. If the index is quantized, you must pass
 <code>--quantized</code> flag.</p>
 <p>For certain types of retrieval algorithms, you will also need to pass
-the so-called &quot;WAND file&quot;, which contains some metadata like skip lists
+the so-called "WAND file", which contains some metadata like skip lists
 and max scores.</p>
 <h2 id="query-parsing"><a class="header" href="#query-parsing">Query Parsing</a></h2>
 <p>There are several parameters you can define to instruct the program on
@@ -1519,6 +1540,32 @@ Options:
   -t,--type TEXT REQUIRED     Sampling type
   --terms-to-drop TEXT        A filename containing a list of term IDs that we want to drop
   --seed UINT                 Seed state
+</code></pre>
+<h2 id="description-6"><a class="header" href="#description-6">Description</a></h2>
+<p>Creates a smaller inverted index from an existing one by sampling postings or
+documents. The purpose of this tool is to reduce time and space requirements
+while preserving the main statistical properties of the original collection,
+making it useful for faster experiments and debugging.</p>
+<h3 id="sampling-strategy--t---type"><a class="header" href="#sampling-strategy--t---type">Sampling strategy (<code>-t, --type</code>)</a></h3>
+<ul>
+<li><code>random_postings</code>: keep random occurrences per posting list (not whole
+posting lists).</li>
+<li><code>random_docids</code>: keep all postings belonging to a random subset of documents.</li>
+</ul>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<h3 id="keep-25-of-postings"><a class="header" href="#keep-25-of-postings">Keep ~25% of postings</a></h3>
+<pre><code class="language-bash">sample_inverted_index \
+    -c path/to/inverted \
+    -o path/to/inverted.sampled \
+    -r 0.25 \
+    -t random_postings
+</code></pre>
+<h3 id="keep-25-of-the-documents"><a class="header" href="#keep-25-of-the-documents">Keep ~25% of the documents</a></h3>
+<pre><code class="language-bash">sample_inverted_index \
+    -c path/to/inverted \
+    -o path/to/inverted.sampled \
+    -r 0.25 \
+    -t random_docids
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="selective_queries"><a class="header" href="#selective_queries">selective_queries</a></h1>
 <h2 id="usage-17"><a class="header" href="#usage-17">Usage</a></h2>
@@ -1791,6 +1838,7 @@ mapping from payloads to their position in the table.</p>
             window.setTimeout(window.print, 100);
         });
         </script>
+
 
     </div>
     </body>
