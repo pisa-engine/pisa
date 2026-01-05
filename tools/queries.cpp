@@ -61,6 +61,7 @@ using namespace pisa;
 using ranges::views::enumerate;
 enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
+
 [[nodiscard]] auto to_string(AggregationType type) -> std::string {
     switch (type) {
     case AggregationType::None: return "none";
@@ -72,9 +73,28 @@ enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
     throw std::logic_error("Unknown AggregationType");
 }
 
-std::vector<std::size_t> aggregate_and_sort_times_per_query(
+struct QueryTimesSummary {
+    AggregationType aggregation_type;
+    double mean;
+    double q50;
+    double q90;
+    double q95;
+    double q99;
+
+    [[nodiscard]] auto to_json() const -> nlohmann::json
+    {
+        return {{"query_aggregation", to_string(aggregation_type)},
+                {"mean", mean},
+                {"q50", q50},
+                {"q90", q90},
+                {"q95", q95},
+                {"q99", q99}};
+    }
+};
+
+auto aggregate_query_times(
     AggregationType aggregation_type, std::vector<std::vector<std::size_t>> const& times_per_query
-) {
+) -> std::vector<std::size_t> {
     std::vector<std::size_t> aggregated_query_times;
     if (aggregation_type == AggregationType::None) {
         for (auto const& query_times: times_per_query) {
@@ -116,6 +136,22 @@ std::vector<std::size_t> aggregate_and_sort_times_per_query(
     }
     std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
     return aggregated_query_times;
+}
+
+auto summarize(
+    std::vector<std::vector<std::size_t>> const& times_per_query, AggregationType agg_type
+) -> QueryTimesSummary
+{
+    auto query_times = aggregate_query_times(agg_type, times_per_query);
+
+    double mean =
+        std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
+    double q50 = query_times[query_times.size() / 2];
+    double q90 = query_times[90 * query_times.size() / 100];
+    double q95 = query_times[95 * query_times.size() / 100];
+    double q99 = query_times[99 * query_times.size() / 100];
+
+    return {agg_type, mean, q50, q90, q95, q99};
 }
 
 template <typename Fn>
@@ -163,32 +199,11 @@ void extract_times(
     summary["corrective_reruns"] = corrective_rerun_count;
     summary["times"] = nlohmann::json::array();
 
-    auto add_aggregated_query_times = [&](AggregationType agg_type) {
-        auto query_times = aggregate_and_sort_times_per_query(agg_type, times_per_query);
-        auto agg_name = to_string(agg_type);
-
-        double mean =
-            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
-        double q50 = query_times[query_times.size() / 2];
-        double q90 = query_times[90 * query_times.size() / 100];
-        double q95 = query_times[95 * query_times.size() / 100];
-        double q99 = query_times[99 * query_times.size() / 100];
-
-        summary["times"].push_back(
-            {{"query_aggregation", agg_name},
-             {"mean", mean},
-             {"q50", q50},
-             {"q90", q90},
-             {"q95", q95},
-             {"q99", q99}}
-        );
-    };
-
-    add_aggregated_query_times(AggregationType::None);
-    add_aggregated_query_times(AggregationType::Min);
-    add_aggregated_query_times(AggregationType::Mean);
-    add_aggregated_query_times(AggregationType::Median);
-    add_aggregated_query_times(AggregationType::Max);
+    summary["times"].push_back(summarize(times_per_query, AggregationType::None).to_json());
+    summary["times"].push_back(summarize(times_per_query, AggregationType::Min).to_json());
+    summary["times"].push_back(summarize(times_per_query, AggregationType::Mean).to_json());
+    summary["times"].push_back(summarize(times_per_query, AggregationType::Median).to_json());
+    summary["times"].push_back(summarize(times_per_query, AggregationType::Max).to_json());
     std::cout << summary.dump(2) << "\n";
 
     // Save times per query (if required)
