@@ -59,19 +59,28 @@
 
 using namespace pisa;
 using ranges::views::enumerate;
-enum class AggregationType { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
+class AggregationType {
+public:
+    enum Value { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
-[[nodiscard]] auto to_string(AggregationType type) -> std::string {
-    switch (type) {
-    case AggregationType::None: return "none";
-    case AggregationType::Min: return "min";
-    case AggregationType::Mean: return "mean";
-    case AggregationType::Median: return "median";
-    case AggregationType::Max: return "max";
+    constexpr AggregationType(Value value) : m_value(value) {}
+    constexpr operator Value() const { return m_value; }
+
+    [[nodiscard]] auto to_string() const -> std::string {
+        switch (m_value) {
+        case None: return "none";
+        case Min: return "min";
+        case Mean: return "mean";
+        case Median: return "median";
+        case Max: return "max";
+        }
+        throw std::logic_error("Unknown AggregationType");
     }
-    throw std::logic_error("Unknown AggregationType");
-}
+
+private:
+    Value m_value;
+};
 
 struct QueryTimesSummary {
     AggregationType aggregation_type;
@@ -83,7 +92,7 @@ struct QueryTimesSummary {
 
     [[nodiscard]] auto to_json() const -> nlohmann::json
     {
-        return {{"query_aggregation", to_string(aggregation_type)},
+        return {{"query_aggregation", aggregation_type.to_string()},
                 {"mean", mean},
                 {"q50", q50},
                 {"q90", q90},
