@@ -209,11 +209,15 @@ void extract_times(
     // Save times per query (if required)
     if (os != nullptr) {
         for (auto&& [query_idx, query]: enumerate(queries)) {
-            *os << fmt::format("{}\t{}", query_type, query.id().value_or(std::to_string(query_idx)));
-            for (auto t: times_per_query[query_idx]) {
-                *os << fmt::format("\t{}", t);
+            for (auto&& [run_idx, time]: enumerate(times_per_query[query_idx])) {
+                *os << fmt::format(
+                    "{}\t{}\t{}\t{}\n",
+                    query_type,
+                    query.id().value_or(std::to_string(query_idx)),
+                    run_idx + 1,
+                    time
+                );
             }
-            *os << "\n";
         }
     }
 }
@@ -280,11 +284,7 @@ void perftest(
         output = &output_file;
 
         // Add header
-        output_file << "algorithm\tqid";
-        for (size_t i = 1; i <= runs; ++i) {
-            output_file << fmt::format("\tusec{}", i);
-        }
-        output_file << "\n";
+        output_file << "algorithm\tqid\trun\tusec\n";
 
         spdlog::info("Per-run query output will be saved to '{}'.", *output_path);
     }
