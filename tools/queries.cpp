@@ -238,11 +238,12 @@ void print_times(
     QueryTimes const& query_times,
     std::vector<Query> const& queries,
     std::string const& query_type,
-    std::ostream& os
+    std::ostream& output_stream
 ) {
+    output_stream << "algorithm\tqid\trun\tusec\n";
     for (auto&& [query_idx, query]: enumerate(queries)) {
         for (auto&& [run_idx, time]: enumerate(query_times.values[query_idx])) {
-            os << fmt::format(
+            output_stream << fmt::format(
                 "{}\t{}\t{}\t{}\n",
                 query_type,
                 query.id().value_or(std::to_string(query_idx)),
@@ -251,6 +252,22 @@ void print_times(
             );
         }
     }
+}
+
+auto open_output_file(std::optional<std::string> const& output_path)
+    -> std::optional<std::ofstream>
+{
+    if (!output_path) {
+        return std::nullopt;
+    }
+
+    std::ofstream out(*output_path);
+    if (!out.is_open()) {
+        const auto err_msg = fmt::format("Failed to open output file: {}.", *output_path);
+        throw std::runtime_error(err_msg);
+    }
+
+    return out;
 }
 
 template <typename IndexType, typename WandType>
@@ -266,7 +283,7 @@ void perftest(
     const bool weighted,
     bool safe,
     std::size_t runs,
-    std::optional<std::string> const& output_path
+    std::ostream* output_stream
 ) {
     auto const& index = *index_ptr;
     spdlog::info("Warming up posting lists...");
@@ -303,22 +320,6 @@ void perftest(
 
     auto scorer = scorer::from_params(scorer_params, wdata);
 
-    std::ofstream output_file;
-    std::ostream* output = nullptr;
-    if (output_path) {
-        output_file.open(*output_path);
-        if (!output_file.is_open()) {
-            const auto err_msg = fmt::format("Failed to open output file: {}.", *output_path);
-            spdlog::error(err_msg);
-            throw std::runtime_error(err_msg);
-        }
-        output = &output_file;
-
-        // Add header
-        output_file << "algorithm\tqid\trun\tusec\n";
-
-        spdlog::info("Per-run query output will be saved to '{}'.", *output_path);
-    }
     for (std::size_t query_type_idx = 0; query_type_idx < query_types.size(); ++query_type_idx) {
         auto const& t = query_types[query_type_idx];
         spdlog::info("Performing {} runs for '{}' queries...", runs, t);
@@ -438,8 +439,8 @@ void perftest(
         }
         auto query_times = extract_times(query_fun, queries, thresholds, runs, k, safe);
         print_summary(query_times, type, t, runs, k, safe);
-        if (output != nullptr) {
-            print_times(query_times, queries, t, *output);
+        if (output_stream) {
+            print_times(query_times, queries, t, *output_stream);
         }
     }
 }
@@ -476,6 +477,20 @@ int main(int argc, const char** argv) {
     std::vector<std::string> query_types;
     boost::algorithm::split(query_types, app.algorithm(), boost::is_any_of(":"));
 
+    // If required, attempt to open the output file
+    std::optional<std::ofstream> output_file;
+    std::ostream* output_stream = nullptr;
+    try {
+        output_file = open_output_file(output_path);
+        if (output_file.has_value()) {
+            output_stream = &*output_file;
+            spdlog::info("Per-run query output will be saved to '{}'.", *output_path);
+        }
+    } catch (std::exception const& e) {
+        spdlog::error("{}", e.what());
+        return EXIT_FAILURE;
+    }
+
     run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
         using Index = std::decay_t<decltype(index)>;
         auto params = std::make_tuple(
@@ -490,7 +505,7 @@ int main(int argc, const char** argv) {
             app.weighted(),
             safe,
             runs,
-            output_path
+            output_stream
         );
         if (app.is_wand_compressed()) {
             if (quantized) {
