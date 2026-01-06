@@ -61,7 +61,7 @@ using namespace pisa;
 using ranges::views::enumerate;
 
 class AggregationType {
-public:
+  public:
     enum Value { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
     constexpr AggregationType(Value value) : m_value(value) {}
@@ -78,7 +78,7 @@ public:
         throw std::logic_error("Unknown AggregationType");
     }
 
-private:
+  private:
     Value m_value;
 };
 
@@ -90,14 +90,15 @@ struct QueryTimesSummary {
     double q95;
     double q99;
 
-    [[nodiscard]] auto to_json() const -> nlohmann::json
-    {
-        return {{"query_aggregation", aggregation_type.to_string()},
-                {"mean", mean},
-                {"q50", q50},
-                {"q90", q90},
-                {"q95", q95},
-                {"q99", q99}};
+    [[nodiscard]] auto to_json() const -> nlohmann::json {
+        return {
+            {"query_aggregation", aggregation_type.to_string()},
+            {"mean", mean},
+            {"q50", q50},
+            {"q90", q90},
+            {"q95", q95},
+            {"q99", q99}
+        };
     }
 };
 
@@ -105,8 +106,7 @@ struct QueryTimes {
     std::vector<std::vector<std::size_t>> values;
     std::size_t corrective_rerun_count;
 
-    auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t>
-    {
+    auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t> {
         std::vector<std::size_t> aggregated_query_times;
         if (aggregation_type == AggregationType::None) {
             for (auto const& times_per_run: values) {
@@ -116,7 +116,8 @@ struct QueryTimes {
             }
         } else if (aggregation_type == AggregationType::Min) {
             for (auto const& times_per_run: values) {
-                aggregated_query_times.push_back(*std::min_element(times_per_run.begin(), times_per_run.end())
+                aggregated_query_times.push_back(
+                    *std::min_element(times_per_run.begin(), times_per_run.end())
                 );
             }
         } else if (aggregation_type == AggregationType::Mean) {
@@ -135,14 +136,14 @@ struct QueryTimes {
                     median = sorted_times[sample_count / 2];
                 } else {
                     median =
-                        (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1])
-                        / 2;
+                        (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
                 }
                 aggregated_query_times.push_back(median);
             }
         } else if (aggregation_type == AggregationType::Max) {
             for (auto const& times_per_run: values) {
-                aggregated_query_times.push_back(*std::max_element(times_per_run.begin(), times_per_run.end())
+                aggregated_query_times.push_back(
+                    *std::max_element(times_per_run.begin(), times_per_run.end())
                 );
             }
         }
@@ -150,8 +151,7 @@ struct QueryTimes {
         return aggregated_query_times;
     }
 
-    auto summarize(AggregationType agg_type) const -> QueryTimesSummary
-    {
+    auto summarize(AggregationType agg_type) const -> QueryTimesSummary {
         auto aggregated_times = aggregate(agg_type);
 
         double mean = std::accumulate(aggregated_times.begin(), aggregated_times.end(), double())
@@ -163,7 +163,6 @@ struct QueryTimes {
 
         return {agg_type, mean, q50, q90, q95, q99};
     }
-
 };
 
 template <typename Fn>
@@ -176,7 +175,8 @@ auto extract_times(
     bool safe
 ) -> QueryTimes {
     QueryTimes query_times{
-        std::vector<std::vector<std::size_t>>(queries.size(), std::vector<std::size_t>(runs)), 0};
+        std::vector<std::vector<std::size_t>>(queries.size(), std::vector<std::size_t>(runs)), 0
+    };
 
     // Note: each query is measured once per run, so the set of queries is
     // measured independently in each run.
@@ -216,21 +216,11 @@ void print_summary(
     summary["corrective_reruns"] = query_times.corrective_rerun_count;
     summary["times"] = nlohmann::json::array();
 
-    summary["times"].push_back(
-        query_times.summarize(AggregationType::None).to_json()
-    );
-    summary["times"].push_back(
-        query_times.summarize(AggregationType::Min).to_json()
-    );
-    summary["times"].push_back(
-        query_times.summarize(AggregationType::Mean).to_json()
-    );
-    summary["times"].push_back(
-        query_times.summarize(AggregationType::Median).to_json()
-    );
-    summary["times"].push_back(
-        query_times.summarize(AggregationType::Max).to_json()
-    );
+    summary["times"].push_back(query_times.summarize(AggregationType::None).to_json());
+    summary["times"].push_back(query_times.summarize(AggregationType::Min).to_json());
+    summary["times"].push_back(query_times.summarize(AggregationType::Mean).to_json());
+    summary["times"].push_back(query_times.summarize(AggregationType::Median).to_json());
+    summary["times"].push_back(query_times.summarize(AggregationType::Max).to_json());
     std::cout << summary.dump(2) << "\n";
 }
 
@@ -254,9 +244,7 @@ void print_times(
     }
 }
 
-auto open_output_file(std::optional<std::string> const& output_path)
-    -> std::optional<std::ofstream>
-{
+auto open_output_file(std::optional<std::string> const& output_path) -> std::optional<std::ofstream> {
     if (!output_path) {
         return std::nullopt;
     }
@@ -491,30 +479,32 @@ int main(int argc, const char** argv) {
         return EXIT_FAILURE;
     }
 
-    run_for_index(app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
-        using Index = std::decay_t<decltype(index)>;
-        auto params = std::make_tuple(
-            &index,
-            app.wand_data_path(),
-            app.queries(),
-            app.thresholds_file(),
-            app.index_encoding(),
-            query_types,
-            app.k(),
-            app.scorer_params(),
-            app.weighted(),
-            safe,
-            runs,
-            output_stream
-        );
-        if (app.is_wand_compressed()) {
-            if (quantized) {
-                std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+    run_for_index(
+        app.index_encoding(), MemorySource::mapped_file(app.index_filename()), [&](auto index) {
+            using Index = std::decay_t<decltype(index)>;
+            auto params = std::make_tuple(
+                &index,
+                app.wand_data_path(),
+                app.queries(),
+                app.thresholds_file(),
+                app.index_encoding(),
+                query_types,
+                app.k(),
+                app.scorer_params(),
+                app.weighted(),
+                safe,
+                runs,
+                output_stream
+            );
+            if (app.is_wand_compressed()) {
+                if (quantized) {
+                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+                } else {
+                    std::apply(perftest<Index, wand_uniform_index>, params);
+                }
             } else {
-                std::apply(perftest<Index, wand_uniform_index>, params);
+                std::apply(perftest<Index, wand_raw_index>, params);
             }
-        } else {
-            std::apply(perftest<Index, wand_raw_index>, params);
         }
-    });
+    );
 }

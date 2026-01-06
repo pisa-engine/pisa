@@ -91,7 +91,7 @@ Algorithm::Algorithm(CLI::App* app) {
            "-a,--algorithm",
            m_algorithm,
            "Query processing algorithm (use ':' to separate multiple algorithms)"
-       )
+    )
         ->required();
 }
 
