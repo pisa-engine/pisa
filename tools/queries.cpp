@@ -64,7 +64,7 @@ class AggregationType {
   public:
     enum Value { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
-    constexpr AggregationType(Value value) : m_value(value) {}
+    explicit constexpr AggregationType(Value value) : m_value(value) {}
     constexpr operator Value() const { return m_value; }
 
     [[nodiscard]] auto to_string() const -> std::string {
@@ -216,11 +216,14 @@ void print_summary(
     summary["corrective_reruns"] = query_times.corrective_rerun_count;
     summary["times"] = nlohmann::json::array();
 
-    summary["times"].push_back(query_times.summarize(AggregationType::None).to_json());
-    summary["times"].push_back(query_times.summarize(AggregationType::Min).to_json());
-    summary["times"].push_back(query_times.summarize(AggregationType::Mean).to_json());
-    summary["times"].push_back(query_times.summarize(AggregationType::Median).to_json());
-    summary["times"].push_back(query_times.summarize(AggregationType::Max).to_json());
+    for (auto agg_type:
+         {AggregationType::None,
+          AggregationType::Min,
+          AggregationType::Mean,
+          AggregationType::Median,
+          AggregationType::Max}) {
+        summary["times"].push_back(query_times.summarize(AggregationType(agg_type)).to_json());
+    }
     std::cout << summary.dump(2) << "\n";
 }
 
