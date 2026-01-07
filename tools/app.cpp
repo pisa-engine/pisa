@@ -1,3 +1,6 @@
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+
 #include "app.hpp"
 #include "type_safe.hpp"
 
@@ -62,6 +65,20 @@ auto Analyzer::text_analyzer() const -> TextAnalyzer {
 
 const std::set<std::string> Analyzer::VALID_TOKENIZERS = {"whitespace", "english"};
 const std::set<std::string> Analyzer::VALID_TOKEN_FILTERS = {"lowercase", "porter2", "krovetz"};
+const std::set<std::string> Algorithm::VALID_ALGORITHMS = {
+    "and",
+    "or",
+    "or_freq",
+    "wand",
+    "block_max_wand",
+    "block_max_maxscore",
+    "ranked_and",
+    "block_max_ranked_and",
+    "ranked_or",
+    "maxscore",
+    "ranked_or_taat",
+    "ranked_or_taat_lazy"
+};
 
 LogLevel::LogLevel(CLI::App* app) {
     app->add_option("-L,--log-level", m_level, "Log level")
@@ -92,7 +109,18 @@ Algorithm::Algorithm(CLI::App* app) {
            m_algorithm,
            "Query processing algorithm (use ':' to separate multiple algorithms)"
     )
-        ->required();
+        ->required()
+        ->check([](const std::string& value) -> std::string {
+            std::vector<std::string> curr_algorithms;
+            boost::algorithm::split(curr_algorithms, value, boost::is_any_of(":"));
+            for (const auto& algorithm: curr_algorithms) {
+                const bool is_valid = VALID_ALGORITHMS.find(algorithm) != VALID_ALGORITHMS.end();
+                if (!is_valid) {
+                    return "Algorithm '" + algorithm + "' is not valid";
+                }
+            }
+            return "";
+        });
 }
 
 auto Algorithm::algorithm() const -> std::string const& {

@@ -195,6 +195,8 @@ namespace arg {
     };
 
     struct Algorithm {
+        static const std::set<std::string> VALID_ALGORITHMS;
+
         explicit Algorithm(CLI::App* app);
         [[nodiscard]] auto algorithm() const -> std::string const&;
 
