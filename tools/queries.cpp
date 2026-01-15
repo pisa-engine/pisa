@@ -131,13 +131,9 @@ struct QueryTimes {
                 auto sorted_times = times_per_run;
                 std::sort(sorted_times.begin(), sorted_times.end());
                 std::size_t sample_count = sorted_times.size();
-                double median = 0;
-                if (sample_count % 2 == 1) {
-                    median = sorted_times[sample_count / 2];
-                } else {
-                    median =
-                        (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
-                }
+                double median = sample_count % 2 == 1
+                    ? sorted_times[sample_count / 2]
+                    : (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
                 aggregated_query_times.push_back(median);
             }
         } else if (aggregation_type == AggregationType::Max) {
