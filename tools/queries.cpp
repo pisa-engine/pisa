@@ -274,7 +274,7 @@ void perftest(
     const bool weighted,
     bool safe,
     std::size_t runs,
-    std::ostream* output_stream
+    std::optional<std::ofstream> output_file
 ) {
     auto const& index = *index_ptr;
     spdlog::info("Warming up posting lists...");
@@ -430,8 +430,8 @@ void perftest(
         }
         auto query_times = extract_times(query_fun, queries, thresholds, runs, k, safe);
         print_summary(query_times, type, t, runs, k, safe);
-        if (output_stream) {
-            print_times(query_times, queries, t, *output_stream);
+        if (output_file) {
+            print_times(query_times, queries, t, *output_file);
         }
     }
 }
@@ -470,11 +470,9 @@ int main(int argc, const char** argv) {
 
     // If required, attempt to open the output file
     std::optional<std::ofstream> output_file;
-    std::ostream* output_stream = nullptr;
     try {
         output_file = open_output_file(output_path);
         if (output_file.has_value()) {
-            output_stream = &*output_file;
             spdlog::info("Per-run query output will be saved to '{}'.", *output_path);
         }
     } catch (std::exception const& e) {
@@ -497,16 +495,18 @@ int main(int argc, const char** argv) {
                 app.weighted(),
                 safe,
                 runs,
-                output_stream
+                std::move(output_file)
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
-                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+                    std::apply(
+                        perftest<Index, wand_uniform_index_quantized>, std::move(params)
+                    );
                 } else {
-                    std::apply(perftest<Index, wand_uniform_index>, params);
+                    std::apply(perftest<Index, wand_uniform_index>, std::move(params));
                 }
             } else {
-                std::apply(perftest<Index, wand_raw_index>, params);
+                std::apply(perftest<Index, wand_raw_index>, std::move(params));
             }
         }
     );
