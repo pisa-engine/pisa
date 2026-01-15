@@ -109,10 +109,10 @@ struct QueryTimes {
     auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t> {
         std::vector<std::size_t> aggregated_query_times;
         if (aggregation_type == AggregationType::None) {
-            for (auto const& times_per_run: values) {
-                for (auto t: times_per_run) {
-                    aggregated_query_times.push_back(t);
-                }
+            for (auto const& times_per_run : values) {
+                aggregated_query_times.insert(
+                    aggregated_query_times.end(), times_per_run.begin(), times_per_run.end()
+                );
             }
         } else if (aggregation_type == AggregationType::Min) {
             for (auto const& times_per_run: values) {
