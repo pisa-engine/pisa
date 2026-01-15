@@ -106,44 +106,67 @@ struct QueryTimes {
     std::vector<std::vector<std::size_t>> values;
     std::size_t corrective_rerun_count;
 
-    auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t> {
-        std::vector<std::size_t> aggregated_query_times;
-        if (aggregation_type == AggregationType::None) {
-            for (auto const& times_per_run : values) {
-                aggregated_query_times.insert(
-                    aggregated_query_times.end(), times_per_run.begin(), times_per_run.end()
-                );
-            }
-        } else if (aggregation_type == AggregationType::Min) {
-            for (auto const& times_per_run: values) {
-                aggregated_query_times.push_back(
-                    *std::min_element(times_per_run.begin(), times_per_run.end())
-                );
-            }
-        } else if (aggregation_type == AggregationType::Mean) {
-            for (auto const& times_per_run: values) {
-                double sum = std::accumulate(times_per_run.begin(), times_per_run.end(), double());
-                double mean = sum / times_per_run.size();
-                aggregated_query_times.push_back(mean);
-            }
-        } else if (aggregation_type == AggregationType::Median) {
-            for (auto const& times_per_run: values) {
-                auto sorted_times = times_per_run;
-                std::sort(sorted_times.begin(), sorted_times.end());
-                std::size_t sample_count = sorted_times.size();
-                double median = sample_count % 2 == 1
-                    ? sorted_times[sample_count / 2]
-                    : (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
-                aggregated_query_times.push_back(median);
-            }
-        } else if (aggregation_type == AggregationType::Max) {
-            for (auto const& times_per_run: values) {
-                aggregated_query_times.push_back(
-                    *std::max_element(times_per_run.begin(), times_per_run.end())
-                );
-            }
+    auto aggregate_none() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        for (auto const& times_per_run: values) {
+            aggregated.insert(aggregated.end(), times_per_run.begin(), times_per_run.end());
         }
-        return aggregated_query_times;
+        return aggregated;
+    }
+
+    auto aggregate_min() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            aggregated.push_back(*std::min_element(times_per_run.begin(), times_per_run.end()));
+        }
+        return aggregated;
+    }
+
+    auto aggregate_mean() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            double sum = std::accumulate(times_per_run.begin(), times_per_run.end(), double());
+            double mean = sum / times_per_run.size();
+            aggregated.push_back(mean);
+        }
+        return aggregated;
+    }
+
+    auto aggregate_median() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            auto sorted_times = times_per_run;
+            std::sort(sorted_times.begin(), sorted_times.end());
+            std::size_t sample_count = sorted_times.size();
+            double median = sample_count % 2 == 1
+                ? sorted_times[sample_count / 2]
+                : (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
+            aggregated.push_back(median);
+        }
+        return aggregated;
+    }
+
+    auto aggregate_max() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            aggregated.push_back(*std::max_element(times_per_run.begin(), times_per_run.end()));
+        }
+        return aggregated;
+    }
+
+    auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t> {
+        switch (aggregation_type) {
+        case AggregationType::None: return aggregate_none();
+        case AggregationType::Min: return aggregate_min();
+        case AggregationType::Mean: return aggregate_mean();
+        case AggregationType::Median: return aggregate_median();
+        case AggregationType::Max: return aggregate_max();
+        }
+        throw std::logic_error("Unknown AggregationType");
     }
 
     auto summarize(AggregationType agg_type) const -> QueryTimesSummary {
@@ -495,9 +518,7 @@ int main(int argc, const char** argv) {
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
-                    std::apply(
-                        perftest<Index, wand_uniform_index_quantized>, std::move(params)
-                    );
+                    std::apply(perftest<Index, wand_uniform_index_quantized>, std::move(params));
                 } else {
                     std::apply(perftest<Index, wand_uniform_index>, std::move(params));
                 }
