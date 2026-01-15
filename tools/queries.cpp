@@ -143,12 +143,12 @@ struct QueryTimes {
                 );
             }
         }
-        std::sort(aggregated_query_times.begin(), aggregated_query_times.end());
         return aggregated_query_times;
     }
 
     auto summarize(AggregationType agg_type) const -> QueryTimesSummary {
         auto aggregated_times = aggregate(agg_type);
+        std::sort(aggregated_times.begin(), aggregated_times.end());
 
         double mean = std::accumulate(aggregated_times.begin(), aggregated_times.end(), double())
             / aggregated_times.size();
