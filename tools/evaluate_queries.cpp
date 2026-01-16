@@ -206,6 +206,11 @@ int main(int argc, const char** argv) {
 
     CLI11_PARSE(app, argc, argv);
 
+    if (app.algorithms().size() > 1) {
+        spdlog::error("Only one algorithm (query type) is allowed at a time.");
+        return 1;
+    }
+
     spdlog::set_level(app.log_level());
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
     spdlog::info("Number of worker threads: {}", app.threads());
