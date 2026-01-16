@@ -410,6 +410,26 @@ TEST_CASE("Algorithm", "[cli]") {
     }
 }
 
+TEST_CASE("Algorithm requires WAND data", "[cli]") {
+    CLI::App app("Algorithm WAND test");
+    pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(&app);
+    SECTION("Algorithm not requiring WAND without WAND data succeeds") {
+        REQUIRE_NOTHROW(parse(app, {"-a", "and"}));
+    }
+    SECTION("Algorithm requiring WAND without WAND data throws") {
+        REQUIRE_THROWS(parse(app, {"-a", "wand"}));
+    }
+    SECTION("Algorithm requiring WAND with WAND data succeeds") {
+        REQUIRE_NOTHROW(parse(app, {"-a", "wand", "-w", "WDATA"}));
+    }
+    SECTION("Multiple algorithms with one requiring WAND without WAND data throws") {
+        REQUIRE_THROWS(parse(app, {"-a", "and", "-a", "maxscore"}));
+    }
+    SECTION("Multiple algorithms with one requiring WAND with WAND data succeeds") {
+        REQUIRE_NOTHROW(parse(app, {"-a", "and", "-a", "maxscore", "-w", "WDATA"}));
+    }
+}
+
 TEST_CASE("Scorer", "[cli]") {
     CLI::App app("Scorer test");
     pisa::Args<pisa::arg::Scorer> args(&app);

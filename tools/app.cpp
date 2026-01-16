@@ -76,19 +76,21 @@ auto Analyzer::text_analyzer() const -> TextAnalyzer {
 
 const std::set<std::string> Analyzer::VALID_TOKENIZERS = {"whitespace", "english"};
 const std::set<std::string> Analyzer::VALID_TOKEN_FILTERS = {"lowercase", "porter2", "krovetz"};
-const std::set<std::string> Algorithm::VALID_ALGORITHMS = {
-    "and",
-    "or",
-    "or_freq",
-    "wand",
-    "block_max_wand",
-    "block_max_maxscore",
-    "ranked_and",
-    "block_max_ranked_and",
-    "ranked_or",
-    "maxscore",
-    "ranked_or_taat",
-    "ranked_or_taat_lazy"
+
+// algorithm -> requires_wand_data
+const std::map<std::string, bool> Algorithm::VALID_ALGORITHMS = {
+    {"and", false},
+    {"or", false},
+    {"or_freq", false},
+    {"wand", true},
+    {"block_max_wand", true},
+    {"block_max_maxscore", true},
+    {"ranked_and", false},
+    {"block_max_ranked_and", true},
+    {"ranked_or", false},
+    {"maxscore", true},
+    {"ranked_or_taat", false},
+    {"ranked_or_taat_lazy", false}
 };
 
 LogLevel::LogLevel(CLI::App* app) {
@@ -117,7 +119,30 @@ const std::map<std::string, spdlog::level::level_enum> LogLevel::ENUM_MAP = {
 Algorithm::Algorithm(CLI::App* app) {
     app->add_option("-a,--algorithm", m_algorithms, "Query processing algorithm")
         ->required()
-        ->check(CLI::IsMember(VALID_ALGORITHMS));
+        ->check([](const std::string& algorithm) -> std::string {
+            const bool is_valid = VALID_ALGORITHMS.find(algorithm) != VALID_ALGORITHMS.end();
+            if (!is_valid) {
+                return "Algorithm '" + algorithm + "' is not valid";
+            }
+
+            return "";
+        });
+
+    // Check if WAND data is provided when it is required by an algorithm.
+    if (auto* wand_option = app->get_option_no_throw("--wand")) {
+        app->callback([this, &wand_opt = *wand_option]() {
+            if (!wand_opt) {
+                for (const auto& algorithm: m_algorithms) {
+                    if (VALID_ALGORITHMS.at(algorithm)) {
+                        throw CLI::ValidationError(
+                            "Algorithm '" + algorithm
+                            + "' requires WAND data but it was not provided"
+                        );
+                    }
+                }
+            }
+        });
+    }
 }
 
 auto Algorithm::algorithms() const -> std::vector<std::string> const& {

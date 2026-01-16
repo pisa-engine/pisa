@@ -209,7 +209,8 @@ namespace arg {
     };
 
     struct Algorithm {
-        static const std::set<std::string> VALID_ALGORITHMS;
+        // algorithm -> requires_wand_data
+        static const std::map<std::string, bool> VALID_ALGORITHMS;
 
         explicit Algorithm(CLI::App* app);
         [[nodiscard]] auto algorithms() const -> std::vector<std::string> const&;
