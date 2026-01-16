@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "boost/algorithm/string/classification.hpp"
-#include "boost/algorithm/string/split.hpp"
-
 #include "app.hpp"
 #include "type_safe.hpp"
 
@@ -118,27 +115,13 @@ const std::map<std::string, spdlog::level::level_enum> LogLevel::ENUM_MAP = {
 };
 
 Algorithm::Algorithm(CLI::App* app) {
-    app->add_option(
-           "-a,--algorithm",
-           m_algorithm,
-           "Query processing algorithm (use ':' to separate multiple algorithms)"
-    )
+    app->add_option("-a,--algorithm", m_algorithms, "Query processing algorithm")
         ->required()
-        ->check([](const std::string& value) -> std::string {
-            std::vector<std::string> curr_algorithms;
-            boost::algorithm::split(curr_algorithms, value, boost::is_any_of(":"));
-            for (const auto& algorithm: curr_algorithms) {
-                const bool is_valid = VALID_ALGORITHMS.find(algorithm) != VALID_ALGORITHMS.end();
-                if (!is_valid) {
-                    return "Algorithm '" + algorithm + "' is not valid";
-                }
-            }
-            return "";
-        });
+        ->check(CLI::IsMember(VALID_ALGORITHMS));
 }
 
-auto Algorithm::algorithm() const -> std::string const& {
-    return m_algorithm;
+auto Algorithm::algorithms() const -> std::vector<std::string> const& {
+    return m_algorithms;
 }
 
 Quantize::Quantize(CLI::App* app) : m_params("") {

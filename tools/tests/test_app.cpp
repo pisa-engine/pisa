@@ -397,14 +397,16 @@ TEST_CASE("Algorithm", "[cli]") {
         REQUIRE_THROWS(parse(app, {}));
     }
     SECTION("Long option") {
-        // Note: algorithm names are not validated until later.
-        parse(app, {"--algorithm", "ALG"});
-        REQUIRE(args.algorithm() == "ALG");
+        parse(app, {"--algorithm", "and"});
+        REQUIRE(args.algorithms() == std::vector<std::string>{"and"});
     }
     SECTION("Short option") {
-        // Note: algorithm names are not validated until later.
-        parse(app, {"-a", "ALG"});
-        REQUIRE(args.algorithm() == "ALG");
+        parse(app, {"-a", "or"});
+        REQUIRE(args.algorithms() == std::vector<std::string>{"or"});
+    }
+    SECTION("Multiple algorithms") {
+        parse(app, {"-a", "wand", "-a", "and"});
+        REQUIRE(args.algorithms() == std::vector<std::string>{"wand", "and"});
     }
 }
 

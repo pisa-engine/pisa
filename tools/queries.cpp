@@ -20,8 +20,6 @@
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <nlohmann/json.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/null_sink.h>
@@ -483,9 +481,7 @@ int main(int argc, const char** argv) {
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
 
-    // Parse query types (algorithms)
-    std::vector<std::string> query_types;
-    boost::algorithm::split(query_types, app.algorithm(), boost::is_any_of(":"));
+    auto const& query_types = app.algorithms();
 
     // If required, attempt to open the output file
     std::optional<std::ofstream> output_file;

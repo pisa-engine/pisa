@@ -212,10 +212,10 @@ namespace arg {
         static const std::set<std::string> VALID_ALGORITHMS;
 
         explicit Algorithm(CLI::App* app);
-        [[nodiscard]] auto algorithm() const -> std::string const&;
+        [[nodiscard]] auto algorithms() const -> std::vector<std::string> const&;
 
       private:
-        std::string m_algorithm;
+        std::vector<std::string> m_algorithms;
     };
 
     enum class ScorerMode : bool { Required, Optional };
