@@ -22,13 +22,12 @@ For example:
         -q ../test/test_data/queries    # query input file
 
 This performs conjunctive queries (`and`). In place of `and` other operators can
-be used (see [Query algorithms](#query-algorithms)), and also multiple operators
-separated by colon (`and:or:wand`), which will run multiple passes, one per
-algorithm.
+be used (see [Query algorithms](#query-algorithms)). To run multiple algorithms,
+provide `-a` multiple times (for example, `-a and -a or -a wand`).
 
 The tool outputs a JSON with query execution statistics including mean, median
-(`q50`), and percentiles (`q90`, `q95`, `q99`) for different aggregation types
-(`none`, `min`, `mean`, `median`, `max`).
+(`q50`), and percentiles (`q90`, `q95`, `q99`) for different _per-query_
+aggregation (`none`, `min`, `mean`, `median`, `max`).
 
 If the WAND file is compressed, append `--compressed-wand` flag.
 

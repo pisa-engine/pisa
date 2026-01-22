@@ -8,11 +8,11 @@
 
 ## Description
 
-Runs query benchmarks.
+Runs query benchmarks focused on performance measurement, executing each query
+on the given index multiple times. Then, it aggregates statistics across all
+queries.
 
-Executes each query on the given index multiple times, and takes the
-minimum of those as the final value. Then, it aggregates statistics
-across all queries.
+Note: for retrieval results use `evaluate_queries`.
 
 ## Input
 
