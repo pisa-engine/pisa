@@ -1,12 +1,26 @@
+// Copyright 2025 PISA Developers
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <numeric>
 #include <optional>
 #include <string>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <nlohmann/json.hpp>
 #include <range/v3/view/enumerate.hpp>
 #include <spdlog/sinks/null_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -44,86 +58,224 @@
 using namespace pisa;
 using ranges::views::enumerate;
 
+class AggregationType {
+  public:
+    enum Value { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
+
+    explicit constexpr AggregationType(Value value) : m_value(value) {}
+    constexpr operator Value() const { return m_value; }
+
+    [[nodiscard]] auto to_string() const -> std::string {
+        switch (m_value) {
+        case None: return "none";
+        case Min: return "min";
+        case Mean: return "mean";
+        case Median: return "median";
+        case Max: return "max";
+        }
+        throw std::logic_error("Unknown AggregationType");
+    }
+
+  private:
+    Value m_value;
+};
+
+struct QueryTimesSummary {
+    AggregationType aggregation_type;
+    double mean;
+    double q50;
+    double q90;
+    double q95;
+    double q99;
+
+    [[nodiscard]] auto to_json() const -> nlohmann::json {
+        return {
+            {"query_aggregation", aggregation_type.to_string()},
+            {"mean", mean},
+            {"q50", q50},
+            {"q90", q90},
+            {"q95", q95},
+            {"q99", q99}
+        };
+    }
+};
+
+struct QueryTimes {
+    std::vector<std::vector<std::size_t>> values;
+    std::size_t corrective_rerun_count;
+
+    auto aggregate_none() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        for (auto const& times_per_run: values) {
+            aggregated.insert(aggregated.end(), times_per_run.begin(), times_per_run.end());
+        }
+        return aggregated;
+    }
+
+    auto aggregate_min() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            aggregated.push_back(*std::min_element(times_per_run.begin(), times_per_run.end()));
+        }
+        return aggregated;
+    }
+
+    auto aggregate_mean() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            double sum = std::accumulate(times_per_run.begin(), times_per_run.end(), double());
+            double mean = sum / times_per_run.size();
+            aggregated.push_back(mean);
+        }
+        return aggregated;
+    }
+
+    auto aggregate_median() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            auto sorted_times = times_per_run;
+            std::sort(sorted_times.begin(), sorted_times.end());
+            std::size_t sample_count = sorted_times.size();
+            double median = sample_count % 2 == 1
+                ? sorted_times[sample_count / 2]
+                : (sorted_times[sample_count / 2] + sorted_times[sample_count / 2 - 1]) / 2;
+            aggregated.push_back(median);
+        }
+        return aggregated;
+    }
+
+    auto aggregate_max() const -> std::vector<std::size_t> {
+        std::vector<std::size_t> aggregated;
+        aggregated.reserve(values.size());
+        for (auto const& times_per_run: values) {
+            aggregated.push_back(*std::max_element(times_per_run.begin(), times_per_run.end()));
+        }
+        return aggregated;
+    }
+
+    auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t> {
+        switch (aggregation_type) {
+        case AggregationType::None: return aggregate_none();
+        case AggregationType::Min: return aggregate_min();
+        case AggregationType::Mean: return aggregate_mean();
+        case AggregationType::Median: return aggregate_median();
+        case AggregationType::Max: return aggregate_max();
+        }
+        throw std::logic_error("Unknown AggregationType");
+    }
+
+    auto summarize(AggregationType agg_type) const -> QueryTimesSummary {
+        auto aggregated_times = aggregate(agg_type);
+        std::sort(aggregated_times.begin(), aggregated_times.end());
+
+        double mean = std::accumulate(aggregated_times.begin(), aggregated_times.end(), double())
+            / aggregated_times.size();
+        double q50 = aggregated_times[aggregated_times.size() / 2];
+        double q90 = aggregated_times[90 * aggregated_times.size() / 100];
+        double q95 = aggregated_times[95 * aggregated_times.size() / 100];
+        double q99 = aggregated_times[99 * aggregated_times.size() / 100];
+
+        return {agg_type, mean, q50, q90, q95, q99};
+    }
+};
+
 template <typename Fn>
-void extract_times(
-    Fn fn,
+auto extract_times(
+    Fn query_func,
     std::vector<Query> const& queries,
     std::vector<Score> const& thresholds,
-    std::string const& index_type,
-    std::string const& query_type,
     size_t runs,
-    std::ostream& os
-) {
-    std::vector<std::size_t> times(runs);
-    for (auto&& [qid, query]: enumerate(queries)) {
-        do_not_optimize_away(fn(query, thresholds[qid]));
-        std::generate(times.begin(), times.end(), [&fn, &q = query, &t = thresholds[qid]]() {
-            return run_with_timer<std::chrono::microseconds>(
-                       [&]() { do_not_optimize_away(fn(q, t)); }
-            ).count();
-        });
-        auto mean = std::accumulate(times.begin(), times.end(), std::size_t{0}, std::plus<>()) / runs;
-        os << fmt::format("{}\t{}\n", query.id().value_or(std::to_string(qid)), mean);
+    std::uint64_t k,
+    bool safe
+) -> QueryTimes {
+    QueryTimes query_times{
+        std::vector<std::vector<std::size_t>>(queries.size(), std::vector<std::size_t>(runs)), 0
+    };
+
+    // Note: each query is measured once per run, so the set of queries is
+    // measured independently in each run.
+    for (size_t run = 0; run <= runs; ++run) {
+        for (auto&& [query_idx, query]: enumerate(queries)) {
+            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
+                uint64_t result = query_func(query, thresholds[query_idx]);
+                if (safe && result < k) {
+                    query_times.corrective_rerun_count += 1;
+                    result = query_func(query, 0);
+                }
+                do_not_optimize_away(result);
+            });
+            if (run != 0) {  // first run is not timed
+                query_times.values[query_idx][run - 1] = usecs.count();
+            }
+        }
     }
+
+    return query_times;
 }
 
-template <typename Functor>
-void op_perftest(
-    Functor query_func,
-    std::vector<Query> const& queries,
-    std::vector<Score> const& thresholds,
+void print_summary(
+    QueryTimes const& query_times,
     std::string const& index_type,
     std::string const& query_type,
     size_t runs,
     std::uint64_t k,
     bool safe
 ) {
-    std::vector<double> query_times;
-    std::size_t num_reruns = 0;
-    spdlog::info("Safe: {}", safe);
+    nlohmann::json summary;
+    summary["encoding"] = index_type;
+    summary["algorithm"] = query_type;
+    summary["runs"] = runs;
+    summary["k"] = k;
+    summary["safe"] = safe;
+    summary["corrective_reruns"] = query_times.corrective_rerun_count;
+    summary["times"] = nlohmann::json::array();
 
-    for (size_t run = 0; run <= runs; ++run) {
-        size_t idx = 0;
-        for (auto const& query: queries) {
-            auto usecs = run_with_timer<std::chrono::microseconds>([&]() {
-                uint64_t result = query_func(query, thresholds[idx]);
-                if (safe && result < k) {
-                    num_reruns += 1;
-                    result = query_func(query, 0);
-                }
-                do_not_optimize_away(result);
-            });
-            if (run != 0) {  // first run is not timed
-                query_times.push_back(usecs.count());
-            }
-            idx += 1;
+    for (auto agg_type:
+         {AggregationType::None,
+          AggregationType::Min,
+          AggregationType::Mean,
+          AggregationType::Median,
+          AggregationType::Max}) {
+        summary["times"].push_back(query_times.summarize(AggregationType(agg_type)).to_json());
+    }
+    std::cout << summary.dump(2) << "\n";
+}
+
+void print_times(
+    QueryTimes const& query_times,
+    std::vector<Query> const& queries,
+    std::string const& query_type,
+    std::ostream& output_stream
+) {
+    output_stream << "algorithm\tqid\trun\tusec\n";
+    for (auto&& [query_idx, query]: enumerate(queries)) {
+        for (auto&& [run_idx, time]: enumerate(query_times.values[query_idx])) {
+            output_stream << fmt::format(
+                "{}\t{}\t{}\t{}\n",
+                query_type,
+                query.id().value_or(std::to_string(query_idx)),
+                run_idx + 1,
+                time
+            );
         }
     }
+}
 
-    if (false) {
-        for (auto t: query_times) {
-            std::cout << (t / 1000) << std::endl;
-        }
-    } else {
-        std::sort(query_times.begin(), query_times.end());
-        double avg =
-            std::accumulate(query_times.begin(), query_times.end(), double()) / query_times.size();
-        double q50 = query_times[query_times.size() / 2];
-        double q90 = query_times[90 * query_times.size() / 100];
-        double q95 = query_times[95 * query_times.size() / 100];
-        double q99 = query_times[99 * query_times.size() / 100];
-
-        spdlog::info("---- {} {}", index_type, query_type);
-        spdlog::info("Mean: {}", avg);
-        spdlog::info("50% quantile: {}", q50);
-        spdlog::info("90% quantile: {}", q90);
-        spdlog::info("95% quantile: {}", q95);
-        spdlog::info("99% quantile: {}", q99);
-        spdlog::info("Num. reruns: {}", num_reruns);
-
-        stats_line()("type", index_type)("query", query_type)("avg", avg)("q50", q50)("q90", q90)(
-            "q95", q95)("q99", q99);
+auto open_output_file(std::optional<std::string> const& output_path) -> std::optional<std::ofstream> {
+    if (!output_path) {
+        return std::nullopt;
     }
+
+    std::ofstream out(*output_path);
+    if (!out.is_open()) {
+        const auto err_msg = fmt::format("Failed to open output file: {}.", *output_path);
+        throw std::runtime_error(err_msg);
+    }
+
+    return out;
 }
 
 template <typename IndexType, typename WandType>
@@ -133,16 +285,16 @@ void perftest(
     const std::vector<Query>& queries,
     const std::optional<std::string>& thresholds_filename,
     std::string const& type,
-    std::string const& query_type,
+    std::vector<std::string> const& query_types,
     uint64_t k,
     const ScorerParams& scorer_params,
     const bool weighted,
-    bool extract,
-    bool safe
+    bool safe,
+    std::size_t runs,
+    std::optional<std::ofstream> output_file
 ) {
     auto const& index = *index_ptr;
-
-    spdlog::info("Warming up posting lists");
+    spdlog::info("Warming up posting lists...");
     std::unordered_set<TermId> warmed_up;
     for (auto const& q: queries) {
         for (auto [t, _]: q.terms()) {
@@ -176,14 +328,10 @@ void perftest(
 
     auto scorer = scorer::from_params(scorer_params, wdata);
 
-    spdlog::info("Performing {} queries", type);
-    spdlog::info("K: {}", k);
+    for (std::size_t query_type_idx = 0; query_type_idx < query_types.size(); ++query_type_idx) {
+        auto const& t = query_types[query_type_idx];
+        spdlog::info("Performing {} runs for '{}' queries...", runs, t);
 
-    std::vector<std::string> query_types;
-    boost::algorithm::split(query_types, query_type, boost::is_any_of(":"));
-
-    for (auto&& t: query_types) {
-        spdlog::info("Query type: {}", t);
         std::function<uint64_t(Query, Score)> query_fun;
         if (t == "and") {
             query_fun = [&](Query query, Score) {
@@ -297,10 +445,10 @@ void perftest(
             spdlog::error("Unsupported query type: {}", t);
             break;
         }
-        if (extract) {
-            extract_times(query_fun, queries, thresholds, type, t, 2, std::cout);
-        } else {
-            op_perftest(query_fun, queries, thresholds, type, t, 2, k, safe);
+        auto query_times = extract_times(query_fun, queries, thresholds, runs, k, safe);
+        print_summary(query_times, type, t, runs, k, safe);
+        if (output_file) {
+            print_times(query_times, queries, t, *output_file);
         }
     }
 }
@@ -310,9 +458,10 @@ using wand_uniform_index = wand_data<wand_data_compressed<>>;
 using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType::Quantized>>;
 
 int main(int argc, const char** argv) {
-    bool extract = false;
     bool safe = false;
     bool quantized = false;
+    std::size_t runs = 0;
+    std::optional<std::string> output_path;
 
     App<arg::Index,
         arg::WandData<arg::WandMode::Optional>,
@@ -323,15 +472,27 @@ int main(int argc, const char** argv) {
         arg::LogLevel>
         app{"Benchmarks queries on a given index."};
     app.add_flag("--quantized", quantized, "Quantized scores");
-    app.add_flag("--extract", extract, "Extract individual query times");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
+    app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
+    app.add_option("-o,--output", output_path, "Output file for per-run query timing data");
     CLI11_PARSE(app, argc, argv);
 
     spdlog::set_default_logger(spdlog::stderr_color_mt("stderr"));
     spdlog::set_level(app.log_level());
-    if (extract) {
-        std::cout << "qid\tusec\n";
+
+    auto const& query_types = app.algorithms();
+
+    // If required, attempt to open the output file
+    std::optional<std::ofstream> output_file;
+    try {
+        output_file = open_output_file(output_path);
+        if (output_file.has_value()) {
+            spdlog::info("Per-run query output will be saved to '{}'.", *output_path);
+        }
+    } catch (std::exception const& e) {
+        spdlog::error("{}", e.what());
+        return EXIT_FAILURE;
     }
 
     run_for_index(
@@ -343,21 +504,22 @@ int main(int argc, const char** argv) {
                 app.queries(),
                 app.thresholds_file(),
                 app.index_encoding(),
-                app.algorithm(),
+                query_types,
                 app.k(),
                 app.scorer_params(),
                 app.weighted(),
-                extract,
-                safe
+                safe,
+                runs,
+                std::move(output_file)
             );
             if (app.is_wand_compressed()) {
                 if (quantized) {
-                    std::apply(perftest<Index, wand_uniform_index_quantized>, params);
+                    std::apply(perftest<Index, wand_uniform_index_quantized>, std::move(params));
                 } else {
-                    std::apply(perftest<Index, wand_uniform_index>, params);
+                    std::apply(perftest<Index, wand_uniform_index>, std::move(params));
                 }
             } else {
-                std::apply(perftest<Index, wand_raw_index>, params);
+                std::apply(perftest<Index, wand_raw_index>, std::move(params));
             }
         }
     );

@@ -2,8 +2,6 @@
 #include <optional>
 
 #include <CLI/CLI.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <functional>
 #include <mappable/mapper.hpp>
 #include <mio/mmap.hpp>
@@ -208,6 +206,11 @@ int main(int argc, const char** argv) {
 
     CLI11_PARSE(app, argc, argv);
 
+    if (app.algorithms().size() > 1) {
+        spdlog::error("Only one algorithm (query type) is allowed at a time.");
+        return 1;
+    }
+
     spdlog::set_level(app.log_level());
     tbb::global_control control(tbb::global_control::max_allowed_parallelism, app.threads() + 1);
     spdlog::info("Number of worker threads: {}", app.threads());
@@ -227,7 +230,7 @@ int main(int argc, const char** argv) {
                 app.queries(),
                 app.thresholds_file(),
                 app.index_encoding(),
-                app.algorithm(),
+                app.algorithms().front(),
                 app.k(),
                 documents_file,
                 app.scorer_params(),

@@ -397,14 +397,36 @@ TEST_CASE("Algorithm", "[cli]") {
         REQUIRE_THROWS(parse(app, {}));
     }
     SECTION("Long option") {
-        // Note: algorithm names are not validated until later.
-        parse(app, {"--algorithm", "ALG"});
-        REQUIRE(args.algorithm() == "ALG");
+        parse(app, {"--algorithm", "and"});
+        REQUIRE(args.algorithms() == std::vector<std::string>{"and"});
     }
     SECTION("Short option") {
-        // Note: algorithm names are not validated until later.
-        parse(app, {"-a", "ALG"});
-        REQUIRE(args.algorithm() == "ALG");
+        parse(app, {"-a", "or"});
+        REQUIRE(args.algorithms() == std::vector<std::string>{"or"});
+    }
+    SECTION("Multiple algorithms") {
+        parse(app, {"-a", "wand", "-a", "and"});
+        REQUIRE(args.algorithms() == std::vector<std::string>{"wand", "and"});
+    }
+}
+
+TEST_CASE("Algorithm requires WAND data", "[cli]") {
+    CLI::App app("Algorithm WAND test");
+    pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(&app);
+    SECTION("Algorithm not requiring WAND without WAND data succeeds") {
+        REQUIRE_NOTHROW(parse(app, {"-a", "and"}));
+    }
+    SECTION("Algorithm requiring WAND without WAND data throws") {
+        REQUIRE_THROWS(parse(app, {"-a", "wand"}));
+    }
+    SECTION("Algorithm requiring WAND with WAND data succeeds") {
+        REQUIRE_NOTHROW(parse(app, {"-a", "wand", "-w", "WDATA"}));
+    }
+    SECTION("Multiple algorithms with one requiring WAND without WAND data throws") {
+        REQUIRE_THROWS(parse(app, {"-a", "and", "-a", "maxscore"}));
+    }
+    SECTION("Multiple algorithms with one requiring WAND with WAND data succeeds") {
+        REQUIRE_NOTHROW(parse(app, {"-a", "and", "-a", "maxscore", "-w", "WDATA"}));
     }
 }
 

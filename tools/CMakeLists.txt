@@ -5,7 +5,7 @@ function(ADD_TOOL TOOL_NAME SRC_FILE)
 endfunction()
 
 add_library(app app.cpp)
-target_link_libraries(app pisa CLI11)
+target_link_libraries(app pisa CLI11 nlohmann_json::nlohmann_json)
 
 add_tool(compress_inverted_index compress_inverted_index.cpp)
 add_tool(create_wand_data create_wand_data.cpp)

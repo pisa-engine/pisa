@@ -1,3 +1,17 @@
+// Copyright 2025 PISA Developers
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "app.hpp"
 #include "type_safe.hpp"
 
@@ -63,6 +77,22 @@ auto Analyzer::text_analyzer() const -> TextAnalyzer {
 const std::set<std::string> Analyzer::VALID_TOKENIZERS = {"whitespace", "english"};
 const std::set<std::string> Analyzer::VALID_TOKEN_FILTERS = {"lowercase", "porter2", "krovetz"};
 
+// algorithm -> requires_wand_data
+const std::map<std::string, bool> Algorithm::VALID_ALGORITHMS = {
+    {"and", false},
+    {"or", false},
+    {"or_freq", false},
+    {"wand", true},
+    {"block_max_wand", true},
+    {"block_max_maxscore", true},
+    {"ranked_and", false},
+    {"block_max_ranked_and", true},
+    {"ranked_or", false},
+    {"maxscore", true},
+    {"ranked_or_taat", false},
+    {"ranked_or_taat_lazy", false}
+};
+
 LogLevel::LogLevel(CLI::App* app) {
     app->add_option("-L,--log-level", m_level, "Log level")
         ->capture_default_str()
@@ -87,11 +117,36 @@ const std::map<std::string, spdlog::level::level_enum> LogLevel::ENUM_MAP = {
 };
 
 Algorithm::Algorithm(CLI::App* app) {
-    app->add_option("-a,--algorithm", m_algorithm, "Query processing algorithm")->required();
+    app->add_option("-a,--algorithm", m_algorithms, "Query processing algorithm")
+        ->required()
+        ->check([](const std::string& algorithm) -> std::string {
+            const bool is_valid = VALID_ALGORITHMS.find(algorithm) != VALID_ALGORITHMS.end();
+            if (!is_valid) {
+                return "Algorithm '" + algorithm + "' is not valid";
+            }
+
+            return "";
+        });
+
+    // Check if WAND data is provided when it is required by an algorithm.
+    if (auto* wand_option = app->get_option_no_throw("--wand")) {
+        app->callback([this, &wand_opt = *wand_option]() {
+            if (!wand_opt) {
+                for (const auto& algorithm: m_algorithms) {
+                    if (VALID_ALGORITHMS.at(algorithm)) {
+                        throw CLI::ValidationError(
+                            "Algorithm '" + algorithm
+                            + "' requires WAND data but it was not provided"
+                        );
+                    }
+                }
+            }
+        });
+    }
 }
 
-auto Algorithm::algorithm() const -> std::string const& {
-    return m_algorithm;
+auto Algorithm::algorithms() const -> std::vector<std::string> const& {
+    return m_algorithms;
 }
 
 Quantize::Quantize(CLI::App* app) : m_params("") {
