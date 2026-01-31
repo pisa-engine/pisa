@@ -460,7 +460,7 @@ using wand_uniform_index_quantized = wand_data<wand_data_compressed<PayloadType:
 int main(int argc, const char** argv) {
     bool safe = false;
     bool quantized = false;
-    std::size_t runs = 0;
+    std::size_t runs = 3;
     std::optional<std::string> output_path;
 
     App<arg::Index,
@@ -474,7 +474,9 @@ int main(int argc, const char** argv) {
     app.add_flag("--quantized", quantized, "Quantized scores");
     app.add_flag("--safe", safe, "Rerun if not enough results with pruning.")
         ->needs(app.thresholds_option());
-    app.add_option("--runs", runs, "Number of runs per query")->default_val(3)->check(CLI::PositiveNumber);
+    app.add_option("--runs", runs, "Number of runs per query")
+        ->capture_default_str()
+        ->check(CLI::PositiveNumber);
     app.add_option("-o,--output", output_path, "Output file for per-run query timing data");
     CLI11_PARSE(app, argc, argv);
 
