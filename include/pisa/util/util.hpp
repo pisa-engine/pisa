@@ -115,10 +115,10 @@ function_iterator<State, AdvanceFunctor, ValueFunctor> make_function_iterator(
 struct stats_line {
     stats_line() : m_out(std::cout) { m_out << "{"; }
     explicit stats_line(std::ostream& out) : m_out(out) { m_out << "{"; }
-    stats_line(stats_line const&) = default;
-    stats_line(stats_line&&) noexcept = default;
-    stats_line& operator=(stats_line const&) = default;
-    stats_line& operator=(stats_line&&) noexcept = default;
+    stats_line(stats_line const&) = delete;
+    stats_line(stats_line&&) noexcept = delete;
+    stats_line& operator=(stats_line const&) = delete;
+    stats_line& operator=(stats_line&&) noexcept = delete;
     ~stats_line() { m_out << "}" << std::endl; }
 
     template <typename K, typename T>
