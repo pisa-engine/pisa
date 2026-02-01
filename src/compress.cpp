@@ -23,7 +23,10 @@ template <typename Collection>
 void dump_index_specific_stats(Collection const&, std::string const&) {}
 
 void dump_index_specific_stats(pisa::pefuniform_index const& coll, std::string const& type) {
-    pisa::stats_line()("type", type)("log_partition_size", int(coll.params().log_partition_size));
+    std::cout << pisa::stats_builder()
+                     .add("type", type)
+                     .add("log_partition_size", int(coll.params().log_partition_size))
+                     .build();
 }
 
 void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const& type) {
@@ -41,9 +44,11 @@ void dump_index_specific_stats(pisa::pefopt_index const& coll, std::string const
         }
     }
 
-    pisa::stats_line()("type", type)("docs_avg_part", long_postings / docs_partitions)(
-        "freqs_avg_part", long_postings / freqs_partitions
-    );
+    std::cout << pisa::stats_builder()
+                     .add("type", type)
+                     .add("docs_avg_part", long_postings / docs_partitions)
+                     .add("freqs_avg_part", long_postings / freqs_partitions)
+                     .build();
 }
 
 template <typename CollectionType, typename Wand>
@@ -173,9 +178,11 @@ void compress_index(
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("{} collection built in {} seconds", seq_type, elapsed_secs);
 
-    stats_line()("type", seq_type)("worker_threads", std::thread::hardware_concurrency())(
-        "construction_time", elapsed_secs
-    );
+    std::cout << pisa::stats_builder()
+                     .add("type", seq_type)
+                     .add("worker_threads", std::thread::hardware_concurrency())
+                     .add("construction_time", elapsed_secs)
+                     .build();
 
     dump_stats(coll, seq_type, postings);
     dump_index_specific_stats(coll, seq_type);

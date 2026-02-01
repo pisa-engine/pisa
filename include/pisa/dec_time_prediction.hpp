@@ -2,14 +2,17 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <cstdint>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "boost/preprocessor/seq/enum.hpp"
 #include "boost/preprocessor/seq/for_each.hpp"
 #include "boost/preprocessor/stringize.hpp"
-
-#include "util/util.hpp"
+#include "util/broadword.hpp"
+#include "util/index_build_utils.hpp"
 
 #define PISA_FEATURE_TYPES (n)(size)(sum_of_logs)(entropy)(nonzeros)(max_b)(pfor_b)(pfor_exceptions)
 
@@ -53,12 +56,12 @@ namespace pisa { namespace time_prediction {
         float& operator[](feature_type f) { return m_features[(size_t)f]; }
         float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
 
-        stats_line& dump(stats_line& sl) const {
+        pisa::StatsBuilder& dump(pisa::StatsBuilder& builder) const {
             for (size_t i = 0; i < num_features; ++i) {
                 auto ft = static_cast<feature_type>(i);
-                sl(feature_name(ft), (*this)[ft]);
+                builder.add(feature_name(ft), (*this)[ft]);
             }
-            return sl;
+            return builder;
         }
 
       protected:
@@ -95,7 +98,7 @@ namespace pisa { namespace time_prediction {
         float m_bias{0.0};
     };
 
-    inline void values_statistics(std::vector<uint32_t> values, feature_vector& f) {
+    inline void values_statistics(std::vector<std::uint32_t> values, feature_vector& f) {
         std::sort(values.begin(), values.end());
         f[feature_type::n] = values.size();
         if (values.empty()) {

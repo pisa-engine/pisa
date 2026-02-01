@@ -148,7 +148,7 @@ void rearrange_sequences(
 ) {
     spdlog::info("Rearranging documents");
     if (not shard_count) {
-        *shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
+        shard_count = *std::max_element(mapping.begin(), mapping.end()) + 1;
     }
     std::ifstream is(input_basename);
     std::ifstream dis(fmt::format("{}.documents", input_basename));
