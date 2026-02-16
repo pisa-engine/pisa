@@ -183,9 +183,11 @@ void BlockIndexBuilder::build(binary_freq_collection const& input, std::string c
     double elapsed_secs = (get_time_usecs() - tick) / 1000000;
     spdlog::info("Index compressed in {} seconds", elapsed_secs);
 
-    stats_line()("type", m_block_codec->get_name())("worker_threads", std::thread::hardware_concurrency())(
-        "construction_time", elapsed_secs
-    );
+    std::cout << pisa::json_stats()
+                     .add("type", m_block_codec->get_name())
+                     .add("worker_threads", std::thread::hardware_concurrency())
+                     .add("construction_time", elapsed_secs)
+                     .str();
 
     if (m_check) {
         BlockInvertedIndex index(

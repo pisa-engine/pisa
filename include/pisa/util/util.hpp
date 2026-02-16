@@ -2,12 +2,6 @@
 
 #include <cassert>
 #include <chrono>
-#include <cmath>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <map>
-#include <vector>
 
 #include "util/broadword.hpp"
 
@@ -111,91 +105,5 @@ function_iterator<State, AdvanceFunctor, ValueFunctor> make_function_iterator(
         std::forward<ValueFunctor>(value_functor)
     );
 }
-
-struct stats_line {
-    stats_line() { std::cout << "{"; }
-    stats_line(stats_line const&) = default;
-    stats_line(stats_line&&) noexcept = default;
-    stats_line& operator=(stats_line const&) = default;
-    stats_line& operator=(stats_line&&) noexcept = default;
-    ~stats_line() { std::cout << "}" << std::endl; }
-
-    template <typename K, typename T>
-    stats_line& operator()(K const& key, T const& value) {
-        if (!first) {
-            std::cout << ", ";
-        } else {
-            first = false;
-        }
-
-        emit(key);
-        std::cout << ": ";
-        emit(value);
-        return *this;
-    }
-
-    template <typename T>
-    stats_line& operator()(T const& obj) {
-        return obj.dump(*this);
-    }
-
-  private:
-    template <typename T>
-    void emit(T const& v) const {
-        std::cout << v;
-    }
-
-    // XXX properly escape strings
-    void emit(const char* s) const { std::cout << '"' << s << '"'; }
-
-    void emit(std::string const& s) const { emit(s.c_str()); }
-
-    template <typename T>
-    void emit(std::vector<T> const& v) const {
-        std::cout << "[";
-        bool first = true;
-        for (auto const& i: v) {
-            if (first) {
-                first = false;
-            } else {
-                std::cout << ", ";
-            }
-            emit(i);
-        }
-        std::cout << "]";
-    }
-
-    template <typename K, typename V>
-    void emit(std::map<K, V> const& m) const {
-        std::vector<std::pair<K, V>> v(m.begin(), m.end());
-        emit(v);
-    }
-
-    template <typename Tuple, size_t Pos>
-    typename std::enable_if<Pos != 0, void>::type emit_tuple_helper(Tuple const& t) const {
-        emit_tuple_helper<Tuple, Pos - 1>(t);
-        std::cout << ", ";
-        emit(std::get<Pos>(t));
-    }
-
-    template <typename Tuple, size_t Pos>
-    typename std::enable_if<Pos == 0, void>::type emit_tuple_helper(Tuple const& t) const {
-        emit(std::get<0>(t));
-    }
-
-    template <typename... Tp>
-    void emit(std::tuple<Tp...> const& t) const {
-        std::cout << "[";
-        emit_tuple_helper<std::tuple<Tp...>, sizeof...(Tp) - 1>(t);
-        std::cout << "]";
-    }
-
-    template <typename T1, typename T2>
-    void emit(std::pair<T1, T2> const& p) const {
-        emit(std::make_tuple(p.first, p.second));
-    }
-
-    bool first{true};
-};
 
 }  // namespace pisa
