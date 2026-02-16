@@ -5,8 +5,7 @@
 #include "block_inverted_index.hpp"
 #include "freq_index.hpp"
 #include "mappable/mapper.hpp"
-#include "util/stats_builder.hpp"
-#include "util/util.hpp"
+#include "util/json_stats.hpp"
 
 namespace pisa {
 
@@ -35,14 +34,14 @@ void dump_stats(Collection& coll, std::string const& type, uint64_t postings) {
     spdlog::info("Documents: {} bytes, {} bits per element", docs_size, bits_per_doc);
     spdlog::info("Frequencies: {} bytes, {} bits per element", freqs_size, bits_per_freq);
 
-    std::cout << pisa::stats_builder()
+    std::cout << pisa::json_stats()
                      .add("type", type)
                      .add("size", docs_size + freqs_size)
                      .add("docs_size", docs_size)
                      .add("freqs_size", freqs_size)
                      .add("bits_per_doc", bits_per_doc)
                      .add("bits_per_freq", bits_per_freq)
-                     .build();
+                     .str();
 }
 
 inline void dump_stats(SizeStats const& stats, std::size_t postings) {
@@ -51,13 +50,13 @@ inline void dump_stats(SizeStats const& stats, std::size_t postings) {
     double bits_per_freq = stats.freqs * 8.0 / postings;
     spdlog::info("Documents: {} bytes, {} bits per element", stats.docs, bits_per_doc);
     spdlog::info("Frequencies: {} bytes, {} bits per element", stats.freqs, bits_per_freq);
-    std::cout << pisa::stats_builder()
+    std::cout << pisa::json_stats()
                      .add("size", stats.docs + stats.freqs)
                      .add("docs_size", stats.docs)
                      .add("freqs_size", stats.freqs)
                      .add("bits_per_doc", bits_per_doc)
                      .add("bits_per_freq", bits_per_freq)
-                     .build();
+                     .str();
 }
 
 }  // namespace pisa

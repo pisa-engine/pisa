@@ -1,11 +1,11 @@
 #define CATCH_CONFIG_MAIN
 #include "catch2/catch.hpp"
 
-#include "pisa/util/stats_builder.hpp"
+#include "pisa/util/json_stats.hpp"
 
-TEST_CASE("stats_builder", "[unit]") {
+TEST_CASE("json_stats", "[unit]") {
     REQUIRE(
-        pisa::stats_builder()
+        pisa::json_stats()
             .add("bool", false)
             .add("int", 1)
             .add("long", std::numeric_limits<long>::max())
@@ -13,7 +13,7 @@ TEST_CASE("stats_builder", "[unit]") {
             .add("double", 10.1)
             .add("const char*", "hello")
             .add("string", std::string("hello"))
-            .build()
+            .str()
         == R"({
   "bool": false,
   "const char*": "hello",

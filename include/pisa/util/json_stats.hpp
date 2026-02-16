@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#pragma once
+
 #include <concepts>
 #include <cstdint>
 #include <memory>
@@ -21,7 +23,7 @@
 namespace pisa {
 
 namespace detail {
-    class StatsBuilderInterface {
+    class StatsInterface {
       public:
         virtual void add(std::string const& key, bool value) = 0;
         virtual void add(std::string const& key, std::int64_t value) = 0;
@@ -29,7 +31,7 @@ namespace detail {
         virtual void add(std::string const& key, double value) = 0;
         virtual void add(std::string const& key, const char* value) = 0;
         virtual void add(std::string const& key, std::string value) = 0;
-        [[nodiscard]] virtual auto build() const -> std::string = 0;
+        [[nodiscard]] virtual auto str() const -> std::string = 0;
     };
 }  // namespace detail
 
@@ -39,39 +41,39 @@ concept Streamable = requires(std::ostream& os, T value) {
 };
 
 /**
- * Builds a simple key-value JSON for printing statistics.
+ * A simple key-value JSON for printing statistics.
  */
-class StatsBuilder {
+class JsonStats {
   private:
-    std::unique_ptr<::pisa::detail::StatsBuilderInterface> m_impl;
+    std::unique_ptr<::pisa::detail::StatsInterface> m_impl;
 
-    explicit StatsBuilder(std::unique_ptr<::pisa::detail::StatsBuilderInterface> impl);
+    explicit JsonStats(std::unique_ptr<::pisa::detail::StatsInterface> impl);
 
   public:
-    StatsBuilder();
-    auto add(std::string const& key, bool value) -> StatsBuilder&;
-    auto add(std::string const& key, int value) -> StatsBuilder&;
-    auto add(std::string const& key, unsigned int value) -> StatsBuilder&;
-    auto add(std::string const& key, long value) -> StatsBuilder&;
-    auto add(std::string const& key, unsigned long value) -> StatsBuilder&;
-    auto add(std::string const& key, double value) -> StatsBuilder&;
-    auto add(std::string const& key, const char* value) -> StatsBuilder&;
-    auto add(std::string const& key, std::string value) -> StatsBuilder&;
-    auto add(std::string const& key, std::string_view value) -> StatsBuilder&;
+    JsonStats();
+    auto add(std::string const& key, bool value) -> JsonStats&;
+    auto add(std::string const& key, int value) -> JsonStats&;
+    auto add(std::string const& key, unsigned int value) -> JsonStats&;
+    auto add(std::string const& key, long value) -> JsonStats&;
+    auto add(std::string const& key, unsigned long value) -> JsonStats&;
+    auto add(std::string const& key, double value) -> JsonStats&;
+    auto add(std::string const& key, const char* value) -> JsonStats&;
+    auto add(std::string const& key, std::string value) -> JsonStats&;
+    auto add(std::string const& key, std::string_view value) -> JsonStats&;
 
     template <typename T>
         requires Streamable<T>
-    auto add(std::string const& key, T const& value) -> StatsBuilder& {
+    auto add(std::string const& key, T const& value) -> JsonStats& {
         std::ostringstream out;
         out << value;
         add(key, out.str());
         return *this;
     }
 
-    /** Builds the JSON. */
-    [[nodiscard]] auto build() const -> std::string;
+    /** Returns the JSON string. */
+    [[nodiscard]] auto str() const -> std::string;
 };
 
-[[nodiscard]] auto stats_builder() -> StatsBuilder;
+[[nodiscard]] auto json_stats() -> JsonStats;
 
 }  // namespace pisa
