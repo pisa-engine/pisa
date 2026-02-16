@@ -69,8 +69,7 @@ JsonStats::JsonStats(std::unique_ptr<::pisa::detail::StatsInterface> impl)
     m_impl->add(key, value);
     return *this;
 }
-[[nodiscard]] auto JsonStats::add(std::string const& key, std::string_view value)
-    -> JsonStats& {
+[[nodiscard]] auto JsonStats::add(std::string const& key, std::string_view value) -> JsonStats& {
     m_impl->add(key, std::string(value));
     return *this;
 }

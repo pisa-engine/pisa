@@ -12,7 +12,7 @@
 #include "boost/preprocessor/seq/for_each.hpp"
 #include "boost/preprocessor/stringize.hpp"
 #include "util/broadword.hpp"
-#include "util/index_build_utils.hpp"
+#include "util/json_stats.hpp"
 
 #define PISA_FEATURE_TYPES (n)(size)(sum_of_logs)(entropy)(nonzeros)(max_b)(pfor_b)(pfor_exceptions)
 
@@ -56,12 +56,12 @@ namespace pisa { namespace time_prediction {
         float& operator[](feature_type f) { return m_features[(size_t)f]; }
         float const& operator[](feature_type f) const { return m_features[(size_t)f]; }
 
-        pisa::StatsBuilder& dump(pisa::StatsBuilder& builder) const {
+        pisa::JsonStats& dump(pisa::JsonStats& stats) const {
             for (size_t i = 0; i < num_features; ++i) {
                 auto ft = static_cast<feature_type>(i);
-                builder.add(feature_name(ft), (*this)[ft]);
+                stats.add(feature_name(ft), (*this)[ft]);
             }
-            return builder;
+            return stats;
         }
 
       protected:
