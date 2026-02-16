@@ -328,8 +328,7 @@ void perftest(
 
     auto scorer = scorer::from_params(scorer_params, wdata);
 
-    for (std::size_t query_type_idx = 0; query_type_idx < query_types.size(); ++query_type_idx) {
-        auto const& t = query_types[query_type_idx];
+    for (const auto& t: query_types) {
         spdlog::info("Performing {} runs for '{}' queries...", runs, t);
 
         std::function<uint64_t(Query, Score)> query_fun;
