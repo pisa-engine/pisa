@@ -25,6 +25,7 @@ namespace pisa {
 namespace detail {
     class StatsInterface {
       public:
+        virtual ~StatsInterface() = default;
         virtual void add(std::string const& key, bool value) = 0;
         virtual void add(std::string const& key, std::int64_t value) = 0;
         virtual void add(std::string const& key, std::uint64_t value) = 0;
