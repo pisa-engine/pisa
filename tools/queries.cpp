@@ -50,7 +50,6 @@
 #include "topk_queue.hpp"
 #include "type_alias.hpp"
 #include "util/do_not_optimize_away.hpp"
-#include "util/util.hpp"
 #include "wand_data.hpp"
 #include "wand_data_compressed.hpp"
 #include "wand_data_raw.hpp"
@@ -63,7 +62,7 @@ class AggregationType {
     enum Value { None = 0, Min = 1, Mean = 2, Median = 3, Max = 4 };
 
     explicit constexpr AggregationType(Value value) : m_value(value) {}
-    constexpr operator Value() const { return m_value; }
+    constexpr explicit operator Value() const { return m_value; }
 
     [[nodiscard]] auto to_string() const -> std::string {
         switch (m_value) {
@@ -157,12 +156,12 @@ struct QueryTimes {
     }
 
     auto aggregate(AggregationType aggregation_type) const -> std::vector<std::size_t> {
-        switch (aggregation_type) {
-        case AggregationType::None: return aggregate_none();
-        case AggregationType::Min: return aggregate_min();
-        case AggregationType::Mean: return aggregate_mean();
-        case AggregationType::Median: return aggregate_median();
-        case AggregationType::Max: return aggregate_max();
+        switch (AggregationType::Value(aggregation_type)) {
+        case AggregationType::Value::None: return aggregate_none();
+        case AggregationType::Value::Min: return aggregate_min();
+        case AggregationType::Value::Mean: return aggregate_mean();
+        case AggregationType::Value::Median: return aggregate_median();
+        case AggregationType::Value::Max: return aggregate_max();
         }
         throw std::logic_error("Unknown AggregationType");
     }
