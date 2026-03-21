@@ -328,6 +328,16 @@ void perftest(
     auto scorer = scorer::from_params(scorer_params, wdata);
 
     for (const auto& t: query_types) {
+        auto valid_algorithms_it = pisa::arg::Algorithm::VALID_ALGORITHMS.find(t);
+        if (valid_algorithms_it == pisa::arg::Algorithm::VALID_ALGORITHMS.end()) {
+            spdlog::error("Unsupported query type: {}", t);
+            break;
+        }
+        if (valid_algorithms_it->second && !wand_data_filename) {
+            spdlog::error("Query type '{}' requires WAND data", t);
+            break;
+        }
+
         spdlog::info("Performing {} runs for '{}' queries...", runs, t);
 
         std::function<uint64_t(Query, Score)> query_fun;
@@ -346,7 +356,7 @@ void perftest(
                 or_query<true> or_q;
                 return or_q(make_cursors(index, query), index.num_docs());
             };
-        } else if (t == "wand" && wand_data_filename) {
+        } else if (t == "wand") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 wand_query wand_q(topk);
@@ -356,7 +366,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "block_max_wand" && wand_data_filename) {
+        } else if (t == "block_max_wand") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 block_max_wand_query block_max_wand_q(topk);
@@ -367,7 +377,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "block_max_maxscore" && wand_data_filename) {
+        } else if (t == "block_max_maxscore") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 block_max_maxscore_query block_max_maxscore_q(topk);
@@ -378,7 +388,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_and" && wand_data_filename) {
+        } else if (t == "ranked_and") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 ranked_and_query ranked_and_q(topk);
@@ -386,7 +396,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "block_max_ranked_and" && wand_data_filename) {
+        } else if (t == "block_max_ranked_and") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 block_max_ranked_and_query block_max_ranked_and_q(topk);
@@ -397,7 +407,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_or" && wand_data_filename) {
+        } else if (t == "ranked_or") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 ranked_or_query ranked_or_q(topk);
@@ -405,7 +415,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "maxscore" && wand_data_filename) {
+        } else if (t == "maxscore") {
             query_fun = [&](Query query, Score threshold) {
                 topk_queue topk(k, threshold);
                 maxscore_query maxscore_q(topk);
@@ -415,7 +425,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_or_taat" && wand_data_filename) {
+        } else if (t == "ranked_or_taat") {
             SimpleAccumulator accumulator(index.num_docs());
             topk_queue topk(k);
             query_fun = [&, topk, accumulator](Query query, Score threshold) mutable {
@@ -427,7 +437,7 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else if (t == "ranked_or_taat_lazy" && wand_data_filename) {
+        } else if (t == "ranked_or_taat_lazy") {
             LazyAccumulator<4> accumulator(index.num_docs());
             topk_queue topk(k);
             query_fun = [&, topk, accumulator](Query query, Score threshold) mutable {
@@ -439,9 +449,6 @@ void perftest(
                 topk.finalize();
                 return topk.topk().size();
             };
-        } else {
-            spdlog::error("Unsupported query type: {}", t);
-            break;
         }
         auto query_times = extract_times(query_fun, queries, thresholds, runs, k, safe);
         print_summary(query_times, type, t, runs, k, safe);
