@@ -249,7 +249,6 @@ void print_times(
     std::string const& query_type,
     std::ostream& output_stream
 ) {
-    output_stream << "algorithm\tqid\trun\tusec\n";
     for (auto&& [query_idx, query]: enumerate(queries)) {
         for (auto&& [run_idx, time]: enumerate(query_times.values[query_idx])) {
             output_stream << fmt::format(
@@ -326,6 +325,10 @@ void perftest(
     }
 
     auto scorer = scorer::from_params(scorer_params, wdata);
+
+    if (output_file) {
+        *output_file << "algorithm\tqid\trun\tusec\n";
+    }
 
     for (const auto& t: query_types) {
         auto valid_algorithms_it = pisa::arg::Algorithm::VALID_ALGORITHMS.find(t);
