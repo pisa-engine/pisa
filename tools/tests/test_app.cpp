@@ -410,22 +410,57 @@ TEST_CASE("Algorithm", "[cli]") {
     }
 }
 
+TEST_CASE("Algorithm WAND requirement mapping is correct", "[cli]") {
+    auto const& algorithms = pisa::arg::Algorithm::VALID_ALGORITHMS;
+    REQUIRE(algorithms.size() == 12);
+
+    REQUIRE(algorithms.at("and") == false);
+    REQUIRE(algorithms.at("or") == false);
+    REQUIRE(algorithms.at("or_freq") == false);
+    REQUIRE(algorithms.at("wand") == true);
+    REQUIRE(algorithms.at("block_max_wand") == true);
+    REQUIRE(algorithms.at("block_max_maxscore") == true);
+    REQUIRE(algorithms.at("ranked_and") == true);
+    REQUIRE(algorithms.at("block_max_ranked_and") == true);
+    REQUIRE(algorithms.at("ranked_or") == true);
+    REQUIRE(algorithms.at("maxscore") == true);
+    REQUIRE(algorithms.at("ranked_or_taat") == true);
+    REQUIRE(algorithms.at("ranked_or_taat_lazy") == true);
+}
+
 TEST_CASE("Algorithm requires WAND data", "[cli]") {
-    CLI::App app("Algorithm WAND test");
-    pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(&app);
-    SECTION("Algorithm not requiring WAND without WAND data succeeds") {
-        REQUIRE_NOTHROW(parse(app, {"-a", "and"}));
+    SECTION("Single algorithm without WAND data throws when required") {
+        for (auto const& [algorithm, requires_wand]: pisa::arg::Algorithm::VALID_ALGORITHMS) {
+            CAPTURE(algorithm, requires_wand);
+            CLI::App app("Algorithm WAND test");
+            pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(
+                &app
+            );
+            if (requires_wand) {
+                REQUIRE_THROWS(parse(app, {"-a", algorithm}));
+            } else {
+                REQUIRE_NOTHROW(parse(app, {"-a", algorithm}));
+            }
+        }
     }
-    SECTION("Algorithm requiring WAND without WAND data throws") {
-        REQUIRE_THROWS(parse(app, {"-a", "wand"}));
+    SECTION("Single algorithm with WAND data always succeeds") {
+        for (auto const& [algorithm, requires_wand]: pisa::arg::Algorithm::VALID_ALGORITHMS) {
+            CAPTURE(algorithm, requires_wand);
+            CLI::App app("Algorithm WAND test");
+            pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(
+                &app
+            );
+            REQUIRE_NOTHROW(parse(app, {"-a", algorithm, "-w", "WDATA"}));
+        }
     }
-    SECTION("Algorithm requiring WAND with WAND data succeeds") {
-        REQUIRE_NOTHROW(parse(app, {"-a", "wand", "-w", "WDATA"}));
-    }
-    SECTION("Multiple algorithms with one requiring WAND without WAND data throws") {
+    SECTION("Multiple algorithms without WAND data throws when one requires it") {
+        CLI::App app("Algorithm WAND test");
+        pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(&app);
         REQUIRE_THROWS(parse(app, {"-a", "and", "-a", "maxscore"}));
     }
-    SECTION("Multiple algorithms with one requiring WAND with WAND data succeeds") {
+    SECTION("Multiple algorithms with WAND data succeeds when one requires it") {
+        CLI::App app("Algorithm WAND test");
+        pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(&app);
         REQUIRE_NOTHROW(parse(app, {"-a", "and", "-a", "maxscore", "-w", "WDATA"}));
     }
 }
