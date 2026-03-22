@@ -85,12 +85,12 @@ const std::map<std::string, bool> Algorithm::VALID_ALGORITHMS = {
     {"wand", true},
     {"block_max_wand", true},
     {"block_max_maxscore", true},
-    {"ranked_and", false},
+    {"ranked_and", true},
     {"block_max_ranked_and", true},
-    {"ranked_or", false},
+    {"ranked_or", true},
     {"maxscore", true},
-    {"ranked_or_taat", false},
-    {"ranked_or_taat_lazy", false}
+    {"ranked_or_taat", true},
+    {"ranked_or_taat_lazy", true}
 };
 
 LogLevel::LogLevel(CLI::App* app) {
