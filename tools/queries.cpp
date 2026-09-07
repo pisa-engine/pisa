@@ -336,7 +336,7 @@ void perftest(
             spdlog::error("Unsupported query type: {}", t);
             break;
         }
-        if (valid_algorithms_it->second && !wand_data_filename) {
+        if (valid_algorithms_it->second == pisa::arg::WandDataRequired::Yes && !wand_data_filename) {
             spdlog::error("Query type '{}' requires WAND data", t);
             break;
         }

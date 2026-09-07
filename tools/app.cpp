@@ -77,20 +77,19 @@ auto Analyzer::text_analyzer() const -> TextAnalyzer {
 const std::set<std::string> Analyzer::VALID_TOKENIZERS = {"whitespace", "english"};
 const std::set<std::string> Analyzer::VALID_TOKEN_FILTERS = {"lowercase", "porter2", "krovetz"};
 
-// algorithm -> requires_wand_data
-const std::map<std::string, bool> Algorithm::VALID_ALGORITHMS = {
-    {"and", false},
-    {"or", false},
-    {"or_freq", false},
-    {"wand", true},
-    {"block_max_wand", true},
-    {"block_max_maxscore", true},
-    {"ranked_and", true},
-    {"block_max_ranked_and", true},
-    {"ranked_or", true},
-    {"maxscore", true},
-    {"ranked_or_taat", true},
-    {"ranked_or_taat_lazy", true}
+const std::map<std::string, WandDataRequired> Algorithm::VALID_ALGORITHMS = {
+    {"and", WandDataRequired::No},
+    {"or", WandDataRequired::No},
+    {"or_freq", WandDataRequired::No},
+    {"wand", WandDataRequired::Yes},
+    {"block_max_wand", WandDataRequired::Yes},
+    {"block_max_maxscore", WandDataRequired::Yes},
+    {"ranked_and", WandDataRequired::Yes},
+    {"block_max_ranked_and", WandDataRequired::Yes},
+    {"ranked_or", WandDataRequired::Yes},
+    {"maxscore", WandDataRequired::Yes},
+    {"ranked_or_taat", WandDataRequired::Yes},
+    {"ranked_or_taat_lazy", WandDataRequired::Yes}
 };
 
 LogLevel::LogLevel(CLI::App* app) {
@@ -133,7 +132,7 @@ Algorithm::Algorithm(CLI::App* app) {
         app->callback([this, &wand_opt = *wand_option]() {
             if (!wand_opt) {
                 for (const auto& algorithm: m_algorithms) {
-                    if (VALID_ALGORITHMS.at(algorithm)) {
+                    if (VALID_ALGORITHMS.at(algorithm) == WandDataRequired::Yes) {
                         throw CLI::ValidationError(
                             "Algorithm '" + algorithm
                             + "' requires WAND data but it was not provided"

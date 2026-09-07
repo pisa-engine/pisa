@@ -208,9 +208,10 @@ namespace arg {
         int m_max_length;
     };
 
+    enum class WandDataRequired : bool { No, Yes };
+
     struct Algorithm {
-        // algorithm -> requires_wand_data
-        static const std::map<std::string, bool> VALID_ALGORITHMS;
+        static const std::map<std::string, WandDataRequired> VALID_ALGORITHMS;
 
         explicit Algorithm(CLI::App* app);
         [[nodiscard]] auto algorithms() const -> std::vector<std::string> const&;
