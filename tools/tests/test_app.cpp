@@ -414,18 +414,18 @@ TEST_CASE("Algorithm WAND requirement mapping is correct", "[cli]") {
     auto const& algorithms = pisa::arg::Algorithm::VALID_ALGORITHMS;
     REQUIRE(algorithms.size() == 12);
 
-    REQUIRE(algorithms.at("and") == false);
-    REQUIRE(algorithms.at("or") == false);
-    REQUIRE(algorithms.at("or_freq") == false);
-    REQUIRE(algorithms.at("wand") == true);
-    REQUIRE(algorithms.at("block_max_wand") == true);
-    REQUIRE(algorithms.at("block_max_maxscore") == true);
-    REQUIRE(algorithms.at("ranked_and") == true);
-    REQUIRE(algorithms.at("block_max_ranked_and") == true);
-    REQUIRE(algorithms.at("ranked_or") == true);
-    REQUIRE(algorithms.at("maxscore") == true);
-    REQUIRE(algorithms.at("ranked_or_taat") == true);
-    REQUIRE(algorithms.at("ranked_or_taat_lazy") == true);
+    REQUIRE(algorithms.at("and") == pisa::arg::WandDataRequired::No);
+    REQUIRE(algorithms.at("or") == pisa::arg::WandDataRequired::No);
+    REQUIRE(algorithms.at("or_freq") == pisa::arg::WandDataRequired::No);
+    REQUIRE(algorithms.at("wand") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("block_max_wand") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("block_max_maxscore") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("ranked_and") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("block_max_ranked_and") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("ranked_or") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("maxscore") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("ranked_or_taat") == pisa::arg::WandDataRequired::Yes);
+    REQUIRE(algorithms.at("ranked_or_taat_lazy") == pisa::arg::WandDataRequired::Yes);
 }
 
 TEST_CASE("Algorithm requires WAND data", "[cli]") {
@@ -436,7 +436,7 @@ TEST_CASE("Algorithm requires WAND data", "[cli]") {
             pisa::Args<pisa::arg::WandData<pisa::arg::WandMode::Optional>, pisa::arg::Algorithm> args(
                 &app
             );
-            if (requires_wand) {
+            if (requires_wand == pisa::arg::WandDataRequired::Yes) {
                 REQUIRE_THROWS(parse(app, {"-a", algorithm}));
             } else {
                 REQUIRE_NOTHROW(parse(app, {"-a", algorithm}));
