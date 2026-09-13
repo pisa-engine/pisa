@@ -231,7 +231,7 @@ if [[ ! -f /etc/apt/trusted.gpg.d/apt.llvm.org.asc ]]; then
     download_key "$GPG_KEY_URL" | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 fi
 
-if [[ -z "`apt-key list 2> /dev/null | grep -i llvm`" ]]; then
+if [[ -z "$(apt-key list 2> /dev/null | grep -i llvm)" ]]; then
     # Delete the key in the old format
     apt-key del AF4F7421 || true
 fi
@@ -263,8 +263,8 @@ if [[ $ALL -eq 1 ]]; then
     # same as in test-install.sh
     # No worries if we have dups
     PKG="$PKG clang-tidy-$LLVM_VERSION clang-format-$LLVM_VERSION clang-tools-$LLVM_VERSION llvm-$LLVM_VERSION-dev lld-$LLVM_VERSION lldb-$LLVM_VERSION llvm-$LLVM_VERSION-tools libomp-$LLVM_VERSION-dev libc++-$LLVM_VERSION-dev libc++abi-$LLVM_VERSION-dev libclang-common-$LLVM_VERSION-dev libclang-$LLVM_VERSION-dev libclang-cpp$LLVM_VERSION-dev liblldb-$LLVM_VERSION-dev libunwind-$LLVM_VERSION-dev"
-    if test $LLVM_VERSION -gt 14; then
+    if test "$LLVM_VERSION" -gt 14; then
         PKG="$PKG libclang-rt-$LLVM_VERSION-dev libpolly-$LLVM_VERSION-dev"
     fi
 fi
-apt-get install -y $PKG
+apt-get install -y "$PKG"
