@@ -1,9 +1,11 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ARG USE_SANITIZERS=OFF
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_TYPE=Debug
 
+COPY /test/docker/llvm-snapshot.gpg.key /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+COPY /test/docker/llvm.sh /
 COPY /test/docker/install-clang.sh /
 RUN /install-clang.sh 19
 RUN apt-get update -y \
