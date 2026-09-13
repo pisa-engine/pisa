@@ -2,6 +2,7 @@ FROM debian:bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+COPY /test/docker/llvm-snapshot.gpg.key /etc/apt/trusted.gpg.d/apt.llvm.org.asc
 COPY /test/docker/llvm.sh /
 COPY /test/docker/install-clang.sh /
 RUN /install-clang.sh 19 clang-tidy-19
