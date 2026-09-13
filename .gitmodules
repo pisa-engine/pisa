@@ -1,33 +1,30 @@
 [submodule "external/FastPFor"]
 	path = external/FastPFor
-	url = https://github.com/lemire/FastPFor.git
+	url = https://github.com/fast-pack/FastPFOR
 [submodule "external/CMake-codecov"]
 	path = external/CMake-codecov
 	url = https://github.com/RWTH-HPC/CMake-codecov.git
 [submodule "external/streamvbyte"]
 	path = external/streamvbyte
-	url = https://github.com/lemire/streamvbyte
+	url = https://github.com/fast-pack/streamvbyte
 [submodule "external/MaskedVByte"]
 	path = external/MaskedVByte
-	url = https://github.com/lemire/MaskedVByte
+	url = https://github.com/fast-pack/MaskedVByte
 [submodule "external/QMX"]
 	path = external/QMX
 	url = https://github.com/amallia/QMX.git
 [submodule "external/simdcomp"]
 	path = external/simdcomp
-	url = https://github.com/lemire/simdcomp.git
+	url = https://github.com/fast-pack/simdcomp
 [submodule "external/CLI11"]
 	path = external/CLI11
 	url = https://github.com/CLIUtils/CLI11.git
 [submodule "external/parallelstl"]
 	path = external/parallelstl
-	url = https://github.com/intel/parallelstl.git
-[submodule "external/tbb"]
-	path = external/tbb
-	url = https://github.com/01org/tbb.git
+	url = https://github.com/uxlfoundation/oneDPL
 [submodule "external/mio"]
 	path = external/mio
-	url = https://github.com/mandreyel/mio.git
+	url = https://github.com/vimpunk/mio
 [submodule "external/GSL"]
 	path = external/GSL
 	url = https://github.com/Microsoft/GSL.git
@@ -75,4 +72,4 @@
 	url = https://github.com/google/benchmark.git
 [submodule "external/oneTBB"]
 	path = external/oneTBB
-	url = https://github.com/oneapi-src/oneTBB.git
+	url = https://github.com/uxlfoundation/oneTBB
