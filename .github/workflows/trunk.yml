@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        compiler: [gcc10, gcc11, gcc12, gcc13, gcc14, clang16, clang17, clang18, clang19]
+        compiler: [gcc12, gcc13, gcc14, clang17, clang18, clang19]
         build_type: [Debug]
         sanitizers: [OFF]
         include:

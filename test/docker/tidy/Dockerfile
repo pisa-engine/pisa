@@ -1,7 +1,8 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+COPY /test/docker/llvm.sh /
 COPY /test/docker/install-clang.sh /
 RUN /install-clang.sh 19 clang-tidy-19
 RUN apt-get update -y \

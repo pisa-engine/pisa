@@ -1,9 +1,10 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ARG USE_SANITIZERS=OFF
 ARG DEBIAN_FRONTEND=noninteractive
 ARG BUILD_TYPE=Debug
 
+COPY /test/docker/llvm.sh /
 COPY /test/docker/install-clang.sh /
 RUN /install-clang.sh 16
 RUN apt-get update -y \

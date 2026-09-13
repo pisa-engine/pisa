@@ -19,6 +19,6 @@ RUN cmake --build . --config Release -- -j 4
 
 CMD ["ctest", "-VV", "-j", "4"]
 
-FROM debian:bullseye
+FROM debian:bookworm
 
 COPY --from=builder /pisa/build/bin/* /usr/bin/
