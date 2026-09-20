@@ -1,9 +1,11 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 ARG DEBIAN_FRONTEND=noninteractive
 
+COPY /test/docker/llvm-snapshot.gpg.key /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+COPY /test/docker/llvm.sh /
 COPY /test/docker/install-clang.sh /
-RUN /install-clang.sh 19 clang-tidy-19
+RUN /install-clang.sh 19
 RUN apt-get update -y \
      && apt-get install libboost-filesystem-dev=1.74.* libboost-dev=1.74.* -y --no-install-recommends \
      && apt-get clean \
