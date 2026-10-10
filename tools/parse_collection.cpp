@@ -13,6 +13,9 @@
 using namespace pisa;
 
 int main(int argc, char** argv) {
+    std::ios::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
     auto valid_basename = [](std::string const& basename) {
         std::filesystem::path p(basename);
         auto parent = p.parent_path();
