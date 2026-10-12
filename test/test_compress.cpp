@@ -1,9 +1,8 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
+#include <exception>
 #include <fstream>
 #include <memory>
 
+#include "catch2/catch_all.hpp"
 #include <fmt/format.h>
 
 #include "forward_index_builder.hpp"

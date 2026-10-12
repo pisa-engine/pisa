@@ -1,6 +1,6 @@
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  ${CMAKE_BINARY_DIR}/test)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../external/Catch2/contrib)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../external/Catch2/extras)
 include(CTest)
 include(Catch)
 
@@ -13,7 +13,7 @@ foreach(TEST_SRC ${TEST_SOURCES})
   add_executable(${TEST_SRC_NAME} ${TEST_SRC})
   target_link_libraries(${TEST_SRC_NAME}
     pisa
-    Catch2
+    Catch2WithMain
     rapidcheck
     )
   catch_discover_tests(${TEST_SRC_NAME} TEST_PREFIX "${TEST_SRC_NAME}:")

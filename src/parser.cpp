@@ -8,7 +8,7 @@
 #include <wapopp/wapopp.hpp>
 #include <warcpp/warcpp.hpp>
 
-#include <spdlog/fmt/ostr.h>
+#include <fmt/ostream.h>
 #include <spdlog/spdlog.h>
 
 #include <iostream>

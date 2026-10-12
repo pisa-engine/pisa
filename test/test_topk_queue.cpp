@@ -1,8 +1,7 @@
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
-
 #include <algorithm>
+#include <exception>
 
+#include <catch2/catch_all.hpp>
 #include <rapidcheck.h>
 
 #include "pisa/topk_queue.hpp"

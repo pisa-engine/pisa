@@ -1,12 +1,13 @@
+#include <exception>
+#include <memory>
+#include <optional>
+#include <unordered_map>
+
+#include "catch2/catch_all.hpp"
 #include "query/query_parser.hpp"
 #include "term_map.hpp"
-#include <optional>
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
 
 #include <boost/algorithm/string.hpp>
-#include <memory>
-#include <unordered_map>
 
 #include "binary_collection.hpp"
 #include "cursor/block_max_scored_cursor.hpp"
@@ -20,6 +21,7 @@
 #include "wand_data_raw.hpp"
 
 using namespace pisa;
+using Catch::Approx;
 
 using WandTypeUniform = wand_data<wand_data_compressed<>>;
 using WandTypePlain = wand_data<wand_data_raw>;

@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <algorithm>
+#include <exception>
 #include <span>
 #include <string_view>
 
+#include "catch2/catch_all.hpp"
 #include <fmt/format.h>
 #include <rapidcheck.h>
 
@@ -13,6 +12,7 @@
 
 using namespace pisa;
 using namespace std::literals::string_view_literals;
+using namespace Catch;
 
 inline std::byte operator"" _b(unsigned long long n) {
     return std::byte(n);
@@ -35,7 +35,7 @@ TEST_CASE("Unpack head", "[payload_vector][unit]") {
     REQUIRE_THROWS_MATCHES(
         (unpack_head<std::byte, uint32_t, uint16_t>(bytes)),
         std::runtime_error,
-        Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
+        Matchers::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
             return std::string(err.what())
                 == "Cannot unpack span of size 6 into structure of size 7";
         })
@@ -68,7 +68,7 @@ TEST_CASE("Split span", "[payload_vector][unit]") {
     REQUIRE_THROWS_MATCHES(
         split(bytes, 7),
         std::runtime_error,
-        Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
+        Matchers::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
             return std::string(err.what()) == "Cannot split span of size 6 at position 7";
         })
     );
@@ -82,7 +82,7 @@ TEST_CASE("Cast span", "[payload_vector][unit]") {
     REQUIRE_THROWS_MATCHES(
         cast_span<uint32_t>(bytes),
         std::runtime_error,
-        Catch::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
+        Matchers::Predicate<std::runtime_error>([](std::runtime_error const& err) -> bool {
             return std::string(err.what()) == "Failed to cast byte-span to span of T of size 4";
         })
     );

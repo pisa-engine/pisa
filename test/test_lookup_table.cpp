@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
+#include <exception>
 #include <span>
 #include <sstream>
 #include <string_view>
 #include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "pisa/lookup_table.hpp"
 #include "pisa/span.hpp"

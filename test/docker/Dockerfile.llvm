@@ -1,0 +1,65 @@
+FROM debian:trixie AS dependencies
+
+ARG COMPILER_VERSION=23
+ARG USE_SANITIZERS=OFF
+ARG BUILD_TYPE=Debug
+ARG DEBIAN_FRONTEND=noninteractive
+
+COPY /test/docker/llvm-snapshot.gpg.key /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+COPY /test/docker/llvm.sh /
+COPY /test/docker/install-clang.sh /
+
+# note: gumbo submodule depends on autotools
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends \
+       lsb-release wget curl gnupg git ca-certificates \
+       autoconf automake libtool m4 \
+       make cmake ninja-build \
+       libboost-filesystem-dev libboost-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# llvm toolchain for trixie
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key -o /etc/apt/keyrings/llvm.asc \
+    && echo "deb [signed-by=/etc/apt/keyrings/llvm.asc] http://apt.llvm.org/trixie/ llvm-toolchain-trixie-${COMPILER_VERSION} main" \
+    > /etc/apt/sources.list.d/llvm.list
+# from llvm.sh: https://apt.llvm.org/#llvmsh
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends \
+       clang-$COMPILER_VERSION \
+       clang-$COMPILER_VERSION \
+       clang-format-$COMPILER_VERSION \
+       clang-tidy-$COMPILER_VERSION \
+       clang-tools-$COMPILER_VERSION \
+       libc++-$COMPILER_VERSION-dev \
+       libc++abi-$COMPILER_VERSION-dev \
+       libclang-$COMPILER_VERSION-dev \
+       libclang-common-$COMPILER_VERSION-dev \
+       libclang-cpp$COMPILER_VERSION-dev \
+       libclang-rt-$COMPILER_VERSION-dev \
+       libomp-$COMPILER_VERSION-dev \
+       libpolly-$COMPILER_VERSION-dev \
+       libunwind-$COMPILER_VERSION-dev \
+       lld-$COMPILER_VERSION \
+       llvm-$COMPILER_VERSION-dev \
+       llvm-$COMPILER_VERSION-tools
+RUN update-alternatives --install /usr/bin/clang clang /usr/bin/clang-$COMPILER_VERSION 100 \
+    && update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-$COMPILER_VERSION 100
+
+FROM dependencies AS build
+WORKDIR /pisa
+COPY . .
+
+RUN cmake -B build \
+    -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE='clang.cmake' \
+    "-DCMAKE_BUILD_TYPE=${BUILD_TYPE}" \
+    -DPISA_BUILD_TOOLS='OFF' \
+    -DPISA_ENABLE_BENCHMARKING='OFF' \
+    -DPISA_SYSTEM_BOOST='ON' \
+    "-DPISA_SANITIZERS=${USE_SANITIZERS}" \
+    && cmake --build build --config "${BUILD_TYPE}" -j $(nproc)
+
+WORKDIR /pisa/build
+CMD ["ctest", "-VV", "-j", "4"]

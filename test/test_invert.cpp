@@ -1,9 +1,9 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <cstdio>
+#include <exception>
 #include <span>
 #include <string>
+
+#include "catch2/catch_all.hpp"
 
 #include <mio/mmap.hpp>
 #include <range/v3/view/iota.hpp>

@@ -1,7 +1,8 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <array>
+#include <cstdint>
+#include <exception>
+
+#include "catch2/catch_all.hpp"
 
 #include "memory.hpp"
 

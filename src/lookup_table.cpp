@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <array>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <numeric>
 #include <optional>
 #include <span>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
 #include <fmt/format.h>
-#include <string>
+#include <fmt/std.h>
 
-#include "fmt/core.h"
 #include "pisa/lookup_table.hpp"
 #include "pisa/span.hpp"
 #include "pisa/stream.hpp"
@@ -92,7 +94,7 @@ void validate_padding(std::span<std::byte const> bytes) {
         throw std::domain_error(
             fmt::format(
                 "bytes 3-7 must be all 0 but are {:#2x} {:#2x} {:#2x} {:#2x} {:#2x}",
-                bytes[3],
+                bytes[2],
                 bytes[4],
                 bytes[5],
                 bytes[6],
@@ -216,7 +218,9 @@ auto LookupTable::from_bytes(std::span<std::byte const> bytes) -> LookupTable {
 
     auto version = static_cast<std::uint8_t>(leading_bytes[1]);
     if (version != 1) {
-        throw std::domain_error(fmt::format("only version 1 is valid but {} given", version));
+        throw std::domain_error(
+            fmt::format(fmt::runtime("only version 1 is valid but {} given"), version)
+        );
     }
 
     return LookupTable::v1(bytes);

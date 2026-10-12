@@ -1,11 +1,13 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <cstdint>
+#include <exception>
+#include <string>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "test_generic_sequence.hpp"
 
 #include "forward_index.hpp"
-
-#include <vector>
 
 TEST_CASE("write_and_read") {
     // given

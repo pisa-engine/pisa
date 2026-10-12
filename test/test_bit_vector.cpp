@@ -1,8 +1,7 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <cstdlib>
+#include <exception>
 
+#include "catch2/catch_all.hpp"
 #include <rapidcheck.h>
 
 #include "bit_vector.hpp"

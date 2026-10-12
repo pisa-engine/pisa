@@ -1,6 +1,6 @@
-#define CATCH_CONFIG_MAIN
+#include <exception>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "pisa/forward_index_builder.hpp"
 #include "pisa/invert.hpp"

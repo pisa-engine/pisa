@@ -1,6 +1,6 @@
-#define CATCH_CONFIG_MAIN
+#include <exception>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "pisa/cursor/max_scored_cursor.hpp"
 #include "pisa/cursor/scored_cursor.hpp"

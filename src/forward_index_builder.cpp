@@ -3,8 +3,8 @@
 #include <map>
 #include <sstream>
 
+#include <fmt/ostream.h>
 #include <range/v3/view/iota.hpp>
-#include <spdlog/fmt/ostr.h>
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task_group.h>

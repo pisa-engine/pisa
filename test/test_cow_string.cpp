@@ -1,6 +1,6 @@
-#define CATCH_CONFIG_MAIN
+#include <exception>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "pisa/cow_string.hpp"
 

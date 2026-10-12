@@ -1,11 +1,12 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <cstdlib>
+#include <exception>
+#include <new>
+#include <vector>
 
+#include "catch2/catch_all.hpp"
 #include "test_generic_sequence.hpp"
 
 #include "codec/compact_elias_fano.hpp"
-#include <cstdlib>
-#include <vector>
 
 struct sequence_initialization {
     sequence_initialization() {

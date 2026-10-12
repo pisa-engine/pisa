@@ -77,10 +77,17 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/wapopp)
 target_compile_options(wapopp PRIVATE -Wno-error=all -Wno-missing-braces)
 
 # Add fmt
+set(FMT_MODULE OFF CACHE BOOL "disable module library" FORCE)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/fmt)
-target_compile_options(fmt INTERFACE -Wno-deprecated-declarations)
+if(TARGET fmt)
+    target_compile_options(fmt INTERFACE -Wno-deprecated-declarations)
+    # FIXME: clang specific option `-stdlib=libc++`
+    # target_compile_options(fmt PRIVATE -stdlib=libc++)
+    # target_compile_options(fmt PRIVATE "SHELL:-include atomic")
+endif()
 
 # Add spdlog
+set(SPDLOG_FMT_EXTERNAL ON CACHE INTERNAL "disable bundled libfmt")
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/spdlog)
 
 # Add range-v3
@@ -90,6 +97,14 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/range-v3)
 # Add RapidCheck
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/rapidcheck)
 target_compile_options(rapidcheck PRIVATE -Wno-error)
+# force global include of missing headers (clang++, libc++)
+if(TARGET rapidcheck)
+    target_compile_options(rapidcheck PRIVATE
+        "SHELL:-include algorithm"
+        "SHELL:-include exception"
+        "SHELL:-include iterator"
+    )
+endif()
 
 # Add taily
 set(TAILY_ENABLE_TESTING OFF CACHE BOOL "skip taily testing")

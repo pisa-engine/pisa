@@ -1,10 +1,10 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <iostream>
 #include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "sequence/partitioned_sequence.hpp"
 #include "sequence/strict_sequence.hpp"

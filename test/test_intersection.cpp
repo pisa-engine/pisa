@@ -1,5 +1,6 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <exception>
+
+#include "catch2/catch_all.hpp"
 
 #include <fmt/format.h>
 
@@ -8,6 +9,7 @@
 
 using namespace pisa;
 using namespace pisa::intersection;
+using Catch::Approx;
 
 TEST_CASE("filter query", "[intersection][unit]") {
     GIVEN("Four-term query") {

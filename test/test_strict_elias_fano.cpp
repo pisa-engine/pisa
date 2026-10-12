@@ -1,11 +1,12 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <cstdlib>
+#include <exception>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "test_generic_sequence.hpp"
 
 #include "codec/strict_elias_fano.hpp"
-#include <cstdlib>
-#include <vector>
 
 TEST_CASE("strict_elias_fano") {
     pisa::global_parameters params;

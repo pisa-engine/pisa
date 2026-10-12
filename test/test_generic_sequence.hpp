@@ -1,5 +1,8 @@
 #pragma once
-#include "catch2/catch.hpp"
+
+#include <exception>
+
+#include "catch2/catch_all.hpp"
 
 #include "bit_vector.hpp"
 #include "bit_vector_builder.hpp"

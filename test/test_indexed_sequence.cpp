@@ -1,11 +1,12 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <cstdlib>
+#include <exception>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "test_generic_sequence.hpp"
 
 #include "sequence/indexed_sequence.hpp"
-#include <cstdlib>
-#include <vector>
 
 TEST_CASE("indexed_sequence") {
     pisa::global_parameters params;

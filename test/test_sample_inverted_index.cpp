@@ -1,11 +1,12 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
-#include "test_generic_sequence.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <exception>
 #include <unordered_set>
 #include <vector>
+
+#include "catch2/catch_all.hpp"
+
+#include "test_generic_sequence.hpp"
 
 #include "binary_freq_collection.hpp"
 #include "pisa_config.hpp"
