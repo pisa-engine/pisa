@@ -5,3 +5,6 @@ src = "src"
 title = "PISA Guide"
 
 [preprocessor.cmdrun]
+
+[output.html]
+mathjax-support = true
