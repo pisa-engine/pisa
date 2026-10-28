@@ -35,7 +35,7 @@ Command = (
 )
 
 ALGORITHMS = ["or", "and", "ranked_or", "ranked_and", "wand", "block_max_wand", "maxscore"]
-TOKENIZERS = ["english", "whitespace"]
+TOKENIZERS = ["english", "whitespace", "international"]
 TOKEN_FILTERS = ["lowercase", "porter2", "krovetz"]
 
 

@@ -1,7 +1,16 @@
 #include "tokenizer.hpp"
 
 #include <cctype>
+#include <stdexcept>
 #include <string>
+
+#if defined(PISA_HAS_ICU)
+#include <unicode/brkiter.h>
+#include <unicode/locid.h>
+#include <unicode/ubrk.h>
+#include <unicode/unistr.h>
+#include <unicode/utypes.h>
+#endif
 
 namespace pisa {
 
@@ -153,5 +162,104 @@ EnglishTokenizer::EnglishTokenizer(EnglishTokenizer&&) = default;
 EnglishTokenizer& EnglishTokenizer::operator=(EnglishTokenizer const&) = default;
 EnglishTokenizer& EnglishTokenizer::operator=(EnglishTokenizer&&) = default;
 EnglishTokenizer::~EnglishTokenizer() = default;
+
+#if defined(PISA_HAS_ICU)
+// putting this in the header would require including ICU headers in every
+// translation unit that includes tokenizer.hpp, which is not desirable
+struct InternationalTokenStream::Impl {
+    icu::UnicodeString text;
+    std::unique_ptr<icu::BreakIterator> iterator;
+    int32_t start{0};
+
+    explicit Impl(std::string_view input) {
+        // copy input to a UnicodeString and fold case for case-insensitive tokenization
+        text = icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), input.size()));
+        text.foldCase();
+
+        UErrorCode status = U_ZERO_ERROR;
+        iterator.reset(icu::BreakIterator::createWordInstance(icu::Locale::getRoot(), status));
+        if (U_FAILURE(status) || iterator == nullptr) {
+            throw std::runtime_error(
+                std::string("Unable to initialize ICU word break iterator: ") + u_errorName(status)
+            );
+        }
+        iterator->setText(text);
+        start = iterator->first();
+    }
+
+    auto next() -> std::optional<std::string> {
+        for (int32_t end = iterator->next(); end != icu::BreakIterator::DONE;
+             end = iterator->next()) {
+            auto const status = iterator->getRuleStatus();
+            auto const segment_start = start;
+            start = end;
+
+            // Skip segments that are not words (whitespace, punctuation, symbols).
+            if (status >= UBRK_WORD_NONE && status < UBRK_WORD_NONE_LIMIT) {
+                continue;
+            }
+
+            std::string token;
+            text.tempSubStringBetween(segment_start, end).toUTF8String(token);
+            if (!token.empty()) {
+                return token;
+            }
+        }
+        return std::nullopt;
+    }
+};
+
+InternationalTokenStream::InternationalTokenStream(std::string_view input)
+    : m_impl(std::make_unique<Impl>(input)) {}
+
+#else
+
+// Without ICU there is no state to hold. Impl exists only so that the destructor and move
+// operations below compile; no instance is ever created because the constructors throw.
+struct InternationalTokenStream::Impl {
+    auto next() -> std::optional<std::string> { return std::nullopt; }
+};
+
+InternationalTokenStream::InternationalTokenStream(std::string_view) {
+    throw std::runtime_error(
+        "InternationalTokenizer requires ICU support at build time. "
+        "Install the ICU development files (libicu-dev on Debian/Ubuntu, "
+        "libicu-devel on Fedora) and reconfigure with -DPISA_ENABLE_ICU=ON"
+    );
+}
+
+#endif
+
+InternationalTokenStream::InternationalTokenStream(std::string input)
+    : InternationalTokenStream(std::string_view(input)) {}
+InternationalTokenStream::InternationalTokenStream(CowString input)
+    : InternationalTokenStream(input.as_view()) {}
+InternationalTokenStream::InternationalTokenStream(InternationalTokenStream&&) noexcept = default;
+InternationalTokenStream& InternationalTokenStream::operator=(InternationalTokenStream&&) noexcept =
+    default;
+InternationalTokenStream::~InternationalTokenStream() = default;
+
+auto InternationalTokenStream::next() -> std::optional<std::string> {
+    return m_impl->next();
+}
+
+auto InternationalTokenizer::tokenize(std::string_view input) const -> std::unique_ptr<TokenStream> {
+    return std::make_unique<InternationalTokenStream>(input);
+}
+
+auto InternationalTokenizer::tokenize(std::string input) const -> std::unique_ptr<TokenStream> {
+    return std::make_unique<InternationalTokenStream>(std::move(input));
+}
+
+auto InternationalTokenizer::tokenize(CowString input) const -> std::unique_ptr<TokenStream> {
+    return std::make_unique<InternationalTokenStream>(std::move(input));
+}
+
+InternationalTokenizer::InternationalTokenizer() = default;
+InternationalTokenizer::InternationalTokenizer(InternationalTokenizer const&) = default;
+InternationalTokenizer::InternationalTokenizer(InternationalTokenizer&&) = default;
+InternationalTokenizer& InternationalTokenizer::operator=(InternationalTokenizer const&) = default;
+InternationalTokenizer& InternationalTokenizer::operator=(InternationalTokenizer&&) = default;
+InternationalTokenizer::~InternationalTokenizer() = default;
 
 }  // namespace pisa

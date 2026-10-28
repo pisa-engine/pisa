@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cctype>
+#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -54,6 +55,37 @@ class EnglishTokenStream: public TokenStream {
     EnglishTokenStream& operator=(EnglishTokenStream&&);
     virtual ~EnglishTokenStream();
     virtual auto next() -> std::optional<std::string> override;
+};
+
+/**
+ * Token stream that splits text into words using ICU's `icu::BreakIterator`.
+ *
+ * ICU is an *optional* build-time dependency (see `PISA_ENABLE_ICU` in CMake). This header
+ * intentionally includes no ICU headers: all ICU state lives in a pimpl defined in
+ * `tokenizer.cpp`, so including this file never requires ICU.
+ *
+ * When PISA is built without ICU, the constructors throw `std::runtime_error`.
+ * 
+ * Copying is not supported: streams are handed out as `std::unique_ptr<TokenStream>`, so it is
+ * not needed, and a correct copy would have to re-bind the break iterator to the copied text.
+ *
+ * Tokens are case-folded (Unicode full case folding), and whitespace and punctuation are skipped.
+ */
+class InternationalTokenStream: public TokenStream {
+  public:
+    explicit InternationalTokenStream(std::string_view input);
+    explicit InternationalTokenStream(std::string input);
+    explicit InternationalTokenStream(CowString input);
+    InternationalTokenStream(InternationalTokenStream const&) = delete;
+    InternationalTokenStream(InternationalTokenStream&&) noexcept;
+    InternationalTokenStream& operator=(InternationalTokenStream const&) = delete;
+    InternationalTokenStream& operator=(InternationalTokenStream&&) noexcept;
+    virtual ~InternationalTokenStream();
+    virtual auto next() -> std::optional<std::string> override;
+
+  private:
+    struct Impl;
+    std::unique_ptr<Impl> m_impl;
 };
 
 /**
@@ -112,6 +144,34 @@ class EnglishTokenizer: public Tokenizer {
     EnglishTokenizer& operator=(EnglishTokenizer const&);
     EnglishTokenizer& operator=(EnglishTokenizer&&);
     virtual ~EnglishTokenizer();
+
+    [[nodiscard]] virtual auto tokenize(std::string_view input) const
+        -> std::unique_ptr<TokenStream> override;
+    [[nodiscard]] virtual auto tokenize(std::string input) const
+        -> std::unique_ptr<TokenStream> override;
+    [[nodiscard]] virtual auto tokenize(CowString input) const
+        -> std::unique_ptr<TokenStream> override;
+};
+
+/**
+ * International tokenizer.
+ *
+ * Uses icu::BreakIterator to split text into words. This tokenizer is suitable for languages
+ * that do not use whitespace to separate words, such as Chinese, Japanese, and Thai.
+ * Also supports mixed language text.
+ *
+ * Requires PISA to be built with ICU (optional dependency, `PISA_ENABLE_ICU`, on by default and
+ * auto-detected). Without ICU, `tokenize` throws `std::runtime_error`. The macro `PISA_HAS_ICU`
+ * is defined when ICU support is compiled in.
+ */
+class InternationalTokenizer: public Tokenizer {
+  public:
+    InternationalTokenizer();
+    InternationalTokenizer(InternationalTokenizer const&);
+    InternationalTokenizer(InternationalTokenizer&&);
+    InternationalTokenizer& operator=(InternationalTokenizer const&);
+    InternationalTokenizer& operator=(InternationalTokenizer&&);
+    virtual ~InternationalTokenizer();
 
     [[nodiscard]] virtual auto tokenize(std::string_view input) const
         -> std::unique_ptr<TokenStream> override;
