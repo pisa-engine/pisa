@@ -171,9 +171,9 @@ struct InternationalTokenStream::Impl {
     std::unique_ptr<icu::BreakIterator> iterator;
     int32_t start{0};
 
-    explicit Impl(std::string_view input) {
-        // copy input to a UnicodeString and fold case for case-insensitive tokenization
-        text = icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), input.size()));
+    explicit Impl(std::string_view input)
+        : text(icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), input.size()))) {
+        // fold case for case-insensitive tokenization
         text.foldCase();
 
         UErrorCode status = U_ZERO_ERROR;
