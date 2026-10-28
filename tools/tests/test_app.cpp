@@ -193,6 +193,29 @@ TEST_CASE("Analyzer", "[cli]") {
         test_tokenizer(args.tokenizer(), "A's b c's", {"A's", "b", "c's"});
         test_analyzer(args.text_analyzer(), "A's b c's", {"A's", "b", "c's"});
     }
+    SECTION("International tokenizer") {
+        parse(app, {"--tokenizer", "international"});
+#if defined(PISA_HAS_ICU)
+        test_tokenizer(args.tokenizer(),
+            "HELLO A's end-to-end (Pisa) RÉSUMÉ resume Naïve L'errore ÜBER Straße واليمن $ U.S.A. himself.image",
+            {
+                "hello", "a's", "end", "to", "end", "pisa", "résumé", "resume", "naïve",
+                "l'errore", "über", "strasse",
+                "واليمن", "u.s.a", "himself.image",
+            });
+
+        test_analyzer(args.text_analyzer(),
+            "HELLO A's end-to-end (Pisa) RÉSUMÉ resume Naïve L'errore ÜBER Straße واليمن $ U.S.A. himself.image",
+            {
+                "hello", "a's", "end", "to", "end", "pisa", "résumé", "resume", "naïve",
+                "l'errore", "über", "strasse",
+                "واليمن", "u.s.a", "himself.image",
+            });
+#else
+        REQUIRE_THROWS(args.tokenizer()->tokenize(std::string("hello 世界")));
+        REQUIRE_THROWS(args.text_analyzer().analyze(std::string("hello 世界")));
+#endif
+    }
     SECTION("Lowercase") {
         parse(app, {"--token-filters", "lowercase"});
         test_tokenizer(args.tokenizer(), "A's b c's", {"A", "b", "c"});
