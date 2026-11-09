@@ -99,14 +99,14 @@ TEST_CASE("InternationalTokenizer") {
     SECTION("Only whitespace and punctuation") {
         REQUIRE(collect(" \t ,.;!? ").empty());
     }
-    SECTION("Latin script: split on spaces, punctuation dropped, case folded") {
+    SECTION("Latin script: split on spaces, punctuation dropped, case preserved") {
         REQUIRE(
             collect("Hello, World! 123 w0rd")
-            == std::vector<std::string>{"hello", "world", "123", "w0rd"}
+            == std::vector<std::string>{"Hello", "World", "123", "w0rd"}
         );
     }
-    SECTION("Non-ASCII case folding") {
-        REQUIRE(collect("ÉCOLE Straße") == std::vector<std::string>{"école", "strasse"});
+    SECTION("Non-ASCII characters are preserved") {
+        REQUIRE(collect("ÉCOLE Straße") == std::vector<std::string>{"ÉCOLE", "Straße"});
     }
     SECTION("Chinese is segmented without whitespace") {
         // Exact segmentation depends on the ICU dictionary version, so only check invariants:
@@ -134,7 +134,7 @@ TEST_CASE("InternationalTokenizer") {
     }
     SECTION("Mixed scripts") {
         auto const tokens = collect("Hello 世界, test");
-        REQUIRE(tokens.front() == "hello");
+        REQUIRE(tokens.front() == "Hello");
         REQUIRE(tokens.back() == "test");
         // The number of tokens for the non-Latin text depends on the ICU dictionary version.
         REQUIRE(tokens.size() >= 3);
@@ -149,7 +149,7 @@ TEST_CASE("InternationalTokenizer") {
     SECTION("Via Tokenizer interface") {
         InternationalTokenizer tokenizer;
         auto stream = tokenizer.tokenize(std::string("Dog cat"));
-        REQUIRE(stream->next() == "dog");
+        REQUIRE(stream->next() == "Dog");
         REQUIRE(stream->next() == "cat");
         REQUIRE(stream->next() == std::nullopt);
     }

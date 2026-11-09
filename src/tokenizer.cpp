@@ -173,9 +173,6 @@ struct InternationalTokenStream::Impl {
 
     explicit Impl(std::string_view input)
         : text(icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), input.size()))) {
-        // fold case for case-insensitive tokenization
-        text.foldCase();
-
         UErrorCode status = U_ZERO_ERROR;
         iterator.reset(icu::BreakIterator::createWordInstance(icu::Locale::getRoot(), status));
         if (U_FAILURE(status) || iterator == nullptr) {

@@ -199,17 +199,17 @@ TEST_CASE("Analyzer", "[cli]") {
         test_tokenizer(args.tokenizer(),
             "HELLO A's end-to-end (Pisa) RÉSUMÉ resume Naïve L'errore ÜBER Straße واليمن $ U.S.A. himself.image",
             {
-                "hello", "a's", "end", "to", "end", "pisa", "résumé", "resume", "naïve",
-                "l'errore", "über", "strasse",
-                "واليمن", "u.s.a", "himself.image",
+                "HELLO", "A's", "end", "to", "end", "Pisa", "RÉSUMÉ", "resume", "Naïve",
+                "L'errore", "ÜBER", "Straße",
+                "واليمن", "U.S.A", "himself.image",
             });
 
         test_analyzer(args.text_analyzer(),
             "HELLO A's end-to-end (Pisa) RÉSUMÉ resume Naïve L'errore ÜBER Straße واليمن $ U.S.A. himself.image",
             {
-                "hello", "a's", "end", "to", "end", "pisa", "résumé", "resume", "naïve",
-                "l'errore", "über", "strasse",
-                "واليمن", "u.s.a", "himself.image",
+                "HELLO", "A's", "end", "to", "end", "Pisa", "RÉSUMÉ", "resume", "Naïve",
+                "L'errore", "ÜBER", "Straße",
+                "واليمن", "U.S.A", "himself.image",
             });
 #else
         REQUIRE_THROWS(args.tokenizer()->tokenize(std::string("hello 世界")));

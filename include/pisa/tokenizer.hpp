@@ -69,7 +69,11 @@ class EnglishTokenStream: public TokenStream {
  * Copying is not supported: streams are handed out as `std::unique_ptr<TokenStream>`, so it is
  * not needed, and a correct copy would have to re-bind the break iterator to the copied text.
  *
- * Tokens are case-folded (Unicode full case folding), and whitespace and punctuation are skipped.
+ * Whitespace and punctuation are skipped. Case handling is left to token filters. Note that
+ * the built-in `lowercase` filter only handles ASCII, so non-ASCII letters are left unchanged.
+ * 
+ * The input is always converted and copied into a UnicodeString here, even when passed as a
+ * string_view or CowString.
  */
 class InternationalTokenStream: public TokenStream {
   public:
