@@ -121,6 +121,8 @@ TEST_CASE("InternationalTokenizer") {
         REQUIRE(joined == input);
     }
     SECTION("Thai is segmented without whitespace") {
+        // Exact segmentation depends on the ICU dictionary version, so only check invariants:
+        // more than one token, and no characters lost or added.
         std::string const input = "สวัสดีครับ";
         auto const tokens = collect(input);
         REQUIRE(tokens.size() > 1);
@@ -134,6 +136,7 @@ TEST_CASE("InternationalTokenizer") {
         auto const tokens = collect("Hello 世界, test");
         REQUIRE(tokens.front() == "hello");
         REQUIRE(tokens.back() == "test");
+        // The number of tokens for the non-Latin text depends on the ICU dictionary version.
         REQUIRE(tokens.size() >= 3);
     }
     SECTION("Stream is movable") {
