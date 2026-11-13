@@ -48,6 +48,9 @@ auto Analyzer::tokenizer() const -> std::unique_ptr<::pisa::Tokenizer> {
     if (m_tokenizer == "whitespace") {
         return std::make_unique<WhitespaceTokenizer>();
     }
+    if (m_tokenizer == "international") {
+        return std::make_unique<InternationalTokenizer>();
+    }
     return std::make_unique<EnglishTokenizer>();
 }
 
@@ -74,7 +77,7 @@ auto Analyzer::text_analyzer() const -> TextAnalyzer {
     return analyzer;
 }
 
-const std::set<std::string> Analyzer::VALID_TOKENIZERS = {"whitespace", "english"};
+const std::set<std::string> Analyzer::VALID_TOKENIZERS = {"whitespace", "english", "international"};
 const std::set<std::string> Analyzer::VALID_TOKEN_FILTERS = {"lowercase", "porter2", "krovetz"};
 
 const std::map<std::string, WandDataRequired> Algorithm::VALID_ALGORITHMS = {

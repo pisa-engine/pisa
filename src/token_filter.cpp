@@ -1,6 +1,12 @@
-#include <boost/algorithm/string.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
+
+#if defined(PISA_HAS_ICU)
+#include <unicode/locid.h>
+#include <unicode/unistr.h>
+#else
+#include <boost/algorithm/string.hpp>
+#endif
 
 #include "pisa/token_filter.hpp"
 
@@ -43,8 +49,18 @@ auto LowercaseFilter::filter(std::string_view input) const -> std::unique_ptr<To
 }
 
 auto LowercaseFilter::filter(std::string input) const -> std::unique_ptr<TokenStream> {
+#if defined(PISA_HAS_ICU)
+    icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(
+        icu::StringPiece(input.data(), static_cast<int32_t>(input.size()))
+    );
+    ustr.toLower(icu::Locale::getRoot());
+    input.clear();
+    ustr.toUTF8String(input);
+    return std::make_unique<SingleTokenStream>(std::move(input));
+#else
     boost::algorithm::to_lower(input);
     return std::make_unique<SingleTokenStream>(std::move(input));
+#endif
 }
 
 auto LowercaseFilter::filter(CowString input) const -> std::unique_ptr<TokenStream> {

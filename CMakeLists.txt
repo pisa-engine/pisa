@@ -25,6 +25,10 @@ option(PISA_SYSTEM_ONETBB "Use system installation of oneTBB" OFF)
 option(PISA_SYSTEM_BOOST "Use system installation of Boost" OFF)
 option(PISA_SYSTEM_CLI11 "Use system headers for CLI11" OFF)
 
+# ICU is an OPTIONAL, system-provided dependency. When it is disabled or
+# not found, PISA builds normally and InternationalTokenizer throws at runtime.
+option(PISA_ENABLE_ICU "Look for a system ICU and enable InternationalTokenizer if found" ON)
+
 if(PISA_USE_PIC)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     set(GUMBO_CFLAGS "-fPIC")
@@ -104,6 +108,11 @@ if (PISA_SYSTEM_ONETBB)
     find_package(TBB REQUIRED)
 endif()
 
+# Optional: only the common library (uc) is needed for icu::BreakIterator.
+if(PISA_ENABLE_ICU)
+    find_package(ICU COMPONENTS uc)
+endif()
+
 file(GLOB_RECURSE PISA_SRC_FILES FOLLOW_SYMLINKS "src/*cpp")
 list(SORT PISA_SRC_FILES)
 
@@ -147,6 +156,23 @@ target_link_libraries(pisa
         trecpp
         nlohmann_json::nlohmann_json
 )
+
+if(PISA_ENABLE_ICU AND ICU_FOUND)
+    # The macro is PUBLIC so tests and tools can tell whether
+    # InternationalTokenizer is functional. ICU itself is PRIVATE
+    target_compile_definitions(pisa PUBLIC PISA_HAS_ICU=1)
+    target_link_libraries(pisa PRIVATE ICU::uc)
+    message(STATUS "ICU ${ICU_VERSION} found: InternationalTokenizer enabled")
+elseif(PISA_ENABLE_ICU)
+    message(WARNING
+        "ICU not found: InternationalTokenizer will throw at runtime. "
+        "Install the ICU development files (libicu-dev on Debian/Ubuntu, "
+        "libicu-devel on Fedora) or configure with -DPISA_ENABLE_ICU=OFF "
+        "to silence this warning.")
+else()
+    message(STATUS "PISA_ENABLE_ICU=OFF: InternationalTokenizer will throw at runtime")
+endif()
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.0)
         target_link_libraries(pisa PUBLIC stdc++fs)
