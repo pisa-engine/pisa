@@ -1,10 +1,11 @@
-#include <boost/algorithm/string.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
 #if defined(PISA_HAS_ICU)
 #include <unicode/locid.h>
 #include <unicode/unistr.h>
+#else
+#include <boost/algorithm/string.hpp>
 #endif
 
 #include "pisa/token_filter.hpp"
