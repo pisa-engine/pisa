@@ -175,7 +175,7 @@ struct InternationalTokenStream::Impl {
         : text(icu::UnicodeString::fromUTF8(icu::StringPiece(input.data(), input.size()))) {
         UErrorCode status = U_ZERO_ERROR;
         iterator.reset(icu::BreakIterator::createWordInstance(icu::Locale::getRoot(), status));
-        if (U_FAILURE(status) || iterator == nullptr) {
+        if (static_cast<bool>(U_FAILURE(status)) || iterator == nullptr) {
             throw std::runtime_error(
                 std::string("Unable to initialize ICU word break iterator: ") + u_errorName(status)
             );
