@@ -66,3 +66,8 @@ have been excluded. This may be useful if you have mostly accurate
 threshold estimates, but still need the safety: even though some queries
 will be slower, most will be much faster, thus improving overall
 throughput and average latency.
+
+When no thresholds file is provided, the initial threshold is zero for every
+query, so the JSON summary reports `"safe": true` even if `--safe` is not
+passed. The `--safe` flag is only needed with a thresholds file when you want
+the corrective rerun for queries that return fewer than `k` results.

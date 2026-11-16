@@ -45,6 +45,7 @@
 #include "query/algorithm/ranked_or_query.hpp"
 #include "query/algorithm/ranked_or_taat_query.hpp"
 #include "query/algorithm/wand_query.hpp"
+#include "query_safety.hpp"
 #include "scorer/scorer.hpp"
 #include "timer.hpp"
 #include "topk_queue.hpp"
@@ -454,7 +455,14 @@ void perftest(
             };
         }
         auto query_times = extract_times(query_fun, queries, thresholds, runs, k, safe);
-        print_summary(query_times, type, t, runs, k, safe);
+        print_summary(
+            query_times,
+            type,
+            t,
+            runs,
+            k,
+            pisa::queries::summary_is_safe(safe, thresholds_filename.has_value())
+        );
         if (output_file) {
             print_times(query_times, queries, t, *output_file);
         }
