@@ -1,15 +1,14 @@
-#include "codec/block_codec.hpp"
-#include "codec/block_codec_registry.hpp"
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <array>
 #include <cstdlib>
-#include <rapidcheck.h>
+#include <exception>
 #include <type_traits>
 #include <vector>
 
+#include "catch2/catch_all.hpp"
+#include <rapidcheck.h>
+
 #include "codec/block_codec.hpp"
+#include "codec/block_codec_registry.hpp"
 
 using namespace rc;
 

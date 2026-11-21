@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <algorithm>
+#include <exception>
 #include <string_view>
+
+#include "catch2/catch_all.hpp"
 
 #include "span.hpp"
 

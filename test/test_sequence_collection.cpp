@@ -1,5 +1,8 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <cstdlib>
+#include <exception>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "mio/mmap.hpp"
 #include "test_generic_sequence.hpp"
@@ -10,9 +13,6 @@
 #include "sequence/uniform_partitioned_sequence.hpp"
 #include "sequence_collection.hpp"
 #include "temporary_directory.hpp"
-
-#include <cstdlib>
-#include <vector>
 
 template <typename BaseSequence>
 void test_sequence_collection() {

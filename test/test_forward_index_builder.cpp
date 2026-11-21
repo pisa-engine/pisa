@@ -1,11 +1,10 @@
-#define CATCH_CONFIG_MAIN
-
 #include <algorithm>
+#include <exception>
 #include <filesystem>
 #include <span>
 #include <string>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "binary_collection.hpp"
 #include "filesystem.hpp"

@@ -1,7 +1,7 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
+#include <exception>
 #include <functional>
+
+#include "catch2/catch_all.hpp"
 
 #include <oneapi/tbb/global_control.h>
 #include <range/v3/view/iota.hpp>

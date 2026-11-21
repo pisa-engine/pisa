@@ -1,11 +1,11 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <array>
+#include <exception>
 #include <span>
 
+#include "catch2/catch_all.hpp"
+
+#include "taily.hpp"
 #include <boost/interprocess/streams/bufferstream.hpp>
-#include <taily.hpp>
 
 #include "binary_freq_collection.hpp"
 #include "io.hpp"
@@ -18,6 +18,7 @@
 #include "wand_data.hpp"
 #include "wand_data_raw.hpp"
 
+using Catch::Approx;
 using taily::Feature_Statistics;
 
 void write_documents(std::filesystem::path const& path) {

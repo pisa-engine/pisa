@@ -1,6 +1,7 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <exception>
 #include <optional>
+
+#include "catch2/catch_all.hpp"
 
 #include "pisa/query/trec_topic_reader.hpp"
 

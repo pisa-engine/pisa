@@ -1,12 +1,13 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <cstdlib>
+#include <exception>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
 
 #include "test_generic_sequence.hpp"
 
 #include "sequence/strict_sequence.hpp"
 #include "sequence/uniform_partitioned_sequence.hpp"
-#include <cstdlib>
-#include <vector>
 
 TEST_CASE("uniform_partitioned_sequence") {
     pisa::global_parameters params;

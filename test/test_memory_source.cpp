@@ -1,7 +1,7 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
+#include <exception>
 #include <fstream>
+
+#include "catch2/catch_all.hpp"
 
 #include "pisa/io.hpp"
 #include "pisa/memory_source.hpp"

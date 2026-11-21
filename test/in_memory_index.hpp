@@ -1,9 +1,10 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <fmt/format.h>
 #include <span>
 #include <vector>
-
-#include <fmt/format.h>
 
 struct VectorCursor {
     std::span<std::uint32_t const> documents;

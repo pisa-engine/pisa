@@ -1,10 +1,10 @@
-#include "query/query_parser.hpp"
-#include "type_safe.hpp"
-#define CATCH_CONFIG_MAIN
-
+#include <exception>
 #include <memory>
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
+
+#include "query/query_parser.hpp"
+#include "type_safe.hpp"
 
 #include "accumulator/lazy_accumulator.hpp"
 #include "accumulator/simple_accumulator.hpp"
@@ -28,6 +28,7 @@
 #include "wand_utils.hpp"
 
 using namespace pisa;
+using Catch::Approx;
 
 template <typename Index>
 struct IndexData {

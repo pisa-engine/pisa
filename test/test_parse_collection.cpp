@@ -1,11 +1,11 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
-#include <vector>
-
-#include <fmt/format.h>
+#include <exception>
 #include <fstream>
 #include <memory>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
+
+#include <fmt/format.h>
 
 #include "binary_collection.hpp"
 #include "fmt/core.h"

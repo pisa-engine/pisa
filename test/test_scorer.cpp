@@ -1,10 +1,12 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
+#include <exception>
+
+#include "catch2/catch_all.hpp"
 
 #include "pisa/scorer/index_scorer.hpp"
 #include "pisa/scorer/scorer.hpp"
 
 using namespace pisa;
+using Catch::Approx;
 
 struct WandData {
     [[nodiscard]] auto term_posting_count(std::uint32_t term_id) const -> std::size_t {

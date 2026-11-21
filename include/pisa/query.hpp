@@ -15,6 +15,7 @@
 #pragma once
 
 #include <algorithm>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>

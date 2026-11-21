@@ -6,22 +6,37 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
+      fail-fast: true
       matrix:
-        compiler: [gcc14, clang19]
+        compiler: [gcc]
+        version: [16]
+        include:
+          - compiler: llvm
+            version: 23
 
     steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: recursive
+      - name: Clone repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
-    - name: Bulid docker image
-      shell: bash
-      run: |
-        docker build \
-          -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.compiler}}/Dockerfile"
+      - name: Build
+        shell: bash
+        run: |
+          IMAGE_NAME="pisa-ci:${{ matrix.compiler }}-${{ matrix.version }}"
+          DOCKER_FILE="${{runner.workspace}}/pisa/test/docker/Dockerfile.${{ matrix.compiler }}"
 
-    - name: Test
-      shell: bash
-      run: docker run pisa ctest -VV -j 4
+          docker build \
+            -f $DOCKER_FILE \
+            --build-arg COMPILER_VERSION=${{ matrix.version }} \
+            --build-arg BUILD_TYPE=Debug \
+            --build-arg USE_SANITIZERS=OFF \
+            -t $IMAGE_NAME .
+
+      - name: Run
+        shell: bash
+        run: |
+          IMAGE_NAME="pisa-ci:${{ matrix.compiler }}-${{ matrix.version }}"
+          docker run --rm $IMAGE_NAME

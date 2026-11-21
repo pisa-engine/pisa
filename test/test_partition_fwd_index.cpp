@@ -1,11 +1,11 @@
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
-
 #include <algorithm>
 #include <cstdio>
+#include <exception>
 #include <iostream>
 #include <span>
 #include <string>
+
+#include "catch2/catch_all.hpp"
 
 #include <fmt/ostream.h>
 #include <range/v3/action/transform.hpp>

@@ -6,36 +6,51 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        compiler: [gcc12, gcc13, gcc14, clang17, clang18, clang19]
+        # compiler: [gcc]
+        # version: [14, 15, 16]
         build_type: [Debug]
-        sanitizers: [OFF]
+        version: [23]
+        compiler: [llvm] # foo
+        # when an include cannot be added to the original matrix combination, a
+        # new matrix combination is added. 
         include:
-          - compiler: gcc13   # Extra test for Release
-            build_type: Release
-          - compiler: clang19 # Extra test with sanitizers
-            sanitizers: ON
+          - compiler: llvm
+          #   version: 23
+          #   build_type: Debug
+          # - compiler: llvm
+          #   version: 22
+          #   build_type: Debug
+          # - compiler: llvm
+          #   version: 21
+          #   build_type: Debug
 
     steps:
-    - uses: actions/checkout@v6
-      with:
-        submodules: recursive
+      - name: Clone repo
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
 
-    - name: Bulid docker image
-      shell: bash
-      run: |
-        docker build \
-          --build-arg USE_SANITIZERS=${{matrix.sanitizers}} \
-          -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/${{matrix.compiler}}/Dockerfile"
+      - name: Build and run
+        shell: bash
+        run: |
+          IMAGE_NAME="pisa-ci:${{ matrix.compiler }}-${{ matrix.version }}-${{matrix.build_type}}"
+          DOCKER_FILE="${{runner.workspace}}/pisa/test/docker/Dockerfile.${{ matrix.compiler }}"
 
-    - name: Test
-      shell: bash
-      run: docker run pisa ctest -VV -j 4
+          docker build \
+            -f $DOCKER_FILE \
+            --build-arg COMPILER_VERSION=${{ matrix.version }} \
+            --build-arg BUILD_TYPE=${{matrix.build_type}} \
+            --build-arg USE_SANITIZERS=OFF \
+            -t $IMAGE_NAME .
+
+          docker run --rm $IMAGE_NAME
 
   tidy:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v6
@@ -47,7 +62,7 @@ jobs:
       run: docker build -t pisa -f- . < "${{runner.workspace}}/pisa/test/docker/tidy/Dockerfile"
 
   system-deps:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v6

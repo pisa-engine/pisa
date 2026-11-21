@@ -4,6 +4,7 @@
 #include <span>
 #include <string_view>
 
+// dup from this unit's header file?
 #include <fmt/format.h>
 
 #include "codec/block_codec.hpp"

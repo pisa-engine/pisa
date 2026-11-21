@@ -1,16 +1,17 @@
+#include <algorithm>
+#include <cstdlib>
+#include <exception>
+#include <random>
+#include <vector>
+
+#include "catch2/catch_all.hpp"
+
 #include "codec/block_codec.hpp"
 #include "codec/block_codec_registry.hpp"
-#define CATCH_CONFIG_MAIN
-#include "catch2/catch.hpp"
 
 #include "test_generic_sequence.hpp"
 
 #include "block_inverted_index.hpp"
-
-#include <algorithm>
-#include <cstdlib>
-#include <random>
-#include <vector>
 
 void test_block_posting_list_ops(
     pisa::BlockCodec const* codec,

@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_MAIN
-
+#include <exception>
 #include <span>
 
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/spirit/include/lex_lexertl.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include "payload_vector.hpp"
 #include "query.hpp"
